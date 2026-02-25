@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import PixelSprite from "./PixelSprite";
-import { SPRITE_SPINNERS, SPRITE_ICONS } from "./SpriteMap";
+import HealLoadingSprite from "./HealLoadingSprite";
+import { SPRITE_ICONS } from "./SpriteMap";
 
 const TOTAL_BLOCKS = 20;
-const LOAD_DURATION = 2000;
+const LOAD_DURATION = 3200;
 
 export default function PixelLoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
@@ -53,8 +54,8 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
 
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-4">
-      {/* Animated heal character – 11 frame sprite animation */}
-      <PixelSprite sprite={SPRITE_SPINNERS.HEAL_CHARACTER} scale={1.8} />
+      {/* Uploaded sprite sheet animation: 11 frames @ 5 FPS */}
+      <HealLoadingSprite scale={1} fps={5} />
 
       <h1 className="text-primary font-mono text-xl font-bold tracking-[0.3em]"
         style={{ textShadow: "2px 2px 0 hsl(var(--accent))" }}>
