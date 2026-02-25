@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, useCallback, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Filter, Flame, Clock, Star, Zap, Gamepad2 } from "lucide-react";
@@ -12,7 +12,7 @@ import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
 import PixelSprite from "@/components/games/PixelSprite";
-import { SPRITE_ICONS, SPRITE_SPINNERS } from "@/components/games/SpriteMap";
+import { SPRITE_ICONS } from "@/components/games/SpriteMap";
 import GameLevelBadge from "@/components/games/GameLevelBadge";
 import {
   GAME_NODES,
@@ -39,6 +39,20 @@ export default function MiniGames() {
   const [filter, setFilter] = useState<GameCategory>(GameCategory.ALL);
   const [loading, setLoading] = useState(true);
   const { playClick } = useGameSounds();
+
+  // Lock body scroll & isolate page focus when on /games
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.inset = '0';
+    document.body.style.width = '100%';
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.inset = '';
+      document.body.style.width = '';
+    };
+  }, []);
 
   const { data: userPoints } = useQuery({
     queryKey: ['user-points-full', user?.id],
@@ -71,7 +85,7 @@ export default function MiniGames() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative" dir="rtl">
+    <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
       {loading && <PixelLoadingScreen onComplete={handleLoadComplete} />}
       <PixelBackground />
       <PixelMusicRadio />
@@ -104,10 +118,6 @@ export default function MiniGames() {
       <div className="max-w-2xl mx-auto px-4 pb-8 relative z-10">
         {/* Hero */}
         <div className="text-center py-8">
-          {/* Animated entry character */}
-          <div className="flex justify-center mb-4">
-            <PixelSprite sprite={SPRITE_SPINNERS.HEAL_CHARACTER} scale={1.5} />
-          </div>
           <div className="inline-flex items-center gap-2 pixel-frame px-5 py-2 mb-4">
             <Gamepad2 className="h-5 w-5 text-primary" />
             <span className="text-primary font-bold text-sm font-mono tracking-wider">PIXEL GAMES</span>
