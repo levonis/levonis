@@ -15,28 +15,33 @@ interface GameCardProps {
 export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) {
   const isLive = game.status === GameStatus.LIVE;
 
+  // Locked / Coming Soon card – minimal placeholder
+  if (!isLive) {
+    return (
+      <div className="pixel-frame-disabled opacity-60 p-4 flex flex-col items-center justify-center min-h-[180px] text-center">
+        <Lock className="h-8 w-8 text-muted-foreground/40 mb-3" />
+        <span className="pixel-badge-locked text-[11px] font-mono font-bold px-3 py-1 uppercase tracking-wider">
+          قريباً
+        </span>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={() => { onClickSound(); onPlay(); }}
-      disabled={!isLive}
       className={cn(
         "group text-right p-4 transition-all duration-200 relative overflow-hidden w-full",
-        isLive
-          ? "pixel-frame hover:pixel-frame-active cursor-pointer active:scale-[0.98]"
-          : "pixel-frame-disabled cursor-not-allowed opacity-60"
+        "pixel-frame hover:pixel-frame-active cursor-pointer active:scale-[0.98]"
       )}
     >
       {/* Status badges */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-        {isLive ? (
-          <span className="pixel-badge-live text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
-            <PixelSprite sprite={SPRITE_ICONS.DIAMOND_GREEN} scale={0.8} />
-            LIVE
-          </span>
-        ) : (
-          <span className="pixel-badge-locked text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider">قريباً</span>
-        )}
-        {game.is_new && isLive && (
+        <span className="pixel-badge-live text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
+          <PixelSprite sprite={SPRITE_ICONS.DIAMOND_GREEN} scale={0.8} />
+          LIVE
+        </span>
+        {game.is_new && (
           <span className="pixel-badge-new text-[9px] font-mono font-bold px-2 py-0.5 flex items-center gap-1">
             <PixelSprite sprite={SPRITE_ICONS.STAR_FULL} scale={0.8} />
             جديد
@@ -45,16 +50,17 @@ export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) 
         <DifficultyBadge level={game.difficulty} />
       </div>
 
-      {/* Icon */}
-      <div className={cn(
-        "w-14 h-14 flex items-center justify-center text-3xl mb-3 transition-transform duration-300",
-        isLive ? "pixel-frame-inset group-hover:scale-110 group-hover:rotate-2" : "pixel-frame-inset opacity-40"
-      )}>
-        {isLive ? game.icon : <Lock className="h-6 w-6 text-muted-foreground/50" />}
+      {/* Game Image */}
+      <div className="w-16 h-16 flex items-center justify-center mb-3 transition-transform duration-300 pixel-frame-inset group-hover:scale-110 group-hover:rotate-2 overflow-hidden rounded">
+        {game.image ? (
+          <img src={game.image} alt={game.title} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-3xl">{game.icon}</span>
+        )}
       </div>
 
-      <h3 className={cn("font-bold text-sm mb-1 line-clamp-1 font-mono", isLive ? "text-foreground" : "text-muted-foreground")}>{game.title}</h3>
-      <p className={cn("text-[11px] leading-relaxed mb-3 line-clamp-2", isLive ? "text-muted-foreground" : "text-muted-foreground/50")}>{game.description}</p>
+      <h3 className="font-bold text-sm mb-1 line-clamp-1 font-mono text-foreground">{game.title}</h3>
+      <p className="text-[11px] leading-relaxed mb-3 line-clamp-2 text-muted-foreground">{game.description}</p>
 
       {/* Reward info with sprite icons */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -67,11 +73,9 @@ export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) 
       </div>
 
       {/* Play button */}
-      {isLive && (
-        <div className="mt-2 pixel-btn-play py-1.5 text-center group-hover:brightness-110 transition-all">
-          <span className="text-xs font-bold font-mono tracking-wider">▶ PLAY</span>
-        </div>
-      )}
+      <div className="mt-2 pixel-btn-play py-1.5 text-center group-hover:brightness-110 transition-all">
+        <span className="text-xs font-bold font-mono tracking-wider">▶ PLAY</span>
+      </div>
     </button>
   );
 }
