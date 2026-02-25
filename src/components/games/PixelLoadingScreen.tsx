@@ -52,9 +52,9 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
   const pct = Math.round((progress / TOTAL_BLOCKS) * 100);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-6">
-      {/* Animated pixel spinner from sprite sheet */}
-      <PixelSprite sprite={SPRITE_SPINNERS.HEAL_CHARACTER} scale={4} />
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-4">
+      {/* Animated heal character – 11 frame sprite animation */}
+      <PixelSprite sprite={SPRITE_SPINNERS.HEAL_CHARACTER} scale={1.8} />
 
       <h1 className="text-primary font-mono text-xl font-bold tracking-[0.3em]"
         style={{ textShadow: "2px 2px 0 hsl(var(--accent))" }}>
