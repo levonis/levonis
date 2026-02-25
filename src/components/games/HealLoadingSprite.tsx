@@ -22,7 +22,7 @@ export default function HealLoadingSprite({
   className = "",
 }: HealLoadingSpriteProps) {
   const [frame, setFrame] = useState(0);
-  const [dims, setDims] = useState<{ sheetW: number; sheetH: number } | null>(null);
+  const [dims, setDims] = useState<{ sheetW: number; sheetH: number }>({ sheetW: 1920, sheetH: 174 });
 
   // Load sheet dimensions once
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function HealLoadingSprite({
     return () => clearInterval(id);
   }, [tick, fps]);
 
-  if (!dims) return null;
+  
 
   const frameW = dims.sheetW / TOTAL_FRAMES;
   const frameH = dims.sheetH;
