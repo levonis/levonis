@@ -43,7 +43,17 @@ export default function HealLoadingSprite({
     return () => clearInterval(id);
   }, [tick, fps]);
 
-  if (!dims) return null;
+  if (!dims) {
+    // Reserve space to prevent layout shift
+    return (
+      <div
+        className={`inline-block shrink-0 ${className}`}
+        style={{ width: 160, height: 160 }}
+        role="img"
+        aria-label="loading character animation"
+      />
+    );
+  }
 
   const frameW = dims.sheetW / TOTAL_FRAMES;
   const frameH = dims.sheetH;
