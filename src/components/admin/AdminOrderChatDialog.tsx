@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { sendAllNotifications } from '@/lib/notifications';
+import ImageLightbox from '@/components/chat/ImageLightbox';
 
 // Support user ID - the admin support account
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
@@ -252,11 +253,16 @@ export default function AdminOrderChatDialog({
                           }`}
                         >
                           {msg.image_url && (
-                            <img
-                              src={msg.image_url}
-                              alt="صورة"
-                              className="max-w-full rounded-lg mb-2"
-                            />
+                            <ImageLightbox src={msg.image_url} alt="صورة">
+                              {(open) => (
+                                <img
+                                  src={msg.image_url!}
+                                  alt="صورة"
+                                  className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={open}
+                                />
+                              )}
+                            </ImageLightbox>
                           )}
                           <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                           <p className={`text-xs mt-1 ${isSupport ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>

@@ -1,6 +1,8 @@
 import { CheckCheck, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseEmojisInText } from '../emojiData';
+import ImageLightbox from '../ImageLightbox';
+import LinkRenderer from '../LinkRenderer';
 
 interface TextMessageProps {
   content: string;
@@ -11,6 +13,19 @@ interface TextMessageProps {
   senderName?: string;
   showSenderName?: boolean;
   showTail?: boolean;
+}
+
+// URL regex pattern
+const URL_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
+
+// Extract URLs from text
+function extractUrls(text: string): string[] {
+  return text.match(URL_REGEX) || [];
+}
+
+// Get text without URLs
+function getTextWithoutUrls(text: string): string {
+  return text.replace(URL_REGEX, '').trim();
 }
 
 // Component to render text with inline emojis
@@ -47,6 +62,10 @@ export default function TextMessage({
   showSenderName = false,
   showTail = true,
 }: TextMessageProps) {
+  const urls = content ? extractUrls(content) : [];
+  const textWithoutUrls = content ? getTextWithoutUrls(content) : '';
+  const hasTextContent = textWithoutUrls && textWithoutUrls !== '📷 وسائط' && textWithoutUrls !== '📷 صورة';
+
   return (
     <div className={cn("flex", isMe ? "justify-start" : "justify-end")}>
       <div
@@ -58,29 +77,38 @@ export default function TextMessage({
           showTail && (isMe ? "rounded-tl-2xl" : "rounded-tr-2xl")
         )}
       >
-        {/* Sender Name - for group chats or admin view */}
+        {/* Sender Name */}
         {showSenderName && senderName && !isMe && (
           <p className="text-xs font-medium text-primary mb-1">{senderName}</p>
         )}
 
-        {/* Image */}
+        {/* Image with Lightbox */}
         {imageUrl && (
-          <div className="mb-1.5">
-            <img
-              src={imageUrl}
-              alt=""
-              className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => window.open(imageUrl, '_blank')}
-            />
-          </div>
+          <ImageLightbox src={imageUrl} alt="صورة">
+            {(open) => (
+              <div className="mb-1.5">
+                <img
+                  src={imageUrl}
+                  alt=""
+                  className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={open}
+                />
+              </div>
+            )}
+          </ImageLightbox>
         )}
 
         {/* Text Content with Inline Emojis */}
-        {content && content !== '📷 وسائط' && content !== '📷 صورة' && (
+        {hasTextContent && (
           <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-            <RenderTextWithEmojis text={content} />
+            <RenderTextWithEmojis text={textWithoutUrls} />
           </p>
         )}
+
+        {/* Rendered Links */}
+        {urls.map((url, i) => (
+          <LinkRenderer key={i} url={url} isMe={isMe} />
+        ))}
 
         {/* Time & Status */}
         <div
