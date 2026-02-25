@@ -61,6 +61,7 @@ export default function HealLoadingSprite({
         backgroundSize: `${Math.round(dims.sheetW * scale)}px ${displayH}px`,
         backgroundPositionX: -Math.round(frame * frameW * scale),
         backgroundPositionY: 0,
+        transition: "none",
         imageRendering: "pixelated",
       }}
       role="img"
