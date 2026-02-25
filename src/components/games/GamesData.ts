@@ -1,3 +1,5 @@
+import gameRpsImage from "@/assets/game-rps.png";
+
 /**
  * ╔══════════════════════════════════════════════════════════════╗
  * ║                    GAMES RESOURCE FILE                       ║
@@ -44,6 +46,9 @@ export interface GameResource {
   /** @export emoji icon for the game */
   icon: string;
 
+  /** @export AI-generated image path (optional) */
+  image?: string;
+
   /** @export current status */
   status: GameStatus;
 
@@ -75,6 +80,7 @@ export const GAME_NODES: GameResource[] = [
     title: "حجرة ورقة مقص",
     description: "تحدى الكمبيوتر في 3 جولات واربح حتى 30 نقطة!",
     icon: "✊",
+    image: gameRpsImage,
     status: GameStatus.LIVE,
     category: GameCategory.LUCK,
     reward: "+10 / -5",
