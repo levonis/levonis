@@ -14,6 +14,7 @@ import GameCard from "@/components/games/GameCard";
 import PixelSprite from "@/components/games/PixelSprite";
 import { SPRITE_ICONS } from "@/components/games/SpriteMap";
 import GameLevelBadge from "@/components/games/GameLevelBadge";
+import GameEntryCharacter from "@/components/games/GameEntryCharacter";
 import {
   GAME_NODES,
   FILTER_NODES,
@@ -104,6 +105,10 @@ export default function MiniGames() {
       <div className="max-w-2xl mx-auto px-4 pb-8 relative z-10">
         {/* Hero */}
         <div className="text-center py-8">
+          {/* Animated entry character */}
+          <div className="flex justify-center mb-4">
+            <GameEntryCharacter scale={3} speed={120} loop />
+          </div>
           <div className="inline-flex items-center gap-2 pixel-frame px-5 py-2 mb-4">
             <Gamepad2 className="h-5 w-5 text-primary" />
             <span className="text-primary font-bold text-sm font-mono tracking-wider">PIXEL GAMES</span>
