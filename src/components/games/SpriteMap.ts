@@ -88,20 +88,12 @@ export const SPRITE_FRAMES = {
   FRAME_BLUE:   { sheet: "02", x: 32, y: 32, w: 32, h: 32 } as SpriteCoords,
 };
 
-// ── 03.png (240×144): Loading spinners — 5 cols × 3 rows, each 48×48 ──
+// ── 03.png (1920×174): Character heal animation — 11 frames, each ~174×174 ──
 
 export const SPRITE_SPINNERS = {
-  SPINNER_GOLD: {
-    sheet: "03", x: 0, y: 0, w: 48, h: 48,
-    frames: 5, direction: "horizontal", speed: 150,
-  } as AnimatedSpriteCoords,
-  SPINNER_GREEN: {
-    sheet: "03", x: 0, y: 48, w: 48, h: 48,
-    frames: 5, direction: "horizontal", speed: 150,
-  } as AnimatedSpriteCoords,
-  SPINNER_BLUE: {
-    sheet: "03", x: 0, y: 96, w: 48, h: 48,
-    frames: 5, direction: "horizontal", speed: 150,
+  HEAL_CHARACTER: {
+    sheet: "03", x: 0, y: 0, w: 175, h: 174,
+    frames: 11, direction: "horizontal", speed: 120,
   } as AnimatedSpriteCoords,
 };
 

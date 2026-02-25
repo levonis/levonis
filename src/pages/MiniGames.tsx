@@ -12,9 +12,8 @@ import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
 import PixelSprite from "@/components/games/PixelSprite";
-import { SPRITE_ICONS } from "@/components/games/SpriteMap";
+import { SPRITE_ICONS, SPRITE_SPINNERS } from "@/components/games/SpriteMap";
 import GameLevelBadge from "@/components/games/GameLevelBadge";
-import GameEntryCharacter from "@/components/games/GameEntryCharacter";
 import {
   GAME_NODES,
   FILTER_NODES,
@@ -107,7 +106,7 @@ export default function MiniGames() {
         <div className="text-center py-8">
           {/* Animated entry character */}
           <div className="flex justify-center mb-4">
-            <GameEntryCharacter scale={3} speed={120} loop />
+            <PixelSprite sprite={SPRITE_SPINNERS.HEAL_CHARACTER} scale={1.5} />
           </div>
           <div className="inline-flex items-center gap-2 pixel-frame px-5 py-2 mb-4">
             <Gamepad2 className="h-5 w-5 text-primary" />
