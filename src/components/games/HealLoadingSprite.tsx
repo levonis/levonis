@@ -47,24 +47,33 @@ export default function HealLoadingSprite({
 
   const frameW = dims.sheetW / TOTAL_FRAMES;
   const frameH = dims.sheetH;
-  const displayW = Math.round(frameW * scale);
-  const displayH = Math.round(frameH * scale);
 
   return (
     <div
-      className={`inline-block shrink-0 ${className}`}
+      className={`inline-block shrink-0 overflow-hidden ${className}`}
       style={{
-        width: displayW,
-        height: displayH,
-        backgroundImage: `url(${healSheet})`,
-        backgroundRepeat: "no-repeat",
-        backgroundSize: `${Math.round(dims.sheetW * scale)}px ${displayH}px`,
-        backgroundPositionX: -Math.round(frame * frameW * scale),
-        backgroundPositionY: 0,
-        imageRendering: "pixelated",
+        width: frameW * scale,
+        height: frameH * scale,
       }}
       role="img"
       aria-label="loading character animation"
-    />
+    >
+      <img
+        src={healSheet}
+        alt=""
+        draggable={false}
+        style={{
+          width: dims.sheetW * scale,
+          height: frameH * scale,
+          transform: `translateX(-${frame * frameW * scale}px)`,
+          imageRendering: "pixelated",
+          display: "block",
+          maxWidth: "none",
+          userSelect: "none",
+          pointerEvents: "none",
+          transition: "none",
+        }}
+      />
+    </div>
   );
 }
