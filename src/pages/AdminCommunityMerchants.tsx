@@ -141,39 +141,9 @@ function MerchantsContent() {
       badge_tier?: string;
       badge_override?: boolean;
     }) => {
-      const { data: feeSettings } = await supabase
-        .from("community_settings")
-        .select("value")
-        .eq("key", "merchant_registration_fee")
-        .maybeSingle();
-      
-      const MERCHANT_FEE = (feeSettings?.value as any)?.amount ?? 25000;
-
-      const { data: wallet, error: walletError } = await supabase
-        .from("user_wallets")
-        .select("balance")
-        .eq("user_id", payload.user_id)
-        .maybeSingle();
-      
-      if (walletError) throw walletError;
-      
-      const currentBalance = wallet?.balance || 0;
-      
-      if (MERCHANT_FEE > 0 && currentBalance < MERCHANT_FEE) {
-        throw new Error(`رصيد المحفظة غير كافي. المطلوب: ${MERCHANT_FEE.toLocaleString()} IQD، المتوفر: ${currentBalance.toLocaleString()} IQD`);
-      }
-
-      // Only deduct if fee > 0
-      if (MERCHANT_FEE > 0) {
-        const { error: deductError } = await supabase.rpc('admin_adjust_wallet', {
-          p_user_id: payload.user_id,
-          p_amount: -MERCHANT_FEE,
-          p_type: 'merchant_fee',
-          p_description: 'رسوم التسجيل كتاجر في مجتمع ليفو'
-        });
-
-        if (deductError) throw new Error(deductError.message || 'فشل خصم رسوم التسجيل');
-      }
+      // Fee handling is done by the database trigger (charge_merchant_registration_fee_on_approval)
+      // which reads registration_fee from the application row and either deducts from wallet or adds to debt
+      const MERCHANT_FEE = 0; // Used only for notification text below
 
       const { error: updateError } = await supabase
         .from("merchant_applications")
