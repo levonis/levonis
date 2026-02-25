@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { X, ZoomIn, ZoomOut, Download } from 'lucide-react';
 
 interface ImageLightboxProps {
@@ -26,8 +27,10 @@ export default function ImageLightbox({ src, alt = '', children }: ImageLightbox
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
           hideClose
+          aria-describedby={undefined}
           className="max-w-[95vw] max-h-[95vh] w-auto p-0 bg-black/95 border-none shadow-2xl overflow-hidden flex items-center justify-center"
         >
+          <VisuallyHidden><DialogTitle>عرض الصورة</DialogTitle></VisuallyHidden>
           {/* Controls */}
           <div className="absolute top-3 left-3 z-20 flex items-center gap-2" dir="ltr">
             <button

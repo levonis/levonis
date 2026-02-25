@@ -66,6 +66,8 @@ import AddToCartSheet from '@/components/community/AddToCartSheet';
 import MerchantOrderDialog from '@/components/chat/MerchantOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
+import ImageLightbox from '@/components/chat/ImageLightbox';
+import LinkRenderer from '@/components/chat/LinkRenderer';
 import SwipeableMessage from '@/components/chat/messages/SwipeableMessage';
 import ReplyBubble from '@/components/chat/messages/ReplyBubble';
 import { type ReplyToMessage } from '@/components/chat/messages/ReplyPreviewBar';
@@ -1741,28 +1743,46 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       />
                                     )}
                                     
-                                    {/* Image */}
+                                    {/* Image with Lightbox */}
                                     {msg.image_url && (
-                                      <div className="mb-1">
-                                        <img 
-                                          src={msg.image_url} 
-                                          alt="" 
-                                          className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
-                                          onClick={() => window.open(msg.image_url, '_blank')}
-                                        />
-                                      </div>
+                                      <ImageLightbox src={msg.image_url} alt="صورة">
+                                        {(open) => (
+                                          <div className="mb-1">
+                                            <img 
+                                              src={msg.image_url} 
+                                              alt="" 
+                                              className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
+                                              onClick={open}
+                                            />
+                                          </div>
+                                        )}
+                                      </ImageLightbox>
                                     )}
                                     
-                                    {/* Text with inline emojis */}
-                                    {msg.content && msg.content !== '📷 وسائط' && msg.content !== '📷 صورة' && !msg.content.startsWith('{') && (
-                                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                                        {parseEmojisInText(msg.content).map((item, idx) => 
-                                          typeof item === 'string' 
-                                            ? <span key={idx}>{item}</span>
-                                            : <img key={idx} src={item.src} alt={item.alt} className="inline-block w-5 h-5 align-text-bottom mx-0.5" loading="lazy" />
-                                        )}
-                                      </p>
-                                    )}
+                                    {/* Text with inline emojis + link detection */}
+                                    {(() => {
+                                      if (!msg.content || msg.content === '📷 وسائط' || msg.content === '📷 صورة' || msg.content.startsWith('{')) return null;
+                                      const URL_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
+                                      const urls = msg.content.match(URL_REGEX) || [];
+                                      const textWithoutUrls = msg.content.replace(URL_REGEX, '').trim();
+                                      const hasText = textWithoutUrls.length > 0;
+                                      return (
+                                        <>
+                                          {hasText && (
+                                            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                                              {parseEmojisInText(textWithoutUrls).map((item, idx) => 
+                                                typeof item === 'string' 
+                                                  ? <span key={idx}>{item}</span>
+                                                  : <img key={idx} src={item.src} alt={item.alt} className="inline-block w-5 h-5 align-text-bottom mx-0.5" loading="lazy" />
+                                              )}
+                                            </p>
+                                          )}
+                                          {urls.map((url, idx) => (
+                                            <LinkRenderer key={idx} url={url} isMe={isMe} />
+                                          ))}
+                                        </>
+                                      );
+                                    })()}
                                     
                                     {/* Admin Cart Edit Button */}
                                     {isCartMessage && (
