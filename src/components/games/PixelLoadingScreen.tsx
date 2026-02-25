@@ -4,7 +4,7 @@ import HealLoadingSprite from "./HealLoadingSprite";
 import { SPRITE_ICONS } from "./SpriteMap";
 
 const TOTAL_BLOCKS = 20;
-const LOAD_DURATION = 3200;
+const LOAD_DURATION = 4000;
 
 export default function PixelLoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
