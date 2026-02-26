@@ -72,7 +72,8 @@ const Products = () => {
 
       let query = supabase
         .from('products')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact' })
+        .eq('is_pricing_updated', true);
 
       // Apply category filter
       if (categoryFilter !== 'all') {

@@ -171,6 +171,11 @@ const ProductsTable = memo(({
                       {product.in_stock ? 'متوفر' : 'غير متوفر'}
                     </Badge>
                     {product.featured && <Badge variant="secondary">مميز</Badge>}
+                    {!product.is_pricing_updated && (
+                      <Badge variant="outline" className="border-amber-500 text-amber-500">
+                        غير محدّث
+                      </Badge>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>

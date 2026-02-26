@@ -44,7 +44,8 @@ const CategoryDetail = () => {
         .from('products')
         .select('*')
         .eq('category_id', category.id)
-        .eq('in_stock', true);
+        .eq('in_stock', true)
+        .eq('is_pricing_updated', true);
 
       // Apply sorting
       if (sortBy === 'price-asc') {
