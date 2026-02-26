@@ -44,7 +44,7 @@ export default function OrdersCenter({ userId }: OrdersCenterProps) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-bold text-foreground">طلباتي</h2>
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/my-orders")}
           className="flex items-center gap-1 text-xs text-primary font-semibold transition-colors hover:text-primary/80"
         >
           <span>عرض الكل</span>
@@ -59,7 +59,7 @@ export default function OrdersCenter({ userId }: OrdersCenterProps) {
           return (
             <button
               key={s.key}
-              onClick={() => navigate(`/orders?status=${s.key}`)}
+              onClick={() => navigate(`/my-orders?status=${s.key}`)}
               className="flex flex-col items-center gap-1.5 rounded-2xl py-3 px-1 transition-all duration-200 active:scale-[0.93] hover:bg-muted/50"
             >
               <div className="relative">

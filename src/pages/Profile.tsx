@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Settings, Store } from "lucide-react";
@@ -10,7 +9,7 @@ import { useUserCardFrame } from "@/hooks/useUserCardFrame";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
+
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 
 // New profile zone components
@@ -23,7 +22,7 @@ import RecentOrders from "@/components/profile/RecentOrders";
 export default function Profile() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [merchantOpen, setMerchantOpen] = useState(false);
+  
 
   const { data: merchantApp } = useQuery({
     queryKey: ["merchant-application", user?.id],
@@ -167,24 +166,6 @@ export default function Profile() {
         {/* E) Recent Orders */}
         {user?.id && <RecentOrders userId={user.id} />}
 
-        {/* Merchant Conversion CTA */}
-        {!merchantApp && (
-          <div className="rounded-3xl bg-card border border-border/40 shadow-sm p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-bold text-foreground">تحويل إلى تاجر</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  قدّم طلب تسجيل كتاجر وابدأ ببيع منتجاتك.
-                </div>
-              </div>
-              <Button className="h-9 rounded-xl shrink-0" onClick={() => setMerchantOpen(true)}>
-                ابدأ الآن
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
       </main>
     </div>
   );

@@ -42,7 +42,7 @@ export default function RecentOrders({ userId }: RecentOrdersProps) {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold text-foreground">آخر الطلبات</h2>
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/my-orders")}
           className="flex items-center gap-1 text-xs text-primary font-semibold transition-colors hover:text-primary/80"
         >
           <span>عرض الكل</span>
@@ -63,7 +63,7 @@ export default function RecentOrders({ userId }: RecentOrdersProps) {
             return (
               <button
                 key={o.id}
-                onClick={() => navigate(`/orders`)}
+                onClick={() => navigate(`/my-orders`)}
                 className="w-full flex items-center gap-3 rounded-2xl border border-border/30 bg-muted/20 p-3 transition-all duration-200 active:scale-[0.97] hover:bg-muted/40 text-right"
               >
                 <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
