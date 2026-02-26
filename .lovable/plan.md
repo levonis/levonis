@@ -1,129 +1,88 @@
 
 
-# خطة: مكون Level Badge ديناميكي مع أنيميشن متقدم
+# Taobao-Inspired Profile Page Redesign
 
-## ملخص
-إنشاء مكون `GameLevelBadge` جديد بأسلوب بكسل متوافق مع نظام الألعاب الحالي. المكون يعرض شارة مستوى مع أنيميشن تقدم متعدد الخطوات، رقم المستوى المحفور، وتوهج حسب الرتبة.
+## Current State
+The profile page (`/profile`) is a simple stacked card layout with: profile header, rating card, activity summary, last 4 requests, and merchant conversion CTA. It lacks visual hierarchy, premium feel, and quick-access functionality.
 
----
+## Data Available in Database
+- **user_points**: `total_points`, `available_points`, `level` (bronze/silver/gold/platinum)
+- **user_wallets**: `balance`, `currency`
+- **user_coupons**: `discount_value`, `discount_type`, `is_used`, `expires_at`, `coupon_code`
+- **loyalty_levels**: tier info with `name_ar`, `color`, `min_points`, `discount_percentage`, `frame_url`
+- **orders**: `status` (pending, confirmed, shipped, arrived_iraq, delivered)
+- **profiles**: full_name, username, avatar_url, phone_verified
+- Existing `LevelBadge` and `AvatarWithFrame` components
 
-## هيكل الملفات
+## Architecture — 5 Zones
 
-| ملف | نوع |
-|-----|------|
-| `src/components/games/GameLevelBadge.tsx` | **جديد** — المكون الرئيسي |
-| `src/components/games/levelBadgeStyles.css` | **جديد** — أنيميشن CSS مخصص |
-| `src/pages/MiniGames.tsx` | **تعديل** — عرض الشارة في الهيدر |
+### A) Premium Profile Header
+- Gradient background (based on user's loyalty level color)
+- Glassmorphism overlay card with `backdrop-blur`
+- Large `AvatarWithFrame` (size `lg`) centered or right-aligned
+- Username + `LevelBadge` inline
+- Progress bar toward next loyalty tier (query `loyalty_levels` for next tier's `min_points`)
+- 4 compact stat pills in a row: Points | Coupons | Wallet | Savings
+- CTA button: "ترقية العضوية" linking to `/rewards?tab=cards`
 
----
+### B) Orders Control Center
+- Section title "طلباتي" with "عرض الكل" link to `/orders`
+- 5-column grid of order status icons with dynamic count badges
+- Statuses: `pending` (بانتظار الدفع), `confirmed` (قيد التجهيز), `shipped` (تم الشحن), `arrived_iraq` (في الطريق), `delivered` (تم التسليم)
+- Each column: outline icon + label + count badge (animated if >0)
+- Tap navigates to `/orders?status=X`
 
-## التفاصيل التقنية
+### C) Quick Services Grid
+- 4-column grid of service shortcuts
+- Items: تتبع الشحنات, المفضلة, المتاجر المتابعة, سجل التصفح, العناوين, خدمة العملاء, الإعدادات
+- Each item: icon in soft colored circle + label below
+- Subtle tap scale animation via `active:scale-95`
 
-### 1. تعريف الرتب (Tiers)
+### D) Coupons & Promotions
+- Horizontal scroll of coupon cards (max 5 active ones)
+- Each card: large discount value, condition text, expiry, "استخدم الآن" CTA
+- Color coding: VIP gold gradient, standard red/pink, expired grayscale
+- "عرض الكل" link
 
-```text
-Bronze   → Level 0–10   → لون نحاسي (#CD7F32) + توهج برتقالي
-Platinum → Level 11–25  → لون فضي/بلاتيني (#E5E4E2) + توهج أبيض
-Diamond  → Level 26–30  → لون أزرق سماوي (#B9F2FF) + توهج سيان
-Emerald  → Level 31+    → لون زمردي (#50C878) + توهج أخضر
-```
+### E) Recent Activity (Simplified)
+- Compact list of last 3 orders with status badge and date
+- Replace the old rating/metrics cards (move to a sub-page if needed)
 
-### 2. هيكل المكون البصري
+## Implementation Plan
 
-```text
-┌──────────────────────────┐
-│  ┌──┐                    │
-│  │V │ ═══ Bar 1 ═══════  │  ← شريط أفقي أول
-│  │E │ ═══ Bar 2 ═══════  │  ← شريط أفقي ثاني
-│  │R │ ══ [  15  ] ═════  │  ← شريط ثالث + رقم محفور
-│  │T │                    │
-│  └──┘                    │
-│     ▲ Shield center      │
-└──────────────────────────┘
-```
+### Step 1: Create sub-components
+Create `src/components/profile/` directory with:
+- `ProfileHeader.tsx` — gradient header with avatar, name, level, stats, progress
+- `OrdersCenter.tsx` — 5-col order status grid with counts from `orders` table
+- `QuickServicesGrid.tsx` — 4-col services grid
+- `CouponsStrip.tsx` — horizontal coupon cards from `user_coupons`
+- `RecentOrders.tsx` — last 3 orders compact list
 
-العناصر:
-- **Shield**: أيقونة درع مركزية (من sprite sheet 01.png `SPRITE_BADGES`)
-- **Horizontal Bars**: 3 أشرطة أفقية متراصة تظهر تتابعياً
-- **Vertical Bar**: شريط عمودي على اليسار يظهر عند 50% تقدم
-- **Level Number**: رقم المستوى محفور بتأثير inner shadow
+### Step 2: Rewrite Profile.tsx
+- Remove all existing card sections for regular users
+- Import and compose the 5 new zone components
+- Keep merchant view as-is (or enhance separately later)
+- Remove `pt-24` top padding, use `pt-6` since bottom nav handles navigation
+- Add `pb-24` for bottom nav clearance
 
-### 3. تسلسل الأنيميشن (Animation Sequence)
+### Step 3: Data fetching
+- Add queries for `user_wallets` (balance), `user_coupons` (active count + list), `orders` (status counts), `loyalty_levels` (next tier info)
+- Use existing `useUserPrintReputation`, `useUserCardFrame`, `LevelBadge`
 
-```text
-t=0ms     → Bar 1: scaleX(0→1) slide-in        [300ms]
-t=300ms   → Bar 2: scaleX(0→1) slide-in        [300ms]
-t=600ms   → Level Number: opacity(0→1) + scale  [400ms]
-t=∞       → عند progress ≥ 50%:
-              Vertical bar slides down behind bars
-              then merges as Bar 3 (scaleX expansion)
-              Level number gets engraved effect on Bar 3
-```
+### Step 4: Visual system
+- Gradient backgrounds using loyalty level color
+- `rounded-3xl` (24px) for main cards, `rounded-2xl` (16px) for inner cards
+- Shadow scale: `shadow-sm`, `shadow-md`, `shadow-lg`
+- Typography: section titles `text-base font-bold`, card titles `text-sm font-semibold`, body `text-xs`
+- Glassmorphism: `bg-white/10 backdrop-blur-xl border border-white/20`
+- Micro-interactions: `transition-all duration-200 active:scale-[0.97]`
 
-### 4. تفاصيل CSS الأنيميشن
+### Step 5: Skeleton loading states
+- Add skeleton placeholders for header stats, order counts, and coupons while data loads
 
-ملف `levelBadgeStyles.css`:
-
-- `@keyframes bar-slide-in`: `transform: scaleX(0) → scaleX(1)` مع `transform-origin: right`
-- `@keyframes level-engrave`: `opacity: 0, scale(0.5) → opacity: 1, scale(1)` مع `text-shadow` محفور
-- `@keyframes vertical-merge`: الشريط العمودي ينزلق من أعلى لأسفل ثم يتحول أفقياً
-- `@keyframes tier-glow-pulse`: نبض توهج خفيف حسب لون الرتبة
-- `@keyframes level-up-burst`: تأثير scale(1→1.2→1) عند تغيير المستوى
-
-تأثير الحفر (Engraved):
-```css
-text-shadow:
-  0 1px 0 rgba(255,255,255,0.15),   /* highlight above */
-  0 -1px 1px rgba(0,0,0,0.6);       /* shadow below */
-color: transparent + background-clip: text
-```
-
-### 5. واجهة المكون (API)
-
-```typescript
-interface GameLevelBadgeProps {
-  level: number;           // 0-99
-  progressPercent: number; // 0-100 (تقدم نحو المستوى التالي)
-  size?: "sm" | "md" | "lg";
-  animate?: boolean;       // تشغيل أنيميشن الدخول
-  className?: string;
-}
-```
-
-دالة `getTier(level)` تحدد الرتبة والألوان تلقائياً.
-
-### 6. استخدام Sprite Assets
-
-- **Shield icon**: `SPRITE_BADGES.SHIELD_GOLD / SHIELD_SILVER / SHIELD_BLUE / SHIELD_GREEN` حسب الرتبة
-- **Progress bars**: ألوان CSS متدرجة بأسلوب بكسل (لا sprites — أشرطة مخصصة أدق)
-- **Glow effect**: `box-shadow` ديناميكي بلون الرتبة
-
-### 7. تكامل مع الصفحة
-
-في `MiniGames.tsx` — عرض `GameLevelBadge` بجانب عداد النقاط في الهيدر:
-
-```text
-┌─────────────────────────────────┐
-│  [BACK]     [LevelBadge] [🪙 500] │
-└─────────────────────────────────┘
-```
-
-المستوى والتقدم يُحسبان من `userPoints` الموجودة أصلاً.
-
-### 8. حساب المستوى من النقاط
-
-```typescript
-// كل 100 نقطة = مستوى واحد (قابل للتعديل)
-const POINTS_PER_LEVEL = 100;
-const level = Math.floor(points / POINTS_PER_LEVEL);
-const progressPercent = (points % POINTS_PER_LEVEL);
-```
-
-### 9. الاستجابة (Responsive)
-
-| الحجم | الأبعاد | الاستخدام |
-|-------|---------|----------|
-| sm    | 32×32px | داخل البطاقات |
-| md    | 48×48px | الهيدر |
-| lg    | 72×72px | الملف الشخصي |
+## Technical Notes
+- All data queries use existing database tables — no migrations needed
+- Bottom navigation already exists in `AppNavBar` — no changes needed there
+- The merchant profile view (approved merchants) stays unchanged initially
+- RTL layout maintained with `dir="rtl"` on main container
 
