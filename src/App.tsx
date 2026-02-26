@@ -130,31 +130,12 @@ function AppContent() {
   useDailyLogin();
   useMessageNotifications();
   useOnlineHeartbeat();
-  const [announcementHeight, setAnnouncementHeight] = useState(0);
-  const [verificationBannerHeight, setVerificationBannerHeight] = useState(0);
   const location = useLocation();
-  const isCommunityShell = location.pathname === "/community" || location.pathname.startsWith("/community/");
   const isGamesPage = location.pathname === "/games";
-  const isProfilePage = location.pathname === "/profile";
-  const hideTopBar = isGamesPage || isProfilePage;
-  
-  // Total top offset = verification banner (highest z-index) + announcement bar + header
-  const totalTopPadding = hideTopBar
-    ? 0
-    : isCommunityShell 
-      ? 56 + verificationBannerHeight 
-      : 68 + announcementHeight + verificationBannerHeight;
   
   return (
     <>
-      {!hideTopBar && <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />}
-      {!hideTopBar && <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />}
-      {!hideTopBar && (isCommunityShell ? (
-        <CommunityTopBar verificationBannerHeight={verificationBannerHeight} />
-      ) : (
-        <Header announcementHeight={announcementHeight} verificationBannerHeight={verificationBannerHeight} />
-      ))}
-      <main style={{ paddingTop: `${totalTopPadding}px` }}>
+      <main style={{ paddingTop: 0 }}>
         <Suspense fallback={<SuspenseLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
