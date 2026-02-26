@@ -1,4 +1,4 @@
-// App component - main application entry point - v10 (premium loading)
+// App component - main application entry point - v11 (premium loading)
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
