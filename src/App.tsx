@@ -12,6 +12,7 @@ import { useDailyLogin } from "@/hooks/useDailyLogin";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { useOnlineHeartbeat } from "@/hooks/useOnlineHeartbeat";
 import Header from "@/components/Header";
+import AppNavBar from "@/components/AppNavBar";
 import CommunityTopBar from "@/components/community/CommunityTopBar";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import AdminRoute from "@/components/AdminRoute";
@@ -260,15 +261,15 @@ function AppContent() {
           </Routes>
         </Suspense>
       </main>
+      {/* Bottom/Side Navigation Bar */}
+      {!isGamesPage && <AppNavBar />}
+      {/* Add bottom padding on mobile for the nav bar */}
+      {!isGamesPage && <div className="h-16 md:hidden" />}
       {!isGamesPage && (
         <>
           {/* Levo Help Bot - floating assistant (above chat button) */}
           <Suspense fallback={null}>
             <LevoHelpBot />
-          </Suspense>
-          {/* Global floating chat button - visible on all pages */}
-          <Suspense fallback={null}>
-            <UnifiedChatButton />
           </Suspense>
           {/* PWA Install Prompt */}
           <Suspense fallback={null}>

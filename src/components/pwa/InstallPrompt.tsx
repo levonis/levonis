@@ -175,7 +175,7 @@ export default function InstallPrompt() {
   if (installDismissed && notifDismissed) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[9999] mx-auto max-w-sm animate-in slide-in-from-bottom-4 duration-500 flex flex-col gap-3">
+    <div className="fixed bottom-20 md:bottom-4 left-4 right-4 z-[9999] mx-auto max-w-sm animate-in slide-in-from-bottom-4 duration-500 flex flex-col gap-3">
       {!notifDismissed && <NotificationCard onDismiss={dismissNotif} />}
       {!installDismissed && <InstallCard onDismiss={dismissInstall} />}
     </div>

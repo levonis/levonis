@@ -16,7 +16,7 @@ export default function ScrollToTopButton() {
   return (
     <Button
       size="icon"
-      className="fixed bottom-20 left-4 z-50 h-10 w-10 rounded-full shadow-lg"
+      className="fixed bottom-20 md:bottom-20 left-4 z-50 h-10 w-10 rounded-full shadow-lg"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
     >
       <ArrowUp className="h-4 w-4" />

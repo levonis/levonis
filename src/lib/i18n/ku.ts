@@ -23,6 +23,7 @@ export const ku: TranslationKeys = {
   menu_custom_product: 'داواکاری بەرهەمی تایبەت',
   menu_cart: 'سەبەتەی کڕین',
   menu_messages: 'گفتوگۆکانی کڕیار',
+  nav_games: 'یارییەکان',
   
   // Home page
   home_subtitle: 'نوێترین ئەلیکترۆنیاتمان بۆ دابین دەکەیت لە هەموو جیهانەوە بە نرخی کێبڕکێ… بە گەرەنتی فەرمی و خزمەتگوزاری خێرا بێ هاوتا',

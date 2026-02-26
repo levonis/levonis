@@ -23,6 +23,7 @@ export const en: TranslationKeys = {
   menu_custom_product: 'Custom Product Request',
   menu_cart: 'Shopping Cart',
   menu_messages: 'Customer Chats',
+  nav_games: 'Games',
   
   // Home page
   home_subtitle: 'We bring you the latest electronics from around the world at competitive prices… with official warranty and unmatched fast service',
