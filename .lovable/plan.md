@@ -2,80 +2,66 @@
 
 ## ملخص التغيير
 
-تحويل نظام التسعير بالكامل ليعتمد على الدولار كعملة أساسية، مع حساب السعر النهائي بالدينار العراقي تلقائياً (سعر الدولار × سعر القطعة + تكلفة الشحن + العمولة). المنتجات غير المحدّثة بهذا النظام تُخفى تلقائياً.
-
----
+إعادة تصميم قسم التسعير في فورم المنتج ليكون واضحاً ومنظماً حسب نوع البيع، مع عمولة يدوية لكل خيار، وحذف الأعمدة/الأقسام المكررة.
 
 ## التفاصيل التقنية
 
-### 1. إضافة أعمدة جديدة لجدول `products`
+### 1. إضافة عمود `commission_iqd` وعمود `other_costs_iqd` لجدول products
 
 ```sql
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS price_usd numeric DEFAULT NULL;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS shipping_type text DEFAULT NULL; -- 'sea' or 'air'
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS weight_kg numeric DEFAULT NULL;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS length_cm numeric DEFAULT NULL;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS width_cm numeric DEFAULT NULL;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS height_cm numeric DEFAULT NULL;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS shipping_cost_iqd numeric DEFAULT NULL;
-ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_pricing_updated boolean DEFAULT false;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS commission_iqd numeric DEFAULT 0;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS other_costs_iqd numeric DEFAULT 0;
 ```
 
-- `price_usd`: سعر القطعة بالدولار (يدخله الأدمن)
-- `shipping_type`: نوع الشحن (بحري/جوي)
-- `weight_kg`, `length_cm`, `width_cm`, `height_cm`: بيانات الشحن
-- `shipping_cost_iqd`: تكلفة الشحن المحسوبة بالدينار
-- `is_pricing_updated`: هل تم تحديث المنتج بالنظام الجديد
+- `commission_iqd`: العمولة اليدوية بالدينار (يدخلها الأدمن لكل منتج)
+- `other_costs_iqd`: تكاليف أخرى للبيع المباشر
 
-### 2. تعديل فورم المنتج في `Admin.tsx`
+### 2. إعادة تصميم `AdminProductPricingSection.tsx` بالكامل
 
-إضافة قسم جديد بعنوان "التسعير الجديد" يحتوي على:
-- **سعر القطعة بالدولار** (حقل إدخال)
-- **نوع الشحن** (بحري / جوي) - اختيار
-- **حقول الشحن البحري**: الطول، العرض، الارتفاع (سم)
-- **حقول الشحن الجوي**: الوزن (كغ) + الأبعاد اختيارياً
-- **البيع المباشر** (checkbox `has_in_stock`)
-- **عرض تلقائي محسوب**: السعر بالعراقي + تكلفة الشحن + العمولة = المجموع النهائي
+الآلية الجديدة:
 
-عند الحفظ:
-- يتم جلب `usd_to_iqd_rate` و إعدادات الشحن من `shipping_settings`
-- يُحسب `price` = `price_usd × usd_to_iqd_rate`
-- يُحسب `shipping_cost_iqd` حسب نوع الشحن باستخدام `calculateShippingCost`
-- يُحسب السعر النهائي: `price = (price_usd × rate) + shipping_cost_iqd + commission_fee`
-- يُضبط `is_pricing_updated = true`
+```text
+┌──────────────────────────────────────────────────┐
+│ نوع البيع: ☐ حجز مسبق  ☐ بيع مباشر             │
+├──────────────────────────────────────────────────┤
+│ إذا حجز مسبق:                                   │
+│   نوع الشحن: ○ بحري  ○ جوي                      │
+│   ─ بحري: سعر USD + CBM (ط×ع×ا) + العمولة       │
+│   ─ جوي:  سعر USD + الوزن kg + العمولة           │
+│   المعاينة: (سعر×صرف) + شحن + عمولة = النهائي   │
+├──────────────────────────────────────────────────┤
+│ إذا بيع مباشر:                                   │
+│   سعر USD + تكاليف أخرى + العمولة                │
+│   المعاينة: (سعر×صرف) + تكاليف + عمولة = النهائي│
+└──────────────────────────────────────────────────┘
+```
 
-### 3. إخفاء المنتجات غير المحدّثة
+- العمولة حقل يدوي بالدينار (ليس من `commission_fee` العام)
+- حقل "تكاليف أخرى" يظهر فقط للبيع المباشر
 
-- في كل صفحة تعرض منتجات للزبائن (`Products.tsx`, `CategoryDetail.tsx`, `Home.tsx`, `ProductDetail.tsx`): إضافة فلتر `.eq('is_pricing_updated', true)` للاستعلامات
-- في لوحة الأدمن: عرض جميع المنتجات مع badge تحذيري "غير محدّث" للمنتجات التي `is_pricing_updated = false`
+### 3. تعديل حساب السعر النهائي في `Admin.tsx` handleProductSubmit
 
-### 4. تعديل إعدادات الشحن `AdminShippingSettings.tsx`
+```text
+حجز مسبق: price = (price_usd × rate) + shipping_cost + commission_iqd
+بيع مباشر: price = (price_usd × rate) + other_costs_iqd + commission_iqd
+```
 
-سعر الدولار والعمولة موجودان بالفعل - لا حاجة لتعديل.
+لم نعد نستخدم `settings.commission_fee` العام - بل `commission_iqd` اليدوي.
+
+### 4. حذف الأقسام المكررة من فورم المنتج
+
+- حذف قسم "خيارات الشحن للطلب المسبق (مخصصة)" بالكامل (السطور 2316-2487 تقريباً في Admin.tsx)
+- حذف حاسبة الشحن السريع القديمة
+- حذف قسم `pre_order_shipping_options` المكرر
+- حذف حقول `pre_order_free_shipping_price` و `pre_order_fast_shipping_price` من الفورم
+- إبقاء `has_in_stock` و `has_pre_order` كـ checkboxes في خيارات التوفر
 
 ### 5. الملفات المتأثرة
 
 | ملف | التعديل |
 |-----|---------|
-| **Migration** | إضافة الأعمدة الجديدة |
-| `src/pages/Admin.tsx` | إضافة حقول التسعير الجديدة + الحساب التلقائي |
-| `src/pages/Products.tsx` | فلتر `is_pricing_updated` |
-| `src/pages/CategoryDetail.tsx` | فلتر `is_pricing_updated` |
-| `src/pages/Home.tsx` | فلتر `is_pricing_updated` |
-| `src/components/admin/ProductsTable.tsx` | badge "غير محدّث" |
-| `src/hooks/useShippingCalculator.tsx` | لا تعديل (مستخدم كما هو) |
-
-### 6. آلية الحساب
-
-```text
-المعادلة النهائية:
-┌─────────────────────────────────────────────────┐
-│ السعر النهائي = (سعر_الدولار × سعر_الصرف)      │
-│                + تكلفة_الشحن (بحري أو جوي)      │
-│                + العمولة (1000 د.ع)              │
-└─────────────────────────────────────────────────┘
-
-الشحن البحري: CBM × سعر_CBM
-الشحن الجوي:  الوزن_مع_التغليف × سعر_الكيلو
-```
+| **Migration** | إضافة `commission_iqd`, `other_costs_iqd` |
+| `AdminProductPricingSection.tsx` | إعادة كتابة كاملة بالتصميم الجديد |
+| `Admin.tsx` | حذف أقسام الشحن المكررة + تعديل handleProductSubmit |
+| `useShippingCalculator.tsx` | لا تغيير (يُستخدم لحساب الشحن فقط) |
 
