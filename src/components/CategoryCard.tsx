@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
+import DirectSaleRibbon from "./ui/DirectSaleRibbon";
 
 interface CategoryCardProps {
   name: string;
@@ -8,9 +9,10 @@ interface CategoryCardProps {
   icon: string;
   description?: string;
   descriptionAr?: string;
+  hasDirectSale?: boolean;
 }
 
-const CategoryCard = ({ name, nameAr, slug, icon, description, descriptionAr }: CategoryCardProps) => {
+const CategoryCard = ({ name, nameAr, slug, icon, description, descriptionAr, hasDirectSale }: CategoryCardProps) => {
   const iconText = (icon ?? "").trim();
   const isLongIcon = iconText.length > 3;
 
@@ -20,6 +22,7 @@ const CategoryCard = ({ name, nameAr, slug, icon, description, descriptionAr }: 
       className="group block bg-card/92 backdrop-blur-sm rounded-xl border border-border/45 hover:border-primary/65 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg relative overflow-hidden h-[160px] sm:h-[172px] p-3 sm:p-4"
       aria-label={nameAr || name}
     >
+      {hasDirectSale && <DirectSaleRibbon />}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       <div className="relative z-10 flex flex-col items-center h-full">

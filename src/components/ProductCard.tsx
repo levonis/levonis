@@ -7,6 +7,7 @@ import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import DirectSaleRibbon from './ui/DirectSaleRibbon';
 
 interface ProductCardProps {
   id: string;
@@ -21,6 +22,7 @@ interface ProductCardProps {
   currency?: string;
   slug: string;
   priority?: boolean;
+  hasDirectSale?: boolean;
   inStock?: boolean;
 }
 
@@ -37,7 +39,8 @@ const ProductCard = ({
   currency = 'دينار عراقي',
   slug,
   priority = false,
-  inStock = true
+  inStock = true,
+  hasDirectSale = false
 }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -93,8 +96,11 @@ const ProductCard = ({
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       className="group block bg-gradient-to-b from-card to-card/80 rounded-lg p-1.5 border border-border/30 hover:border-primary/40 transition-all hover:-translate-y-0.5 relative overflow-hidden"
     >
+      {/* Direct sale ribbon */}
+      {hasDirectSale && <DirectSaleRibbon />}
+
       {/* Sale badge - above image */}
-      {hasSale && (
+      {hasSale && !hasDirectSale && (
         <Badge 
           variant="secondary" 
           className="absolute top-0.5 left-0.5 z-20 text-[10px] bg-primary/90 text-primary-foreground border-0 shadow-sm px-1.5 py-0"

@@ -281,6 +281,7 @@ const Products = () => {
                   currency={product.currency || undefined}
                   slug={product.slug}
                   inStock={product.in_stock ?? true}
+                  hasDirectSale={product.has_in_stock ?? false}
                 />
               ))}
             </div>

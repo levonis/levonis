@@ -59,6 +59,22 @@ const Home = () => {
     gcTime: 30 * 60 * 1000,
   });
 
+  // Fetch category IDs that have at least one direct-sale product
+  const { data: directSaleCategoryIds } = useQuery({
+    queryKey: ['direct-sale-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('category_id')
+        .eq('has_in_stock', true);
+      if (error) throw error;
+      const ids = new Set((data || []).map(p => p.category_id));
+      return ids;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+
   const categoriesByMainSection = useMemo(() => {
     if (!categories) return {};
     return categories.reduce((acc, category) => {
@@ -170,6 +186,7 @@ const Home = () => {
                           icon={category.icon}
                           description={category.description}
                           descriptionAr={category.description_ar}
+                          hasDirectSale={directSaleCategoryIds?.has(category.id)}
                         />
                       ))}
                     </div>
