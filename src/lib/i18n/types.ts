@@ -23,6 +23,7 @@ export type TranslationKeys = {
   menu_custom_product: string;
   menu_cart: string;
   menu_messages: string;
+  nav_games: string;
   
   // Home page
   home_subtitle: string;

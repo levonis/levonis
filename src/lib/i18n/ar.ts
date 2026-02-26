@@ -23,6 +23,7 @@ export const ar: TranslationKeys = {
   menu_custom_product: 'طلب منتج مخصص',
   menu_cart: 'سلة التسوق',
   menu_messages: 'محادثات العملاء',
+  nav_games: 'الألعاب',
   
   // Home page
   home_subtitle: 'نوفّر لك أحدث الإلكترونيات من حول العالم بأسعار تنافسية… بضمان رسمي وخدمة سريعة بلا منافس',

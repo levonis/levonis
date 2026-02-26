@@ -580,7 +580,7 @@ export default function LevoHelpBot() {
 
       {/* ─── Floating Icon Button — positioned ABOVE the chat button ─── */}
       {!isOpen && !isHidden && (
-        <div className="fixed bottom-24 left-4 sm:left-6 z-40 flex flex-col items-center gap-1 levo-help-bot-trigger">
+        <div className="fixed bottom-[5.5rem] sm:bottom-24 left-4 sm:left-6 z-40 flex flex-col items-center gap-1 levo-help-bot-trigger">
           <button
             onClick={() => setIsOpen(true)}
             className="group relative h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
@@ -615,7 +615,7 @@ export default function LevoHelpBot() {
 
       {/* ─── Chat Panel ─── */}
       {isOpen && (
-        <div className="fixed bottom-20 left-4 sm:left-6 z-40 w-[330px] max-h-[75vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl animate-scale-in overflow-hidden" dir="rtl">
+        <div className="fixed bottom-[5.5rem] sm:bottom-20 left-4 sm:left-6 z-40 w-[330px] max-h-[65vh] sm:max-h-[75vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl animate-scale-in overflow-hidden" dir="rtl">
           
           {/* Header */}
           <div className="shrink-0 bg-gradient-to-l from-primary via-primary/95 to-primary/85 px-3.5 py-2.5">
