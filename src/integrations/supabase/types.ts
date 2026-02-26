@@ -4923,10 +4923,13 @@ export type Database = {
           features: Json | null
           has_in_stock: boolean | null
           has_pre_order: boolean | null
+          height_cm: number | null
           id: string
           image_url: string | null
           images: string[] | null
           in_stock: boolean | null
+          is_pricing_updated: boolean | null
+          length_cm: number | null
           name: string
           name_ar: string
           name_en: string | null
@@ -4937,6 +4940,9 @@ export type Database = {
           pre_order_free_shipping_price: number | null
           pre_order_shipping_options: Json | null
           price: number
+          price_usd: number | null
+          shipping_cost_iqd: number | null
+          shipping_type: string | null
           slug: string
           taobao_availability_cache: Json | null
           taobao_last_sync_at: string | null
@@ -4945,6 +4951,8 @@ export type Database = {
           taobao_variant_mapping: Json | null
           ticket_reward: number | null
           updated_at: string | null
+          weight_kg: number | null
+          width_cm: number | null
         }
         Insert: {
           availability_type?: string
@@ -4962,10 +4970,13 @@ export type Database = {
           features?: Json | null
           has_in_stock?: boolean | null
           has_pre_order?: boolean | null
+          height_cm?: number | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           in_stock?: boolean | null
+          is_pricing_updated?: boolean | null
+          length_cm?: number | null
           name: string
           name_ar: string
           name_en?: string | null
@@ -4976,6 +4987,9 @@ export type Database = {
           pre_order_free_shipping_price?: number | null
           pre_order_shipping_options?: Json | null
           price: number
+          price_usd?: number | null
+          shipping_cost_iqd?: number | null
+          shipping_type?: string | null
           slug: string
           taobao_availability_cache?: Json | null
           taobao_last_sync_at?: string | null
@@ -4984,6 +4998,8 @@ export type Database = {
           taobao_variant_mapping?: Json | null
           ticket_reward?: number | null
           updated_at?: string | null
+          weight_kg?: number | null
+          width_cm?: number | null
         }
         Update: {
           availability_type?: string
@@ -5001,10 +5017,13 @@ export type Database = {
           features?: Json | null
           has_in_stock?: boolean | null
           has_pre_order?: boolean | null
+          height_cm?: number | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           in_stock?: boolean | null
+          is_pricing_updated?: boolean | null
+          length_cm?: number | null
           name?: string
           name_ar?: string
           name_en?: string | null
@@ -5015,6 +5034,9 @@ export type Database = {
           pre_order_free_shipping_price?: number | null
           pre_order_shipping_options?: Json | null
           price?: number
+          price_usd?: number | null
+          shipping_cost_iqd?: number | null
+          shipping_type?: string | null
           slug?: string
           taobao_availability_cache?: Json | null
           taobao_last_sync_at?: string | null
@@ -5023,6 +5045,8 @@ export type Database = {
           taobao_variant_mapping?: Json | null
           ticket_reward?: number | null
           updated_at?: string | null
+          weight_kg?: number | null
+          width_cm?: number | null
         }
         Relationships: [
           {

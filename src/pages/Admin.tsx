@@ -20,6 +20,8 @@ import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
+import AdminProductPricingSection from '@/components/admin/AdminProductPricingSection';
+import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -1342,7 +1344,62 @@ const Admin = () => {
           : 0,
         // Multiple card discounts as JSON array
         card_discounts: productCardDiscounts.filter(d => d.level_id && d.discount_amount > 0),
-      };
+        // New USD pricing fields
+        price_usd: formData.get('price_usd') && formData.get('price_usd') !== '' 
+          ? Number(formData.get('price_usd')) 
+          : null,
+        shipping_type: (formData.get('shipping_type') as string) || null,
+        weight_kg: formData.get('weight_kg') && formData.get('weight_kg') !== '' 
+          ? Number(formData.get('weight_kg')) 
+          : null,
+        length_cm: formData.get('length_cm') && formData.get('length_cm') !== '' 
+          ? Number(formData.get('length_cm')) 
+          : null,
+        width_cm: formData.get('width_cm') && formData.get('width_cm') !== '' 
+          ? Number(formData.get('width_cm')) 
+          : null,
+        height_cm: formData.get('height_cm') && formData.get('height_cm') !== '' 
+          ? Number(formData.get('height_cm')) 
+          : null,
+      } as any;
+
+      // Auto-calculate final price from USD pricing if price_usd is set
+      const priceUsdVal = values.price_usd;
+      if (priceUsdVal && priceUsdVal > 0) {
+        // Fetch shipping settings for calculation
+        const { data: settingsData } = await supabase
+          .from('shipping_settings')
+          .select('setting_key, setting_value');
+        
+        const settings: any = {
+          sea_cbm_price: 350000, sea_padding_cm: 5,
+          air_usa_kg_price: 30000, air_usa_weight_buffer_percent: 20,
+          air_china_volumetric_price: 15000, air_china_volumetric_divider: 5000,
+          air_china_weight_safety_margin: 20, commission_fee: 1000,
+          local_delivery_baghdad: 6000, local_delivery_provinces: 5000,
+          usd_to_iqd_rate: 1410,
+        };
+        settingsData?.forEach((item: any) => {
+          if (item.setting_key in settings) settings[item.setting_key] = Number(item.setting_value);
+        });
+
+        const dims = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
+          ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 }
+          : null;
+        
+        const shippingCalc = calculateShippingCost(
+          'china',
+          values.shipping_type || 'sea',
+          dims,
+          values.weight_kg > 0 ? values.weight_kg : null,
+          settings
+        );
+
+        const priceIqd = Math.round(priceUsdVal * settings.usd_to_iqd_rate);
+        values.price = priceIqd + shippingCalc.totalCost;
+        values.shipping_cost_iqd = shippingCalc.shippingCost;
+        values.is_pricing_updated = true;
+      }
 
       // Validate with zod
       productSchema.parse(values);
@@ -2199,6 +2256,9 @@ const Admin = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* New USD Pricing Section */}
+                    <AdminProductPricingSection editingProduct={editingProduct} />
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">

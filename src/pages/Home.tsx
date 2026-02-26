@@ -66,7 +66,8 @@ const Home = () => {
       const { data, error } = await supabase
         .from('products')
         .select('category_id')
-        .eq('has_in_stock', true);
+        .eq('has_in_stock', true)
+        .eq('is_pricing_updated', true);
       if (error) throw error;
       const ids = new Set((data || []).map(p => p.category_id));
       return ids;

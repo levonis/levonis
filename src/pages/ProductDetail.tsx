@@ -45,6 +45,11 @@ const ProductDetail = () => {
         .eq('slug', slug)
         .maybeSingle();
       
+      // Block non-updated products from customer view (admin can still see via admin panel)
+      if (data && !data.is_pricing_updated) {
+        throw new Error('Product not found');
+      }
+      
       if (error) throw error;
       if (!data) throw new Error('Product not found');
       return data;
