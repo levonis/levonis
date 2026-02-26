@@ -957,6 +957,7 @@ const ProductDetail = () => {
                   images={relatedProduct.images}
                   currency={relatedProduct.currency || 'دينار عراقي'}
                   slug={relatedProduct.slug}
+                  hasDirectSale={relatedProduct.has_in_stock ?? false}
                 />
               ))}
             </div>

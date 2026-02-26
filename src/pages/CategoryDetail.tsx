@@ -197,6 +197,7 @@ const CategoryDetail = () => {
                         images={product.images || undefined}
                         currency={product.currency || undefined}
                         slug={product.slug}
+                        hasDirectSale={product.has_in_stock ?? false}
                       />
                     ))}
                   </div>
