@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
@@ -13,87 +14,134 @@ interface AdminProductPricingSectionProps {
 const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSectionProps) => {
   const { data: shippingSettings } = useShippingSettings();
   
-  // Sale type: 'pre_order' or 'direct'
-  const [saleType, setSaleType] = useState<'pre_order' | 'direct'>('pre_order');
-  const [priceUsd, setPriceUsd] = useState<number>(editingProduct?.price_usd || 0);
-  const [shippingType, setShippingType] = useState<'sea' | 'air'>(editingProduct?.shipping_type || 'sea');
-  const [weightKg, setWeightKg] = useState<number>(editingProduct?.weight_kg || 0);
-  const [lengthCm, setLengthCm] = useState<number>(editingProduct?.length_cm || 0);
-  const [widthCm, setWidthCm] = useState<number>(editingProduct?.width_cm || 0);
-  const [heightCm, setHeightCm] = useState<number>(editingProduct?.height_cm || 0);
-  const [commissionIqd, setCommissionIqd] = useState<number>(editingProduct?.commission_iqd || 0);
-  const [otherCostsIqd, setOtherCostsIqd] = useState<number>(editingProduct?.other_costs_iqd || 0);
+  // Sale types (multi-select)
+  const [hasPreOrder, setHasPreOrder] = useState(false);
+  const [hasDirectSale, setHasDirectSale] = useState(false);
+  
+  // Shipping types (multi-select for pre-order)
+  const [hasSea, setHasSea] = useState(false);
+  const [hasAir, setHasAir] = useState(false);
+
+  // Common fields
+  const [priceUsd, setPriceUsd] = useState<number>(0);
+  const [originalPriceUsd, setOriginalPriceUsd] = useState<number>(0);
+
+  // Dimensions & weight
+  const [lengthCm, setLengthCm] = useState<number>(0);
+  const [widthCm, setWidthCm] = useState<number>(0);
+  const [heightCm, setHeightCm] = useState<number>(0);
+  const [weightKg, setWeightKg] = useState<number>(0);
+
+  // Commissions per type
+  const [commissionSeaIqd, setCommissionSeaIqd] = useState<number>(0);
+  const [commissionAirIqd, setCommissionAirIqd] = useState<number>(0);
+  const [commissionDirectIqd, setCommissionDirectIqd] = useState<number>(0);
+
+  // Direct sale
+  const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
 
   useEffect(() => {
     if (editingProduct) {
       setPriceUsd(editingProduct.price_usd || 0);
-      setShippingType(editingProduct.shipping_type || 'sea');
-      setWeightKg(editingProduct.weight_kg || 0);
+      setOriginalPriceUsd(editingProduct.original_price_usd || 0);
       setLengthCm(editingProduct.length_cm || 0);
       setWidthCm(editingProduct.width_cm || 0);
       setHeightCm(editingProduct.height_cm || 0);
-      setCommissionIqd(editingProduct.commission_iqd || 0);
+      setWeightKg(editingProduct.weight_kg || 0);
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
+
+      // Determine sale types
+      setHasPreOrder(editingProduct.has_pre_order ?? false);
+      setHasDirectSale(editingProduct.has_in_stock ?? false);
       
-      // Determine sale type from existing data
-      if (editingProduct.has_in_stock && !editingProduct.has_pre_order) {
-        setSaleType('direct');
+      // Determine shipping types
+      const st = editingProduct.shipping_type;
+      if (st === 'both') {
+        setHasSea(true);
+        setHasAir(true);
+      } else if (st === 'air') {
+        setHasAir(true);
+        setHasSea(false);
       } else {
-        setSaleType('pre_order');
+        setHasSea(st === 'sea' || editingProduct.has_pre_order);
+        setHasAir(false);
       }
+
+      // Commissions - support per-type or single legacy
+      setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
+      setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
+      setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
     }
   }, [editingProduct]);
 
-  const calculation = useMemo(() => {
+  // Derive shipping_type value for hidden input
+  const shippingTypeValue = useMemo(() => {
+    if (hasSea && hasAir) return 'both';
+    if (hasAir) return 'air';
+    if (hasSea) return 'sea';
+    return '';
+  }, [hasSea, hasAir]);
+
+  // Calculations
+  const calculations = useMemo(() => {
     if (!shippingSettings || !priceUsd) return null;
+    const rate = shippingSettings.usd_to_iqd_rate;
+    const priceIqd = Math.round(priceUsd * rate);
+    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number }> = [];
 
-    const priceIqd = Math.round(priceUsd * shippingSettings.usd_to_iqd_rate);
-
-    if (saleType === 'direct') {
-      const finalPrice = priceIqd + otherCostsIqd + commissionIqd;
-      return {
+    if (hasPreOrder && hasSea) {
+      const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
+        ? { length: lengthCm, width: widthCm, height: heightCm } : null;
+      const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
+      results.push({
+        label: 'حجز مسبق - بحري',
+        type: 'sea',
         priceIqd,
-        shippingCost: 0,
-        otherCosts: otherCostsIqd,
-        commission: commissionIqd,
-        finalPrice,
-        rate: shippingSettings.usd_to_iqd_rate,
-      };
+        shipping: calc.shippingCost,
+        commission: commissionSeaIqd,
+        final: priceIqd + calc.shippingCost + commissionSeaIqd,
+      });
     }
 
-    // Pre-order calculation
-    const dimensions = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
-      ? { length: lengthCm, width: widthCm, height: heightCm }
-      : null;
+    if (hasPreOrder && hasAir) {
+      const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
+        ? { length: lengthCm, width: widthCm, height: heightCm } : null;
+      const calc = calculateShippingCost('china', 'air', dims, weightKg > 0 ? weightKg : null, shippingSettings);
+      results.push({
+        label: 'حجز مسبق - جوي',
+        type: 'air',
+        priceIqd,
+        shipping: calc.shippingCost,
+        commission: commissionAirIqd,
+        final: priceIqd + calc.shippingCost + commissionAirIqd,
+      });
+    }
 
-    const shippingCalc = calculateShippingCost(
-      'china',
-      shippingType,
-      dimensions,
-      weightKg > 0 ? weightKg : null,
-      shippingSettings
-    );
+    if (hasDirectSale) {
+      results.push({
+        label: 'بيع مباشر',
+        type: 'direct',
+        priceIqd,
+        shipping: 0,
+        commission: commissionDirectIqd,
+        final: priceIqd + otherCostsIqd + commissionDirectIqd,
+      });
+    }
 
-    // Use manual commission instead of global commission_fee
-    const finalPrice = priceIqd + shippingCalc.shippingCost + commissionIqd;
-
-    return {
-      priceIqd,
-      shippingCost: shippingCalc.shippingCost,
-      otherCosts: 0,
-      commission: commissionIqd,
-      finalPrice,
-      breakdown: shippingCalc.breakdown,
-      rate: shippingSettings.usd_to_iqd_rate,
-    };
-  }, [priceUsd, saleType, shippingType, weightKg, lengthCm, widthCm, heightCm, commissionIqd, otherCostsIqd, shippingSettings]);
+    return { rate, priceIqd, results };
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, shippingSettings]);
 
   return (
     <div className="space-y-4 border-t pt-4">
       {/* Hidden inputs for form submission */}
-      <input type="hidden" name="commission_iqd" value={commissionIqd} />
+      <input type="hidden" name="has_pre_order_pricing" value={hasPreOrder ? 'true' : 'false'} />
+      <input type="hidden" name="has_in_stock_pricing" value={hasDirectSale ? 'true' : 'false'} />
+      <input type="hidden" name="shipping_type" value={shippingTypeValue} />
+      <input type="hidden" name="commission_sea_iqd" value={commissionSeaIqd} />
+      <input type="hidden" name="commission_air_iqd" value={commissionAirIqd} />
+      <input type="hidden" name="commission_direct_iqd" value={commissionDirectIqd} />
+      <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, commissionDirectIqd)} />
       <input type="hidden" name="other_costs_iqd" value={otherCostsIqd} />
-      <input type="hidden" name="sale_type" value={saleType} />
 
       <div className="flex items-center gap-2 text-sm font-medium text-primary">
         <DollarSign className="h-4 w-4" />
@@ -106,42 +154,59 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       </div>
 
       <div className="p-4 border border-primary/20 rounded-lg bg-primary/5 space-y-4">
-        {/* Sale Type Toggle */}
+        {/* USD Price Fields */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="price_usd">سعر تكلفة المنتج ($) *</Label>
+            <Input
+              id="price_usd"
+              name="price_usd"
+              type="number"
+              step="0.01"
+              min="0"
+              value={priceUsd || ''}
+              onChange={(e) => setPriceUsd(Number(e.target.value))}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="original_price_usd">السعر الأصلي قبل التخفيض ($)</Label>
+            <Input
+              id="original_price_usd"
+              name="original_price_usd"
+              type="number"
+              step="0.01"
+              min="0"
+              value={originalPriceUsd || ''}
+              onChange={(e) => setOriginalPriceUsd(Number(e.target.value))}
+              placeholder="اختياري"
+            />
+          </div>
+        </div>
+
+        {/* Sale Type Checkboxes */}
         <div className="space-y-2">
-          <Label>نوع البيع</Label>
-          <div className="flex gap-3">
-            <label
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
-                saleType === 'pre_order'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="sale_type_radio"
-                value="pre_order"
-                checked={saleType === 'pre_order'}
-                onChange={() => setSaleType('pre_order')}
-                className="sr-only"
+          <Label>نوع البيع (يمكن اختيار أكثر من خيار)</Label>
+          <div className="flex gap-4">
+            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+              hasPreOrder ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+            }`}>
+              <Checkbox
+                checked={hasPreOrder}
+                onCheckedChange={(checked) => {
+                  setHasPreOrder(!!checked);
+                  if (checked && !hasSea && !hasAir) setHasSea(true);
+                }}
               />
               <Package className="h-4 w-4" />
               <span className="text-sm font-medium">حجز مسبق</span>
             </label>
-            <label
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
-                saleType === 'direct'
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <input
-                type="radio"
-                name="sale_type_radio"
-                value="direct"
-                checked={saleType === 'direct'}
-                onChange={() => setSaleType('direct')}
-                className="sr-only"
+            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+              hasDirectSale ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+            }`}>
+              <Checkbox
+                checked={hasDirectSale}
+                onCheckedChange={(checked) => setHasDirectSale(!!checked)}
               />
               <ShoppingBag className="h-4 w-4" />
               <span className="text-sm font-medium">بيع مباشر</span>
@@ -149,70 +214,42 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
           </div>
         </div>
 
-        {/* USD Price - common for both */}
-        <div className="space-y-2">
-          <Label htmlFor="price_usd">سعر تكلفة المنتج بالدولار ($) *</Label>
-          <Input
-            id="price_usd"
-            name="price_usd"
-            type="number"
-            step="0.01"
-            min="0"
-            value={priceUsd || ''}
-            onChange={(e) => setPriceUsd(Number(e.target.value))}
-            placeholder="0.00"
-          />
-        </div>
-
         {/* ===== PRE-ORDER SECTION ===== */}
-        {saleType === 'pre_order' && (
+        {hasPreOrder && (
           <div className="space-y-4 p-3 rounded-lg bg-card border border-border">
-            <Label className="text-sm font-medium">إعدادات الشحن</Label>
+            <Label className="text-sm font-medium">إعدادات الشحن (يمكن اختيار أكثر من خيار)</Label>
             
-            {/* Shipping Type */}
+            {/* Shipping Type Checkboxes */}
             <div className="flex gap-3">
-              <label
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
-                  shippingType === 'sea'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="shipping_type"
-                  value="sea"
-                  checked={shippingType === 'sea'}
-                  onChange={() => setShippingType('sea')}
-                  className="sr-only"
+              <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                hasSea ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+              }`}>
+                <Checkbox
+                  checked={hasSea}
+                  onCheckedChange={(checked) => setHasSea(!!checked)}
                 />
                 <Ship className="h-4 w-4" />
                 <span className="text-sm font-medium">بحري</span>
               </label>
-              <label
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
-                  shippingType === 'air'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="shipping_type"
-                  value="air"
-                  checked={shippingType === 'air'}
-                  onChange={() => setShippingType('air')}
-                  className="sr-only"
+              <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                hasAir ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+              }`}>
+                <Checkbox
+                  checked={hasAir}
+                  onCheckedChange={(checked) => setHasAir(!!checked)}
                 />
                 <Plane className="h-4 w-4" />
                 <span className="text-sm font-medium">جوي</span>
               </label>
             </div>
 
-            {/* Sea: dimensions for CBM */}
-            {shippingType === 'sea' && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">أبعاد القطعة (سم) - لحساب CBM</Label>
+            {/* Sea: CBM dimensions */}
+            {hasSea && (
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Ship className="h-3 w-3" />
+                  <span>الشحن البحري - أبعاد القطعة (سم) لحساب CBM</span>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <Label htmlFor="length_cm" className="text-xs">الطول</Label>
@@ -230,25 +267,43 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                       value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="سم" />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commission_sea_iqd">العمولة - بحري (د.ع)</Label>
+                  <Input id="commission_sea_iqd" type="number" min="0"
+                    value={commissionSeaIqd || ''} onChange={(e) => setCommissionSeaIqd(Number(e.target.value))} placeholder="0" />
+                </div>
               </div>
             )}
 
             {/* Air: weight */}
-            {shippingType === 'air' && (
-              <div className="space-y-2">
-                <Label htmlFor="weight_kg">الوزن (كغ) *</Label>
-                <Input id="weight_kg" name="weight_kg" type="number" step="0.01" min="0"
-                  value={weightKg || ''} onChange={(e) => setWeightKg(Number(e.target.value))} placeholder="كغ" />
-                <div>
-                  <Label className="text-xs text-muted-foreground">الأبعاد (اختياري - للحساب الحجمي)</Label>
-                  <div className="grid grid-cols-3 gap-2 mt-1">
-                    <Input name="length_cm" type="number" step="0.1" min="0"
-                      value={lengthCm || ''} onChange={(e) => setLengthCm(Number(e.target.value))} placeholder="الطول" />
-                    <Input name="width_cm" type="number" step="0.1" min="0"
-                      value={widthCm || ''} onChange={(e) => setWidthCm(Number(e.target.value))} placeholder="العرض" />
-                    <Input name="height_cm" type="number" step="0.1" min="0"
-                      value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="الارتفاع" />
+            {hasAir && (
+              <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Plane className="h-3 w-3" />
+                  <span>الشحن الجوي</span>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight_kg">الوزن (كغ) *</Label>
+                  <Input id="weight_kg" name="weight_kg" type="number" step="0.01" min="0"
+                    value={weightKg || ''} onChange={(e) => setWeightKg(Number(e.target.value))} placeholder="كغ" />
+                </div>
+                {!hasSea && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">الأبعاد (اختياري - للحساب الحجمي)</Label>
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                      <Input type="number" step="0.1" min="0"
+                        value={lengthCm || ''} onChange={(e) => setLengthCm(Number(e.target.value))} placeholder="الطول" />
+                      <Input type="number" step="0.1" min="0"
+                        value={widthCm || ''} onChange={(e) => setWidthCm(Number(e.target.value))} placeholder="العرض" />
+                      <Input type="number" step="0.1" min="0"
+                        value={heightCm || ''} onChange={(e) => setHeightCm(Number(e.target.value))} placeholder="الارتفاع" />
+                    </div>
                   </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="commission_air_iqd">العمولة - جوي (د.ع)</Label>
+                  <Input id="commission_air_iqd" type="number" min="0"
+                    value={commissionAirIqd || ''} onChange={(e) => setCommissionAirIqd(Number(e.target.value))} placeholder="0" />
                 </div>
               </div>
             )}
@@ -256,70 +311,76 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         )}
 
         {/* ===== DIRECT SALE SECTION ===== */}
-        {saleType === 'direct' && (
-          <div className="space-y-2">
-            <Label htmlFor="other_costs_iqd">تكاليف أخرى (د.ع)</Label>
-            <Input
-              id="other_costs_iqd"
-              type="number"
-              min="0"
-              value={otherCostsIqd || ''}
-              onChange={(e) => setOtherCostsIqd(Number(e.target.value))}
-              placeholder="0"
-            />
-            <p className="text-xs text-muted-foreground">تكاليف إضافية مثل الشحن الداخلي أو التغليف</p>
+        {hasDirectSale && (
+          <div className="space-y-3 p-3 rounded-lg bg-card border border-border">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ShoppingBag className="h-3 w-3" />
+              <span>إعدادات البيع المباشر</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="other_costs_iqd">تكاليف أخرى (د.ع)</Label>
+              <Input
+                id="other_costs_iqd"
+                type="number"
+                min="0"
+                value={otherCostsIqd || ''}
+                onChange={(e) => setOtherCostsIqd(Number(e.target.value))}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">تكاليف إضافية مثل الشحن الداخلي أو التغليف</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="commission_direct_iqd">العمولة - بيع مباشر (د.ع)</Label>
+              <Input
+                id="commission_direct_iqd"
+                type="number"
+                min="0"
+                value={commissionDirectIqd || ''}
+                onChange={(e) => setCommissionDirectIqd(Number(e.target.value))}
+                placeholder="0"
+              />
+            </div>
           </div>
         )}
 
-        {/* Commission - always visible */}
-        <div className="space-y-2">
-          <Label htmlFor="commission_iqd">العمولة (د.ع) *</Label>
-          <Input
-            id="commission_iqd"
-            type="number"
-            min="0"
-            value={commissionIqd || ''}
-            onChange={(e) => setCommissionIqd(Number(e.target.value))}
-            placeholder="1000"
-          />
-          <p className="text-xs text-muted-foreground">عمولة الموقع لهذا المنتج</p>
-        </div>
-
         {/* Calculation Preview */}
-        {calculation && priceUsd > 0 && (
-          <div className="mt-4 p-3 rounded-lg bg-card border border-border space-y-2">
+        {calculations && priceUsd > 0 && calculations.results.length > 0 && (
+          <div className="mt-4 p-3 rounded-lg bg-card border border-border space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Calculator className="h-4 w-4 text-primary" />
-              <span>معاينة السعر النهائي</span>
+              <span>معاينة الأسعار النهائية</span>
             </div>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">سعر القطعة ({priceUsd}$ × {calculation.rate.toLocaleString()})</span>
-                <span>{formatPrice(calculation.priceIqd)}</span>
+            {calculations.results.map((r, i) => (
+              <div key={i} className="space-y-1 text-sm border-b last:border-b-0 pb-2 last:pb-0">
+                <div className="font-medium text-primary text-xs">{r.label}</div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">سعر القطعة ({priceUsd}$ × {calculations.rate.toLocaleString()})</span>
+                  <span>{formatPrice(r.priceIqd)}</span>
+                </div>
+                {r.shipping > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">تكلفة الشحن</span>
+                    <span>{formatPrice(r.shipping)}</span>
+                  </div>
+                )}
+                {r.type === 'direct' && otherCostsIqd > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">تكاليف أخرى</span>
+                    <span>{formatPrice(otherCostsIqd)}</span>
+                  </div>
+                )}
+                {r.commission > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">العمولة</span>
+                    <span>{formatPrice(r.commission)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-primary pt-1">
+                  <span>السعر النهائي</span>
+                  <span>{formatPrice(r.final)}</span>
+                </div>
               </div>
-              {saleType === 'pre_order' && calculation.shippingCost > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">تكلفة الشحن ({shippingType === 'sea' ? 'بحري' : 'جوي'})</span>
-                  <span>{formatPrice(calculation.shippingCost)}</span>
-                </div>
-              )}
-              {saleType === 'direct' && calculation.otherCosts > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">تكاليف أخرى</span>
-                  <span>{formatPrice(calculation.otherCosts)}</span>
-                </div>
-              )}
-              {commissionIqd > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">العمولة</span>
-                  <span>{formatPrice(commissionIqd)}</span>
-                </div>
-              )}
-              <div className="border-t pt-1 flex justify-between font-bold text-primary">
-                <span>السعر النهائي للزبون</span>
-                <span>{formatPrice(calculation.finalPrice)}</span>
-              </div>
-            </div>
+            ))}
           </div>
         )}
       </div>
