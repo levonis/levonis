@@ -1121,8 +1121,8 @@ const Admin = () => {
       const allImages = editingProduct?.images || [];
       const finalImages = [...allImages, ...uploadedImages];
 
-      const hasInStock = (formData.get('has_in_stock') as string) === 'on';
-      const hasPreOrder = (formData.get('has_pre_order') as string) === 'on';
+      const hasInStock = (formData.get('has_in_stock_pricing') as string) === 'true' || (formData.get('has_in_stock') as string) === 'on';
+      const hasPreOrder = (formData.get('has_pre_order_pricing') as string) === 'true' || (formData.get('has_pre_order') as string) === 'on';
       
       // Determine availability_type based on selected options (for backward compatibility)
       let availabilityType = 'in_stock';
@@ -1197,13 +1197,17 @@ const Admin = () => {
           : null,
       } as any;
 
-      // Auto-calculate final price from USD pricing if price_usd is set
       const priceUsdVal = values.price_usd;
-      const saleType = (formData.get('sale_type') as string) || 'pre_order';
       const commissionIqdVal = formData.get('commission_iqd') ? Number(formData.get('commission_iqd')) : 0;
+      const commissionSeaIqdVal = formData.get('commission_sea_iqd') ? Number(formData.get('commission_sea_iqd')) : 0;
+      const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
+      const commissionDirectIqdVal = formData.get('commission_direct_iqd') ? Number(formData.get('commission_direct_iqd')) : 0;
       const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
       
       values.commission_iqd = commissionIqdVal;
+      values.commission_sea_iqd = commissionSeaIqdVal;
+      values.commission_air_iqd = commissionAirIqdVal;
+      values.commission_direct_iqd = commissionDirectIqdVal;
       values.other_costs_iqd = otherCostsIqdVal;
 
       if (priceUsdVal && priceUsdVal > 0) {
@@ -1225,31 +1229,34 @@ const Admin = () => {
         });
 
         const priceIqd = Math.round(priceUsdVal * settings.usd_to_iqd_rate);
+        const shippingType = values.shipping_type;
+        
+        // Calculate prices for each active mode and use the lowest for the main price
+        const prices: number[] = [];
 
-        if (saleType === 'direct') {
-          // Direct sale: price = (USD * rate) + other_costs + commission
-          values.price = priceIqd + otherCostsIqdVal + commissionIqdVal;
-          values.shipping_cost_iqd = 0;
-          values.has_in_stock = true;
-          values.has_pre_order = false;
-        } else {
-          // Pre-order: price = (USD * rate) + shipping + commission
+        if (hasPreOrder) {
           const dims = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
             ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 }
             : null;
-          
-          const shippingCalc = calculateShippingCost(
-            'china',
-            values.shipping_type || 'sea',
-            dims,
-            values.weight_kg > 0 ? values.weight_kg : null,
-            settings
-          );
 
-          values.price = priceIqd + shippingCalc.shippingCost + commissionIqdVal;
-          values.shipping_cost_iqd = shippingCalc.shippingCost;
-          values.has_pre_order = true;
+          if (shippingType === 'sea' || shippingType === 'both') {
+            const seaCalc = calculateShippingCost('china', 'sea', dims, null, settings);
+            prices.push(priceIqd + seaCalc.shippingCost + commissionSeaIqdVal);
+            values.shipping_cost_iqd = seaCalc.shippingCost;
+          }
+          if (shippingType === 'air' || shippingType === 'both') {
+            const airCalc = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings);
+            prices.push(priceIqd + airCalc.shippingCost + commissionAirIqdVal);
+            if (!values.shipping_cost_iqd) values.shipping_cost_iqd = airCalc.shippingCost;
+          }
         }
+
+        if (hasInStock) {
+          prices.push(priceIqd + otherCostsIqdVal + commissionDirectIqdVal);
+        }
+
+        // Use the lowest price as the main display price
+        values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
       }
 
@@ -1963,57 +1970,9 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="price">السعر *</Label>
-                        <Input 
-                          id="price" 
-                          name="price"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          defaultValue={editingProduct?.price ?? 0}
-                          required 
-                        />
-                        <p className="text-xs text-muted-foreground">يمكن تركه 0 وتعديله لاحقاً</p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="original_price">السعر الأصلي (قبل التخفيض)</Label>
-                        <Input 
-                          id="original_price" 
-                          name="original_price"
-                          type="number"
-                          step="0.01"
-                          defaultValue={editingProduct?.original_price}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cost_price">سعر التكلفة (للمشرف فقط)</Label>
-                        <Input 
-                          id="cost_price" 
-                          name="cost_price"
-                          type="number"
-                          step="0.01"
-                          defaultValue={editingProduct?.cost_price}
-                          placeholder="سعر الشراء من المورد"
-                        />
-                        <p className="text-xs text-muted-foreground">يستخدم لحساب الأرباح - مرئي للمشرف فقط</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="currency">العملة</Label>
-                        <Input 
-                          id="currency" 
-                          name="currency"
-                          defaultValue={editingProduct?.currency || defaultSettings?.currency || 'دينار عراقي'}
-                          placeholder="دينار عراقي"
-                        />
-                      </div>
-                    </div>
+                    {/* Price fields moved to AdminProductPricingSection */}
+                    <input type="hidden" name="price" value={editingProduct?.price ?? 0} />
+                    <input type="hidden" name="currency" value="دينار عراقي" />
 
                     {/* Product Rewards & Card Discounts Section */}
                     <div className="space-y-4 border-t pt-4">
@@ -2123,50 +2082,7 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4 border-t pt-4">
-                      <Label>خيارات التوفر *</Label>
-                      <div className="space-y-3 p-4 border border-border rounded-lg bg-card/30">
-                        <div className="flex items-center gap-2">
-                          <input 
-                            id="has_in_stock" 
-                            name="has_in_stock" 
-                            type="checkbox" 
-                            defaultChecked={editingProduct?.has_in_stock ?? defaultSettings?.has_in_stock ?? false}
-                            onChange={(e) => {
-                              const colorsSection = document.getElementById('colors-in-stock-notice');
-                              if (colorsSection) {
-                                colorsSection.style.display = e.target.checked ? 'block' : 'none';
-                              }
-                            }}
-                          />
-                          <Label htmlFor="has_in_stock" className="cursor-pointer">متاح في المخزن</Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground pr-6">
-                          يمكن للعملاء شراء المنتج مباشرة من المخزون
-                        </p>
-                        
-                        <div className="flex items-center gap-2 pt-2">
-                          <input 
-                            id="has_pre_order" 
-                            name="has_pre_order" 
-                            type="checkbox" 
-                            defaultChecked={editingProduct?.has_pre_order ?? defaultSettings?.has_pre_order ?? true}
-                            onChange={(e) => {
-                              const preOrderSection = document.getElementById('pre-order-section');
-                              if (preOrderSection) {
-                                preOrderSection.style.display = e.target.checked ? 'block' : 'none';
-                              }
-                            }}
-                          />
-                          <Label htmlFor="has_pre_order" className="cursor-pointer">طلب مسبق</Label>
-                        </div>
-                        <p className="text-xs text-muted-foreground pr-6">
-                          يمكن للعملاء طلب المنتج مسبقاً مع اختيار نوع الشحن
-                        </p>
-                      </div>
-
-                       {/* Legacy pre-order shipping section removed - now in AdminProductPricingSection */}
-                    </div>
+                    {/* Availability options now managed by AdminProductPricingSection */}
 
                     <div className="space-y-2">
                       <Label htmlFor="category_id">القسم *</Label>
