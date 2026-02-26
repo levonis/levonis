@@ -110,11 +110,7 @@ const Admin = () => {
     level_id: string;
     discount_amount: number; // Amount in IQD
   }>>([]);
-  const [preOrderShippingOptions, setPreOrderShippingOptions] = useState<Array<{
-    name: string;
-    name_ar: string;
-    price_adjustment: number;
-  }>>([]);
+  // preOrderShippingOptions removed - now handled by AdminProductPricingSection
   
   // AI extraction states
   const [productUrl, setProductUrl] = useState('');
@@ -186,7 +182,7 @@ const Admin = () => {
         : [];
       setProductColors(colorsWithStock);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
-      setPreOrderShippingOptions(Array.isArray(editingProduct.pre_order_shipping_options) ? editingProduct.pre_order_shipping_options : []);
+      // preOrderShippingOptions removed
       
       // Load card discounts from product
       const cardDiscounts = Array.isArray(editingProduct.card_discounts) ? editingProduct.card_discounts : [];
@@ -225,16 +221,7 @@ const Admin = () => {
       setProductUrl(''); // Clear URL when opening for new product
       setFormKey(prev => prev + 1); // Force form to re-render with correct defaults
       
-      // Load default shipping options from settings
-      if (defaultSettings && Array.isArray(defaultSettings.pre_order_shipping_options)) {
-        setPreOrderShippingOptions(defaultSettings.pre_order_shipping_options);
-      } else {
-        setPreOrderShippingOptions([{
-          name: 'Free Shipping (45 days)',
-          name_ar: 'شحن مجاني (45 يومًا)',
-          price_adjustment: 0
-        }]);
-      }
+      // preOrderShippingOptions removed - handled by pricing section
     } else if (!productDialogOpen) {
       // Clear URL when closing dialog
       setProductUrl('');
@@ -911,15 +898,7 @@ const Admin = () => {
       if (pointsInput) pointsInput.value = String(productInfo.points_reward);
     }
 
-    // Apply estimated air shipping cost if calculated by AI, or calculate locally
-    if (productInfo.estimated_air_shipping_cost && productInfo.estimated_air_shipping_cost > 0) {
-      // Use the pre-calculated shipping cost from AI
-      console.log('[AI Shipping] Using pre-calculated air shipping cost:', productInfo.estimated_air_shipping_cost);
-      applyAirShippingCost(productInfo.estimated_air_shipping_cost);
-    } else if (productInfo.dimensions || productInfo.weight_kg) {
-      // Fall back to local calculation
-      calculateAndApplyAirShipping(productInfo.dimensions, productInfo.weight_kg);
-    }
+    // Shipping calculation now handled by AdminProductPricingSection
 
     // Hide manual input if it was shown
     setShowManualInput(false);
@@ -932,130 +911,7 @@ const Admin = () => {
     toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
   };
 
-  // Apply air shipping cost directly (when calculated by AI)
-  const applyAirShippingCost = (shippingCost: number) => {
-    console.log('[AI Shipping] Applying pre-calculated air shipping cost:', shippingCost);
-    
-    // Update the fast shipping option in preOrderShippingOptions
-    setPreOrderShippingOptions(prevOptions => {
-      // Find fast shipping option (usually the second one with "سريع" in name)
-      const updatedOptions = prevOptions.map((opt, index) => {
-        if (opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast') || index === 1) {
-          return { ...opt, price_adjustment: shippingCost };
-        }
-        return opt;
-      });
-      
-      // If no fast shipping option found, add one
-      const hasFastShipping = updatedOptions.some(
-        opt => opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast')
-      );
-      
-      if (!hasFastShipping && shippingCost > 0) {
-        updatedOptions.push({
-          name: 'Fast shipping (15 days)',
-          name_ar: 'شحن سريع (15 يومًا)',
-          price_adjustment: shippingCost
-        });
-      }
-      
-      return updatedOptions;
-    });
-    
-    toast.info(`تم حساب سعر الشحن السريع: ${shippingCost.toLocaleString()} دينار`);
-  };
-
-  // Calculate air shipping cost from China and apply to fast shipping option
-  const calculateAndApplyAirShipping = async (dimensions: any, weightKg: number | null) => {
-    try {
-      // Fetch shipping settings
-      const { data: settingsData, error } = await supabase
-        .from('shipping_settings')
-        .select('setting_key, setting_value');
-      
-      if (error) {
-        console.error('Error fetching shipping settings:', error);
-        return;
-      }
-
-      // Build settings object
-      const settings: Record<string, number> = {
-        sea_padding_cm: 5,
-        air_china_volumetric_price: 15000,
-        air_china_volumetric_divider: 5000,
-        air_china_weight_safety_margin: 20,
-      };
-
-      settingsData?.forEach((item) => {
-        settings[item.setting_key] = Number(item.setting_value);
-      });
-
-      let shippingCost = 0;
-      const padding = settings.sea_padding_cm;
-      
-      // Calculate volumetric weight if dimensions provided
-      let volumetricWeight = 0;
-      if (dimensions && dimensions.length_cm && dimensions.width_cm && dimensions.height_cm) {
-        const length = (dimensions.length_cm || 0) + padding;
-        const width = (dimensions.width_cm || 0) + padding;
-        const height = (dimensions.height_cm || 0) + padding;
-        volumetricWeight = (length * width * height) / settings.air_china_volumetric_divider;
-      }
-      
-      // Use the greater weight (volumetric or actual)
-      const actualWeight = weightKg || 0;
-      const usedWeight = Math.max(volumetricWeight, actualWeight);
-      
-      if (usedWeight > 0) {
-        // Add safety margin
-        const safetyMargin = settings.air_china_weight_safety_margin / 100;
-        const weightWithSafety = usedWeight * (1 + safetyMargin);
-        
-        // Calculate cost
-        shippingCost = Math.round(weightWithSafety * settings.air_china_volumetric_price);
-        
-        console.log('[AI Shipping] Calculated air shipping:', {
-          dimensions,
-          weightKg,
-          volumetricWeight,
-          actualWeight,
-          usedWeight,
-          weightWithSafety,
-          shippingCost
-        });
-        
-        // Update the fast shipping option in preOrderShippingOptions
-        setPreOrderShippingOptions(prevOptions => {
-          // Find fast shipping option (usually the second one with "سريع" in name)
-          const updatedOptions = prevOptions.map((opt, index) => {
-            if (opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast') || index === 1) {
-              return { ...opt, price_adjustment: shippingCost };
-            }
-            return opt;
-          });
-          
-          // If no fast shipping option found, add one
-          const hasFastShipping = updatedOptions.some(
-            opt => opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast')
-          );
-          
-          if (!hasFastShipping && shippingCost > 0) {
-            updatedOptions.push({
-              name: 'Fast shipping (15 days)',
-              name_ar: 'شحن سريع (15 يومًا)',
-              price_adjustment: shippingCost
-            });
-          }
-          
-          return updatedOptions;
-        });
-        
-        toast.info(`تم حساب سعر الشحن السريع: ${shippingCost.toLocaleString()} دينار`);
-      }
-    } catch (err) {
-      console.error('Error calculating air shipping:', err);
-    }
-  };
+  // Legacy shipping functions removed - now handled by AdminProductPricingSection
 
   // Re-extract images only for a product using AI
   const handleReExtractImages = async (product: any) => {
@@ -1255,23 +1111,7 @@ const Admin = () => {
     setProductFeatures(updated);
   };
 
-  const addPreOrderShippingOption = () => {
-    setPreOrderShippingOptions([...preOrderShippingOptions, {
-      name: '',
-      name_ar: '',
-      price_adjustment: 0
-    }]);
-  };
-
-  const removePreOrderShippingOption = (index: number) => {
-    setPreOrderShippingOptions(preOrderShippingOptions.filter((_, i) => i !== index));
-  };
-
-  const updatePreOrderShippingOption = (index: number, field: string, value: any) => {
-    const updated = [...preOrderShippingOptions];
-    updated[index] = { ...updated[index], [field]: value };
-    setPreOrderShippingOptions(updated);
-  };
+  // Legacy preOrderShippingOption functions removed
 
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1324,15 +1164,9 @@ const Admin = () => {
         availability_type: availabilityType,
         has_in_stock: hasInStock,
         has_pre_order: hasPreOrder,
-        pre_order_shipping_options: hasPreOrder 
-          ? preOrderShippingOptions.filter(opt => opt.name_ar.trim() !== '' && opt.name.trim() !== '')
-          : [],
-        pre_order_free_shipping_price: hasPreOrder && formData.get('pre_order_free_shipping_price') && formData.get('pre_order_free_shipping_price') !== ''
-          ? Number(formData.get('pre_order_free_shipping_price'))
-          : null,
-        pre_order_fast_shipping_price: hasPreOrder && formData.get('pre_order_fast_shipping_price') && formData.get('pre_order_fast_shipping_price') !== ''
-          ? Number(formData.get('pre_order_fast_shipping_price'))
-          : null,
+        pre_order_shipping_options: [],
+        pre_order_free_shipping_price: null,
+        pre_order_fast_shipping_price: null,
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
@@ -1365,6 +1199,13 @@ const Admin = () => {
 
       // Auto-calculate final price from USD pricing if price_usd is set
       const priceUsdVal = values.price_usd;
+      const saleType = (formData.get('sale_type') as string) || 'pre_order';
+      const commissionIqdVal = formData.get('commission_iqd') ? Number(formData.get('commission_iqd')) : 0;
+      const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
+      
+      values.commission_iqd = commissionIqdVal;
+      values.other_costs_iqd = otherCostsIqdVal;
+
       if (priceUsdVal && priceUsdVal > 0) {
         // Fetch shipping settings for calculation
         const { data: settingsData } = await supabase
@@ -1383,21 +1224,32 @@ const Admin = () => {
           if (item.setting_key in settings) settings[item.setting_key] = Number(item.setting_value);
         });
 
-        const dims = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
-          ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 }
-          : null;
-        
-        const shippingCalc = calculateShippingCost(
-          'china',
-          values.shipping_type || 'sea',
-          dims,
-          values.weight_kg > 0 ? values.weight_kg : null,
-          settings
-        );
-
         const priceIqd = Math.round(priceUsdVal * settings.usd_to_iqd_rate);
-        values.price = priceIqd + shippingCalc.totalCost;
-        values.shipping_cost_iqd = shippingCalc.shippingCost;
+
+        if (saleType === 'direct') {
+          // Direct sale: price = (USD * rate) + other_costs + commission
+          values.price = priceIqd + otherCostsIqdVal + commissionIqdVal;
+          values.shipping_cost_iqd = 0;
+          values.has_in_stock = true;
+          values.has_pre_order = false;
+        } else {
+          // Pre-order: price = (USD * rate) + shipping + commission
+          const dims = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
+            ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 }
+            : null;
+          
+          const shippingCalc = calculateShippingCost(
+            'china',
+            values.shipping_type || 'sea',
+            dims,
+            values.weight_kg > 0 ? values.weight_kg : null,
+            settings
+          );
+
+          values.price = priceIqd + shippingCalc.shippingCost + commissionIqdVal;
+          values.shipping_cost_iqd = shippingCalc.shippingCost;
+          values.has_pre_order = true;
+        }
         values.is_pricing_updated = true;
       }
 
@@ -2313,178 +2165,7 @@ const Admin = () => {
                         </p>
                       </div>
 
-                       <div 
-                         id="pre-order-section" 
-                         className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
-                         style={{ display: (editingProduct ? (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') : (defaultSettings?.has_pre_order ?? true)) ? 'block' : 'none' }}
-                       >
-                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                           <Package className="h-4 w-4" />
-                           <span>خيارات الشحن للطلب المسبق (مخصصة)</span>
-                         </div>
-
-                         {/* Air Shipping Calculator */}
-                         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
-                           <div className="flex items-center gap-2 mb-3">
-                             <Truck className="h-4 w-4 text-amber-600" />
-                             <Label className="text-sm font-medium text-amber-700">حاسبة الشحن السريع (جوي من الصين)</Label>
-                           </div>
-                           <p className="text-xs text-muted-foreground mb-3">
-                             أدخل الوزن و/أو الأبعاد لحساب سعر الشحن الجوي تلقائياً وإضافته للشحن السريع
-                           </p>
-                           <div className="grid grid-cols-4 gap-2 mb-3">
-                             <div>
-                               <Label className="text-xs">الوزن (كغ)</Label>
-                               <Input
-                                 type="number"
-                                 step="0.1"
-                                 min="0"
-                                 id="calc_weight"
-                                 placeholder="1.5"
-                                 className="h-8 text-sm"
-                               />
-                             </div>
-                             <div>
-                               <Label className="text-xs">الطول (سم)</Label>
-                               <Input
-                                 type="number"
-                                 step="1"
-                                 min="0"
-                                 id="calc_length"
-                                 placeholder="30"
-                                 className="h-8 text-sm"
-                               />
-                             </div>
-                             <div>
-                               <Label className="text-xs">العرض (سم)</Label>
-                               <Input
-                                 type="number"
-                                 step="1"
-                                 min="0"
-                                 id="calc_width"
-                                 placeholder="20"
-                                 className="h-8 text-sm"
-                               />
-                             </div>
-                             <div>
-                               <Label className="text-xs">الارتفاع (سم)</Label>
-                               <Input
-                                 type="number"
-                                 step="1"
-                                 min="0"
-                                 id="calc_height"
-                                 placeholder="15"
-                                 className="h-8 text-sm"
-                               />
-                             </div>
-                           </div>
-                           <Button
-                             type="button"
-                             size="sm"
-                             variant="outline"
-                             className="w-full bg-amber-500/20 border-amber-500/50 hover:bg-amber-500/30"
-                             onClick={async () => {
-                               const weightInput = document.getElementById('calc_weight') as HTMLInputElement;
-                               const lengthInput = document.getElementById('calc_length') as HTMLInputElement;
-                               const widthInput = document.getElementById('calc_width') as HTMLInputElement;
-                               const heightInput = document.getElementById('calc_height') as HTMLInputElement;
-                               
-                               const weight = parseFloat(weightInput?.value) || 0;
-                               const length = parseFloat(lengthInput?.value) || 0;
-                               const width = parseFloat(widthInput?.value) || 0;
-                               const height = parseFloat(heightInput?.value) || 0;
-                               
-                               if (weight <= 0 && (length <= 0 || width <= 0 || height <= 0)) {
-                                 toast.error('أدخل الوزن أو الأبعاد لحساب الشحن');
-                                 return;
-                               }
-                               
-                               const dimensions = length > 0 && width > 0 && height > 0 
-                                 ? { length_cm: length, width_cm: width, height_cm: height }
-                                 : null;
-                               
-                               await calculateAndApplyAirShipping(dimensions, weight > 0 ? weight : null);
-                             }}
-                           >
-                             <Zap className="ml-1 h-3 w-3" />
-                             حساب وتطبيق على الشحن السريع
-                           </Button>
-                         </div>
-
-                         <div className="bg-card/50 border border-border rounded-lg p-4 mb-4">
-                           <div className="flex items-center justify-between mb-3">
-                             <Label className="text-sm font-medium">خيارات الشحن المخصصة</Label>
-                             <Button
-                               type="button"
-                               size="sm"
-                               variant="outline"
-                               onClick={addPreOrderShippingOption}
-                             >
-                               <Plus className="ml-1 h-3 w-3" />
-                               إضافة خيار
-                             </Button>
-                           </div>
-                           <p className="text-xs text-muted-foreground mb-3">
-                             أضف خيارات شحن مخصصة. السعر يمكن أن يزيد (+) أو ينقص (-) من السعر الكلي. اترك السعر 0 إذا لم يؤثر على السعر.
-                           </p>
-
-                           {preOrderShippingOptions.length > 0 && (
-                             <div className="space-y-3">
-                               {preOrderShippingOptions.map((option, index) => (
-                                 <div key={index} className="p-3 border border-border rounded-lg bg-background space-y-3">
-                                   <div className="flex justify-between items-start">
-                                     <span className="text-sm font-medium">خيار {index + 1}</span>
-                                     <Button
-                                       type="button"
-                                       size="sm"
-                                       variant="ghost"
-                                       onClick={() => removePreOrderShippingOption(index)}
-                                     >
-                                       <X className="h-4 w-4" />
-                                     </Button>
-                                   </div>
-                                   
-                                   <div className="grid grid-cols-2 gap-3">
-                                     <div className="space-y-1">
-                                       <Label className="text-xs">الاسم بالعربي *</Label>
-                                       <Input
-                                         value={option.name_ar}
-                                         onChange={(e) => updatePreOrderShippingOption(index, 'name_ar', e.target.value)}
-                                         placeholder="شحن مجاني"
-                                         className="h-9"
-                                       />
-                                     </div>
-                                     <div className="space-y-1">
-                                       <Label className="text-xs">الاسم بالإنجليزي *</Label>
-                                       <Input
-                                         value={option.name}
-                                         onChange={(e) => updatePreOrderShippingOption(index, 'name', e.target.value)}
-                                         placeholder="Free Shipping"
-                                         className="h-9"
-                                       />
-                                     </div>
-                                   </div>
-
-                                   <div className="space-y-1">
-                                     <Label className="text-xs">تعديل السعر (+ يزيد، - ينقص، 0 بدون تأثير)</Label>
-                                     <Input
-                                       type="number"
-                                       step="0.01"
-                                       value={option.price_adjustment}
-                                       onChange={(e) => updatePreOrderShippingOption(index, 'price_adjustment', Number(e.target.value))}
-                                       placeholder="0"
-                                       className="h-9"
-                                     />
-                                     <p className="text-xs text-muted-foreground">
-                                       أدخل رقم موجب للإضافة، سالب للخصم، أو 0 لعدم التأثير
-                                     </p>
-                                   </div>
-                                 </div>
-                               ))}
-                             </div>
-                           )}
-                         </div>
-                       </div>
+                       {/* Legacy pre-order shipping section removed - now in AdminProductPricingSection */}
                     </div>
 
                     <div className="space-y-2">

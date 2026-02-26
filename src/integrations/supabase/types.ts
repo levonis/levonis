@@ -4912,6 +4912,7 @@ export type Database = {
           card_discounts: Json | null
           category_id: string | null
           colors: Json | null
+          commission_iqd: number | null
           cost_price: number | null
           created_at: string | null
           currency: string | null
@@ -4935,6 +4936,7 @@ export type Database = {
           name_en: string | null
           name_ku: string | null
           original_price: number | null
+          other_costs_iqd: number | null
           points_reward: number | null
           pre_order_fast_shipping_price: number | null
           pre_order_free_shipping_price: number | null
@@ -4959,6 +4961,7 @@ export type Database = {
           card_discounts?: Json | null
           category_id?: string | null
           colors?: Json | null
+          commission_iqd?: number | null
           cost_price?: number | null
           created_at?: string | null
           currency?: string | null
@@ -4982,6 +4985,7 @@ export type Database = {
           name_en?: string | null
           name_ku?: string | null
           original_price?: number | null
+          other_costs_iqd?: number | null
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
@@ -5006,6 +5010,7 @@ export type Database = {
           card_discounts?: Json | null
           category_id?: string | null
           colors?: Json | null
+          commission_iqd?: number | null
           cost_price?: number | null
           created_at?: string | null
           currency?: string | null
@@ -5029,6 +5034,7 @@ export type Database = {
           name_en?: string | null
           name_ku?: string | null
           original_price?: number | null
+          other_costs_iqd?: number | null
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
