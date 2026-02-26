@@ -135,9 +135,11 @@ function AppContent() {
   const location = useLocation();
   const isCommunityShell = location.pathname === "/community" || location.pathname.startsWith("/community/");
   const isGamesPage = location.pathname === "/games";
+  const isProfilePage = location.pathname === "/profile";
+  const hideTopBar = isGamesPage || isProfilePage;
   
   // Total top offset = verification banner (highest z-index) + announcement bar + header
-  const totalTopPadding = isGamesPage
+  const totalTopPadding = hideTopBar
     ? 0
     : isCommunityShell 
       ? 56 + verificationBannerHeight 
@@ -145,9 +147,9 @@ function AppContent() {
   
   return (
     <>
-      {!isGamesPage && <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />}
-      {!isGamesPage && <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />}
-      {!isGamesPage && (isCommunityShell ? (
+      {!hideTopBar && <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />}
+      {!hideTopBar && <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />}
+      {!hideTopBar && (isCommunityShell ? (
         <CommunityTopBar verificationBannerHeight={verificationBannerHeight} />
       ) : (
         <Header announcementHeight={announcementHeight} verificationBannerHeight={verificationBannerHeight} />
