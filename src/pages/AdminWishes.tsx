@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, X, Loader2, Pencil, ArrowRight } from "lucide-react";
+import { Check, X, Loader2, Pencil, ArrowRight, ImagePlus, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import {
@@ -26,6 +26,9 @@ export default function AdminWishes() {
   const [editDesc, setEditDesc] = useState("");
   const [editImage, setEditImage] = useState("");
   const [editPrice, setEditPrice] = useState("");
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState("");
+  const editFileRef = useRef<HTMLInputElement>(null);
 
   const { data: wishes, isLoading } = useQuery({
     queryKey: ["admin-wishes", filter],
@@ -37,6 +40,16 @@ export default function AdminWishes() {
       return data;
     },
   });
+
+  const uploadEditImage = async (): Promise<string | null> => {
+    if (!editImageFile) return editImage.trim() || null;
+    const ext = editImageFile.name.split(".").pop();
+    const path = `admin/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("wish-images").upload(path, editImageFile, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("wish-images").getPublicUrl(path);
+    return urlData.publicUrl;
+  };
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
@@ -65,20 +78,30 @@ export default function AdminWishes() {
     setEditDesc(wish.description || "");
     setEditImage(wish.image_url || "");
     setEditPrice(wish.price?.toString() || "");
+    setEditImageFile(null);
+    setEditImagePreview(wish.image_url || "");
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editWish) return;
+    const imgUrl = await uploadEditImage();
     updateMutation.mutate({
       id: editWish.id,
       updates: {
         title: editTitle.trim(),
         description: editDesc.trim() || null,
-        image_url: editImage.trim() || null,
+        image_url: imgUrl,
         price: editPrice ? Number(editPrice) : null,
       },
     });
     setEditWish(null);
+  };
+
+  const handleEditImageSelect = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) return toast.error("حجم الصورة يجب ألا يتجاوز 5 ميجابايت");
+    setEditImageFile(file);
+    setEditImagePreview(URL.createObjectURL(file));
+    setEditImage("");
   };
 
   const filters: { label: string; value: WishStatus | "all" }[] = [
@@ -98,7 +121,6 @@ export default function AdminWishes() {
           <h1 className="text-xl font-black">إدارة الأمنيات</h1>
         </div>
 
-        {/* Filters */}
         <div className="flex gap-2 mb-6 flex-wrap">
           {filters.map((f) => (
             <button
@@ -122,27 +144,44 @@ export default function AdminWishes() {
         ) : wishes && wishes.length > 0 ? (
           <div className="space-y-3">
             {wishes.map((wish: any) => (
-              <WishAdminCard
-                key={wish.id}
-                wish={wish}
-                onApprove={approve}
-                onReject={reject}
-                onEdit={openEdit}
-                isPending={updateMutation.isPending}
-              />
+              <WishAdminCard key={wish.id} wish={wish} onApprove={approve} onReject={reject} onEdit={openEdit} isPending={updateMutation.isPending} />
             ))}
           </div>
         ) : (
           <p className="text-center py-12 text-sm text-muted-foreground">لا توجد أمنيات</p>
         )}
 
-        {/* Edit Dialog */}
+        {/* Edit Dialog with Image Upload */}
         <Dialog open={!!editWish} onOpenChange={(o) => !o && setEditWish(null)}>
           <DialogContent className="max-w-md" dir="rtl">
             <DialogHeader>
               <DialogTitle className="text-right">تعديل الأمنية</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
+              {/* Image Upload */}
+              <div>
+                <Label className="text-xs mb-1.5 block">الصورة</Label>
+                <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleEditImageSelect(e.target.files[0])} />
+                {editImagePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-border/50 group">
+                    <img src={editImagePreview} alt="" className="w-full aspect-video object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                      <button onClick={() => editFileRef.current?.click()} className="p-2 rounded-full bg-card/80 text-foreground hover:bg-card transition-colors">
+                        <Camera className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => { setEditImageFile(null); setEditImagePreview(""); setEditImage(""); }} className="p-2 rounded-full bg-destructive/80 text-destructive-foreground hover:bg-destructive transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => editFileRef.current?.click()} className="w-full aspect-video rounded-xl border-2 border-dashed border-border/50 hover:border-primary/50 bg-card/30 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 group">
+                    <ImagePlus className="w-6 h-6 text-primary/60 group-hover:text-primary transition-colors" />
+                    <span className="text-xs text-muted-foreground">اضغط لرفع صورة</span>
+                  </button>
+                )}
+              </div>
+
               <div>
                 <Label>العنوان</Label>
                 <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="mt-1" />
@@ -150,10 +189,6 @@ export default function AdminWishes() {
               <div>
                 <Label>الوصف</Label>
                 <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} className="mt-1" rows={3} />
-              </div>
-              <div>
-                <Label>رابط الصورة</Label>
-                <Input value={editImage} onChange={(e) => setEditImage(e.target.value)} className="mt-1" dir="ltr" />
               </div>
               <div>
                 <Label>السعر (د.ع)</Label>
@@ -170,9 +205,7 @@ export default function AdminWishes() {
   );
 }
 
-function WishAdminCard({
-  wish, onApprove, onReject, onEdit, isPending,
-}: {
+function WishAdminCard({ wish, onApprove, onReject, onEdit, isPending }: {
   wish: any; onApprove: (id: string, price: string) => void;
   onReject: (id: string) => void; onEdit: (w: any) => void; isPending: boolean;
 }) {

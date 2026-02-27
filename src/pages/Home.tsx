@@ -101,14 +101,26 @@ const Home = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
-        {/* Wishes Link Bar */}
+        {/* Wishes Link Bar - Premium Animated Banner */}
         <section className="container mx-auto px-4 mb-2">
           <a
             href="/wishes"
-            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all group"
+            className="relative flex items-center justify-between py-3 px-5 rounded-2xl overflow-hidden group hover:shadow-lg hover:shadow-primary/10 transition-all duration-500"
           >
-            <span className="text-sm font-bold text-primary group-hover:scale-105 transition-transform">✨ الأمنيات</span>
-            <span className="text-xs text-muted-foreground">تمنّى منتجاً وسنوفره لك!</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-accent/20 to-primary/15 group-hover:from-primary/25 group-hover:via-accent/30 group-hover:to-primary/25 transition-all duration-500" />
+            <div className="absolute inset-0 border border-primary/20 group-hover:border-primary/40 rounded-2xl transition-colors duration-300" />
+            <div className="absolute -top-6 -right-6 w-20 h-20 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all" />
+            <div className="relative flex items-center gap-2.5">
+              <span className="text-lg animate-pulse">✨</span>
+              <div>
+                <span className="text-sm font-black text-primary block leading-tight">الأمنيات</span>
+                <span className="text-[10px] text-muted-foreground">تمنّى منتجاً وسنوفره لك!</span>
+              </div>
+            </div>
+            <div className="relative flex items-center gap-1 text-primary/70 group-hover:text-primary transition-colors">
+              <span className="text-xs font-bold hidden sm:inline">اكتشف</span>
+              <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300 rtl:rotate-180 rtl:group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </div>
           </a>
         </section>
 
