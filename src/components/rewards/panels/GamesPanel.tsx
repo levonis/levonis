@@ -6,7 +6,7 @@ import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_GAMES = [
-  { id: 'rps', title: 'حجرة ورقة مقص', icon: '✊', reward: '+10', live: true },
+  { id: 'rps', title: 'حجرة ورقة مقص', icon: '✊', reward: '+10', live: false },
   { id: 'quiz', title: 'تحدي المعرفة', icon: '🧠', reward: '+15', live: false },
   { id: 'spin', title: 'عجلة الحظ', icon: '🎰', reward: '+50', live: false },
 ];
