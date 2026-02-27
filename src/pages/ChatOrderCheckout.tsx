@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import AddressDialog from '@/components/AddressDialog';
 import { useCommissionSettings } from '@/hooks/useCommissionSettings';
 
-type PaymentMethod = 'wallet' | 'half' | 'quarter' | 'cod';
+type PaymentMethod = 'wallet' | 'half' | 'quarter';
 
 interface ChatOrder {
   id: string;
@@ -114,7 +114,6 @@ export default function ChatOrderCheckout() {
     switch (paymentMethod) {
       case 'half': return commissionConfig.half_payment_fee;
       case 'quarter': return commissionConfig.quarter_payment_fee;
-      case 'cod': return commissionConfig.cod_merchant_fee; // COD fee shown to customer, deducted from merchant
       default: return 0; // wallet = no extra fee
     }
   };
@@ -123,7 +122,6 @@ export default function ChatOrderCheckout() {
     switch (paymentMethod) {
       case 'half': return 50;
       case 'quarter': return 25;
-      case 'cod': return 0;
       default: return 100;
     }
   };
@@ -134,7 +132,7 @@ export default function ChatOrderCheckout() {
   const partialPercent = getPartialPercent();
   const amountToPay = paymentMethod === 'wallet' ? finalTotal : Math.round(finalTotal * (partialPercent / 100));
   const remainingAmount = finalTotal - amountToPay;
-  const insufficientBalance = paymentMethod !== 'cod' && amountToPay > walletBalance;
+  const insufficientBalance = amountToPay > walletBalance;
 
   const checkoutMutation = useMutation({
     mutationFn: async () => {
@@ -145,11 +143,10 @@ export default function ChatOrderCheckout() {
         wallet: 'المحفظة',
         half: 'نصف المبلغ',
         quarter: 'ربع المبلغ',
-        cod: 'الدفع عند الاستلام',
       };
 
-      // Deduct wallet for non-COD
-      if (amountToPay > 0 && paymentMethod !== 'cod') {
+      // Deduct wallet
+      if (amountToPay > 0) {
         const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
           p_amount: amountToPay,
@@ -158,55 +155,6 @@ export default function ChatOrderCheckout() {
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
       }
 
-      // For COD: charge merchant debt (fee is shown to customer but deducted from merchant since payment is outside platform)
-      if (paymentMethod === 'cod' && commissionConfig && commissionAmount > 0) {
-        const codFeeAmount = commissionAmount;
-        const { data: merchantApp } = await supabase
-          .from('merchant_applications')
-          .select('id, user_id')
-          .eq('user_id', order.seller_id)
-          .eq('status', 'approved')
-          .maybeSingle();
-
-        if (merchantApp) {
-          const { data: merchantWallet } = await supabase
-            .from('user_wallets')
-            .select('balance')
-            .eq('user_id', order.seller_id)
-            .maybeSingle();
-
-          const merchantBalance = merchantWallet?.balance || 0;
-
-          if (merchantBalance >= codFeeAmount) {
-            await supabase.rpc('deduct_wallet_balance', {
-              p_user_id: order.seller_id,
-              p_amount: codFeeAmount,
-              p_description: `عمولة COD - طلب #${order.id.slice(0, 8)}`
-            });
-          } else {
-            const debtAmount = codFeeAmount - Math.max(0, merchantBalance);
-            if (merchantBalance > 0) {
-              await supabase.rpc('deduct_wallet_balance', {
-                p_user_id: order.seller_id,
-                p_amount: merchantBalance,
-                p_description: `عمولة COD جزئية - طلب #${order.id.slice(0, 8)}`
-              });
-            }
-            await supabase.from('merchant_debts').insert({
-              merchant_user_id: order.seller_id,
-              merchant_application_id: merchantApp.id,
-              amount: debtAmount,
-              reason: `عمولة الدفع عند الاستلام - طلب #${order.id.slice(0, 8)}`,
-              order_id: order.id,
-              status: 'pending',
-            });
-            await supabase
-              .from('merchant_public_profiles')
-              .update({ total_debt: (await supabase.from('merchant_debts').select('amount').eq('merchant_application_id', merchantApp.id).eq('status', 'pending').then(r => (r.data || []).reduce((s, d) => s + Number(d.amount), 0))) })
-              .eq('id', merchantApp.id);
-          }
-        }
-      }
 
       const { error: orderError } = await supabase
         .from('chat_orders')
@@ -219,7 +167,7 @@ export default function ChatOrderCheckout() {
           paid_amount: amountToPay,
           remaining_amount: remainingAmount,
           partial_payment_percent: partialPercent,
-          status: paymentMethod === 'cod' ? 'confirmed' : 'paid',
+          status: 'paid',
           checkout_completed_at: new Date().toISOString(),
         })
         .eq('id', order.id);
@@ -235,7 +183,7 @@ export default function ChatOrderCheckout() {
           product_image: order.product_image,
           quantity: order.quantity,
           total_price: order.total_price,
-          status: paymentMethod === 'cod' ? 'confirmed' : 'paid',
+          status: 'paid',
         }),
       });
 
@@ -518,30 +466,6 @@ export default function ChatOrderCheckout() {
                   </Label>
                 )}
 
-                {/* COD */}
-                {commissionConfig?.cod_enabled && (
-                  <Label
-                    htmlFor="pay-cod"
-                    className={cn(
-                      "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
-                      paymentMethod === 'cod' 
-                        ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
-                        : "border-primary/10 hover:border-primary/30"
-                    )}
-                  >
-                    <RadioGroupItem value="cod" id="pay-cod" />
-                    <div className="w-9 h-9 rounded-lg bg-orange-500/15 flex items-center justify-center">
-                      <Truck className="h-4 w-4 text-orange-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm text-foreground">الدفع عند الاستلام</p>
-                      <p className="text-[10px] text-muted-foreground">ادفع كامل المبلغ + العمولة عند التسليم</p>
-                    </div>
-                    <span className="text-[10px] bg-orange-500/15 text-orange-400 px-2 py-0.5 rounded-full font-bold">
-                      +{commissionConfig.cod_merchant_fee}%
-                    </span>
-                  </Label>
-                )}
               </div>
             </RadioGroup>
           </div>

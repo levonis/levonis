@@ -66,7 +66,7 @@ interface ProfessionalCustomerOrderDialogProps {
   isSubmitting?: boolean;
 }
 
-type PaymentMethod = "full_advance" | "quarter_advance" | "half_advance" | "cod";
+type PaymentMethod = "full_advance" | "quarter_advance" | "half_advance";
 
 export default function ProfessionalCustomerOrderDialog({
   open,
@@ -93,6 +93,20 @@ export default function ProfessionalCustomerOrderDialog({
         .eq("setting_key", "community_payment_commissions")
         .maybeSingle();
       return (data?.setting_value as unknown) as Record<PaymentMethod, PaymentCommission> | null;
+    },
+  });
+
+  // Fetch wallet balance
+  const { data: wallet } = useQuery({
+    queryKey: ["user-wallet", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_wallets")
+        .select("balance")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
     },
   });
 
@@ -133,9 +147,13 @@ export default function ProfessionalCustomerOrderDialog({
   const subtotal = unitPrice * quantity;
   const commissionAmount = Math.round(subtotal * (currentCommission?.rate || 0));
   const total = subtotal + commissionAmount;
+  const walletBalance = wallet?.balance || 0;
+  const amountToPay = paymentMethod === "full_advance" ? total : 
+    paymentMethod === "quarter_advance" ? Math.ceil(total * 0.25) : Math.ceil(total * 0.5);
+  const hasEnoughBalance = walletBalance >= amountToPay;
 
   const requiresWarning = paymentMethod !== "full_advance";
-  const canSubmit = selectedAddressId && (!requiresWarning || acceptedWarning);
+  const canSubmit = selectedAddressId && (!requiresWarning || acceptedWarning) && hasEnoughBalance;
 
   const handleSubmit = () => {
     if (!selectedAddress || !canSubmit) return;
@@ -291,11 +309,10 @@ export default function ProfessionalCustomerOrderDialog({
                 </Alert>
 
                 {/* Partial Payments */}
-                {(["quarter_advance", "half_advance", "cod"] as const).map((method) => {
+                {(["quarter_advance", "half_advance"] as const).map((method) => {
                   const config = {
                     quarter_advance: { label: "ربع المبلغ مقدماً", desc: "25% مقدماً والباقي عند الاستلام", commission: "6%" },
                     half_advance: { label: "نصف المبلغ مقدماً", desc: "50% مقدماً والباقي عند الاستلام", commission: "6%" },
-                    cod: { label: "الدفع عند الاستلام", desc: "كامل المبلغ + العمولة عند التوصيل", commission: "10%" },
                   };
                   const c = config[method];
 
@@ -357,6 +374,21 @@ export default function ProfessionalCustomerOrderDialog({
               <span className="text-xs">الإجمالي</span>
               <span className="text-primary">{total.toLocaleString()} د.ع</span>
             </div>
+          </div>
+
+          {/* Wallet Balance */}
+          <div className={cn("p-2.5 rounded-xl border space-y-1", hasEnoughBalance ? "bg-primary/5 border-primary/20" : "bg-destructive/5 border-destructive/30")}>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-muted-foreground flex items-center gap-1"><Wallet className="h-3 w-3" /> رصيد المحفظة</span>
+              <span className={cn("font-bold", hasEnoughBalance ? "text-primary" : "text-destructive")}>{walletBalance.toLocaleString()} د.ع</span>
+            </div>
+            <div className="flex justify-between text-[11px]">
+              <span className="text-muted-foreground">المطلوب الآن</span>
+              <span className="font-bold">{amountToPay.toLocaleString()} د.ع</span>
+            </div>
+            {!hasEnoughBalance && (
+              <p className="text-[9px] text-destructive">رصيد غير كافٍ. تحتاج {(amountToPay - walletBalance).toLocaleString()} د.ع إضافية</p>
+            )}
           </div>
         </div>
 

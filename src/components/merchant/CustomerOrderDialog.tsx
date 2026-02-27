@@ -67,7 +67,7 @@ interface CustomerOrderDialogProps {
   isSubmitting?: boolean;
 }
 
-type PaymentMethod = "full_advance" | "quarter_advance" | "half_advance" | "cod";
+type PaymentMethod = "full_advance" | "quarter_advance" | "half_advance";
 
 export default function CustomerOrderDialog({
   open,
@@ -93,6 +93,20 @@ export default function CustomerOrderDialog({
         .eq("setting_key", "community_payment_commissions")
         .maybeSingle();
       return (data?.setting_value as unknown) as Record<PaymentMethod, PaymentCommission> | null;
+    },
+  });
+
+  // Fetch wallet balance
+  const { data: wallet } = useQuery({
+    queryKey: ["user-wallet", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_wallets")
+        .select("balance")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
     },
   });
 
@@ -130,9 +144,13 @@ export default function CustomerOrderDialog({
   const subtotal = unitPrice * quantity;
   const commissionAmount = Math.round(subtotal * (currentCommission?.rate || 0));
   const total = subtotal + commissionAmount;
+  const walletBalance = wallet?.balance || 0;
+  const amountToPay = paymentMethod === "full_advance" ? total : 
+    paymentMethod === "quarter_advance" ? Math.ceil(total * 0.25) : Math.ceil(total * 0.5);
+  const hasEnoughBalance = walletBalance >= amountToPay;
 
   const requiresWarning = paymentMethod !== "full_advance";
-  const canSubmit = selectedAddressId && (!requiresWarning || acceptedWarning);
+  const canSubmit = selectedAddressId && (!requiresWarning || acceptedWarning) && hasEnoughBalance;
 
   const handleSubmit = () => {
     if (!selectedAddress || !canSubmit) return;
@@ -325,30 +343,6 @@ export default function CustomerOrderDialog({
                   </p>
                 </div>
               </label>
-
-              {/* COD */}
-              <label
-                className={cn(
-                  "flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all",
-                  paymentMethod === "cod"
-                    ? "border-destructive bg-destructive/5"
-                    : "border-border/50 hover:border-destructive/30"
-                )}
-              >
-                <RadioGroupItem value="cod" className="mt-0.5" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-semibold text-sm">الدفع عند الاستلام</span>
-                    <Badge variant="outline" className="text-[10px] text-destructive">
-                      +10% عمولة
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    دفع كامل المبلغ عند استلام الطلب
-                  </p>
-                </div>
-              </label>
             </RadioGroup>
 
             {/* Warning for non-platform payments */}
@@ -414,7 +408,22 @@ export default function CustomerOrderDialog({
           >
             {isSubmitting ? "جاري الإرسال..." : "تأكيد الطلب"}
           </Button>
-        </div>
+          </div>
+
+          {/* Wallet Balance */}
+          <div className={cn("p-3 rounded-xl border space-y-1", hasEnoughBalance ? "bg-primary/5 border-primary/20" : "bg-destructive/5 border-destructive/30")}>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground flex items-center gap-1"><Wallet className="h-3 w-3" /> رصيد المحفظة</span>
+              <span className={cn("font-bold", hasEnoughBalance ? "text-primary" : "text-destructive")}>{walletBalance.toLocaleString()} د.ع</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">المطلوب دفعه الآن</span>
+              <span className="font-bold">{amountToPay.toLocaleString()} د.ع</span>
+            </div>
+            {!hasEnoughBalance && (
+              <p className="text-[10px] text-destructive mt-1">رصيد المحفظة غير كافٍ. تحتاج {(amountToPay - walletBalance).toLocaleString()} د.ع إضافية</p>
+            )}
+          </div>
       </DialogContent>
     </Dialog>
   );
