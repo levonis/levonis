@@ -28,10 +28,32 @@ import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 import { sendAllNotifications } from '@/lib/notifications';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 
-const statusOptions = [
+const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
-  { value: 'processing', label: 'قيد المعالجة' },
+  { value: 'processing', label: 'قيد التجهيز' },
+  { value: 'shipped', label: 'تم الشحن' },
+  { value: 'on_the_way', label: 'في الطريق إليك' },
+  { value: 'delivered', label: 'تم التوصيل' },
+  { value: 'cancelled', label: 'ملغي' },
+];
+
+const preorderStatusOptions = [
+  { value: 'pending', label: 'قيد الانتظار' },
+  { value: 'confirmed', label: 'تم التأكيد' },
+  { value: 'purchased', label: 'تم الشراء' },
+  { value: 'arrived_warehouse', label: 'وصل المخزن' },
+  { value: 'shipped', label: 'تم الشحن إلى العراق' },
+  { value: 'arrived_iraq', label: 'وصل العراق' },
+  { value: 'on_the_way', label: 'في الطريق إليك' },
+  { value: 'delivered', label: 'تم التوصيل' },
+  { value: 'cancelled', label: 'ملغي' },
+];
+
+const allStatusOptions = [
+  { value: 'pending', label: 'قيد الانتظار' },
+  { value: 'confirmed', label: 'تم التأكيد' },
+  { value: 'processing', label: 'قيد التجهيز' },
   { value: 'purchased', label: 'تم الشراء' },
   { value: 'shipped', label: 'تم الشحن' },
   { value: 'arrived_warehouse', label: 'وصل المخزن' },
@@ -40,6 +62,11 @@ const statusOptions = [
   { value: 'delivered', label: 'تم التوصيل' },
   { value: 'cancelled', label: 'ملغي' },
 ];
+
+const getStatusOptionsForOrder = (order: any, checkFn: (items: any[]) => boolean): typeof allStatusOptions => {
+  const orderType = order?.order_type || (checkFn(order?.order_items || []) ? 'preorder' : 'direct');
+  return orderType === 'direct' ? directStatusOptions : preorderStatusOptions;
+};
 
 const AdminOrders = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -912,7 +939,7 @@ const AdminOrders = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {statusOptions.map((option) => (
+                                {getStatusOptionsForOrder(order, checkIfPreOrder).map((option) => (
                                   <SelectItem key={option.value} value={option.value}>
                                     {option.label}
                                   </SelectItem>
@@ -1067,7 +1094,7 @@ const AdminOrders = () => {
                       <SelectValue placeholder="اختر الحالة" />
                     </SelectTrigger>
                     <SelectContent>
-                      {statusOptions.map((option) => (
+                      {getStatusOptionsForOrder(editingOrder, checkIfPreOrder).map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
