@@ -834,9 +834,23 @@ const Cart = () => {
           ? (customRequest?.product_name || 'طلب مخصص')
           : (item.products?.name_ar || 'منتج');
         
+        const isDirect = (item as any).sale_type === 'direct';
         let itemPrice = isCustomRequest
           ? Number(customRequest?.suggested_price || 0)
           : Number(item.products?.price || 0);
+        
+        if (!isCustomRequest && item.products) {
+          if (isDirect && item.products.direct_sale_price != null) {
+            itemPrice = Number(item.products.direct_sale_price);
+          } else if (!isDirect) {
+            const shippingType = (item as any).shipping_type;
+            if (shippingType === 'sea' && item.products.sea_price != null) {
+              itemPrice = Number(item.products.sea_price);
+            } else if (shippingType === 'air' && item.products.air_price != null) {
+              itemPrice = Number(item.products.air_price);
+            }
+          }
+        }
         
         // Use product_options data directly from the cart item
         const itemOption = (item as any).product_options;
@@ -846,8 +860,12 @@ const Cart = () => {
           ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
           : null;
         
-        if (colorData?.price != null) {
-          itemPrice = Number(colorData.price);
+        if (colorData) {
+          if (isDirect && colorData.direct_sale_price != null) {
+            itemPrice = Number(colorData.direct_sale_price);
+          } else if (colorData.price != null) {
+            itemPrice = Number(colorData.price);
+          }
         }
         
         if (itemOption?.price_adjustment) {
@@ -1019,12 +1037,30 @@ const Cart = () => {
                       ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
                       : null;
                     
+                    const isDirect = (item as any).sale_type === 'direct';
                     let itemPrice = item.products 
                       ? Number(item.products.price)
                       : Number(item.custom_product_requests?.suggested_price || 0);
                     
-                    if (colorData?.price != null) {
-                      itemPrice = Number(colorData.price);
+                    if (item.products) {
+                      if (isDirect && item.products.direct_sale_price != null) {
+                        itemPrice = Number(item.products.direct_sale_price);
+                      } else if (!isDirect) {
+                        const shippingType = (item as any).shipping_type;
+                        if (shippingType === 'sea' && item.products.sea_price != null) {
+                          itemPrice = Number(item.products.sea_price);
+                        } else if (shippingType === 'air' && item.products.air_price != null) {
+                          itemPrice = Number(item.products.air_price);
+                        }
+                      }
+                    }
+                    
+                    if (colorData) {
+                      if (isDirect && colorData.direct_sale_price != null) {
+                        itemPrice = Number(colorData.direct_sale_price);
+                      } else if (colorData.price != null) {
+                        itemPrice = Number(colorData.price);
+                      }
                     }
                     
                     if (itemOption?.price_adjustment) {
