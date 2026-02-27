@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic, X, AlertTriangle } from 'lucide-react';
+import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic, X, AlertTriangle, BoxIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { formatPrice } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
@@ -35,6 +35,7 @@ const ProductDetail = () => {
   const [optionImageUrl, setOptionImageUrl] = useState<string | null>(null);
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
 
   const { data: product, isLoading, refetch: refetchProduct } = useQuery({
     queryKey: ['product', slug],
@@ -45,7 +46,6 @@ const ProductDetail = () => {
         .eq('slug', slug)
         .maybeSingle();
       
-      // Block non-updated products from customer view (admin can still see via admin panel)
       if (data && !data.is_pricing_updated) {
         throw new Error('Product not found');
       }
@@ -56,7 +56,6 @@ const ProductDetail = () => {
     }
   });
 
-  // Fetch all loyalty levels for card discounts display
   const { data: allLoyaltyLevels } = useQuery({
     queryKey: ['loyalty-levels-for-discounts'],
     queryFn: async () => {
@@ -64,18 +63,15 @@ const ProductDetail = () => {
         .from('loyalty_levels')
         .select('id, name_ar, color, level_key, display_order')
         .order('display_order', { ascending: true });
-      
       if (error) throw error;
       return data;
     }
   });
 
-  // Fetch user's active loyalty card
   const { data: userCard } = useQuery({
     queryKey: ['user-card', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      
       const { data, error } = await supabase
         .from('user_cards')
         .select('*, loyalty_levels:level_id(id, name_ar, display_order)')
@@ -84,11 +80,7 @@ const ProductDetail = () => {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching user card:', error);
-        return null;
-      }
+      if (error) { console.error('Error fetching user card:', error); return null; }
       return data;
     },
     enabled: !!user
@@ -98,13 +90,11 @@ const ProductDetail = () => {
     queryKey: ['product-options', product?.id],
     queryFn: async () => {
       if (!product) return [];
-      
       const { data, error } = await supabase
         .from('product_options')
         .select('*')
         .eq('product_id', product.id)
         .order('name_ar');
-      
       if (error) throw error;
       return data || [];
     },
@@ -115,14 +105,12 @@ const ProductDetail = () => {
     queryKey: ['favorite', product?.id, user?.id],
     queryFn: async () => {
       if (!user || !product) return false;
-      
       const { data, error } = await supabase
         .from('favorites')
         .select('id')
         .eq('user_id', user.id)
         .eq('product_id', product.id)
         .maybeSingle();
-      
       if (error) throw error;
       return !!data;
     },
@@ -133,7 +121,6 @@ const ProductDetail = () => {
     queryKey: ['related-products', product?.category_id, product?.id],
     queryFn: async () => {
       if (!product || !product.category_id) return [];
-      
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -141,7 +128,6 @@ const ProductDetail = () => {
         .eq('in_stock', true)
         .neq('id', product.id)
         .limit(4);
-      
       if (error) throw error;
       return data || [];
     },
@@ -150,26 +136,12 @@ const ProductDetail = () => {
 
   const toggleFavoriteMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !product) {
-        throw new Error('User not authenticated');
-      }
-
+      if (!user || !product) throw new Error('User not authenticated');
       if (isFavorite) {
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', product.id);
-        
+        const { error } = await supabase.from('favorites').delete().eq('user_id', user.id).eq('product_id', product.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('favorites')
-          .insert({
-            user_id: user.id,
-            product_id: product.id
-          });
-        
+        const { error } = await supabase.from('favorites').insert({ user_id: user.id, product_id: product.id });
         if (error) throw error;
       }
     },
@@ -186,6 +158,19 @@ const ProductDetail = () => {
       }
     }
   });
+
+  // Determine available sale types
+  const hasDirectSale = product?.has_in_stock ?? false;
+  const hasPreOrder = product?.has_pre_order ?? false;
+  const hasBothTypes = hasDirectSale && hasPreOrder;
+
+  // Auto-select sale type
+  const activeSaleType = useMemo(() => {
+    if (selectedSaleType) return selectedSaleType;
+    if (hasDirectSale) return 'direct';
+    if (hasPreOrder) return 'preorder';
+    return 'direct';
+  }, [selectedSaleType, hasDirectSale, hasPreOrder]);
 
   if (isLoading) {
     return (
@@ -206,48 +191,74 @@ const ProductDetail = () => {
     );
   }
 
-  // إذا كان هناك خيار محدد أو لون محدد وله صورة، استخدمها بدلاً من صور المنتج الأساسية
   const getProductImages = () => {
-    // أولوية للخيار، ثم اللون، ثم الصور الأساسية
-    if (optionImageUrl) {
-      return [optionImageUrl];
-    }
-    if (colorImageUrl) {
-      return [colorImageUrl];
-    }
+    if (optionImageUrl) return [optionImageUrl];
+    if (colorImageUrl) return [colorImageUrl];
     return product.images && product.images.length > 0 
       ? product.images 
-      : product.image_url 
-        ? [product.image_url] 
-        : [];
+      : product.image_url ? [product.image_url] : [];
   };
   
   const productImages = getProductImages();
-  
   const currency = product.currency || 'دينار عراقي';
 
-  // السعر النهائي بحسب اللون والخيار
+  // Get selected option data
   const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
-  const selectedColorData = Array.isArray(product.colors)
-    ? (product.colors as any[]).find((c: any) => c.name_ar === selectedColor)
-    : null;
+  const selectedOptionName = selectedOptionData?.name_ar;
 
-  const basePrice = selectedColorData?.price != null
-    ? Number(selectedColorData.price)
-    : Number(product.price);
+  // Filter colors based on selected option's linked_options
+  const allColors = Array.isArray(product.colors) ? (product.colors as any[]) : [];
+  
+  const getFilteredColors = () => {
+    return allColors.map(color => {
+      // Check availability for current sale type
+      const isAvailableForType = activeSaleType === 'direct'
+        ? (color.available_for_direct_sale ?? true)
+        : (color.available_for_pre_order ?? false);
+      
+      // Check linked_options filter
+      const linkedOptions = color.linked_options as string[] | undefined;
+      const isLinkedToOption = !linkedOptions || linkedOptions.length === 0 || !selectedOptionName
+        ? true
+        : linkedOptions.includes(selectedOptionName);
+      
+      const isInStock = color.in_stock !== false;
+      
+      return {
+        ...color,
+        isAvailable: isAvailableForType && isLinkedToOption && isInStock,
+        isLinkedToOption,
+      };
+    });
+  };
 
+  const filteredColors = getFilteredColors();
+
+  // Price calculation
+  const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
+  
+  const getPrice = () => {
+    // For direct sale, use direct_sale_price if available
+    if (activeSaleType === 'direct' && selectedColorData?.direct_sale_price) {
+      return Number(selectedColorData.direct_sale_price);
+    }
+    const base = selectedColorData?.price != null
+      ? Number(selectedColorData.price)
+      : Number(product.price);
+    return base;
+  };
+
+  const basePrice = getPrice();
   const optionAdjustment = selectedOptionData ? Number(selectedOptionData.price_adjustment) : 0;
   
-  // إضافة سعر الشحن إذا كان محدداً
   let shippingAdjustment = 0;
-  if (selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
+  if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     const shippingOption = product.pre_order_shipping_options[selectedShippingOption] as any;
     shippingAdjustment = Number(shippingOption.price_adjustment || 0);
   }
   
   const finalPrice = basePrice + optionAdjustment + shippingAdjustment;
 
-  // اضبط السعر الأصلي ليتماشى مع فرق سعر اللون إن وُجد، ثم أضف فرق الخيار
   let finalOriginalPrice: number | null = null;
   if (product.original_price != null) {
     const productOriginal = Number(product.original_price);
@@ -258,27 +269,25 @@ const ProductDetail = () => {
   const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
   const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;
 
+  // Stock info for direct sale
+  const directStockQuantity = selectedColorData?.stock_quantity;
+  const hasStockInfo = activeSaleType === 'direct' && directStockQuantity != null && directStockQuantity > 0;
+
   const handleAddToCart = async () => {
-    // Check if product has options and none selected
     if (productOptions && productOptions.length > 0 && !selectedOption) {
       toast.error(t('product_select_option'));
       return;
     }
 
-    // Check if pre-order has custom shipping options and none selected
     const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
-    const hasCustomShippingOptions = product.has_pre_order && preOrderShippingOptions.length > 0;
+    const hasCustomShippingOptions = activeSaleType === 'preorder' && preOrderShippingOptions.length > 0;
     if (hasCustomShippingOptions && selectedShippingOption === null) {
       toast.error(t('product_choose_shipping'));
       return;
     }
 
-    // تحضير معلومات الشحن
     const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
-      ? {
-          index: selectedShippingOption,
-          name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar
-        }
+      ? { index: selectedShippingOption, name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar }
       : undefined;
 
     await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo);
@@ -286,54 +295,49 @@ const ProductDetail = () => {
     setQuantity(1);
   };
 
-  const handleToggleFavorite = () => {
-    toggleFavoriteMutation.mutate();
+  const handleToggleFavorite = () => { toggleFavoriteMutation.mutate(); };
+  const incrementQuantity = () => { setQuantity(prev => prev + 1); };
+  const decrementQuantity = () => { if (quantity > 1) setQuantity(prev => prev - 1); };
+
+  const handleSaleTypeChange = (type: string) => {
+    setSelectedSaleType(type as 'direct' | 'preorder');
+    // Reset selections when switching sale type
+    setSelectedColor(null);
+    setColorImageUrl(null);
+    setSelectedShippingOption(null);
   };
 
-  const incrementQuantity = () => {
-    setQuantity(prev => prev + 1);
+  // Filter options based on sale type
+  const getFilteredOptions = () => {
+    if (!productOptions) return [];
+    return productOptions.map((option: any) => {
+      const isAvailable = activeSaleType === 'direct'
+        ? (option.available_for_direct_sale ?? true)
+        : (option.available_for_pre_order ?? false);
+      return { ...option, isAvailable: isAvailable && option.in_stock };
+    });
   };
 
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
-  };
+  const filteredOptions = getFilteredOptions();
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
       <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
         {/* Back Button & Breadcrumb */}
-        <div className="mb-8">
-          <Button
-            variant="outline"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
+        <div className="mb-6">
+          <Button variant="outline" onClick={() => navigate(-1)} className="mb-3">
             <ArrowRight className="h-4 w-4 ml-2" />
             {t('product_go_back')}
           </Button>
-          
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <button 
-              onClick={() => navigate('/')}
-              className="hover:text-primary transition-colors"
-            >
-              {t('nav_home')}
-            </button>
+            <button onClick={() => navigate('/')} className="hover:text-primary transition-colors">{t('nav_home')}</button>
             <span>/</span>
-            <button 
-              onClick={() => navigate('/products')}
-              className="hover:text-primary transition-colors"
-            >
-              {t('nav_products')}
-            </button>
+            <button onClick={() => navigate('/products')} className="hover:text-primary transition-colors">{t('nav_products')}</button>
             <span>/</span>
             <span className="text-foreground">{product.name_ar}</span>
           </div>
         </div>
 
-        {/* Product Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-12">
           {/* Image Section */}
           <div className="relative">
@@ -343,9 +347,7 @@ const ProductDetail = () => {
                   <TooltipTrigger asChild>
                     <div className="absolute -top-4 -left-4 z-20 cursor-help">
                       <div className="relative">
-                        {/* Glow effect */}
                         <div className="absolute inset-0 bg-primary/40 rounded-full blur-lg animate-pulse" />
-                        {/* Icon container */}
                         <div className="relative bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full p-3 shadow-xl backdrop-blur-sm border border-primary-foreground/20 hover:scale-110 transition-transform">
                           <Tag className="h-4 w-4" />
                         </div>
@@ -353,88 +355,61 @@ const ProductDetail = () => {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="bg-primary text-primary-foreground font-bold text-base px-4 py-2">
-                    <p>خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : Math.round((savings / Number(product.original_price!)) * 100)}%</p>
+                    <p>خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : 0}%</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
-            <div className="glass-effect rounded-2xl p-4 sm:p-6 border border-border/50 card-premium">
+            <div className="rounded-2xl p-4 sm:p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
               {productImages.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Main Image with Swipe Support */}
                   {productImages.length > 1 ? (
                     <Carousel 
-                      opts={{ 
-                        loop: true,
-                        direction: 'rtl',
-                        dragFree: false,
-                      }}
+                      opts={{ loop: true, direction: 'rtl', dragFree: false }}
                       className="w-full"
                       setApi={(api) => {
-                        api?.on('select', () => {
-                          const index = api.selectedScrollSnap();
-                          setSelectedImage(index);
-                        });
+                        api?.on('select', () => setSelectedImage(api.selectedScrollSnap()));
                       }}
                     >
                       <CarouselContent className="-ml-0">
                         {productImages.map((img, idx) => (
                           <CarouselItem key={idx} className="pl-0">
                             <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
-                              <img 
-                                src={img} 
-                                alt={`${product.name_ar} - صورة ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                                draggable={false}
-                              />
+                              <img src={img} alt={`${product.name_ar} - صورة ${idx + 1}`} className="w-full h-full object-cover" draggable={false} />
                             </div>
                           </CarouselItem>
                         ))}
                       </CarouselContent>
                       <CarouselPrevious className="right-2 left-auto h-10 w-10 bg-background/80 hover:bg-background border-border/50" />
                       <CarouselNext className="left-2 right-auto h-10 w-10 bg-background/80 hover:bg-background border-border/50" />
-                      
-                      {/* Image Counter */}
                       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
                         {selectedImage + 1} / {productImages.length}
                       </div>
                     </Carousel>
                   ) : (
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
-                      <img 
-                        src={productImages[0]} 
-                        alt={product.name_ar}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={productImages[0]} alt={product.name_ar} className="w-full h-full object-cover" />
                     </div>
                   )}
                   
                   {!product.in_stock && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-xl">
-                     <Badge variant="destructive" className="text-lg px-6 py-2">
-                       {t('product_out_of_stock')}
-                      </Badge>
+                      <Badge variant="destructive" className="text-lg px-6 py-2">{t('product_out_of_stock')}</Badge>
                     </div>
                   )}
                   
-                  {/* Dot Indicators for Mobile */}
                   {productImages.length > 1 && (
                     <div className="flex justify-center gap-1.5">
                       {productImages.map((_, idx) => (
                         <button
                           key={idx}
                           onClick={() => setSelectedImage(idx)}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            selectedImage === idx 
-                              ? 'bg-primary w-4' 
-                              : 'bg-border hover:bg-primary/50'
-                          }`}
+                          className={`w-2 h-2 rounded-full transition-all ${selectedImage === idx ? 'bg-primary w-4' : 'bg-border hover:bg-primary/50'}`}
                         />
                       ))}
                     </div>
                   )}
                   
-                  {/* Thumbnails - Hidden on mobile, shown on larger screens */}
                   {productImages.length > 1 && (
                     <div className="hidden sm:grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
                       {productImages.map((img, idx) => (
@@ -442,16 +417,10 @@ const ProductDetail = () => {
                           key={idx}
                           onClick={() => setSelectedImage(idx)}
                           className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                            selectedImage === idx 
-                              ? 'border-primary ring-2 ring-primary/20' 
-                              : 'border-border/30 hover:border-primary/50'
+                            selectedImage === idx ? 'border-primary ring-2 ring-primary/20' : 'border-border/30 hover:border-primary/50'
                           }`}
                         >
-                          <img 
-                            src={img} 
-                            alt={`${product.name_ar} - صورة مصغرة ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={img} alt={`${product.name_ar} - صورة مصغرة ${idx + 1}`} className="w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>
@@ -467,82 +436,93 @@ const ProductDetail = () => {
             </div>
           </div>
 
+          {/* Product Info Section */}
           <div className="flex flex-col gap-4">
-            <div className="glass-effect rounded-2xl p-5 md:p-6 border border-border/50 card-premium">
-              {/* Category Badge */}
+            <div className="rounded-2xl p-5 md:p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
+              {/* Category */}
               {product.categories && (
                 <Badge variant="outline" className="mb-3 text-xs">
                   {(product as any).categories.name_ar}
                 </Badge>
               )}
 
-              <h1 className="text-2xl md:text-4xl font-black text-gradient-gold mb-3 flex items-center gap-2 leading-tight">
+              {/* Title */}
+              <h1 className="text-2xl md:text-3xl font-black text-foreground mb-2 flex items-center gap-2 leading-tight">
                 {product.name_ar}
-                {/* Admin-only Taobao quick access */}
                 {isAdmin && (product as any).taobao_url && (
                   <TaobaoLinkButton taobaoUrl={(product as any).taobao_url} />
                 )}
               </h1>
               
+              {/* Description */}
               {product.description_ar && (
                 <div className="text-muted-foreground text-sm mb-5 leading-relaxed">
                   <p className={`${!showFullDescription && product.description_ar.length > 150 ? 'line-clamp-2' : ''}`}>
                     {product.description_ar}
                   </p>
                   {product.description_ar.length > 150 && (
-                    <button
-                      onClick={() => setShowFullDescription(!showFullDescription)}
-                      className="text-primary hover:underline text-xs mt-1 font-medium"
-                    >
+                    <button onClick={() => setShowFullDescription(!showFullDescription)} className="text-primary hover:underline text-xs mt-1 font-medium">
                       {showFullDescription ? t('product_show_less') : t('product_show_more')}
                     </button>
                   )}
                 </div>
               )}
 
-              {/* Availability Type - Enhanced Display */}
-              <div className="mb-4">
-                <div className="flex flex-wrap items-stretch gap-3">
-                  {product.has_in_stock && (
-                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                          <Package className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                         <span className="font-bold text-sm text-primary block">{t('product_direct_sale')}</span>
-                          <span className="text-[10px] text-primary/70">{t('product_direct_sale_desc')}</span>
-                        </div>
-                      </div>
+              {/* === Sale Type Tabs === */}
+              {hasBothTypes ? (
+                <Tabs value={activeSaleType} onValueChange={handleSaleTypeChange} className="mb-5">
+                  <TabsList className="w-full grid grid-cols-2 h-12 bg-muted/50 rounded-xl p-1">
+                    <TabsTrigger 
+                      value="direct" 
+                      className="rounded-lg gap-2 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+                    >
+                      <Package className="h-4 w-4" />
+                      {t('product_direct_sale')}
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="preorder"
+                      className="rounded-lg gap-2 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+                    >
+                      <Clock className="h-4 w-4" />
+                      {t('product_pre_order')}
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="mt-1">
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      {activeSaleType === 'direct' ? t('product_direct_sale_desc') : t('product_pre_order_desc')}
+                    </p>
+                  </div>
+                </Tabs>
+              ) : (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/15">
+                    <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                      {hasDirectSale ? <Package className="h-4 w-4 text-primary" /> : <Clock className="h-4 w-4 text-primary" />}
                     </div>
-                  )}
-                  {product.has_pre_order && (
-                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/30">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-accent/30 flex items-center justify-center">
-                          <Clock className="h-5 w-5 text-accent-foreground" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-sm text-accent-foreground block">{t('product_pre_order')}</span>
-                          <span className="text-[10px] text-accent-foreground/70">{t('product_pre_order_desc')}</span>
-                        </div>
-                      </div>
+                    <div>
+                      <span className="font-bold text-sm text-primary block">
+                        {hasDirectSale ? t('product_direct_sale') : t('product_pre_order')}
+                      </span>
+                      <span className="text-[10px] text-primary/70">
+                        {hasDirectSale ? t('product_direct_sale_desc') : t('product_pre_order_desc')}
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Product Details Section - Improved Layout */}
+              {/* === Content based on sale type === */}
               <div className="space-y-4">
-                {/* Pre-Order Custom Shipping Options */}
-                {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
-                  <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                {/* Shipping Options - Only for pre-order */}
+                {activeSaleType === 'preorder' && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
+                  <div className="p-3 rounded-xl bg-card/80 border border-border/30">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Truck className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                       <Label className="text-xs font-bold block">{t('product_shipping_type')}</Label>
+                        <Label className="text-xs font-bold block">{t('product_shipping_type')}</Label>
                         <span className="text-[9px] text-muted-foreground">{t('product_choose_shipping')}</span>
                       </div>
                     </div>
@@ -551,7 +531,7 @@ const ProductDetail = () => {
                         <button
                           key={index}
                           onClick={() => setSelectedShippingOption(index)}
-                          className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
+                          className={`w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
                             selectedShippingOption === index
                               ? 'border-primary bg-primary/10 shadow-sm'
                               : 'border-border/40 hover:border-primary/40 bg-background/30'
@@ -585,15 +565,15 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {/* Pre-Order Shipping Options (Legacy) */}
-                {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
-                  <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                {/* Legacy Pre-Order Shipping */}
+                {activeSaleType === 'preorder' && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
+                  <div className="p-3 rounded-xl bg-card/80 border border-border/30">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Truck className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                       <Label className="text-xs font-bold block">{t('product_shipping_type')}</Label>
+                        <Label className="text-xs font-bold block">{t('product_shipping_type')}</Label>
                         <span className="text-[9px] text-muted-foreground">{t('product_choose_shipping')}</span>
                       </div>
                     </div>
@@ -601,10 +581,8 @@ const ProductDetail = () => {
                       {product.pre_order_free_shipping_price && (
                         <button
                           onClick={() => setSelectedShippingOption(0)}
-                          className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
-                            selectedShippingOption === 0
-                              ? 'border-primary bg-primary/10 shadow-sm'
-                              : 'border-border/40 hover:border-primary/40 bg-background/30'
+                          className={`w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
+                            selectedShippingOption === 0 ? 'border-primary bg-primary/10 shadow-sm' : 'border-border/40 hover:border-primary/40 bg-background/30'
                           }`}
                         >
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
@@ -613,23 +591,16 @@ const ProductDetail = () => {
                             {selectedShippingOption === 0 && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
                           </div>
                           <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
-                            <div className="min-w-0">
-                              <span className="font-medium text-xs block">شحن بحري</span>
-                              <span className="text-[9px] text-muted-foreground">45 يوم تقريباً</span>
-                            </div>
-                            <Badge variant="outline" className="text-[8px] shrink-0 text-primary border-primary/30 px-1 py-0 h-4">
-                              {t('product_free')}
-                            </Badge>
+                            <div><span className="font-medium text-xs block">شحن بحري</span><span className="text-[9px] text-muted-foreground">45 يوم تقريباً</span></div>
+                            <Badge variant="outline" className="text-[8px] shrink-0 text-primary border-primary/30 px-1 py-0 h-4">{t('product_free')}</Badge>
                           </div>
                         </button>
                       )}
                       {product.pre_order_fast_shipping_price && (
                         <button
                           onClick={() => setSelectedShippingOption(1)}
-                          className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
-                            selectedShippingOption === 1
-                              ? 'border-primary bg-primary/10 shadow-sm'
-                              : 'border-border/40 hover:border-primary/40 bg-background/30'
+                          className={`w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
+                            selectedShippingOption === 1 ? 'border-primary bg-primary/10 shadow-sm' : 'border-border/40 hover:border-primary/40 bg-background/30'
                           }`}
                         >
                           <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
@@ -638,13 +609,8 @@ const ProductDetail = () => {
                             {selectedShippingOption === 1 && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
                           </div>
                           <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
-                            <div className="min-w-0">
-                              <span className="font-medium text-xs block">شحن جوي سريع</span>
-                              <span className="text-[9px] text-muted-foreground">15 يوم تقريباً</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-primary shrink-0">
-                              +{formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}
-                            </span>
+                            <div><span className="font-medium text-xs block">شحن جوي سريع</span><span className="text-[9px] text-muted-foreground">15 يوم تقريباً</span></div>
+                            <span className="text-[10px] font-bold text-primary shrink-0">+{formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}</span>
                           </div>
                         </button>
                       )}
@@ -652,167 +618,150 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {/* Product Options - Enhanced Design */}
-                {productOptions && productOptions.length > 0 && (
-                  <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                {/* Product Options */}
+                {filteredOptions.length > 0 && (
+                  <div className="p-3 rounded-xl bg-card/80 border border-border/30">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center">
                         <Settings className="h-3.5 w-3.5 text-secondary-foreground" />
                       </div>
                       <div>
-                       <Label className="text-xs font-bold block">{t('product_options_available')}</Label>
+                        <Label className="text-xs font-bold block">{t('product_options_available')}</Label>
                         <span className="text-[9px] text-muted-foreground">{t('product_choose_option')}</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 max-h-[280px] overflow-y-auto scrollbar-thin">
-                      {productOptions.map((option: any) => {
-                        const isOptionAvailable = product.has_in_stock 
-                          ? (option.available_for_direct_sale ?? true)
-                          : product.has_pre_order 
-                            ? (option.available_for_pre_order ?? false)
-                            : false;
-                        const isOptionDisabled = !isOptionAvailable || !option.in_stock;
-                        
-                        return (
-                          <button
-                            key={option.id}
-                            onClick={() => {
-                              if (isOptionDisabled) return;
-                              setSelectedOption(option.id);
-                              if (option.image_url) {
-                                setOptionImageUrl(option.image_url);
-                                setSelectedImage(0);
-                              } else {
-                                setOptionImageUrl(null);
-                              }
-                            }}
-                            disabled={isOptionDisabled}
-                            className={`relative w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
-                              selectedOption === option.id
-                                ? 'border-primary bg-primary/10 shadow-sm'
-                                : 'border-border/40 hover:border-primary/40 bg-background/30'
-                            } ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                          >
-                            {/* Selection Indicator */}
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                              selectedOption === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/30'
-                            }`}>
-                              {selectedOption === option.id && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                      {filteredOptions.map((option: any) => (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            if (!option.isAvailable) return;
+                            setSelectedOption(option.id);
+                            // Reset color when option changes (due to linked_options filtering)
+                            setSelectedColor(null);
+                            setColorImageUrl(null);
+                            if (option.image_url) {
+                              setOptionImageUrl(option.image_url);
+                              setSelectedImage(0);
+                            } else {
+                              setOptionImageUrl(null);
+                            }
+                          }}
+                          disabled={!option.isAvailable}
+                          className={`relative w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
+                            selectedOption === option.id
+                              ? 'border-primary bg-primary/10 shadow-sm'
+                              : 'border-border/40 hover:border-primary/40 bg-background/30'
+                          } ${!option.isAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        >
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                            selectedOption === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                          }`}>
+                            {selectedOption === option.id && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                          </div>
+                          {option.image_url && (
+                            <div className="w-8 h-8 rounded-md overflow-hidden border border-border/30 shrink-0">
+                              <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
                             </div>
-                            
-                            {/* Option Image - Compact */}
-                            {option.image_url && (
-                              <div className="w-8 h-8 rounded-md overflow-hidden border border-border/30 shrink-0">
-                                <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
-                              </div>
-                            )}
-                            
-                            {/* Option Details - Inline */}
-                            <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
-                              <span className="font-medium text-xs truncate">{option.name_ar}</span>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {option.price_adjustment !== 0 && (
-                                  <span className={`text-[10px] font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
-                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
-                                  </span>
-                                )}
-                                {isOptionDisabled && (
-                                   <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">
-                                     {t('product_out_of_stock')}
-                                  </Badge>
-                                )}
-                              </div>
+                          )}
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                            <span className="font-medium text-xs truncate">{option.name_ar}</span>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {option.price_adjustment !== 0 && (
+                                <span className={`text-[10px] font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600'}`}>
+                                  {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
+                                </span>
+                              )}
+                              {!option.isAvailable && (
+                                <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">{t('product_out_of_stock')}</Badge>
+                              )}
                             </div>
-                          </button>
-                        );
-                      })}
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* Product Colors */}
-                {product.colors && Array.isArray(product.colors) && product.colors.length > 0 && (
-                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
+                {/* Product Colors - Filtered */}
+                {filteredColors.length > 0 && (
+                  <div className="p-3 rounded-xl bg-card/80 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
                       </div>
                       <div>
-                       <Label className="text-sm font-bold block">{t('product_colors_available')}</Label>
+                        <Label className="text-xs font-bold block">{t('product_colors_available')}</Label>
                         {selectedColor && (
                           <span className="text-[10px] text-muted-foreground">{t('product_selected_color')}: {selectedColor}</span>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {product.colors.map((color: any, index: number) => {
-                        const isColorAvailableForProductType = product.has_in_stock 
-                          ? (color.available_for_direct_sale ?? true)
-                          : product.has_pre_order 
-                            ? (color.available_for_pre_order ?? false)
-                            : false;
-                        const isColorInStock = color.in_stock !== false;
-                        const isColorAvailable = isColorAvailableForProductType && isColorInStock;
-                        
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            onClick={() => {
-                              if (!isColorAvailable) return;
-                              const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
-                              setSelectedColor(newSelectedColor);
-                              if (newSelectedColor && color.image_url) {
-                                setColorImageUrl(color.image_url);
-                                setSelectedImage(0);
-                              } else {
-                                setColorImageUrl(null);
-                              }
-                            }}
-                            disabled={!isColorAvailable}
-                            className={`group relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all min-w-[70px] ${
-                              selectedColor === color.name_ar
-                                ? 'border-primary bg-primary/5 shadow-sm'
-                                : 'border-border/50 hover:border-primary/30 bg-background/50'
-                            } ${!isColorAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
-                          >
-                            <div className="relative">
-                              <div
-                                className={`w-8 h-8 rounded-full border-2 transition-transform group-hover:scale-110 ${
-                                  selectedColor === color.name_ar ? 'border-primary ring-2 ring-primary/30' : 'border-border'
-                                }`}
-                                style={{ backgroundColor: color.hex_code }}
-                              />
-                              {selectedColor === color.name_ar && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Check className={`h-4 w-4 ${
-                                    color.hex_code?.toLowerCase() === '#ffffff' || color.hex_code?.toLowerCase() === '#fff' 
-                                      ? 'text-foreground' 
-                                      : 'text-white'
-                                  }`} />
-                                </div>
-                              )}
-                            </div>
-                            <span className="font-medium text-[10px] leading-tight text-center">{color.name_ar}</span>
-                            {color.price != null && color.price !== product.price && (
-                              <span className="text-[9px] text-muted-foreground">{formatPrice(color.price)}</span>
-                            )}
-                            {!isColorAvailable && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-xl">
-                                <X className="h-4 w-4 text-destructive" />
+                      {filteredColors.map((color: any, index: number) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            if (!color.isAvailable) return;
+                            const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
+                            setSelectedColor(newSelectedColor);
+                            if (newSelectedColor && color.image_url) {
+                              setColorImageUrl(color.image_url);
+                              setSelectedImage(0);
+                            } else {
+                              setColorImageUrl(null);
+                            }
+                          }}
+                          disabled={!color.isAvailable}
+                          className={`group relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all min-w-[70px] ${
+                            selectedColor === color.name_ar
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                          } ${!color.isAvailable ? 'opacity-30 cursor-not-allowed' : ''}`}
+                        >
+                          <div className="relative">
+                            <div
+                              className={`w-8 h-8 rounded-full border-2 transition-transform group-hover:scale-110 ${
+                                selectedColor === color.name_ar ? 'border-primary ring-2 ring-primary/30' : 'border-border'
+                              }`}
+                              style={{ backgroundColor: color.hex_code }}
+                            />
+                            {selectedColor === color.name_ar && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Check className={`h-4 w-4 ${
+                                  color.hex_code?.toLowerCase() === '#ffffff' || color.hex_code?.toLowerCase() === '#fff' 
+                                    ? 'text-foreground' : 'text-white'
+                                }`} />
                               </div>
                             )}
-                          </button>
-                        );
-                      })}
+                          </div>
+                          <span className="font-medium text-[10px] leading-tight text-center">{color.name_ar}</span>
+                          {/* Show stock for direct sale */}
+                          {activeSaleType === 'direct' && color.stock_quantity != null && color.stock_quantity > 0 && (
+                            <span className="text-[8px] text-muted-foreground">متبقي {color.stock_quantity}</span>
+                          )}
+                          {color.price != null && color.price !== product.price && activeSaleType !== 'direct' && (
+                            <span className="text-[9px] text-muted-foreground">{formatPrice(color.price)}</span>
+                          )}
+                          {activeSaleType === 'direct' && color.direct_sale_price && (
+                            <span className="text-[9px] font-bold text-primary">{formatPrice(color.direct_sale_price)}</span>
+                          )}
+                          {!color.isAvailable && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-xl">
+                              <X className="h-4 w-4 text-destructive" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Price Section - Compact */}
-               <div className="border-t border-border/30 pt-5 mb-4">
-                <div className="flex items-baseline gap-2">
+              {/* Price Section */}
+              <div className="border-t border-border/30 pt-5 mt-4 mb-4">
+                <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-3xl font-black text-primary">
                     {formatPrice(finalPrice)}
                   </span>
@@ -823,6 +772,12 @@ const ProductDetail = () => {
                     </span>
                   )}
                 </div>
+                {hasStockInfo && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <BoxIcon className="h-3 w-3" />
+                    متبقي {directStockQuantity} قطعة في المخزون
+                  </p>
+                )}
               </div>
 
               {/* Product Rewards Section */}
@@ -840,35 +795,23 @@ const ProductDetail = () => {
                   />
                 </div>
               )}
+
+              {/* Quantity */}
               {product.in_stock && (
-                <div className="border-t border-border/30 pt-6 mb-6">
+                <div className="border-t border-border/30 pt-5 mb-5">
                   <label className="text-sm font-medium text-foreground mb-2 block">{t('common_quantity')}</label>
                   <div className="flex items-center gap-3">
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-12 w-12"
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1}
-                    >
+                    <Button size="icon" variant="outline" className="h-11 w-11" onClick={decrementQuantity} disabled={quantity <= 1}>
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input
                       type="number"
                       min="1"
                       value={quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (val > 0) setQuantity(val);
-                      }}
-                      className="h-12 text-center text-lg font-bold w-20"
+                      onChange={(e) => { const val = parseInt(e.target.value); if (val > 0) setQuantity(val); }}
+                      className="h-11 text-center text-lg font-bold w-20"
                     />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-12 w-12"
-                      onClick={incrementQuantity}
-                    >
+                    <Button size="icon" variant="outline" className="h-11 w-11" onClick={incrementQuantity}>
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -879,14 +822,13 @@ const ProductDetail = () => {
               <div className="flex gap-3">
                 <Button 
                   size="lg"
-                  className="flex-1 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 text-lg h-14"
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-lg h-14"
                   onClick={handleAddToCart}
                   disabled={!product.in_stock}
                 >
                   <ShoppingCart className="ml-2 h-5 w-5" />
                   {product.in_stock ? t('product_add_to_cart') : t('product_out_of_stock')}
                 </Button>
-                
                 <Button 
                   size="lg"
                   variant="outline"
@@ -898,14 +840,12 @@ const ProductDetail = () => {
                 </Button>
               </div>
             </div>
-
-            {/* Features - Only admin-added features - Removed, features now shown in main section */}
           </div>
         </div>
 
-        {/* Additional Info - Features from extraction */}
+        {/* Features */}
         {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-          <div className="glass-effect rounded-2xl p-6 border border-border/50 mb-8">
+          <div className="rounded-2xl p-6 border border-border/50 bg-card/50 mb-8">
             <h3 className="text-2xl font-bold text-primary mb-4">{t('product_features')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {product.features.map((feature: any, index: number) => {
@@ -938,15 +878,15 @@ const ProductDetail = () => {
           </div>
         )}
 
-        {/* Reviews Section */}
+        {/* Reviews */}
         <div className="mb-8">
           <ProductReviews productId={product.id} />
         </div>
 
-        {/* Related Products Section */}
+        {/* Related Products */}
         {relatedProducts && relatedProducts.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-3xl font-black text-gradient-gold mb-8">{t('product_related')}</h2>
+            <h2 className="text-3xl font-black text-foreground mb-8">{t('product_related')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct: any) => (
                 <ProductCard
