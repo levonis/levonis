@@ -283,34 +283,45 @@ const ProductDetail = () => {
         ? getCompatiblePreOrderOptionId(normalizedLinkedOptions)
         : null;
 
-      // Smart stock check: for direct sale, check option_stocks for the selected option first
+      // Smart stock check: for direct sale, option_stocks is the SOURCE OF TRUTH
       let isInStock = true;
+      let hasActualStock = false; // Track if we found real stock data
       if (activeSaleType === 'direct') {
         const selectedOptionStock = getColorStockForOption(color, selectedOptionName);
 
         if (selectedOptionStock != null) {
           isInStock = selectedOptionStock > 0;
+          hasActualStock = selectedOptionStock > 0;
         } else if (color.option_stocks && Object.keys(color.option_stocks).length > 0) {
           // If an option is selected but not found in option_stocks, this color is out of stock for that option
-          isInStock = normalizedSelectedOption ? false : hasAnyColorStock(color);
+          if (normalizedSelectedOption) {
+            isInStock = false;
+          } else {
+            const anyStock = hasAnyColorStock(color);
+            isInStock = anyStock;
+            hasActualStock = anyStock;
+          }
         } else if (color.stock_quantity != null) {
           isInStock = Number(color.stock_quantity) > 0;
+          hasActualStock = Number(color.stock_quantity) > 0;
         } else {
-          // No stock data at all — rely on available_for_direct_sale flag (handled by isAvailableForType)
           isInStock = color.in_stock !== false;
         }
       }
 
-      // For direct sale: respect explicit available_for_direct_sale flag;
-      // only override if there's ACTUAL stock data proving availability
+      // For direct sale: if there's ACTUAL stock data proving availability,
+      // override available_for_direct_sale flag (stock is source of truth)
       const isAvailableForType = activeSaleType === 'direct'
-        ? (color.available_for_direct_sale ?? true)
+        ? (hasActualStock ? true : (color.available_for_direct_sale ?? true))
         : (color.available_for_pre_order ?? true);
+
+      // For direct sale with actual stock, also override linked_options check
+      const effectiveIsLinkedToOption = (activeSaleType === 'direct' && hasActualStock) ? true : isLinkedToOption;
 
       return {
         ...color,
-        isAvailable: isAvailableForType && isLinkedToOption && isInStock,
-        isLinkedToOption,
+        isAvailable: isAvailableForType && effectiveIsLinkedToOption && isInStock,
+        isLinkedToOption: effectiveIsLinkedToOption,
         compatiblePreOrderOptionId,
       };
     });
