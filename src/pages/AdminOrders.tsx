@@ -146,14 +146,11 @@ const AdminOrders = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Always fetch full order items for quick preview to avoid partial list data
-  useEffect(() => {
-    if (!quickViewOrder?.id) return;
-
-    let isActive = true;
-
-    const fetchQuickViewDetails = async () => {
-      setQuickViewLoading(true);
+  // Fetch full order items for quick preview
+  const fetchQuickViewDetails = useCallback(async (order: any) => {
+    setQuickViewOrder(order);
+    setQuickViewLoading(true);
+    try {
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -181,31 +178,20 @@ const AdminOrders = () => {
             custom_product_requests(product_name, image_url)
           )
         `)
-        .eq('id', quickViewOrder.id)
+        .eq('id', order.id)
         .maybeSingle();
-
-      if (!isActive) return;
 
       if (error) {
         console.error('Quick view order fetch failed:', error);
         toast.error('تعذر تحميل تفاصيل المنتجات');
-        setQuickViewLoading(false);
-        return;
+      } else if (data) {
+        setQuickViewOrder(data);
       }
-
-      if (data) {
-        setQuickViewOrder((prev: any) => (prev?.id === data.id ? { ...prev, ...data } : prev));
-      }
-
-      setQuickViewLoading(false);
-    };
-
-    fetchQuickViewDetails();
-
-    return () => {
-      isActive = false;
-    };
-  }, [quickViewOrder?.id]);
+    } catch (err) {
+      console.error('Quick view fetch error:', err);
+    }
+    setQuickViewLoading(false);
+  }, []);
 
   // Helper function to check if order is pre-order
   const checkIfPreOrder = (orderItems: any[]): boolean => {
@@ -1070,10 +1056,7 @@ const AdminOrders = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => {
-                                  setQuickViewLoading(true);
-                                  setQuickViewOrder(order);
-                                }}
+                                onClick={() => fetchQuickViewDetails(order)}
                                 title="عرض المنتجات"
                               >
                                 <Eye className="h-4 w-4" />
