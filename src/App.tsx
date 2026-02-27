@@ -113,6 +113,7 @@ const AdminStories = lazy(() => import("./pages/AdminStories"));
 const AdminDeliveredOrders = lazy(() => import("./pages/AdminDeliveredOrders"));
 const AdminGiveawaysCoupons = lazy(() => import("./pages/AdminGiveawaysCoupons"));
 const AdminGameMusic = lazy(() => import("./pages/AdminGameMusic"));
+const AdminPriceMatch = lazy(() => import("./pages/AdminPriceMatch"));
 const AdminWishes = lazy(() => import("./pages/AdminWishes"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
@@ -196,6 +197,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/giveaways-coupons`} element={<AdminRoute><AdminGiveawaysCoupons /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/game-music`} element={<AdminRoute><AdminGameMusic /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/wishes`} element={<AdminRoute><AdminWishes /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/price-match`} element={<AdminRoute><AdminPriceMatch /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
