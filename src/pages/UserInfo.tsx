@@ -98,12 +98,15 @@ const UserInfo = () => {
         setUploadingAvatar(false);
       }
 
+      // Never save base64 data URIs as avatar_url
+      const safeAvatarUrl = avatarUrl && !avatarUrl.startsWith('data:') ? avatarUrl : null;
+
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: profile.full_name,
           username: profile.username || null,
-          avatar_url: avatarUrl || null,
+          avatar_url: safeAvatarUrl,
         })
         .eq('id', user?.id);
 
