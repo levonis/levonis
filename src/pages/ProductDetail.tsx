@@ -229,15 +229,15 @@ const ProductDetail = () => {
     });
   };
   const filteredColors = getFilteredColors().sort((a: any, b: any) => {
-    // Sort by availability first, then by stock quantity (highest first)
+    // Only sort/reorder in direct sale mode (stock-based ordering)
+    if (activeSaleType !== 'direct') return 0;
+    // Sort by availability first
     if (a.isAvailable && !b.isAvailable) return -1;
     if (!a.isAvailable && b.isAvailable) return 1;
-    if (activeSaleType === 'direct') {
-      const stockA = selectedOptionName && a.option_stocks?.[selectedOptionName] != null ? a.option_stocks[selectedOptionName] : (a.stock_quantity ?? 0);
-      const stockB = selectedOptionName && b.option_stocks?.[selectedOptionName] != null ? b.option_stocks[selectedOptionName] : (b.stock_quantity ?? 0);
-      return (stockB || 0) - (stockA || 0);
-    }
-    return 0;
+    // Then by stock quantity (highest first)
+    const stockA = selectedOptionName && a.option_stocks?.[selectedOptionName] != null ? a.option_stocks[selectedOptionName] : (a.stock_quantity ?? 0);
+    const stockB = selectedOptionName && b.option_stocks?.[selectedOptionName] != null ? b.option_stocks[selectedOptionName] : (b.stock_quantity ?? 0);
+    return (stockB || 0) - (stockA || 0);
   });
 
   const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
@@ -641,7 +641,7 @@ const ProductDetail = () => {
                     </AccordionTrigger>
                     <AccordionContent className="px-3 pb-3">
                       <LayoutGroup>
-                        <motion.div layout className="flex flex-wrap gap-2">
+                        <motion.div layout="position" className="flex flex-wrap gap-2" transition={{ type: 'spring', stiffness: 200, damping: 28, mass: 1 }}>
                         {filteredColors.map((color: any) => (
                           <motion.button
                             key={color.name_ar}
@@ -649,8 +649,8 @@ const ProductDetail = () => {
                             layoutId={`color-${color.name_ar}`}
                             initial={false}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ type: 'spring', stiffness: 200, damping: 28, mass: 1 }}
                             type="button"
                             onClick={() => {
                               if (!color.isAvailable) return;
