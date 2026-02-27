@@ -29,10 +29,9 @@ const productSchema = z.object({
   slug: z.string().min(1, 'الرابط مطلوب'),
   description_ar: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  // Allow 0 or positive price - validation will show warning but not block save
   price: z.number().nonnegative('السعر يجب أن يكون صفر أو أكبر'),
   original_price: z.number().positive().nullable().optional(),
-  cost_price: z.number().nonnegative('سعر التكلفة مطلوب'),
+  cost_price: z.number().nonnegative().nullable().optional(),
   currency: z.string().optional(),
   images: z.array(z.string()).optional(),
   image_url: z.string().nullable().optional(),
@@ -44,6 +43,9 @@ const productSchema = z.object({
   has_pre_order: z.boolean().optional(),
   pre_order_free_shipping_price: z.number().nullable().optional(),
   pre_order_fast_shipping_price: z.number().nullable().optional(),
+  direct_sale_price: z.number().nullable().optional(),
+  sea_price: z.number().nullable().optional(),
+  air_price: z.number().nullable().optional(),
   colors: z.array(z.any()).optional(),
   features: z.array(z.any()).optional(),
   pre_order_shipping_options: z.array(z.any()).optional(),
@@ -1150,8 +1152,7 @@ const Admin = () => {
         slug: formData.get('slug') as string,
         description_ar: (formData.get('description_ar') as string) || null,
         description: (formData.get('description') as string) || null,
-        price: Number(formData.get('price')),
-        // Use null to clear the value, not undefined
+        price: formData.get('price') && formData.get('price') !== '' ? Number(formData.get('price')) : 0,
         original_price: formData.get('original_price') && formData.get('original_price') !== '' 
           ? Number(formData.get('original_price')) 
           : null,
@@ -1161,6 +1162,9 @@ const Admin = () => {
         cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
           ? Number(formData.get('cost_price')) 
           : null,
+        direct_sale_price: null as number | null,
+        sea_price: null as number | null,
+        air_price: null as number | null,
         currency: (formData.get('currency') as string) || 'دينار عراقي',
         images: finalImages.length > 0 ? finalImages : [],
         image_url: finalImages[0] || null,
