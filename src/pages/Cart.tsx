@@ -1364,7 +1364,7 @@ const Cart = () => {
                   
                   {/* Address selector for direct sale */}
                   {isDirectSaleCart && (
-                    <div className="rounded-xl border border-border/50 bg-muted/30 p-3 space-y-2">
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                           <MapPin className="h-4 w-4 text-primary" />
