@@ -290,9 +290,11 @@ const ProductDetail = () => {
     const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
       ? { index: selectedShippingOption, name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar }
       : undefined;
-    await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
-    toast.success(t('product_added_to_cart').replace('{count}', String(quantity)));
-    setQuantity(1);
+    const success = await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
+    if (success) {
+      toast.success(t('product_added_to_cart').replace('{count}', String(quantity)));
+      setQuantity(1);
+    }
   };
 
   const handleToggleFavorite = () => { toggleFavoriteMutation.mutate(); };
