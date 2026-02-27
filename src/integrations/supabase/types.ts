@@ -4229,6 +4229,56 @@ export type Database = {
         }
         Relationships: []
       }
+      price_match_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          found_price: number
+          id: string
+          image_url: string | null
+          notes: string | null
+          product_id: string
+          source_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          found_price: number
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          product_id: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          found_price?: number
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          product_id?: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_match_requests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       print_offers: {
         Row: {
           accepted_at: string | null

@@ -20,6 +20,7 @@ import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
 import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 import ProductRewardsSection from '@/components/ProductRewardsSection';
+import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -737,6 +738,9 @@ const ProductDetail = () => {
 
               {/* Reviews */}
               <ProductReviews productId={product.id} />
+
+              {/* Price Match */}
+              <PriceMatchForm productId={product.id} productName={product.name_ar} />
 
               {/* Related Products */}
               {relatedProducts && relatedProducts.length > 0 && (
