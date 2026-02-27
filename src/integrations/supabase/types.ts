@@ -6948,10 +6948,16 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          fulfilled_at: string | null
           id: string
           image_url: string | null
           likes_count: number | null
           price: number | null
+          reward_bonus_points: number | null
+          reward_discount_percent: number | null
+          reward_free_shipping: boolean | null
+          reward_gift_description: string | null
+          rewards_claimed: boolean | null
           status: string | null
           title: string
           updated_at: string | null
@@ -6960,10 +6966,16 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          fulfilled_at?: string | null
           id?: string
           image_url?: string | null
           likes_count?: number | null
           price?: number | null
+          reward_bonus_points?: number | null
+          reward_discount_percent?: number | null
+          reward_free_shipping?: boolean | null
+          reward_gift_description?: string | null
+          rewards_claimed?: boolean | null
           status?: string | null
           title: string
           updated_at?: string | null
@@ -6972,10 +6984,16 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          fulfilled_at?: string | null
           id?: string
           image_url?: string | null
           likes_count?: number | null
           price?: number | null
+          reward_bonus_points?: number | null
+          reward_discount_percent?: number | null
+          reward_free_shipping?: boolean | null
+          reward_gift_description?: string | null
+          rewards_claimed?: boolean | null
           status?: string | null
           title?: string
           updated_at?: string | null
