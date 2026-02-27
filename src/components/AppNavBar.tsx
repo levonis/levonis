@@ -1,6 +1,6 @@
-import { memo, useState, useRef, useCallback } from 'react';
+import { memo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle, GripVertical } from 'lucide-react';
+import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/hooks/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -24,13 +24,13 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 type DockPosition = 'right' | 'left' | 'top' | 'bottom';
-
+const POSITIONS: DockPosition[] = ['right', 'bottom', 'left', 'top'];
 const STORAGE_KEY = 'nav-dock-position';
 
 const getStoredPosition = (): DockPosition => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && ['right', 'left', 'top', 'bottom'].includes(stored)) return stored as DockPosition;
+    if (stored && POSITIONS.includes(stored as DockPosition)) return stored as DockPosition;
   } catch {}
   return 'right';
 };
@@ -42,11 +42,6 @@ const AppNavBar = memo(() => {
   const { itemCount } = useCart();
   const isMobile = useIsMobile();
   const [dockPosition, setDockPosition] = useState<DockPosition>(getStoredPosition);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
-  const navRef = useRef<HTMLElement>(null);
-  const dragStartRef = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null);
-  const hasDraggedRef = useRef(false);
 
   const isActive = (item: NavItem) => {
     if (item.path === '/') return location.pathname === '/' || location.pathname === '/home';
@@ -54,109 +49,48 @@ const AppNavBar = memo(() => {
   };
 
   const handleClick = (item: NavItem) => {
-    if (hasDraggedRef.current) return;
     navigate(item.path);
   };
 
-  const snapToEdge = useCallback((x: number, y: number) => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const cx = x;
-    const cy = y;
-
-    // Distances to each edge
-    const distRight = vw - cx;
-    const distLeft = cx;
-    const distTop = cy;
-    const distBottom = vh - cy;
-
-    const min = Math.min(distRight, distLeft, distTop, distBottom);
-
-    let newPos: DockPosition = 'right';
-    if (min === distLeft) newPos = 'left';
-    else if (min === distTop) newPos = 'top';
-    else if (min === distBottom) newPos = 'bottom';
-    else newPos = 'right';
-
-    setDockPosition(newPos);
-    localStorage.setItem(STORAGE_KEY, newPos);
-    setDragPos(null);
-    setIsDragging(false);
-  }, []);
-
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (isMobile) return;
-    const el = e.currentTarget as HTMLElement;
-    el.setPointerCapture(e.pointerId);
-    const rect = navRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    dragStartRef.current = { x: e.clientX, y: e.clientY, startX: rect.left + rect.width / 2, startY: rect.top + rect.height / 2 };
-    hasDraggedRef.current = false;
-  }, [isMobile]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragStartRef.current) return;
-    const dx = e.clientX - dragStartRef.current.x;
-    const dy = e.clientY - dragStartRef.current.y;
-    if (!isDragging && Math.abs(dx) + Math.abs(dy) < 8) return;
-    hasDraggedRef.current = true;
-    setIsDragging(true);
-    setDragPos({
-      x: dragStartRef.current.startX + dx,
-      y: dragStartRef.current.startY + dy,
-    });
-  }, [isDragging]);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!dragStartRef.current) return;
-    if (isDragging && dragPos) {
-      snapToEdge(dragPos.x, dragPos.y);
-    }
-    dragStartRef.current = null;
-    setTimeout(() => { hasDraggedRef.current = false; }, 50);
-  }, [isDragging, dragPos, snapToEdge]);
+  const cyclePosition = () => {
+    const idx = POSITIONS.indexOf(dockPosition);
+    const next = POSITIONS[(idx + 1) % POSITIONS.length];
+    setDockPosition(next);
+    localStorage.setItem(STORAGE_KEY, next);
+  };
 
   const isHorizontal = dockPosition === 'top' || dockPosition === 'bottom';
 
   if (!isMobile) {
-    const dockStyles: React.CSSProperties = isDragging && dragPos
-      ? {
-          position: 'fixed',
-          left: dragPos.x,
-          top: dragPos.y,
-          transform: 'translate(-50%, -50%)',
-          zIndex: 9999,
-          opacity: 0.85,
-          transition: 'none',
-        }
-      : dockPosition === 'right'
-        ? { position: 'fixed', top: '50%', right: 12, transform: 'translateY(-50%)' }
-        : dockPosition === 'left'
-          ? { position: 'fixed', top: '50%', left: 12, transform: 'translateY(-50%)' }
-          : dockPosition === 'top'
-            ? { position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)' }
-            : { position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)' };
+    const positionClasses: Record<DockPosition, string> = {
+      right: 'fixed top-1/2 -translate-y-1/2 right-3 flex-col',
+      left: 'fixed top-1/2 -translate-y-1/2 left-3 flex-col',
+      top: 'fixed top-3 left-1/2 -translate-x-1/2 flex-row',
+      bottom: 'fixed bottom-3 left-1/2 -translate-x-1/2 flex-row',
+    };
+
+    const tooltipClasses: Record<DockPosition, string> = {
+      right: 'right-full mr-2',
+      left: 'left-full ml-2',
+      top: 'top-full mt-2',
+      bottom: 'bottom-full mb-2',
+    };
 
     return (
       <nav
-        ref={navRef}
         className={cn(
-          "z-50 flex items-center gap-1.5 p-2 rounded-2xl bg-card/90 border border-border/50 shadow-xl select-none",
-          isHorizontal && !isDragging ? "flex-row" : !isDragging ? "flex-col" : (isHorizontal ? "flex-row" : "flex-col"),
-          isDragging && "cursor-grabbing shadow-2xl ring-2 ring-primary/30"
+          "z-50 flex items-center gap-1.5 p-2 rounded-2xl bg-card/90 border border-border/50 shadow-xl transition-all duration-500",
+          positionClasses[dockPosition]
         )}
-        style={dockStyles}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
       >
-        {/* Drag handle */}
-        <div className={cn(
-          "flex items-center justify-center text-muted-foreground/50 cursor-grab active:cursor-grabbing",
-          isHorizontal && !isDragging ? "h-full px-0.5" : "w-full py-0.5"
-        )}>
-          <GripVertical className={cn("h-4 w-4", isHorizontal && !isDragging && "rotate-90")} />
-        </div>
+        {/* Position toggle button */}
+        <button
+          onClick={cyclePosition}
+          title="تغيير موقع الشريط"
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50 transition-colors"
+        >
+          {isHorizontal ? <ArrowLeftRight className="h-3.5 w-3.5" /> : <ArrowUpDown className="h-3.5 w-3.5" />}
+        </button>
 
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -179,13 +113,9 @@ const AppNavBar = memo(() => {
                   {itemCount > 9 ? '9+' : itemCount}
                 </span>
               )}
-              {/* Tooltip - adjust based on position */}
               <span className={cn(
                 "absolute px-2.5 py-1 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-[60]",
-                dockPosition === 'right' && "right-full mr-2",
-                dockPosition === 'left' && "left-full ml-2",
-                dockPosition === 'top' && "top-full mt-2",
-                dockPosition === 'bottom' && "bottom-full mb-2",
+                tooltipClasses[dockPosition]
               )}>
                 {t(item.labelKey as any)}
               </span>
@@ -196,7 +126,7 @@ const AppNavBar = memo(() => {
     );
   }
 
-  // Mobile: redesigned bottom bar with pill active indicator
+  // Mobile: bottom bar (unchanged)
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border/40"
