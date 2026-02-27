@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Phone, Clock, FileText, Truck, CheckCircle2, Loader2, Package } from 'lucide-react';
+import { MapPin, Phone, Clock, FileText, Truck, CheckCircle2, Loader2, Package, Zap, Info } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 interface DirectSaleCheckoutDialogProps {
@@ -96,6 +96,22 @@ const DirectSaleCheckoutDialog = ({
               الدفع عند الاستلام
             </Badge>
           </DialogHeader>
+
+          {/* Delivery hints */}
+          <div className="mt-3 space-y-2">
+            <div className="flex items-start gap-2 rounded-lg bg-accent/10 border border-accent/20 p-2.5">
+              <Info className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+              <p className="text-xs text-accent-foreground/80 leading-relaxed">
+                اطلب قبل <span className="font-black text-accent">5:00 مساءً</span> ليصل طلبك في اليوم التالي
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/15 p-2.5">
+              <Zap className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                توصيل سريع خلال <span className="font-black text-primary">24-48 ساعة</span>
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="px-6 pb-6 space-y-5">
