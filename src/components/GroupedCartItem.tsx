@@ -106,11 +106,11 @@ const GroupedCartItem = ({
           {/* Option/Color tags */}
           {(itemOption || colorData) && (
             <div className="flex flex-wrap gap-1 mt-0.5">
-              {itemOption && (
-                <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
+               {itemOption && (
+                <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
               )}
               {colorData && (
-                <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                   <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={{ backgroundColor: colorData.hex_code }} />
                   {colorData.name_ar}
                 </span>
@@ -130,14 +130,14 @@ const GroupedCartItem = ({
               const itemPrice = calculateItemPrice(item);
               
               return (
-                <div key={item.id} className="bg-muted/20 rounded-lg p-2 border border-border/30">
+                <div key={item.id} className="bg-card rounded-lg p-2 border border-border/30">
                   <div className="flex items-center justify-between gap-1 mb-1">
                     <span className="text-[11px] font-medium text-foreground line-clamp-1">{shippingName}</span>
                     <span className="text-[11px] font-bold text-primary shrink-0">{formatPrice(itemPrice)} د.ع</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 bg-background/50 rounded border border-border/40">
+                    <div className="flex items-center gap-1 bg-background rounded border border-border/40">
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
                         disabled={item.quantity <= 1}>
