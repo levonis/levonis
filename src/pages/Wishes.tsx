@@ -388,13 +388,36 @@ export default function Wishes() {
         .wish-card-animate { animation: wishCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: var(--delay, 0s); }
         .wish-float { animation: wishFloat 4s ease-in-out infinite; }
         
+        .wish-glass-card {
+          transform-style: preserve-3d;
+          will-change: transform;
+          box-shadow: 
+            0 4px 24px -4px rgba(0,0,0,0.12),
+            0 8px 48px -8px rgba(0,0,0,0.08);
+        }
+        .wish-glass-card:hover {
+          box-shadow: 
+            0 8px 32px -4px rgba(0,0,0,0.18),
+            0 16px 64px -8px rgba(0,0,0,0.1);
+        }
+        .wish-glass-top {
+          box-shadow: 
+            0 4px 24px -4px hsl(var(--primary) / 0.15),
+            0 12px 48px -8px hsl(var(--primary) / 0.08);
+        }
+        .wish-glass-top:hover {
+          box-shadow: 
+            0 8px 32px -4px hsl(var(--primary) / 0.2),
+            0 20px 64px -8px hsl(var(--primary) / 0.12);
+        }
+
         @keyframes wishHeroIn {
           from { opacity: 0; transform: translateY(20px) scale(0.97); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes wishCardIn {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(16px) rotateX(4deg); }
+          to { opacity: 1; transform: translateY(0) rotateX(0deg); }
         }
         @keyframes wishFloat {
           0%, 100% { transform: translateY(0); }
@@ -429,11 +452,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-/* ═══════════════ Wish Card ═══════════════ */
+/* ═══════════════ Wish Card — Glassmorphism 3D ═══════════════ */
 function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
   wish: any; isLiked: boolean; onLike: () => void; canLike: boolean; index: number; isTop: boolean;
 }) {
   const [animateLike, setAnimateLike] = useState(false);
+  const [pressed, setPressed] = useState(false);
 
   const handleLike = () => {
     if (!canLike) return;
@@ -444,71 +468,114 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
 
   return (
     <div
-      className={`rounded-2xl border bg-card/70 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 group wish-card-animate ${
-        isTop ? "border-primary/30 ring-1 ring-primary/10" : "border-border/30 hover:border-primary/20"
-      }`}
-      style={{ '--delay': `${0.3 + index * 0.06}s` } as any}
+      className="wish-card-animate"
+      style={{
+        '--delay': `${0.3 + index * 0.06}s`,
+        perspective: '800px',
+      } as any}
     >
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-card to-background">
-        {wish.image_url ? (
-          <img
-            src={wish.image_url}
-            alt={wish.title}
-            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-out"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-12 h-12 rounded-2xl bg-primary/8 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-primary/25" />
+      <div
+        className={`wish-glass-card group relative rounded-2xl overflow-hidden transition-all duration-500 ${
+          pressed ? 'scale-[0.97]' : 'hover:scale-[1.02]'
+        } ${isTop ? 'wish-glass-top' : ''}`}
+        onTouchStart={() => setPressed(true)}
+        onTouchEnd={() => setPressed(false)}
+        onMouseDown={() => setPressed(true)}
+        onMouseUp={() => setPressed(false)}
+        onMouseLeave={() => setPressed(false)}
+      >
+        {/* Glass background layers */}
+        <div className="absolute inset-0 bg-card/40 backdrop-blur-xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent" />
+        {isTop && <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-transparent" />}
+        
+        {/* Subtle inner border glow */}
+        <div className={`absolute inset-0 rounded-2xl border transition-colors duration-500 ${
+          isTop
+            ? 'border-primary/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]'
+            : 'border-white/[0.08] group-hover:border-primary/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
+        }`} />
+
+        {/* Content - relative z */}
+        <div className="relative z-10">
+          {/* Image */}
+          <div className="relative aspect-[4/3] overflow-hidden m-1.5 rounded-xl">
+            {wish.image_url ? (
+              <img
+                src={wish.image_url}
+                alt={wish.title}
+                className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 backdrop-blur-sm flex items-center justify-center border border-primary/10">
+                  <Sparkles className="w-7 h-7 text-primary/30" />
+                </div>
+              </div>
+            )}
+
+            {/* Top badge for #1 */}
+            {isTop && (
+              <div className="absolute top-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-primary/90 backdrop-blur-sm text-primary-foreground text-[9px] font-black flex items-center gap-1 shadow-lg shadow-primary/30">
+                <Flame className="w-3 h-3" /> الأكثر طلباً
+              </div>
+            )}
+
+            {/* Like button — frosted glass */}
+            <button
+              onClick={handleLike}
+              disabled={!canLike}
+              className={`absolute top-1.5 left-1.5 w-8 h-8 rounded-xl backdrop-blur-xl flex items-center justify-center transition-all duration-300 border ${
+                isLiked
+                  ? "bg-destructive/70 text-white border-destructive/30 shadow-lg shadow-destructive/25"
+                  : "bg-black/20 text-white/80 border-white/10 hover:bg-black/30 hover:border-white/20"
+              } ${animateLike ? "wish-heart-pop" : ""}`}
+            >
+              <Heart className={`w-3.5 h-3.5 transition-all ${isLiked ? "fill-current scale-110" : ""}`} />
+            </button>
+
+            {/* Price — frosted glass pill */}
+            {wish.price && (
+              <div className="absolute bottom-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-xl border border-white/10">
+                <span className="text-[11px] font-black text-white">
+                  {Number(wish.price).toLocaleString()} <span className="text-[9px] opacity-70">د.ع</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Text content */}
+          <div className="px-3 pt-1 pb-3">
+            <h3 className="font-bold text-[12px] leading-snug line-clamp-2 mb-2 text-foreground">{wish.title}</h3>
+            
+            {/* Bottom row */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={handleLike}
+                disabled={!canLike}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-300 ${
+                  isLiked
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                <Heart className={`w-3 h-3 ${isLiked ? "fill-current" : ""} ${animateLike ? "wish-heart-pop" : ""}`} />
+                <span className="text-[10px] font-bold">{wish.likes_count || 0}</span>
+              </button>
+              <span className="text-[9px] text-muted-foreground/40 font-medium">
+                {new Date(wish.created_at).toLocaleDateString("ar-IQ")}
+              </span>
             </div>
           </div>
-        )}
-
-        {/* Top badge for #1 */}
-        {isTop && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-primary/90 text-primary-foreground text-[9px] font-black flex items-center gap-1">
-            <Flame className="w-3 h-3" /> الأكثر طلباً
-          </div>
-        )}
-
-        {/* Price overlay */}
-        {wish.price && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pt-6 pb-2 px-2.5">
-            <span className="text-[11px] font-black text-white drop-shadow-sm">
-              {Number(wish.price).toLocaleString()} <span className="text-[9px] font-bold opacity-80">د.ع</span>
-            </span>
-          </div>
-        )}
-
-        {/* Like button overlay */}
-        <button
-          onClick={handleLike}
-          disabled={!canLike}
-          className={`absolute top-2 left-2 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
-            isLiked
-              ? "bg-destructive/80 text-destructive-foreground shadow-lg shadow-destructive/20"
-              : "bg-card/60 text-foreground/70 hover:bg-card/90"
-          } ${animateLike ? "wish-heart-pop" : ""}`}
-        >
-          <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-current" : ""}`} />
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="p-2.5">
-        <h3 className="font-bold text-[11px] leading-snug line-clamp-2 mb-1.5">{wish.title}</h3>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Heart className={`w-3 h-3 ${isLiked ? "fill-destructive text-destructive" : ""}`} />
-            <span className="text-[10px] font-bold">{wish.likes_count || 0}</span>
-          </div>
-          <span className="text-[9px] text-muted-foreground/50">
-            {new Date(wish.created_at).toLocaleDateString("ar-IQ")}
-          </span>
         </div>
+
+        {/* 3D shadow layers */}
+        <div className={`absolute -inset-1 -z-10 rounded-3xl blur-xl transition-opacity duration-500 ${
+          isTop
+            ? 'bg-primary/10 opacity-100'
+            : 'bg-foreground/5 opacity-0 group-hover:opacity-100'
+        }`} />
       </div>
     </div>
   );
@@ -518,15 +585,22 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
 function WishSkeleton({ index }: { index: number }) {
   return (
     <div
-      className="rounded-2xl border border-border/20 bg-card/30 overflow-hidden wish-card-animate"
-      style={{ '--delay': `${0.1 + index * 0.06}s` } as any}
+      className="wish-card-animate"
+      style={{ '--delay': `${0.1 + index * 0.06}s`, perspective: '800px' } as any}
     >
-      <div className="aspect-square bg-muted/10 animate-pulse" />
-      <div className="p-2.5 space-y-1.5">
-        <div className="h-3 w-4/5 bg-muted/10 rounded animate-pulse" />
-        <div className="flex justify-between">
-          <div className="h-3 w-8 bg-muted/10 rounded animate-pulse" />
-          <div className="h-2.5 w-10 bg-muted/8 rounded animate-pulse" />
+      <div className="relative rounded-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-card/40 backdrop-blur-xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.06] to-transparent" />
+        <div className="absolute inset-0 rounded-2xl border border-white/[0.06]" />
+        <div className="relative z-10">
+          <div className="aspect-[4/3] m-1.5 rounded-xl bg-muted/10 animate-pulse" />
+          <div className="px-3 pt-1 pb-3 space-y-2">
+            <div className="h-3.5 w-4/5 bg-muted/10 rounded-lg animate-pulse" />
+            <div className="flex justify-between items-center">
+              <div className="h-6 w-14 bg-muted/8 rounded-lg animate-pulse" />
+              <div className="h-2.5 w-10 bg-muted/6 rounded animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
