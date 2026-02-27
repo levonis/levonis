@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Coins, Ticket, Trophy, Loader2, AlertCircle } from "lucide-react";
+import { Coins, Ticket, Trophy, Loader2, AlertCircle, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -31,7 +31,6 @@ export default function RedeemPointsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Fetch redemption settings from database
   const { data: redeemOptions, isLoading: loadingOptions } = useQuery({
     queryKey: ['redemption-settings'],
     queryFn: async () => {
@@ -46,7 +45,6 @@ export default function RedeemPointsPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch today's redemption total for the user
   const { data: todayRedemption } = useQuery({
     queryKey: ['today-redemption', user?.id],
     queryFn: async () => {
@@ -72,8 +70,9 @@ export default function RedeemPointsPanel() {
       const option = redeemOptions?.find(o => o.redemption_type === selectedOption);
       if (!option) throw new Error('خيار غير صالح');
       
-      if (isNaN(points) || points < option.min_points) {
-        throw new Error(`الحد الأدنى ${option.min_points} نقطة`);
+      // Must be multiples of points_per_unit
+      if (isNaN(points) || points < option.min_points || points % option.points_per_unit !== 0) {
+        throw new Error(`يجب أن تكون النقاط من مضاعفات ${option.points_per_unit} والحد الأدنى ${option.min_points}`);
       }
 
       const availablePoints = userPoints?.available_points || 0;
@@ -92,14 +91,30 @@ export default function RedeemPointsPanel() {
         }
       }
 
-      // Calculate value
       const value = (points / option.points_per_unit) * option.unit_value;
 
-      if (selectedOption === 'coupon') {
-        // Generate coupon code
+      if (selectedOption === 'wallet') {
+        // Add to wallet
+        const { data: wallet } = await supabase
+          .from('user_wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (wallet) {
+          const { error: walletError } = await supabase
+            .from('user_wallets')
+            .update({ balance: (wallet.balance || 0) + value })
+            .eq('user_id', user.id);
+          if (walletError) throw walletError;
+        } else {
+          const { error: walletError } = await supabase
+            .from('user_wallets')
+            .insert({ user_id: user.id, balance: value });
+          if (walletError) throw walletError;
+        }
+      } else if (selectedOption === 'coupon') {
         const couponCode = `PTS${Date.now().toString(36).toUpperCase()}`;
-        
-        // Create user coupon
         const { error: couponError } = await supabase
           .from('user_coupons')
           .insert({
@@ -107,11 +122,11 @@ export default function RedeemPointsPanel() {
             coupon_code: couponCode,
             discount_value: value,
             discount_type: 'fixed',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            source: 'points_redemption',
           });
         if (couponError) throw couponError;
       } else if (selectedOption === 'tickets') {
-        // Add tickets using secure function
         const { error: ticketError } = await supabase.rpc('add_user_tickets', {
           p_user_id: user.id,
           p_amount: value,
@@ -120,16 +135,14 @@ export default function RedeemPointsPanel() {
         if (ticketError) throw ticketError;
       }
 
-      // Deduct points using secure function
+      // Deduct points
       const { error: pointsError } = await supabase.rpc('deduct_user_points', {
         p_user_id: user.id,
         p_amount: points,
         p_source: 'redemption',
-        p_description: `استبدال ${points} نقطة`
+        p_description: `استبدال ${points} نقطة → ${value.toLocaleString()} ${getUnitLabel(selectedOption)}`
       });
       if (pointsError) throw pointsError;
-
-      // Note: Points transaction already logged by deduct_user_points function
 
       // Log daily redemption
       await supabase.from('daily_redemption_log').insert({
@@ -140,10 +153,12 @@ export default function RedeemPointsPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['user-points-redeem'] });
       queryClient.invalidateQueries({ queryKey: ['user-coupons'] });
       queryClient.invalidateQueries({ queryKey: ['user-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['today-redemption'] });
-      toast.success('تم الاستبدال بنجاح!');
+      toast.success('تم الاستبدال بنجاح! ✅');
       setPointsToRedeem('');
       setSelectedOption(null);
     },
@@ -156,7 +171,17 @@ export default function RedeemPointsPanel() {
     switch (iconName) {
       case 'Ticket': return Ticket;
       case 'Trophy': return Trophy;
+      case 'Wallet': return Wallet;
       default: return Coins;
+    }
+  };
+
+  const getUnitLabel = (type: string) => {
+    switch (type) {
+      case 'wallet': return 'د.ع للمحفظة';
+      case 'coupon': return 'د.ع كوبون';
+      case 'tickets': return 'تذكرة';
+      default: return '';
     }
   };
 
@@ -172,6 +197,7 @@ export default function RedeemPointsPanel() {
 
   const selectedOptionData = redeemOptions?.find(o => o.redemption_type === selectedOption);
   const points = parseInt(pointsToRedeem) || 0;
+  const isValidPoints = selectedOptionData && points >= selectedOptionData.min_points && points % selectedOptionData.points_per_unit === 0;
   const calculatedValue = selectedOptionData 
     ? (points / selectedOptionData.points_per_unit) * selectedOptionData.unit_value 
     : 0;
@@ -197,7 +223,7 @@ export default function RedeemPointsPanel() {
         
         {loadingOptions ? (
           <div className="space-y-3">
-            {[1, 2].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />)}
+            {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />)}
           </div>
         ) : (
           redeemOptions?.map((option) => {
@@ -214,7 +240,10 @@ export default function RedeemPointsPanel() {
                 className={`cursor-pointer transition-all ${
                   isSelected ? 'ring-2 ring-primary' : 'hover:shadow-md'
                 }`}
-                onClick={() => setSelectedOption(option.redemption_type)}
+                onClick={() => {
+                  setSelectedOption(option.redemption_type);
+                  setPointsToRedeem('');
+                }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
@@ -224,9 +253,11 @@ export default function RedeemPointsPanel() {
                     <div className="flex-1">
                       <p className="font-medium">{option.name_ar}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{option.description_ar}</p>
-                      <p className="text-xs text-primary font-medium mt-1">
-                        {option.points_per_unit} نقطة = {option.unit_value.toLocaleString()} {option.redemption_type === 'coupon' ? 'د.ع' : 'تذكرة'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                          {option.points_per_unit} نقطة = {option.unit_value.toLocaleString()} {option.redemption_type === 'tickets' ? 'تذكرة' : 'د.ع'}
+                        </span>
+                      </div>
                       {remaining !== null && (
                         <p className="text-[10px] text-muted-foreground mt-0.5">
                           الحد اليومي المتبقي: {remaining.toLocaleString()} نقطة
@@ -255,15 +286,15 @@ export default function RedeemPointsPanel() {
               step={selectedOptionData.points_per_unit}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              الحد الأدنى: {selectedOptionData.min_points.toLocaleString()} نقطة
+              الحد الأدنى: {selectedOptionData.min_points.toLocaleString()} نقطة • مضاعفات {selectedOptionData.points_per_unit}
             </p>
           </div>
 
-          {points >= selectedOptionData.min_points && (
+          {isValidPoints && (
             <Alert className="border-primary/30 bg-primary/5">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                ستحصل على: <strong>{calculatedValue.toLocaleString()}</strong> {selectedOption === 'coupon' ? 'د.ع خصم' : 'تذكرة'}
+                ستحصل على: <strong>{calculatedValue.toLocaleString()}</strong> {getUnitLabel(selectedOption)}
               </AlertDescription>
             </Alert>
           )}
@@ -271,7 +302,7 @@ export default function RedeemPointsPanel() {
           <Button 
             className="w-full"
             onClick={() => redeemMutation.mutate()}
-            disabled={redeemMutation.isPending || points < selectedOptionData.min_points}
+            disabled={redeemMutation.isPending || !isValidPoints}
           >
             {redeemMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
             تأكيد الاستبدال

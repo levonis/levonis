@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, Circle, Coins, ChevronDown, Star, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Coins, ChevronDown, Star, Loader2, Flame, Users, Store, Package } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
@@ -49,6 +49,85 @@ export default function DailyTasksPanel() {
     },
     enabled: !!user,
     staleTime: 1 * 60 * 1000,
+  });
+
+  // Fetch all-time completed once-tasks  
+  const { data: completedOnceTasks } = useQuery({
+    queryKey: ['user-completed-once-tasks', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_task_completions')
+        .select('task_key')
+        .eq('user_id', user.id);
+      if (error && error.code !== 'PGRST116') return [];
+      return data?.map(t => t.task_key) || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Streak data
+  const { data: streakData } = useQuery({
+    queryKey: ['user-streak', user?.id],
+    queryFn: async () => {
+      if (!user) return { current: 0, max: 7 };
+      // Count consecutive days with at least one task completion
+      const { data, error } = await supabase
+        .from('user_task_completions')
+        .select('completed_at')
+        .eq('user_id', user.id)
+        .eq('task_key', 'daily_login')
+        .order('completed_at', { ascending: false })
+        .limit(30);
+      if (error || !data || data.length === 0) return { current: 0, max: 7 };
+
+      let streak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const uniqueDays = [...new Set(data.map(d => new Date(d.completed_at).toISOString().split('T')[0]))].sort().reverse();
+      
+      for (let i = 0; i < uniqueDays.length; i++) {
+        const expectedDate = new Date(today);
+        expectedDate.setDate(expectedDate.getDate() - i);
+        const expected = expectedDate.toISOString().split('T')[0];
+        if (uniqueDays[i] === expected) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      return { current: streak, max: 7 };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Auto-check community profile and merchant registration
+  const { data: autoCheckData } = useQuery({
+    queryKey: ['auto-check-tasks', user?.id],
+    queryFn: async () => {
+      if (!user) return { hasProfile: false, isMerchant: false };
+      const { data: profile } = await supabase
+        .from('community_customer_profiles')
+        .select('display_name, avatar_url, bio')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const hasProfile = !!(profile?.display_name && profile?.avatar_url);
+
+      const { data: merchant } = await supabase
+        .from('merchant_profiles' as any)
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const isMerchant = !!merchant;
+      return { hasProfile, isMerchant };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: reviewableOrders } = useQuery({
@@ -104,27 +183,56 @@ export default function DailyTasksPanel() {
     mutationFn: async (task: any) => {
       if (!user) throw new Error(t('tasks_login_required'));
 
-      const today = new Date().toISOString().split('T')[0];
-      const { data: existing } = await supabase
-        .from('user_task_completions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('task_key', task.task_key)
-        .gte('completed_at', today)
-        .maybeSingle();
+      // For once tasks, check all-time completions
+      if (task.task_type === 'once') {
+        const { data: existing } = await supabase
+          .from('user_task_completions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('task_key', task.task_key)
+          .maybeSingle();
+        if (existing) throw new Error('تم إكمال هذه المهمة مسبقاً');
+      } else {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: existing } = await supabase
+          .from('user_task_completions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('task_key', task.task_key)
+          .gte('completed_at', today)
+          .maybeSingle();
+        if (existing) throw new Error(t('tasks_completed_today'));
+      }
 
-      if (existing) throw new Error(t('tasks_completed_today'));
+      // Validate auto-check tasks
+      if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile) {
+        throw new Error('يرجى إكمال ملفك في مجتمع ليفو أولاً (الاسم والصورة)');
+      }
+      if (task.task_key === 'register_merchant' && !autoCheckData?.isMerchant) {
+        throw new Error('يرجى التسجيل كتاجر في مجتمع ليفو أولاً');
+      }
+
+      // Calculate streak bonus
+      let bonusPoints = 0;
+      if (task.streak_bonus_enabled && streakData) {
+        bonusPoints = Math.min(streakData.current, task.max_streak_days || 7) * (task.streak_bonus_per_day || 1);
+      }
+      const totalPoints = task.points_reward + bonusPoints;
 
       const { error: taskError } = await supabase
         .from('user_task_completions')
-        .insert({ user_id: user.id, task_key: task.task_key, points_earned: task.points_reward });
+        .insert({ user_id: user.id, task_key: task.task_key, points_earned: totalPoints });
       if (taskError) throw taskError;
+
+      const desc = bonusPoints > 0
+        ? `مهمة: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ستريك)`
+        : `مهمة: ${task.title_ar}`;
 
       const { error: pointsError } = await supabase
         .from('points_transactions')
         .insert({
-          user_id: user.id, points: task.points_reward, type: 'earned',
-          source: 'daily_task', description: `${t('tasks_start')}: ${task.title_ar}`,
+          user_id: user.id, points: totalPoints, type: 'earned',
+          source: 'daily_task', description: desc,
         });
       if (pointsError) throw pointsError;
 
@@ -133,21 +241,26 @@ export default function DailyTasksPanel() {
 
       if (currentPoints) {
         await supabase.from('user_points').update({
-          total_points: (currentPoints.total_points || 0) + task.points_reward,
-          available_points: (currentPoints.available_points || 0) + task.points_reward,
+          total_points: (currentPoints.total_points || 0) + totalPoints,
+          available_points: (currentPoints.available_points || 0) + totalPoints,
         }).eq('user_id', user.id);
       } else {
         await supabase.from('user_points').insert({
-          user_id: user.id, total_points: task.points_reward, available_points: task.points_reward,
+          user_id: user.id, total_points: totalPoints, available_points: totalPoints,
         });
       }
-      return task;
+      return { ...task, totalPoints, bonusPoints };
     },
-    onSuccess: (task) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['user-completed-tasks-today'] });
+      queryClient.invalidateQueries({ queryKey: ['user-completed-once-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['user-streak'] });
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
-      toast.success(t('tasks_task_completed', { points: task.points_reward }));
+      const msg = result.bonusPoints > 0
+        ? `+${result.totalPoints} نقطة (منها ${result.bonusPoints} مكافأة ستريك 🔥)`
+        : `+${result.totalPoints} نقطة ✅`;
+      toast.success(msg);
     },
     onError: (error: any) => { toast.error(error.message || t('common_error')); },
   });
@@ -158,6 +271,15 @@ export default function DailyTasksPanel() {
     if (!user) { toast.error(t('tasks_login_required')); return; }
     setActiveTaskKey(task.task_key);
     completeTaskMutation.mutate(task, { onSettled: () => setActiveTaskKey(null) });
+  };
+
+  const getTaskIcon = (icon: string) => {
+    switch (icon) {
+      case 'Users': return Users;
+      case 'Store': return Store;
+      case 'Package': return Package;
+      default: return Circle;
+    }
   };
 
   if (isLoading) {
@@ -176,14 +298,59 @@ export default function DailyTasksPanel() {
     );
   }
 
-  const reviewPoints = pointsSettings?.points_per_review || 5;
+  const reviewPoints = pointsSettings?.points_per_review || 25;
   const mediaBonus = pointsSettings?.points_per_verified_review || 10;
+  const streak = streakData?.current || 0;
 
   return (
     <div className="space-y-3">
+      {/* Streak Card */}
+      <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <Flame className="h-5 w-5 text-orange-500" />
+            <span className="font-medium text-sm">الستريك اليومي</span>
+            <span className="text-xs bg-orange-500/20 text-orange-600 px-2 py-0.5 rounded-full font-bold mr-auto">
+              {streak} يوم 🔥
+            </span>
+          </div>
+          <div className="flex gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div
+                key={i}
+                className={`flex-1 h-2 rounded-full transition-all ${
+                  i < streak ? 'bg-orange-500' : 'bg-muted'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            سجّل دخولك يومياً لزيادة الستريك والحصول على نقاط إضافية
+          </p>
+        </CardContent>
+      </Card>
+
       {tasks?.map((task) => {
-        const isCompleted = completedTasks?.includes(task.task_key);
+        const isOnceTask = task.task_type === 'once';
+        const isCompleted = isOnceTask 
+          ? completedOnceTasks?.includes(task.task_key)
+          : completedTasks?.includes(task.task_key);
         const isTaskLoading = activeTaskKey === task.task_key && completeTaskMutation.isPending;
+        
+        // Auto-check eligibility for special tasks
+        let canComplete = true;
+        let statusText = '';
+        if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile && !isCompleted) {
+          canComplete = false;
+          statusText = 'أكمل ملفك أولاً';
+        }
+        if (task.task_key === 'register_merchant' && !autoCheckData?.isMerchant && !isCompleted) {
+          canComplete = false;
+          statusText = 'سجّل كتاجر أولاً';
+        }
+
+        const TaskIcon = getTaskIcon(task.icon);
+        const streakBonus = task.streak_bonus_enabled ? Math.min(streak, task.max_streak_days || 7) * (task.streak_bonus_per_day || 1) : 0;
         
         return (
           <Card key={task.id} className={isCompleted ? 'opacity-60' : ''}>
@@ -195,20 +362,37 @@ export default function DailyTasksPanel() {
                   {isCompleted ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                   ) : (
-                    <Circle className="h-5 w-5 text-primary" />
+                    <TaskIcon className="h-5 w-5 text-primary" />
                   )}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">{task.title_ar}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{task.description_ar}</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Coins className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-xs font-bold text-amber-600">+{task.points_reward} {t('points_unit')}</span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-1">
+                      <Coins className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-xs font-bold text-amber-600">+{task.points_reward} {t('points_unit')}</span>
+                    </div>
+                    {streakBonus > 0 && !isCompleted && (
+                      <span className="text-[10px] bg-orange-500/15 text-orange-600 px-1.5 py-0.5 rounded-full">
+                        +{streakBonus} ستريك 🔥
+                      </span>
+                    )}
+                    {isOnceTask && !isCompleted && (
+                      <span className="text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full">مرة واحدة</span>
+                    )}
                   </div>
+                  {statusText && (
+                    <p className="text-[10px] text-orange-500 mt-1">{statusText}</p>
+                  )}
                 </div>
                 {!isCompleted && (
-                  <Button size="sm" variant="outline" className="shrink-0" onClick={() => handleTaskClick(task)} disabled={isTaskLoading}>
-                    {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('tasks_start')}
+                  <Button size="sm" variant="outline" className="shrink-0" 
+                    onClick={() => handleTaskClick(task)} 
+                    disabled={isTaskLoading || !canComplete}
+                  >
+                    {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+                      canComplete ? t('tasks_start') : '⏳'}
                   </Button>
                 )}
               </div>
@@ -290,7 +474,7 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
 
       const { error: pointsError } = await supabase.from('points_transactions').insert({
         user_id: user.id, points: reviewPoints, type: 'earned', source: 'review',
-        description: `${t('tasks_rate_products')}: ${item.product_name_ar || item.product_name}`,
+        description: `تقييم: ${item.product_name_ar || item.product_name}`,
         related_id: item.product_id,
       });
       if (pointsError) throw pointsError;
