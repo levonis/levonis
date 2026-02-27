@@ -69,9 +69,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
-    navigate('/');
+    try {
+      setIsAdmin(false);
+      // Clear all local storage auth data first for reliability on Android/Chrome
+      const keysToRemove = Object.keys(localStorage).filter(k => 
+        k.startsWith('sb-') || k.includes('supabase')
+      );
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Force clear session state even if signOut API fails
+      setUser(null);
+      setSession(null);
+    } finally {
+      navigate('/');
+    }
   };
 
   return (

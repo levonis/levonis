@@ -76,26 +76,41 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
 
     setUploading(true);
     try {
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `temp-signup-${Date.now()}.${fileExt}`;
-
-      // Convert to base64 for preview (we'll upload properly after account creation)
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        updateData({ avatarUrl: base64 });
-        setUploading(false);
-      };
-      reader.onerror = () => {
-        toast.error('فشل في قراءة الصورة');
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      // Compress image before converting to base64
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      const loadPromise = new Promise<string>((resolve, reject) => {
+        img.onload = () => {
+          // Resize to max 256x256 for avatar
+          const maxSize = 256;
+          let w = img.width, h = img.height;
+          if (w > maxSize || h > maxSize) {
+            const ratio = Math.min(maxSize / w, maxSize / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          canvas.width = w;
+          canvas.height = h;
+          ctx?.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => reject(new Error('فشل في تحميل الصورة'));
+      });
+      
+      img.src = URL.createObjectURL(file);
+      const base64 = await loadPromise;
+      URL.revokeObjectURL(img.src);
+      
+      updateData({ avatarUrl: base64 });
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error('فشل في رفع الصورة');
+      console.error('Error processing image:', error);
+      toast.error('فشل في معالجة الصورة. حاول صورة أخرى.');
+    } finally {
       setUploading(false);
+      // Reset input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 

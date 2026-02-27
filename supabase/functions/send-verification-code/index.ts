@@ -338,9 +338,19 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResult = await emailResponse.json();
 
     if (!emailResponse.ok) {
-      console.error("Resend API error:", emailResult);
+      console.error("Resend API error:", JSON.stringify(emailResult), "Status:", emailResponse.status, "Email:", email, "From: noreply@levonisiq.com");
+      
+      // Provide more specific error messages
+      const errorMsg = emailResult?.message || emailResult?.error?.message || "Unknown";
+      const isdomainError = errorMsg.toLowerCase().includes("domain") || errorMsg.toLowerCase().includes("not verified");
+      
       return new Response(
-        JSON.stringify({ success: false, error: "فشل في إرسال البريد" }),
+        JSON.stringify({ 
+          success: false, 
+          error: isdomainError 
+            ? "مشكلة في إعدادات البريد. يرجى التواصل مع الدعم." 
+            : "فشل في إرسال البريد. حاول مرة أخرى." 
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

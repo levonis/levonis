@@ -31,16 +31,20 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const handleStep1Complete = async () => {
     setLoading(true);
     try {
-      // Check if email is already registered by attempting sign in
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: 'dummy-check-password-12345',
-      });
-      
-      // If error contains "Invalid" it means email exists or doesn't
-      // We proceed either way since we'll catch it later
+      // Check if email is already registered using profiles table
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.email.trim().toLowerCase())
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.');
+        return;
+      }
     } catch (error: any) {
-      // Expected behavior
+      // If profiles check fails, continue anyway - will be caught at signup
+      console.warn('Email check failed, continuing:', error?.message);
     }
     
     setLoading(false);
