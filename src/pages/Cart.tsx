@@ -1399,6 +1399,7 @@ const Cart = () => {
                                 )}
                               </div>
                               <div className="text-xs space-y-0.5 flex-1">
+                                {addr.label && <p className="font-black text-primary text-[11px]">{addr.label}</p>}
                                 <p className="font-bold text-foreground">{addr.full_name}</p>
                                 <p className="text-muted-foreground">{addr.governorate} - {addr.area}</p>
                                 <p className="text-muted-foreground" dir="ltr">{addr.phone_number}</p>

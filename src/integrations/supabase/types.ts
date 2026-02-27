@@ -6065,6 +6065,7 @@ export type Database = {
           governorate: string
           id: string
           is_default: boolean
+          label: string | null
           nearest_landmark: string
           neighborhood: string | null
           phone_number: string
@@ -6079,6 +6080,7 @@ export type Database = {
           governorate: string
           id?: string
           is_default?: boolean
+          label?: string | null
           nearest_landmark: string
           neighborhood?: string | null
           phone_number: string
@@ -6093,6 +6095,7 @@ export type Database = {
           governorate?: string
           id?: string
           is_default?: boolean
+          label?: string | null
           nearest_landmark?: string
           neighborhood?: string | null
           phone_number?: string
