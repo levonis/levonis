@@ -1,45 +1,49 @@
 
 
-# خطة: تحسين صفحة الأمنيات بشكل جذري + رفع صور بدل روابط
+# خطة: إصلاح أسعار البيع المباشر + تكرار الخيارات في السلة
 
-## 1. Storage Bucket للصور
-إنشاء bucket `wish-images` عام مع RLS policies للرفع (مستخدم مسجل فقط) والقراءة (الكل).
+## المشاكل المكتشفة
 
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('wish-images', 'wish-images', true);
--- RLS: authenticated users upload, public read
+### 1. تكرار الخيارات في قاعدة البيانات
+المنتج `a7059f64` يحتوي على 4 خيارات بدلاً من 2 — نسختان مكررتان:
+- "بكرة كاملة" مكررة (id: `b6141f0a` و `a2af2677`)
+- "تعبئة بدون روله" مكررة (id: `a8751134` و `f7eaef75`)
+
+**السبب**: عند تعديل المنتج، يتم حذف الخيارات القديمة وإضافة الجديدة — لكن يبدو أن عملية الحذف لا تنتظر اكتمالها قبل الإدراج. سنضيف `await` والتأكد من الحذف الكامل.
+
+### 2. سعر البيع المباشر لا يظهر في السلة
+في `Cart.tsx` (سطور 1022-1028) و `GroupedCartItem.tsx` (سطور 35-39):
+- يستخدم دائماً `product.price` (أقل سعر) بدون التحقق من `sale_type`
+- لا يستخدم `direct_sale_price` أو `sea_price` / `air_price`
+
+### 3. سعر اللون لا يتحدث حسب نوع البيع
+عند اختيار لون في البيع المباشر، يجب استخدام `colorData.direct_sale_price` بدلاً من `colorData.price`.
+
+---
+
+## الإصلاحات
+
+### 1. `src/pages/Admin.tsx` — منع تكرار الخيارات
+- التأكد من `await` كامل عند حذف الخيارات القديمة قبل إدراج الجديدة
+
+### 2. `src/pages/Cart.tsx` — إصلاح حساب سعر العنصر المفرد
+في سطور 1022-1038: إضافة نفس منطق الأسعار الموجود في `useCart.tsx`:
+```
+const isDirect = item.sale_type === 'direct';
+if (isDirect && item.products?.direct_sale_price) → استخدم direct_sale_price
+if (!isDirect) → استخدم sea_price / air_price حسب shipping_type
+// اللون: isDirect ? colorData.direct_sale_price : colorData.price
 ```
 
-## 2. إعادة كتابة `src/pages/Wishes.tsx` بالكامل
-- **رفع صورة**: استبدال حقل رابط الصورة بمنطقة رفع (drag & drop / click) مع معاينة فورية
-- Upload إلى `wish-images` bucket ثم تخزين الـ public URL في `image_url`
-- **UI جديد بالكامل**:
-  - Header مع خلفية gradient وأيقونة متحركة (animate-fade-in + floating sparkles)
-  - بطاقة "أمنيتك" المثبتة بتأثير glassmorphism مع حدود متوهجة (glow border animation)
-  - زر "تمنّى أمنية" بتأثير pulse و hover scale
-  - بطاقات الأمنيات بتصميم grid ثنائي الأعمدة على الموبايل مع:
-    - صورة كبيرة في الأعلى
-    - عنوان + وصف
-    - سعر بـ badge ذهبي
-    - زر إعجاب متحرك (scale animation عند الضغط)
-    - عداد الإعجابات
-  - Staggered fade-in animation لكل بطاقة
-  - Skeleton loading بدل Loader2
-  - حالة فارغة بتصميم جميل
+### 3. `src/components/GroupedCartItem.tsx` — إصلاح `calculateItemPrice`
+في سطور 35-39: نفس المنطق — استخدام `direct_sale_price` / `sea_price` / `air_price` حسب `sale_type` بدلاً من `product.price` دائماً.
 
-## 3. تحسين زر الأمنيات في `src/pages/Home.tsx`
-- تحويله من رابط بسيط إلى بنر أنيق مع:
-  - خلفية gradient متحركة
-  - أيقونة نجمة متحركة (animate-pulse)
-  - سهم يمين متحرك
-  - تأثير hover مع scale و glow
+### 4. تنظيف الخيارات المكررة
+تشغيل migration لحذف الخيارات المكررة من قاعدة البيانات.
 
-## 4. تحديث `src/pages/AdminWishes.tsx`
-- استبدال حقل رابط الصورة في Dialog التعديل بعنصر رفع صورة + معاينة
-
-## الملفات المتأثرة
-- Migration SQL — bucket + storage policies
-- `src/pages/Wishes.tsx` — إعادة كتابة كاملة
-- `src/pages/Home.tsx` — تحسين زر الأمنيات (سطور 105-113)
-- `src/pages/AdminWishes.tsx` — إضافة رفع صورة في التعديل
+### الملفات المتأثرة
+- `src/pages/Admin.tsx` — await delete options
+- `src/pages/Cart.tsx` — حساب سعر العنصر
+- `src/components/GroupedCartItem.tsx` — حساب سعر العنصر
+- Migration SQL — تنظيف الخيارات المكررة
 
