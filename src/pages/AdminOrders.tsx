@@ -116,9 +116,10 @@ const AdminOrders = () => {
     }
   }, [taxPercentage, subtotalAmount]);
   
-  // Calculate profit dynamically
-  // Profit = total_amount - delivery_fee - admin_product_cost (delivery fee is NOT profit)
-  const calculatedProfit = totalAmount - deliveryFee - adminProductCost;
+  // Profit = commission from product (commission_direct_iqd * quantity) for direct sale
+  // Falls back to total - delivery - cost if no commission data
+  const [commissionProfit, setCommissionProfit] = useState(0);
+  const calculatedProfit = commissionProfit > 0 ? commissionProfit : (totalAmount - deliveryFee - adminProductCost);
   
   useEffect(() => {
     const status = searchParams.get('status');
@@ -133,7 +134,7 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, sale_type, products!order_items_product_id_fkey(cost_price, other_costs_iqd, shipping_cost_iqd))
+          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, sale_type, products!order_items_product_id_fkey(cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd))
         `)
         .order('created_at', { ascending: false });
 
@@ -473,6 +474,7 @@ const AdminOrders = () => {
     if (isDirectSale && (!order.admin_product_cost || order.admin_product_cost === 0)) {
       const items = order.order_items || [];
       let totalCost = 0;
+      let totalCommission = 0;
       for (const item of items) {
         // Product cost = cost_price + other_costs_iqd + shipping_cost_iqd (from products table)
         const product = item.products || {};
@@ -481,10 +483,15 @@ const AdminOrders = () => {
         const itemShippingCost = product.shipping_cost_iqd || 0;
         const itemTotalCost = itemCostPrice + itemOtherCosts + itemShippingCost;
         totalCost += itemTotalCost * (item.quantity || 1);
+        // Commission = profit per item for direct sale
+        const itemCommission = product.commission_direct_iqd || 0;
+        totalCommission += itemCommission * (item.quantity || 1);
       }
       setAdminProductCost(totalCost);
+      setCommissionProfit(totalCommission);
     } else {
       setAdminProductCost(order.admin_product_cost || 0);
+      setCommissionProfit(0);
     }
     
     setTaxAmount(order.tax_amount || 0);
