@@ -92,7 +92,7 @@ const AdminOrders = () => {
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
   const [quickViewOrder, setQuickViewOrder] = useState<any>(null);
-  
+  const [quickViewLoading, setQuickViewLoading] = useState(false);
   // Edit form state
   const [editStatus, setEditStatus] = useState('');
   const [editPaymentStatus, setEditPaymentStatus] = useState('');
@@ -145,6 +145,67 @@ const AdminOrders = () => {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  // Always fetch full order items for quick preview to avoid partial list data
+  useEffect(() => {
+    if (!quickViewOrder?.id) return;
+
+    let isActive = true;
+
+    const fetchQuickViewDetails = async () => {
+      setQuickViewLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          total_amount,
+          phone_number,
+          shipping_address,
+          governorate,
+          profiles(full_name, username),
+          order_items!order_items_order_id_fkey(
+            id,
+            product_id,
+            custom_request_id,
+            product_name_ar,
+            product_name,
+            quantity,
+            unit_price,
+            total_price,
+            selected_color,
+            selected_option,
+            shipping_option_name_ar,
+            color_image_url,
+            products!order_items_product_id_fkey(name_ar, image_url, images),
+            custom_product_requests(product_name, image_url)
+          )
+        `)
+        .eq('id', quickViewOrder.id)
+        .maybeSingle();
+
+      if (!isActive) return;
+
+      if (error) {
+        console.error('Quick view order fetch failed:', error);
+        toast.error('تعذر تحميل تفاصيل المنتجات');
+        setQuickViewLoading(false);
+        return;
+      }
+
+      if (data) {
+        setQuickViewOrder((prev: any) => (prev?.id === data.id ? { ...prev, ...data } : prev));
+      }
+
+      setQuickViewLoading(false);
+    };
+
+    fetchQuickViewDetails();
+
+    return () => {
+      isActive = false;
+    };
+  }, [quickViewOrder?.id]);
 
   // Helper function to check if order is pre-order
   const checkIfPreOrder = (orderItems: any[]): boolean => {
@@ -1009,7 +1070,10 @@ const AdminOrders = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => setQuickViewOrder(order)}
+                                onClick={() => {
+                                  setQuickViewLoading(true);
+                                  setQuickViewOrder(order);
+                                }}
                                 title="عرض المنتجات"
                               >
                                 <Eye className="h-4 w-4" />
@@ -1421,7 +1485,12 @@ const AdminOrders = () => {
       )}
 
       {/* Quick View Dialog */}
-      <Dialog open={!!quickViewOrder} onOpenChange={(open) => !open && setQuickViewOrder(null)}>
+      <Dialog open={!!quickViewOrder} onOpenChange={(open) => {
+        if (!open) {
+          setQuickViewOrder(null);
+          setQuickViewLoading(false);
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-right">
@@ -1455,31 +1524,49 @@ const AdminOrders = () => {
 
               {/* Products */}
               <div className="space-y-2">
-                {(quickViewOrder.order_items || []).map((item: any) => (
-                  <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
-                    {item.color_image_url && (
-                      <img src={item.color_image_url} className="w-12 h-12 rounded-lg object-cover border border-border" alt="" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">{item.product_name_ar}</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.selected_color && (
-                          <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_color}</Badge>
-                        )}
-                        {item.selected_option && (
-                          <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_option}</Badge>
-                        )}
-                        {item.shipping_option_name_ar && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5">{item.shipping_option_name_ar}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-left shrink-0">
-                      <span className="text-sm font-bold text-foreground">×{item.quantity}</span>
-                      <p className="text-[11px] text-muted-foreground">{formatPrice(item.unit_price)}</p>
-                    </div>
+                {quickViewLoading ? (
+                  <div className="rounded-lg border border-border p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري تحميل المنتجات...
                   </div>
-                ))}
+                ) : (quickViewOrder.order_items || []).length === 0 ? (
+                  <div className="rounded-lg border border-border p-4 text-center text-sm text-muted-foreground">
+                    لا توجد منتجات في هذا الطلب
+                  </div>
+                ) : (
+                  (quickViewOrder.order_items || []).map((item: any, index: number) => {
+                    const itemName = item.product_name_ar || item.product_name || item.products?.name_ar || item.custom_product_requests?.product_name || 'منتج';
+                    const itemQty = item.quantity ?? 1;
+                    const itemPrice = item.unit_price ?? item.total_price ?? 0;
+                    const itemImage = item.color_image_url || item.products?.images?.[0] || item.products?.image_url || item.custom_product_requests?.image_url;
+
+                    return (
+                      <div key={item.id || `${quickViewOrder.id}-${index}`} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                        {itemImage && (
+                          <img src={itemImage} className="w-12 h-12 rounded-lg object-cover border border-border" alt={itemName} loading="lazy" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{itemName}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.selected_color && (
+                              <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_color}</Badge>
+                            )}
+                            {item.selected_option && (
+                              <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_option}</Badge>
+                            )}
+                            {item.shipping_option_name_ar && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5">{item.shipping_option_name_ar}</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-left shrink-0">
+                          <span className="text-sm font-bold text-foreground">×{itemQty}</span>
+                          <p className="text-[11px] text-muted-foreground">{formatPrice(itemPrice)}</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
               {/* Total */}
