@@ -1,51 +1,45 @@
 
 
-# خطة: إصلاح عرض الأسعار المختلفة (بيع مباشر / طلب مسبق بحري / جوي)
+# خطة: تحسين صفحة الأمنيات بشكل جذري + رفع صور بدل روابط
 
-## المشكلة
-عند حفظ المنتج في الأدمن، يتم حساب أسعار مختلفة لكل نوع بيع:
-- **بحري**: سعر USD × سعر الصرف + شحن بحري + عمولة بحري
-- **جوي**: سعر USD × سعر الصرف + شحن جوي + عمولة جوي  
-- **بيع مباشر**: سعر USD × سعر الصرف + تكاليف أخرى + عمولة مباشر
+## 1. Storage Bucket للصور
+إنشاء bucket `wish-images` عام مع RLS policies للرفع (مستخدم مسجل فقط) والقراءة (الكل).
 
-لكن يُخزّن فقط **أقل سعر** في `product.price`، ولا يُخزّن `direct_sale_price` ولا أسعار الشحن المنفصلة. فتظهر نفس الأسعار لكل الأنواع.
-
-## الحل
-
-### 1. إضافة أعمدة جديدة للأسعار المنفصلة (Migration)
 ```sql
-ALTER TABLE products ADD COLUMN IF NOT EXISTS sea_price numeric;
-ALTER TABLE products ADD COLUMN IF NOT EXISTS air_price numeric;
-```
-- `direct_sale_price` موجود بالفعل لكنه فارغ
-- `sea_price` و `air_price` جديدة لأسعار الطلب المسبق
-
-### 2. تحديث حفظ المنتج في Admin.tsx
-بعد حساب الأسعار (سطر 1260-1262)، تخزين كل سعر في العمود المناسب:
-- `values.direct_sale_price = priceIqd + otherCosts + commissionDirect` (عند `hasInStock`)
-- `values.sea_price = priceIqd + seaShipping + commissionSea` (عند شحن بحري)
-- `values.air_price = priceIqd + airShipping + commissionAir` (عند شحن جوي)
-- `values.price` يبقى الأقل (للعرض في القوائم)
-
-### 3. تحديث ProductDetail.tsx - `getPrice()`
-```
-if (activeSaleType === 'direct') → product.direct_sale_price || product.price
-if (activeSaleType === 'preorder'):
-  - إذا كان shipping_type = 'sea' → product.sea_price || product.price  
-  - إذا كان shipping_type = 'air' → product.air_price || product.price
-  - إذا كان shipping_type = 'both' → عرض خيارات الشحن مع أسعار مختلفة
+INSERT INTO storage.buckets (id, name, public) VALUES ('wish-images', 'wish-images', true);
+-- RLS: authenticated users upload, public read
 ```
 
-عند `shipping_type = 'both'`, نملأ `pre_order_shipping_options` تلقائياً بخياري البحري والجوي مع `price_adjustment` محسوب من الفرق.
+## 2. إعادة كتابة `src/pages/Wishes.tsx` بالكامل
+- **رفع صورة**: استبدال حقل رابط الصورة بمنطقة رفع (drag & drop / click) مع معاينة فورية
+- Upload إلى `wish-images` bucket ثم تخزين الـ public URL في `image_url`
+- **UI جديد بالكامل**:
+  - Header مع خلفية gradient وأيقونة متحركة (animate-fade-in + floating sparkles)
+  - بطاقة "أمنيتك" المثبتة بتأثير glassmorphism مع حدود متوهجة (glow border animation)
+  - زر "تمنّى أمنية" بتأثير pulse و hover scale
+  - بطاقات الأمنيات بتصميم grid ثنائي الأعمدة على الموبايل مع:
+    - صورة كبيرة في الأعلى
+    - عنوان + وصف
+    - سعر بـ badge ذهبي
+    - زر إعجاب متحرك (scale animation عند الضغط)
+    - عداد الإعجابات
+  - Staggered fade-in animation لكل بطاقة
+  - Skeleton loading بدل Loader2
+  - حالة فارغة بتصميم جميل
 
-### 4. تحديث الأسعار في Cart وuseCart
-- `Cart.tsx`: استخدام `direct_sale_price` / `sea_price` / `air_price` حسب نوع الطلب
-- `useCart.tsx`: جلب الأعمدة الجديدة وحساب السعر الصحيح
+## 3. تحسين زر الأمنيات في `src/pages/Home.tsx`
+- تحويله من رابط بسيط إلى بنر أنيق مع:
+  - خلفية gradient متحركة
+  - أيقونة نجمة متحركة (animate-pulse)
+  - سهم يمين متحرك
+  - تأثير hover مع scale و glow
 
-### الملفات المتأثرة
-- Migration SQL — إضافة `sea_price`, `air_price`
-- `src/pages/Admin.tsx` — تخزين الأسعار المنفصلة عند الحفظ
-- `src/pages/ProductDetail.tsx` — عرض السعر حسب النوع المختار
-- `src/hooks/useCart.tsx` — حساب السعر الصحيح بالسلة
-- `src/pages/Cart.tsx` — عرض السعر الصحيح بالسلة
+## 4. تحديث `src/pages/AdminWishes.tsx`
+- استبدال حقل رابط الصورة في Dialog التعديل بعنصر رفع صورة + معاينة
+
+## الملفات المتأثرة
+- Migration SQL — bucket + storage policies
+- `src/pages/Wishes.tsx` — إعادة كتابة كاملة
+- `src/pages/Home.tsx` — تحسين زر الأمنيات (سطور 105-113)
+- `src/pages/AdminWishes.tsx` — إضافة رفع صورة في التعديل
 
