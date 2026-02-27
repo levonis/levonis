@@ -102,6 +102,7 @@ const Admin = () => {
     taobao_linked_name?: string | null;
     linked_options?: string[];
     direct_sale_price?: number;
+    option_stocks?: Record<string, number>;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -1154,6 +1155,9 @@ const Admin = () => {
         original_price: formData.get('original_price') && formData.get('original_price') !== '' 
           ? Number(formData.get('original_price')) 
           : null,
+        original_price_usd: formData.get('original_price_usd') && formData.get('original_price_usd') !== '' 
+          ? Number(formData.get('original_price_usd')) 
+          : null,
         cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
           ? Number(formData.get('cost_price')) 
           : null,
@@ -1260,6 +1264,30 @@ const Admin = () => {
         // Use the lowest price as the main display price
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
+
+        // Calculate original_price from original_price_usd if set
+        const origUsd = values.original_price_usd;
+        if (origUsd && origUsd > 0) {
+          const origPriceIqd = Math.round(origUsd * settings.usd_to_iqd_rate);
+          // Use lowest-price type's commission/costs for original price too
+          if (hasInStock) {
+            values.original_price = origPriceIqd + otherCostsIqdVal + commissionDirectIqdVal;
+          } else if (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) {
+            const dims2 = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
+              ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 } : null;
+            const seaCalc2 = calculateShippingCost('china', 'sea', dims2, null, settings);
+            values.original_price = origPriceIqd + seaCalc2.shippingCost + commissionSeaIqdVal;
+          } else if (hasPreOrder && shippingType === 'air') {
+            const dims2 = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
+              ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 } : null;
+            const airCalc2 = calculateShippingCost('china', 'air', dims2, values.weight_kg > 0 ? values.weight_kg : null, settings);
+            values.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqdVal;
+          } else {
+            values.original_price = origPriceIqd;
+          }
+        } else {
+          values.original_price = null;
+        }
       }
 
       // Validate with zod
@@ -1300,6 +1328,7 @@ const Admin = () => {
             price_adjustment: opt.price_adjustment,
             in_stock: opt.in_stock,
             image_url: opt.image_url || null,
+            stock_quantity: opt.stock_quantity ?? null,
             available_for_direct_sale: opt.available_for_direct_sale ?? true,
             available_for_pre_order: opt.available_for_pre_order ?? false
           }));
@@ -2705,7 +2734,7 @@ const Admin = () => {
                                  {color.available_for_direct_sale && (
                                    <div className="space-y-2 pt-2 border-t border-border/50">
                                      <Label className="text-xs font-medium">إعدادات البيع المباشر</Label>
-                                     <div className="grid grid-cols-2 gap-3">
+                                     <div className="space-y-3">
                                        <div className="space-y-1">
                                          <Label className="text-xs">سعر البيع المباشر (د.ع)</Label>
                                          <Input
@@ -2717,17 +2746,46 @@ const Admin = () => {
                                            className="h-9"
                                          />
                                        </div>
-                                       <div className="space-y-1">
-                                         <Label className="text-xs">كمية المخزون</Label>
-                                         <Input
-                                           type="number"
-                                           min="0"
-                                           value={color.stock_quantity ?? ''}
-                                           onChange={(e) => updateProductColor(index, 'stock_quantity', e.target.value ? Number(e.target.value) : undefined)}
-                                           placeholder="غير محدود"
-                                           className="h-9"
-                                         />
-                                       </div>
+                                       
+                                       {/* Per-option stock or single stock */}
+                                       {(color.linked_options && color.linked_options.length > 0) ? (
+                                         <div className="space-y-2">
+                                           <Label className="text-xs">مخزون لكل خيار</Label>
+                                           {color.linked_options.map((optName) => (
+                                             <div key={optName} className="flex items-center gap-2">
+                                               <span className="text-xs text-muted-foreground min-w-[80px]">{optName}:</span>
+                                               <Input
+                                                 type="number"
+                                                 min="0"
+                                                 value={color.option_stocks?.[optName] ?? ''}
+                                                 onChange={(e) => {
+                                                   const currentStocks = { ...(color.option_stocks || {}) };
+                                                   if (e.target.value) {
+                                                     currentStocks[optName] = Number(e.target.value);
+                                                   } else {
+                                                     delete currentStocks[optName];
+                                                   }
+                                                   updateProductColor(index, 'option_stocks', Object.keys(currentStocks).length > 0 ? currentStocks : undefined);
+                                                 }}
+                                                 placeholder="غير محدود"
+                                                 className="h-8 w-24"
+                                               />
+                                             </div>
+                                           ))}
+                                         </div>
+                                       ) : (
+                                         <div className="space-y-1">
+                                           <Label className="text-xs">كمية المخزون</Label>
+                                           <Input
+                                             type="number"
+                                             min="0"
+                                             value={color.stock_quantity ?? ''}
+                                             onChange={(e) => updateProductColor(index, 'stock_quantity', e.target.value ? Number(e.target.value) : undefined)}
+                                             placeholder="غير محدود"
+                                             className="h-9"
+                                           />
+                                         </div>
+                                       )}
                                      </div>
                                    </div>
                                  )}

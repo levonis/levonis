@@ -4862,6 +4862,7 @@ export type Database = {
           name_ar: string
           price_adjustment: number | null
           product_id: string
+          stock_quantity: number | null
           taobao_available: boolean | null
           taobao_last_sync_at: string | null
           taobao_sku_id: string | null
@@ -4877,6 +4878,7 @@ export type Database = {
           name_ar: string
           price_adjustment?: number | null
           product_id: string
+          stock_quantity?: number | null
           taobao_available?: boolean | null
           taobao_last_sync_at?: string | null
           taobao_sku_id?: string | null
@@ -4892,6 +4894,7 @@ export type Database = {
           name_ar?: string
           price_adjustment?: number | null
           product_id?: string
+          stock_quantity?: number | null
           taobao_available?: boolean | null
           taobao_last_sync_at?: string | null
           taobao_sku_id?: string | null
