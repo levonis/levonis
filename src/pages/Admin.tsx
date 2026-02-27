@@ -1544,14 +1544,14 @@ const Admin = () => {
         })()}
 
         {/* Statistics Cards */}
-        <div className="admin-grid-5 mb-8">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-2.5 mb-6">
           <div className="admin-stat-card text-center">
-            <div className="admin-stat-value">{stats?.totalProducts || 0}</div>
-            <div className="admin-stat-label">إجمالي المنتجات</div>
+            <div className="admin-stat-value text-lg md:text-xl">{stats?.totalProducts || 0}</div>
+            <div className="admin-stat-label">المنتجات</div>
           </div>
 
           <div className="admin-stat-card text-center">
-            <div className="admin-stat-value">{stats?.totalCategories || 0}</div>
+            <div className="admin-stat-value text-lg md:text-xl">{stats?.totalCategories || 0}</div>
             <div className="admin-stat-label">الأقسام</div>
           </div>
 
@@ -1559,12 +1559,12 @@ const Admin = () => {
             className="admin-stat-card text-center cursor-pointer relative"
             onClick={() => navigate(ADMIN_ROUTES.orders + '?status=pending')}
           >
-            <div className="admin-stat-value text-amber-500">{stats?.pendingOrders || 0}</div>
-            <div className="admin-stat-label">طلبات معلقة</div>
+            <div className="admin-stat-value text-lg md:text-xl text-amber-500">{stats?.pendingOrders || 0}</div>
+            <div className="admin-stat-label">معلقة</div>
             {stats?.pendingOrders && stats.pendingOrders > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full animate-pulse"
               >
                 {stats.pendingOrders}
               </Badge>
@@ -1575,25 +1575,24 @@ const Admin = () => {
             className="admin-stat-card text-center cursor-pointer"
             onClick={() => navigate(ADMIN_ROUTES.orders)}
           >
-            <div className="flex justify-center mb-2">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Package className="h-6 w-6 text-primary" />
+            <div className="flex justify-center mb-1">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Package className="h-4 w-4 text-primary" />
               </div>
             </div>
-            <div className="text-sm font-semibold text-foreground">جميع الطلبات</div>
-            <div className="admin-stat-label">تعديل وإدارة</div>
+            <div className="text-xs font-semibold text-foreground">الطلبات</div>
           </div>
 
           <div 
             className="admin-stat-card text-center cursor-pointer relative"
             onClick={() => setActiveTab('custom-requests')}
           >
-            <div className="admin-stat-value text-orange-500">{pendingRequestsCount || 0}</div>
-            <div className="admin-stat-label">طلبات خاصة معلقة</div>
+            <div className="admin-stat-value text-lg md:text-xl text-orange-500">{pendingRequestsCount || 0}</div>
+            <div className="admin-stat-label">خاصة</div>
             {pendingRequestsCount && pendingRequestsCount > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full animate-pulse"
               >
                 !
               </Badge>
@@ -1602,40 +1601,40 @@ const Admin = () => {
         </div>
 
         {/* Quick Actions - Settings & Management */}
-        <div className="admin-card mb-8">
+        <div className="admin-card mb-6">
           <div className="admin-card-header">
             <div className="admin-card-title">
-              <Bell className="h-5 w-5 text-primary" />
+              <Bell className="h-4 w-4 text-primary" />
               الإعدادات والإدارة
             </div>
           </div>
           <div className="admin-card-content">
-            <div className="admin-grid-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-2.5">
               {[
-                { icon: Bell, title: 'إدارة الإشعارات', desc: 'إرسال إشعارات للمستخدمين', path: ADMIN_ROUTES.notifications },
-                { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إدارة الإعلانات المتحركة', path: ADMIN_ROUTES.announcements },
-                { icon: Ticket, title: 'إدارة الكوبونات', desc: 'إنشاء وإدارة الخصومات', path: ADMIN_ROUTES.coupons },
-                { icon: Package, title: 'إدارة الطلبات', desc: 'تتبع وإدارة الطلبات', path: ADMIN_ROUTES.orders },
-                { icon: FileText, title: 'الطلبات المخصصة', desc: 'مراجعة طلبات العملاء', action: () => setActiveTab('custom-requests'), badge: pendingRequestsCount },
-                { icon: Zap, title: 'الإعدادات الافتراضية', desc: 'تخصيص القيم الافتراضية', path: ADMIN_ROUTES.defaultSettings },
-                { icon: Coins, title: 'إعدادات النقاط', desc: 'إدارة نظام المكافآت', path: ADMIN_ROUTES.pointsSettings },
-                { icon: Award, title: 'مستويات الولاء', desc: 'إدارة المستويات والمزايا', path: ADMIN_ROUTES.loyaltyLevels },
-                { icon: Wallet, title: 'إدارة المحفظة', desc: 'تعبئة وسحب الأرصدة', path: ADMIN_ROUTES.wallet },
-                { icon: MessageCircle, title: 'محادثات العملاء', desc: 'الدعم والمساعدة', path: ADMIN_ROUTES.chats },
-                { icon: Receipt, title: 'قوالب الفواتير', desc: 'تخصيص تصميم الفاتورة', path: ADMIN_ROUTES.invoiceTemplates },
-                { icon: FileText, title: 'الفواتير المحفوظة', desc: 'مراجعة وإدارة الفواتير', path: ADMIN_ROUTES.savedInvoices },
-                { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: ADMIN_ROUTES.financials },
-                { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: ADMIN_ROUTES.partialPaymentSettings },
-                { icon: Trophy, title: 'المسابقات', desc: 'إدارة المسابقات والسحوبات', path: ADMIN_ROUTES.competitions },
-                { icon: Gift, title: 'عروض المنتجات', desc: 'إدارة العروض والمبيعات', path: ADMIN_ROUTES.productOffers },
-                { icon: Shield, title: 'حماية الطابعات', desc: 'إدارة اشتراكات الحماية', path: ADMIN_ROUTES.printerProtection },
-                { icon: Truck, title: 'إعدادات الشحن', desc: 'أسعار وحساب تكلفة الشحن', path: ADMIN_ROUTES.shippingSettings },
-                { icon: Sparkles, title: 'مجتمع ليفو', desc: 'التجار والعملاء والهدايا والكوبونات', path: ADMIN_ROUTES.levoCommunity },
-                { icon: Users, title: 'إدارة المستخدمين', desc: 'عرض جميع المستخدمين والتجار', path: ADMIN_ROUTES.users },
-                { icon: ImageIcon, title: 'إدارة الستوريات', desc: 'أقسام وفيديوهات الصفحة الرئيسية', path: ADMIN_ROUTES.stories },
-                { icon: Music, title: 'موسيقى الألعاب', desc: 'رفع وإدارة محطات الموسيقى', path: ADMIN_ROUTES.gameMusic },
-                { icon: BadgeDollarSign, title: 'مطابقة الأسعار', desc: 'طلبات العملاء لأسعار أقل', path: ADMIN_ROUTES.priceMatch },
-                { icon: Sparkles, title: 'إدارة الأمنيات', desc: 'مراجعة أمنيات العملاء', path: ADMIN_ROUTES.wishes },
+                { icon: Bell, title: 'الإشعارات', desc: 'إرسال إشعارات', path: ADMIN_ROUTES.notifications },
+                { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إعلانات متحركة', path: ADMIN_ROUTES.announcements },
+                { icon: Ticket, title: 'الكوبونات', desc: 'خصومات', path: ADMIN_ROUTES.coupons },
+                { icon: Package, title: 'الطلبات', desc: 'تتبع وإدارة', path: ADMIN_ROUTES.orders },
+                { icon: FileText, title: 'طلبات مخصصة', desc: 'مراجعة', action: () => setActiveTab('custom-requests'), badge: pendingRequestsCount },
+                { icon: Zap, title: 'الافتراضية', desc: 'قيم افتراضية', path: ADMIN_ROUTES.defaultSettings },
+                { icon: Coins, title: 'النقاط', desc: 'مكافآت', path: ADMIN_ROUTES.pointsSettings },
+                { icon: Award, title: 'الولاء', desc: 'مستويات', path: ADMIN_ROUTES.loyaltyLevels },
+                { icon: Wallet, title: 'المحفظة', desc: 'أرصدة', path: ADMIN_ROUTES.wallet },
+                { icon: MessageCircle, title: 'المحادثات', desc: 'دعم', path: ADMIN_ROUTES.chats },
+                { icon: Receipt, title: 'الفواتير', desc: 'قوالب', path: ADMIN_ROUTES.invoiceTemplates },
+                { icon: FileText, title: 'فواتير محفوظة', desc: 'مراجعة', path: ADMIN_ROUTES.savedInvoices },
+                { icon: TrendingUp, title: 'المالية', desc: 'تحليلات', path: ADMIN_ROUTES.financials },
+                { icon: Percent, title: 'دفع جزئي', desc: 'رسوم', path: ADMIN_ROUTES.partialPaymentSettings },
+                { icon: Trophy, title: 'المسابقات', desc: 'سحوبات', path: ADMIN_ROUTES.competitions },
+                { icon: Gift, title: 'العروض', desc: 'منتجات', path: ADMIN_ROUTES.productOffers },
+                { icon: Shield, title: 'الحماية', desc: 'طابعات', path: ADMIN_ROUTES.printerProtection },
+                { icon: Truck, title: 'الشحن', desc: 'إعدادات', path: ADMIN_ROUTES.shippingSettings },
+                { icon: Sparkles, title: 'مجتمع ليفو', desc: 'تجار وعملاء', path: ADMIN_ROUTES.levoCommunity },
+                { icon: Users, title: 'المستخدمين', desc: 'إدارة', path: ADMIN_ROUTES.users },
+                { icon: ImageIcon, title: 'ستوريات', desc: 'فيديوهات', path: ADMIN_ROUTES.stories },
+                { icon: Music, title: 'موسيقى', desc: 'ألعاب', path: ADMIN_ROUTES.gameMusic },
+                { icon: BadgeDollarSign, title: 'مطابقة أسعار', desc: 'طلبات', path: ADMIN_ROUTES.priceMatch },
+                { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
               ].map((item, idx) => (
                 <button
                   key={idx}
@@ -1645,12 +1644,14 @@ const Admin = () => {
                   <div className="icon-wrapper">
                     <item.icon />
                   </div>
-                  <span className="btn-title">{item.title}</span>
-                  <span className="btn-desc">{item.desc}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="btn-title">{item.title}</span>
+                    <span className="btn-desc">{item.desc}</span>
+                  </div>
                   {item.badge && item.badge > 0 && (
                     <Badge 
                       variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full"
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full"
                     >
                       {item.badge > 9 ? '9+' : item.badge}
                     </Badge>
@@ -1662,15 +1663,15 @@ const Admin = () => {
         </div>
 
         {/* Quick Actions - Content Management */}
-        <div className="admin-card mb-8">
+        <div className="admin-card mb-6">
           <div className="admin-card-header">
             <div className="admin-card-title">
-              <Plus className="h-5 w-5 text-primary" />
+              <Plus className="h-4 w-4 text-primary" />
               إضافة محتوى جديد
             </div>
           </div>
           <div className="admin-card-content">
-            <div className="admin-grid-3">
+            <div className="grid grid-cols-3 gap-2.5 md:gap-3">
               <Button
                 onClick={() => {
                   setActiveTab('products');
@@ -1681,11 +1682,10 @@ const Admin = () => {
                   setProductFeatures([]);
                   setProductDialogOpen(true);
                 }}
-                className="admin-btn-primary gap-3 h-auto py-8 flex-col"
+                className="admin-btn-primary gap-2 h-auto py-5 flex-col rounded-xl"
               >
-                <Plus className="h-10 w-10" />
-                <span className="text-sm font-semibold">منتج جديد</span>
-                <span className="text-xs opacity-90">إضافة منتج للمتجر</span>
+                <Plus className="h-7 w-7 md:h-8 md:w-8" />
+                <span className="text-xs font-semibold">منتج جديد</span>
               </Button>
               
               <Button
@@ -1694,11 +1694,10 @@ const Admin = () => {
                   setEditingCategory(null);
                   setCategoryDialogOpen(true);
                 }}
-                className="admin-btn-primary gap-3 h-auto py-8 flex-col"
+                className="admin-btn-primary gap-2 h-auto py-5 flex-col rounded-xl"
               >
-                <FolderOpen className="h-10 w-10" />
-                <span className="text-sm font-semibold">قسم جديد</span>
-                <span className="text-xs opacity-90">إضافة قسم للمنتجات</span>
+                <FolderOpen className="h-7 w-7 md:h-8 md:w-8" />
+                <span className="text-xs font-semibold">قسم جديد</span>
               </Button>
               
               <Button
@@ -1707,11 +1706,10 @@ const Admin = () => {
                   setEditingMainSection(null);
                   setMainSectionDialogOpen(true);
                 }}
-                className="admin-btn-primary gap-3 h-auto py-8 flex-col"
+                className="admin-btn-primary gap-2 h-auto py-5 flex-col rounded-xl"
               >
-                <FolderOpen className="h-10 w-10" />
-                <span className="text-sm font-semibold">قسم رئيسي</span>
-                <span className="text-xs opacity-90">إضافة قسم رئيسي</span>
+                <FolderOpen className="h-7 w-7 md:h-8 md:w-8" />
+                <span className="text-xs font-semibold">قسم رئيسي</span>
               </Button>
             </div>
           </div>

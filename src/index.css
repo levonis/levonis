@@ -639,7 +639,7 @@
 }
 
 /* ================================
-   ADMIN DASHBOARD STYLES - PROFESSIONAL UI
+   ADMIN DASHBOARD STYLES - GLASSMORPHISM 3D UI
    ================================ */
 
 /* Admin page container */
@@ -649,81 +649,104 @@
 
 /* Admin header section */
 .admin-header {
-  @apply mb-6 md:mb-8 space-y-1;
+  @apply mb-5 md:mb-6 space-y-1;
 }
 
 .admin-header h1 {
-  @apply text-2xl md:text-3xl font-black text-foreground tracking-tight;
+  @apply text-xl md:text-2xl font-black text-foreground tracking-tight;
 }
 
 .admin-header p {
-  @apply text-sm text-muted-foreground;
+  @apply text-xs text-muted-foreground;
 }
 
-/* Admin Card enhancements */
+/* Admin Card - Glassmorphism 3D */
 .admin-card {
-  @apply rounded-xl border border-border/40 bg-card shadow-sm transition-all duration-200 overflow-x-auto;
+  @apply rounded-2xl border border-border/30 bg-card/80 backdrop-blur-md shadow-sm transition-all duration-300 overflow-x-auto;
+  background: linear-gradient(135deg, hsl(var(--card) / 0.85), hsl(var(--card) / 0.65));
 }
 
 .admin-card:hover {
-  @apply shadow-md border-border/60;
+  @apply shadow-md border-border/50;
 }
 
 .admin-card-header {
-  @apply p-4 md:p-5 pb-3 md:pb-4 border-b border-border/30;
+  @apply p-3.5 md:p-4 pb-2.5 md:pb-3 border-b border-border/20;
+  background: linear-gradient(180deg, hsl(var(--muted) / 0.15), transparent);
 }
 
 .admin-card-title {
-  @apply text-base md:text-lg font-bold text-foreground flex items-center gap-2;
+  @apply text-sm md:text-base font-bold text-foreground flex items-center gap-2;
 }
 
 .admin-card-content {
-  @apply p-4 md:p-5;
+  @apply p-3.5 md:p-4;
 }
 
-/* Admin Stats Cards */
+/* Admin Stats Cards - Compact Glassmorphism 3D */
 .admin-stat-card {
-  @apply rounded-xl border border-border/40 bg-card p-4 md:p-5 transition-all duration-200;
-  @apply hover:shadow-md hover:border-border/60;
+  @apply rounded-xl border border-border/30 p-3 md:p-3.5 transition-all duration-300;
+  background: linear-gradient(145deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.6));
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 hsl(var(--border) / 0.15);
+}
+
+.admin-stat-card:hover {
+  @apply border-border/50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 1px 0 hsl(var(--border) / 0.2);
+  transform: translateY(-1px);
 }
 
 .admin-stat-value {
-  @apply text-2xl md:text-3xl font-black text-primary tabular-nums;
+  @apply text-xl md:text-2xl font-black text-primary tabular-nums;
 }
 
 .admin-stat-label {
-  @apply text-xs text-muted-foreground font-medium mt-0.5;
+  @apply text-[10px] md:text-xs text-muted-foreground font-medium mt-0.5;
 }
 
-/* Admin Quick Action Buttons */
+/* Admin Quick Action Buttons - Glassmorphism 3D Horizontal */
 .admin-action-btn {
-  @apply relative flex flex-col items-center justify-center gap-2 p-4 md:p-5 rounded-xl border border-border/40 bg-card/50 transition-all duration-200;
-  @apply hover:bg-primary/5 hover:border-primary/40 hover:shadow-md;
+  @apply relative flex flex-row items-center gap-3 p-3 md:p-3.5 rounded-xl border border-border/30 transition-all duration-300;
+  background: linear-gradient(145deg, hsl(var(--card) / 0.85), hsl(var(--card) / 0.55));
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), inset 0 1px 0 hsl(var(--border) / 0.15);
+}
+
+.admin-action-btn:hover {
+  @apply border-primary/30;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.08), inset 0 1px 0 hsl(var(--primary) / 0.15);
+  transform: translateY(-1px);
 }
 
 .admin-action-btn .icon-wrapper {
-  @apply w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-transform duration-200;
+  @apply w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-all duration-300 shrink-0;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.08));
+  box-shadow: inset 0 1px 0 hsl(var(--primary) / 0.1);
 }
 
 .admin-action-btn:hover .icon-wrapper {
-  @apply scale-105 bg-primary/15;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--primary) / 0.12));
+  transform: scale(1.05);
 }
 
 .admin-action-btn .icon-wrapper svg {
-  @apply h-5 w-5 md:h-6 md:w-6 text-primary;
+  @apply h-4 w-4 md:h-5 md:w-5 text-primary;
 }
 
 .admin-action-btn .btn-title {
-  @apply text-xs md:text-sm font-semibold text-foreground text-center;
+  @apply text-xs md:text-sm font-semibold text-foreground text-right leading-tight;
 }
 
 .admin-action-btn .btn-desc {
-  @apply text-[10px] md:text-xs text-muted-foreground text-center leading-relaxed hidden md:block;
+  @apply text-[10px] text-muted-foreground text-right leading-tight hidden md:block;
 }
 
 /* Admin Table Styles */
 .admin-table-wrapper {
-  @apply rounded-xl border border-border/40 bg-card overflow-x-auto;
+  @apply rounded-xl border border-border/30 overflow-x-auto;
+  background: linear-gradient(145deg, hsl(var(--card) / 0.85), hsl(var(--card) / 0.65));
+  backdrop-filter: blur(12px);
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
 }
@@ -733,7 +756,7 @@
 }
 
 .admin-table thead {
-  @apply bg-muted/20;
+  background: linear-gradient(180deg, hsl(var(--muted) / 0.2), hsl(var(--muted) / 0.08));
 }
 
 .admin-table th {
@@ -741,7 +764,7 @@
 }
 
 .admin-table td {
-  @apply px-3 md:px-4 py-3 align-middle border-t border-border/20 text-sm;
+  @apply px-3 md:px-4 py-3 align-middle border-t border-border/15 text-sm;
 }
 
 .admin-table tr {
@@ -792,23 +815,23 @@
 
 /* Admin Input enhancements */
 .admin-input {
-  @apply h-10 md:h-11 rounded-lg border-border/50 bg-background/50 px-3 md:px-4 text-sm transition-all duration-150;
-  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply h-10 md:h-11 rounded-lg border-border/40 bg-background/60 backdrop-blur-sm px-3 md:px-4 text-sm transition-all duration-150;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/15;
 }
 
 .admin-select {
-  @apply h-10 md:h-11 rounded-lg border-border/50 bg-background/50 px-3 md:px-4 text-sm transition-all duration-150;
-  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply h-10 md:h-11 rounded-lg border-border/40 bg-background/60 backdrop-blur-sm px-3 md:px-4 text-sm transition-all duration-150;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/15;
 }
 
 .admin-textarea {
-  @apply rounded-lg border-border/50 bg-background/50 px-3 md:px-4 py-2.5 md:py-3 text-sm transition-all duration-150 min-h-[100px];
-  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply rounded-lg border-border/40 bg-background/60 backdrop-blur-sm px-3 md:px-4 py-2.5 md:py-3 text-sm transition-all duration-150 min-h-[100px];
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/15;
 }
 
 /* Admin Section Divider */
 .admin-section-divider {
-  @apply border-t border-border/30 pt-4 md:pt-5 mt-4 md:mt-5;
+  @apply border-t border-border/20 pt-4 md:pt-5 mt-4 md:mt-5;
 }
 
 .admin-section-title {
@@ -817,7 +840,9 @@
 
 /* Admin Filter Bar */
 .admin-filters {
-  @apply grid gap-3 md:gap-4 p-4 md:p-5 bg-muted/10 rounded-xl border border-border/30;
+  @apply grid gap-3 md:gap-4 p-3.5 md:p-4 rounded-xl border border-border/20;
+  background: linear-gradient(145deg, hsl(var(--muted) / 0.12), hsl(var(--muted) / 0.05));
+  backdrop-filter: blur(8px);
 }
 
 .admin-filter-group {
@@ -857,23 +882,38 @@
   @apply bg-primary/10 text-primary border border-primary/20;
 }
 
-/* Admin Buttons */
+/* Admin Buttons - Glassmorphism */
 .admin-btn-primary {
-  @apply h-10 md:h-11 px-4 md:px-6 rounded-lg font-semibold text-sm transition-all duration-200;
-  @apply bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-sm;
-  @apply hover:shadow-md hover:opacity-90;
+  @apply h-10 md:h-11 px-4 md:px-6 rounded-xl font-semibold text-sm transition-all duration-300;
+  @apply bg-gradient-to-b from-primary to-accent text-primary-foreground;
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.15), inset 0 1px 0 hsl(var(--primary-foreground) / 0.1);
+}
+
+.admin-btn-primary:hover {
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.2), inset 0 1px 0 hsl(var(--primary-foreground) / 0.15);
+  transform: translateY(-1px);
 }
 
 .admin-btn-secondary {
-  @apply h-10 md:h-11 px-4 md:px-6 rounded-lg font-medium text-sm transition-all duration-200;
-  @apply bg-muted/50 text-foreground border border-border/50;
-  @apply hover:bg-muted hover:border-border;
+  @apply h-10 md:h-11 px-4 md:px-6 rounded-xl font-medium text-sm transition-all duration-300;
+  @apply text-foreground border border-border/40;
+  background: linear-gradient(145deg, hsl(var(--muted) / 0.5), hsl(var(--muted) / 0.2));
+  backdrop-filter: blur(8px);
+}
+
+.admin-btn-secondary:hover {
+  @apply border-border/60;
+  transform: translateY(-1px);
 }
 
 .admin-btn-danger {
-  @apply h-10 md:h-11 px-4 md:px-6 rounded-lg font-semibold text-sm transition-all duration-200;
+  @apply h-10 md:h-11 px-4 md:px-6 rounded-xl font-semibold text-sm transition-all duration-300;
   @apply bg-destructive text-destructive-foreground;
-  @apply hover:bg-destructive/90;
+}
+
+.admin-btn-danger:hover {
+  @apply bg-destructive/90;
+  transform: translateY(-1px);
 }
 
 .admin-btn-ghost {
@@ -891,13 +931,16 @@
   @apply text-muted-foreground hover:bg-muted/50 hover:text-foreground;
 }
 
-/* Admin Dialog Styles */
+/* Admin Dialog Styles - Glassmorphism */
 .admin-dialog {
-  @apply rounded-xl md:rounded-2xl border-border/40 bg-card shadow-2xl max-h-[90vh] overflow-hidden;
+  @apply rounded-2xl border-border/30 max-h-[90vh] overflow-hidden;
+  background: linear-gradient(145deg, hsl(var(--card) / 0.95), hsl(var(--card) / 0.85));
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
 .admin-dialog-header {
-  @apply p-4 md:p-6 pb-3 md:pb-4 border-b border-border/30;
+  @apply p-4 md:p-6 pb-3 md:pb-4 border-b border-border/20;
 }
 
 .admin-dialog-title {
@@ -909,7 +952,7 @@
 }
 
 .admin-dialog-footer {
-  @apply p-4 md:p-6 pt-3 md:pt-4 border-t border-border/30 flex justify-end gap-2 md:gap-3;
+  @apply p-4 md:p-6 pt-3 md:pt-4 border-t border-border/20 flex justify-end gap-2 md:gap-3;
 }
 
 /* Admin Empty State */
@@ -944,15 +987,15 @@
 }
 
 .admin-grid-3 {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4;
+  @apply grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4;
 }
 
 .admin-grid-4 {
-  @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4;
+  @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-3;
 }
 
 .admin-grid-5 {
-  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4;
+  @apply grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 md:gap-3;
 }
 
 /* Admin Navigation Tabs */
