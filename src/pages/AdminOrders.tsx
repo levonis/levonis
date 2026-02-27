@@ -103,6 +103,7 @@ const AdminOrders = () => {
   // Financial fields state for live calculation
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [adminProductCost, setAdminProductCost] = useState<number>(0);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
   const [subtotalAmount, setSubtotalAmount] = useState<number>(0);
   const [taxPercentage, setTaxPercentage] = useState<number>(0);
@@ -116,8 +117,8 @@ const AdminOrders = () => {
   }, [taxPercentage, subtotalAmount]);
   
   // Calculate profit dynamically
-  // Profit = total_amount - admin_product_cost
-  const calculatedProfit = totalAmount - adminProductCost;
+  // Profit = total_amount - delivery_fee - admin_product_cost (delivery fee is NOT profit)
+  const calculatedProfit = totalAmount - deliveryFee - adminProductCost;
   
   useEffect(() => {
     const status = searchParams.get('status');
@@ -132,7 +133,7 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_name_ar, product_name, quantity, unit_price, total_price, selected_color, selected_option, color_image_url, option_image_url, shipping_option_name_ar, custom_request_id, sale_type)
+          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, option_image_url, shipping_option_name_ar, custom_request_id, sale_type, products!order_items_product_id_fkey(cost_price))
         `)
         .order('created_at', { ascending: false });
 
@@ -442,6 +443,7 @@ const AdminOrders = () => {
     setEditEstimatedDeliveryDate('');
     setTotalAmount(0);
     setAdminProductCost(0);
+    setDeliveryFee(0);
     setTaxAmount(0);
     setSubtotalAmount(0);
     setTaxPercentage(0);
@@ -449,13 +451,38 @@ const AdminOrders = () => {
 
   const openEditDialog = (order: any) => {
     setEditingOrder(order);
+    const orderType = order.order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
+    const isDirectSale = orderType === 'direct';
+    
     setEditStatus(order.status || '');
-    setEditPaymentStatus(order.payment_status || '');
+    // Direct sale orders default to COD payment
+    setEditPaymentStatus(order.payment_status || (isDirectSale ? 'cod' : ''));
     setEditInternalNotes(order.internal_notes || '');
     setEditShippingNotes(order.shipping_notes || '');
-    setEditEstimatedDeliveryDate(order.estimated_delivery_date ? order.estimated_delivery_date.split('T')[0] : '');
+    // Direct sale orders don't need estimated delivery date
+    setEditEstimatedDeliveryDate(isDirectSale ? '' : (order.estimated_delivery_date ? order.estimated_delivery_date.split('T')[0] : ''));
     setTotalAmount(order.total_amount || 0);
-    setAdminProductCost(order.admin_product_cost || 0);
+    
+    // Calculate delivery fee from subtotal vs total
+    const orderSubtotal = order.subtotal || 0;
+    const orderDiscount = order.discount_amount || 0;
+    const orderDeliveryFee = orderSubtotal > 0 ? Math.max(0, (order.total_amount || 0) - orderSubtotal + orderDiscount) : 0;
+    setDeliveryFee(order.admin_shipping_cost || orderDeliveryFee);
+    
+    // For direct sale: auto-calculate product cost from order_items cost_price (from products)
+    if (isDirectSale && (!order.admin_product_cost || order.admin_product_cost === 0)) {
+      const items = order.order_items || [];
+      let totalCost = 0;
+      for (const item of items) {
+        // Use cost_price from products table, fallback to order_item cost_price
+        const itemCost = item.products?.cost_price || item.cost_price || 0;
+        totalCost += itemCost * (item.quantity || 1);
+      }
+      setAdminProductCost(totalCost);
+    } else {
+      setAdminProductCost(order.admin_product_cost || 0);
+    }
+    
     setTaxAmount(order.tax_amount || 0);
     setSubtotalAmount(order.subtotal || 0);
     setTaxPercentage(order.tax_percentage || 0);
@@ -546,7 +573,7 @@ const AdminOrders = () => {
       estimated_delivery_date: editEstimatedDeliveryDate ? new Date(editEstimatedDeliveryDate).toISOString() : null,
       total_amount: totalAmount,
       admin_product_cost: adminProductCost,
-      admin_shipping_cost: 0,
+      admin_shipping_cost: deliveryFee,
       admin_other_costs: 0,
       tax_amount: taxAmount,
       tax_percentage: taxPercentage,
@@ -1091,77 +1118,97 @@ const AdminOrders = () => {
               </div>
 
               {/* Status */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>حالة الطلب</Label>
-                  <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر الحالة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getStatusOptionsForOrder(editingOrder, checkIfPreOrder).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>حالة الدفع</Label>
-                  <Select value={editPaymentStatus} onValueChange={setEditPaymentStatus}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر حالة الدفع" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">قيد الانتظار</SelectItem>
-                      <SelectItem value="partial">دفع جزئي</SelectItem>
-                      <SelectItem value="paid">مدفوع</SelectItem>
-                      <SelectItem value="refunded">مسترجع</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    التاريخ المتوقع للوصول
-                  </Label>
-                  <Input
-                    type="date"
-                    value={editEstimatedDeliveryDate}
-                    onChange={(e) => setEditEstimatedDeliveryDate(e.target.value)}
-                  />
-                </div>
-              </div>
+              {(() => {
+                const orderType = editingOrder.order_type || (checkIfPreOrder(editingOrder.order_items || []) ? 'preorder' : 'direct');
+                const isDirectSale = orderType === 'direct';
+                return (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>حالة الطلب</Label>
+                        <Select value={editStatus} onValueChange={setEditStatus}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر الحالة" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getStatusOptionsForOrder(editingOrder, checkIfPreOrder).map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>حالة الدفع</Label>
+                        <Select value={editPaymentStatus} onValueChange={setEditPaymentStatus}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر حالة الدفع" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="cod">الدفع عند الاستلام</SelectItem>
+                            <SelectItem value="pending">قيد الانتظار</SelectItem>
+                            <SelectItem value="partial">دفع جزئي</SelectItem>
+                            <SelectItem value="paid">مدفوع</SelectItem>
+                            <SelectItem value="refunded">مسترجع</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {!isDirectSale && (
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            التاريخ المتوقع للوصول
+                          </Label>
+                          <Input
+                            type="date"
+                            value={editEstimatedDeliveryDate}
+                            onChange={(e) => setEditEstimatedDeliveryDate(e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
 
-              {/* Financial */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <Label>المبلغ الإجمالي</Label>
-                  <Input
-                    type="number"
-                    value={totalAmount}
-                    onChange={(e) => setTotalAmount(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>تكلفة المنتجات</Label>
-                  <Input
-                    type="number"
-                    value={adminProductCost}
-                    onChange={(e) => setAdminProductCost(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>الربح المتوقع</Label>
-                  <Input
-                    type="number"
-                    value={calculatedProfit}
-                    readOnly
-                    className={calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}
-                  />
-                </div>
-              </div>
+                    {/* Financial */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="space-y-2">
+                        <Label>المبلغ الإجمالي</Label>
+                        <Input
+                          type="number"
+                          value={totalAmount}
+                          onChange={(e) => setTotalAmount(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>سعر التوصيل</Label>
+                        <Input
+                          type="number"
+                          value={deliveryFee}
+                          onChange={(e) => setDeliveryFee(Number(e.target.value))}
+                        />
+                        <p className="text-[10px] text-muted-foreground">لا يُحسب من الأرباح</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>تكلفة المنتجات</Label>
+                        <Input
+                          type="number"
+                          value={adminProductCost}
+                          onChange={(e) => setAdminProductCost(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>الربح المتوقع</Label>
+                        <Input
+                          type="number"
+                          value={calculatedProfit}
+                          readOnly
+                          className={calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}
+                        />
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Admin Images and Files */}
               <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
