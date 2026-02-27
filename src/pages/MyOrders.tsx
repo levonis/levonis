@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotifications';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -241,11 +241,30 @@ const MyOrders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
 
   const [preorderExpanded, setPreorderExpanded] = useState(true);
   const [directExpanded, setDirectExpanded] = useState(false);
   const [preorderTab, setPreorderTab] = useState('all');
   const [directTab, setDirectTab] = useState('all');
+
+  // Read status from URL and apply to the correct section
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (!statusParam) return;
+
+    const isDirectStatus = DIRECT_TABS.some(t => t.key === statusParam);
+    const isPreorderStatus = PREORDER_TABS.some(t => t.key === statusParam);
+
+    if (isDirectStatus) {
+      setDirectTab(statusParam);
+      setDirectExpanded(true);
+    }
+    if (isPreorderStatus) {
+      setPreorderTab(statusParam);
+      setPreorderExpanded(true);
+    }
+  }, [searchParams]);
 
   useOrderRealtimeNotifications();
 

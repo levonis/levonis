@@ -131,7 +131,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: userPoints?.total_points ? Math.round((userPoints.total_points) * 0.1) : 0,
       loading: pointsLoading,
       suffix: "د.ع",
-      to: "/offers",
+      to: "/rewards?tab=points&sub=redeem",
     },
   ];
 
