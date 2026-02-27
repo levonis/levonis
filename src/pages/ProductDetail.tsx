@@ -291,8 +291,8 @@ const ProductDetail = () => {
         if (selectedOptionStock != null) {
           isInStock = selectedOptionStock > 0;
         } else if (color.option_stocks && Object.keys(color.option_stocks).length > 0) {
-          // No option selected yet - color is available if ANY option has stock
-          isInStock = hasAnyColorStock(color);
+          // If an option is selected but not found in option_stocks, this color is out of stock for that option
+          isInStock = normalizedSelectedOption ? false : hasAnyColorStock(color);
         } else if (color.stock_quantity != null) {
           isInStock = Number(color.stock_quantity) > 0;
         } else {
