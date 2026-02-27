@@ -2297,6 +2297,56 @@ export type Database = {
           },
         ]
       }
+      level_prizes: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          level_id: string
+          prize_type: string
+          prize_value: number | null
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          level_id: string
+          prize_type?: string
+          prize_value?: number | null
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          level_id?: string
+          prize_type?: string
+          prize_value?: number | null
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_prizes_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_conversations: {
         Row: {
           admin_joined: boolean | null

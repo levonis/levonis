@@ -18,7 +18,7 @@ import {
   Share2, UserPlus, Star, ShoppingCart, Users, Zap, Target, TrendingUp,
   Clock, Calendar, Award, Sparkles, RefreshCw, Shield, Percent, ArrowUpRight,
   Package, Activity, ChevronLeft, ChevronRight, Eye, EyeOff, Wallet, Instagram,
-  Image, Ticket, Tag, Box, Flame, Camera
+  Image, Ticket, Tag, Box, Flame, Camera, Trophy
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -33,6 +33,7 @@ import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent
 import AdminUsersPointsTab from "@/components/admin/AdminUsersPointsTab";
 import AdminPointsAuditTab from "@/components/admin/AdminPointsAuditTab";
 import AdminTaskApprovalsTab from "@/components/admin/AdminTaskApprovalsTab";
+import AdminLevelPrizesTab from "@/components/admin/AdminLevelPrizesTab";
 
 const TASK_ICONS = [
   { name: 'Gift', icon: Gift, label: 'هدية' },
@@ -726,7 +727,7 @@ export default function AdminPointsSettings() {
 
           {/* Main Tabs */}
           <Tabs defaultValue="earning" className="space-y-4">
-            <TabsList className="grid grid-cols-7 w-full">
+            <TabsList className="grid grid-cols-8 w-full">
               <TabsTrigger value="earning" className="flex items-center gap-2">
                 <Coins className="h-4 w-4" />
                 <span className="hidden sm:inline">كسب النقاط</span>
@@ -742,6 +743,10 @@ export default function AdminPointsSettings() {
               <TabsTrigger value="approvals" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">الموافقات</span>
+              </TabsTrigger>
+              <TabsTrigger value="prizes" className="flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                <span className="hidden sm:inline">الجوائز</span>
               </TabsTrigger>
               <TabsTrigger value="bonuses" className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
@@ -1313,6 +1318,11 @@ export default function AdminPointsSettings() {
             {/* Approvals Tab */}
             <TabsContent value="approvals">
               <AdminTaskApprovalsTab />
+            </TabsContent>
+
+            {/* Prizes Tab */}
+            <TabsContent value="prizes">
+              <AdminLevelPrizesTab />
             </TabsContent>
 
             {/* Audit Tab */}
