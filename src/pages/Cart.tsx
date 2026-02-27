@@ -367,6 +367,16 @@ const Cart = () => {
     }
 
     if (isDirectSaleCart) {
+      // Check address before opening dialog
+      if (!defaultUserAddress) {
+        toast({
+          title: "يجب إضافة عنوان",
+          description: "الرجاء إضافة عنوان توصيل أولاً لإتمام طلب البيع المباشر",
+          variant: "destructive",
+        });
+        navigate('/addresses');
+        return;
+      }
       // Direct sale: show direct sale checkout dialog
       setShowDirectSaleDialog(true);
       return;
