@@ -470,8 +470,67 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
-    await clearCart();
-    return addToCart(productId, optionId, color, quantity, shippingInfo, saleType);
+    if (!user) return false;
+    try {
+      // Clear cart items directly in DB
+      const { error: clearError } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id);
+      if (clearError) throw clearError;
+      // Reset local items so addToCart won't detect a conflict
+      setItems([]);
+
+      // Now insert the new item directly (bypass addToCart conflict check)
+      const { data: productData } = await supabase
+        .from('products')
+        .select('colors, images, image_url')
+        .eq('id', productId)
+        .single();
+
+      let colorImageUrl: string | null = null;
+      if (color && productData?.colors) {
+        const selectedColorData = (productData.colors as any[]).find(
+          (c: any) => c.name === color || c.name_ar === color
+        );
+        colorImageUrl = selectedColorData?.image_url || null;
+      }
+
+      let optionImageUrl: string | null = null;
+      if (optionId) {
+        const { data: optionData } = await supabase
+          .from('product_options')
+          .select('image_url')
+          .eq('id', optionId)
+          .single();
+        optionImageUrl = optionData?.image_url || null;
+      }
+
+      const insertData: any = {
+        user_id: user.id,
+        product_id: productId,
+        quantity,
+        sale_type: saleType,
+      };
+      if (optionId) insertData.product_option_id = optionId;
+      if (color) insertData.selected_color = color;
+      if (colorImageUrl) insertData.color_image_url = colorImageUrl;
+      if (optionImageUrl) insertData.option_image_url = optionImageUrl;
+      if (shippingInfo?.index !== null && shippingInfo?.index !== undefined && Number.isFinite(shippingInfo.index)) {
+        insertData.shipping_option_index = Math.trunc(shippingInfo.index);
+        insertData.shipping_option_name_ar = shippingInfo.name_ar || null;
+      }
+
+      const { error } = await supabase.from('cart_items').insert([insertData]);
+      if (error) throw error;
+
+      await fetchCart();
+      return true;
+    } catch (error) {
+      console.error('Error in forceAddToCart:', error);
+      toast.error('حدث خطأ في إضافة المنتج');
+      return false;
+    }
   };
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
