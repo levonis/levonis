@@ -412,7 +412,7 @@ const ProductDetail = () => {
               {/* Sale Type Tabs */}
               {hasBothTypes && (
                 <Tabs value={activeSaleType} onValueChange={handleSaleTypeChange}>
-                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-muted">
+                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-accent/80">
                     <TabsTrigger value="direct" className="rounded-lg gap-1.5 text-xs font-black data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       <Package className="h-3.5 w-3.5" />{t('product_direct_sale')}
                     </TabsTrigger>
@@ -627,37 +627,10 @@ const ProductDetail = () => {
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="fixed bottom-[4.5rem] md:bottom-0 left-0 right-0 z-40 bg-card border-t border-border/30 px-3 py-2 safe-area-bottom">
-        <div className="container mx-auto max-w-4xl flex items-center gap-2">
-          {/* Quantity */}
-          {product.in_stock && (
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg" onClick={decrementQuantity} disabled={quantity <= 1}>
-                <Minus className="h-3 w-3" />
-              </Button>
-              <Input type="number" min="1" value={quantity} onChange={(e) => { const v = parseInt(e.target.value); if (v > 0) setQuantity(v); }}
-                className="h-8 text-center text-xs font-black w-10 rounded-lg px-1" />
-              <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg" onClick={incrementQuantity}>
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          {/* Add to cart */}
-          <Button className="flex-1 h-9 rounded-lg font-black text-xs" onClick={handleAddToCart} disabled={!product.in_stock}>
-            <ShoppingCart className="ml-1.5 h-3.5 w-3.5" />
-            {product.in_stock ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}
-          </Button>
-
-          {/* Favorite */}
-          <Button size="icon" variant="outline"
-            className={cn("h-9 w-9 rounded-lg shrink-0", isFavorite && "text-destructive border-destructive/50")}
-            onClick={handleToggleFavorite} disabled={favoriteLoading || toggleFavoriteMutation.isPending}>
-            <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
-          </Button>
-
+      <div className="fixed bottom-[4.5rem] md:bottom-0 left-0 right-0 z-40 bg-card border-t border-border/30 px-3 py-2">
+        <div className="flex items-center gap-1.5 w-full">
           {/* Share */}
-          <Button size="icon" variant="outline" className="h-9 w-9 rounded-lg shrink-0"
+          <Button size="icon" variant="outline" className="h-10 w-10 rounded-xl shrink-0"
             onClick={async () => {
               const url = `${window.location.origin}/product/${slug}`;
               try {
@@ -671,6 +644,35 @@ const ProductDetail = () => {
             }}>
             <Share2 className="h-4 w-4" />
           </Button>
+
+          {/* Favorite */}
+          <Button size="icon" variant="outline"
+            className={cn("h-10 w-10 rounded-xl shrink-0", isFavorite && "text-destructive border-destructive/50")}
+            onClick={handleToggleFavorite} disabled={favoriteLoading || toggleFavoriteMutation.isPending}>
+            <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+          </Button>
+
+          {/* Add to cart */}
+          <Button className="flex-1 h-10 rounded-xl font-black text-xs min-w-0" onClick={handleAddToCart} disabled={!product.in_stock}>
+            <ShoppingCart className="ml-1 h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {product.in_stock ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}
+            </span>
+          </Button>
+
+          {/* Quantity */}
+          {product.in_stock && (
+            <div className="flex items-center shrink-0">
+              <Button size="icon" variant="outline" className="h-10 w-10 rounded-r-xl rounded-l-none border-l-0" onClick={incrementQuantity}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+              <Input type="number" min="1" value={quantity} onChange={(e) => { const v = parseInt(e.target.value); if (v > 0) setQuantity(v); }}
+                className="h-10 text-center text-sm font-black w-10 rounded-none border-x-0 px-0" />
+              <Button size="icon" variant="outline" className="h-10 w-10 rounded-l-xl rounded-r-none border-r-0" onClick={decrementQuantity} disabled={quantity <= 1}>
+                <Minus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
