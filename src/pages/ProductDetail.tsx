@@ -227,6 +227,32 @@ const ProductDetail = () => {
       .replace(/\s+/g, ' ')
       .trim();
 
+  const getColorStockForOption = (color: any, optionName?: string | null): number | null => {
+    if (!optionName || !color?.option_stocks || typeof color.option_stocks !== 'object') return null;
+
+    const normalizedOptionName = normalizeOptionValue(optionName);
+    const matchingKey = Object.keys(color.option_stocks).find(
+      (key) => normalizeOptionValue(key) === normalizedOptionName
+    );
+
+    if (!matchingKey) return null;
+
+    const stockValue = Number(color.option_stocks[matchingKey]);
+    return Number.isFinite(stockValue) ? stockValue : 0;
+  };
+
+  const hasAnyColorStock = (color: any): boolean => {
+    if (color?.option_stocks && typeof color.option_stocks === 'object' && Object.keys(color.option_stocks).length > 0) {
+      return Object.values(color.option_stocks as Record<string, unknown>).some((value) => Number(value) > 0);
+    }
+
+    if (color?.stock_quantity != null) {
+      return Number(color.stock_quantity) > 0;
+    }
+
+    return color?.in_stock !== false;
+  };
+
   const getFilteredColors = () => {
     const normalizedSelectedOption = normalizeOptionValue(selectedOptionName);
     const preorderOptions = Array.isArray(productOptions)
@@ -241,10 +267,6 @@ const ProductDetail = () => {
     };
 
     return allColors.map(color => {
-      const isAvailableForType = activeSaleType === 'direct'
-        ? (color.available_for_direct_sale ?? true)
-        : (color.available_for_pre_order ?? true);
-
       const linkedOptions = color.linked_options as string[] | undefined;
       const normalizedLinkedOptions = Array.isArray(linkedOptions)
         ? linkedOptions.map((option) => normalizeOptionValue(option)).filter(Boolean)
@@ -263,28 +285,24 @@ const ProductDetail = () => {
       // Smart stock check: for direct sale, check option_stocks for the selected option first
       let isInStock = true;
       if (activeSaleType === 'direct') {
-        if (normalizedSelectedOption && color.option_stocks) {
-          // Find the matching option_stocks key using normalized comparison
-          const matchingKey = Object.keys(color.option_stocks).find(
-            key => normalizeOptionValue(key) === normalizedSelectedOption
-          );
-          if (matchingKey !== undefined) {
-            isInStock = (color.option_stocks[matchingKey] ?? 0) > 0;
-          } else if (color.stock_quantity != null) {
-            isInStock = color.stock_quantity > 0;
-          } else {
-            isInStock = color.in_stock !== false;
-          }
+        const selectedOptionStock = getColorStockForOption(color, selectedOptionName);
+
+        if (selectedOptionStock != null) {
+          isInStock = selectedOptionStock > 0;
         } else if (color.option_stocks && Object.keys(color.option_stocks).length > 0) {
           // No option selected yet - color is available if ANY option has stock
-          const totalStock = Object.values(color.option_stocks as Record<string, number>).reduce((sum: number, v: any) => sum + (Number(v) || 0), 0);
-          isInStock = totalStock > 0;
+          isInStock = hasAnyColorStock(color);
         } else if (color.stock_quantity != null) {
-          isInStock = color.stock_quantity > 0;
+          isInStock = Number(color.stock_quantity) > 0;
         } else {
           isInStock = color.in_stock !== false;
         }
       }
+
+      // Legacy data safety: if direct availability flag is false but stock exists, keep color selectable
+      const isAvailableForType = activeSaleType === 'direct'
+        ? ((color.available_for_direct_sale ?? true) || hasAnyColorStock(color))
+        : (color.available_for_pre_order ?? true);
 
       return {
         ...color,
@@ -301,9 +319,9 @@ const ProductDetail = () => {
     if (a.isAvailable && !b.isAvailable) return -1;
     if (!a.isAvailable && b.isAvailable) return 1;
     // Then by stock quantity (highest first)
-    const stockA = selectedOptionName && a.option_stocks?.[selectedOptionName] != null ? a.option_stocks[selectedOptionName] : (a.stock_quantity ?? 0);
-    const stockB = selectedOptionName && b.option_stocks?.[selectedOptionName] != null ? b.option_stocks[selectedOptionName] : (b.stock_quantity ?? 0);
-    return (stockB || 0) - (stockA || 0);
+    const stockA = getColorStockForOption(a, selectedOptionName) ?? (a.stock_quantity ?? 0);
+    const stockB = getColorStockForOption(b, selectedOptionName) ?? (b.stock_quantity ?? 0);
+    return Number(stockB || 0) - Number(stockA || 0);
   });
 
   const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
@@ -350,7 +368,7 @@ const ProductDetail = () => {
   const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;
 
   const directStockQuantity = selectedColorData
-    ? (selectedOptionName && selectedColorData.option_stocks?.[selectedOptionName] != null ? selectedColorData.option_stocks[selectedOptionName] : selectedColorData.stock_quantity)
+    ? (getColorStockForOption(selectedColorData, selectedOptionName) ?? selectedColorData.stock_quantity)
     : undefined;
   const hasStockInfo = activeSaleType === 'direct' && directStockQuantity != null && directStockQuantity > 0;
 
@@ -760,7 +778,7 @@ const ProductDetail = () => {
                             </div>
                             <span className="font-bold text-[10px] leading-tight text-center">{color.name_ar}</span>
                             {activeSaleType === 'direct' && (() => {
-                              const stock = selectedOptionName && color.option_stocks?.[selectedOptionName] != null ? color.option_stocks[selectedOptionName] : color.stock_quantity;
+                              const stock = getColorStockForOption(color, selectedOptionName) ?? color.stock_quantity;
                               return stock != null && stock > 0 ? <span className="text-[8px] text-muted-foreground">متبقي {stock}</span> : null;
                             })()}
                             {activeSaleType === 'direct' && color.direct_sale_price && (
