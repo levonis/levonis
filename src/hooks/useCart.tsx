@@ -14,11 +14,13 @@ export interface CartItem {
   option_image_url?: string | null;
   shipping_option_index?: number | null;
   shipping_option_name_ar?: string | null;
+  sale_type?: string | null;
   products?: {
     id: string;
     name: string;
     name_ar: string;
     price: number;
+    direct_sale_price?: number | null;
     original_price: number | null;
     image_url: string | null;
     images?: string[];
@@ -59,7 +61,8 @@ interface CartContextType {
   itemCount: number;
   total: number;
   pendingCartRequest: PendingCartRequest | null;
-  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }) => Promise<void>;
+  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<void>;
+  cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -189,11 +192,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           option_image_url,
           shipping_option_index,
           shipping_option_name_ar,
+          sale_type,
           products (
             id,
             name,
             name_ar,
             price,
+            direct_sale_price,
             original_price,
             image_url,
             images,
@@ -242,13 +247,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchPendingCartRequest();
   }, [user]);
 
-  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }) => {
+  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder') => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
 
     try {
+      // Check for sale type conflict
+      const existingProductItems = items.filter(i => i.product_id);
+      if (existingProductItems.length > 0) {
+        const currentCartSaleType = existingProductItems[0]?.sale_type || 'preorder';
+        if (currentCartSaleType !== saleType) {
+          // Conflict: different sale type - clear cart first
+          await clearCart();
+          toast.info('تم تفريغ السلة لأن نوع البيع مختلف');
+        }
+      }
+
       // Get product data to find color image
       const { data: productData } = await supabase
         .from('products')
@@ -297,7 +313,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const insertData: any = { 
         user_id: user.id, 
         product_id: productId, 
-        quantity: quantity 
+        quantity: quantity,
+        sale_type: saleType,
       };
       
       if (optionId) {
@@ -446,7 +463,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   
   const total = items.reduce((sum, item) => {
     if (item.products) {
+      const isDirect = (item as any).sale_type === 'direct';
       let itemPrice = Number(item.products.price);
+
+      // For direct sale, use direct_sale_price if available
+      if (isDirect && item.products.direct_sale_price != null) {
+        itemPrice = Number(item.products.direct_sale_price);
+      }
 
       // Add color price if selected and different from base price
       const selColor = (item as any).selected_color;
@@ -455,7 +478,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         : null;
 
       if (selectedColorData?.price != null) {
-        itemPrice = Number(selectedColorData.price);
+        // For direct sale, prefer direct_sale_price from color
+        if (isDirect && selectedColorData?.direct_sale_price != null) {
+          itemPrice = Number(selectedColorData.direct_sale_price);
+        } else {
+          itemPrice = Number(selectedColorData.price);
+        }
       }
 
       // Add option price adjustment
@@ -485,6 +513,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     await fetchPendingCartRequest();
   };
 
+  // Determine the current cart's sale type
+  const cartSaleType = items.length > 0 
+    ? (items.find(i => i.product_id)?.sale_type || 'preorder')
+    : null;
+
   return (
     <CartContext.Provider
       value={{
@@ -493,6 +526,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         itemCount,
         total,
         pendingCartRequest,
+        cartSaleType,
         addToCart,
         addCustomRequestToCart,
         updateQuantity,

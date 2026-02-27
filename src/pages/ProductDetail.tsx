@@ -211,7 +211,12 @@ const ProductDetail = () => {
 
   const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
   const getPrice = () => {
-    if (activeSaleType === 'direct' && selectedColorData?.direct_sale_price) return Number(selectedColorData.direct_sale_price);
+    if (activeSaleType === 'direct') {
+      // For direct sale: use color's direct_sale_price, then product's direct_sale_price, then fall back to regular price
+      if (selectedColorData?.direct_sale_price) return Number(selectedColorData.direct_sale_price);
+      if ((product as any).direct_sale_price) return Number((product as any).direct_sale_price);
+      // Fall through to regular price logic
+    }
     const base = selectedColorData?.price != null ? Number(selectedColorData.price) : Number(product.price);
     return base;
   };
@@ -246,7 +251,7 @@ const ProductDetail = () => {
     const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
       ? { index: selectedShippingOption, name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar }
       : undefined;
-    await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo);
+    await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
     toast.success(t('product_added_to_cart').replace('{count}', String(quantity)));
     setQuantity(1);
   };
