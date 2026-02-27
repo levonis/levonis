@@ -1,142 +1,83 @@
+# خطة: صفحة الأمنيات (Wishlist)
 
+## قاعدة البيانات
 
-# خطة إصلاح وتطوير 10 مشاكل/ميزات
+### جدول `wishes`
 
-هذا طلب كبير يتضمن 10 نقاط مختلفة. سأقسمها إلى مراحل للتنفيذ.
+```sql
+CREATE TABLE public.wishes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title text NOT NULL,
+  description text,
+  image_url text,
+  status text DEFAULT 'pending', -- pending, approved, rejected
+  price numeric,
+  likes_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
 
----
+### جدول `wish_likes`
 
-## المرحلة 1: إصلاح أسعار البيع المباشر والألوان (النقطة 1)
+```sql
+CREATE TABLE public.wish_likes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  wish_id uuid REFERENCES public.wishes(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(wish_id, user_id)
+);
+```
 
-**المشكلة**: عند اختيار "بيع مباشر" لا يتغير السعر، يبقى على سعر الحجز المسبق. كذلك أسعار الألوان لا تتغير.
+### RLS Policies
 
-**السبب الجذري**: في `getPrice()` بملف `ProductDetail.tsx` (سطر 213-217)، يتم استخدام `direct_sale_price` فقط إذا كان اللون محدداً وله سعر مباشر. لكن سعر المنتج الأساسي للبيع المباشر (`product.direct_sale_price`) غير موجود أو لا يُستخدم.
+- `wishes`: الكل يقرأ الأمنيات المعتمدة (`status = 'approved'`)، المستخدم يقرأ/يعدل/يحذف أمنياته الخاصة، الأدمن يعدل الكل
+- `wish_likes`: المستخدم المسجل يضيف/يحذف إعجابه، الكل يقرأ
 
-**الحل**:
-- إضافة حقل `direct_sale_price` للمنتج في قاعدة البيانات (migration)
-- تعديل `getPrice()` ليفرق بين السعر الأساسي للبيع المباشر والحجز المسبق
-- تعديل حساب السعر في السلة (`useCart.tsx`) ليأخذ بالاعتبار نوع البيع
+### Trigger
 
----
-
-## المرحلة 2: فصل البيع المباشر عن الحجز المسبق في السلة (النقطة 2)
-
-**المشكلة**: يمكن خلط منتجات بيع مباشر مع حجز مسبق في نفس السلة.
-
-**الحل**:
-- تعديل `addToCart` في `useCart.tsx` لإضافة حقل `sale_type` ("direct" أو "preorder") لكل عنصر
-- عند إضافة منتج بنوع مختلف عن الموجود في السلة، يظهر AlertDialog للمستخدم يسأله عن تفريغ السلة
-- نفس المنطق عند تغيير نوع الشحن (شحن مختلف)
-- إضافة عمود `sale_type` لجدول `cart_items` (migration)
-
----
-
-## المرحلة 3: نافذة إتمام طلب البيع المباشر (النقطة 3)
-
-**المشكلة**: عند البيع المباشر يجب إظهار "الدفع عند الاستلام" ونافذة تأكيد احترافية.
-
-**الحل**:
-- إنشاء مكون `DirectSaleCheckoutDialog` جديد بتصميم احترافي يتضمن:
-  - معلومات العنوان والرقم
-  - الوقت المتوقع للوصول
-  - الملاحظات
-  - شريط انتظار 5 ثوانٍ قبل إظهار زر التأكيد (progress bar مع countdown)
-- تعديل صفحة السلة لإظهار "الدفع عند الاستلام" بدل الدفع بالمحفظة عند البيع المباشر
-- تعديل `handleCheckout` لمعالجة طلبات البيع المباشر بدون خصم من المحفظة
+- تحديث `likes_count` تلقائياً عند إضافة/حذف إعجاب
+- تحديث `updated_at` عند التعديل
 
 ---
 
-## المرحلة 4: شريط تتبع الطلبات المباشرة (النقطة 4)
+## الواجهة الأمامية
 
-**الحل**:
-- تعديل `MyOrders.tsx` لإضافة تبويب/شريط سفلي يفصل الطلبات المباشرة عن الطلبات المسبقة
-- إضافة عمود `order_type` ("direct" أو "preorder") لجدول `orders` (migration)
+### 1. رابط في الصفحة الرئيسية (فوق البنر)
 
----
+- إضافة شريط صغير في `Home.tsx` فوق `BannerCarousel` يحتوي على رابط "الأمنيات ✨" يوجه إلى `/wishes`
+  تصميم انيق واحترافي وعميق مناسب مع ثيم الموقع 
 
-## المرحلة 5: تحسين عرض الطلبات للأدمن (النقطة 5)
+### 2. صفحة `src/pages/Wishes.tsx`
 
-**الحل**:
-- تعديل `AdminOrders.tsx` لإضافة فلاتر واضحة: حجز مسبق (بحري/جوي) / بيع مباشر
-- إضافة حالة "تم التوصيل" تنقل الطلب تلقائياً إلى سجل "الطلبات المكتملة" (تبويب جديد أو صفحة `AdminDeliveredOrders.tsx` الموجودة)
-- تمييز بصري واضح (Badge) لنوع الطلب والشحن
+- عرض الأمنيات المعتمدة (`status = 'approved'`) مع السعر وعدد الإعجابات
+- **في الأعلى**: أمنية المستخدم الحالي (إن وجدت) مثبتة مع إمكانية التعديل قبل موافقه الادمن
+- زر "تمنّى أمنية" يفتح Dialog لإضافة أمنية جديدة (عنوان + وصف + صورة اختيارية)
+- زر إعجاب ❤️ لكل أمنية (toggle)
+- عرض السعر المحدد من الأدمن + badge "معتمدة"
 
----
+### 3. صفحة إدارة `src/pages/AdminWishes.tsx`
 
-## المرحلة 6: إصلاح مشاكل كود التحقق والتسجيل (النقطة 6)
+- عرض جميع الأمنيات (معلقة/معتمدة/مرفوضة)
+- فلتر بالحالة
+- زر موافقة مع حقل لتحديد السعر
+- زر رفض
+- تعديل الوصف والعنوان والصوره 
+- اضافه سعر ( سوف يكون بهذا السعر بالبيع المباشر)
 
-**المشكلة**: كود التحقق لا يصل + لا يتم التحقق من تكرار الإيميل/اليوزرنيم.
+### 4. Route جديد
 
-**الحل**:
-- تعديل `MultiStepSignup.tsx` لإضافة فحص تكرار اليوزرنيم في الخطوة الثانية (query على `profiles` بحقل `username`)
-- تحسين فحص الإيميل المكرر (الموجود حالياً) ليكون أكثر وضوحاً للمستخدم
-- فحص وتحسين Edge Function `send-verification-code` لتشخيص سبب عدم وصول الرسائل
-
----
-
-## المرحلة 7: تقليل المخزون عند البيع المباشر (النقطة 7)
-
-**الحل**:
-- إنشاء trigger أو RPC function في قاعدة البيانات
-- عند إتمام طلب بيع مباشر، يتم تقليل `stock_quantity` و `option_stocks` في جدول الألوان/المنتجات
-- التحقق من توفر المخزون قبل إتمام الطلب
+- `/wishes` → `Wishes.tsx`
+- `/admin/wishes` → `AdminWishes.tsx` (محمي بـ AdminRoute)
 
 ---
 
-## المرحلة 8: إتاحة رؤية السلة للأدمن وتعديل الطلب (النقطة 8)
+## الملفات المتأثرة
 
-**المشكلة**: الأدمن لا يستطيع رؤية تفاصيل سلة المستخدم عند مشاركة رمز السلة.
-
-**الحل** (جزئي موجود في `AdminCartRequests.tsx`):
-- تعديل `AdminCartRequests.tsx` لإظهار تفاصيل السلة الكاملة مع صور المنتجات والألوان والخيارات
-- إضافة إمكانية تعديل الكميات وحذف عناصر من السلة بواسطة الأدمن
-- إضافة إمكانية تعديل أسعار العناصر الفردية
-
----
-
-## المرحلة 9: جدول تقارير مالية مفصل (النقطة 9)
-
-**الحل**:
-- تعديل `AdminFinancials.tsx` لإضافة تبويبات:
-  - **ربح عام**: إجمالي أرباح الموقع (عمولات المجتمع + العروض + المنتجات)
-  - **ربح حسب القسم الرئيسي**: تجميع الأرباح per main_section
-  - **ربح حسب القسم الفرعي**: تجميع per category
-  - **ربح حسب المنتج**: تفصيل per product
-- استخدام البيانات الموجودة (`admin_product_cost`, `total_amount`) لحساب الأرباح
-
----
-
-## المرحلة 10: إجبار تحديث أسعار وتكلفة المنتجات (النقطة 10)
-
-**الحل**:
-- إضافة عمود `cost_price` لجدول `products` (migration) إذا غير موجود
-- تعديل لوحة الأدمن لإظهار تنبيه/شريط علوي يُجبر الأدمن على تحديث الأسعار
-- عند فتح صفحة المنتجات، إظهار قائمة المنتجات التي لم يتم تحديث `cost_price` لها
-- عدم السماح بتفعيل المنتج (`is_pricing_updated`) بدون وضع سعر التكلفة
-
----
-
-## التفاصيل التقنية
-
-### Database Migrations المطلوبة:
-1. `ALTER TABLE cart_items ADD COLUMN sale_type text DEFAULT 'preorder'`
-2. `ALTER TABLE orders ADD COLUMN order_type text DEFAULT 'preorder'`
-3. `ALTER TABLE products ADD COLUMN cost_price numeric DEFAULT 0`
-4. `ALTER TABLE products ADD COLUMN direct_sale_price numeric`
-5. إنشاء DB function لتقليل المخزون عند إتمام الطلب
-
-### الملفات الرئيسية المتأثرة:
-- `src/pages/ProductDetail.tsx` — إصلاح السعر + تمرير `sale_type`
-- `src/hooks/useCart.tsx` — فصل أنواع البيع + فحص التعارض
-- `src/pages/Cart.tsx` — نافذة البيع المباشر + فصل checkout flow
-- `src/pages/MyOrders.tsx` — تبويب الطلبات المباشرة
-- `src/pages/AdminOrders.tsx` — فلاتر واضحة + نقل المكتملة
-- `src/pages/AdminCartRequests.tsx` — تعديل السلة
-- `src/pages/AdminFinancials.tsx` — جداول ربح مفصلة
-- `src/pages/Admin.tsx` — حقل cost_price + تنبيه التحديث
-- `src/components/auth/signup/MultiStepSignup.tsx` — فحص اليوزرنيم
-- مكون جديد: `src/components/DirectSaleCheckoutDialog.tsx`
-
-### ملاحظة مهمة:
-هذا طلب كبير جداً يحتوي على 10 نقاط مستقلة. **أنصح بالتنفيذ على مراحل** (2-3 نقاط في كل جلسة) لضمان جودة التنفيذ واختبار كل تغيير بشكل صحيح. هل تريد البدء بمراحل معينة أولاً؟
-
+- `src/App.tsx` — إضافة routes جديدة
+- `src/pages/Home.tsx` — شريط رابط فوق البنر
+- `src/pages/Wishes.tsx` — **جديد**
+- `src/pages/AdminWishes.tsx` — **جديد**
+- Migration SQL للجداول والسياسات
