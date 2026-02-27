@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
 import OrderSuccessAnimation from '@/components/ui/OrderSuccessAnimation';
@@ -47,6 +47,7 @@ const Cart = () => {
   const [isDirectSaleProcessing, setIsDirectSaleProcessing] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   // Refresh cart data on mount to get latest pendingCartRequest
   useEffect(() => {
     refreshCart();
@@ -92,28 +93,31 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch default address for direct sale dialog
-  const { data: defaultUserAddress } = useQuery({
-    queryKey: ['default-address', user?.id],
+  // Fetch all user addresses for direct sale
+  const { data: userAddresses } = useQuery({
+    queryKey: ['user-addresses', user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
-      const { data: defAddr } = await supabase
+      if (!user?.id) return [];
+      const { data } = await supabase
         .from('user_addresses')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_default', true)
-        .maybeSingle();
-      if (defAddr) return defAddr;
-      const { data: firstAddr } = await supabase
-        .from('user_addresses')
-        .select('*')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      return firstAddr;
+        .order('is_default', { ascending: false });
+      return data || [];
     },
     enabled: !!user?.id,
   });
+
+  // Set default selected address
+  useEffect(() => {
+    if (userAddresses && userAddresses.length > 0 && !selectedAddressId) {
+      const def = userAddresses.find((a: any) => a.is_default) || userAddresses[0];
+      setSelectedAddressId(def.id);
+    }
+  }, [userAddresses, selectedAddressId]);
+
+  const selectedAddress = userAddresses?.find((a: any) => a.id === selectedAddressId) || null;
+  const defaultUserAddress = selectedAddress;
 
   // جلب إعدادات الدفع الجزئي
   interface FeeTier {
@@ -367,17 +371,14 @@ const Cart = () => {
     }
 
     if (isDirectSaleCart) {
-      // Check address before opening dialog
-      if (!defaultUserAddress) {
+      if (!selectedAddress) {
         toast({
-          title: "يجب إضافة عنوان",
-          description: "الرجاء إضافة عنوان توصيل أولاً لإتمام طلب البيع المباشر",
+          title: "يجب اختيار عنوان",
+          description: "الرجاء اختيار أو إضافة عنوان توصيل أولاً",
           variant: "destructive",
         });
-        navigate('/addresses');
         return;
       }
-      // Direct sale: show direct sale checkout dialog
       setShowDirectSaleDialog(true);
       return;
     }
@@ -1360,6 +1361,67 @@ const Cart = () => {
                     <span>{t('cart_delivery')}</span>
                     <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
                   </div>
+                  
+                  {/* Address selector for direct sale */}
+                  {isDirectSaleCart && (
+                    <div className="rounded-xl border border-border/50 bg-muted/30 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-bold text-foreground">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          عنوان التوصيل
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-primary hover:text-primary/80"
+                          onClick={() => navigate('/addresses')}
+                        >
+                          {userAddresses && userAddresses.length > 0 ? 'إدارة العناوين' : 'إضافة عنوان'}
+                        </Button>
+                      </div>
+                      {userAddresses && userAddresses.length > 0 ? (
+                        <div className="space-y-2">
+                          {userAddresses.map((addr: any) => (
+                            <div
+                              key={addr.id}
+                              onClick={() => setSelectedAddressId(addr.id)}
+                              className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                                selectedAddressId === addr.id
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border/40 hover:border-primary/30'
+                              }`}
+                            >
+                              <div className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${
+                                selectedAddressId === addr.id ? 'border-primary' : 'border-muted-foreground/40'
+                              }`}>
+                                {selectedAddressId === addr.id && (
+                                  <div className="w-2 h-2 rounded-full bg-primary" />
+                                )}
+                              </div>
+                              <div className="text-xs space-y-0.5 flex-1">
+                                <p className="font-bold text-foreground">{addr.full_name}</p>
+                                <p className="text-muted-foreground">{addr.governorate} - {addr.area}</p>
+                                <p className="text-muted-foreground" dir="ltr">{addr.phone_number}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-3">
+                          <p className="text-xs text-muted-foreground mb-2">لا يوجد عنوان محفوظ</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => navigate('/addresses')}
+                          >
+                            <MapPin className="h-3 w-3 ml-1" />
+                            إضافة عنوان جديد
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   {/* خيارات الدفع للطلب المسبق */}
                   {hasPreOrderItems && (
