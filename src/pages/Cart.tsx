@@ -975,7 +975,22 @@ const Cart = () => {
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-6">
-          <h1 className="text-3xl font-black text-primary mb-2">{t('cart_title')}</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-black text-primary">{t('cart_title')}</h1>
+            {itemCount > 0 && (
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${
+                isDirectSaleCart
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'bg-accent/10 text-accent-foreground border-accent/20'
+              }`}>
+                {isDirectSaleCart ? (
+                  <><Package className="w-3 h-3" /> بيع مباشر</>
+                ) : (
+                  <><Truck className="w-3 h-3" /> حجز مسبق</>
+                )}
+              </span>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm">
             {itemCount > 0 ? t('cart_items_in_cart', { count: itemCount, label: itemCount === 1 ? t('cart_product') : t('cart_products') }) : t('cart_empty')}
           </p>
@@ -1503,7 +1518,7 @@ const Cart = () => {
                   )}
                 </Button>
                 
-                {!hasEnoughBalance && (
+                {!isDirectSaleCart && !hasEnoughBalance && (
                   <Button 
                     className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                     size="lg"
