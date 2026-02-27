@@ -640,12 +640,16 @@ const ProductDetail = () => {
                     </AccordionTrigger>
                     <AccordionContent className="px-3 pb-3">
                       <LayoutGroup>
-                        <div className="flex flex-wrap gap-2">
+                        <motion.div layout className="flex flex-wrap gap-2">
                         {filteredColors.map((color: any) => (
                           <motion.button
                             key={color.name_ar}
-                            layout
-                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            layout="position"
+                            layoutId={`color-${color.name_ar}`}
+                            initial={false}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
                             type="button"
                             onClick={() => {
                               if (!color.isAvailable) return;
@@ -665,10 +669,14 @@ const ProductDetail = () => {
                                 selectedColor === color.name_ar ? 'border-primary ring-2 ring-primary/30' : 'border-border')}
                                 style={{ backgroundColor: color.hex_code }} />
                               {selectedColor === color.name_ar && (
-                                <div className="absolute inset-0 flex items-center justify-center">
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                                  className="absolute inset-0 flex items-center justify-center">
                                   <Check className={cn("h-3.5 w-3.5",
                                     color.hex_code?.toLowerCase() === '#ffffff' || color.hex_code?.toLowerCase() === '#fff' ? 'text-foreground' : 'text-white')} />
-                                </div>
+                                </motion.div>
                               )}
                             </div>
                             <span className="font-bold text-[10px] leading-tight text-center">{color.name_ar}</span>
@@ -686,7 +694,7 @@ const ProductDetail = () => {
                             )}
                           </motion.button>
                         ))}
-                        </div>
+                        </motion.div>
                       </LayoutGroup>
                     </AccordionContent>
                   </AccordionItem>
