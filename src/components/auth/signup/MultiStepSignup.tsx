@@ -10,7 +10,7 @@ import Step4OptionalInfo from './Step4OptionalInfo';
 import Step5Review from './Step5Review';
 import { SignupFormData, initialFormData } from './types';
 
-const STEP_LABELS = ['الحساب', 'الملف', 'التحقق', 'إضافية', 'مراجعة'];
+const STEP_LABELS = ['الحساب', 'الملف', 'إضافية', 'مراجعة'];
 
 interface MultiStepSignupProps {
   onSwitchToLogin: () => void;
@@ -67,44 +67,19 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         return;
       }
 
-      // Send verification code WITHOUT creating account
-      const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
-        body: { 
-          email: formData.email, 
-          type: 'signup'
-        }
-      });
-
-      if (codeError) {
-        console.error('Error sending verification code:', codeError);
-        toast.error('فشل إرسال رمز التحقق. حاول مرة أخرى');
-        return;
-      }
-
-      toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+      // Skip verification - go directly to optional info (now step 3)
+      setEmailVerified(true);
       setCurrentStep(3);
     } catch (error) {
-      console.error('Verification code error:', error);
+      console.error('Username check error:', error);
       toast.error('حدث خطأ غير متوقع');
     } finally {
       setLoading(false);
     }
   };
 
-  // After email verification, just mark as verified and proceed
-  const handleVerificationComplete = async () => {
-    setEmailVerified(true);
-    toast.success('تم التحقق من بريدك بنجاح!');
-    setCurrentStep(4);
-  };
-
-  // Create account ONLY at final step (Step 5)
+  // Create account ONLY at final step (Step 4)
   const handleFinalSubmit = async () => {
-    if (!emailVerified) {
-      toast.error('يجب تأكيد البريد الإلكتروني أولاً');
-      setCurrentStep(3);
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -241,33 +216,21 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         );
       case 3:
         return (
-          <Step3Verification
+          <Step4OptionalInfo
             data={formData}
             updateData={updateFormData}
             onNext={() => setCurrentStep(4)}
             onBack={() => setCurrentStep(2)}
             loading={loading}
-            userEmail={formData.email}
-            onVerified={handleVerificationComplete}
           />
         );
       case 4:
-        return (
-          <Step4OptionalInfo
-            data={formData}
-            updateData={updateFormData}
-            onNext={() => setCurrentStep(5)}
-            onBack={() => setCurrentStep(3)}
-            loading={loading}
-          />
-        );
-      case 5:
         return (
           <Step5Review
             data={formData}
             updateData={updateFormData}
             onNext={() => {}}
-            onBack={() => setCurrentStep(4)}
+            onBack={() => setCurrentStep(3)}
             onSubmit={handleFinalSubmit}
             loading={loading}
             submitting={submitting}
@@ -282,7 +245,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
     <div className="space-y-4">
       <StepIndicator
         currentStep={currentStep}
-        totalSteps={5}
+        totalSteps={4}
         labels={STEP_LABELS}
       />
       
