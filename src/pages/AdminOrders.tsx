@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle, Eye, Copy } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -91,6 +91,7 @@ const AdminOrders = () => {
   const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
+  const [quickViewOrder, setQuickViewOrder] = useState<any>(null);
   
   // Edit form state
   const [editStatus, setEditStatus] = useState('');
@@ -970,6 +971,15 @@ const AdminOrders = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
+                                onClick={() => setQuickViewOrder(order)}
+                                title="عرض المنتجات"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
                                 onClick={() => navigate(`/order/${order.id}`)}
                                 title="عرض التفاصيل"
                               >
@@ -1351,6 +1361,78 @@ const AdminOrders = () => {
           customerName={selectedOrderForMessage.profiles?.full_name || selectedOrderForMessage.profiles?.username || 'زبون'}
         />
       )}
+
+      {/* Quick View Dialog */}
+      <Dialog open={!!quickViewOrder} onOpenChange={(open) => !open && setQuickViewOrder(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-right">
+              <Eye className="h-5 w-5 text-primary" />
+              منتجات الطلب {quickViewOrder?.order_number}
+            </DialogTitle>
+          </DialogHeader>
+          {quickViewOrder && (
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+              {/* Customer Info with copy */}
+              <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">👤</span>
+                  <span className="font-medium flex-1">{quickViewOrder.profiles?.full_name || quickViewOrder.profiles?.username}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">📞</span>
+                  <span className="flex-1 text-xs">{quickViewOrder.phone_number}</span>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(quickViewOrder.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">📍</span>
+                  <span className="flex-1 text-xs">{quickViewOrder.governorate} - {quickViewOrder.shipping_address}</span>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`${quickViewOrder.governorate} - ${quickViewOrder.shipping_address}`); toast.success('تم نسخ العنوان'); }}>
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Products */}
+              <div className="space-y-2">
+                {(quickViewOrder.order_items || []).map((item: any) => (
+                  <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                    {item.color_image_url && (
+                      <img src={item.color_image_url} className="w-12 h-12 rounded-lg object-cover border border-border" alt="" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{item.product_name_ar}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.selected_color && (
+                          <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_color}</Badge>
+                        )}
+                        {item.selected_option && (
+                          <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_option}</Badge>
+                        )}
+                        {item.shipping_option_name_ar && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5">{item.shipping_option_name_ar}</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <span className="text-sm font-bold text-foreground">×{item.quantity}</span>
+                      <p className="text-[11px] text-muted-foreground">{formatPrice(item.unit_price)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total */}
+              <div className="flex items-center justify-between pt-2 border-t border-border text-sm font-bold">
+                <span>المجموع</span>
+                <span className="text-primary">{formatPrice(quickViewOrder.total_amount)}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
