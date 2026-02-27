@@ -15,6 +15,7 @@ import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Che
 import { toast } from 'sonner';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatPrice, cn } from '@/lib/utils';
+import { motion, LayoutGroup } from 'framer-motion';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
 import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
@@ -604,13 +605,14 @@ const ProductDetail = () => {
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="px-3 pb-3">
-                      <div className="flex flex-wrap gap-2" style={{ position: 'relative' }}>
-                        {filteredColors.map((color: any, index: number) => (
-                          <button key={color.name_ar || index} type="button"
-                            style={{ 
-                              transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                              animationDelay: `${index * 50}ms`,
-                            }}
+                      <LayoutGroup>
+                        <div className="flex flex-wrap gap-2">
+                        {filteredColors.map((color: any) => (
+                          <motion.button
+                            key={color.name_ar}
+                            layout
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            type="button"
                             onClick={() => {
                               if (!color.isAvailable) return;
                               const newColor = selectedColor === color.name_ar ? null : color.name_ar;
@@ -619,8 +621,7 @@ const ProductDetail = () => {
                               else setColorImageUrl(null);
                             }}
                             disabled={!color.isAvailable}
-                            className={cn("group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 min-w-[65px] backdrop-blur-sm active:scale-[0.95] animate-fade-in",
-                              "transition-all duration-300",
+                            className={cn("group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 min-w-[65px] backdrop-blur-sm active:scale-[0.95]",
                               selectedColor === color.name_ar
                                 ? 'border-primary/50 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.15)]'
                                 : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
@@ -649,9 +650,10 @@ const ProductDetail = () => {
                                 <X className="h-4 w-4 text-destructive" />
                               </div>
                             )}
-                          </button>
+                          </motion.button>
                         ))}
-                      </div>
+                        </div>
+                      </LayoutGroup>
                     </AccordionContent>
                   </AccordionItem>
                 )}
