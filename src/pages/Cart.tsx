@@ -619,6 +619,20 @@ const Cart = () => {
 
       // Send telegram notification
       try {
+        const itemDetailsList = items.map((item, idx) => {
+          const name = item.custom_request_id
+            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            : (item.products?.name_ar || item.products?.name || 'منتج');
+          const color = (item as any).selected_color;
+          const option = (item as any).product_options?.name_ar;
+          const shippingOpt = (item as any).shipping_option_name_ar;
+          let detail = `${idx + 1}. ${name} × ${item.quantity}`;
+          if (color) detail += `\n   🎨 اللون: ${color}`;
+          if (option) detail += `\n   📐 الخيار: ${option}`;
+          if (shippingOpt) detail += `\n   🚚 الشحن: ${shippingOpt}`;
+          return detail;
+        }).join('\n');
+
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
             message: `🛒 <b>طلب جديد - بيع مباشر (دفع عند الاستلام)</b>\n\n` +
@@ -628,6 +642,7 @@ const Cart = () => {
               `📋 رقم الطلب: ${orderResult.order_number}\n` +
               `📦 عدد المنتجات: ${items.length}\n` +
               `📍 المحافظة: ${selectedAddress.governorate}\n\n` +
+              `📝 <b>تفاصيل المنتجات:</b>\n${itemDetailsList}\n\n` +
               `💰 الإجمالي: ${(orderSubtotal + deliveryFeeCalc).toLocaleString()} د.ع\n` +
               `💳 الدفع: عند الاستلام`,
           },
@@ -766,6 +781,20 @@ const Cart = () => {
         const orderTotalAmount = (total - discount) + deliveryFee;
         const paidAmountNow = grandTotal;
         const remainingToPay = isPreOrderWithPartialPayment ? remainingAmount : 0;
+
+        const paidItemDetailsList = items.map((item, idx) => {
+          const name = item.custom_request_id
+            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            : (item.products?.name_ar || item.products?.name || 'منتج');
+          const color = (item as any).selected_color;
+          const option = (item as any).product_options?.name_ar;
+          const shippingOpt = (item as any).shipping_option_name_ar;
+          let detail = `${idx + 1}. ${name} × ${item.quantity}`;
+          if (color) detail += `\n   🎨 اللون: ${color}`;
+          if (option) detail += `\n   📐 الخيار: ${option}`;
+          if (shippingOpt) detail += `\n   🚚 الشحن: ${shippingOpt}`;
+          return detail;
+        }).join('\n');
         
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
@@ -776,6 +805,7 @@ const Cart = () => {
               `📋 رقم الطلب: ${order.order_number}\n` +
               `📦 عدد المنتجات: ${items.length}\n` +
               `📍 المحافظة: ${selectedAddress.governorate}\n\n` +
+              `📝 <b>تفاصيل المنتجات:</b>\n${paidItemDetailsList}\n\n` +
               `💰 <b>تفاصيل الدفع:</b>\n` +
               `• المبلغ الإجمالي: ${orderTotalAmount.toLocaleString()} د.ع\n` +
               `• المدفوع الآن: ${paidAmountNow.toLocaleString()} د.ع\n` +
