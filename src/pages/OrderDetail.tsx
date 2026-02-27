@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotifications';
@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download, Ship, Plane, MessageCircle } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download, Ship, Plane, MessageCircle, XCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { OrderTimeline } from '@/components/OrderTimeline';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // Helper function to determine if order is pre-order
 // An order is DIRECT only if ALL items come from in-stock products
@@ -59,6 +60,9 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showAdminChat, setShowAdminChat] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const queryClient = useQueryClient();
   
   // Enable realtime notifications
   useOrderRealtimeNotifications();
@@ -242,6 +246,62 @@ const OrderDetail = () => {
     }, 500);
   };
 
+  // Cancel order handler
+  const handleCancelOrder = async () => {
+    if (!orderId || isCancelling) return;
+    setIsCancelling(true);
+    try {
+      const cancelledBy = isAdmin ? 'admin' : 'customer';
+      const { data: result, error } = await supabase.rpc('cancel_order', {
+        p_order_id: orderId,
+        p_cancelled_by: cancelledBy,
+      });
+
+      if (error) throw error;
+
+      const res = result as any;
+      if (!res?.success) {
+        toast.error(res?.error || 'حدث خطأ أثناء إلغاء الطلب');
+        return;
+      }
+
+      // Send telegram notification
+      try {
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `❌ <b>تم إلغاء طلب</b>\n\n` +
+              `📋 رقم الطلب: ${res.order_number}\n` +
+              `📦 نوع الطلب: ${res.order_type === 'direct' ? 'بيع مباشر' : 'حجز مسبق'}\n` +
+              `🔄 تم الإلغاء بواسطة: ${cancelledBy === 'admin' ? 'الإدارة' : 'الزبون'}\n` +
+              (res.refunded_amount > 0 ? `💰 المبلغ المسترد: ${Number(res.refunded_amount).toLocaleString()} د.ع\n` : '') +
+              (res.order_type === 'direct' ? `📦 تم إرجاع المنتجات إلى المخزون` : ''),
+          },
+        });
+      } catch (e) { console.error('Telegram error:', e); }
+
+      toast.success('تم إلغاء الطلب بنجاح' + (res.refunded_amount > 0 ? ` وتم استرداد ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
+      queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
+    } catch (error) {
+      console.error('Cancel order error:', error);
+      toast.error('حدث خطأ أثناء إلغاء الطلب');
+    } finally {
+      setIsCancelling(false);
+      setShowCancelDialog(false);
+    }
+  };
+
+  // Check if order can be cancelled by current user
+  const canCancelOrder = (order: any) => {
+    if (!order || order.status === 'cancelled' || order.status === 'delivered' || order.status === 'shipped' || order.status === 'arrived_iraq') return false;
+    if (isAdmin) return true; // Admin can cancel anytime before shipping
+    // Customer: within 1 hour or before processing
+    const createdAt = new Date(order.created_at);
+    const now = new Date();
+    const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    if (hoursSinceCreation <= 1) return true;
+    return order.status === 'pending' || order.status === 'confirmed';
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, color: string }> = {
       pending: { variant: 'outline', label: 'قيد الانتظار', color: 'text-amber-500' },
@@ -365,6 +425,17 @@ const OrderDetail = () => {
                 >
                   <MessageCircle className="ml-2 h-4 w-4" />
                   التواصل مع العميل
+                </Button>
+              )}
+              {canCancelOrder(order) && (
+                <Button 
+                  variant="destructive"
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCancelling}
+                  className="gap-1"
+                >
+                  {isCancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                  إلغاء الطلب
                 </Button>
               )}
               <Badge variant={statusInfo.variant} className="text-lg px-4 py-2 w-fit">
@@ -727,6 +798,39 @@ const OrderDetail = () => {
           userName={order.profiles?.full_name || 'العميل'}
         />
       )}
+
+      {/* Cancel Order Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <XCircle className="h-5 w-5" />
+              إلغاء الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>هل أنت متأكد من إلغاء الطلب رقم <strong>#{order?.order_number}</strong>؟</p>
+              {order?.order_type === 'direct' && (
+                <p className="text-muted-foreground text-xs">📦 سيتم إرجاع المنتجات إلى المخزون تلقائياً</p>
+              )}
+              {order?.paid_amount > 0 && order?.payment_status !== 'cod' && (
+                <p className="text-muted-foreground text-xs">💰 سيتم استرداد المبلغ المدفوع ({formatPrice(order.paid_amount)} د.ع) إلى محفظتك</p>
+              )}
+              <p className="text-destructive text-xs font-bold">⚠️ لا يمكن التراجع عن هذا الإجراء</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelOrder}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isCancelling}
+            >
+              {isCancelling ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              تأكيد الإلغاء
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
