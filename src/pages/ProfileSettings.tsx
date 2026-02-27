@@ -258,17 +258,19 @@ export default function ProfileSettings() {
     : `يمكن تغيير اسم المستخدم بعد ${cooldownDaysLeft} يوم`;
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+    <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 pt-24 pb-24 max-w-4xl">
-        <div className="mb-6 flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9">
             <ArrowRight className="h-4 w-4" />
-            رجوع
           </Button>
+          <h1 className="text-lg font-bold text-foreground">الإعدادات</h1>
         </div>
 
-        <div className="space-y-4">
-          <Card className="glass-effect border-border/50">
+        <div className="space-y-3">
+          {/* Profile Section */}
+          <Card className="border-border/50">
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                 <div className="relative">

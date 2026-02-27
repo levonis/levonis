@@ -296,7 +296,7 @@ const OrderDetail = () => {
   const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <main className="container mx-auto px-4 py-8 pt-24 relative z-10 max-w-5xl">
         {/* Header */}
         <div className="mb-6">
@@ -310,9 +310,8 @@ const OrderDetail = () => {
           </Button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-black text-primary mb-2">تفاصيل الطلب</h1>
+              <h1 className="text-2xl font-black text-foreground mb-1">طلب #{order.order_number}</h1>
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
                 {/* Order Type Badge */}
                 <Badge variant={isPreOrder ? "outline" : "secondary"} className="flex items-center gap-1">
                   <ShoppingBag className="h-3 w-3" />

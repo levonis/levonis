@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Heart, ShoppingCart, Trash2 } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, ArrowRight, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/lib/i18n';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FavoriteProduct {
   id: string;
@@ -25,6 +25,24 @@ interface FavoriteProduct {
   };
 }
 
+const FavoriteSkeleton = () => (
+  <div className="space-y-2">
+    {[1, 2, 3, 4].map(i => (
+      <div key={i} className="flex gap-3 p-3 rounded-2xl border bg-card">
+        <Skeleton className="w-20 h-20 rounded-xl shrink-0" />
+        <div className="flex-1 space-y-2 py-1">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <div className="flex flex-col gap-1.5 py-1">
+          <Skeleton className="h-8 w-8 rounded-lg" />
+          <Skeleton className="h-8 w-8 rounded-lg" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const Favorites = () => {
   const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
@@ -38,35 +56,18 @@ const Favorites = () => {
       navigate('/auth');
       return;
     }
-
-    if (user) {
-      fetchFavorites();
-    }
+    if (user) fetchFavorites();
   }, [user, authLoading, navigate]);
 
   const fetchFavorites = async () => {
     try {
-      const { data: productFavs, error: productError } = await supabase
+      const { data, error } = await supabase
         .from('favorites')
-        .select(`
-          id,
-          product_id,
-          products (
-            id,
-            name_ar,
-            slug,
-            price,
-            currency,
-            image_url,
-            images,
-            in_stock
-          )
-        `)
+        .select(`id, product_id, products (id, name_ar, slug, price, currency, image_url, images, in_stock)`)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
-
-      if (productError) throw productError;
-      setFavorites(productFavs || []);
+      if (error) throw error;
+      setFavorites(data || []);
     } catch (error) {
       console.error('Error fetching favorites:', error);
       toast.error(t('favorites_error'));
@@ -77,13 +78,8 @@ const Favorites = () => {
 
   const handleRemoveFavorite = async (favoriteId: string) => {
     try {
-      const { error } = await supabase
-        .from('favorites')
-        .delete()
-        .eq('id', favoriteId);
-
+      const { error } = await supabase.from('favorites').delete().eq('id', favoriteId);
       if (error) throw error;
-
       setFavorites(favorites.filter(fav => fav.id !== favoriteId));
       toast.success(t('favorites_removed'));
     } catch (error) {
@@ -97,88 +93,110 @@ const Favorites = () => {
     toast.success(t('favorites_cart_added'));
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  return (
+    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Heart className="h-5 w-5 text-primary" />
+            <h1 className="text-base font-bold text-foreground">{t('favorites_title')}</h1>
+            {!loading && (
+              <span className="text-xs text-muted-foreground">({favorites.length})</span>
+            )}
+          </div>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(-1)}>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">
-            <Heart className="h-8 w-8" />
-            {t('favorites_title')}
-          </h1>
-          <p className="text-muted-foreground">{t('favorites_desc')}</p>
-        </div>
-
-        {favorites.length === 0 ? (
-          <Card className="glass-effect border-border/50">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <h3 className="text-xl font-bold text-foreground mb-2">{t('favorites_empty')}</h3>
-              <p className="text-muted-foreground mb-6">{t('favorites_empty_desc')}</p>
-              <Button onClick={() => navigate('/')}>{t('common_browse_products')}</Button>
-            </CardContent>
-          </Card>
+      {/* Content */}
+      <main className="flex-1 px-3 py-3">
+        {authLoading || loading ? (
+          <FavoriteSkeleton />
+        ) : favorites.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <Heart className="h-10 w-10 text-muted-foreground/50" />
+            </div>
+            <h3 className="font-bold text-foreground mb-1">{t('favorites_empty')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{t('favorites_empty_desc')}</p>
+            <Button size="sm" onClick={() => navigate('/')}>
+              <Package className="h-4 w-4 ml-1.5" />
+              {t('common_browse_products')}
+            </Button>
+          </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-2">
             {favorites.map((favorite) => {
               const product = favorite.products;
               const productImage = product.images?.[0] || product.image_url;
               const currency = product.currency || t('common_iqd');
 
               return (
-                <Card key={favorite.id} className="glass-effect border-border/50 overflow-hidden group">
-                  <div className="relative aspect-square bg-card/50">
+                <div
+                  key={favorite.id}
+                  className="flex gap-3 p-3 rounded-2xl border bg-card shadow-sm hover:shadow-md transition-all active:scale-[0.99] overflow-hidden"
+                >
+                  {/* Image */}
+                  <div
+                    className="w-20 h-20 rounded-xl overflow-hidden bg-muted shrink-0 cursor-pointer"
+                    onClick={() => navigate(`/product/${product.slug}`)}
+                  >
                     {productImage ? (
                       <img
                         src={productImage}
                         alt={product.name_ar}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => navigate(`/product/${product.slug}`)}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Heart className="w-16 h-16 text-muted-foreground/30" />
+                        <Heart className="w-6 h-6 text-muted-foreground/30" />
                       </div>
                     )}
+                  </div>
+
+                  {/* Info */}
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer py-0.5"
+                    onClick={() => navigate(`/product/${product.slug}`)}
+                  >
+                    <p className="text-sm font-medium text-foreground line-clamp-2 mb-1.5 leading-snug">
+                      {product.name_ar}
+                    </p>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-base font-black text-primary">{formatPrice(Number(product.price))}</span>
+                      <span className="text-[10px] text-muted-foreground">{currency}</span>
+                    </div>
+                    {!product.in_stock && (
+                      <span className="text-[10px] text-destructive font-medium">{t('product_out_of_stock')}</span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-1.5 shrink-0 justify-center">
                     <Button
                       size="icon"
-                      variant="destructive"
-                      className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      variant="ghost"
+                      className="h-8 w-8 text-primary hover:bg-primary/10"
+                      onClick={() => handleAddToCart(product.id)}
+                      disabled={!product.in_stock}
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
                       onClick={() => handleRemoveFavorite(favorite.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  <CardContent className="p-4">
-                    <h3
-                      className="font-bold text-foreground mb-2 line-clamp-2 cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => navigate(`/product/${product.slug}`)}
-                    >
-                      {product.name_ar}
-                    </h3>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-2xl font-black text-primary">{formatPrice(Number(product.price))}</span>
-                      <span className="text-sm text-muted-foreground">{currency}</span>
-                    </div>
-                    <Button
-                      className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                      onClick={() => handleAddToCart(product.id)}
-                      disabled={!product.in_stock}
-                    >
-                      <ShoppingCart className="ml-2 h-4 w-4" />
-                      {product.in_stock ? t('favorites_add_to_cart') : t('product_out_of_stock')}
-                    </Button>
-                  </CardContent>
-                </Card>
+                </div>
               );
             })}
           </div>
