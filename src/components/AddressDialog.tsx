@@ -56,6 +56,7 @@ const governorates = [
 ];
 
 const addressSchema = z.object({
+  label: z.string().optional(),
   full_name: z.string().min(1, 'الاسم مطلوب').max(100, 'الاسم طويل جداً'),
   phone_number: z.string().min(1, 'رقم الهاتف مطلوب').max(20, 'رقم الهاتف غير صحيح'),
   governorate: z.string().min(1, 'المحافظة مطلوبة'),
@@ -82,6 +83,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
   const form = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
     defaultValues: {
+      label: '',
       full_name: '',
       phone_number: '',
       governorate: '',
@@ -96,6 +98,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
   useEffect(() => {
     if (address) {
       form.reset({
+        label: address.label || '',
         full_name: address.full_name || '',
         phone_number: address.phone_number || '',
         governorate: address.governorate || '',
@@ -107,6 +110,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
       });
     } else {
       form.reset({
+        label: '',
         full_name: '',
         phone_number: '',
         governorate: '',
@@ -128,6 +132,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
         const { error } = await supabase
           .from('user_addresses')
           .update({
+            label: data.label || null,
             full_name: data.full_name,
             phone_number: data.phone_number,
             governorate: data.governorate,
@@ -146,6 +151,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
           .from('user_addresses')
           .insert({
             user_id: user.id,
+            label: data.label || null,
             full_name: data.full_name,
             phone_number: data.phone_number,
             governorate: data.governorate,
@@ -193,6 +199,20 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="label"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>اسم العنوان (اختياري)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="مثال: البيت، العمل، بيت الأهل" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="full_name"
