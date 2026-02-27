@@ -122,6 +122,10 @@ const MyOrders = () => {
     statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
   });
 
+  // Separate direct and preorder orders
+  const directOrders = orders?.filter((o: any) => (o as any).order_type === 'direct') || [];
+  const preorderOrders = orders?.filter((o: any) => (o as any).order_type !== 'direct') || [];
+  
   const filtered = activeTab === 'all'
     ? orders
     : orders?.filter((o: any) => o.status === activeTab);
@@ -304,21 +308,30 @@ const MyOrders = () => {
                             )}
                           </p>
                           <div className="flex flex-wrap gap-1">
-                            {isPreOrder && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600">
-                                <ShoppingBag className="h-2.5 w-2.5" />
-                                طلب مسبق
-                              </span>
-                            )}
-                            {isPreOrder && shippingName && (
-                              <span className={cn(
-                                "inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md",
-                                isFastShipping ? "bg-amber-500/10 text-amber-600" : "bg-sky-500/10 text-sky-600"
-                              )}>
-                                {isFastShipping ? <Plane className="h-2.5 w-2.5" /> : <Ship className="h-2.5 w-2.5" />}
-                                {shippingName}
-                              </span>
-                            )}
+              {(order as any).order_type === 'direct' ? (
+                               <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600">
+                                 <Truck className="h-2.5 w-2.5" />
+                                 بيع مباشر
+                               </span>
+                             ) : (
+                               <>
+                                 {isPreOrder && (
+                                   <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600">
+                                     <ShoppingBag className="h-2.5 w-2.5" />
+                                     طلب مسبق
+                                   </span>
+                                 )}
+                                 {isPreOrder && shippingName && (
+                                   <span className={cn(
+                                     "inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md",
+                                     isFastShipping ? "bg-amber-500/10 text-amber-600" : "bg-sky-500/10 text-sky-600"
+                                   )}>
+                                     {isFastShipping ? <Plane className="h-2.5 w-2.5" /> : <Ship className="h-2.5 w-2.5" />}
+                                     {shippingName}
+                                   </span>
+                                 )}
+                               </>
+                             )}
                           </div>
                         </div>
 
@@ -370,6 +383,27 @@ const MyOrders = () => {
           </div>
         )}
       </main>
+
+      {/* Bottom bar for active direct orders */}
+      {directOrders.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-3 pb-2">
+          <div
+            onClick={() => { setActiveTab('all'); }}
+            className="bg-emerald-600 text-white rounded-2xl px-4 py-3 flex items-center justify-between shadow-lg cursor-pointer hover:bg-emerald-700 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              <div>
+                <p className="text-sm font-bold">طلبات مباشرة نشطة</p>
+                <p className="text-xs opacity-80">
+                  {directOrders.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length} طلب قيد التوصيل
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 rotate-180" />
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
