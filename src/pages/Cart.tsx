@@ -549,6 +549,13 @@ const Cart = () => {
         if (itemsError) {
           console.error('Order items insert error:', itemsError);
         }
+        
+        // Deduct stock for direct sale items
+        try {
+          await supabase.rpc('deduct_order_stock', { p_order_id: orderResult.id });
+        } catch (stockError) {
+          console.error('Stock deduction error:', stockError);
+        }
       }
 
       // Send telegram notification
@@ -985,8 +992,8 @@ const Cart = () => {
       window.open(whatsappURL, '_blank');
       
       toast({
-        title: "تم إنشاء الطلب بنجاح",
-        description: `رقم الطلب: ${order.order_number}`,
+        title: "تم إنشاء الطلب بنجاح ✅",
+        description: `رقم الطلب: ${order.order_number} — لا تنسَ تقييم المنتجات بعد الاستلام للحصول على خصومات وهدايا! ⭐`,
       });
       
     } catch (error) {

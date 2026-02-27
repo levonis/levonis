@@ -7206,6 +7206,7 @@ export type Database = {
         }
         Returns: string
       }
+      deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
       deduct_user_points: {
         Args: {
           p_amount: number
