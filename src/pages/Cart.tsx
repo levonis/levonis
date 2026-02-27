@@ -22,6 +22,7 @@ import { useLanguage } from '@/lib/i18n';
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
@@ -48,6 +49,7 @@ const Cart = () => {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddressSwitcher, setShowAddressSwitcher] = useState(false);
   // Refresh cart data on mount to get latest pendingCartRequest
   useEffect(() => {
     refreshCart();
@@ -1364,48 +1366,43 @@ const Cart = () => {
                   
                   {/* Address selector for direct sale */}
                   {isDirectSaleCart && (
+                    <>
                     <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                           <MapPin className="h-4 w-4 text-primary" />
                           عنوان التوصيل
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs text-primary hover:text-primary/80"
-                          onClick={() => navigate('/addresses')}
-                        >
-                          {userAddresses && userAddresses.length > 0 ? 'إدارة العناوين' : 'إضافة عنوان'}
-                        </Button>
-                      </div>
-                      {userAddresses && userAddresses.length > 0 ? (
-                        <div className="space-y-2">
-                          {userAddresses.map((addr: any) => (
-                            <div
-                              key={addr.id}
-                              onClick={() => setSelectedAddressId(addr.id)}
-                              className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
-                                selectedAddressId === addr.id
-                                  ? 'border-primary bg-primary/5'
-                                  : 'border-border/40 hover:border-primary/30'
-                              }`}
+                        <div className="flex items-center gap-1">
+                          {userAddresses && userAddresses.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-primary hover:text-primary/80"
+                              onClick={() => setShowAddressSwitcher(true)}
                             >
-                              <div className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${
-                                selectedAddressId === addr.id ? 'border-primary' : 'border-muted-foreground/40'
-                              }`}>
-                                {selectedAddressId === addr.id && (
-                                  <div className="w-2 h-2 rounded-full bg-primary" />
-                                )}
-                              </div>
-                              <div className="text-xs space-y-0.5 flex-1">
-                                {addr.label && <p className="font-black text-primary text-[11px]">{addr.label}</p>}
-                                <p className="font-bold text-foreground">{addr.full_name}</p>
-                                <p className="text-muted-foreground">{addr.governorate} - {addr.area}</p>
-                                <p className="text-muted-foreground" dir="ltr">{addr.phone_number}</p>
-                              </div>
-                            </div>
-                          ))}
+                              تبديل العنوان
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => navigate('/addresses')}
+                          >
+                            {userAddresses && userAddresses.length > 0 ? 'إدارة' : 'إضافة عنوان'}
+                          </Button>
+                        </div>
+                      </div>
+                      {selectedAddress ? (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-primary/30 bg-background">
+                          <MapPin className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                          <div className="text-xs space-y-0.5 flex-1">
+                            {selectedAddress.label && <p className="font-black text-primary text-[11px]">{selectedAddress.label}</p>}
+                            <p className="font-bold text-foreground">{selectedAddress.full_name}</p>
+                            <p className="text-muted-foreground">{selectedAddress.governorate} - {selectedAddress.area}</p>
+                            <p className="text-muted-foreground" dir="ltr">{selectedAddress.phone_number}</p>
+                          </div>
                         </div>
                       ) : (
                         <div className="text-center py-3">
@@ -1422,8 +1419,51 @@ const Cart = () => {
                         </div>
                       )}
                     </div>
+
+                    <Dialog open={showAddressSwitcher} onOpenChange={setShowAddressSwitcher}>
+                      <DialogContent dir="rtl" className="max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5 text-primary" />
+                            اختر عنوان التوصيل
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                          {userAddresses?.map((addr: any) => (
+                            <div
+                              key={addr.id}
+                              onClick={() => {
+                                setSelectedAddressId(addr.id);
+                                setShowAddressSwitcher(false);
+                              }}
+                              className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                selectedAddressId === addr.id
+                                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                  : 'border-border/50 hover:border-primary/30 hover:bg-muted/30'
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center ${
+                                selectedAddressId === addr.id ? 'border-primary' : 'border-muted-foreground/40'
+                              }`}>
+                                {selectedAddressId === addr.id && (
+                                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                                )}
+                              </div>
+                              <div className="text-sm space-y-0.5 flex-1">
+                                {addr.label && <p className="font-black text-primary text-xs">{addr.label}</p>}
+                                <p className="font-bold text-foreground">{addr.full_name}</p>
+                                <p className="text-muted-foreground text-xs">{addr.governorate} - {addr.area}</p>
+                                {addr.nearest_landmark && <p className="text-muted-foreground text-xs">{addr.nearest_landmark}</p>}
+                                <p className="text-muted-foreground text-xs" dir="ltr">{addr.phone_number}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    </>
                   )}
-                  
+
                   {/* خيارات الدفع للطلب المسبق */}
                   {hasPreOrderItems && (
                     <div className="py-4 px-4 rounded-lg bg-accent/10 border border-accent/30">
