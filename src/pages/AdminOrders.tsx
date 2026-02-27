@@ -647,12 +647,12 @@ const AdminOrders = () => {
       (shippingTypeFilter === 'air' && isAirShipping) ||
       (shippingTypeFilter === 'sea' && !isAirShipping);
     
-    // Order type filter
-    const isPreOrder = checkIfPreOrder(order.order_items || []);
+    // Order type filter - use order_type column if available
+    const orderType = (order as any).order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
     const matchesOrderType = 
       orderTypeFilter === 'all' || 
-      (orderTypeFilter === 'preorder' && isPreOrder) ||
-      (orderTypeFilter === 'direct' && !isPreOrder);
+      (orderTypeFilter === 'preorder' && orderType === 'preorder') ||
+      (orderTypeFilter === 'direct' && orderType === 'direct');
 
     return matchesSearch && matchesStatus && matchesShippingType && matchesOrderType;
   }) || [];
@@ -922,12 +922,21 @@ const AdminOrders = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              {shippingInfo.isFast ? (
-                                <Plane className="h-4 w-4 text-blue-500" />
+                              {(order as any).order_type === 'direct' ? (
+                                <>
+                                  <Truck className="h-4 w-4 text-emerald-500" />
+                                  <span className="text-xs font-bold text-emerald-600">بيع مباشر</span>
+                                </>
                               ) : (
-                                <Ship className="h-4 w-4 text-green-500" />
+                                <>
+                                  {shippingInfo.isFast ? (
+                                    <Plane className="h-4 w-4 text-blue-500" />
+                                  ) : (
+                                    <Ship className="h-4 w-4 text-green-500" />
+                                  )}
+                                  <span className="text-xs">{isPreOrder ? 'طلب مسبق' : 'متوفر'}</span>
+                                </>
                               )}
-                              <span className="text-xs">{isPreOrder ? 'طلب مسبق' : 'متوفر'}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">

@@ -32,7 +32,7 @@ const productSchema = z.object({
   // Allow 0 or positive price - validation will show warning but not block save
   price: z.number().nonnegative('السعر يجب أن يكون صفر أو أكبر'),
   original_price: z.number().positive().nullable().optional(),
-  cost_price: z.number().nonnegative().nullable().optional(),
+  cost_price: z.number().nonnegative('سعر التكلفة مطلوب'),
   currency: z.string().optional(),
   images: z.array(z.string()).optional(),
   image_url: z.string().nullable().optional(),
@@ -1495,6 +1495,34 @@ const Admin = () => {
           <h1>لوحة التحكم</h1>
           <p>إدارة شاملة للمنتجات والأقسام والإعدادات</p>
         </div>
+        {/* Warning: Products missing cost_price */}
+        {(() => {
+          const missingCostProducts = products?.filter((p: any) => !p.cost_price || p.cost_price <= 0) || [];
+          if (missingCostProducts.length === 0) return null;
+          return (
+            <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-1">⚠️ تحذير: {missingCostProducts.length} منتج بدون سعر تكلفة</h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">يجب تحديث سعر التكلفة لجميع المنتجات لحساب الأرباح بدقة.</p>
+                  <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                    {missingCostProducts.slice(0, 10).map((p: any) => (
+                      <Badge key={p.id} variant="outline" className="text-xs border-amber-500/30 text-amber-600 dark:text-amber-400">
+                        {p.name_ar}
+                      </Badge>
+                    ))}
+                    {missingCostProducts.length > 10 && (
+                      <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-600 dark:text-amber-400">
+                        +{missingCostProducts.length - 10} أخرى
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Statistics Cards */}
         <div className="admin-grid-5 mb-8">

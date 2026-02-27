@@ -149,7 +149,13 @@ const AdminFinancials = () => {
         .select(`
           *,
           profile:profiles(username, full_name),
-          order_items(id, product_name, product_name_ar, quantity, unit_price, total_price)
+          order_items(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id,
+            products:product_id(id, name_ar, cost_price, category_id,
+              categories:category_id(id, name_ar, main_section_id,
+                main_sections:main_section_id(id, name_ar)
+              )
+            )
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -743,6 +749,187 @@ const AdminFinancials = () => {
             </Table>
           </div>
         )}
+      </AdminSection>
+
+      {/* Profit Breakdown Section */}
+      <AdminSection title="تحليل الأرباح التفصيلي" className="mt-6">
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="general">ربح عام</TabsTrigger>
+            <TabsTrigger value="by-section">حسب القسم الرئيسي</TabsTrigger>
+            <TabsTrigger value="by-category">حسب القسم الفرعي</TabsTrigger>
+            <TabsTrigger value="by-product">حسب المنتج</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="general">
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">المصدر</TableHead>
+                    <TableHead className="text-right">الإيرادات</TableHead>
+                    <TableHead className="text-right">التكلفة</TableHead>
+                    <TableHead className="text-right">صافي الربح</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const directOrders = filteredOrders.filter((o: any) => (o as any).order_type === 'direct');
+                    const preorderOrders = filteredOrders.filter((o: any) => (o as any).order_type !== 'direct');
+                    const directRevenue = directOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
+                    const directCost = directOrders.reduce((s, o) => s + (o.admin_product_cost || 0), 0);
+                    const preorderRevenue = preorderOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
+                    const preorderCost = preorderOrders.reduce((s, o) => s + (o.admin_product_cost || 0), 0);
+                    return (
+                      <>
+                        <TableRow>
+                          <TableCell className="font-bold">بيع مباشر</TableCell>
+                          <TableCell className="text-green-600">{formatPrice(directRevenue)}</TableCell>
+                          <TableCell className="text-red-500">{formatPrice(directCost)}</TableCell>
+                          <TableCell className={directRevenue - directCost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(directRevenue - directCost)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-bold">حجز مسبق</TableCell>
+                          <TableCell className="text-green-600">{formatPrice(preorderRevenue)}</TableCell>
+                          <TableCell className="text-red-500">{formatPrice(preorderCost)}</TableCell>
+                          <TableCell className={preorderRevenue - preorderCost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(preorderRevenue - preorderCost)}</TableCell>
+                        </TableRow>
+                        <TableRow className="bg-muted/50">
+                          <TableCell className="font-black">الإجمالي</TableCell>
+                          <TableCell className="text-green-600 font-bold">{formatPrice(totals.totalRevenue)}</TableCell>
+                          <TableCell className="text-red-500 font-bold">{formatPrice(totals.totalProductCost)}</TableCell>
+                          <TableCell className={calculatedProfit >= 0 ? 'text-green-600 font-black' : 'text-red-600 font-black'}>{formatPrice(calculatedProfit)}</TableCell>
+                        </TableRow>
+                      </>
+                    );
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="by-section">
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">القسم الرئيسي</TableHead>
+                    <TableHead className="text-right">عدد الطلبات</TableHead>
+                    <TableHead className="text-right">الإيرادات</TableHead>
+                    <TableHead className="text-right">التكلفة</TableHead>
+                    <TableHead className="text-right">صافي الربح</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const sectionMap: Record<string, { name: string; revenue: number; cost: number; count: number }> = {};
+                    filteredOrders.forEach((order: any) => {
+                      order.order_items?.forEach((item: any) => {
+                        const section = (item as any).products?.categories?.main_sections;
+                        const sectionName = section?.name_ar || 'غير مصنف';
+                        const sectionId = section?.id || 'unknown';
+                        if (!sectionMap[sectionId]) sectionMap[sectionId] = { name: sectionName, revenue: 0, cost: 0, count: 0 };
+                        sectionMap[sectionId].revenue += item.total_price || 0;
+                        sectionMap[sectionId].cost += (item as any).cost_price ? (item as any).cost_price * item.quantity : 0;
+                        sectionMap[sectionId].count += 1;
+                      });
+                    });
+                    return Object.entries(sectionMap).sort((a, b) => b[1].revenue - a[1].revenue).map(([id, data]) => (
+                      <TableRow key={id}>
+                        <TableCell className="font-bold">{data.name}</TableCell>
+                        <TableCell>{data.count}</TableCell>
+                        <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
+                        <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
+                        <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="by-category">
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">القسم الفرعي</TableHead>
+                    <TableHead className="text-right">عدد المنتجات</TableHead>
+                    <TableHead className="text-right">الإيرادات</TableHead>
+                    <TableHead className="text-right">التكلفة</TableHead>
+                    <TableHead className="text-right">صافي الربح</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const catMap: Record<string, { name: string; revenue: number; cost: number; count: number }> = {};
+                    filteredOrders.forEach((order: any) => {
+                      order.order_items?.forEach((item: any) => {
+                        const cat = (item as any).products?.categories;
+                        const catName = cat?.name_ar || 'غير مصنف';
+                        const catId = cat?.id || 'unknown';
+                        if (!catMap[catId]) catMap[catId] = { name: catName, revenue: 0, cost: 0, count: 0 };
+                        catMap[catId].revenue += item.total_price || 0;
+                        catMap[catId].cost += (item as any).cost_price ? (item as any).cost_price * item.quantity : 0;
+                        catMap[catId].count += 1;
+                      });
+                    });
+                    return Object.entries(catMap).sort((a, b) => b[1].revenue - a[1].revenue).map(([id, data]) => (
+                      <TableRow key={id}>
+                        <TableCell className="font-bold">{data.name}</TableCell>
+                        <TableCell>{data.count}</TableCell>
+                        <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
+                        <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
+                        <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="by-product">
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">المنتج</TableHead>
+                    <TableHead className="text-right">الكمية المباعة</TableHead>
+                    <TableHead className="text-right">الإيرادات</TableHead>
+                    <TableHead className="text-right">التكلفة</TableHead>
+                    <TableHead className="text-right">صافي الربح</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const prodMap: Record<string, { name: string; revenue: number; cost: number; qty: number }> = {};
+                    filteredOrders.forEach((order: any) => {
+                      order.order_items?.forEach((item: any) => {
+                        const prodName = item.product_name_ar || item.product_name || 'غير محدد';
+                        const prodId = (item as any).product_id || prodName;
+                        if (!prodMap[prodId]) prodMap[prodId] = { name: prodName, revenue: 0, cost: 0, qty: 0 };
+                        prodMap[prodId].revenue += item.total_price || 0;
+                        prodMap[prodId].cost += (item as any).cost_price ? (item as any).cost_price * item.quantity : 0;
+                        prodMap[prodId].qty += item.quantity;
+                      });
+                    });
+                    return Object.entries(prodMap).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 50).map(([id, data]) => (
+                      <TableRow key={id}>
+                        <TableCell className="font-medium max-w-[200px] truncate">{data.name}</TableCell>
+                        <TableCell>{data.qty}</TableCell>
+                        <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
+                        <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
+                        <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
       </AdminSection>
 
       {/* Order Details Dialog */}

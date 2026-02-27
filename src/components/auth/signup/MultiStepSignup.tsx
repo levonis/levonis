@@ -54,6 +54,19 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const handleStep2Complete = async () => {
     setLoading(true);
     try {
+      // Check if username is already taken
+      const { data: existingUsername } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', formData.username.trim().toLowerCase())
+        .maybeSingle();
+
+      if (existingUsername) {
+        toast.error('اسم المستخدم مأخوذ بالفعل. اختر اسماً آخر.');
+        setLoading(false);
+        return;
+      }
+
       // Send verification code WITHOUT creating account
       const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
         body: { 
