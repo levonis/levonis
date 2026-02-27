@@ -391,34 +391,57 @@ const MyOrders = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3 pt-3">
+          <div className="space-y-4 pt-3">
             {/* Preorder Section */}
             <div className="mx-3">
               <button
                 onClick={() => setPreorderExpanded(!preorderExpanded)}
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border transition-all",
+                  "w-full flex items-center justify-between px-4 py-4 rounded-2xl border transition-all duration-300 relative overflow-hidden group",
+                  "backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.08)]",
                   preorderExpanded
-                    ? "bg-amber-500/10 border-amber-500/20"
-                    : "bg-card border-border/40 hover:border-amber-500/30"
+                    ? "bg-amber-500/8 border-amber-500/25 shadow-[0_8px_32px_rgba(245,158,11,0.12),inset_0_1px_0_rgba(255,255,255,0.1)]"
+                    : "bg-card/50 border-border/30 hover:border-amber-500/30 hover:shadow-[0_8px_24px_rgba(245,158,11,0.08)]"
                 )}
               >
-                <div className="flex items-center gap-3">
+                {/* Decorative gradient overlay */}
+                <div className={cn(
+                  "absolute inset-0 bg-gradient-to-l opacity-0 transition-opacity duration-500 pointer-events-none",
+                  "from-amber-500/10 via-amber-400/5 to-transparent",
+                  preorderExpanded ? "opacity-100" : "group-hover:opacity-60"
+                )} />
+                {/* 3D shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] to-transparent pointer-events-none rounded-2xl" />
+
+                <div className="flex items-center gap-3 relative z-[1]">
                   <div className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center",
-                    preorderExpanded ? "bg-amber-500/20" : "bg-amber-500/10"
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 border",
+                    "shadow-[0_4px_12px_rgba(245,158,11,0.15),inset_0_1px_0_rgba(255,255,255,0.15)]",
+                    preorderExpanded
+                      ? "bg-gradient-to-br from-amber-500/25 to-amber-600/15 border-amber-500/30 scale-105"
+                      : "bg-amber-500/10 border-amber-500/15 group-hover:scale-105"
                   )}>
-                    <ShoppingBag className="h-4.5 w-4.5 text-amber-600" />
+                    <ShoppingBag className="h-[18px] w-[18px] text-amber-500" />
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black text-foreground">الحجز المسبق</p>
                     <p className="text-[11px] text-muted-foreground">{preorders.length} طلب</p>
                   </div>
                 </div>
-                <ChevronDown className={cn(
-                  "h-5 w-5 text-muted-foreground transition-transform duration-200",
-                  preorderExpanded && "rotate-180"
-                )} />
+                <div className="relative z-[1] flex items-center gap-2">
+                  {preorders.length > 0 && (
+                    <span className="min-w-[22px] h-[22px] flex items-center justify-center rounded-lg text-[10px] font-black bg-amber-500/15 text-amber-600 border border-amber-500/20 px-1.5">
+                      {preorders.length}
+                    </span>
+                  )}
+                  <div className={cn(
+                    "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300",
+                    "bg-card/60 border border-border/30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]",
+                    preorderExpanded && "rotate-180 bg-amber-500/10 border-amber-500/20"
+                  )}>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
               </button>
 
               {preorderExpanded && (
@@ -434,28 +457,51 @@ const MyOrders = () => {
               <button
                 onClick={() => setDirectExpanded(!directExpanded)}
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border transition-all",
+                  "w-full flex items-center justify-between px-4 py-4 rounded-2xl border transition-all duration-300 relative overflow-hidden group",
+                  "backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.08)]",
                   directExpanded
-                    ? "bg-emerald-500/10 border-emerald-500/20"
-                    : "bg-card border-border/40 hover:border-emerald-500/30"
+                    ? "bg-emerald-500/8 border-emerald-500/25 shadow-[0_8px_32px_rgba(16,185,129,0.12),inset_0_1px_0_rgba(255,255,255,0.1)]"
+                    : "bg-card/50 border-border/30 hover:border-emerald-500/30 hover:shadow-[0_8px_24px_rgba(16,185,129,0.08)]"
                 )}
               >
-                <div className="flex items-center gap-3">
+                {/* Decorative gradient overlay */}
+                <div className={cn(
+                  "absolute inset-0 bg-gradient-to-l opacity-0 transition-opacity duration-500 pointer-events-none",
+                  "from-emerald-500/10 via-emerald-400/5 to-transparent",
+                  directExpanded ? "opacity-100" : "group-hover:opacity-60"
+                )} />
+                {/* 3D shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] to-transparent pointer-events-none rounded-2xl" />
+
+                <div className="flex items-center gap-3 relative z-[1]">
                   <div className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center",
-                    directExpanded ? "bg-emerald-500/20" : "bg-emerald-500/10"
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 border",
+                    "shadow-[0_4px_12px_rgba(16,185,129,0.15),inset_0_1px_0_rgba(255,255,255,0.15)]",
+                    directExpanded
+                      ? "bg-gradient-to-br from-emerald-500/25 to-emerald-600/15 border-emerald-500/30 scale-105"
+                      : "bg-emerald-500/10 border-emerald-500/15 group-hover:scale-105"
                   )}>
-                    <Store className="h-4.5 w-4.5 text-emerald-600" />
+                    <Store className="h-[18px] w-[18px] text-emerald-500" />
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black text-foreground">البيع المباشر</p>
                     <p className="text-[11px] text-muted-foreground">{directOrders.length} طلب</p>
                   </div>
                 </div>
-                <ChevronDown className={cn(
-                  "h-5 w-5 text-muted-foreground transition-transform duration-200",
-                  directExpanded && "rotate-180"
-                )} />
+                <div className="relative z-[1] flex items-center gap-2">
+                  {directOrders.length > 0 && (
+                    <span className="min-w-[22px] h-[22px] flex items-center justify-center rounded-lg text-[10px] font-black bg-emerald-500/15 text-emerald-600 border border-emerald-500/20 px-1.5">
+                      {directOrders.length}
+                    </span>
+                  )}
+                  <div className={cn(
+                    "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300",
+                    "bg-card/60 border border-border/30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]",
+                    directExpanded && "rotate-180 bg-emerald-500/10 border-emerald-500/20"
+                  )}>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
               </button>
 
               {directExpanded && (
