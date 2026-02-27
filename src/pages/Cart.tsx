@@ -1116,144 +1116,121 @@ const Cart = () => {
                     return (
                       <div 
                         key={item.id}
-                        className="glass-effect rounded-2xl p-4 border border-border/50 group hover:border-primary/30 transition-all"
+                        className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all"
                       >
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex gap-2.5 sm:gap-4">
+                          {/* Product Image - compact on mobile */}
                           {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
                             <Link 
                               to={item.products ? `/product/${item.products.slug}` : '#'}
-                              className="flex-shrink-0 mx-auto sm:mx-0"
+                              className="flex-shrink-0"
                             >
                               <img 
                                 src={(item as any).option_image_url || (item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
                                 alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
-                                className="w-32 h-32 sm:w-24 sm:h-24 object-cover rounded-xl border border-border/40 hover:border-primary/50 transition-colors"
+                                className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-border/40"
                               />
                             </Link>
                           )}
                           
-                          <div className="flex-1 flex flex-col gap-3">
-                            <div className="text-center sm:text-right">
-                              {item.products ? (
-                                <Link 
-                                  to={`/product/${item.products.slug}`}
-                                  className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2 hover:text-primary transition-colors"
-                                >
-                                  {item.products.name_ar}
-                                </Link>
-                              ) : (
-                                <div className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2">
-                                  {item.custom_product_requests?.product_name}
-                                  <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                                    طلب خاص ⭐
-                                  </span>
-                                </div>
-                              )}
-                              
-                              {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
-                                <div className="text-sm text-muted-foreground mb-2 space-y-1">
-                                  {itemOption && (
-                                    <div className="flex items-center justify-center sm:justify-start gap-2">
-                                      <span className="font-medium">الخيار:</span>
-                                      <span>{itemOption.name_ar}</span>
-                                    </div>
-                                  )}
-                                   {colorData && (
-                                    <div className="flex items-center justify-center sm:justify-start gap-2">
-                                      <span className="font-medium">اللون:</span>
-                                      <div className="flex items-center gap-1.5">
-                                        <div 
-                                          className="w-4 h-4 rounded-full border border-border"
-                                          style={{ backgroundColor: colorData.hex_code }}
-                                        />
-                                        <span>{colorData.name_ar}</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {(item as any).shipping_option_name_ar && (
-                                    <div className="flex items-center justify-center sm:justify-start gap-2">
-                                      <span className="font-medium">الشحن:</span>
-                                      <span>{(item as any).shipping_option_name_ar}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              
-                              <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                                <span className="text-lg font-black text-primary">
-                                  {formatPrice(itemPrice)} دينار عراقي
-                                </span>
-                                {item.products?.original_price && item.products.original_price > itemPrice && (
-                                  <span className="text-sm line-through text-muted-foreground/60">
-                                    {formatPrice(Number(item.products.original_price))} دينار عراقي
-                                  </span>
+                          {/* Product Info - compact */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="min-w-0 flex-1">
+                                {item.products ? (
+                                  <Link 
+                                    to={`/product/${item.products.slug}`}
+                                    className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors line-clamp-1 block"
+                                  >
+                                    {item.products.name_ar}
+                                  </Link>
+                                ) : (
+                                  <div className="font-bold text-xs sm:text-sm text-foreground line-clamp-1 flex items-center gap-1">
+                                    {item.custom_product_requests?.product_name}
+                                    <span className="text-[9px] bg-primary/20 text-primary px-1 py-0.5 rounded-full shrink-0">طلب خاص</span>
+                                  </div>
+                                )}
+                                
+                                {/* Option/Color/Shipping tags inline */}
+                                {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {itemOption && (
+                                      <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
+                                    )}
+                                    {colorData && (
+                                      <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                        <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={{ backgroundColor: colorData.hex_code }} />
+                                        {colorData.name_ar}
+                                      </span>
+                                    )}
+                                    {(item as any).shipping_option_name_ar && (
+                                      <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{(item as any).shipping_option_name_ar}</span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
+
+                              {/* Delete button */}
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleRemoveFromCart(item.id);
+                                }}
+                                aria-label="حذف المنتج"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/20">
-                              <div className="flex items-center gap-3 w-full sm:w-auto">
-                                <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/40">
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      handleUpdateQuantity(item.id, item.quantity - 1);
-                                    }}
-                                    disabled={item.quantity <= 1}
-                                    aria-label="تقليل الكمية"
-                                  >
-                                    <Minus className="h-4 w-4" />
-                                  </Button>
-                                  
-                                  <span className="w-10 sm:w-8 text-center font-bold" aria-live="polite">
-                                    {item.quantity}
-                                  </span>
-                                  
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      handleUpdateQuantity(item.id, item.quantity + 1);
-                                    }}
-                                    aria-label="زيادة الكمية"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-                                </div>
-
+                            {/* Price + Quantity row */}
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="text-sm sm:text-base font-black text-primary">
+                                {formatPrice(itemPrice)} <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
+                              </span>
+                              
+                              <div className="flex items-center gap-1 bg-muted/30 rounded-lg border border-border/40">
                                 <Button
                                   type="button"
-                                  size="sm"
+                                  size="icon"
                                   variant="ghost"
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-10 px-4 sm:h-8 touch-manipulation"
+                                  className="h-7 w-7 touch-manipulation"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    handleRemoveFromCart(item.id);
+                                    handleUpdateQuantity(item.id, item.quantity - 1);
                                   }}
-                                  aria-label="حذف المنتج"
+                                  disabled={item.quantity <= 1}
                                 >
-                                  <Trash2 className="h-4 w-4 ml-2" />
-                                  <span className="hidden sm:inline">حذف</span>
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-6 text-center font-bold text-xs">{item.quantity}</span>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 touch-manipulation"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleUpdateQuantity(item.id, item.quantity + 1);
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
-
-                              <div className="text-center sm:text-left">
-                                <div className="text-sm text-muted-foreground mb-1">المجموع</div>
-                                <div className="text-lg font-black text-primary">
-                                  {formatPrice(itemPrice * item.quantity)} دينار عراقي
-                                </div>
-                              </div>
                             </div>
+
+                            {/* Total if quantity > 1 */}
+                            {item.quantity > 1 && (
+                              <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
+                                المجموع: <span className="font-bold text-foreground">{formatPrice(itemPrice * item.quantity)}</span> د.ع
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
