@@ -39,8 +39,8 @@ export default function AdminLayout({
 
   return (
     <div className="admin-page min-h-screen" dir="rtl">
-      {/* Sticky Header */}
-      <header className="sticky top-16 z-40 bg-card/95 backdrop-blur-lg border-b border-border/40">
+      {/* Sticky Header - positioned below main TopBar */}
+      <header className="sticky top-16 z-30 border-b border-border/20" style={{ background: 'linear-gradient(145deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.8))', backdropFilter: 'blur(16px)' }}>
         <div className={`container mx-auto px-4 md:px-6 ${maxWidthClasses[maxWidth]}`}>
           <div className="flex items-center justify-between h-16 md:h-18">
             {/* Left: Back button + Title */}
