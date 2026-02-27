@@ -1,0 +1,1 @@
+ALTER TABLE public.product_options ADD COLUMN stock_quantity integer DEFAULT NULL;

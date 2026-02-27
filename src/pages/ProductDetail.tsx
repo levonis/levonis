@@ -269,8 +269,12 @@ const ProductDetail = () => {
   const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
   const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;
 
-  // Stock info for direct sale
-  const directStockQuantity = selectedColorData?.stock_quantity;
+  // Stock info for direct sale - support per-option stocks
+  const directStockQuantity = selectedColorData
+    ? (selectedOptionName && selectedColorData.option_stocks?.[selectedOptionName] != null
+        ? selectedColorData.option_stocks[selectedOptionName]
+        : selectedColorData.stock_quantity)
+    : undefined;
   const hasStockInfo = activeSaleType === 'direct' && directStockQuantity != null && directStockQuantity > 0;
 
   const handleAddToCart = async () => {
@@ -742,10 +746,15 @@ const ProductDetail = () => {
                             )}
                           </div>
                           <span className="font-medium text-[10px] leading-tight text-center">{color.name_ar}</span>
-                          {/* Show stock for direct sale */}
-                          {activeSaleType === 'direct' && color.stock_quantity != null && color.stock_quantity > 0 && (
-                            <span className="text-[8px] text-muted-foreground">متبقي {color.stock_quantity}</span>
-                          )}
+                          {/* Show stock for direct sale - per option or general */}
+                          {activeSaleType === 'direct' && (() => {
+                            const stock = selectedOptionName && color.option_stocks?.[selectedOptionName] != null
+                              ? color.option_stocks[selectedOptionName]
+                              : color.stock_quantity;
+                            return stock != null && stock > 0 ? (
+                              <span className="text-[8px] text-muted-foreground">متبقي {stock}</span>
+                            ) : null;
+                          })()}
                           {color.price != null && color.price !== product.price && activeSaleType !== 'direct' && (
                             <span className="text-[9px] text-muted-foreground">{formatPrice(color.price)}</span>
                           )}
