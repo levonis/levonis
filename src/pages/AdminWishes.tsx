@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, X, Loader2, Pencil, ArrowRight, ImagePlus, Camera } from "lucide-react";
+import { Check, X, Loader2, Pencil, ArrowRight, ImagePlus, Camera, Gift, Truck, Award, Coins, CheckCircle2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,13 @@ export default function AdminWishes() {
   const [editImagePreview, setEditImagePreview] = useState("");
   const editFileRef = useRef<HTMLInputElement>(null);
 
+  // Fulfill dialog state
+  const [fulfillWish, setFulfillWish] = useState<any>(null);
+  const [rewardGift, setRewardGift] = useState("");
+  const [rewardDiscount, setRewardDiscount] = useState("");
+  const [rewardFreeShipping, setRewardFreeShipping] = useState(true);
+  const [rewardPoints, setRewardPoints] = useState("500");
+
   const { data: wishes, isLoading } = useQuery({
     queryKey: ["admin-wishes", filter],
     queryFn: async () => {
@@ -37,6 +45,17 @@ export default function AdminWishes() {
       if (filter !== "all") q = q.eq("status", filter);
       const { data, error } = await q;
       if (error) throw error;
+
+      // Fetch profiles
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((w: any) => w.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, username, phone_number")
+          .in("id", userIds);
+        const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+        return data.map((w: any) => ({ ...w, profile: profileMap.get(w.user_id) || null }));
+      }
       return data;
     },
   });
@@ -97,6 +116,29 @@ export default function AdminWishes() {
     setEditWish(null);
   };
 
+  const openFulfill = (wish: any) => {
+    setFulfillWish(wish);
+    setRewardGift("هدية عشوائية مجانية");
+    setRewardDiscount("15");
+    setRewardFreeShipping(true);
+    setRewardPoints("500");
+  };
+
+  const saveFulfill = () => {
+    if (!fulfillWish) return;
+    updateMutation.mutate({
+      id: fulfillWish.id,
+      updates: {
+        fulfilled_at: new Date().toISOString(),
+        reward_gift_description: rewardGift.trim() || null,
+        reward_discount_percent: rewardDiscount ? Number(rewardDiscount) : 0,
+        reward_free_shipping: rewardFreeShipping,
+        reward_bonus_points: rewardPoints ? Number(rewardPoints) : 0,
+      },
+    });
+    setFulfillWish(null);
+  };
+
   const handleEditImageSelect = (file: File) => {
     if (file.size > 5 * 1024 * 1024) return toast.error("حجم الصورة يجب ألا يتجاوز 5 ميجابايت");
     setEditImageFile(file);
@@ -144,21 +186,28 @@ export default function AdminWishes() {
         ) : wishes && wishes.length > 0 ? (
           <div className="space-y-3">
             {wishes.map((wish: any) => (
-              <WishAdminCard key={wish.id} wish={wish} onApprove={approve} onReject={reject} onEdit={openEdit} isPending={updateMutation.isPending} />
+              <WishAdminCard
+                key={wish.id}
+                wish={wish}
+                onApprove={approve}
+                onReject={reject}
+                onEdit={openEdit}
+                onFulfill={openFulfill}
+                isPending={updateMutation.isPending}
+              />
             ))}
           </div>
         ) : (
           <p className="text-center py-12 text-sm text-muted-foreground">لا توجد أمنيات</p>
         )}
 
-        {/* Edit Dialog with Image Upload */}
+        {/* Edit Dialog */}
         <Dialog open={!!editWish} onOpenChange={(o) => !o && setEditWish(null)}>
           <DialogContent className="max-w-md" dir="rtl">
             <DialogHeader>
               <DialogTitle className="text-right">تعديل الأمنية</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
-              {/* Image Upload */}
               <div>
                 <Label className="text-xs mb-1.5 block">الصورة</Label>
                 <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleEditImageSelect(e.target.files[0])} />
@@ -200,19 +249,82 @@ export default function AdminWishes() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Fulfill Dialog */}
+        <Dialog open={!!fulfillWish} onOpenChange={(o) => !o && setFulfillWish(null)}>
+          <DialogContent className="max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-right flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                تحقيق الأمنية وتحديد المكافآت
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              {fulfillWish && (
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                  <p className="text-sm font-bold">{fulfillWish.title}</p>
+                  {fulfillWish.profile && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {fulfillWish.profile.full_name || fulfillWish.profile.username}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Gift className="w-3.5 h-3.5 text-pink-400" /> وصف الهدية المجانية
+                </Label>
+                <Input value={rewardGift} onChange={(e) => setRewardGift(e.target.value)} placeholder="هدية عشوائية مجانية" className="mt-1" />
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Award className="w-3.5 h-3.5 text-yellow-400" /> نسبة الخصم %
+                </Label>
+                <Input value={rewardDiscount} onChange={(e) => setRewardDiscount(e.target.value)} type="number" placeholder="15" className="mt-1" dir="ltr" />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Truck className="w-3.5 h-3.5 text-emerald-400" /> توصيل مجاني
+                </Label>
+                <Switch checked={rewardFreeShipping} onCheckedChange={setRewardFreeShipping} />
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Coins className="w-3.5 h-3.5 text-orange-400" /> نقاط إضافية
+                </Label>
+                <Input value={rewardPoints} onChange={(e) => setRewardPoints(e.target.value)} type="number" placeholder="500" className="mt-1" dir="ltr" />
+              </div>
+
+              <Button onClick={saveFulfill} disabled={updateMutation.isPending} className="w-full h-11 gap-2 bg-emerald-600 hover:bg-emerald-700">
+                {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    تحقيق الأمنية وإرسال المكافآت
+                  </>
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
 }
 
-function WishAdminCard({ wish, onApprove, onReject, onEdit, isPending }: {
+function WishAdminCard({ wish, onApprove, onReject, onEdit, onFulfill, isPending }: {
   wish: any; onApprove: (id: string, price: string) => void;
-  onReject: (id: string) => void; onEdit: (w: any) => void; isPending: boolean;
+  onReject: (id: string) => void; onEdit: (w: any) => void; onFulfill: (w: any) => void; isPending: boolean;
 }) {
   const [price, setPrice] = useState(wish.price?.toString() || "");
+  const isFulfilled = !!wish.fulfilled_at;
 
   return (
-    <div className="p-4 rounded-xl border border-border/50 bg-card/50">
+    <div className={`p-4 rounded-xl border bg-card/50 ${isFulfilled ? 'border-emerald-500/30' : 'border-border/50'}`}>
       <div className="flex gap-3">
         {wish.image_url && (
           <img src={wish.image_url} alt="" className="w-14 h-14 rounded-lg object-cover border border-border/30" />
@@ -220,18 +332,45 @@ function WishAdminCard({ wish, onApprove, onReject, onEdit, isPending }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-bold text-sm">{wish.title}</h3>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${
-              wish.status === "approved" ? "bg-emerald-500/20 text-emerald-400" :
-              wish.status === "rejected" ? "bg-destructive/20 text-destructive" :
-              "bg-yellow-500/20 text-yellow-400"
-            }`}>
-              {wish.status === "approved" ? "معتمدة" : wish.status === "rejected" ? "مرفوضة" : "معلقة"}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {isFulfilled && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 whitespace-nowrap flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> محققة
+                </span>
+              )}
+              <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${
+                wish.status === "approved" ? "bg-emerald-500/20 text-emerald-400" :
+                wish.status === "rejected" ? "bg-destructive/20 text-destructive" :
+                "bg-yellow-500/20 text-yellow-400"
+              }`}>
+                {wish.status === "approved" ? "معتمدة" : wish.status === "rejected" ? "مرفوضة" : "معلقة"}
+              </span>
+            </div>
           </div>
           {wish.description && <p className="text-xs text-muted-foreground mt-1">{wish.description}</p>}
+          
+          {/* Owner info */}
+          {wish.profile && (
+            <p className="text-[10px] text-primary/70 mt-1 flex items-center gap-1">
+              <User className="w-3 h-3" />
+              {wish.profile.full_name || wish.profile.username}
+              {wish.profile.phone_number && <span className="text-muted-foreground mr-1">({wish.profile.phone_number})</span>}
+            </p>
+          )}
+          
           <p className="text-[10px] text-muted-foreground mt-1">
             ❤️ {wish.likes_count || 0} إعجاب · {new Date(wish.created_at).toLocaleDateString("ar-IQ")}
           </p>
+
+          {/* Show rewards if fulfilled */}
+          {isFulfilled && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {wish.reward_gift_description && <span className="text-[9px] px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400">🎁 {wish.reward_gift_description}</span>}
+              {wish.reward_discount_percent > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400">💸 {wish.reward_discount_percent}%</span>}
+              {wish.reward_free_shipping && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">🚚 مجاني</span>}
+              {wish.reward_bonus_points > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400">⭐ +{wish.reward_bonus_points}</span>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -250,7 +389,12 @@ function WishAdminCard({ wish, onApprove, onReject, onEdit, isPending }: {
         </div>
       )}
 
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex justify-end gap-2">
+        {wish.status === "approved" && !isFulfilled && (
+          <Button size="sm" variant="outline" onClick={() => onFulfill(wish)} className="h-7 text-[10px] gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10">
+            <CheckCircle2 className="w-3 h-3" /> تحقيق الأمنية
+          </Button>
+        )}
         <button onClick={() => onEdit(wish)} className="text-muted-foreground hover:text-primary transition-colors">
           <Pencil className="w-3.5 h-3.5" />
         </button>

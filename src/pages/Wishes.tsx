@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Heart, Sparkles, Star, Pencil, Loader2, BadgeCheck, ImagePlus, X, Camera, Flame, TrendingUp } from "lucide-react";
+import { Heart, Sparkles, Star, Pencil, Loader2, BadgeCheck, ImagePlus, X, Camera, Flame, TrendingUp, Gift, Truck, Award, Coins, CheckCircle2, User } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -37,6 +37,18 @@ export default function Wishes() {
         .eq("status", "approved")
         .order("likes_count", { ascending: false });
       if (error) throw error;
+      
+      // Fetch profiles for all wish owners
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((w: any) => w.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, username, avatar_url")
+          .in("id", userIds);
+        
+        const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+        return data.map((w: any) => ({ ...w, profile: profileMap.get(w.user_id) || null }));
+      }
       return data;
     },
   });
@@ -82,6 +94,17 @@ export default function Wishes() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Check for duplicate wish title
+      const { data: existing } = await supabase
+        .from("wishes")
+        .select("id, title")
+        .neq("status", "rejected")
+        .ilike("title", title.trim());
+      
+      if (existing && existing.length > 0) {
+        throw new Error("DUPLICATE");
+      }
+
       const imgUrl = await uploadImage();
       const { error } = await supabase.from("wishes").insert({
         user_id: user!.id,
@@ -89,7 +112,12 @@ export default function Wishes() {
         description: description.trim() || null,
         image_url: imgUrl,
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes("wishes_unique_title_idx")) {
+          throw new Error("DUPLICATE");
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-wish"] });
@@ -98,7 +126,13 @@ export default function Wishes() {
       resetForm();
       toast.success("تم إرسال أمنيتك بنجاح! سيتم مراجعتها قريباً ✨");
     },
-    onError: () => toast.error("حدث خطأ، حاول مرة أخرى"),
+    onError: (err: any) => {
+      if (err.message === "DUPLICATE") {
+        toast.error("هذه الأمنية موجودة بالفعل! كل أمنية من نصيب شخص واحد فقط 🎯");
+      } else {
+        toast.error("حدث خطأ، حاول مرة أخرى");
+      }
+    },
   });
 
   const updateMutation = useMutation({
@@ -187,24 +221,22 @@ export default function Wishes() {
   };
 
   const totalWishes = wishes?.length || 0;
+  const isFulfilled = (w: any) => w.status === 'fulfilled' || w.fulfilled_at;
 
   return (
     <div className="min-h-screen bg-background">
       {/* ═══ HERO SECTION ═══ */}
       <div className="relative pt-20 pb-8 overflow-hidden">
-        {/* Animated background orbs */}
         <div className="absolute top-10 right-10 w-64 h-64 bg-primary/8 rounded-full blur-[100px] animate-pulse-slow" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full blur-[80px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 bg-primary/5 rounded-full blur-[120px]" />
 
         <div className="container mx-auto px-4 max-w-3xl relative z-10" dir="rtl">
-          {/* Sparkle particles */}
           <div className="absolute top-4 right-8 text-primary/30 animate-bounce" style={{ animationDuration: '3s' }}>✦</div>
           <div className="absolute top-12 left-12 text-accent/20 animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>✧</div>
           <div className="absolute bottom-4 right-1/3 text-primary/20 animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>✦</div>
 
           <div className="text-center wish-hero-animate">
-            {/* Icon badge */}
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20 mb-4 wish-float">
               <Sparkles className="w-8 h-8 text-primary" />
             </div>
@@ -216,7 +248,29 @@ export default function Wishes() {
               تمنّى منتجاً ترغب بتوفره وسنعمل على تحقيقه
             </p>
 
-            {/* Stats pills */}
+            {/* Rewards info banner */}
+            <div className="max-w-md mx-auto mb-4 p-3 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
+              <p className="text-[11px] font-bold text-primary mb-2">🎉 صاحب الأمنية التي يتم توفيرها سيحصل على:</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <Gift className="w-3 h-3 text-pink-400 shrink-0" />
+                  <span>هدية عشوائية مجانية 🎁</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <Award className="w-3 h-3 text-yellow-400 shrink-0" />
+                  <span>خصم كبير ومميز 💸</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <Truck className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>توصيل مجاني 🚚</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <Coins className="w-3 h-3 text-orange-400 shrink-0" />
+                  <span>نقاط إضافية ⭐</span>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-center gap-3">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-xs">
                 <Flame className="w-3.5 h-3.5 text-primary" />
@@ -236,10 +290,8 @@ export default function Wishes() {
         {user && myWish && (
           <div className="mb-6 wish-card-animate" style={{ '--delay': '0.15s' } as any}>
             <div className="relative rounded-2xl overflow-hidden">
-              {/* Animated border glow */}
               <div className="absolute -inset-[1px] bg-gradient-to-r from-primary via-accent to-primary bg-[length:300%_100%] rounded-2xl animate-shimmer opacity-60" />
               <div className="relative bg-card rounded-[15px] p-4">
-                {/* Top row: label + status */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -248,7 +300,7 @@ export default function Wishes() {
                     <span className="text-xs font-black text-primary">أمنيتك</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={myWish.status} />
+                    <StatusBadge status={myWish.status} fulfilled={!!myWish.fulfilled_at} />
                     {myWish.status === "pending" && (
                       <button onClick={openEdit} className="w-7 h-7 rounded-lg bg-muted/30 hover:bg-primary/15 flex items-center justify-center text-muted-foreground hover:text-primary transition-all">
                         <Pencil className="w-3 h-3" />
@@ -257,7 +309,6 @@ export default function Wishes() {
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="flex gap-3">
                   {myWish.image_url && (
                     <div className="shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/40">
@@ -274,6 +325,37 @@ export default function Wishes() {
                     )}
                   </div>
                 </div>
+
+                {/* Show rewards if fulfilled */}
+                {myWish.fulfilled_at && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-primary/10 border border-emerald-500/20">
+                    <p className="text-[11px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> تم تحقيق أمنيتك! مكافآتك:
+                    </p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {myWish.reward_gift_description && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Gift className="w-3 h-3 text-pink-400" /> {myWish.reward_gift_description}
+                        </span>
+                      )}
+                      {myWish.reward_discount_percent > 0 && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Award className="w-3 h-3 text-yellow-400" /> خصم {myWish.reward_discount_percent}%
+                        </span>
+                      )}
+                      {myWish.reward_free_shipping && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Truck className="w-3 h-3 text-emerald-400" /> توصيل مجاني
+                        </span>
+                      )}
+                      {myWish.reward_bonus_points > 0 && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Coins className="w-3 h-3 text-orange-400" /> +{myWish.reward_bonus_points} نقطة
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -382,7 +464,6 @@ export default function Wishes() {
         </div>
       </main>
 
-      {/* Scoped styles */}
       <style>{`
         .wish-hero-animate { animation: wishHeroIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .wish-card-animate { animation: wishCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: var(--delay, 0s); }
@@ -436,7 +517,12 @@ export default function Wishes() {
 }
 
 /* ═══════════════ Status Badge ═══════════════ */
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, fulfilled }: { status: string; fulfilled?: boolean }) {
+  if (fulfilled) return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-500/15 to-primary/15 text-emerald-400 font-bold border border-emerald-500/20">
+      <CheckCircle2 className="w-3 h-3" /> تم تحقيقها 🎉
+    </span>
+  );
   if (status === "approved") return (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/20">
       <BadgeCheck className="w-3 h-3" /> معتمدة
@@ -452,12 +538,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-/* ═══════════════ Wish Card — Glassmorphism 3D ═══════════════ */
+/* ═══════════════ Wish Card ═══════════════ */
 function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
   wish: any; isLiked: boolean; onLike: () => void; canLike: boolean; index: number; isTop: boolean;
 }) {
   const [animateLike, setAnimateLike] = useState(false);
   const [pressed, setPressed] = useState(false);
+  const isFulfilled = !!wish.fulfilled_at;
 
   const handleLike = () => {
     if (!canLike) return;
@@ -465,6 +552,8 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
     setTimeout(() => setAnimateLike(false), 400);
     onLike();
   };
+
+  const profile = wish.profile;
 
   return (
     <div
@@ -484,19 +573,19 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
         onMouseUp={() => setPressed(false)}
         onMouseLeave={() => setPressed(false)}
       >
-        {/* Glass background layers */}
         <div className="absolute inset-0 bg-card/40 backdrop-blur-xl" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-transparent" />
         {isTop && <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-transparent" />}
+        {isFulfilled && <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.04] to-transparent" />}
         
-        {/* Subtle inner border glow */}
         <div className={`absolute inset-0 rounded-2xl border transition-colors duration-500 ${
-          isTop
+          isFulfilled
+            ? 'border-emerald-500/25'
+            : isTop
             ? 'border-primary/25 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]'
             : 'border-white/[0.08] group-hover:border-primary/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]'
         }`} />
 
-        {/* Content - relative z */}
         <div className="relative z-10">
           {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden m-1.5 rounded-xl">
@@ -515,14 +604,18 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
               </div>
             )}
 
-            {/* Top badge for #1 */}
-            {isTop && (
+            {/* Top badge */}
+            {isFulfilled ? (
+              <div className="absolute top-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/90 backdrop-blur-sm text-white text-[9px] font-black flex items-center gap-1 shadow-lg">
+                <CheckCircle2 className="w-3 h-3" /> تم التوفير ✨
+              </div>
+            ) : isTop ? (
               <div className="absolute top-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-primary/90 backdrop-blur-sm text-primary-foreground text-[9px] font-black flex items-center gap-1 shadow-lg shadow-primary/30">
                 <Flame className="w-3 h-3" /> الأكثر طلباً
               </div>
-            )}
+            ) : null}
 
-            {/* Like button — frosted glass */}
+            {/* Like button */}
             <button
               onClick={handleLike}
               disabled={!canLike}
@@ -535,7 +628,7 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
               <Heart className={`w-3.5 h-3.5 transition-all ${isLiked ? "fill-current scale-110" : ""}`} />
             </button>
 
-            {/* Price — frosted glass pill */}
+            {/* Price */}
             {wish.price && (
               <div className="absolute bottom-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-xl border border-white/10">
                 <span className="text-[11px] font-black text-white">
@@ -547,7 +640,33 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
 
           {/* Text content */}
           <div className="px-3 pt-1 pb-3">
-            <h3 className="font-bold text-[12px] leading-snug line-clamp-2 mb-2 text-foreground">{wish.title}</h3>
+            <h3 className="font-bold text-[12px] leading-snug line-clamp-2 mb-1.5 text-foreground">{wish.title}</h3>
+            
+            {/* Owner identity */}
+            {profile && (
+              <div className="flex items-center gap-1.5 mb-2">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover border border-border/30" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-2.5 h-2.5 text-primary/50" />
+                  </div>
+                )}
+                <span className="text-[10px] text-muted-foreground font-medium truncate">
+                  {profile.full_name || profile.username || 'مستخدم'}
+                </span>
+              </div>
+            )}
+
+            {/* Fulfilled rewards preview */}
+            {isFulfilled && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400 font-bold">🎁 هدية</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 font-bold">💸 خصم</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">🚚 مجاني</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 font-bold">⭐ نقاط</span>
+              </div>
+            )}
             
             {/* Bottom row */}
             <div className="flex items-center justify-between">
@@ -570,9 +689,10 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
           </div>
         </div>
 
-        {/* 3D shadow layers */}
         <div className={`absolute -inset-1 -z-10 rounded-3xl blur-xl transition-opacity duration-500 ${
-          isTop
+          isFulfilled
+            ? 'bg-emerald-500/10 opacity-100'
+            : isTop
             ? 'bg-primary/10 opacity-100'
             : 'bg-foreground/5 opacity-0 group-hover:opacity-100'
         }`} />
@@ -635,6 +755,14 @@ function WishFormDialog({ title, setTitle, description, setDescription, imagePre
         </DialogTitle>
       </DialogHeader>
       <div className="space-y-4 mt-2">
+        {/* Unique wish notice */}
+        {!editMode && (
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 font-medium flex items-start gap-2">
+            <Star className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+            <span>كل أمنية فريدة! إذا كان شخص آخر قد تمنّى نفس المنتج فلن تتمكن من إضافته. الأمنية من نصيب أول شخص فقط 🎯</span>
+          </div>
+        )}
+
         {/* Image Upload */}
         <div>
           <Label className="text-xs mb-1.5 block">صورة المنتج (اختياري)</Label>
