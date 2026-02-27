@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut } from "lucide-react";
 import { useLanguage, LANGUAGE_LABELS } from "@/lib/i18n";
 import type { Language } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +56,7 @@ export default function ProfileSettings() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -73,6 +73,9 @@ export default function ProfileSettings() {
     wallet: true,
     support: true,
     promotions: true,
+    community_messages: true,
+    print_offers: true,
+    merchant_updates: true,
   });
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
@@ -367,14 +370,22 @@ export default function ProfileSettings() {
         </SettingsSection>
 
         {/* Telegram Notifications */}
-        {(profile as any)?.telegram_chat_id && (
-          <SettingsSection icon={Bell} title={t('settings_telegram_notifs')}>
+        <SettingsSection icon={Bell} title="إشعارات التليجرام">
+          {!(profile as any)?.telegram_chat_id ? (
+            <div className="text-center py-3">
+              <p className="text-sm text-muted-foreground mb-2">لم يتم ربط حسابك بتليجرام بعد</p>
+              <p className="text-xs text-muted-foreground">أرسل <span className="font-mono font-bold">/start</span> للبوت على تليجرام ثم أضف الـ ID في ملفك الشخصي</p>
+            </div>
+          ) : (
             <div className="space-y-3">
               {[
-                { key: 'orders' as const, label: t('settings_notif_orders'), desc: t('settings_notif_orders_desc') },
-                { key: 'wallet' as const, label: t('settings_notif_wallet'), desc: t('settings_notif_wallet_desc') },
-                { key: 'support' as const, label: t('settings_notif_support'), desc: t('settings_notif_support_desc') },
-                { key: 'promotions' as const, label: t('settings_notif_promotions'), desc: t('settings_notif_promotions_desc') },
+                { key: 'orders' as const, label: 'الطلبات', desc: 'إشعارات حالة الطلبات والشحن' },
+                { key: 'wallet' as const, label: 'المحفظة', desc: 'إشعارات الإيداع والسحب' },
+                { key: 'support' as const, label: 'الدعم', desc: 'رسائل خدمة العملاء' },
+                { key: 'promotions' as const, label: 'العروض', desc: 'العروض والخصومات الجديدة' },
+                { key: 'community_messages' as const, label: 'رسائل المجتمع', desc: 'رسائل محادثات السوق والتجار' },
+                { key: 'print_offers' as const, label: 'عروض الطباعة', desc: 'عروض أسعار جديدة على طلباتك' },
+                { key: 'merchant_updates' as const, label: 'تحديثات التاجر', desc: 'شارات التوثيق وتحديثات الحساب' },
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between">
                   <div>
@@ -382,14 +393,27 @@ export default function ProfileSettings() {
                     <p className="text-xs text-muted-foreground">{item.desc}</p>
                   </div>
                   <Switch
-                    checked={telegramNotifs[item.key]}
+                    checked={telegramNotifs[item.key] ?? true}
                     onCheckedChange={(checked) => setTelegramNotifs(prev => ({ ...prev, [item.key]: checked }))}
                   />
                 </div>
               ))}
             </div>
-          </SettingsSection>
-        )}
+          )}
+        </SettingsSection>
+
+        {/* Logout */}
+        <Button
+          variant="outline"
+          className="w-full rounded-2xl h-12 text-destructive border-destructive/30 hover:bg-destructive/10 font-bold gap-2"
+          onClick={async () => {
+            await signOut();
+            navigate('/');
+          }}
+        >
+          <LogOut className="h-4 w-4" />
+          تسجيل الخروج
+        </Button>
       </main>
 
       {/* Sticky Save Button */}
