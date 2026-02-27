@@ -23,6 +23,7 @@ import {
 } from "@/components/games/GamesData";
 
 const RockPaperScissorsGame = lazy(() => import("@/components/games/RockPaperScissorsGame"));
+const BankGame = lazy(() => import("@/components/games/BankGame"));
 
 const FILTER_ICONS: Record<string, React.ReactNode> = {
   Filter: <Filter className="h-3.5 w-3.5" />,
@@ -79,6 +80,16 @@ export default function MiniGames() {
       <div className="fixed inset-0 z-50 bg-background">
         <Suspense fallback={<div className="flex items-center justify-center h-full text-primary font-mono">LOADING...</div>}>
           <RockPaperScissorsGame onBack={() => setActiveGame(null)} />
+        </Suspense>
+      </div>
+    );
+  }
+
+  if (activeGame === 'bank') {
+    return (
+      <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-primary font-mono">LOADING...</div>}>
+          <BankGame onBack={() => setActiveGame(null)} />
         </Suspense>
       </div>
     );
