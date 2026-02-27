@@ -428,7 +428,7 @@ const Admin = () => {
           );
         },
       });
-      toast.success('تم تحديث المنتج بنجاح');
+      // Toast handled in handleSubmitProduct
       setProductDialogOpen(false);
       setEditingProduct(null);
     },

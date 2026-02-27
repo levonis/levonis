@@ -357,7 +357,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       
       await fetchCart();
-      toast.success('تمت الإضافة إلى السلة');
+      // Toast handled by caller (ProductDetail)
     } catch (error: any) {
       console.error('Error adding to cart:', error);
       const msg = error?.message || error?.error_description || 'حدث خطأ في إضافة المنتج';
