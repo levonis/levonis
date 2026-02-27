@@ -2517,6 +2517,7 @@ export type Database = {
           special_name_style: Json | null
           updated_at: string
           vip_support: boolean | null
+          xp_required: number
         }
         Insert: {
           benefits?: Json
@@ -2548,6 +2549,7 @@ export type Database = {
           special_name_style?: Json | null
           updated_at?: string
           vip_support?: boolean | null
+          xp_required?: number
         }
         Update: {
           benefits?: Json
@@ -2579,6 +2581,7 @@ export type Database = {
           special_name_style?: Json | null
           updated_at?: string
           vip_support?: boolean | null
+          xp_required?: number
         }
         Relationships: []
       }
@@ -6346,6 +6349,7 @@ export type Database = {
           level: string | null
           redeemed_points: number
           total_points: number
+          total_xp: number
           updated_at: string
           user_id: string
         }
@@ -6356,6 +6360,7 @@ export type Database = {
           level?: string | null
           redeemed_points?: number
           total_points?: number
+          total_xp?: number
           updated_at?: string
           user_id: string
         }
@@ -6366,6 +6371,7 @@ export type Database = {
           level?: string | null
           redeemed_points?: number
           total_points?: number
+          total_xp?: number
           updated_at?: string
           user_id?: string
         }

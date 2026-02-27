@@ -78,7 +78,6 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
         .select('*, loyalty_levels(*)')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .gte('expires_at', new Date().toISOString())
         .order('purchased_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -135,11 +134,9 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                     <p className="font-bold" style={{ color: (userCard.loyalty_levels as any).color }}>
                       {(userCard.loyalty_levels as any).name_ar}
                     </p>
-                    {userCard.expires_at && (
-                      <p className="text-[10px] text-muted-foreground">
-                        {t('points_remaining_days', { count: Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) })}
-                      </p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      {((userPoints as any)?.total_xp || 0).toLocaleString()} XP
+                    </p>
                   </div>
                 </div>
               </div>

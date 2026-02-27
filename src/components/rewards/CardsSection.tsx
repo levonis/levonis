@@ -66,7 +66,6 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
         .select(`*, loyalty_levels:level_id(*)`)
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .gt('expires_at', new Date().toISOString())
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       return data;
@@ -160,7 +159,6 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
               benefits: displayLevel.benefits as any,
             }}
             userName={userName}
-            expiresAt={userCard?.expires_at}
             isActive={true}
             showDetails={true}
           />
