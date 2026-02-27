@@ -8,6 +8,8 @@ import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Walle
 import GroupedCartItem from '@/components/GroupedCartItem';
 import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
 import OrderSuccessAnimation from '@/components/ui/OrderSuccessAnimation';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
+import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,6 +51,7 @@ const Cart = () => {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [removingItemIds, setRemovingItemIds] = useState<Set<string>>(new Set());
   const [showAddressSwitcher, setShowAddressSwitcher] = useState(false);
   // Refresh cart data on mount to get latest pendingCartRequest
   useEffect(() => {
@@ -1113,10 +1116,26 @@ const Cart = () => {
                       itemPrice += shippingAdjustment;
                     }
                     
+                    const isRemoving = removingItemIds.has(item.id);
+                    
+                    const handleAnimatedRemove = () => {
+                      setRemovingItemIds(prev => new Set(prev).add(item.id));
+                      setTimeout(() => {
+                        handleRemoveFromCart(item.id);
+                        setRemovingItemIds(prev => {
+                          const next = new Set(prev);
+                          next.delete(item.id);
+                          return next;
+                        });
+                      }, 300);
+                    };
+
                     return (
                       <div 
                         key={item.id}
-                        className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all"
+                        className={`rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all duration-300 ${
+                          isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0'
+                        }`}
                       >
                         <div className="flex gap-2.5 sm:gap-4">
                           {/* Product Image - compact on mobile */}
@@ -1155,16 +1174,16 @@ const Cart = () => {
                                 {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
                                   <div className="flex flex-wrap gap-1 mt-0.5">
                                     {itemOption && (
-                                      <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
+                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
                                     )}
                                     {colorData && (
-                                      <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                         <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={{ backgroundColor: colorData.hex_code }} />
                                         {colorData.name_ar}
                                       </span>
                                     )}
                                     {(item as any).shipping_option_name_ar && (
-                                      <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{(item as any).shipping_option_name_ar}</span>
+                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{(item as any).shipping_option_name_ar}</span>
                                     )}
                                   </div>
                                 )}
@@ -1175,11 +1194,11 @@ const Cart = () => {
                                 type="button"
                                 size="icon"
                                 variant="ghost"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0 active:scale-75 transition-transform"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  handleRemoveFromCart(item.id);
+                                  handleAnimatedRemove();
                                 }}
                                 aria-label="حذف المنتج"
                               >
@@ -1190,7 +1209,7 @@ const Cart = () => {
                             {/* Price + Quantity row */}
                             <div className="flex items-center justify-between mt-1.5">
                               <span className="text-sm sm:text-base font-black text-primary">
-                                {formatPrice(itemPrice)} <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
+                                <AnimatedPrice value={itemPrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
                               </span>
                               
                               <div className="flex items-center gap-1 bg-muted/30 rounded-lg border border-border/40">
@@ -1198,7 +1217,7 @@ const Cart = () => {
                                   type="button"
                                   size="icon"
                                   variant="ghost"
-                                  className="h-7 w-7 touch-manipulation"
+                                  className="h-7 w-7 touch-manipulation active:scale-90 transition-transform"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -1208,12 +1227,12 @@ const Cart = () => {
                                 >
                                   <Minus className="h-3 w-3" />
                                 </Button>
-                                <span className="w-6 text-center font-bold text-xs">{item.quantity}</span>
+                                <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
                                 <Button
                                   type="button"
                                   size="icon"
                                   variant="ghost"
-                                  className="h-7 w-7 touch-manipulation"
+                                  className="h-7 w-7 touch-manipulation active:scale-90 transition-transform"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -1228,7 +1247,7 @@ const Cart = () => {
                             {/* Total if quantity > 1 */}
                             {item.quantity > 1 && (
                               <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
-                                المجموع: <span className="font-bold text-foreground">{formatPrice(itemPrice * item.quantity)}</span> د.ع
+                                المجموع: <AnimatedPrice value={itemPrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
                               </div>
                             )}
                           </div>
@@ -1331,13 +1350,20 @@ const Cart = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_subtotal')}</span>
-                    <span className="font-bold">{formatPrice(total)} دينار عراقي</span>
+                    <span className="font-bold"><AnimatedPrice value={total} formatFn={formatPrice} /> دينار عراقي</span>
                   </div>
                   
                   {appliedCoupon && discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>{t('cart_discount')} ({appliedCoupon.code})</span>
-                      <span className="font-bold">-{formatPrice(discount)} دينار عراقي</span>
+                    <div className="flex justify-between animate-fade-in">
+                      <span className="text-green-600">{t('cart_discount')} ({appliedCoupon.code})</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-muted-foreground line-through text-xs animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                          {formatPrice(total)} د.ع
+                        </span>
+                        <span className="font-bold text-green-600 animate-scale-in" style={{ animationDelay: '0.3s' }}>
+                          -<AnimatedPrice value={discount} formatFn={formatPrice} /> دينار عراقي
+                        </span>
+                      </div>
                     </div>
                   )}
                   
@@ -1345,7 +1371,7 @@ const Cart = () => {
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
+                    <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
                   </div>
                   
                   {/* Address selector for direct sale */}
@@ -1555,7 +1581,7 @@ const Cart = () => {
                       <span className="text-foreground">
                         {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total')}
                       </span>
-                      <span className="text-primary">{formatPrice(grandTotal)} دينار عراقي</span>
+                      <span className="text-primary"><AnimatedPrice value={grandTotal} formatFn={formatPrice} /> دينار عراقي</span>
                     </div>
                     {useWalletBalance && walletDeduction > 0 && grandTotal === 0 && (
                       <p className="text-xs text-green-600 mt-2 text-center">

@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2, Package } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
+import AnimatedPrice from '@/components/ui/AnimatedPrice';
+import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
 
 interface GroupedCartItemProps {
   productId: string;
@@ -18,6 +21,7 @@ const GroupedCartItem = ({
   removeFromCart, 
   formatPrice 
 }: GroupedCartItemProps) => {
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const firstItem = items[0];
   const product = firstItem.products;
   
@@ -80,6 +84,11 @@ const GroupedCartItem = ({
     ? (product.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
     : null;
 
+  const handleRemove = (itemId: string) => {
+    setRemovingIds(prev => new Set(prev).add(itemId));
+    setTimeout(() => removeFromCart(itemId), 300);
+  };
+
   return (
     <div className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all">
       <div className="flex gap-2.5 sm:gap-4">
@@ -128,23 +137,34 @@ const GroupedCartItem = ({
             {items.map((item) => {
               const shippingName = (item as any).shipping_option_name_ar || 'شحن افتراضي';
               const itemPrice = calculateItemPrice(item);
+              const isRemoving = removingIds.has(item.id);
               
               return (
-                <div key={item.id} className="bg-card rounded-lg p-2 border border-border/30">
+                <div 
+                  key={item.id} 
+                  className={`bg-card rounded-lg p-2 border border-border/30 transition-all duration-300 ${
+                    isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-1 mb-1">
                     <span className="text-[11px] font-medium text-foreground line-clamp-1">{shippingName}</span>
-                    <span className="text-[11px] font-bold text-primary shrink-0">{formatPrice(itemPrice)} د.ع</span>
+                    <AnimatedPrice 
+                      value={itemPrice} 
+                      formatFn={formatPrice} 
+                      className="text-[11px] font-bold text-primary shrink-0"
+                    />
+                    <span className="text-[11px] font-bold text-primary shrink-0">د.ع</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 bg-background rounded border border-border/40">
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation"
+                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
                         disabled={item.quantity <= 1}>
                         <Minus className="h-2.5 w-2.5" />
                       </Button>
-                      <span className="w-5 text-center font-bold text-[11px]">{item.quantity}</span>
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation"
+                      <AnimatedQuantity value={item.quantity} className="w-5 text-center font-bold text-[11px]" />
+                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}>
                         <Plus className="h-2.5 w-2.5" />
                       </Button>
@@ -152,11 +172,13 @@ const GroupedCartItem = ({
 
                     <div className="flex items-center gap-1.5">
                       {item.quantity > 1 && (
-                        <span className="text-[10px] text-muted-foreground">{formatPrice(itemPrice * item.quantity)} د.ع</span>
+                        <span className="text-[10px] text-muted-foreground transition-all duration-300">
+                          <AnimatedPrice value={itemPrice * item.quantity} formatFn={formatPrice} /> د.ع
+                        </span>
                       )}
                       <Button type="button" size="icon" variant="ghost"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 touch-manipulation"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeFromCart(item.id); }}>
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 touch-manipulation active:scale-75 transition-transform"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemove(item.id); }}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -169,7 +191,9 @@ const GroupedCartItem = ({
           {/* Group Total */}
           <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-border/20">
             <span className="text-[11px] text-muted-foreground">إجمالي ({totalQuantity} قطع)</span>
-            <span className="text-sm font-black text-primary">{formatPrice(groupTotal)} د.ع</span>
+            <span className="text-sm font-black text-primary">
+              <AnimatedPrice value={groupTotal} formatFn={formatPrice} /> د.ع
+            </span>
           </div>
         </div>
       </div>
