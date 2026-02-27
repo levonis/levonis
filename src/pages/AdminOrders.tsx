@@ -133,7 +133,7 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, option_image_url, shipping_option_name_ar, custom_request_id, sale_type, products!order_items_product_id_fkey(cost_price))
+          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, option_image_url, shipping_option_name_ar, custom_request_id, sale_type, products!order_items_product_id_fkey(cost_price, other_costs_iqd, shipping_cost_iqd))
         `)
         .order('created_at', { ascending: false });
 
@@ -474,9 +474,13 @@ const AdminOrders = () => {
       const items = order.order_items || [];
       let totalCost = 0;
       for (const item of items) {
-        // Use cost_price from products table, fallback to order_item cost_price
-        const itemCost = item.products?.cost_price || item.cost_price || 0;
-        totalCost += itemCost * (item.quantity || 1);
+        // Product cost = cost_price + other_costs_iqd + shipping_cost_iqd (from products table)
+        const product = item.products || {};
+        const itemCostPrice = product.cost_price || item.cost_price || 0;
+        const itemOtherCosts = product.other_costs_iqd || 0;
+        const itemShippingCost = product.shipping_cost_iqd || 0;
+        const itemTotalCost = itemCostPrice + itemOtherCosts + itemShippingCost;
+        totalCost += itemTotalCost * (item.quantity || 1);
       }
       setAdminProductCost(totalCost);
     } else {
