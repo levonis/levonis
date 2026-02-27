@@ -220,9 +220,25 @@ const ProductDetail = () => {
   const selectedOptionName = selectedOptionData?.name_ar;
 
   const allColors = Array.isArray(product.colors) ? (product.colors as any[]) : [];
-  const normalizeOptionValue = (value?: string | null) => (value ?? '').replace(/\s+/g, ' ').trim();
+  const normalizeOptionValue = (value?: string | null) =>
+    (value ?? '')
+      .normalize('NFKC')
+      .replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
   const getFilteredColors = () => {
     const normalizedSelectedOption = normalizeOptionValue(selectedOptionName);
+    const preorderOptions = Array.isArray(productOptions)
+      ? productOptions.filter((opt: any) => (opt.available_for_pre_order ?? true))
+      : [];
+
+    const normalizedPreorderOptionNames = preorderOptions.map((opt: any) => normalizeOptionValue(opt.name_ar));
+
+    const getCompatiblePreOrderOptionId = (normalizedLinkedOptions: string[]) => {
+      const matched = preorderOptions.find((opt: any) => normalizedLinkedOptions.includes(normalizeOptionValue(opt.name_ar)));
+      return matched?.id ?? null;
+    };
 
     return allColors.map(color => {
       const isAvailableForType = activeSaleType === 'direct'
@@ -234,12 +250,24 @@ const ProductDetail = () => {
         ? linkedOptions.map((option) => normalizeOptionValue(option)).filter(Boolean)
         : [];
 
-      const isLinkedToOption = normalizedLinkedOptions.length === 0 || !normalizedSelectedOption
-        ? true
-        : normalizedLinkedOptions.includes(normalizedSelectedOption);
+      const isLinkedToOption = activeSaleType === 'preorder'
+        ? (normalizedLinkedOptions.length === 0 || normalizedLinkedOptions.some((option) => normalizedPreorderOptionNames.includes(option)))
+        : (normalizedLinkedOptions.length === 0 || !normalizedSelectedOption
+            ? true
+            : normalizedLinkedOptions.includes(normalizedSelectedOption));
+
+      const compatiblePreOrderOptionId = activeSaleType === 'preorder' && normalizedLinkedOptions.length > 0
+        ? getCompatiblePreOrderOptionId(normalizedLinkedOptions)
+        : null;
 
       const isInStock = activeSaleType === 'preorder' ? true : (color.in_stock !== false);
-      return { ...color, isAvailable: isAvailableForType && isLinkedToOption && isInStock, isLinkedToOption };
+
+      return {
+        ...color,
+        isAvailable: isAvailableForType && isLinkedToOption && isInStock,
+        isLinkedToOption,
+        compatiblePreOrderOptionId,
+      };
     });
   };
   const filteredColors = getFilteredColors().sort((a: any, b: any) => {
@@ -670,6 +698,16 @@ const ProductDetail = () => {
                             type="button"
                             onClick={() => {
                               if (!color.isAvailable) return;
+
+                              if (activeSaleType === 'preorder' && color.compatiblePreOrderOptionId && selectedOption !== color.compatiblePreOrderOptionId) {
+                                setSelectedOption(color.compatiblePreOrderOptionId);
+                                const autoOption = productOptions?.find((opt: any) => opt.id === color.compatiblePreOrderOptionId);
+                                if (autoOption?.image_url) {
+                                  setOptionImageUrl(autoOption.image_url);
+                                  setSelectedImage(0);
+                                }
+                              }
+
                               const newColor = selectedColor === color.name_ar ? null : color.name_ar;
                               setSelectedColor(newColor);
                               if (newColor && color.image_url) { setColorImageUrl(color.image_url); setSelectedImage(0); }
