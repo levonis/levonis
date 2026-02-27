@@ -260,7 +260,31 @@ const ProductDetail = () => {
         ? getCompatiblePreOrderOptionId(normalizedLinkedOptions)
         : null;
 
-      const isInStock = activeSaleType === 'preorder' ? true : (color.in_stock !== false);
+      // Smart stock check: for direct sale, check option_stocks for the selected option first
+      let isInStock = true;
+      if (activeSaleType === 'direct') {
+        if (normalizedSelectedOption && color.option_stocks) {
+          // Find the matching option_stocks key using normalized comparison
+          const matchingKey = Object.keys(color.option_stocks).find(
+            key => normalizeOptionValue(key) === normalizedSelectedOption
+          );
+          if (matchingKey !== undefined) {
+            isInStock = (color.option_stocks[matchingKey] ?? 0) > 0;
+          } else if (color.stock_quantity != null) {
+            isInStock = color.stock_quantity > 0;
+          } else {
+            isInStock = color.in_stock !== false;
+          }
+        } else if (color.option_stocks && Object.keys(color.option_stocks).length > 0) {
+          // No option selected yet - color is available if ANY option has stock
+          const totalStock = Object.values(color.option_stocks as Record<string, number>).reduce((sum: number, v: any) => sum + (Number(v) || 0), 0);
+          isInStock = totalStock > 0;
+        } else if (color.stock_quantity != null) {
+          isInStock = color.stock_quantity > 0;
+        } else {
+          isInStock = color.in_stock !== false;
+        }
+      }
 
       return {
         ...color,

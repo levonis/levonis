@@ -157,32 +157,54 @@ const Cart = () => {
   const PRINTER_SECTION_ID = '0a7d1d66-1ddb-4398-8e4a-c6ca8deac5b6';
   const hasPrinterItems = items.some(item => item.products?.categories?.main_section_id === PRINTER_SECTION_ID);
 
-  // Check if user has existing direct sale orders today before 5PM for free delivery
+  // Check if user has existing direct sale orders in the current "business day" (resets at 5PM)
+  // Also requires same address for free delivery
   const { data: todayDirectOrders } = useQuery({
     queryKey: ['today-direct-orders', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const cutoff = new Date();
-      cutoff.setHours(17, 0, 0, 0);
       const now = new Date();
-      if (now > cutoff) return []; // After 5PM, no free delivery
+      const hour = now.getHours();
+      
+      // Business day starts at 5PM previous day and ends at 5PM today
+      // If before 5PM: window = yesterday 5PM → today 5PM
+      // If after 5PM: window = today 5PM → tomorrow 5PM (no previous orders yet, so empty)
+      const windowStart = new Date(now);
+      if (hour < 17) {
+        // Before 5PM - look for orders since yesterday 5PM
+        windowStart.setDate(windowStart.getDate() - 1);
+        windowStart.setHours(17, 0, 0, 0);
+      } else {
+        // After 5PM - look for orders since today 5PM (current window just started)
+        windowStart.setHours(17, 0, 0, 0);
+      }
+      
       const { data } = await supabase
         .from('orders')
-        .select('id')
+        .select('id, shipping_address')
         .eq('user_id', user.id)
         .eq('order_type', 'direct')
         .neq('status', 'cancelled')
-        .gte('created_at', today.toISOString())
-        .lte('created_at', cutoff.toISOString())
-        .limit(1);
+        .gte('created_at', windowStart.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5);
       return data || [];
     },
     enabled: !!user?.id && isDirectSaleCart,
   });
 
-  const hasExistingDirectOrderToday = (todayDirectOrders?.length || 0) > 0;
+  // Free delivery only if there's a previous order with the SAME address
+  const hasExistingDirectOrderToday = (() => {
+    if (!todayDirectOrders || todayDirectOrders.length === 0) return false;
+    if (!selectedAddressId && !selectedAddress) return false;
+    // Check if any previous order was shipped to same address (compare the full stored shipping_address)
+    return todayDirectOrders.some((o: any) => {
+      if (!selectedAddress || !o.shipping_address) return false;
+      // Reconstruct the same shipping address text format used during checkout
+      const currentAddrText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
+      return o.shipping_address === currentAddrText;
+    });
+  })();
 
   const getDeliveryFee = (governorate: string | null) => {
     // Free delivery for 2nd+ direct sale orders before 5PM

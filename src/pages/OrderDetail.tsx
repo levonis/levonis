@@ -21,8 +21,12 @@ import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { motion } from 'framer-motion';
 
-// Helper function to determine if order is pre-order
-const checkIfPreOrder = (orderItems: any[]): boolean => {
+// Helper function to determine if order is pre-order - uses order_type field first
+const checkIfPreOrder = (order: any): boolean => {
+  if (order?.order_type === 'direct') return false;
+  if (order?.order_type === 'preorder') return true;
+  // Fallback: check order items
+  const orderItems = order?.order_items;
   if (!orderItems || orderItems.length === 0) return true;
   for (const item of orderItems) {
     if (item.custom_request_id) return true;
@@ -208,7 +212,7 @@ const OrderDetail = () => {
   }
 
   const statusConfig = getStatusConfig(order.status);
-  const isPreOrder = checkIfPreOrder(order.order_items);
+  const isPreOrder = checkIfPreOrder(order);
   const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
   const shippingOptionName = shippingItem?.shipping_option_name_ar || '';
   const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');

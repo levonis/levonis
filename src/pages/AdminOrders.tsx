@@ -333,26 +333,21 @@ const AdminOrders = () => {
 
   const deleteOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', orderId);
-
-      if (itemsError) throw itemsError;
-
-      const { error: orderError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderId);
-
-      if (orderError) throw orderError;
+      // Cancel instead of hard delete - calls cancel_order RPC which also restores stock
+      const { data, error } = await supabase.rpc('cancel_order', { 
+        p_order_id: orderId, 
+        p_cancelled_by: 'admin' 
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (result && !result.success) throw new Error(result.error || 'فشل إلغاء الطلب');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-      toast.success('تم حذف الطلب بنجاح');
+      toast.success('تم إلغاء الطلب بنجاح');
     },
-    onError: (error) => {
-      toast.error('حدث خطأ أثناء حذف الطلب');
+    onError: (error: any) => {
+      toast.error(error?.message || 'حدث خطأ أثناء إلغاء الطلب');
       console.error(error);
     }
   });
@@ -659,9 +654,9 @@ const AdminOrders = () => {
       order.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.phone_number?.includes(searchTerm);
 
-    // Archive filter: when 'active' is selected, exclude delivered and cancelled
+    // When 'all' is selected, hide cancelled orders. Show them only via 'cancelled' filter.
     const matchesStatus = statusFilter === 'all' 
-      ? true 
+      ? order.status !== 'cancelled'
       : statusFilter === 'active'
         ? !['delivered', 'cancelled'].includes(order.status)
         : order.status === statusFilter;
@@ -1014,18 +1009,18 @@ const AdminOrders = () => {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>حذف الطلب</AlertDialogTitle>
+                                    <AlertDialogTitle>إلغاء الطلب</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.
+                                      هل أنت متأكد من إلغاء هذا الطلب؟ سيتم إرجاع المخزون والمبلغ المدفوع للزبون.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogCancel>تراجع</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                       onClick={() => deleteOrderMutation.mutate(order.id)}
                                     >
-                                      حذف
+                                      إلغاء الطلب
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
