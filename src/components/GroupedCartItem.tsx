@@ -26,6 +26,7 @@ const GroupedCartItem = ({
 
   // Calculate total for all variants
   const calculateItemPrice = (item: CartItem) => {
+    const isDirect = (item as any).sale_type === 'direct';
     const itemOption = (item as any).product_options;
     const itemColor = (item as any).selected_color;
     const colorData = itemColor && product.colors
@@ -34,8 +35,23 @@ const GroupedCartItem = ({
     
     let itemPrice = Number(product.price);
     
-    if (colorData?.price != null) {
-      itemPrice = Number(colorData.price);
+    if (isDirect && (product as any).direct_sale_price != null) {
+      itemPrice = Number((product as any).direct_sale_price);
+    } else if (!isDirect) {
+      const shippingType = (item as any).shipping_type;
+      if (shippingType === 'sea' && (product as any).sea_price != null) {
+        itemPrice = Number((product as any).sea_price);
+      } else if (shippingType === 'air' && (product as any).air_price != null) {
+        itemPrice = Number((product as any).air_price);
+      }
+    }
+    
+    if (colorData) {
+      if (isDirect && colorData.direct_sale_price != null) {
+        itemPrice = Number(colorData.direct_sale_price);
+      } else if (colorData.price != null) {
+        itemPrice = Number(colorData.price);
+      }
     }
     
     if (itemOption?.price_adjustment) {
