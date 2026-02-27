@@ -10,8 +10,10 @@ export function formatDate(date: string | Date): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
-export function formatPrice(price: number | string): string {
+export function formatPrice(price: number | string | null | undefined): string {
+  if (price === null || price === undefined) return '0';
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  if (isNaN(numPrice)) return '0';
   return numPrice.toLocaleString('en-US');
 }
 
