@@ -64,7 +64,7 @@ interface CartContextType {
   itemCount: number;
   total: number;
   pendingCartRequest: PendingCartRequest | null;
-  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<void>;
+  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -253,10 +253,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchPendingCartRequest();
   }, [user]);
 
-  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder') => {
+  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
-      return;
+      return false;
     }
 
     try {
@@ -313,7 +313,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + quantity);
-        return;
+        return true;
       }
 
       const insertData: any = { 
@@ -357,11 +357,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       
       await fetchCart();
-      // Toast handled by caller (ProductDetail)
+      return true;
     } catch (error: any) {
       console.error('Error adding to cart:', error);
       const msg = error?.message || error?.error_description || 'حدث خطأ في إضافة المنتج';
       toast.error(msg);
+      return false;
     }
   };
 
