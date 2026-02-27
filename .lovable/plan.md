@@ -1,83 +1,51 @@
-# خطة: صفحة الأمنيات (Wishlist)
 
-## قاعدة البيانات
 
-### جدول `wishes`
+# خطة: إصلاح عرض الأسعار المختلفة (بيع مباشر / طلب مسبق بحري / جوي)
 
+## المشكلة
+عند حفظ المنتج في الأدمن، يتم حساب أسعار مختلفة لكل نوع بيع:
+- **بحري**: سعر USD × سعر الصرف + شحن بحري + عمولة بحري
+- **جوي**: سعر USD × سعر الصرف + شحن جوي + عمولة جوي  
+- **بيع مباشر**: سعر USD × سعر الصرف + تكاليف أخرى + عمولة مباشر
+
+لكن يُخزّن فقط **أقل سعر** في `product.price`، ولا يُخزّن `direct_sale_price` ولا أسعار الشحن المنفصلة. فتظهر نفس الأسعار لكل الأنواع.
+
+## الحل
+
+### 1. إضافة أعمدة جديدة للأسعار المنفصلة (Migration)
 ```sql
-CREATE TABLE public.wishes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  title text NOT NULL,
-  description text,
-  image_url text,
-  status text DEFAULT 'pending', -- pending, approved, rejected
-  price numeric,
-  likes_count integer DEFAULT 0,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sea_price numeric;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS air_price numeric;
+```
+- `direct_sale_price` موجود بالفعل لكنه فارغ
+- `sea_price` و `air_price` جديدة لأسعار الطلب المسبق
+
+### 2. تحديث حفظ المنتج في Admin.tsx
+بعد حساب الأسعار (سطر 1260-1262)، تخزين كل سعر في العمود المناسب:
+- `values.direct_sale_price = priceIqd + otherCosts + commissionDirect` (عند `hasInStock`)
+- `values.sea_price = priceIqd + seaShipping + commissionSea` (عند شحن بحري)
+- `values.air_price = priceIqd + airShipping + commissionAir` (عند شحن جوي)
+- `values.price` يبقى الأقل (للعرض في القوائم)
+
+### 3. تحديث ProductDetail.tsx - `getPrice()`
+```
+if (activeSaleType === 'direct') → product.direct_sale_price || product.price
+if (activeSaleType === 'preorder'):
+  - إذا كان shipping_type = 'sea' → product.sea_price || product.price  
+  - إذا كان shipping_type = 'air' → product.air_price || product.price
+  - إذا كان shipping_type = 'both' → عرض خيارات الشحن مع أسعار مختلفة
 ```
 
-### جدول `wish_likes`
+عند `shipping_type = 'both'`, نملأ `pre_order_shipping_options` تلقائياً بخياري البحري والجوي مع `price_adjustment` محسوب من الفرق.
 
-```sql
-CREATE TABLE public.wish_likes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  wish_id uuid REFERENCES public.wishes(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(wish_id, user_id)
-);
-```
+### 4. تحديث الأسعار في Cart وuseCart
+- `Cart.tsx`: استخدام `direct_sale_price` / `sea_price` / `air_price` حسب نوع الطلب
+- `useCart.tsx`: جلب الأعمدة الجديدة وحساب السعر الصحيح
 
-### RLS Policies
+### الملفات المتأثرة
+- Migration SQL — إضافة `sea_price`, `air_price`
+- `src/pages/Admin.tsx` — تخزين الأسعار المنفصلة عند الحفظ
+- `src/pages/ProductDetail.tsx` — عرض السعر حسب النوع المختار
+- `src/hooks/useCart.tsx` — حساب السعر الصحيح بالسلة
+- `src/pages/Cart.tsx` — عرض السعر الصحيح بالسلة
 
-- `wishes`: الكل يقرأ الأمنيات المعتمدة (`status = 'approved'`)، المستخدم يقرأ/يعدل/يحذف أمنياته الخاصة، الأدمن يعدل الكل
-- `wish_likes`: المستخدم المسجل يضيف/يحذف إعجابه، الكل يقرأ
-
-### Trigger
-
-- تحديث `likes_count` تلقائياً عند إضافة/حذف إعجاب
-- تحديث `updated_at` عند التعديل
-
----
-
-## الواجهة الأمامية
-
-### 1. رابط في الصفحة الرئيسية (فوق البنر)
-
-- إضافة شريط صغير في `Home.tsx` فوق `BannerCarousel` يحتوي على رابط "الأمنيات ✨" يوجه إلى `/wishes`
-  تصميم انيق واحترافي وعميق مناسب مع ثيم الموقع 
-
-### 2. صفحة `src/pages/Wishes.tsx`
-
-- عرض الأمنيات المعتمدة (`status = 'approved'`) مع السعر وعدد الإعجابات
-- **في الأعلى**: أمنية المستخدم الحالي (إن وجدت) مثبتة مع إمكانية التعديل قبل موافقه الادمن
-- زر "تمنّى أمنية" يفتح Dialog لإضافة أمنية جديدة (عنوان + وصف + صورة اختيارية)
-- زر إعجاب ❤️ لكل أمنية (toggle)
-- عرض السعر المحدد من الأدمن + badge "معتمدة"
-
-### 3. صفحة إدارة `src/pages/AdminWishes.tsx`
-
-- عرض جميع الأمنيات (معلقة/معتمدة/مرفوضة)
-- فلتر بالحالة
-- زر موافقة مع حقل لتحديد السعر
-- زر رفض
-- تعديل الوصف والعنوان والصوره 
-- اضافه سعر ( سوف يكون بهذا السعر بالبيع المباشر)
-
-### 4. Route جديد
-
-- `/wishes` → `Wishes.tsx`
-- `/admin/wishes` → `AdminWishes.tsx` (محمي بـ AdminRoute)
-
----
-
-## الملفات المتأثرة
-
-- `src/App.tsx` — إضافة routes جديدة
-- `src/pages/Home.tsx` — شريط رابط فوق البنر
-- `src/pages/Wishes.tsx` — **جديد**
-- `src/pages/AdminWishes.tsx` — **جديد**
-- Migration SQL للجداول والسياسات
