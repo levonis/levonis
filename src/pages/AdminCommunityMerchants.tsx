@@ -265,6 +265,23 @@ function MerchantsContent() {
 
       if (profileError) throw profileError;
 
+      // Send notification about badge/verification changes
+      const changes: string[] = [];
+      if (payload.is_verified) changes.push("✅ تم توثيق حسابك");
+      if (payload.badge_tier && payload.badge_tier !== "none") {
+        const tierNames: Record<string, string> = { bronze: "برونزي", silver: "فضي", gold: "ذهبي", platinum: "بلاتيني" };
+        changes.push(`🏅 حصلت على شارة ${tierNames[payload.badge_tier] || payload.badge_tier}`);
+      }
+      
+      if (changes.length > 0) {
+        await sendAllNotifications({
+          userId: payload.user_id,
+          title: "تحديث حسابك كتاجر 🎖️",
+          message: changes.join("\n"),
+          type: 'success',
+        });
+      }
+
       return true;
     },
     onSuccess: async () => {

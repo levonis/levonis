@@ -142,6 +142,41 @@ export default function AddOfferDialog({
         }
         throw error;
       }
+      // Notify request owner about new offer (fire and forget)
+      const { data: request } = await supabase
+        .from("community_print_requests")
+        .select("user_id, title")
+        .eq("id", requestId)
+        .single();
+
+      if (request && request.user_id !== user.id) {
+        const { data: merchantProfile } = await supabase
+          .from("merchant_applications")
+          .select("display_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        const merchantName = merchantProfile?.display_name || "تاجر";
+        
+        supabase.functions.invoke('send-user-telegram-notification', {
+          body: {
+            user_id: request.user_id,
+            title: "عرض جديد على طلبك 💰",
+            message: `قدّم ${merchantName} عرضاً بسعر ${priceNum.toLocaleString()} د.ع على طلبك "${request.title}"`,
+            notification_type: "info",
+          },
+        }).catch(() => {});
+
+        supabase.from('notifications').insert({
+          user_id: request.user_id,
+          title: "عرض جديد على طلبك 💰",
+          message: `قدّم ${merchantName} عرضاً بسعر ${priceNum.toLocaleString()} د.ع على طلبك "${request.title}"`,
+          type: 'info',
+          related_id: requestId,
+          is_general: false,
+        }).then(() => {});
+      }
+
       return data;
     },
     onSuccess: () => {
