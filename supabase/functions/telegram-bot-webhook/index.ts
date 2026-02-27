@@ -11,10 +11,13 @@ const sanitizeText = (text: string | undefined): string => {
   if (!text || typeof text !== 'string') return '';
   let sanitized = text.substring(0, 4096);
   let previous = '';
+  // Iteratively strip HTML tags to prevent nested tag bypasses
   while (previous !== sanitized) {
     previous = sanitized;
     sanitized = sanitized.replace(/<[^>]*>/g, '');
   }
+  // Remove null bytes and control characters (except newlines/tabs)
+  sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
   sanitized = sanitized
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -22,6 +25,13 @@ const sanitizeText = (text: string | undefined): string => {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
   return sanitized.trim();
+};
+
+// Validate chat_id is a valid Telegram numeric ID
+const isValidChatId = (chatId: unknown): boolean => {
+  if (chatId === null || chatId === undefined) return false;
+  const id = Number(chatId);
+  return Number.isInteger(id) && id !== 0;
 };
 
 serve(async (req) => {
@@ -46,10 +56,19 @@ serve(async (req) => {
     const update = await req.json();
 
     const message = update.message;
-    if (!message) {
+    if (!message || !message.chat) {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
+      });
+    }
+
+    // Validate chat_id format
+    if (!isValidChatId(message.chat.id)) {
+      console.warn("Invalid chat_id received:", typeof message.chat.id);
+      return new Response(JSON.stringify({ success: false, error: "Invalid chat ID" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
       });
     }
 
