@@ -223,12 +223,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // For password_reset, check if user exists first
+    // For password_reset, check if user exists but return generic message to prevent enumeration
     if (type === 'password_reset') {
       const { data: users, error: userError } = await supabase.auth.admin.listUsers();
       
       if (userError) {
-        console.error("Error checking user:", userError);
+        console.error("Error checking user");
         return new Response(
           JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -238,9 +238,10 @@ const handler = async (req: Request): Promise<Response> => {
       const userExists = users.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
       
       if (!userExists) {
+        // Return success to prevent email enumeration - don't reveal if email exists
         return new Response(
-          JSON.stringify({ success: false, error: "البريد الإلكتروني غير مسجل في النظام" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ success: true, message: "إذا كان البريد مسجلاً، ستصلك رسالة تحقق" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
@@ -273,7 +274,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (recentCode) {
       // Code was recently sent, return success without sending again
-      console.log("Recent code exists, skipping duplicate send for:", email);
+      console.log("Recent code exists, skipping duplicate send");
       return new Response(
         JSON.stringify({ success: true, message: "Verification code already sent", alreadySent: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -338,7 +339,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResult = await emailResponse.json();
 
     if (!emailResponse.ok) {
-      console.error("Resend API error:", JSON.stringify(emailResult), "Status:", emailResponse.status, "Email:", email, "From: noreply@levonisiq.com");
+      console.error("Resend API error:", "Status:", emailResponse.status);
       
       // Provide more specific error messages
       const errorMsg = emailResult?.message || emailResult?.error?.message || "Unknown";
@@ -355,7 +356,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Verification code sent to:", email);
+    console.log("Verification code sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, message: "Verification code sent" }),
