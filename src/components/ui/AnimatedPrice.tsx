@@ -8,29 +8,43 @@ interface AnimatedPriceProps {
 }
 
 const AnimatedPrice = ({ value, formatFn, className = '', duration = 400 }: AnimatedPriceProps) => {
-  const [display, setDisplay] = useState(value);
-  const prevRef = useRef(value);
+  const safeValue = value ?? 0;
+  const [display, setDisplay] = useState(safeValue);
+  const prevRef = useRef(safeValue);
   const frameRef = useRef<number>();
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     const prev = prevRef.current;
-    if (prev === value) return;
+    if (prev === safeValue) {
+      setDisplay(safeValue);
+      return;
+    }
+
+    // Cancel any running animation
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
     
     const start = performance.now();
-    const diff = value - prev;
+    const diff = safeValue - prev;
 
     const animate = (now: number) => {
+      if (!mountedRef.current) return;
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-      // easeOutCubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(Math.round(prev + diff * eased));
+      const current = Math.round(prev + diff * eased);
+      setDisplay(current);
       
       if (progress < 1) {
         frameRef.current = requestAnimationFrame(animate);
       } else {
-        setDisplay(value);
-        prevRef.current = value;
+        setDisplay(safeValue);
+        prevRef.current = safeValue;
       }
     };
 
@@ -38,13 +52,12 @@ const AnimatedPrice = ({ value, formatFn, className = '', duration = 400 }: Anim
     return () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
-  }, [value, duration]);
+  }, [safeValue, duration]);
 
-  // Sync on first render
+  // Always keep prevRef in sync when value settles
   useEffect(() => {
-    prevRef.current = value;
-    setDisplay(value);
-  }, []); // eslint-disable-line
+    prevRef.current = safeValue;
+  }, [safeValue]);
 
   return <span className={className}>{formatFn(display)}</span>;
 };
