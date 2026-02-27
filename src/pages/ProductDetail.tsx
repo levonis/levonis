@@ -12,7 +12,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatPrice, cn } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
@@ -106,7 +106,7 @@ const ProductDetail = () => {
     enabled: !!user
   });
 
-  const { data: productOptions } = useQuery({
+  const { data: productOptions, isLoading: optionsLoading } = useQuery({
     queryKey: ['product-options', product?.id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -172,6 +172,22 @@ const ProductDetail = () => {
     if (hasPreOrder) return 'preorder';
     return 'direct';
   }, [selectedSaleType, hasDirectSale, hasPreOrder]);
+
+  // Auto-select first available option when options load
+  useEffect(() => {
+    if (!productOptions || productOptions.length === 0 || selectedOption) return;
+    const firstAvailable = productOptions.find((opt: any) => {
+      const isAvailable = activeSaleType === 'direct' ? (opt.available_for_direct_sale ?? true) : (opt.available_for_pre_order ?? false);
+      return isAvailable && opt.in_stock;
+    });
+    if (firstAvailable) {
+      setSelectedOption(firstAvailable.id);
+      if (firstAvailable.image_url) {
+        setOptionImageUrl(firstAvailable.image_url);
+        setSelectedImage(0);
+      }
+    }
+  }, [productOptions, activeSaleType]);
 
   if (isLoading) return <ProductDetailSkeleton />;
 
@@ -258,6 +274,8 @@ const ProductDetail = () => {
   const hasStockInfo = activeSaleType === 'direct' && directStockQuantity != null && directStockQuantity > 0;
 
   const handleAddToCart = async () => {
+    // Block if options exist but still loading or none selected
+    if (optionsLoading) { toast.error('جاري تحميل الخيارات...'); return; }
     if (productOptions && productOptions.length > 0 && !selectedOption) { toast.error(t('product_select_option')); return; }
     const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
     const hasCustomShippingOptions = activeSaleType === 'preorder' && preOrderShippingOptions.length > 0;
@@ -678,7 +696,7 @@ const ProductDetail = () => {
             )}
 
             {/* Add to cart */}
-            <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!product.in_stock}>
+            <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!product.in_stock || optionsLoading}>
               <ShoppingCart className="ml-1 h-4 w-4 shrink-0" />
               <span className="truncate">{product.in_stock ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}</span>
             </Button>
