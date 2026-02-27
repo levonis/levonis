@@ -405,6 +405,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
     if (quantity < 1) return;
 
+    // Optimistic update
+    const previousItems = items;
+    setItems(prev => prev.map(item => item.id === itemId ? { ...item, quantity } : item));
+
     try {
       const { error } = await supabase
         .from('cart_items')
@@ -414,10 +418,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Update quantity error:', error);
+        setItems(previousItems);
         throw error;
       }
       
-      await fetchCart();
       toast.success('تم تحديث الكمية');
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -430,6 +434,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
+    // Optimistic update - remove immediately from UI
+    const previousItems = items;
+    setItems(prev => prev.filter(item => item.id !== itemId));
+    
     try {
       const { error } = await supabase
         .from('cart_items')
@@ -439,10 +447,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Remove from cart error:', error);
+        // Revert on error
+        setItems(previousItems);
         throw error;
       }
       
-      await fetchCart();
       toast.success('تم حذف المنتج من السلة');
     } catch (error) {
       console.error('Error removing from cart:', error);
