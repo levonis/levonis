@@ -250,7 +250,8 @@ const ProductDetail = () => {
       return Number(color.stock_quantity) > 0;
     }
 
-    return color?.in_stock !== false;
+    // No concrete stock data available — do NOT assume in-stock
+    return false;
   };
 
   const getFilteredColors = () => {
@@ -295,13 +296,15 @@ const ProductDetail = () => {
         } else if (color.stock_quantity != null) {
           isInStock = Number(color.stock_quantity) > 0;
         } else {
+          // No stock data at all — rely on available_for_direct_sale flag (handled by isAvailableForType)
           isInStock = color.in_stock !== false;
         }
       }
 
-      // Legacy data safety: if direct availability flag is false but stock exists, keep color selectable
+      // For direct sale: respect explicit available_for_direct_sale flag;
+      // only override if there's ACTUAL stock data proving availability
       const isAvailableForType = activeSaleType === 'direct'
-        ? ((color.available_for_direct_sale ?? true) || hasAnyColorStock(color))
+        ? (color.available_for_direct_sale ?? true)
         : (color.available_for_pre_order ?? true);
 
       return {
