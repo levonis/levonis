@@ -101,6 +101,17 @@ const Home = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
+        {/* Wishes Link Bar */}
+        <section className="container mx-auto px-4 mb-2">
+          <a
+            href="/wishes"
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all group"
+          >
+            <span className="text-sm font-bold text-primary group-hover:scale-105 transition-transform">✨ الأمنيات</span>
+            <span className="text-xs text-muted-foreground">تمنّى منتجاً وسنوفره لك!</span>
+          </a>
+        </section>
+
         <section className="w-full">
           <BannerCarousel />
         </section>
