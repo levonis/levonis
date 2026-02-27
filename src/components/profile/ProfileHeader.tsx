@@ -108,12 +108,14 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       label: "النقاط",
       value: userPoints?.available_points ?? 0,
       loading: pointsLoading,
+      to: "/rewards?tab=points&sub=summary",
     },
     {
       icon: Ticket,
       label: "كوبونات",
       value: couponsCount ?? 0,
       loading: couponsLoading,
+      to: "/special-coupons",
     },
     {
       icon: Wallet,
@@ -121,6 +123,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: wallet?.balance ?? 0,
       loading: walletLoading,
       suffix: "د.ع",
+      to: "/rewards?tab=points&sub=summary",
     },
     {
       icon: TrendingUp,
@@ -128,6 +131,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: userPoints?.total_points ? Math.round((userPoints.total_points) * 0.1) : 0,
       loading: pointsLoading,
       suffix: "د.ع",
+      to: "/offers",
     },
   ];
 
@@ -198,7 +202,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
           {stats.map((s) => (
             <button
               key={s.label}
-              onClick={() => navigate("/rewards")}
+              onClick={() => navigate(s.to)}
               className="flex flex-col items-center gap-1 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 px-2 py-3 transition-all duration-200 active:scale-[0.95]"
             >
               <s.icon className="h-4 w-4 text-white/90" />
