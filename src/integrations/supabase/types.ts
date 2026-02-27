@@ -7332,6 +7332,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_text_key: { Args: { p_text: string }; Returns: string }
       notify_draw_happening: { Args: { comp_id: string }; Returns: undefined }
       pay_order_from_wallet: {
         Args: {
