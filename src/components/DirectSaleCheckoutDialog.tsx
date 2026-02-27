@@ -43,6 +43,16 @@ const DirectSaleCheckoutDialog = ({
   const [countdown, setCountdown] = useState(5);
   const [canConfirm, setCanConfirm] = useState(false);
 
+  // Calculate time until 5 PM cutoff
+  const now = new Date();
+  const cutoff = new Date();
+  cutoff.setHours(17, 0, 0, 0);
+  const isBeforeCutoff = now < cutoff;
+  const msUntilCutoff = isBeforeCutoff ? cutoff.getTime() - now.getTime() : 0;
+  const hoursLeft = Math.floor(msUntilCutoff / 3600000);
+  const minutesLeft = Math.floor((msUntilCutoff % 3600000) / 60000);
+  const timeLeftText = isBeforeCutoff ? `${hoursLeft} ساعة و ${minutesLeft} دقيقة` : null;
+
   useEffect(() => {
     if (!open) {
       setCountdown(5);
@@ -100,12 +110,26 @@ const DirectSaleCheckoutDialog = ({
 
           {/* Delivery hints */}
           <div className="mt-3 space-y-2">
-            <div className="flex items-start gap-2 rounded-lg bg-accent/10 border border-accent/20 p-2.5">
-              <Info className="h-4 w-4 text-accent mt-0.5 shrink-0" />
-              <p className="text-xs text-accent-foreground/80 leading-relaxed">
-                اطلب قبل <span className="font-black text-accent">5:00 مساءً</span> ليصل طلبك في اليوم التالي
-              </p>
-            </div>
+            {isBeforeCutoff ? (
+              <div className="flex items-start gap-2 rounded-lg bg-accent/10 border border-accent/20 p-2.5">
+                <Info className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-foreground leading-relaxed">
+                    لديك <span className="text-accent">{timeLeftText}</span> لإضافة منتجات أخرى
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                    اطلب منتجات بيع مباشر إضافية قبل <span className="font-bold">5:00 مساءً</span> وسيتم توصيلها في شحنة واحدة مجاناً! 🚚
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-lg bg-muted/50 border border-border/50 p-2.5">
+                <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  تجاوزت الساعة 5:00 مساءً — سيتم شحن هذا الطلب بشكل منفصل عن الطلبات السابقة.
+                </p>
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/15 p-2.5">
               <Zap className="h-4 w-4 text-primary shrink-0" />
               <p className="text-xs text-muted-foreground">
