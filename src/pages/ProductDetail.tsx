@@ -10,7 +10,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon } from 'lucide-react';
+import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useMemo } from 'react';
 import { formatPrice, cn } from '@/lib/utils';
@@ -355,7 +355,7 @@ const ProductDetail = () => {
           </div>
 
           {/* Product Info - Overlap card on mobile */}
-          <div className="relative z-10 px-4 -mt-5 md:mt-0 md:px-0 pb-32 md:pb-12">
+          <div className="relative z-10 px-4 -mt-5 md:mt-0 md:px-0 pb-40 md:pb-12">
             <div className="rounded-2xl border border-border/40 bg-card p-4 md:p-6 space-y-4 md:border-0 md:bg-transparent md:p-0">
               {/* Desktop back */}
               <div className="hidden md:block mb-4">
@@ -412,7 +412,7 @@ const ProductDetail = () => {
               {/* Sale Type Tabs */}
               {hasBothTypes && (
                 <Tabs value={activeSaleType} onValueChange={handleSaleTypeChange}>
-                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1">
+                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-muted">
                     <TabsTrigger value="direct" className="rounded-lg gap-1.5 text-xs font-black data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       <Package className="h-3.5 w-3.5" />{t('product_direct_sale')}
                     </TabsTrigger>
@@ -627,33 +627,49 @@ const ProductDetail = () => {
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 bg-card border-t border-border/30 px-4 py-2.5">
-        <div className="container mx-auto max-w-4xl flex items-center gap-3">
+      <div className="fixed bottom-[4.5rem] md:bottom-0 left-0 right-0 z-40 bg-card border-t border-border/30 px-3 py-2 safe-area-bottom">
+        <div className="container mx-auto max-w-4xl flex items-center gap-2">
           {/* Quantity */}
           {product.in_stock && (
-            <div className="flex items-center gap-1 shrink-0">
-              <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl" onClick={decrementQuantity} disabled={quantity <= 1}>
-                <Minus className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-0.5 shrink-0">
+              <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg" onClick={decrementQuantity} disabled={quantity <= 1}>
+                <Minus className="h-3 w-3" />
               </Button>
               <Input type="number" min="1" value={quantity} onChange={(e) => { const v = parseInt(e.target.value); if (v > 0) setQuantity(v); }}
-                className="h-9 text-center text-sm font-black w-12 rounded-xl" />
-              <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl" onClick={incrementQuantity}>
-                <Plus className="h-3.5 w-3.5" />
+                className="h-8 text-center text-xs font-black w-10 rounded-lg px-1" />
+              <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg" onClick={incrementQuantity}>
+                <Plus className="h-3 w-3" />
               </Button>
             </div>
           )}
 
           {/* Add to cart */}
-          <Button className="flex-1 h-11 rounded-xl font-black text-sm" onClick={handleAddToCart} disabled={!product.in_stock}>
-            <ShoppingCart className="ml-2 h-4 w-4" />
+          <Button className="flex-1 h-9 rounded-lg font-black text-xs" onClick={handleAddToCart} disabled={!product.in_stock}>
+            <ShoppingCart className="ml-1.5 h-3.5 w-3.5" />
             {product.in_stock ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}
           </Button>
 
           {/* Favorite */}
           <Button size="icon" variant="outline"
-            className={cn("h-11 w-11 rounded-xl shrink-0", isFavorite && "text-red-500 border-red-500/50")}
+            className={cn("h-9 w-9 rounded-lg shrink-0", isFavorite && "text-destructive border-destructive/50")}
             onClick={handleToggleFavorite} disabled={favoriteLoading || toggleFavoriteMutation.isPending}>
-            <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
+            <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+          </Button>
+
+          {/* Share */}
+          <Button size="icon" variant="outline" className="h-9 w-9 rounded-lg shrink-0"
+            onClick={async () => {
+              const url = `${window.location.origin}/product/${slug}`;
+              try {
+                if (navigator.share) {
+                  await navigator.share({ title: product.name_ar, url });
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  toast.success('تم نسخ الرابط');
+                }
+              } catch {}
+            }}>
+            <Share2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
