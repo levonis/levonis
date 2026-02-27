@@ -1,6 +1,6 @@
 import { memo, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Users, Trophy, User } from 'lucide-react';
+import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'cart', labelKey: 'menu_cart', icon: ShoppingCart, path: '/cart' },
   { key: 'community', labelKey: 'nav_community', icon: Users, path: '/community' },
   { key: 'rewards', labelKey: 'menu_rewards', icon: Trophy, path: '/rewards' },
+  { key: 'games', labelKey: 'nav_games', icon: Gamepad2, path: '/games' },
+  { key: 'messages', labelKey: 'menu_messages', icon: MessageCircle, path: '/community/messages' },
   { key: 'account', labelKey: 'menu_account_info', icon: User, path: '/profile' },
 ];
 
