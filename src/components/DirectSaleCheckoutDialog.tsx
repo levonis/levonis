@@ -88,8 +88,7 @@ const DirectSaleCheckoutDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         dir="rtl" 
-        className="max-w-md mx-auto border-primary/20 p-0 overflow-hidden max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: "#47624D" }}
+        className="max-w-md mx-auto border-primary/20 p-0 overflow-hidden max-h-[90vh] overflow-y-auto bg-background"
       >
         {/* Header with gradient */}
         <div className="bg-gradient-to-l from-primary/10 via-accent/5 to-transparent p-6 pb-4">
