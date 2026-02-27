@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -84,6 +84,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
   const { user } = useAuth();
+  const optimisticLockRef = useRef(0); // Guard against fetch overwriting optimistic updates
 
   // Fetch pending cart request
   const fetchPendingCartRequest = async () => {
@@ -182,6 +183,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    const lockValue = optimisticLockRef.current;
+
     try {
       
       const { data, error } = await supabase
@@ -241,10 +244,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      setItems(data as CartItem[] || []);
+      // Only update if no optimistic operation happened while we were fetching
+      if (optimisticLockRef.current === lockValue) {
+        setItems(data as CartItem[] || []);
+      }
     } catch (error) {
       console.error('Error fetching cart:', error);
-      // Suppress cart errors silently - they are non-critical
       console.warn('Cart fetch failed (non-critical):', error);
     } finally {
       setLoading(false);
@@ -405,7 +410,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
     if (quantity < 1) return;
 
-    // Optimistic update
+    // Optimistic update with lock to prevent fetchCart from overwriting
+    optimisticLockRef.current++;
     const previousItems = items;
     setItems(prev => prev.map(item => item.id === itemId ? { ...item, quantity } : item));
 
@@ -419,6 +425,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Update quantity error:', error);
         setItems(previousItems);
+        optimisticLockRef.current--;
         throw error;
       }
       
@@ -434,7 +441,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
-    // Optimistic update - remove immediately from UI
+    // Optimistic update with lock
+    optimisticLockRef.current++;
     const previousItems = items;
     setItems(prev => prev.filter(item => item.id !== itemId));
     
