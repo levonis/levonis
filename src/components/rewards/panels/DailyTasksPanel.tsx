@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,11 +105,11 @@ export default function DailyTasksPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Auto-check community profile and merchant registration
+  // Auto-check community profile and merchant registration + products
   const { data: autoCheckData } = useQuery({
     queryKey: ['auto-check-tasks', user?.id],
     queryFn: async () => {
-      if (!user) return { hasProfile: false, isMerchant: false };
+      if (!user) return { hasProfile: false, isMerchant: false, merchantProductCount: 0 };
       const { data: profile } = await supabase
         .from('community_customer_profiles')
         .select('display_name, avatar_url, bio')
@@ -118,13 +119,24 @@ export default function DailyTasksPanel() {
       const hasProfile = !!(profile?.display_name && profile?.avatar_url);
 
       const { data: merchant } = await supabase
-        .from('merchant_profiles' as any)
+        .from('merchant_public_profiles' as any)
         .select('id')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
       
       const isMerchant = !!merchant;
-      return { hasProfile, isMerchant };
+
+      let merchantProductCount = 0;
+      if (isMerchant) {
+        const { count } = await supabase
+          .from('merchant_products' as any)
+          .select('id', { count: 'exact', head: true })
+          .eq('merchant_id', user.id)
+          .eq('is_active', true);
+        merchantProductCount = count || 0;
+      }
+
+      return { hasProfile, isMerchant, merchantProductCount };
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
@@ -208,8 +220,9 @@ export default function DailyTasksPanel() {
       if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile) {
         throw new Error('يرجى إكمال ملفك في مجتمع ليفو أولاً (الاسم والصورة)');
       }
-      if (task.task_key === 'register_merchant' && !autoCheckData?.isMerchant) {
-        throw new Error('يرجى التسجيل كتاجر في مجتمع ليفو أولاً');
+      if (task.task_key === 'register_merchant') {
+        if (!autoCheckData?.isMerchant) throw new Error('يرجى التسجيل كتاجر في مجتمع ليفو أولاً');
+        if ((autoCheckData?.merchantProductCount || 0) < 3) throw new Error(`يرجى نشر ٣ منتجات على الأقل (لديك ${autoCheckData?.merchantProductCount || 0} حالياً)`);
       }
 
       // Calculate streak bonus
@@ -344,9 +357,12 @@ export default function DailyTasksPanel() {
           canComplete = false;
           statusText = 'أكمل ملفك أولاً';
         }
-        if (task.task_key === 'register_merchant' && !autoCheckData?.isMerchant && !isCompleted) {
-          canComplete = false;
-          statusText = 'سجّل كتاجر أولاً';
+        if (task.task_key === 'register_merchant' && !isCompleted) {
+          const isMerch = autoCheckData?.isMerchant || false;
+          const prodCount = Math.min(autoCheckData?.merchantProductCount || 0, 3);
+          canComplete = isMerch && prodCount >= 3;
+          if (!isMerch) statusText = '❶ سجّل كتاجر أولاً';
+          else if (prodCount < 3) statusText = `❷ انشر ${3 - prodCount} منتجات إضافية (${prodCount}/٣)`;
         }
 
         const TaskIcon = getTaskIcon(task.icon);
@@ -384,6 +400,24 @@ export default function DailyTasksPanel() {
                   </div>
                   {statusText && (
                     <p className="text-[10px] text-orange-500 mt-1">{statusText}</p>
+                  )}
+                  {task.task_key === 'register_merchant' && !isCompleted && (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <span className={autoCheckData?.isMerchant ? 'text-green-600' : 'text-muted-foreground'}>
+                          {autoCheckData?.isMerchant ? '✅' : '⬜'} التسجيل كتاجر
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <span className={(autoCheckData?.merchantProductCount || 0) >= 3 ? 'text-green-600' : 'text-muted-foreground'}>
+                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} نشر ٣ منتجات ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/٣)
+                        </span>
+                      </div>
+                      <Progress 
+                        value={((autoCheckData?.isMerchant ? 1 : 0) + Math.min(autoCheckData?.merchantProductCount || 0, 3)) / 4 * 100} 
+                        className="h-1.5" 
+                      />
+                    </div>
                   )}
                 </div>
                 {!isCompleted && (
