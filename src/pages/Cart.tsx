@@ -169,7 +169,8 @@ const Cart = () => {
     return 6000;
   };
 
-  const deliveryFee = getDeliveryFee(profile?.governorate || null);
+  // Use selected address governorate first, fallback to profile governorate
+  const deliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
   
   // Calculate discount
   const calculateDiscount = () => {
