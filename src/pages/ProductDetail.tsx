@@ -223,7 +223,17 @@ const ProductDetail = () => {
       return { ...color, isAvailable: isAvailableForType && isLinkedToOption && isInStock, isLinkedToOption };
     });
   };
-  const filteredColors = getFilteredColors();
+  const filteredColors = getFilteredColors().sort((a: any, b: any) => {
+    // Sort by availability first, then by stock quantity (highest first)
+    if (a.isAvailable && !b.isAvailable) return -1;
+    if (!a.isAvailable && b.isAvailable) return 1;
+    if (activeSaleType === 'direct') {
+      const stockA = selectedOptionName && a.option_stocks?.[selectedOptionName] != null ? a.option_stocks[selectedOptionName] : (a.stock_quantity ?? 0);
+      const stockB = selectedOptionName && b.option_stocks?.[selectedOptionName] != null ? b.option_stocks[selectedOptionName] : (b.stock_quantity ?? 0);
+      return (stockB || 0) - (stockA || 0);
+    }
+    return 0;
+  });
 
   const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
   const getPrice = () => {
@@ -572,9 +582,13 @@ const ProductDetail = () => {
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="px-3 pb-3">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2" style={{ position: 'relative' }}>
                         {filteredColors.map((color: any, index: number) => (
-                          <button key={index} type="button"
+                          <button key={color.name_ar || index} type="button"
+                            style={{ 
+                              transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                              animationDelay: `${index * 50}ms`,
+                            }}
                             onClick={() => {
                               if (!color.isAvailable) return;
                               const newColor = selectedColor === color.name_ar ? null : color.name_ar;
@@ -583,7 +597,8 @@ const ProductDetail = () => {
                               else setColorImageUrl(null);
                             }}
                             disabled={!color.isAvailable}
-                            className={cn("group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all min-w-[65px] backdrop-blur-sm active:scale-[0.95]",
+                            className={cn("group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 min-w-[65px] backdrop-blur-sm active:scale-[0.95] animate-fade-in",
+                              "transition-all duration-300",
                               selectedColor === color.name_ar
                                 ? 'border-primary/50 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.15)]'
                                 : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
