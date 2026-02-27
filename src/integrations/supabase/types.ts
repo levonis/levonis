@@ -4119,6 +4119,42 @@ export type Database = {
           },
         ]
       }
+      pending_task_approvals: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          proof_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          task_key: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          task_key: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          task_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       points_product_redemptions: {
         Row: {
           created_at: string

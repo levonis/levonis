@@ -105,25 +105,26 @@ export default function DailyTasksPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Auto-check community profile and merchant registration + products
+  // Auto-check community profile, merchant registration + products, profile, review, purchase
   const { data: autoCheckData } = useQuery({
     queryKey: ['auto-check-tasks', user?.id],
     queryFn: async () => {
-      if (!user) return { hasProfile: false, isMerchant: false, merchantProductCount: 0 };
+      if (!user) return { hasProfile: false, isMerchant: false, merchantProductCount: 0, hasFullProfile: false, hasReview: false, hasWeeklyPurchase: false };
+      
+      // Community profile check
       const { data: profile } = await supabase
         .from('community_customer_profiles')
         .select('display_name, avatar_url, bio')
         .eq('user_id', user.id)
         .maybeSingle();
-      
       const hasProfile = !!(profile?.display_name && profile?.avatar_url);
 
+      // Merchant check
       const { data: merchant } = await supabase
         .from('merchant_public_profiles' as any)
         .select('id')
         .eq('id', user.id)
         .maybeSingle();
-      
       const isMerchant = !!merchant;
 
       let merchantProductCount = 0;
@@ -136,10 +137,52 @@ export default function DailyTasksPanel() {
         merchantProductCount = count || 0;
       }
 
-      return { hasProfile, isMerchant, merchantProductCount };
+      // Full profile check (name + avatar in profiles table)
+      const { data: mainProfile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+      const hasFullProfile = !!(mainProfile?.full_name && mainProfile?.avatar_url);
+
+      // Has at least one review
+      const { count: reviewCount } = await supabase
+        .from('reviews')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      const hasReview = (reviewCount || 0) > 0;
+
+      // Has purchase this week
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const { count: orderCount } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', weekAgo.toISOString());
+      const hasWeeklyPurchase = (orderCount || 0) > 0;
+
+      return { hasProfile, isMerchant, merchantProductCount, hasFullProfile, hasReview, hasWeeklyPurchase };
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch pending admin approvals for this user
+  const { data: pendingApprovals } = useQuery({
+    queryKey: ['pending-task-approvals', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('pending_task_approvals' as any)
+        .select('task_key, status')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'approved']);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 1 * 60 * 1000,
   });
 
   const { data: reviewableOrders } = useQuery({
@@ -224,6 +267,30 @@ export default function DailyTasksPanel() {
         if (!autoCheckData?.isMerchant) throw new Error('يرجى التسجيل كتاجر في مجتمع ليفو أولاً');
         if ((autoCheckData?.merchantProductCount || 0) < 3) throw new Error(`يرجى نشر ٣ منتجات على الأقل (لديك ${autoCheckData?.merchantProductCount || 0} حالياً)`);
       }
+      if (task.task_key === 'complete_profile' && !autoCheckData?.hasFullProfile) {
+        throw new Error('يرجى إكمال ملفك الشخصي أولاً (الاسم والصورة)');
+      }
+      if (task.task_key === 'first_review' && !autoCheckData?.hasReview) {
+        throw new Error('يرجى إضافة تقييم لأحد المنتجات أولاً');
+      }
+      if (task.task_key === 'weekly_purchase' && !autoCheckData?.hasWeeklyPurchase) {
+        throw new Error('يرجى شراء منتج هذا الأسبوع أولاً');
+      }
+
+      // Admin-approval tasks: submit for review instead of completing
+      if (task.confirmation_type === 'admin_approval') {
+        // Check if already pending
+        const existingPending = pendingApprovals?.find((p: any) => p.task_key === task.task_key && p.status === 'pending');
+        if (existingPending) throw new Error('طلبك قيد المراجعة بالفعل');
+        
+        const { error: approvalError } = await supabase
+          .from('pending_task_approvals' as any)
+          .insert({ user_id: user.id, task_key: task.task_key, status: 'pending' });
+        if (approvalError) throw approvalError;
+        
+        queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
+        return { ...task, totalPoints: 0, bonusPoints: 0, pendingApproval: true };
+      }
 
       // Calculate streak bonus
       let bonusPoints = 0;
@@ -262,7 +329,7 @@ export default function DailyTasksPanel() {
           user_id: user.id, total_points: totalPoints, available_points: totalPoints,
         });
       }
-      return { ...task, totalPoints, bonusPoints };
+      return { ...task, totalPoints, bonusPoints, pendingApproval: false };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['user-completed-tasks-today'] });
@@ -270,10 +337,15 @@ export default function DailyTasksPanel() {
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['user-streak'] });
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
-      const msg = result.bonusPoints > 0
-        ? `+${result.totalPoints} نقطة (منها ${result.bonusPoints} مكافأة ستريك 🔥)`
-        : `+${result.totalPoints} نقطة ✅`;
-      toast.success(msg);
+      queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
+      if (result.pendingApproval) {
+        toast.success('تم إرسال طلبك للمراجعة من قبل الإدارة ⏳');
+      } else {
+        const msg = result.bonusPoints > 0
+          ? `+${result.totalPoints} نقطة (منها ${result.bonusPoints} مكافأة ستريك 🔥)`
+          : `+${result.totalPoints} نقطة ✅`;
+        toast.success(msg);
+      }
     },
     onError: (error: any) => { toast.error(error.message || t('common_error')); },
   });
@@ -349,13 +421,28 @@ export default function DailyTasksPanel() {
           ? completedOnceTasks?.includes(task.task_key)
           : completedTasks?.includes(task.task_key);
         const isTaskLoading = activeTaskKey === task.task_key && completeTaskMutation.isPending;
+        const isPending = pendingApprovals?.some((p: any) => p.task_key === task.task_key && p.status === 'pending');
+        const isAdminTask = task.confirmation_type === 'admin_approval';
         
         // Auto-check eligibility for special tasks
         let canComplete = true;
         let statusText = '';
+
         if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile && !isCompleted) {
           canComplete = false;
           statusText = 'أكمل ملفك أولاً';
+        }
+        if (task.task_key === 'complete_profile' && !autoCheckData?.hasFullProfile && !isCompleted) {
+          canComplete = false;
+          statusText = 'أكمل بياناتك وأضف صورة أولاً';
+        }
+        if (task.task_key === 'first_review' && !autoCheckData?.hasReview && !isCompleted) {
+          canComplete = false;
+          statusText = 'أضف تقييم لمنتج أولاً';
+        }
+        if (task.task_key === 'weekly_purchase' && !autoCheckData?.hasWeeklyPurchase && !isCompleted) {
+          canComplete = false;
+          statusText = 'اشترِ منتج هذا الأسبوع أولاً';
         }
         if (task.task_key === 'register_merchant' && !isCompleted) {
           const isMerch = autoCheckData?.isMerchant || false;
@@ -363,6 +450,9 @@ export default function DailyTasksPanel() {
           canComplete = isMerch && prodCount >= 3;
           if (!isMerch) statusText = '❶ سجّل كتاجر أولاً';
           else if (prodCount < 3) statusText = `❷ انشر ${3 - prodCount} منتجات إضافية (${prodCount}/٣)`;
+        }
+        if (isPending) {
+          canComplete = false;
         }
 
         const TaskIcon = getTaskIcon(task.icon);
@@ -373,10 +463,12 @@ export default function DailyTasksPanel() {
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isCompleted ? 'bg-green-500/20' : 'bg-primary/10'
+                  isCompleted ? 'bg-green-500/20' : isPending ? 'bg-amber-500/20' : 'bg-primary/10'
                 }`}>
                   {isCompleted ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  ) : isPending ? (
+                    <Loader2 className="h-5 w-5 text-amber-500" />
                   ) : (
                     <TaskIcon className="h-5 w-5 text-primary" />
                   )}
@@ -384,7 +476,7 @@ export default function DailyTasksPanel() {
                 <div className="flex-1">
                   <p className="font-medium text-sm">{task.title_ar}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{task.description_ar}</p>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <div className="flex items-center gap-1">
                       <Coins className="h-3.5 w-3.5 text-amber-500" />
                       <span className="text-xs font-bold text-amber-600">+{task.points_reward} {t('points_unit')}</span>
@@ -397,8 +489,14 @@ export default function DailyTasksPanel() {
                     {isOnceTask && !isCompleted && (
                       <span className="text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full">مرة واحدة</span>
                     )}
+                    {isAdminTask && !isCompleted && !isPending && (
+                      <span className="text-[10px] bg-purple-500/15 text-purple-600 px-1.5 py-0.5 rounded-full">تحقق يدوي</span>
+                    )}
                   </div>
-                  {statusText && (
+                  {isPending && (
+                    <p className="text-[10px] text-amber-600 mt-1 font-medium">⏳ قيد مراجعة الإدارة</p>
+                  )}
+                  {statusText && !isPending && (
                     <p className="text-[10px] text-orange-500 mt-1">{statusText}</p>
                   )}
                   {task.task_key === 'register_merchant' && !isCompleted && (
@@ -420,13 +518,13 @@ export default function DailyTasksPanel() {
                     </div>
                   )}
                 </div>
-                {!isCompleted && (
+                {!isCompleted && !isPending && (
                   <Button size="sm" variant="outline" className="shrink-0" 
                     onClick={() => handleTaskClick(task)} 
                     disabled={isTaskLoading || !canComplete}
                   >
                     {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 
-                      canComplete ? t('tasks_start') : '⏳'}
+                      canComplete ? (isAdminTask ? 'إرسال' : t('tasks_start')) : '⏳'}
                   </Button>
                 )}
               </div>
