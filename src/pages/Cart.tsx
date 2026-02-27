@@ -354,8 +354,15 @@ const Cart = () => {
     wrapWithCartRequestCheck(() => removeFromCart(itemId));
   };
 
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+
   const handleClearCart = () => {
+    setShowClearCartDialog(true);
+  };
+
+  const confirmClearCart = () => {
     wrapWithCartRequestCheck(() => clearCart());
+    setShowClearCartDialog(false);
   };
 
   // حساب المبلغ المطلوب دفعه الآن
@@ -1789,6 +1796,30 @@ const Cart = () => {
           return `${h} ساعة و ${m} دقيقة`;
         })()}
       />
+
+      {/* Clear Cart Confirmation Dialog */}
+      <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              تفريغ السلة
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من تفريغ السلة؟ سيتم حذف جميع المنتجات ({itemCount} منتج) من السلة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmClearCart}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              تفريغ السلة
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
