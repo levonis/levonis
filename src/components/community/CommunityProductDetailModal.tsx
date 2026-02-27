@@ -164,6 +164,8 @@ export default function CommunityProductDetailModal({
         .eq("merchant_id", product!.merchant_id)
         .neq("id", product!.id)
         .eq("is_active", true)
+        .not("price_iqd", "is", null)
+        .gt("price_iqd", 0)
         .limit(4);
 
       const { data: otherMerchants } = await supabase
@@ -172,6 +174,8 @@ export default function CommunityProductDetailModal({
         .neq("merchant_id", product!.merchant_id)
         .neq("id", product!.id)
         .eq("is_active", true)
+        .not("price_iqd", "is", null)
+        .gt("price_iqd", 0)
         .limit(4);
 
       return { sameMerchant: sameMerchant || [], otherMerchants: otherMerchants || [] };
