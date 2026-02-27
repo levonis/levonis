@@ -45,7 +45,7 @@ export default function CouponsStrip({ userId }: CouponsStripProps) {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold text-foreground">كوبوناتي</h2>
         <button
-          onClick={() => navigate("/rewards?tab=coupons")}
+          onClick={() => navigate("/special-coupons")}
           className="flex items-center gap-1 text-xs text-primary font-semibold transition-colors hover:text-primary/80"
         >
           <span>عرض الكل</span>
