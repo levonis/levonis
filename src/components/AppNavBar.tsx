@@ -1,15 +1,10 @@
-import { memo, useState, lazy, Suspense } from 'react';
+import { memo, useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle } from 'lucide-react';
+import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle, GripVertical } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/hooks/useCart';
-import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-
-const ListingConversations = lazy(() =>
-  import('@/components/marketplace/ListingConversations').then(m => ({ default: m.ListingConversations }))
-);
 
 interface NavItem {
   key: string;
@@ -28,12 +23,30 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'account', labelKey: 'menu_account_info', icon: User, path: '/profile' },
 ];
 
+type DockPosition = 'right' | 'left' | 'top' | 'bottom';
+
+const STORAGE_KEY = 'nav-dock-position';
+
+const getStoredPosition = (): DockPosition => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && ['right', 'left', 'top', 'bottom'].includes(stored)) return stored as DockPosition;
+  } catch {}
+  return 'right';
+};
+
 const AppNavBar = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
   const { itemCount } = useCart();
   const isMobile = useIsMobile();
+  const [dockPosition, setDockPosition] = useState<DockPosition>(getStoredPosition);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const dragStartRef = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null);
+  const hasDraggedRef = useRef(false);
 
   const isActive = (item: NavItem) => {
     if (item.path === '/') return location.pathname === '/' || location.pathname === '/home';
@@ -41,13 +54,110 @@ const AppNavBar = memo(() => {
   };
 
   const handleClick = (item: NavItem) => {
+    if (hasDraggedRef.current) return;
     navigate(item.path);
   };
 
+  const snapToEdge = useCallback((x: number, y: number) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cx = x;
+    const cy = y;
+
+    // Distances to each edge
+    const distRight = vw - cx;
+    const distLeft = cx;
+    const distTop = cy;
+    const distBottom = vh - cy;
+
+    const min = Math.min(distRight, distLeft, distTop, distBottom);
+
+    let newPos: DockPosition = 'right';
+    if (min === distLeft) newPos = 'left';
+    else if (min === distTop) newPos = 'top';
+    else if (min === distBottom) newPos = 'bottom';
+    else newPos = 'right';
+
+    setDockPosition(newPos);
+    localStorage.setItem(STORAGE_KEY, newPos);
+    setDragPos(null);
+    setIsDragging(false);
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (isMobile) return;
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+    const rect = navRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragStartRef.current = { x: e.clientX, y: e.clientY, startX: rect.left + rect.width / 2, startY: rect.top + rect.height / 2 };
+    hasDraggedRef.current = false;
+  }, [isMobile]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    if (!isDragging && Math.abs(dx) + Math.abs(dy) < 8) return;
+    hasDraggedRef.current = true;
+    setIsDragging(true);
+    setDragPos({
+      x: dragStartRef.current.startX + dx,
+      y: dragStartRef.current.startY + dy,
+    });
+  }, [isDragging]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!dragStartRef.current) return;
+    if (isDragging && dragPos) {
+      snapToEdge(dragPos.x, dragPos.y);
+    }
+    dragStartRef.current = null;
+    setTimeout(() => { hasDraggedRef.current = false; }, 50);
+  }, [isDragging, dragPos, snapToEdge]);
+
+  const isHorizontal = dockPosition === 'top' || dockPosition === 'bottom';
+
   if (!isMobile) {
-    // Desktop: compact right sidebar
+    const dockStyles: React.CSSProperties = isDragging && dragPos
+      ? {
+          position: 'fixed',
+          left: dragPos.x,
+          top: dragPos.y,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 9999,
+          opacity: 0.85,
+          transition: 'none',
+        }
+      : dockPosition === 'right'
+        ? { position: 'fixed', top: '50%', right: 12, transform: 'translateY(-50%)' }
+        : dockPosition === 'left'
+          ? { position: 'fixed', top: '50%', left: 12, transform: 'translateY(-50%)' }
+          : dockPosition === 'top'
+            ? { position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)' }
+            : { position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)' };
+
     return (
-      <nav className="fixed top-1/2 -translate-y-1/2 right-0 z-50 flex flex-col items-center gap-1.5 p-2 m-3 rounded-2xl bg-card/90 border border-border/50 shadow-xl">
+      <nav
+        ref={navRef}
+        className={cn(
+          "z-50 flex items-center gap-1.5 p-2 rounded-2xl bg-card/90 border border-border/50 shadow-xl select-none",
+          isHorizontal && !isDragging ? "flex-row" : !isDragging ? "flex-col" : (isHorizontal ? "flex-row" : "flex-col"),
+          isDragging && "cursor-grabbing shadow-2xl ring-2 ring-primary/30"
+        )}
+        style={dockStyles}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {/* Drag handle */}
+        <div className={cn(
+          "flex items-center justify-center text-muted-foreground/50 cursor-grab active:cursor-grabbing",
+          isHorizontal && !isDragging ? "h-full px-0.5" : "w-full py-0.5"
+        )}>
+          <GripVertical className={cn("h-4 w-4", isHorizontal && !isDragging && "rotate-90")} />
+        </div>
+
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isActive(item);
@@ -69,7 +179,14 @@ const AppNavBar = memo(() => {
                   {itemCount > 9 ? '9+' : itemCount}
                 </span>
               )}
-              <span className="absolute right-full mr-2 px-2.5 py-1 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150">
+              {/* Tooltip - adjust based on position */}
+              <span className={cn(
+                "absolute px-2.5 py-1 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-[60]",
+                dockPosition === 'right' && "right-full mr-2",
+                dockPosition === 'left' && "left-full ml-2",
+                dockPosition === 'top' && "top-full mt-2",
+                dockPosition === 'bottom' && "bottom-full mb-2",
+              )}>
                 {t(item.labelKey as any)}
               </span>
             </button>
@@ -98,7 +215,6 @@ const AppNavBar = memo(() => {
                 active ? "text-primary" : "text-muted-foreground active:scale-90"
               )}
             >
-              {/* Pill floating indicator */}
               <span
                 className={cn(
                   "flex items-center justify-center rounded-2xl transition-all duration-300",
@@ -128,7 +244,6 @@ const AppNavBar = memo(() => {
               >
                 {t(item.labelKey as any)}
               </span>
-              {/* Active dot */}
               {active && (
                 <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
               )}
