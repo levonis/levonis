@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import WalletDialog from "@/components/WalletDialog";
 import SavingsPopup from "./SavingsPopup";
+import CouponsPopup from "./CouponsPopup";
 
 interface ProfileHeaderProps {
   userId: string;
@@ -32,6 +33,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   const { isAdmin } = useAuth();
   const [walletOpen, setWalletOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(false);
+  const [couponsOpen, setCouponsOpen] = useState(false);
 
   const { data: userPoints, isLoading: pointsLoading } = useQuery({
     queryKey: ["profile-user-points", userId],
@@ -156,7 +158,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       label: "كوبونات",
       value: couponsCount ?? 0,
       loading: couponsLoading,
-      onClick: () => navigate("/special-coupons"),
+      onClick: () => setCouponsOpen(true),
     },
     {
       icon: Wallet,
@@ -290,6 +292,10 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
         open={savingsOpen}
         onOpenChange={setSavingsOpen}
         userId={userId}
+      />
+      <CouponsPopup
+        open={couponsOpen}
+        onOpenChange={setCouponsOpen}
       />
     </>
   );
