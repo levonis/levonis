@@ -157,7 +157,36 @@ const Cart = () => {
   const PRINTER_SECTION_ID = '0a7d1d66-1ddb-4398-8e4a-c6ca8deac5b6';
   const hasPrinterItems = items.some(item => item.products?.categories?.main_section_id === PRINTER_SECTION_ID);
 
+  // Check if user has existing direct sale orders today before 5PM for free delivery
+  const { data: todayDirectOrders } = useQuery({
+    queryKey: ['today-direct-orders', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const cutoff = new Date();
+      cutoff.setHours(17, 0, 0, 0);
+      const now = new Date();
+      if (now > cutoff) return []; // After 5PM, no free delivery
+      const { data } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('order_type', 'direct')
+        .neq('status', 'cancelled')
+        .gte('created_at', today.toISOString())
+        .lte('created_at', cutoff.toISOString())
+        .limit(1);
+      return data || [];
+    },
+    enabled: !!user?.id && isDirectSaleCart,
+  });
+
+  const hasExistingDirectOrderToday = (todayDirectOrders?.length || 0) > 0;
+
   const getDeliveryFee = (governorate: string | null) => {
+    // Free delivery for 2nd+ direct sale orders before 5PM
+    if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
     if (hasPrinterItems) return 12000;
     if (!governorate) return 6000;
     if (governorate.includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
@@ -551,9 +580,8 @@ const Cart = () => {
         }
         
         // Deduct stock for direct sale items
-        try {
-          await supabase.rpc('deduct_order_stock', { p_order_id: orderResult.id });
-        } catch (stockError) {
+        const { error: stockError } = await supabase.rpc('deduct_order_stock', { p_order_id: orderResult.id });
+        if (stockError) {
           console.error('Stock deduction error:', stockError);
         }
       }
