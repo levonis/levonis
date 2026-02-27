@@ -217,6 +217,20 @@ const ProductDetail = () => {
       if ((product as any).direct_sale_price) return Number((product as any).direct_sale_price);
       // Fall through to regular price logic
     }
+    if (activeSaleType === 'preorder') {
+      // Use sea_price or air_price based on shipping type
+      const shippingType = product.shipping_type;
+      if (shippingType === 'sea' && (product as any).sea_price) return Number((product as any).sea_price);
+      if (shippingType === 'air' && (product as any).air_price) return Number((product as any).air_price);
+      // For 'both', use the lower price as base (shipping options handle the adjustment)
+      if (shippingType === 'both') {
+        const seaP = (product as any).sea_price;
+        const airP = (product as any).air_price;
+        if (seaP && airP) return Math.min(Number(seaP), Number(airP));
+        if (seaP) return Number(seaP);
+        if (airP) return Number(airP);
+      }
+    }
     const base = selectedColorData?.price != null ? Number(selectedColorData.price) : Number(product.price);
     return base;
   };

@@ -1247,18 +1247,33 @@ const Admin = () => {
 
           if (shippingType === 'sea' || shippingType === 'both') {
             const seaCalc = calculateShippingCost('china', 'sea', dims, null, settings);
-            prices.push(priceIqd + seaCalc.shippingCost + commissionSeaIqdVal);
+            const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal;
+            prices.push(seaFinalPrice);
+            values.sea_price = seaFinalPrice;
             values.shipping_cost_iqd = seaCalc.shippingCost;
           }
           if (shippingType === 'air' || shippingType === 'both') {
             const airCalc = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings);
-            prices.push(priceIqd + airCalc.shippingCost + commissionAirIqdVal);
+            const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal;
+            prices.push(airFinalPrice);
+            values.air_price = airFinalPrice;
             if (!values.shipping_cost_iqd) values.shipping_cost_iqd = airCalc.shippingCost;
+          }
+
+          // Auto-populate pre_order_shipping_options when both sea & air exist
+          if (shippingType === 'both' && values.sea_price && values.air_price) {
+            const basePreOrderPrice = Math.min(values.sea_price, values.air_price);
+            values.pre_order_shipping_options = [
+              { name_ar: 'شحن بحري', price_adjustment: values.sea_price - basePreOrderPrice },
+              { name_ar: 'شحن جوي', price_adjustment: values.air_price - basePreOrderPrice },
+            ];
           }
         }
 
         if (hasInStock) {
-          prices.push(priceIqd + otherCostsIqdVal + commissionDirectIqdVal);
+          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal;
+          prices.push(directFinalPrice);
+          values.direct_sale_price = directFinalPrice;
         }
 
         // Use the lowest price as the main display price

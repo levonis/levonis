@@ -21,12 +21,15 @@ export interface CartItem {
     name_ar: string;
     price: number;
     direct_sale_price?: number | null;
+    sea_price?: number | null;
+    air_price?: number | null;
     original_price: number | null;
     image_url: string | null;
     images?: string[];
     slug: string;
     colors?: any[];
     pre_order_shipping_options?: any;
+    shipping_type?: string | null;
     category_id?: string | null;
     categories?: {
       id: string;
@@ -199,12 +202,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             name_ar,
             price,
             direct_sale_price,
+            sea_price,
+            air_price,
             original_price,
             image_url,
             images,
             slug,
             colors,
             pre_order_shipping_options,
+            shipping_type,
             category_id,
             categories (
               id,
@@ -469,6 +475,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // For direct sale, use direct_sale_price if available
       if (isDirect && item.products.direct_sale_price != null) {
         itemPrice = Number(item.products.direct_sale_price);
+      }
+
+      // For pre-order, use sea_price or air_price based on shipping option
+      if (!isDirect) {
+        const shippingType = (item.products as any).shipping_type;
+        const shippingIndex = (item as any).shipping_option_index;
+        const seaPrice = (item.products as any).sea_price;
+        const airPrice = (item.products as any).air_price;
+        
+        if (shippingType === 'sea' && seaPrice != null) {
+          itemPrice = Number(seaPrice);
+        } else if (shippingType === 'air' && airPrice != null) {
+          itemPrice = Number(airPrice);
+        } else if (shippingType === 'both' && seaPrice != null && airPrice != null) {
+          // Base price is the lower one; shipping adjustment adds the difference
+          itemPrice = Math.min(Number(seaPrice), Number(airPrice));
+        }
       }
 
       // Add color price if selected and different from base price

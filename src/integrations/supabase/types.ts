@@ -4917,6 +4917,7 @@ export type Database = {
       }
       products: {
         Row: {
+          air_price: number | null
           availability_type: string
           card_discounts: Json | null
           category_id: string | null
@@ -4957,6 +4958,7 @@ export type Database = {
           pre_order_shipping_options: Json | null
           price: number
           price_usd: number | null
+          sea_price: number | null
           shipping_cost_iqd: number | null
           shipping_type: string | null
           slug: string
@@ -4971,6 +4973,7 @@ export type Database = {
           width_cm: number | null
         }
         Insert: {
+          air_price?: number | null
           availability_type?: string
           card_discounts?: Json | null
           category_id?: string | null
@@ -5011,6 +5014,7 @@ export type Database = {
           pre_order_shipping_options?: Json | null
           price: number
           price_usd?: number | null
+          sea_price?: number | null
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
           slug: string
@@ -5025,6 +5029,7 @@ export type Database = {
           width_cm?: number | null
         }
         Update: {
+          air_price?: number | null
           availability_type?: string
           card_discounts?: Json | null
           category_id?: string | null
@@ -5065,6 +5070,7 @@ export type Database = {
           pre_order_shipping_options?: Json | null
           price?: number
           price_usd?: number | null
+          sea_price?: number | null
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
           slug?: string
