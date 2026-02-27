@@ -233,22 +233,64 @@ function MerchantsContent() {
     },
   });
 
+  // Update mutation - for updating badges/verification on already approved merchants
+  const updateMutation = useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      user_id: string;
+      admin_notes?: string | null;
+      is_verified?: boolean;
+      badge_tier?: string;
+      badge_override?: boolean;
+    }) => {
+      const { error: updateError } = await supabase
+        .from("merchant_applications")
+        .update({
+          admin_notes: payload.admin_notes ?? null,
+          is_verified: payload.is_verified ?? false,
+          badge_tier: payload.badge_tier ?? "none",
+          badge_override: payload.badge_override ?? false,
+        })
+        .eq("id", payload.id);
+
+      if (updateError) throw updateError;
+
+      const { error: profileError } = await supabase
+        .from("merchant_public_profiles")
+        .update({
+          is_verified: payload.is_verified ?? false,
+          badge_tier: payload.badge_tier ?? "none",
+        })
+        .eq("id", payload.user_id);
+
+      if (profileError) throw profileError;
+
+      return true;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
+      toast({ title: "تم تحديث التاجر", description: "تم حفظ التعديلات بنجاح" });
+      setOpen(false);
+      setActive(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "تعذر التحديث", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+    },
+  });
+
   // Delete mutation - full cleanup from all tables
   const deleteMutation = useMutation({
     mutationFn: async ({ appId, userId }: { appId: string; userId: string }) => {
-      // Delete from merchant_application_private
       await supabase
         .from("merchant_application_private")
         .delete()
         .eq("application_id", appId);
       
-      // Delete from merchant_public_profiles
       await supabase
         .from("merchant_public_profiles")
         .delete()
         .eq("id", userId);
       
-      // Delete merchant application
       const { error } = await supabase
         .from("merchant_applications")
         .delete()
@@ -707,20 +749,37 @@ function MerchantsContent() {
                   </>
                 )}
 
-                {/* Approved - delete with confirmation */}
+                {/* Approved - update + delete */}
                 {active.status === "approved" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setDeleteConfirmName("");
-                      setDeleteDialogOpen(true);
-                    }}
-                    disabled={deleteMutation.isPending}
-                    className="gap-2 text-destructive border-destructive/30"
-                  >
-                    <Ban className="h-4 w-4" />
-                    حذف التاجر من المجتمع
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setDeleteConfirmName("");
+                        setDeleteDialogOpen(true);
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="gap-2 text-destructive border-destructive/30"
+                    >
+                      <Ban className="h-4 w-4" />
+                      حذف التاجر من المجتمع
+                    </Button>
+                    <Button
+                      onClick={() => updateMutation.mutate({
+                        id: active.id,
+                        user_id: active.user_id,
+                        admin_notes: adminNotes,
+                        is_verified: isVerified,
+                        badge_tier: badgeTier,
+                        badge_override: badgeOverride
+                      })}
+                      disabled={updateMutation.isPending}
+                      className="gap-2 bg-primary"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {updateMutation.isPending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
+                    </Button>
+                  </>
                 )}
               </DialogFooter>
             </div>
