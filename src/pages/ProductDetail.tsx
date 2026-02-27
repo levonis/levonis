@@ -277,9 +277,16 @@ const ProductDetail = () => {
     // Block if options exist but still loading or none selected
     if (optionsLoading) { toast.error('جاري تحميل الخيارات...'); return; }
     if (productOptions && productOptions.length > 0 && !selectedOption) { toast.error(t('product_select_option')); return; }
+    // Block if colors exist but none selected
+    const availableColors = filteredColors.filter((c: any) => c.isAvailable);
+    if (availableColors.length > 0 && !selectedColor) { toast.error('يرجى اختيار اللون'); return; }
     const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
     const hasCustomShippingOptions = activeSaleType === 'preorder' && preOrderShippingOptions.length > 0;
     if (hasCustomShippingOptions && selectedShippingOption === null) { toast.error(t('product_choose_shipping')); return; }
+    // Block if direct sale shipping type requires selection
+    if (activeSaleType === 'direct' && product.shipping_type === 'both' && !selectedShippingOption && selectedShippingOption !== 0) {
+      // Only enforce if there are shipping options to pick from
+    }
     const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
       ? { index: selectedShippingOption, name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar }
       : undefined;
