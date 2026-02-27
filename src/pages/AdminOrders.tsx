@@ -132,7 +132,7 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(shipping_option_name_ar, custom_request_id)
+          order_items!order_items_order_id_fkey(id, product_name_ar, product_name, quantity, unit_price, total_price, selected_color, selected_option, color_image_url, option_image_url, shipping_option_name_ar, custom_request_id, sale_type)
         `)
         .order('created_at', { ascending: false });
 
@@ -1388,8 +1388,8 @@ const AdminOrders = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-muted-foreground">📍</span>
-                  <span className="flex-1 text-xs">{quickViewOrder.governorate} - {quickViewOrder.shipping_address}</span>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(`${quickViewOrder.governorate} - ${quickViewOrder.shipping_address}`); toast.success('تم نسخ العنوان'); }}>
+                  <span className="flex-1 text-xs">{quickViewOrder.shipping_address || quickViewOrder.governorate || '-'}</span>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(quickViewOrder.shipping_address || quickViewOrder.governorate || ''); toast.success('تم نسخ العنوان'); }}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
