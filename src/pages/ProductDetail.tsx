@@ -412,7 +412,7 @@ const ProductDetail = () => {
               )}
 
               {/* Price section */}
-              <div className="rounded-xl bg-primary/5 border border-primary/15 p-3">
+              <div className="rounded-xl bg-primary/8 border border-primary/20 p-3 backdrop-blur-sm shadow-[0_4px_16px_hsl(var(--primary)/0.1),inset_0_1px_0_hsl(var(--primary)/0.1)]">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-black text-primary">{formatPrice(finalPrice)}</span>
                   <span className="text-sm text-muted-foreground">{currency}</span>
@@ -431,11 +431,11 @@ const ProductDetail = () => {
               {/* Sale Type Tabs */}
               {hasBothTypes && (
                 <Tabs value={activeSaleType} onValueChange={handleSaleTypeChange}>
-                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-accent/80">
-                    <TabsTrigger value="direct" className="rounded-lg gap-1.5 text-xs font-black data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-card/40 backdrop-blur-sm border border-border/30 shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                    <TabsTrigger value="direct" className="rounded-lg gap-1.5 text-xs font-black transition-all data-[state=active]:bg-primary/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_12px_hsl(var(--primary)/0.25),inset_0_1px_0_hsl(var(--primary-glow)/0.3)]">
                       <Package className="h-3.5 w-3.5" />{t('product_direct_sale')}
                     </TabsTrigger>
-                    <TabsTrigger value="preorder" className="rounded-lg gap-1.5 text-xs font-black data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <TabsTrigger value="preorder" className="rounded-lg gap-1.5 text-xs font-black transition-all data-[state=active]:bg-primary/90 data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_4px_12px_hsl(var(--primary)/0.25),inset_0_1px_0_hsl(var(--primary-glow)/0.3)]">
                       <Clock className="h-3.5 w-3.5" />{t('product_pre_order')}
                     </TabsTrigger>
                   </TabsList>
@@ -446,7 +446,7 @@ const ProductDetail = () => {
               <Accordion type="multiple" defaultValue={['shipping', 'options', 'colors']} className="space-y-2">
                 {/* Shipping Options */}
                 {activeSaleType === 'preorder' && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
-                  <AccordionItem value="shipping" className="border border-border/30 rounded-xl overflow-hidden">
+                  <AccordionItem value="shipping" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" />{t('product_shipping_type')}</span>
                     </AccordionTrigger>
@@ -454,8 +454,10 @@ const ProductDetail = () => {
                       <div className="space-y-1.5">
                         {product.pre_order_shipping_options.map((option: any, index: number) => (
                           <button key={index} onClick={() => setSelectedShippingOption(index)}
-                            className={cn("w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all text-right",
-                              selectedShippingOption === index ? 'border-primary bg-primary/10' : 'border-border/40 hover:border-primary/40')}>
+                            className={cn("w-full flex items-center gap-2 p-2.5 rounded-xl border transition-all text-right backdrop-blur-sm active:scale-[0.98]",
+                              selectedShippingOption === index
+                                ? 'border-primary/40 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
+                                : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]')}>
                             <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
                               selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30')}>
                               {selectedShippingOption === index && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
@@ -480,7 +482,7 @@ const ProductDetail = () => {
 
                 {/* Product Options */}
                 {filteredOptions.length > 0 && (
-                  <AccordionItem value="options" className="border border-border/30 rounded-xl overflow-hidden">
+                  <AccordionItem value="options" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" />{t('product_options_available')}</span>
                     </AccordionTrigger>
@@ -496,8 +498,10 @@ const ProductDetail = () => {
                               else setOptionImageUrl(null);
                             }}
                             disabled={!option.isAvailable}
-                            className={cn("w-full flex items-center gap-2 p-2.5 rounded-lg border transition-all text-right",
-                              selectedOption === option.id ? 'border-primary bg-primary/10' : 'border-border/40 hover:border-primary/40',
+                            className={cn("w-full flex items-center gap-2 p-2.5 rounded-xl border transition-all text-right backdrop-blur-sm active:scale-[0.98]",
+                              selectedOption === option.id
+                                ? 'border-primary/40 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
+                                : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
                               !option.isAvailable && 'opacity-40 cursor-not-allowed')}>
                             <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
                               selectedOption === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/30')}>
@@ -533,7 +537,7 @@ const ProductDetail = () => {
 
                 {/* Colors */}
                 {filteredColors.length > 0 && (
-                  <AccordionItem value="colors" className="border border-border/30 rounded-xl overflow-hidden">
+                  <AccordionItem value="colors" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
@@ -552,8 +556,10 @@ const ProductDetail = () => {
                               else setColorImageUrl(null);
                             }}
                             disabled={!color.isAvailable}
-                            className={cn("group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all min-w-[65px]",
-                              selectedColor === color.name_ar ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30',
+                            className={cn("group relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all min-w-[65px] backdrop-blur-sm active:scale-[0.95]",
+                              selectedColor === color.name_ar
+                                ? 'border-primary/50 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.15)]'
+                                : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
                               !color.isAvailable && 'opacity-30 cursor-not-allowed')}>
                             <div className="relative">
                               <div className={cn("w-7 h-7 rounded-full border-2 transition-transform group-hover:scale-110",
