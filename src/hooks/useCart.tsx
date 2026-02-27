@@ -34,6 +34,7 @@ export interface CartItem {
     categories?: {
       id: string;
       tax_rate: number | null;
+      main_section_id: string | null;
     } | null;
   };
   product_options?: {
@@ -214,7 +215,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             category_id,
             categories (
               id,
-              tax_rate
+              tax_rate,
+              main_section_id
             )
           ),
           product_options (
