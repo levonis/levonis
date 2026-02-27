@@ -1,63 +1,23 @@
-import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, CreditCard, Loader2, Clock, ShoppingCart, Sparkles, Wallet, Coins } from "lucide-react";
-import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { Coins, Star, CheckCircle2, Lock, Zap } from "lucide-react";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export default function LoyaltyLevelsPanel() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
-  const [selectedLevel, setSelectedLevel] = useState<any>(null);
 
-  // Fetch user points balance
   const { data: userPointsData } = useQuery({
     queryKey: ['user-points-loyalty', user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_points')
-        .select('total_points, available_points')
+        .select('total_points, available_points, total_xp')
         .eq('user_id', user.id)
-        .maybeSingle();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!user,
-    staleTime: 2 * 60 * 1000,
-  });
-
-  const availablePoints = userPointsData?.available_points || 0;
-
-  const { data: userCard } = useQuery({
-    queryKey: ['user-active-card', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data, error } = await supabase
-        .from('user_cards')
-        .select(`
-          *,
-          loyalty_levels:level_id(*)
-        `)
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .gt('expires_at', new Date().toISOString())
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       return data;
@@ -88,243 +48,199 @@ export default function LoyaltyLevelsPanel() {
       const { data, error } = await supabase
         .from('loyalty_levels')
         .select('*')
-        .order('display_order', { ascending: true });
+        .order('xp_required', { ascending: true });
       if (error) throw error;
       return data;
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  const purchaseCardMutation = useMutation({
-    mutationFn: async (level: any) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
-      
-      const pointsCost = level.purchase_price_points || 0;
-      
-      if (pointsCost <= 0) {
-        throw new Error('سعر البطاقة غير محدد');
-      }
-      
-      if (availablePoints < pointsCost) {
-        throw new Error('رصيد النقاط غير كافٍ لشراء هذه البطاقة');
-      }
-
-      // Deduct points using secure RPC
-      const { error: pointsError } = await supabase.rpc('deduct_user_points', {
-        p_user_id: user.id,
-        p_amount: pointsCost,
-      });
-      if (pointsError) throw pointsError;
-
-      // Record points transaction
-      const { error: transError } = await supabase
-        .from('points_transactions')
-        .insert({
-          user_id: user.id,
-          points: pointsCost,
-          type: 'spent',
-          source: 'card_purchase',
-          description: `شراء بطاقة ${level.name_ar}`,
-          related_id: level.id,
-        });
-      if (transError) throw transError;
-
-      // Calculate expiration date
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + (level.duration_days || 30));
-
-      // Deactivate any existing active cards first
-      await supabase
-        .from('user_cards')
-        .update({ is_active: false })
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      // Create user card
-      const { error: cardError } = await supabase
-        .from('user_cards')
-        .insert({
-          user_id: user.id,
-          level_id: level.id,
-          expires_at: expiresAt.toISOString(),
-          points_spent: pointsCost,
-          is_active: true,
-        });
-      if (cardError) throw cardError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-points'] });
-      queryClient.invalidateQueries({ queryKey: ['user-points-loyalty'] });
-      queryClient.invalidateQueries({ queryKey: ['user-active-card'] });
-      toast.success('تم شراء البطاقة بنجاح! 🎉');
-      setPurchaseDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
-    },
-  });
-
-  const handlePurchaseClick = (level: any) => {
-    setSelectedLevel(level);
-    setPurchaseDialogOpen(true);
-  };
-
-  const getCardPrice = (level: any) => {
-    if (!level) return 0;
-    return level.purchase_price_points || 0;
-  };
-
   if (isLoading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map(i => (
-          <Skeleton key={i} className="h-28 w-full" />
-        ))}
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-full" />)}
       </div>
     );
   }
 
-  const currentCardLevel = userCard?.loyalty_levels;
+  const totalXp = (userPointsData as any)?.total_xp || 0;
   const userName = userProfile?.full_name || userProfile?.username || '';
+
+  // Find current level and next level
+  const sortedLevels = levels?.slice().sort((a, b) => ((a as any).xp_required || 0) - ((b as any).xp_required || 0)) || [];
+  const currentLevelIndex = sortedLevels.reduce((acc, level, i) => {
+    return ((level as any).xp_required || 0) <= totalXp ? i : acc;
+  }, 0);
+  const currentLevel = sortedLevels[currentLevelIndex];
+  const nextLevel = sortedLevels[currentLevelIndex + 1];
+
+  const currentXpRequired = (currentLevel as any)?.xp_required || 0;
+  const nextXpRequired = nextLevel ? (nextLevel as any).xp_required : currentXpRequired;
+  const xpInLevel = totalXp - currentXpRequired;
+  const xpNeeded = nextLevel ? nextXpRequired - currentXpRequired : 1;
+  const progressPercent = nextLevel ? Math.min((xpInLevel / xpNeeded) * 100, 100) : 100;
 
   return (
     <div className="space-y-4">
-      {/* Wallet Balance Display */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <Coins className="h-5 w-5 text-primary" />
+      {/* XP Overview Card */}
+      <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20 overflow-hidden relative">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+              <Zap className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">نقاط الخبرة (XP)</p>
+              <p className="text-2xl font-bold">{totalXp.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">رصيد النقاط المتاح</p>
-            <p className="text-xl font-bold">{availablePoints.toLocaleString()} نقطة</p>
+          <div className="text-[10px] text-muted-foreground mb-1">
+            كل نقطة تكسبها = 2 XP • استخدام النقاط لا يؤثر على XP
           </div>
         </CardContent>
       </Card>
 
-      {/* Current Card Status */}
-      {userCard && currentCardLevel && (
+      {/* Current Level Card */}
+      {currentLevel && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">بطاقتك الحالية</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-muted-foreground">مستواك الحالي</h3>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              المستوى {currentLevelIndex + 1}
+            </span>
+          </div>
           <UserLoyaltyCard
             level={{
-              id: currentCardLevel.id,
-              name_ar: currentCardLevel.name_ar,
-              name_en: currentCardLevel.name_en,
-              color: currentCardLevel.color,
-              discount_percentage: currentCardLevel.discount_percentage,
-              bonus_points_percentage: currentCardLevel.bonus_points_percentage,
-              free_shipping: currentCardLevel.free_shipping,
-              free_shipping_min_order: currentCardLevel.free_shipping_min_order,
-              duration_days: currentCardLevel.duration_days,
-              vip_support: currentCardLevel.vip_support,
-              priority_shipping: currentCardLevel.priority_shipping,
-              early_access: currentCardLevel.early_access,
-              exclusive_products: currentCardLevel.exclusive_products,
-              special_name_style: currentCardLevel.special_name_style as any,
-              profile_effects: currentCardLevel.profile_effects as any,
-              benefits: currentCardLevel.benefits as any,
+              id: currentLevel.id,
+              name_ar: currentLevel.name_ar,
+              name_en: currentLevel.name_en,
+              color: currentLevel.color,
+              discount_percentage: currentLevel.discount_percentage,
+              bonus_points_percentage: currentLevel.bonus_points_percentage,
+              free_shipping: currentLevel.free_shipping,
+              free_shipping_min_order: currentLevel.free_shipping_min_order,
+              duration_days: currentLevel.duration_days,
+              vip_support: currentLevel.vip_support,
+              priority_shipping: currentLevel.priority_shipping,
+              early_access: currentLevel.early_access,
+              exclusive_products: currentLevel.exclusive_products,
+              special_name_style: currentLevel.special_name_style as any,
+              profile_effects: currentLevel.profile_effects as any,
+              benefits: currentLevel.benefits as any,
             }}
             userName={userName}
-            expiresAt={userCard.expires_at}
             isActive={true}
             showDetails={false}
           />
+
+          {/* Progress to next level */}
+          {nextLevel && (
+            <Card className="border-border/50">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">التقدم نحو {nextLevel.name_ar}</span>
+                  <span className="font-bold text-primary">{Math.round(progressPercent)}%</span>
+                </div>
+                <Progress value={progressPercent} className="h-2" />
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>{totalXp.toLocaleString()} XP</span>
+                  <span>{((nextLevel as any).xp_required || 0).toLocaleString()} XP</span>
+                </div>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  تحتاج <strong className="text-foreground">{(nextXpRequired - totalXp).toLocaleString()}</strong> XP إضافية للترقية
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
-      {/* Available Cards */}
+      {/* All Levels */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة للشراء</h3>
-        <div className="grid gap-6">
-          {levels?.filter(level => level.is_purchasable).map((level) => {
-            const isCurrentCard = currentCardLevel?.id === level.id;
-            const cardPrice = getCardPrice(level);
-            const canPurchase = availablePoints >= cardPrice;
-            
-            if (isCurrentCard) return null;
-            
+        <h3 className="text-sm font-semibold text-muted-foreground">جميع المستويات</h3>
+        <div className="grid gap-4">
+          {sortedLevels.map((level, index) => {
+            const xpReq = (level as any).xp_required || 0;
+            const isUnlocked = totalXp >= xpReq;
+            const isCurrent = index === currentLevelIndex;
+
             return (
-              <div 
-                key={level.id} 
-                className="p-4 rounded-xl bg-card border border-border/50 shadow-sm space-y-4"
+              <div
+                key={level.id}
+                className={`p-4 rounded-xl border shadow-sm space-y-3 transition-all ${
+                  isCurrent 
+                    ? 'bg-primary/5 border-primary/30 ring-1 ring-primary/20' 
+                    : isUnlocked 
+                      ? 'bg-card border-border/50 opacity-80' 
+                      : 'bg-muted/30 border-border/30'
+                }`}
               >
-                <UserLoyaltyCard
-                  level={{
-                    id: level.id,
-                    name_ar: level.name_ar,
-                    name_en: level.name_en,
-                    color: level.color,
-                    discount_percentage: level.discount_percentage,
-                    bonus_points_percentage: level.bonus_points_percentage,
-                    free_shipping: level.free_shipping,
-                    free_shipping_min_order: level.free_shipping_min_order,
-                    duration_days: level.duration_days,
-                    vip_support: level.vip_support,
-                    priority_shipping: level.priority_shipping,
-                    early_access: level.early_access,
-                    exclusive_products: level.exclusive_products,
-                    special_name_style: level.special_name_style as any,
-                    profile_effects: level.profile_effects as any,
-                    benefits: level.benefits as any,
-                    purchase_price_points: level.purchase_price_points,
-                  }}
-                  isActive={false}
-                  showDetails={true}
-                  showPurchaseInfo={true}
-                />
-                <Button
-                  className="w-full"
-                  variant={canPurchase ? 'default' : 'outline'}
-                  disabled={!canPurchase || !user}
-                  onClick={() => handlePurchaseClick(level)}
-                >
-                  {canPurchase ? (
-                    <>
-                      <Coins className="h-4 w-4 ml-2" />
-                      شراء بـ {cardPrice.toLocaleString()} نقطة
-                    </>
-                  ) : (
-                    `تحتاج ${(cardPrice - availablePoints).toLocaleString()} نقطة إضافية`
-                  )}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+                    style={{ backgroundColor: level.color + '20', color: level.color }}
+                  >
+                    {isUnlocked ? (
+                      <CheckCircle2 className="h-5 w-5" />
+                    ) : (
+                      <Lock className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm" style={{ color: level.color }}>
+                        {level.name_ar}
+                      </p>
+                      {isCurrent && (
+                        <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                          الحالي
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {xpReq > 0 ? `${xpReq.toLocaleString()} XP مطلوب` : 'المستوى الأساسي'}
+                    </p>
+                  </div>
+                  <div className="text-left text-xs">
+                    {level.bonus_points_percentage > 0 && (
+                      <span className="flex items-center gap-1 text-amber-600">
+                        <Star className="h-3 w-3" />+{level.bonus_points_percentage}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Benefits */}
+                {(level.benefits as any)?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(level.benefits as any).map((b: any, i: number) => (
+                      <span
+                        key={i}
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                      >
+                        {b.text_ar}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Progress for locked levels */}
+                {!isUnlocked && (
+                  <div className="space-y-1">
+                    <Progress
+                      value={Math.min((totalXp / xpReq) * 100, 100)}
+                      className="h-1.5"
+                    />
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      {totalXp.toLocaleString()} / {xpReq.toLocaleString()} XP
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* Purchase Confirmation Dialog */}
-      <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد شراء البطاقة</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                هل تريد شراء بطاقة <strong style={{ color: selectedLevel?.color }}>{selectedLevel?.name_ar}</strong>؟
-              </p>
-              <p className="text-sm">
-                سيتم خصم <strong>{getCardPrice(selectedLevel).toLocaleString()}</strong> نقطة من رصيدك.
-              </p>
-              <p className="text-sm">
-                البطاقة صالحة لمدة <strong>{selectedLevel?.duration_days || 30}</strong> يوم.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => selectedLevel && purchaseCardMutation.mutate(selectedLevel)}
-              disabled={purchaseCardMutation.isPending}
-            >
-              {purchaseCardMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin ml-2" />
-              ) : null}
-              تأكيد الشراء
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
