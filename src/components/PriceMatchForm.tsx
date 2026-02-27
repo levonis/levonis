@@ -108,12 +108,12 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
         className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 transition-all text-amber-600 dark:text-amber-400 text-sm font-black active:scale-[0.97]"
       >
         <BadgeDollarSign className="h-5 w-5" />
-        <span>لكيتها بمكان ارخص؟ دلينا! 👀</span>
+        <span>لكيتها بمكان ارخص؟ دلّنا! 👀</span>
       </button>
 
       {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl p-0 overflow-hidden" dir="rtl">
+        <DialogContent className="max-w-sm mx-auto rounded-2xl p-0 overflow-hidden z-[100]" dir="rtl">
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-3">
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -138,14 +138,14 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
                   دلنا على السعر الأرخص!
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  ساعدنا نوفر أفضل سعر لـ <span className="font-bold text-foreground">{productName}</span>
+                  ساعدنا نكون الأنسب لـ <span className="font-bold text-foreground">{productName}</span>
                 </p>
               </DialogHeader>
 
               <div className="px-5 pb-5 pt-3 space-y-4">
                 {/* Chat-like message bubble for context */}
                 <div className="bg-muted/50 rounded-2xl rounded-tr-sm p-3 text-xs text-muted-foreground leading-relaxed">
-                  💬 شاركنا السعر اللي لكيته ووين، وإذا عندك صورة إثبات ارفقها. نحن نحب نكون الأرخص دائماً!
+                  💬 شاركنا السعر اللي لكيته ووين، وإذا عندك صورة إثبات ارفقها. نحن نحب نكون الأنسب دائماً!
                 </div>
 
                 {/* Price Input */}
