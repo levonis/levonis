@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
+import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,7 +23,7 @@ import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 
 const Cart = () => {
-  const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart } = useCart();
+  const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -41,14 +42,18 @@ const Cart = () => {
   const [showTermsSheet, setShowTermsSheet] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
-
+  const [showDirectSaleDialog, setShowDirectSaleDialog] = useState(false);
+  const [isDirectSaleProcessing, setIsDirectSaleProcessing] = useState(false);
   // Refresh cart data on mount to get latest pendingCartRequest
   useEffect(() => {
     refreshCart();
   }, []);
 
+  // Check cart sale type
+  const isDirectSaleCart = cartSaleType === 'direct';
+
   // التحقق من وجود منتجات طلب مسبق
-  const hasPreOrderItems = items.some((item: any) => 
+  const hasPreOrderItems = !isDirectSaleCart && items.some((item: any) => 
     item.shipping_option_name_ar || 
     (item as any).shipping_option_index !== null
   );
@@ -84,6 +89,28 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
+  // Fetch default address for direct sale dialog
+  const { data: defaultUserAddress } = useQuery({
+    queryKey: ['default-address', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data: defAddr } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .maybeSingle();
+      if (defAddr) return defAddr;
+      const { data: firstAddr } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      return firstAddr;
+    },
+    enabled: !!user?.id,
+  });
 
   // جلب إعدادات الدفع الجزئي
   interface FeeTier {
@@ -327,19 +354,25 @@ const Cart = () => {
       return;
     }
 
-    if (!hasEnoughBalance) {
+    if (!termsAccepted) {
       toast({
-        title: "رصيد المحفظة غير كافٍ",
-        description: `رصيدك الحالي: ${formatPrice(walletBalance)} د.ع - المطلوب: ${formatPrice(requiredPaymentNow)} د.ع`,
+        title: "الشروط والأحكام",
+        description: "يجب الموافقة على الشروط والأحكام لإتمام الطلب",
         variant: "destructive",
       });
       return;
     }
 
-    if (!termsAccepted) {
+    if (isDirectSaleCart) {
+      // Direct sale: show direct sale checkout dialog
+      setShowDirectSaleDialog(true);
+      return;
+    }
+
+    if (!hasEnoughBalance) {
       toast({
-        title: "الشروط والأحكام",
-        description: "يجب الموافقة على الشروط والأحكام لإتمام الطلب",
+        title: "رصيد المحفظة غير كافٍ",
+        description: `رصيدك الحالي: ${formatPrice(walletBalance)} د.ع - المطلوب: ${formatPrice(requiredPaymentNow)} د.ع`,
         variant: "destructive",
       });
       return;
@@ -352,6 +385,150 @@ const Cart = () => {
   const handleTermsAccepted = () => {
     setTermsAccepted(true);
     setShowTermsSheet(false);
+  };
+
+  // Direct sale checkout handler (no wallet payment)
+  const handleDirectSaleCheckout = async (data: { notes: string }) => {
+    if (!user || isDirectSaleProcessing) return;
+    setIsDirectSaleProcessing(true);
+
+    try {
+      // Check address
+      const { data: addresses, error: addressError } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (addressError || !addresses || addresses.length === 0) {
+        toast({ title: "يجب إضافة عنوان", description: "الرجاء إضافة عنوان توصيل أولاً", variant: "destructive" });
+        navigate('/addresses');
+        return;
+      }
+
+      const { data: defaultAddress } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      const selectedAddress = defaultAddress || addresses[0];
+      const deliveryFeeCalc = getDeliveryFee(selectedAddress.governorate);
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, phone_number, governorate, username')
+        .eq('id', user.id)
+        .single();
+
+      const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
+
+      const orderSubtotal = total - (appliedCoupon ? calculateDiscount() : 0);
+
+      // Create order directly (no wallet payment)
+      const orderInsertData = {
+        user_id: user.id,
+        total_amount: orderSubtotal + deliveryFeeCalc,
+        subtotal: orderSubtotal,
+        paid_amount: 0,
+        remaining_amount: orderSubtotal + deliveryFeeCalc,
+        shipping_address: shippingAddressText,
+        phone_number: selectedAddress.phone_number,
+        governorate: selectedAddress.governorate,
+        status: 'confirmed',
+        payment_status: 'cod',
+        order_type: 'direct',
+      } as any;
+
+      const { data: orderResult, error: orderError } = await supabase
+        .from('orders')
+        .insert([orderInsertData])
+        .select('*')
+        .single();
+
+      if (orderError || !orderResult) {
+        toast({ title: "خطأ", description: orderError?.message || "حدث خطأ أثناء إنشاء الطلب", variant: "destructive" });
+        return;
+      }
+
+      // Create order items
+      const orderItems = items
+        .filter(item => item.product_id || item.custom_request_id)
+        .map(item => {
+          const isCustomRequest = !!item.custom_request_id;
+          const itemOption = (item as any).product_options;
+          const itemColor = (item as any).selected_color;
+          const colorData = itemColor && item.products?.colors
+            ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
+            : null;
+
+          let itemPrice = isCustomRequest
+            ? Number(item.custom_product_requests?.suggested_price || 0)
+            : Number(item.products?.price || 0);
+
+          // Use direct sale price
+          if (!isCustomRequest && item.products?.direct_sale_price != null) {
+            itemPrice = Number(item.products.direct_sale_price);
+          }
+          if (colorData?.direct_sale_price != null) {
+            itemPrice = Number(colorData.direct_sale_price);
+          } else if (colorData?.price != null) {
+            itemPrice = Number(colorData.price);
+          }
+          if (itemOption?.price_adjustment) {
+            itemPrice += Number(itemOption.price_adjustment);
+          }
+
+          return {
+            order_id: orderResult.id,
+            product_id: isCustomRequest ? null : item.product_id,
+            custom_request_id: isCustomRequest ? item.custom_request_id : null,
+            product_option_id: (item as any).product_option_id || null,
+            quantity: item.quantity,
+            unit_price: itemPrice,
+            total_price: itemPrice * item.quantity,
+            selected_color: itemColor || null,
+            color_image_url: (item as any).color_image_url || null,
+            selected_option: itemOption?.name_ar || null,
+            product_name: isCustomRequest ? (item.custom_product_requests?.product_name || 'طلب مخصص') : (item.products?.name || 'منتج'),
+            product_name_ar: isCustomRequest ? (item.custom_product_requests?.product_name || 'طلب مخصص') : (item.products?.name_ar || 'منتج'),
+          };
+        });
+
+      if (orderItems.length > 0) {
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+        if (itemsError) {
+          console.error('Order items insert error:', itemsError);
+        }
+      }
+
+      // Send telegram notification
+      try {
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `🛒 <b>طلب جديد - بيع مباشر (دفع عند الاستلام)</b>\n\n` +
+              `👤 العميل: ${profileData?.full_name || 'غير محدد'}\n` +
+              `📱 اليوزر: @${profileData?.username || 'غير محدد'}\n` +
+              `📞 الهاتف: ${selectedAddress.phone_number}\n\n` +
+              `📋 رقم الطلب: ${orderResult.order_number}\n` +
+              `📦 عدد المنتجات: ${items.length}\n` +
+              `📍 المحافظة: ${selectedAddress.governorate}\n\n` +
+              `💰 الإجمالي: ${(orderSubtotal + deliveryFeeCalc).toLocaleString()} د.ع\n` +
+              `💳 الدفع: عند الاستلام`,
+          },
+        });
+      } catch (e) { console.error('Telegram error:', e); }
+
+      await clearCart();
+      setShowDirectSaleDialog(false);
+      toast({ title: "تم إنشاء الطلب بنجاح", description: `رقم الطلب: ${orderResult.order_number} - الدفع عند الاستلام` });
+    } catch (error) {
+      console.error('Direct sale checkout error:', error);
+      toast({ title: "خطأ", description: "حدث خطأ أثناء إتمام الطلب", variant: "destructive" });
+    } finally {
+      setIsDirectSaleProcessing(false);
+    }
   };
 
   const handleCheckout = async () => {
@@ -1155,32 +1332,42 @@ const Cart = () => {
                     </div>
                   )}
                   
-                  {/* رصيد المحفظة المطلوب */}
-                  <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-card border-primary/30' : 'bg-card border-destructive/30'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`} />
-                      <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
-                        {t('cart_wallet_payment')}
-                      </span>
+                  {/* Payment section - different for direct sale vs preorder */}
+                  {isDirectSaleCart ? (
+                    <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="h-5 w-5 text-primary" />
+                        <span className="font-bold text-primary">الدفع عند الاستلام</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب</p>
                     </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('cart_wallet_balance')}:</span>
+                  ) : (
+                    <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-card border-primary/30' : 'bg-card border-destructive/30'}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`} />
                         <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
-                          {formatPrice(walletBalance)} {t('common_iqd')}
+                          {t('cart_wallet_payment')}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('cart_wallet_required')}:</span>
-                        <span className="font-bold text-foreground">{formatPrice(requiredPaymentNow)} {t('common_iqd')}</span>
-                      </div>
-                      {!hasEnoughBalance && (
-                        <div className="mt-2 text-xs text-destructive">
-                          {t('cart_wallet_charge_extra', { amount: formatPrice(requiredPaymentNow - walletBalance) })}
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('cart_wallet_balance')}:</span>
+                          <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
+                            {formatPrice(walletBalance)} {t('common_iqd')}
+                          </span>
                         </div>
-                      )}
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{t('cart_wallet_required')}:</span>
+                          <span className="font-bold text-foreground">{formatPrice(requiredPaymentNow)} {t('common_iqd')}</span>
+                        </div>
+                        {!hasEnoughBalance && (
+                          <div className="mt-2 text-xs text-destructive">
+                            {t('cart_wallet_charge_extra', { amount: formatPrice(requiredPaymentNow - walletBalance) })}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   <div className="border-t border-border/40 pt-3 mt-3">
                     {hasPreOrderItems && preOrderPaymentOption === 'quarter' && (
@@ -1244,22 +1431,27 @@ const Cart = () => {
                   className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
                   size="lg"
                   onClick={handleCheckoutClick}
-                  disabled={isCheckingOut || !hasEnoughBalance || !termsAccepted}
+                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted}
                 >
-                  {isCheckingOut ? (
+                  {isCheckingOut || isDirectSaleProcessing ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       {t('cart_processing')}
-                    </>
-                  ) : !hasEnoughBalance ? (
-                    <>
-                      <Wallet className="ml-2 h-4 w-4" />
-                      {t('cart_wallet_insufficient')}
                     </>
                   ) : !termsAccepted ? (
                     <>
                       <FileText className="ml-2 h-4 w-4" />
                       {t('cart_terms_accept_first')}
+                    </>
+                  ) : isDirectSaleCart ? (
+                    <>
+                      <Truck className="ml-2 h-4 w-4" />
+                      إتمام الطلب - الدفع عند الاستلام
+                    </>
+                  ) : !hasEnoughBalance ? (
+                    <>
+                      <Wallet className="ml-2 h-4 w-4" />
+                      {t('cart_wallet_insufficient')}
                     </>
                   ) : (
                     t('cart_confirm_order')
@@ -1380,6 +1572,18 @@ const Cart = () => {
         onOpenChange={setShowTermsSheet}
         onAccept={handleTermsAccepted}
         isLoading={isCheckingOut}
+      />
+
+      {/* Direct Sale Checkout Dialog */}
+      <DirectSaleCheckoutDialog
+        open={showDirectSaleDialog}
+        onOpenChange={setShowDirectSaleDialog}
+        onConfirm={handleDirectSaleCheckout}
+        address={defaultUserAddress}
+        totalAmount={total}
+        deliveryFee={deliveryFee}
+        itemCount={itemCount}
+        isProcessing={isDirectSaleProcessing}
       />
     </div>
   );

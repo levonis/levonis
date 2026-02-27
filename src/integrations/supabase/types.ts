@@ -306,6 +306,7 @@ export type Database = {
           product_id: string | null
           product_option_id: string | null
           quantity: number
+          sale_type: string | null
           selected_color: string | null
           shipping_option_index: number | null
           shipping_option_name_ar: string | null
@@ -321,6 +322,7 @@ export type Database = {
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
+          sale_type?: string | null
           selected_color?: string | null
           shipping_option_index?: number | null
           shipping_option_name_ar?: string | null
@@ -336,6 +338,7 @@ export type Database = {
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
+          sale_type?: string | null
           selected_color?: string | null
           shipping_option_index?: number | null
           shipping_option_name_ar?: string | null
@@ -3855,6 +3858,7 @@ export type Database = {
           internal_notes: string | null
           on_the_way_at: string | null
           order_number: string
+          order_type: string | null
           package_dimensions: string | null
           paid_amount: number | null
           payment_method: string | null
@@ -3908,6 +3912,7 @@ export type Database = {
           internal_notes?: string | null
           on_the_way_at?: string | null
           order_number: string
+          order_type?: string | null
           package_dimensions?: string | null
           paid_amount?: number | null
           payment_method?: string | null
@@ -3961,6 +3966,7 @@ export type Database = {
           internal_notes?: string | null
           on_the_way_at?: string | null
           order_number?: string
+          order_type?: string | null
           package_dimensions?: string | null
           paid_amount?: number | null
           payment_method?: string | null
@@ -4926,6 +4932,7 @@ export type Database = {
           description_ar: string | null
           description_en: string | null
           description_ku: string | null
+          direct_sale_price: number | null
           featured: boolean | null
           features: Json | null
           has_in_stock: boolean | null
@@ -4979,6 +4986,7 @@ export type Database = {
           description_ar?: string | null
           description_en?: string | null
           description_ku?: string | null
+          direct_sale_price?: number | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -5032,6 +5040,7 @@ export type Database = {
           description_ar?: string | null
           description_en?: string | null
           description_ku?: string | null
+          direct_sale_price?: number | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
