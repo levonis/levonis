@@ -151,10 +151,17 @@ const Cart = () => {
 
   // الضريبة مدمجة مع سعر المنتج - لا تُعرض بشكل منفصل
 
+  const PRINTER_SECTION_ID = '0a7d1d66-1ddb-4398-8e4a-c6ca8deac5b6';
+  const hasPrinterItems = items.some(item => item.products?.categories?.main_section_id === PRINTER_SECTION_ID);
+
   const getDeliveryFee = (governorate: string | null) => {
+    if (hasPrinterItems) return 12000;
     if (!governorate) return 6000;
-    if (governorate.toLowerCase().includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
+    if (governorate.includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
       return 5000;
+    }
+    if (governorate.includes('بابل')) {
+      return 4000;
     }
     return 6000;
   };
