@@ -204,9 +204,19 @@ export default function AdminPendingOrdersSheet() {
                         ))}
 
                         {/* Address & Phone */}
-                        <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground space-y-0.5">
-                          <p>📍 {order.governorate} - {order.shipping_address}</p>
-                          <p>📞 {order.phone_number}</p>
+                        <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground space-y-1">
+                          <div className="flex items-center gap-1">
+                            <span className="flex-1 truncate">📍 {order.governorate} - {order.shipping_address}</span>
+                            <Button size="icon" variant="ghost" className="h-5 w-5 shrink-0" onClick={() => { navigator.clipboard.writeText(`${order.governorate} - ${order.shipping_address}`); toast({ title: 'تم نسخ العنوان' }); }}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="flex-1">📞 {order.phone_number}</span>
+                            <Button size="icon" variant="ghost" className="h-5 w-5 shrink-0" onClick={() => { navigator.clipboard.writeText(order.phone_number || ''); toast({ title: 'تم نسخ الرقم' }); }}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Copy button */}
