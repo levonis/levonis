@@ -866,12 +866,13 @@ const ProductDetail = () => {
               variant="outline"
               className="h-9 w-9 rounded-xl shrink-0"
               onClick={async () => {
-                const url = `${window.location.origin}/product/${slug}`;
+                const ogUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/product-og?slug=${slug}`;
+                const directUrl = `${window.location.origin}/product/${slug}`;
                 try {
                   if (navigator.share) {
-                    await navigator.share({ title: product.name_ar, url });
+                    await navigator.share({ title: product.name_ar, url: ogUrl });
                   } else {
-                    await navigator.clipboard.writeText(url);
+                    await navigator.clipboard.writeText(directUrl);
                     toast.success('تم نسخ الرابط');
                   }
                 } catch {}
