@@ -182,8 +182,9 @@ const ProductDetail = () => {
   useEffect(() => {
     if (!productOptions || productOptions.length === 0 || selectedOption) return;
     const firstAvailable = productOptions.find((opt: any) => {
-      const isAvailable = activeSaleType === 'direct' ? (opt.available_for_direct_sale ?? true) : (opt.available_for_pre_order ?? false);
-      return isAvailable && opt.in_stock;
+      const isAvailable = activeSaleType === 'direct' ? (opt.available_for_direct_sale ?? true) : (opt.available_for_pre_order ?? true);
+      const passesStockCheck = activeSaleType === 'preorder' ? true : !!opt.in_stock;
+      return isAvailable && passesStockCheck;
     });
     if (firstAvailable) {
       setSelectedOption(firstAvailable.id);
@@ -367,11 +368,13 @@ const ProductDetail = () => {
   const getFilteredOptions = () => {
     if (!productOptions) return [];
     return productOptions.map((option: any) => {
-      const isAvailable = activeSaleType === 'direct' ? (option.available_for_direct_sale ?? true) : (option.available_for_pre_order ?? false);
-      return { ...option, isAvailable: isAvailable && option.in_stock };
+      const isAvailableForType = activeSaleType === 'direct' ? (option.available_for_direct_sale ?? true) : (option.available_for_pre_order ?? true);
+      const passesStockCheck = activeSaleType === 'preorder' ? true : !!option.in_stock;
+      return { ...option, isAvailable: isAvailableForType && passesStockCheck };
     });
   };
   const filteredOptions = getFilteredOptions();
+  const isAvailableForCurrentSaleType = activeSaleType === 'preorder' ? hasPreOrder : (hasDirectSale && !!product.in_stock);
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -443,7 +446,7 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {!product.in_stock && (
+                {!isAvailableForCurrentSaleType && (
                   <div className="absolute inset-0 bg-background/70 flex items-center justify-center md:rounded-2xl">
                     <Badge variant="destructive" className="text-base px-5 py-2">{t('product_out_of_stock')}</Badge>
                   </div>
@@ -781,7 +784,7 @@ const ProductDetail = () => {
         <div className="mx-auto w-full max-w-md rounded-2xl border border-border/40 bg-card/95 p-1.5 shadow-lg">
           <div className="flex items-center gap-1 min-w-0">
             {/* Quantity */}
-            {product.in_stock && (
+            {isAvailableForCurrentSaleType && (
               <div className="flex items-center shrink-0">
                 <Button size="icon" variant="outline" className="h-9 w-9 rounded-r-xl rounded-l-none border-l-0" onClick={incrementQuantity}>
                   <Plus className="h-3.5 w-3.5" />
@@ -803,9 +806,9 @@ const ProductDetail = () => {
             )}
 
             {/* Add to cart */}
-            <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!product.in_stock || optionsLoading}>
+            <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!isAvailableForCurrentSaleType || optionsLoading}>
               <ShoppingCart className="ml-1 h-4 w-4 shrink-0" />
-              <span className="truncate">{product.in_stock ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}</span>
+              <span className="truncate">{isAvailableForCurrentSaleType ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}</span>
             </Button>
 
             {/* Favorite */}
