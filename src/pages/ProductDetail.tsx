@@ -665,7 +665,12 @@ const ProductDetail = () => {
                             </div>
                           )}
                           <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
-                            <span className="font-medium text-xs truncate">{option.name_ar}</span>
+                            <div className="min-w-0">
+                              <span className="font-medium text-xs truncate block">{option.name_ar}</span>
+                              {activeSaleType === 'direct' && option.stock_quantity != null && option.stock_quantity > 0 && (
+                                <span className="text-[9px] text-muted-foreground">متبقي {option.stock_quantity} قطعة</span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-1 shrink-0">
                               {option.price_adjustment !== 0 && (
                                 <span className={`text-[10px] font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600'}`}>
