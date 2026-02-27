@@ -1635,6 +1635,7 @@ const Admin = () => {
                 { icon: ImageIcon, title: 'إدارة الستوريات', desc: 'أقسام وفيديوهات الصفحة الرئيسية', path: ADMIN_ROUTES.stories },
                 { icon: Music, title: 'موسيقى الألعاب', desc: 'رفع وإدارة محطات الموسيقى', path: ADMIN_ROUTES.gameMusic },
                 { icon: BadgeDollarSign, title: 'مطابقة الأسعار', desc: 'طلبات العملاء لأسعار أقل', path: ADMIN_ROUTES.priceMatch },
+                { icon: Sparkles, title: 'إدارة الأمنيات', desc: 'مراجعة أمنيات العملاء', path: ADMIN_ROUTES.wishes },
               ].map((item, idx) => (
                 <button
                   key={idx}
