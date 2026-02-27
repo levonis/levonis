@@ -467,11 +467,20 @@ const Cart = () => {
             ? Number(item.custom_product_requests?.suggested_price || 0)
             : Number(item.products?.price || 0);
 
-          // Use direct sale price
-          if (!isCustomRequest && item.products?.direct_sale_price != null) {
+          const isDirect = (item as any).sale_type === 'direct';
+
+          if (!isCustomRequest && isDirect && item.products?.direct_sale_price != null) {
             itemPrice = Number(item.products.direct_sale_price);
+          } else if (!isCustomRequest && !isDirect) {
+            const shippingType = (item.products as any)?.shipping_type;
+            const seaPrice = (item.products as any)?.sea_price;
+            const airPrice = (item.products as any)?.air_price;
+            if (shippingType === 'sea' && seaPrice != null) itemPrice = Number(seaPrice);
+            else if (shippingType === 'air' && airPrice != null) itemPrice = Number(airPrice);
+            else if (shippingType === 'both' && seaPrice != null && airPrice != null) itemPrice = Math.min(Number(seaPrice), Number(airPrice));
           }
-          if (colorData?.direct_sale_price != null) {
+
+          if (colorData?.direct_sale_price != null && isDirect) {
             itemPrice = Number(colorData.direct_sale_price);
           } else if (colorData?.price != null) {
             itemPrice = Number(colorData.price);
