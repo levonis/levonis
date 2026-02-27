@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
+import OrderSuccessAnimation from '@/components/ui/OrderSuccessAnimation';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,6 +45,8 @@ const Cart = () => {
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
   const [showDirectSaleDialog, setShowDirectSaleDialog] = useState(false);
   const [isDirectSaleProcessing, setIsDirectSaleProcessing] = useState(false);
+  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
+  const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
   // Refresh cart data on mount to get latest pendingCartRequest
   useEffect(() => {
     refreshCart();
@@ -531,7 +534,8 @@ const Cart = () => {
 
       await clearCart();
       setShowDirectSaleDialog(false);
-      toast({ title: "تم إنشاء الطلب بنجاح", description: `رقم الطلب: ${orderResult.order_number} - الدفع عند الاستلام` });
+      setSuccessOrderNumber(orderResult.order_number);
+      setShowOrderSuccess(true);
     } catch (error) {
       console.error('Direct sale checkout error:', error);
       toast({ title: "خطأ", description: "حدث خطأ أثناء إتمام الطلب", variant: "destructive" });
@@ -1644,6 +1648,23 @@ const Cart = () => {
         deliveryFee={deliveryFee}
         itemCount={itemCount}
         isProcessing={isDirectSaleProcessing}
+      />
+
+      {/* Order Success Animation */}
+      <OrderSuccessAnimation
+        open={showOrderSuccess}
+        onClose={() => setShowOrderSuccess(false)}
+        orderNumber={successOrderNumber}
+        timeUntilCutoff={(() => {
+          const now = new Date();
+          const cutoff = new Date();
+          cutoff.setHours(17, 0, 0, 0);
+          if (now >= cutoff) return null;
+          const ms = cutoff.getTime() - now.getTime();
+          const h = Math.floor(ms / 3600000);
+          const m = Math.floor((ms % 3600000) / 60000);
+          return `${h} ساعة و ${m} دقيقة`;
+        })()}
       />
     </div>
   );
