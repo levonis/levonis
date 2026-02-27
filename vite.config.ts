@@ -41,8 +41,6 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },
   optimizeDeps: {
-    // Force re-optimization to clear cache issues
-    force: true,
-    include: ["react", "react-dom"],
+    include: ["react", "react-dom", "react-router-dom"],
   },
 }));
