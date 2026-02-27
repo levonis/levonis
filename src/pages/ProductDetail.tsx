@@ -77,7 +77,7 @@ const ProductDetail = () => {
         .select('*, categories(name_ar, name)')
         .eq('slug', slug)
         .maybeSingle();
-      if (data && !data.is_pricing_updated) throw new Error('Product not found');
+      if (data && !data.is_pricing_updated && !isAdmin) throw new Error('Product not found');
       if (error) throw error;
       if (!data) throw new Error('Product not found');
       return data;
