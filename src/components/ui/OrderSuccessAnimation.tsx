@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { CheckCircle2, Package, Clock, Truck } from 'lucide-react';
+import { CheckCircle2, Package, Clock, Truck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -8,7 +8,7 @@ interface OrderSuccessAnimationProps {
   open: boolean;
   onClose: () => void;
   orderNumber?: string;
-  timeUntilCutoff?: string | null; // null if past 5 PM
+  timeUntilCutoff?: string | null;
 }
 
 const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutoff }: OrderSuccessAnimationProps) => {
@@ -47,7 +47,6 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutof
               "relative transition-all duration-700 ease-out",
               step >= 1 ? "scale-100 opacity-100" : "scale-0 opacity-0"
             )}>
-              {/* Outer ring pulse */}
               <div className={cn(
                 "absolute inset-0 rounded-full bg-primary/20 transition-all duration-1000",
                 step >= 2 ? "scale-[1.8] opacity-0" : "scale-100 opacity-100"
@@ -70,7 +69,7 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutof
               )}
             </div>
 
-            {/* Delivery info */}
+            {/* Info cards */}
             <div className={cn(
               "w-full space-y-3 transition-all duration-500 delay-200",
               step >= 3 ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
@@ -82,7 +81,19 @@ const OrderSuccessAnimation = memo(({ open, onClose, orderNumber, timeUntilCutof
                 </p>
               </div>
 
-              {/* Combined delivery notice */}
+              {/* Rating reminder */}
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                <Star className="h-5 w-5 text-yellow-500 mt-0.5 shrink-0 fill-yellow-500" />
+                <div className="text-right">
+                  <p className="text-xs font-bold text-foreground leading-relaxed">
+                    لا تنسَ تقييم المنتجات بعد الاستلام! ⭐
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                    قيّم المنتجات واحصل على <span className="font-bold text-yellow-600">خصومات وهدايا</span> في طلبك القادم!
+                  </p>
+                </div>
+              </div>
+
               {timeUntilCutoff && (
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-accent/10 border border-accent/20">
                   <Clock className="h-5 w-5 text-accent mt-0.5 shrink-0" />
