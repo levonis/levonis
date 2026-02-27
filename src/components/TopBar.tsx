@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Globe } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
+import AdminPendingOrdersSheet from './admin/AdminPendingOrdersSheet';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -282,23 +283,26 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
               )}
             </Button>
 
-            {/* Admin Chat Button - Direct link to community messages */}
+            {/* Admin Buttons */}
             {isAdmin && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setMessagesOpen(true)}
-                className="relative rounded-full border-primary/30 hover:border-primary"
-                title={t('menu_messages')}
-                aria-label={t('menu_messages')}
-              >
-                <MessageCircle className="h-4 w-4" />
-                {adminUnreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
-                    {adminUnreadMessages > 9 ? '9+' : adminUnreadMessages}
-                  </span>
-                )}
-              </Button>
+              <>
+                <AdminPendingOrdersSheet />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setMessagesOpen(true)}
+                  className="relative rounded-full border-primary/30 hover:border-primary"
+                  title={t('menu_messages')}
+                  aria-label={t('menu_messages')}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {adminUnreadMessages > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
+                      {adminUnreadMessages > 9 ? '9+' : adminUnreadMessages}
+                    </span>
+                  )}
+                </Button>
+              </>
             )}
 
             {user ? (
