@@ -579,12 +579,21 @@ const Cart = () => {
           console.error('Order items insert error:', itemsError);
         }
         
-        // Deduct stock for direct sale items
-        const { error: stockError } = await supabase.rpc('deduct_order_stock', { p_order_id: orderResult.id });
-        if (stockError) {
-          console.error('Stock deduction error:', stockError);
+        // Deduct stock for direct sale items - retry up to 3 times
+        let stockDeducted = false;
+        for (let attempt = 0; attempt < 3 && !stockDeducted; attempt++) {
+          const { error: stockError } = await supabase.rpc('deduct_order_stock', { p_order_id: orderResult.id });
+          if (!stockError) {
+            stockDeducted = true;
+          } else {
+            console.error(`Stock deduction attempt ${attempt + 1} error:`, stockError);
+            if (attempt < 2) await new Promise(r => setTimeout(r, 500));
+          }
         }
       }
+
+      // Invalidate today-direct-orders cache so next order gets free delivery
+      queryClient.invalidateQueries({ queryKey: ['today-direct-orders'] });
 
       // Send telegram notification
       try {

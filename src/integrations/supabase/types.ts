@@ -3877,6 +3877,7 @@ export type Database = {
           shipping_route_type: string | null
           shipping_route_waypoints: Json | null
           status: string
+          stock_deducted: boolean | null
           subtotal: number | null
           tax_amount: number | null
           tax_percentage: number | null
@@ -3931,6 +3932,7 @@ export type Database = {
           shipping_route_type?: string | null
           shipping_route_waypoints?: Json | null
           status?: string
+          stock_deducted?: boolean | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_percentage?: number | null
@@ -3985,6 +3987,7 @@ export type Database = {
           shipping_route_type?: string | null
           shipping_route_waypoints?: Json | null
           status?: string
+          stock_deducted?: boolean | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_percentage?: number | null
