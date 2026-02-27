@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { BadgeDollarSign, Upload, X, Loader2, CheckCircle, Send, MapPin, Camera } from 'lucide-react';
 
@@ -112,7 +113,14 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
       </button>
 
       {/* Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) {
+          // Force restore scroll on close
+          document.body.style.overflow = '';
+          document.body.style.pointerEvents = '';
+        }
+      }}>
         <DialogContent className="max-w-sm mx-auto rounded-2xl p-0 overflow-hidden z-[100]" dir="rtl">
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-3">
@@ -135,11 +143,11 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
               <DialogHeader className="px-5 pt-5 pb-0">
                 <DialogTitle className="flex items-center gap-2 text-base font-black">
                   <BadgeDollarSign className="h-5 w-5 text-amber-500" />
-                  دلنا على السعر الأرخص!
+                  دلنا وين لكيته بسعر أقل!
                 </DialogTitle>
-                <p className="text-xs text-muted-foreground mt-1">
+                <DialogDescription className="text-xs text-muted-foreground mt-1">
                   ساعدنا نكون الأنسب لـ <span className="font-bold text-foreground">{productName}</span>
-                </p>
+                </DialogDescription>
               </DialogHeader>
 
               <div className="px-5 pb-5 pt-3 space-y-4">
