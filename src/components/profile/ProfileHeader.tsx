@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import WalletPopup from "./WalletPopup";
+import WalletDialog from "@/components/WalletDialog";
 import SavingsPopup from "./SavingsPopup";
 
 interface ProfileHeaderProps {
@@ -282,11 +282,9 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       </div>
 
       {/* Popups */}
-      <WalletPopup
+      <WalletDialog
         open={walletOpen}
         onOpenChange={setWalletOpen}
-        userId={userId}
-        balance={wallet?.balance ?? 0}
       />
       <SavingsPopup
         open={savingsOpen}
