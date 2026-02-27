@@ -174,8 +174,30 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+            <div className="rounded-2xl p-4 border border-border/50 bg-card/50">
+              <div className="aspect-square rounded-xl bg-muted/30 animate-pulse" />
+              <div className="hidden sm:grid grid-cols-5 gap-2 mt-4">
+                {[1,2,3,4,5].map(i => <div key={i} className="aspect-square rounded-lg bg-muted/20 animate-pulse" />)}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-2xl p-5 border border-border/50 bg-card/50 space-y-4">
+                <div className="h-5 w-20 rounded bg-muted/30 animate-pulse" />
+                <div className="h-8 w-3/4 rounded bg-muted/30 animate-pulse" />
+                <div className="h-4 w-full rounded bg-muted/20 animate-pulse" />
+                <div className="h-4 w-2/3 rounded bg-muted/20 animate-pulse" />
+                <div className="h-12 w-full rounded-xl bg-muted/20 animate-pulse mt-6" />
+                <div className="flex gap-3 mt-4">
+                  <div className="h-14 flex-1 rounded-lg bg-primary/20 animate-pulse" />
+                  <div className="h-14 w-16 rounded-lg bg-muted/20 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -325,7 +347,7 @@ const ProductDetail = () => {
   const filteredOptions = getFilteredOptions();
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
         {/* Back Button & Breadcrumb */}
         <div className="mb-6">
@@ -379,7 +401,7 @@ const ProductDetail = () => {
                         {productImages.map((img, idx) => (
                           <CarouselItem key={idx} className="pl-0">
                             <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
-                              <img src={img} alt={`${product.name_ar} - صورة ${idx + 1}`} className="w-full h-full object-cover" draggable={false} />
+                              <img src={img} alt={`${product.name_ar} - صورة ${idx + 1}`} className="w-full h-full object-cover" draggable={false} loading="lazy" decoding="async" />
                             </div>
                           </CarouselItem>
                         ))}
@@ -424,7 +446,7 @@ const ProductDetail = () => {
                             selectedImage === idx ? 'border-primary ring-2 ring-primary/20' : 'border-border/30 hover:border-primary/50'
                           }`}
                         >
-                          <img src={img} alt={`${product.name_ar} - صورة مصغرة ${idx + 1}`} className="w-full h-full object-cover" />
+                          <img src={img} alt={`${product.name_ar} - صورة مصغرة ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </button>
                       ))}
                     </div>
