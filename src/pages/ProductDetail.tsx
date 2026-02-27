@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2 } from 'lucide-react';
+import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatPrice, cn } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
@@ -56,7 +57,9 @@ const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
-  const { addToCart } = useCart();
+  const { addToCart, forceAddToCart } = useCart();
+  const [showSaleTypeConflict, setShowSaleTypeConflict] = useState(false);
+  const pendingAddRef = useRef<{ productId: string; optionId?: string; color?: string; quantity: number; shippingInfo?: { index: number; name_ar: string }; saleType: 'direct' | 'preorder' } | null>(null);
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -300,11 +303,30 @@ const ProductDetail = () => {
     const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
       ? { index: selectedShippingOption, name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar }
       : undefined;
-    const success = await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
+    try {
+      const success = await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
+      if (success) {
+        toast.success(t('product_added_to_cart').replace('{count}', String(quantity)));
+        setQuantity(1);
+      }
+    } catch (err: any) {
+      if (err?.message === 'SALE_TYPE_CONFLICT') {
+        pendingAddRef.current = { productId: product.id, optionId: selectedOption || undefined, color: selectedColor || undefined, quantity, shippingInfo, saleType: activeSaleType };
+        setShowSaleTypeConflict(true);
+      }
+    }
+  };
+
+  const handleForceAdd = async () => {
+    const p = pendingAddRef.current;
+    if (!p) return;
+    setShowSaleTypeConflict(false);
+    const success = await forceAddToCart(p.productId, p.optionId, p.color, p.quantity, p.shippingInfo, p.saleType);
     if (success) {
-      toast.success(t('product_added_to_cart').replace('{count}', String(quantity)));
+      toast.success('تم تفريغ السلة وإضافة المنتج بنجاح 🛒');
       setQuantity(1);
     }
+    pendingAddRef.current = null;
   };
 
   const handleToggleFavorite = () => { toggleFavoriteMutation.mutate(); };
@@ -758,6 +780,30 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Sale Type Conflict Dialog */}
+      <AlertDialog open={showSaleTypeConflict} onOpenChange={setShowSaleTypeConflict}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              تفريغ السلة
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              لديك منتجات من نوع بيع مختلف في السلة. هل تريد تفريغ السلة وإضافة هذا المنتج؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => { pendingAddRef.current = null; }}>تراجع</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForceAdd}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              تفريغ السلة وإضافة المنتج
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

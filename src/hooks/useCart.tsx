@@ -66,6 +66,7 @@ interface CartContextType {
   total: number;
   pendingCartRequest: PendingCartRequest | null;
   addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -267,9 +268,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (existingProductItems.length > 0) {
         const currentCartSaleType = existingProductItems[0]?.sale_type || 'preorder';
         if (currentCartSaleType !== saleType) {
-          // Conflict: different sale type - clear cart first
-          await clearCart();
-          toast.info('تم تفريغ السلة لأن نوع البيع مختلف');
+          // Signal conflict - let the caller handle confirmation
+          throw new Error('SALE_TYPE_CONFLICT');
         }
       }
 
@@ -361,6 +361,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await fetchCart();
       return true;
     } catch (error: any) {
+      if (error?.message === 'SALE_TYPE_CONFLICT') throw error;
       console.error('Error adding to cart:', error);
       const msg = error?.message || error?.error_description || 'حدث خطأ في إضافة المنتج';
       toast.error(msg);
@@ -468,6 +469,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
+    await clearCart();
+    return addToCart(productId, optionId, color, quantity, shippingInfo, saleType);
+  };
+
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
@@ -554,6 +560,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         pendingCartRequest,
         cartSaleType,
         addToCart,
+        forceAddToCart,
         addCustomRequestToCart,
         updateQuantity,
         removeFromCart,
