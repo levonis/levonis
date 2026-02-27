@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save } from "lucide-react";
 import { useLanguage, LANGUAGE_LABELS } from "@/lib/i18n";
 import type { Language } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ImageCropper from "@/components/marketplace/ImageCropper";
 import WalletPinDialog from "@/components/wallet/WalletPinDialog";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 function daysUntilAllowed(last: string | null) {
   if (!last) return 0;
@@ -30,7 +30,6 @@ function daysUntilAllowed(last: string | null) {
 
 function normalizePhone(raw: string) {
   const s = (raw || "").trim();
-  // Allow +9647xxxxxxxxx or 07xxxxxxxxx
   const digits = s.replace(/[^\d+]/g, "");
   return digits;
 }
@@ -39,6 +38,19 @@ function isValidPhone(raw: string) {
   const v = normalizePhone(raw);
   return /^\+9647\d{8,9}$/.test(v) || /^07\d{8,9}$/.test(v);
 }
+
+// Section wrapper component
+const SettingsSection = ({ icon: Icon, title, children, className }: { icon: any; title: string; children: React.ReactNode; className?: string }) => (
+  <div className={cn("rounded-2xl border border-border/40 bg-card overflow-hidden", className)}>
+    <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/30 bg-card">
+      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+        <Icon className="h-4 w-4 text-primary" />
+      </div>
+      <h2 className="text-sm font-black text-foreground">{title}</h2>
+    </div>
+    <div className="p-4">{children}</div>
+  </div>
+);
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
@@ -66,6 +78,7 @@ export default function ProfileSettings() {
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["profile-settings-profile", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -82,6 +95,7 @@ export default function ProfileSettings() {
   const { data: addresses, isLoading: loadingAddresses } = useQuery({
     queryKey: ["my-addresses", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_addresses")
@@ -93,14 +107,12 @@ export default function ProfileSettings() {
     },
   });
 
-  // Initialize local state once profile loads
   useMemo(() => {
     if (!profile) return;
     setFullName((prev) => (prev ? prev : (profile.full_name as string | null) ?? ""));
     setUsername((prev) => (prev ? prev : (profile.username as string | null) ?? ""));
   }, [profile]);
 
-  // Load telegram notification preferences
   useMemo(() => {
     if (!profile) return;
     const saved = (profile as any)?.telegram_notifications;
@@ -117,7 +129,6 @@ export default function ProfileSettings() {
 
   const cooldownDaysLeft = daysUntilAllowed((profile as any)?.last_username_change_at ?? null);
   const canEditUsername = cooldownDaysLeft === 0;
-
   const phoneVerified = Boolean((profile as any)?.phone_verified) || (profile as any)?.phone_verification_status === "verified";
   const phoneNumber = ((profile as any)?.phone_number as string | null) ?? "";
 
@@ -126,9 +137,8 @@ export default function ProfileSettings() {
       if (!user?.id) throw new Error("Not authenticated");
       if (!fullName.trim()) throw new Error("الاسم مطلوب");
 
-      // Phone validation requirement (read-only here, but we still validate existing value for UX clarity)
       if (phoneNumber && !isValidPhone(phoneNumber)) {
-        throw new Error("رقم الهاتف غير صحيح. الرجاء تحديثه عبر مسار التحقق.");
+        throw new Error("رقم الهاتف غير صحيح.");
       }
 
       let nextAvatarUrl: string | null = (profile as any)?.avatar_url ?? null;
@@ -141,20 +151,16 @@ export default function ProfileSettings() {
           .upload(`avatars/${fileName}`, avatarFile);
         if (uploadError) throw uploadError;
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("product-images").getPublicUrl(`avatars/${fileName}`);
+        const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(`avatars/${fileName}`);
         nextAvatarUrl = publicUrl;
       }
 
-      // Update profile basics
       const updatePayload: any = {
         full_name: fullName.trim(),
         avatar_url: nextAvatarUrl,
         telegram_notifications: telegramNotifs,
       };
 
-      // Username rule: only attempt to change when allowed
       if (canEditUsername && username.trim() && username.trim() !== (profile as any)?.username) {
         updatePayload.username = username.trim();
       }
@@ -162,19 +168,10 @@ export default function ProfileSettings() {
       const { error: profileError } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
       if (profileError) throw profileError;
 
-      // Default address selection
       if (selectedDefaultAddressId) {
-        const { error: clearErr } = await supabase
-          .from("user_addresses")
-          .update({ is_default: false })
-          .eq("user_id", user.id);
+        const { error: clearErr } = await supabase.from("user_addresses").update({ is_default: false }).eq("user_id", user.id);
         if (clearErr) throw clearErr;
-
-        const { error: setErr } = await supabase
-          .from("user_addresses")
-          .update({ is_default: true })
-          .eq("user_id", user.id)
-          .eq("id", selectedDefaultAddressId);
+        const { error: setErr } = await supabase.from("user_addresses").update({ is_default: true }).eq("user_id", user.id).eq("id", selectedDefaultAddressId);
         if (setErr) throw setErr;
       }
 
@@ -190,38 +187,20 @@ export default function ProfileSettings() {
       setAvatarFile(null);
     },
     onError: (err: any) => {
-      // Unique constraint
       if (err?.code === "23505") {
-        toast({
-          title: "تعذر الحفظ",
-          description: "اسم المستخدم مستخدم بالفعل — الرجاء اختيار يوزرنيم مختلف.",
-          variant: "destructive",
-        });
+        toast({ title: "تعذر الحفظ", description: "اسم المستخدم مستخدم بالفعل", variant: "destructive" });
         return;
       }
-
-      // Username cooldown trigger
       if (err?.code === "P0001" && String(err?.message || "").includes("USERNAME_CHANGE_COOLDOWN")) {
-        toast({
-          title: "تعذر الحفظ",
-          description: "لا يمكن تغيير اسم المستخدم حالياً. حاول لاحقاً.",
-          variant: "destructive",
-        });
+        toast({ title: "تعذر الحفظ", description: "لا يمكن تغيير اسم المستخدم حالياً.", variant: "destructive" });
         return;
       }
-
-      toast({
-        title: "تعذر الحفظ",
-        description: err?.message ?? "حدث خطأ غير متوقع",
-        variant: "destructive",
-      });
+      toast({ title: "تعذر الحفظ", description: err?.message ?? "حدث خطأ غير متوقع", variant: "destructive" });
     },
   });
 
   useEffect(() => {
-    return () => {
-      if (cropObjectUrlRef.current) URL.revokeObjectURL(cropObjectUrlRef.current);
-    };
+    return () => { if (cropObjectUrlRef.current) URL.revokeObjectURL(cropObjectUrlRef.current); };
   }, []);
 
   const previewAvatar = useMemo(() => {
@@ -231,16 +210,12 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     if (!avatarFile || !previewAvatar) return;
-    // previewAvatar is the object URL created above
     return () => URL.revokeObjectURL(previewAvatar);
   }, [avatarFile, previewAvatar]);
 
   const handlePickAvatar = (file: File | null) => {
     if (!file) return;
-    if (cropObjectUrlRef.current) {
-      URL.revokeObjectURL(cropObjectUrlRef.current);
-      cropObjectUrlRef.current = null;
-    }
+    if (cropObjectUrlRef.current) { URL.revokeObjectURL(cropObjectUrlRef.current); cropObjectUrlRef.current = null; }
     const objectUrl = URL.createObjectURL(file);
     cropObjectUrlRef.current = objectUrl;
     setCropImageSrc(objectUrl);
@@ -258,230 +233,187 @@ export default function ProfileSettings() {
     : `يمكن تغيير اسم المستخدم بعد ${cooldownDaysLeft} يوم`;
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 pt-24 pb-24 max-w-4xl">
-        {/* Header */}
-        <div className="mb-6 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9">
+    <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-card border-b border-border/30">
+        <div className="container mx-auto max-w-2xl px-4 py-3 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9 rounded-xl">
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-bold text-foreground">الإعدادات</h1>
+          <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
         </div>
+      </div>
 
-        <div className="space-y-3">
-          {/* Profile Section */}
-          <Card className="border-border/50">
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                <div className="relative">
-                  <Avatar className="h-20 w-20 ring-4 ring-primary/20">
-                    <AvatarImage src={previewAvatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                      {((profile as any)?.username?.[0] || (profile as any)?.full_name?.[0] || "م").toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="absolute -bottom-2 -left-2 h-9 w-9 rounded-full"
-                    onClick={() => fileRef.current?.click()}
-                    aria-label="تغيير الصورة"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handlePickAvatar(e.target.files?.[0] ?? null)}
-                  />
-                </div>
-
-                <div className="flex-1 w-full">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">الاسم</Label>
-                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="اسمك" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs">رقم الهاتف</Label>
-                      <Input value={phoneNumber || ""} disabled placeholder="—" inputMode="tel" />
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={phoneVerified ? "secondary" : "outline"} className="gap-2">
-                          {phoneVerified ? (
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                          ) : (
-                            <ShieldAlert className="h-3.5 w-3.5" />
-                          )}
-                          <span>{phoneVerified ? "تم تأكيد الرقم" : "غير مؤكد"}</span>
-                        </Badge>
-                        {!phoneVerified && (
-                          <span className="text-xs text-muted-foreground">(لا يوجد تحقق فعلي الآن — فقط حالة عرض)</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">اليوزرنيم</Label>
-                      <Input
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        disabled={!canEditUsername}
-                        placeholder="مثال: levo_user"
-                        maxLength={30}
-                      />
-                      <p className="text-xs text-muted-foreground">{usernameHint}</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs">العنوان الافتراضي</Label>
-                      {loadingAddresses ? (
-                        <div className="rounded-xl border border-border bg-card/60 p-3 text-sm text-muted-foreground">
-                          جارٍ تحميل العناوين…
-                        </div>
-                      ) : !addresses || addresses.length === 0 ? (
-                        <div className="rounded-xl border border-border bg-card/60 p-3 text-sm text-muted-foreground">
-                          لا توجد عناوين بعد. يمكنك إضافتها من صفحة العناوين.
-                        </div>
-                      ) : (
-                        <RadioGroup value={selectedDefaultAddressId} onValueChange={setSelectedDefaultAddressId}>
-                          <div className="space-y-2">
-                            {addresses.map((a: any) => {
-                              const title = `${a.governorate} • ${a.area}${a.neighborhood ? ` • ${a.neighborhood}` : ""}`;
-                              const sub = a.nearest_landmark ? `أقرب نقطة: ${a.nearest_landmark}` : "";
-                              return (
-                                <label
-                                  key={a.id}
-                                  className="flex items-start gap-3 rounded-2xl border border-border bg-card/60 p-3 cursor-pointer hover:bg-card"
-                                >
-                                  <RadioGroupItem value={a.id} className="mt-1" />
-                                  <div className="min-w-0">
-                                    <div className="text-sm font-semibold text-foreground truncate">{title}</div>
-                                    {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
-                                  </div>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </RadioGroup>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* حماية المحفظة */}
-        <div className="pb-2">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Lock className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">رمز PIN للمحفظة</p>
-                    <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setShowPinDialog(true)}>
-                  تعيين / تغيير
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Language Switcher */}
-        <div className="pb-2">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Globe className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{t('settings_language')}</p>
-                  <p className="text-xs text-muted-foreground">{t('settings_language_desc')}</p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {(['ar', 'en', 'ku'] as Language[]).map(lang => (
-                  <Button
-                    key={lang}
-                    variant={language === lang ? 'default' : 'outline'}
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setLanguage(lang)}
-                  >
-                    {LANGUAGE_LABELS[lang]}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* إعدادات إشعارات تيليجرام */}
-        {(profile as any)?.telegram_chat_id && (
-          <div className="pb-2">
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bell className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t('settings_telegram_notifs')}</p>
-                    <p className="text-xs text-muted-foreground">{t('settings_telegram_notifs_desc')}</p>
-                  </div>
-                </div>
-                
-                {[
-                  { key: 'orders' as const, label: t('settings_notif_orders'), desc: t('settings_notif_orders_desc') },
-                  { key: 'wallet' as const, label: t('settings_notif_wallet'), desc: t('settings_notif_wallet_desc') },
-                  { key: 'support' as const, label: t('settings_notif_support'), desc: t('settings_notif_support_desc') },
-                  { key: 'promotions' as const, label: t('settings_notif_promotions'), desc: t('settings_notif_promotions_desc') },
-                ].map(item => (
-                  <div key={item.key} className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-sm font-medium">{item.label}</p>
-                      <p className="text-xs text-muted-foreground">{item.desc}</p>
-                    </div>
-                    <Switch
-                      checked={telegramNotifs[item.key]}
-                      onCheckedChange={(checked) => setTelegramNotifs(prev => ({ ...prev, [item.key]: checked }))}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-          <div className="container mx-auto px-4 py-3 max-w-4xl">
+      <main className="container mx-auto max-w-2xl px-4 pt-4 pb-28 space-y-3">
+        {/* Avatar Section - Centered */}
+        <div className="flex flex-col items-center py-4">
+          <div className="relative mb-3">
+            <Avatar className="h-24 w-24 ring-4 ring-primary/20 shadow-lg">
+              <AvatarImage src={previewAvatar} />
+              <AvatarFallback className="bg-primary/10 text-primary text-2xl font-black">
+                {((profile as any)?.username?.[0] || (profile as any)?.full_name?.[0] || "م").toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <Button
-              className="w-full"
-              disabled={loadingProfile || saveMutation.isPending}
-              onClick={() => saveMutation.mutate()}
+              type="button"
+              size="icon"
+              className="absolute -bottom-1 -left-1 h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+              onClick={() => fileRef.current?.click()}
             >
-              <span className="inline-flex items-center justify-center gap-2">
-                {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                {saveMutation.isPending ? "جارٍ الحفظ…" : "حفظ"}
-              </span>
+              <Camera className="h-4 w-4" />
+            </Button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handlePickAvatar(e.target.files?.[0] ?? null)} />
+          </div>
+          {(profile as any)?.username && (
+            <p className="text-sm font-bold text-muted-foreground">@{(profile as any).username}</p>
+          )}
+        </div>
+
+        {/* Personal Info Section */}
+        <SettingsSection icon={User} title="المعلومات الشخصية">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">الاسم</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="اسمك" className="rounded-xl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">اليوزرنيم</Label>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={!canEditUsername}
+                placeholder="مثال: levo_user"
+                maxLength={30}
+                className="rounded-xl"
+              />
+              <p className="text-[11px] text-muted-foreground">{usernameHint}</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">رقم الهاتف</Label>
+              <Input value={phoneNumber || ""} disabled placeholder="—" inputMode="tel" className="rounded-xl" />
+              <Badge variant={phoneVerified ? "secondary" : "outline"} className="gap-1.5 text-[11px]">
+                {phoneVerified ? <ShieldCheck className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
+                {phoneVerified ? "تم تأكيد الرقم" : "غير مؤكد"}
+              </Badge>
+            </div>
+          </div>
+        </SettingsSection>
+
+        {/* Default Address Section */}
+        <SettingsSection icon={MapPin} title="العنوان الافتراضي">
+          {loadingAddresses ? (
+            <p className="text-sm text-muted-foreground">جارٍ تحميل العناوين…</p>
+          ) : !addresses || addresses.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-3">لا توجد عناوين بعد</p>
+              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/addresses')}>
+                إضافة عنوان
+              </Button>
+            </div>
+          ) : (
+            <RadioGroup value={selectedDefaultAddressId} onValueChange={setSelectedDefaultAddressId}>
+              <div className="space-y-2">
+                {addresses.map((a: any) => {
+                  const title = `${a.governorate} • ${a.area}${a.neighborhood ? ` • ${a.neighborhood}` : ""}`;
+                  const sub = a.nearest_landmark ? `أقرب نقطة: ${a.nearest_landmark}` : "";
+                  return (
+                    <label
+                      key={a.id}
+                      className="flex items-start gap-3 rounded-xl border border-border/40 bg-background/50 p-3 cursor-pointer hover:border-primary/30 transition-colors"
+                    >
+                      <RadioGroupItem value={a.id} className="mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-foreground truncate">{title}</div>
+                        {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </RadioGroup>
+          )}
+        </SettingsSection>
+
+        {/* Security Section */}
+        <SettingsSection icon={Lock} title="الأمان">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
+              <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+            </div>
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowPinDialog(true)}>
+              تعيين / تغيير
             </Button>
           </div>
-        </div>
+        </SettingsSection>
+
+        {/* Language Section */}
+        <SettingsSection icon={Globe} title={t('settings_language')}>
+          <div className="flex gap-2">
+            {(['ar', 'en', 'ku'] as Language[]).map(lang => (
+              <Button
+                key={lang}
+                variant={language === lang ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 rounded-xl"
+                onClick={() => setLanguage(lang)}
+              >
+                {LANGUAGE_LABELS[lang]}
+              </Button>
+            ))}
+          </div>
+        </SettingsSection>
+
+        {/* Telegram Notifications */}
+        {(profile as any)?.telegram_chat_id && (
+          <SettingsSection icon={Bell} title={t('settings_telegram_notifs')}>
+            <div className="space-y-3">
+              {[
+                { key: 'orders' as const, label: t('settings_notif_orders'), desc: t('settings_notif_orders_desc') },
+                { key: 'wallet' as const, label: t('settings_notif_wallet'), desc: t('settings_notif_wallet_desc') },
+                { key: 'support' as const, label: t('settings_notif_support'), desc: t('settings_notif_support_desc') },
+                { key: 'promotions' as const, label: t('settings_notif_promotions'), desc: t('settings_notif_promotions_desc') },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold">{item.label}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <Switch
+                    checked={telegramNotifs[item.key]}
+                    onCheckedChange={(checked) => setTelegramNotifs(prev => ({ ...prev, [item.key]: checked }))}
+                  />
+                </div>
+              ))}
+            </div>
+          </SettingsSection>
+        )}
       </main>
+
+      {/* Sticky Save Button */}
+      <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
+        <div className="container mx-auto max-w-2xl">
+          <Button
+            className="w-full rounded-xl h-12 text-base font-black shadow-lg"
+            disabled={loadingProfile || saveMutation.isPending}
+            onClick={() => saveMutation.mutate()}
+          >
+            {saveMutation.isPending ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                جارٍ الحفظ…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                حفظ الإعدادات
+              </span>
+            )}
+          </Button>
+        </div>
+      </div>
 
       {cropImageSrc && (
         <ImageCropper

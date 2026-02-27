@@ -8,12 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Loader2, Package, Truck, ExternalLink, Calendar, MapPin,
-  CreditCard, Ship, Plane, ShoppingBag, ArrowRight,
+  Package, Truck, ExternalLink, MapPin,
+  Ship, Plane, ShoppingBag, ArrowRight,
   Clock, CheckCircle, XCircle, Warehouse, PackageCheck
 } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/lib/i18n';
 import Footer from '@/components/Footer';
@@ -31,6 +31,18 @@ const STATUS_TABS = [
   { key: 'cancelled', label: 'ملغي', icon: XCircle },
 ] as const;
 
+const STATUS_ACCENT: Record<string, string> = {
+  pending: 'bg-amber-500',
+  confirmed: 'bg-blue-500',
+  processing: 'bg-primary',
+  arrived_warehouse: 'bg-indigo-500',
+  shipped: 'bg-sky-500',
+  arrived_iraq: 'bg-teal-500',
+  on_the_way: 'bg-cyan-500',
+  delivered: 'bg-emerald-500',
+  cancelled: 'bg-destructive',
+};
+
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
   confirmed: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
@@ -42,6 +54,35 @@ const STATUS_COLORS: Record<string, string> = {
   delivered: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
   cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
 };
+
+const OrderSkeleton = () => (
+  <div className="space-y-3 px-4 py-4">
+    {[1, 2, 3].map(i => (
+      <div key={i} className="rounded-2xl border bg-card overflow-hidden">
+        <div className="flex">
+          <Skeleton className="w-1.5 shrink-0" />
+          <div className="flex-1 p-4 space-y-3">
+            <div className="flex justify-between">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <div className="flex gap-3">
+              <Skeleton className="h-14 w-14 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 const MyOrders = () => {
   const { user } = useAuth();
@@ -73,9 +114,9 @@ const MyOrders = () => {
       return data || [];
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Count per status
   const statusCounts: Record<string, number> = {};
   orders?.forEach((o: any) => {
     statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
@@ -93,31 +134,36 @@ const MyOrders = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Package className="h-8 w-8 animate-pulse text-primary" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
-        {/* Title bar */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            <h1 className="text-base font-bold text-foreground">طلباتي</h1>
-            {orders && (
-              <span className="text-xs text-muted-foreground">({orders.length})</span>
-            )}
+      {/* Gradient Header */}
+      <div className="sticky top-0 z-50 bg-card border-b border-border/30">
+        <div className="px-4 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Package className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-black text-foreground">طلباتي</h1>
+                {orders && (
+                  <p className="text-xs text-muted-foreground">{orders.length} طلب</p>
+                )}
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate(-1)}>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(-1)}>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Status Tabs - Horizontal Scroll */}
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide px-3 pb-2.5">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide px-4 pb-3">
           {STATUS_TABS.map((tab) => {
             const count = tab.key === 'all' ? (orders?.length || 0) : (statusCounts[tab.key] || 0);
             const isActive = activeTab === tab.key;
@@ -128,19 +174,19 @@ const MyOrders = () => {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
+                  "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
                   isActive
-                    ? "bg-foreground text-background border-foreground shadow-sm"
-                    : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
+                    ? "bg-primary text-primary-foreground border-primary shadow-md"
+                    : "bg-card text-muted-foreground border-border/40 hover:border-primary/30 hover:text-foreground"
                 )}
               >
-                <Icon className="h-3 w-3" />
+                <Icon className="h-3.5 w-3.5" />
                 <span>{tab.label}</span>
                 {count > 0 && (
                   <span className={cn(
-                    "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1",
+                    "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black px-1",
                     isActive
-                      ? "bg-background text-foreground"
+                      ? "bg-primary-foreground/20 text-primary-foreground"
                       : "bg-primary/10 text-primary"
                   )}>
                     {count}
@@ -153,190 +199,175 @@ const MyOrders = () => {
       </div>
 
       {/* Content */}
-      <main className="flex-1 px-3 py-3 space-y-2.5">
+      <main className="flex-1">
         {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="rounded-2xl border bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                </div>
-                <div className="flex gap-3">
-                  <Skeleton className="h-16 w-16 rounded-xl" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                </div>
-                <Skeleton className="h-8 w-full rounded-lg" />
-              </div>
-            ))}
-          </div>
+          <OrderSkeleton />
         ) : !filtered || filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <Package className="h-10 w-10 text-muted-foreground/50" />
+          <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+              <Package className="h-10 w-10 text-primary/40" />
             </div>
-            <h3 className="font-bold text-foreground mb-1">
+            <h3 className="font-black text-foreground mb-1.5 text-lg">
               {activeTab === 'all' ? 'لا توجد طلبات بعد' : `لا توجد طلبات ${getStatusLabel(activeTab)}`}
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-5">
               {activeTab === 'all' ? 'ابدأ التسوق واطلب منتجاتك المفضلة' : 'جرب تصفية أخرى'}
             </p>
             {activeTab === 'all' ? (
-              <Button size="sm" onClick={() => navigate('/products')}>
+              <Button onClick={() => navigate('/products')} className="rounded-xl">
                 <ShoppingBag className="h-4 w-4 ml-1.5" />
                 تصفح المنتجات
               </Button>
             ) : (
-              <Button size="sm" variant="outline" onClick={() => setActiveTab('all')}>
+              <Button variant="outline" className="rounded-xl" onClick={() => setActiveTab('all')}>
                 عرض كل الطلبات
               </Button>
             )}
           </div>
         ) : (
-          filtered.map((order: any) => {
-            const isPreOrder = order.order_items?.some((item: any) => item.shipping_option_name_ar?.trim());
-            const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
-            const shippingName = shippingItem?.shipping_option_name_ar || '';
-            const isFastShipping = shippingName.includes('سريع') || shippingName.includes('جوي');
-            const statusColor = STATUS_COLORS[order.status] || 'bg-muted text-muted-foreground border-border';
-            const itemCount = order.order_items?.length || 0;
-            const firstItem = order.order_items?.[0];
-            const firstImage = firstItem?.custom_request_id
-              ? firstItem?.custom_product_requests?.image_url
-              : firstItem?.products?.image_url;
-            const firstName = firstItem?.custom_request_id
-              ? firstItem?.custom_product_requests?.product_name || firstItem?.product_name_ar
-              : firstItem?.product_name_ar;
+          <div className="px-3 py-3 space-y-2.5 pb-24">
+            {filtered.map((order: any) => {
+              const isPreOrder = order.order_items?.some((item: any) => item.shipping_option_name_ar?.trim());
+              const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
+              const shippingName = shippingItem?.shipping_option_name_ar || '';
+              const isFastShipping = shippingName.includes('سريع') || shippingName.includes('جوي');
+              const accentColor = STATUS_ACCENT[order.status] || 'bg-muted';
+              const statusColor = STATUS_COLORS[order.status] || 'bg-muted text-muted-foreground border-border';
+              const itemCount = order.order_items?.length || 0;
+              const firstItem = order.order_items?.[0];
+              const firstImage = firstItem?.custom_request_id
+                ? firstItem?.custom_product_requests?.image_url
+                : firstItem?.products?.image_url;
+              const firstName = firstItem?.custom_request_id
+                ? firstItem?.custom_product_requests?.product_name || firstItem?.product_name_ar
+                : firstItem?.product_name_ar;
 
-            return (
-              <div
-                key={order.id}
-                onClick={() => navigate(`/order/${order.id}`)}
-                className="rounded-2xl border bg-card shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer overflow-hidden"
-              >
-                {/* Order header */}
-                <div className="flex items-center justify-between px-4 pt-3 pb-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{format(new Date(order.created_at), 'dd MMM yyyy', { locale: ar })}</span>
-                    <span className="text-muted-foreground/40">•</span>
-                    <span className="font-mono text-[11px]">#{order.order_number}</span>
-                  </div>
-                  <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 font-medium border", statusColor)}>
-                    {getStatusLabel(order.status)}
-                  </Badge>
-                </div>
+              const relativeTime = (() => {
+                try {
+                  return formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: ar });
+                } catch {
+                  return '';
+                }
+              })();
 
-                {/* Items preview */}
-                <div className="px-4 pb-3">
-                  <div className="flex gap-3 items-start">
-                    {/* Image stack */}
-                    <div className="relative flex-shrink-0">
-                      {firstImage ? (
-                        <img
-                          src={firstImage}
-                          alt={firstName}
-                          className="w-16 h-16 object-cover rounded-xl border bg-muted"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-xl border bg-muted flex items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground/40" />
+              return (
+                <div
+                  key={order.id}
+                  onClick={() => navigate(`/order/${order.id}`)}
+                  className="rounded-2xl border border-border/40 bg-card overflow-hidden hover:border-primary/20 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="flex">
+                    {/* Vertical accent bar */}
+                    <div className={cn("w-1.5 shrink-0 rounded-r-none", accentColor)} />
+
+                    <div className="flex-1 p-3.5">
+                      {/* Top row: order number + status */}
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] text-muted-foreground">#{order.order_number}</span>
+                          <span className="text-muted-foreground/30">•</span>
+                          <span className="text-[11px] text-muted-foreground">{relativeTime}</span>
                         </div>
-                      )}
-                      {itemCount > 1 && (
-                        <span className="absolute -bottom-1 -left-1 bg-foreground text-background text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
-                          {itemCount}
-                        </span>
-                      )}
-                    </div>
+                        <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 font-bold border rounded-lg", statusColor)}>
+                          {getStatusLabel(order.status)}
+                        </Badge>
+                      </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground line-clamp-1 mb-1">
-                        {firstName}
-                        {itemCount > 1 && (
-                          <span className="text-muted-foreground font-normal"> و{itemCount - 1} منتج آخر</span>
-                        )}
-                      </p>
+                      {/* Product row */}
+                      <div className="flex gap-3 items-start">
+                        <div className="relative shrink-0">
+                          {firstImage ? (
+                            <img
+                              src={firstImage}
+                              alt={firstName}
+                              className="w-14 h-14 object-cover rounded-xl border border-border/30 bg-muted"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-xl border border-border/30 bg-muted flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground/30" />
+                            </div>
+                          )}
+                          {itemCount > 1 && (
+                            <span className="absolute -bottom-1 -left-1 bg-primary text-primary-foreground text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center">
+                              {itemCount}
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Tags row */}
-                      <div className="flex flex-wrap gap-1 mb-1.5">
-                        <span className={cn(
-                          "inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md",
-                          isPreOrder
-                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                            : "bg-muted text-muted-foreground"
-                        )}>
-                          <ShoppingBag className="h-2.5 w-2.5" />
-                          {isPreOrder ? 'طلب مسبق' : 'مباشر'}
-                        </span>
-                        {isPreOrder && shippingName && (
-                          <span className={cn(
-                            "inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md",
-                            isFastShipping
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              : "bg-sky-500/10 text-sky-600 dark:text-sky-400"
-                          )}>
-                            {isFastShipping ? <Plane className="h-2.5 w-2.5" /> : <Ship className="h-2.5 w-2.5" />}
-                            {shippingName}
-                          </span>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground line-clamp-1 mb-1">
+                            {firstName}
+                            {itemCount > 1 && (
+                              <span className="text-muted-foreground font-normal text-xs"> و{itemCount - 1} آخر</span>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {isPreOrder && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600">
+                                <ShoppingBag className="h-2.5 w-2.5" />
+                                طلب مسبق
+                              </span>
+                            )}
+                            {isPreOrder && shippingName && (
+                              <span className={cn(
+                                "inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md",
+                                isFastShipping ? "bg-amber-500/10 text-amber-600" : "bg-sky-500/10 text-sky-600"
+                              )}>
+                                {isFastShipping ? <Plane className="h-2.5 w-2.5" /> : <Ship className="h-2.5 w-2.5" />}
+                                {shippingName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        <div className="text-left shrink-0">
+                          <p className="text-base font-black text-primary">
+                            {formatPrice(Number(order.total_amount))}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{order.currency}</p>
+                        </div>
                       </div>
 
                       {/* Tracking */}
                       {order.tracking_number && (
-                        <div className="flex items-center gap-1 text-[11px] text-primary">
+                        <div className="flex items-center gap-1.5 mt-2 text-[11px] text-primary bg-primary/5 rounded-lg px-2 py-1">
                           <Truck className="h-3 w-3" />
                           <code className="font-mono">{order.tracking_number}</code>
                         </div>
                       )}
-                    </div>
 
-                    {/* Price */}
-                    <div className="text-left flex-shrink-0">
-                      <p className="text-sm font-bold text-foreground">
-                        {formatPrice(Number(order.total_amount))}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">{order.currency}</p>
+                      {/* Action buttons */}
+                      {(order.status === 'delivered' || order.tracking_url) && (
+                        <div className="flex gap-2 mt-2.5">
+                          {order.tracking_url && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); window.open(order.tracking_url, '_blank'); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 rounded-xl py-2 transition-colors"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              تتبع الشحنة
+                            </button>
+                          )}
+                          {order.status === 'delivered' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/my-orders/${order.id}/confirm`); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/15 rounded-xl py-2 transition-colors"
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              تأكيد الاستلام
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-
-                {/* Bottom action bar */}
-                {(order.status === 'delivered' || order.tracking_url) && (
-                  <div className="border-t px-4 py-2 flex gap-2">
-                    {order.tracking_url && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(order.tracking_url, '_blank');
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-lg py-1.5 transition-colors"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        تتبع الشحنة
-                      </button>
-                    )}
-                    {order.status === 'delivered' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/my-orders/${order.id}/confirm`);
-                        }}
-                        className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-lg py-1.5 transition-colors"
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                        تأكيد الاستلام
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </main>
 
