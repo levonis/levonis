@@ -100,6 +100,8 @@ const Admin = () => {
     available_for_direct_sale?: boolean;
     available_for_pre_order?: boolean;
     taobao_linked_name?: string | null;
+    linked_options?: string[];
+    direct_sale_price?: number;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -2038,8 +2040,8 @@ const Admin = () => {
                                     <Input
                                       type="number"
                                       min="0"
-                                      step="500"
-                                      value={discount.discount_amount}
+                                      step="1"
+                                      value={discount.discount_amount || ''}
                                       onChange={(e) => {
                                         const updated = [...productCardDiscounts];
                                         updated[index] = { ...updated[index], discount_amount: Number(e.target.value) };
@@ -2668,6 +2670,67 @@ const Admin = () => {
                                        : "اللون متاح للعملاء"}
                                    </p>
                                  </div>
+
+                                 {/* ربط اللون بالخيارات */}
+                                 {productOptions.length > 0 && (
+                                   <div className="space-y-2 pt-2 border-t border-border/50">
+                                     <Label className="text-xs font-medium">الخيارات المتاحة لهذا اللون</Label>
+                                     <p className="text-[10px] text-muted-foreground">اترك الكل بدون تحديد = متاح لجميع الخيارات</p>
+                                     <div className="flex flex-wrap gap-2">
+                                       {productOptions.map((opt, optIdx) => {
+                                         const isLinked = color.linked_options?.includes(opt.name_ar) ?? false;
+                                         return (
+                                           <label key={optIdx} className="flex items-center gap-1.5 text-xs bg-muted/50 rounded-md px-2 py-1 cursor-pointer hover:bg-muted transition-colors">
+                                             <input
+                                               type="checkbox"
+                                               checked={isLinked}
+                                               onChange={(e) => {
+                                                 const current = color.linked_options || [];
+                                                 const updated = e.target.checked
+                                                   ? [...current, opt.name_ar]
+                                                   : current.filter(o => o !== opt.name_ar);
+                                                 updateProductColor(index, 'linked_options', updated.length > 0 ? updated : undefined);
+                                               }}
+                                               className="h-3 w-3 rounded"
+                                             />
+                                             {opt.name_ar}
+                                           </label>
+                                         );
+                                       })}
+                                     </div>
+                                   </div>
+                                 )}
+
+                                 {/* سعر البيع المباشر والمخزون */}
+                                 {color.available_for_direct_sale && (
+                                   <div className="space-y-2 pt-2 border-t border-border/50">
+                                     <Label className="text-xs font-medium">إعدادات البيع المباشر</Label>
+                                     <div className="grid grid-cols-2 gap-3">
+                                       <div className="space-y-1">
+                                         <Label className="text-xs">سعر البيع المباشر (د.ع)</Label>
+                                         <Input
+                                           type="number"
+                                           min="0"
+                                           value={color.direct_sale_price ?? ''}
+                                           onChange={(e) => updateProductColor(index, 'direct_sale_price', e.target.value ? Number(e.target.value) : undefined)}
+                                           placeholder="اتركه فارغاً للسعر الافتراضي"
+                                           className="h-9"
+                                         />
+                                       </div>
+                                       <div className="space-y-1">
+                                         <Label className="text-xs">كمية المخزون</Label>
+                                         <Input
+                                           type="number"
+                                           min="0"
+                                           value={color.stock_quantity ?? ''}
+                                           onChange={(e) => updateProductColor(index, 'stock_quantity', e.target.value ? Number(e.target.value) : undefined)}
+                                           placeholder="غير محدود"
+                                           className="h-9"
+                                         />
+                                       </div>
+                                     </div>
+                                   </div>
+                                 )}
                                  
                                  <div 
                                    id="colors-in-stock-notice"
@@ -2691,27 +2754,7 @@ const Admin = () => {
                                        متوفر في المخزون
                                      </Label>
                                    </div>
-                                   
-                                   {color.available_for_direct_sale && (
-                                     <div className="space-y-1 mr-6">
-                                       <Label className="text-xs">كمية المخزون (اختياري)</Label>
-                                       <Input
-                                         type="number"
-                                         min="0"
-                                         value={color.stock_quantity ?? ''}
-                                         onChange={(e) => updateProductColor(index, 'stock_quantity', e.target.value ? Number(e.target.value) : undefined)}
-                                         placeholder="اتركه فارغاً لغير محدود"
-                                         className="h-9"
-                                       />
-                                     </div>
-                                   )}
                                  </div>
-                                 <p 
-                                   className="text-xs text-muted-foreground"
-                                   style={{ display: (editingProduct?.has_in_stock ?? true) ? 'block' : 'none' }}
-                                 >
-                                   فقط للمنتجات المتوفرة في المخزن. عند إلغاء التحديد، يظهر اللون بشكل خافت للزبون
-                                 </p>
                                </div>
                              </div>
                            ))}
