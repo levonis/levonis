@@ -6,8 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { BadgeDollarSign, Upload, X, Loader2, CheckCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { BadgeDollarSign, Upload, X, Loader2, CheckCircle, Send, MapPin, Camera } from 'lucide-react';
 
 interface PriceMatchFormProps {
   productId: string;
@@ -34,6 +39,15 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
     }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  const resetForm = () => {
+    setFoundPrice('');
+    setSourceUrl('');
+    setNotes('');
+    setImageFile(null);
+    setImagePreview(null);
+    setSubmitted(false);
   };
 
   const handleSubmit = async () => {
@@ -77,7 +91,7 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
       if (error) throw error;
 
       setSubmitted(true);
-      toast.success('تم إرسال طلبك بنجاح! سنراجعه قريباً');
+      toast.success('شكراً لمساعدتك! سنراجع السعر قريباً 🙏');
     } catch (error) {
       console.error('Error submitting price match:', error);
       toast.error('حدث خطأ في إرسال الطلب');
@@ -86,106 +100,142 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
     }
   };
 
-  if (submitted) {
-    return (
-      <div className="border border-primary/20 rounded-xl p-4 bg-primary/5 text-center space-y-2">
-        <CheckCircle className="h-8 w-8 text-primary mx-auto" />
-        <p className="text-sm font-bold text-primary">تم إرسال طلبك بنجاح!</p>
-        <p className="text-xs text-muted-foreground">سنراجع السعر ونرد عليك قريباً</p>
-      </div>
-    );
-  }
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all text-primary text-sm font-bold active:scale-[0.98]"
-      >
-        <BadgeDollarSign className="h-4 w-4" />
-        وجدت السعر أقل في مكان آخر؟
-      </button>
-    );
-  }
-
   return (
-    <div className="border border-border/30 rounded-xl p-4 bg-card/50 backdrop-blur-sm space-y-3 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-black flex items-center gap-2">
-          <BadgeDollarSign className="h-4 w-4 text-primary" />
-          أبلغنا عن سعر أقل
-        </h4>
-        <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-xs font-bold">السعر الذي وجدته (بالدولار) *</Label>
-        <Input
-          type="number"
-          step="0.01"
-          min="0"
-          value={foundPrice}
-          onChange={(e) => setFoundPrice(e.target.value)}
-          placeholder="مثال: 15.99"
-          className="text-sm h-9"
-          dir="ltr"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-xs font-bold">رابط المصدر (اختياري)</Label>
-        <Input
-          type="url"
-          value={sourceUrl}
-          onChange={(e) => setSourceUrl(e.target.value)}
-          placeholder="https://..."
-          className="text-sm h-9"
-          dir="ltr"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-xs font-bold">صورة إثبات السعر (اختياري)</Label>
-        {imagePreview ? (
-          <div className="relative w-full h-32 rounded-lg overflow-hidden border border-border/30">
-            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-            <button
-              onClick={() => { setImageFile(null); setImagePreview(null); }}
-              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ) : (
-          <label className="flex items-center justify-center gap-2 py-4 border border-dashed border-border/40 rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
-            <Upload className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">اضغط لرفع صورة</span>
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-          </label>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label className="text-xs font-bold">ملاحظات إضافية (اختياري)</Label>
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="أي تفاصيل إضافية..."
-          className="text-sm min-h-[60px] resize-none"
-        />
-      </div>
-
-      <Button
-        onClick={handleSubmit}
-        disabled={submitting || !foundPrice}
-        className="w-full h-9 text-sm font-bold rounded-xl"
+    <>
+      {/* Trigger Button */}
+      <button
+        onClick={() => { resetForm(); setOpen(true); }}
+        className="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl border-2 border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 transition-all text-amber-600 dark:text-amber-400 text-sm font-black active:scale-[0.97]"
       >
-        {submitting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <BadgeDollarSign className="h-4 w-4 ml-2" />}
-        إرسال
-      </Button>
-    </div>
+        <BadgeDollarSign className="h-5 w-5" />
+        <span>لكيتها بمكان ارخص؟ دلينا! 👀</span>
+      </button>
+
+      {/* Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-sm mx-auto rounded-2xl p-0 overflow-hidden" dir="rtl">
+          {submitted ? (
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h3 className="text-lg font-black text-foreground">شكراً لك! 🎉</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                تم إرسال معلوماتك بنجاح. سنراجع السعر ونحاول نوفره بأفضل عرض!
+              </p>
+              <Button
+                onClick={() => setOpen(false)}
+                className="mt-2 rounded-xl"
+              >
+                تمام 👍
+              </Button>
+            </div>
+          ) : (
+            <>
+              <DialogHeader className="px-5 pt-5 pb-0">
+                <DialogTitle className="flex items-center gap-2 text-base font-black">
+                  <BadgeDollarSign className="h-5 w-5 text-amber-500" />
+                  دلنا على السعر الأرخص!
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ساعدنا نوفر أفضل سعر لـ <span className="font-bold text-foreground">{productName}</span>
+                </p>
+              </DialogHeader>
+
+              <div className="px-5 pb-5 pt-3 space-y-4">
+                {/* Chat-like message bubble for context */}
+                <div className="bg-muted/50 rounded-2xl rounded-tr-sm p-3 text-xs text-muted-foreground leading-relaxed">
+                  💬 شاركنا السعر اللي لكيته ووين، وإذا عندك صورة إثبات ارفقها. نحن نحب نكون الأرخص دائماً!
+                </div>
+
+                {/* Price Input */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold flex items-center gap-1">
+                    <BadgeDollarSign className="h-3.5 w-3.5 text-primary" />
+                    السعر اللي لكيته *
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={foundPrice}
+                    onChange={(e) => setFoundPrice(e.target.value)}
+                    placeholder="مثال: 15.99 $"
+                    className="text-sm h-10 rounded-xl"
+                    dir="ltr"
+                  />
+                </div>
+
+                {/* Source */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
+                    وين لكيته؟ (رابط أو اسم المتجر)
+                  </Label>
+                  <Input
+                    type="text"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    placeholder="رابط الموقع أو اسم المتجر..."
+                    className="text-sm h-10 rounded-xl"
+                  />
+                </div>
+
+                {/* Image Upload */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold flex items-center gap-1">
+                    <Camera className="h-3.5 w-3.5 text-primary" />
+                    صورة إثبات (اختياري)
+                  </Label>
+                  {imagePreview ? (
+                    <div className="relative w-full h-36 rounded-xl overflow-hidden border border-border/30">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 shadow-lg"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center gap-1.5 py-5 border-2 border-dashed border-border/40 rounded-xl cursor-pointer hover:bg-muted/30 hover:border-primary/30 transition-colors">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">اضغط لرفع صورة</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    </label>
+                  )}
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold">ملاحظات إضافية (اختياري)</Label>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="أي تفاصيل ثانية تبي تضيفها..."
+                    className="text-sm min-h-[60px] resize-none rounded-xl"
+                  />
+                </div>
+
+                {/* Submit */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting || !foundPrice}
+                  className="w-full h-11 text-sm font-black rounded-xl gap-2"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {submitting ? 'جاري الإرسال...' : 'إرسال 🚀'}
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
