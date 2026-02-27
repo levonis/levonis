@@ -69,21 +69,61 @@ export default function CartRequestDialog({
       // Generate unique cart code
       const cartCode = `CART-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-      // Prepare cart items data
-      const cartItemsData = cartItems.map(item => ({
-        product_id: item.product_id,
-        name_ar: item.products?.name_ar,
-        image_url: item.products?.image_url,
-        price: item.products?.price || 0,
-        quantity: item.quantity,
-        selected_color: item.selected_color,
-        color_image_url: item.color_image_url,
-        product_option_id: item.product_option_id,
-        option_name_ar: item.product_options?.name_ar,
-        option_image_url: item.option_image_url,
-        shipping_option_name_ar: item.shipping_option_name_ar,
-        custom_request_id: item.custom_request_id,
-      }));
+      // Prepare cart items data with correct prices
+      const cartItemsData = cartItems.map(item => {
+        const isCustomRequest = !!item.custom_request_id;
+        const isDirect = (item as any).sale_type === 'direct';
+        
+        // Calculate correct item price
+        let itemPrice = isCustomRequest
+          ? Number((item as any).custom_product_requests?.suggested_price || 0)
+          : Number(item.products?.price || 0);
+
+        if (!isCustomRequest && isDirect && item.products?.direct_sale_price != null) {
+          itemPrice = Number(item.products.direct_sale_price);
+        } else if (!isCustomRequest && !isDirect) {
+          const shippingType = (item.products as any)?.shipping_type;
+          const seaPrice = (item.products as any)?.sea_price;
+          const airPrice = (item.products as any)?.air_price;
+          if (shippingType === 'sea' && seaPrice != null) itemPrice = Number(seaPrice);
+          else if (shippingType === 'air' && airPrice != null) itemPrice = Number(airPrice);
+          else if (shippingType === 'both' && seaPrice != null && airPrice != null) itemPrice = Math.min(Number(seaPrice), Number(airPrice));
+        }
+
+        // Check color-specific pricing
+        const selectedColor = (item as any).selected_color;
+        if (selectedColor && item.products?.colors) {
+          const colorData = (item.products.colors as any[]).find(
+            (c: any) => c.name === selectedColor || c.name_ar === selectedColor || c.hex_code === selectedColor
+          );
+          if (colorData?.direct_sale_price != null && isDirect) {
+            itemPrice = Number(colorData.direct_sale_price);
+          } else if (colorData?.price != null) {
+            itemPrice = Number(colorData.price);
+          }
+        }
+
+        // Check option-specific pricing
+        if ((item as any).product_options?.price_modifier) {
+          itemPrice += Number((item as any).product_options.price_modifier);
+        }
+
+        return {
+          product_id: item.product_id,
+          name_ar: item.products?.name_ar,
+          image_url: item.products?.image_url,
+          price: itemPrice,
+          quantity: item.quantity,
+          selected_color: item.selected_color,
+          color_image_url: item.color_image_url,
+          product_option_id: item.product_option_id,
+          option_name_ar: (item as any).product_options?.name_ar,
+          option_image_url: item.option_image_url,
+          shipping_option_name_ar: item.shipping_option_name_ar,
+          custom_request_id: item.custom_request_id,
+          sale_type: (item as any).sale_type,
+        };
+      });
 
       const { data, error } = await supabase
         .from('cart_requests')

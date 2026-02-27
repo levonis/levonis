@@ -460,9 +460,14 @@ const Cart = () => {
 
       const orderSubtotal = total - (appliedCoupon ? calculateDiscount() : 0);
 
+      // Generate order number
+      const { data: orderNumberData } = await supabase.rpc('generate_order_number');
+      const orderNumber = orderNumberData || `ORD-${Date.now()}`;
+
       // Create order directly (no wallet payment)
       const orderInsertData = {
         user_id: user.id,
+        order_number: orderNumber,
         total_amount: orderSubtotal + deliveryFeeCalc,
         subtotal: orderSubtotal,
         paid_amount: 0,
