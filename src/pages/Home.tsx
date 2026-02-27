@@ -101,25 +101,26 @@ const Home = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
-        {/* Wishes Link Bar - Premium Animated Banner */}
+        {/* ✨ Wishes Link - Animated Premium Banner */}
         <section className="container mx-auto px-4 mb-2">
-          <a
-            href="/wishes"
-            className="relative flex items-center justify-between py-3 px-5 rounded-2xl overflow-hidden group hover:shadow-lg hover:shadow-primary/10 transition-all duration-500"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-accent/20 to-primary/15 group-hover:from-primary/25 group-hover:via-accent/30 group-hover:to-primary/25 transition-all duration-500" />
-            <div className="absolute inset-0 border border-primary/20 group-hover:border-primary/40 rounded-2xl transition-colors duration-300" />
-            <div className="absolute -top-6 -right-6 w-20 h-20 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all" />
-            <div className="relative flex items-center gap-2.5">
-              <span className="text-lg animate-pulse">✨</span>
-              <div>
-                <span className="text-sm font-black text-primary block leading-tight">الأمنيات</span>
-                <span className="text-[10px] text-muted-foreground">تمنّى منتجاً وسنوفره لك!</span>
+          <a href="/wishes" className="block relative rounded-2xl overflow-hidden group">
+            {/* Shimmer border */}
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary/40 via-accent/60 to-primary/40 bg-[length:300%_100%] rounded-2xl animate-shimmer opacity-50 group-hover:opacity-80 transition-opacity" />
+            <div className="relative bg-card/95 rounded-[15px] py-3 px-4 flex items-center justify-between">
+              {/* Glow blob */}
+              <div className="absolute -top-4 right-6 w-16 h-16 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-700" />
+              <div className="relative flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <span className="text-base">✨</span>
+                </div>
+                <div>
+                  <span className="text-sm font-black text-foreground block leading-tight">الأمنيات</span>
+                  <span className="text-[10px] text-muted-foreground">تمنّى منتجاً وسنوفره لك</span>
+                </div>
               </div>
-            </div>
-            <div className="relative flex items-center gap-1 text-primary/70 group-hover:text-primary transition-colors">
-              <span className="text-xs font-bold hidden sm:inline">اكتشف</span>
-              <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300 rtl:rotate-180 rtl:group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              <div className="relative w-7 h-7 rounded-lg bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-all">
+                <svg className="w-3.5 h-3.5 text-primary group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[2px] transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              </div>
             </div>
           </a>
         </section>
