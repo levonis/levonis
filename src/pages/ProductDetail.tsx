@@ -224,7 +224,7 @@ const ProductDetail = () => {
       const isAvailableForType = activeSaleType === 'direct' ? (color.available_for_direct_sale ?? true) : (color.available_for_pre_order ?? false);
       const linkedOptions = color.linked_options as string[] | undefined;
       const isLinkedToOption = !linkedOptions || linkedOptions.length === 0 || !selectedOptionName ? true : linkedOptions.includes(selectedOptionName);
-      const isInStock = color.in_stock !== false;
+      const isInStock = activeSaleType === 'preorder' ? true : (color.in_stock !== false);
       return { ...color, isAvailable: isAvailableForType && isLinkedToOption && isInStock, isLinkedToOption };
     });
   };
