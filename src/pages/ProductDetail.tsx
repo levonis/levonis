@@ -295,14 +295,23 @@ const ProductDetail = () => {
     const availableColors = filteredColors.filter((c: any) => c.isAvailable);
     if (availableColors.length > 0 && !selectedColor) { toast.error('يرجى اختيار اللون'); return; }
     const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
-    const hasCustomShippingOptions = activeSaleType === 'preorder' && preOrderShippingOptions.length > 0;
-    if (hasCustomShippingOptions && selectedShippingOption === null) { toast.error(t('product_choose_shipping')); return; }
-    // Block if direct sale shipping type requires selection
-    if (activeSaleType === 'direct' && product.shipping_type === 'both' && !selectedShippingOption && selectedShippingOption !== 0) {
-      // Only enforce if there are shipping options to pick from
+    // Build fallback options same as in the UI
+    const fallbackOpts: any[] = [];
+    if (preOrderShippingOptions.length === 0 && activeSaleType === 'preorder') {
+      const st = product.shipping_type;
+      if ((st === 'both' || st === 'sea') && (product as any).sea_price) fallbackOpts.push({ name_ar: '🚢 شحن بحري', price_adjustment: 0, type: 'sea' });
+      if ((st === 'both' || st === 'air') && (product as any).air_price) {
+        const adj = st === 'both' ? (Number((product as any).air_price || 0) - Number((product as any).sea_price || 0)) : 0;
+        fallbackOpts.push({ name_ar: '✈️ شحن جوي', price_adjustment: adj, type: 'air' });
+      }
     }
-    const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
-      ? { index: selectedShippingOption, name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar }
+    const allShippingOpts = preOrderShippingOptions.length > 0 ? preOrderShippingOptions : fallbackOpts;
+    if (activeSaleType === 'preorder' && allShippingOpts.length > 1 && selectedShippingOption === null) {
+      toast.error(t('product_choose_shipping'));
+      return;
+    }
+    const shippingInfo = selectedShippingOption !== null && allShippingOpts[selectedShippingOption]
+      ? { index: selectedShippingOption, name_ar: (allShippingOpts[selectedShippingOption] as any).name_ar }
       : undefined;
     try {
       const success = await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo, activeSaleType);
@@ -505,40 +514,65 @@ const ProductDetail = () => {
               {/* Accordion sections */}
               <Accordion type="multiple" defaultValue={['shipping', 'options', 'colors']} className="space-y-2">
                 {/* Shipping Options */}
-                {activeSaleType === 'preorder' && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
-                  <AccordionItem value="shipping" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
-                    <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
-                      <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" />{t('product_shipping_type')}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-3 pb-3">
-                      <div className="space-y-1.5">
-                        {product.pre_order_shipping_options.map((option: any, index: number) => (
-                          <button key={index} onClick={() => setSelectedShippingOption(index)}
-                            className={cn("w-full flex items-center gap-2 p-2.5 rounded-xl border transition-all text-right backdrop-blur-sm active:scale-[0.98]",
-                              selectedShippingOption === index
-                                ? 'border-primary/40 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
-                                : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]')}>
-                            <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
-                              selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30')}>
-                              {selectedShippingOption === index && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
-                            </div>
-                            <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
-                              <div className="min-w-0">
-                                <span className="font-bold text-xs block truncate">{option.name_ar}</span>
-                                {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
+                {activeSaleType === 'preorder' && (() => {
+                  const preOrderOpts = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
+                  const shippingType = product.shipping_type;
+                  // Build fallback options from sea_price/air_price when no custom options exist
+                  const fallbackOptions: any[] = [];
+                  if (preOrderOpts.length === 0 && (shippingType === 'both' || shippingType === 'sea' || shippingType === 'air')) {
+                    if ((shippingType === 'both' || shippingType === 'sea') && (product as any).sea_price) {
+                      fallbackOptions.push({ name_ar: '🚢 شحن بحري', description: 'توصيل خلال 25-40 يوم', price_adjustment: 0, type: 'sea' });
+                    }
+                    if ((shippingType === 'both' || shippingType === 'air') && (product as any).air_price) {
+                      const seaP = Number((product as any).sea_price || 0);
+                      const airP = Number((product as any).air_price || 0);
+                      const adj = shippingType === 'both' ? (airP - seaP) : 0;
+                      fallbackOptions.push({ name_ar: '✈️ شحن جوي', description: 'توصيل خلال 7-15 يوم', price_adjustment: adj, type: 'air' });
+                    }
+                  }
+                  const displayOptions = preOrderOpts.length > 0 ? preOrderOpts : fallbackOptions;
+                  // If only one option, auto-select it
+                  if (displayOptions.length === 1 && selectedShippingOption === null) {
+                    setTimeout(() => setSelectedShippingOption(0), 0);
+                  }
+                  if (displayOptions.length === 0) return null;
+                  return (
+                    <AccordionItem value="shipping" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
+                        <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" />{t('product_shipping_type')}
+                          {selectedShippingOption === null && displayOptions.length > 1 && <Badge variant="destructive" className="text-[8px] px-1.5 py-0 h-4 mr-1">مطلوب</Badge>}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-3 pb-3">
+                        <div className="space-y-1.5">
+                          {displayOptions.map((option: any, index: number) => (
+                            <button key={index} onClick={() => setSelectedShippingOption(index)}
+                              className={cn("w-full flex items-center gap-2 p-2.5 rounded-xl border transition-all text-right backdrop-blur-sm active:scale-[0.98]",
+                                selectedShippingOption === index
+                                  ? 'border-primary/40 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
+                                  : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]')}>
+                              <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                                selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30')}>
+                                {selectedShippingOption === index && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
                               </div>
-                              {option.price_adjustment > 0 ? (
-                                <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(option.price_adjustment)}</span>
-                              ) : (
-                                <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 h-4">{t('product_free')}</Badge>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
+                              <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                                <div className="min-w-0">
+                                  <span className="font-bold text-xs block truncate">{option.name_ar}</span>
+                                  {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
+                                </div>
+                                {option.price_adjustment > 0 ? (
+                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(option.price_adjustment)}</span>
+                                ) : (
+                                  <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 h-4">{t('product_free')}</Badge>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })()}
 
                 {/* Product Options */}
                 {filteredOptions.length > 0 && (
