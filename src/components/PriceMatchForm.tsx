@@ -121,7 +121,7 @@ const PriceMatchForm = ({ productId, productName }: PriceMatchFormProps) => {
           document.body.style.pointerEvents = '';
         }
       }}>
-        <DialogContent className="max-w-sm mx-auto rounded-2xl p-0 overflow-hidden z-[100]" dir="rtl">
+        <DialogContent className="max-w-sm mx-auto rounded-2xl p-0 z-[100] max-h-[90dvh] overflow-y-auto" dir="rtl">
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-3">
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
