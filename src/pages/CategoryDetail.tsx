@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
 import { useState } from 'react';
@@ -17,6 +18,7 @@ import { useLanguage } from '@/lib/i18n';
 
 const CategoryDetail = () => {
   const { t } = useLanguage();
+  const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -44,8 +46,11 @@ const CategoryDetail = () => {
         .from('products')
         .select('*')
         .eq('category_id', category.id)
-        .eq('in_stock', true)
-        .eq('is_pricing_updated', true);
+        .eq('in_stock', true);
+
+      if (!isAdmin) {
+        query = query.eq('is_pricing_updated', true);
+      }
 
       // Apply sorting
       if (sortBy === 'price-asc') {

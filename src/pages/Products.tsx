@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
@@ -50,6 +51,7 @@ const Products = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const ITEMS_PER_PAGE = 24;
   const { t } = useLanguage();
+  const { isAdmin } = useAuth();
 
   // Fetch categories for filter
   const { data: categories } = useQuery({
@@ -72,8 +74,11 @@ const Products = () => {
 
       let query = supabase
         .from('products')
-        .select('*', { count: 'exact' })
-        .eq('is_pricing_updated', true);
+        .select('*', { count: 'exact' });
+
+      if (!isAdmin) {
+        query = query.eq('is_pricing_updated', true);
+      }
 
       // Apply category filter
       if (categoryFilter !== 'all') {
