@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { WECHAT_EMOJIS } from './emojiData';
+import DOMPurify from 'dompurify';
 
 interface RichTextInputProps {
   value: string;
@@ -39,7 +40,7 @@ function textToHtml(text: string): string {
 // Convert HTML with images back to text with emoji codes
 function htmlToText(html: string): string {
   const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
+  tempDiv.innerHTML = DOMPurify.sanitize(html, { ALLOWED_TAGS: ['img'], ALLOWED_ATTR: ['src', 'alt', 'class', 'data-code'] });
   
   // Replace img elements with their data-code
   const images = tempDiv.querySelectorAll('img.inline-emoji');
@@ -77,8 +78,9 @@ export default function RichTextInput({
     // Only update if value actually changed (not from our own onChange)
     if (value !== lastValueRef.current) {
       const html = textToHtml(value);
-      if (editorRef.current.innerHTML !== html) {
-        editorRef.current.innerHTML = html;
+      const sanitizedHtml = DOMPurify.sanitize(html, { ALLOWED_TAGS: ['img'], ALLOWED_ATTR: ['src', 'alt', 'class', 'data-code'] });
+      if (editorRef.current.innerHTML !== sanitizedHtml) {
+        editorRef.current.innerHTML = sanitizedHtml;
       }
       lastValueRef.current = value;
     }
