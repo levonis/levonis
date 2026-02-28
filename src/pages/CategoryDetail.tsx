@@ -204,6 +204,7 @@ const CategoryDetail = () => {
                         currency={product.currency || undefined}
                         slug={product.slug}
                         hasDirectSale={product.has_in_stock ?? false}
+                        soldCount={product.sold_count ?? 0}
                       />
                     ))}
                   </div>

@@ -24,6 +24,7 @@ interface ProductCardProps {
   priority?: boolean;
   hasDirectSale?: boolean;
   inStock?: boolean;
+  soldCount?: number;
 }
 
 const ProductCard = ({ 
@@ -40,7 +41,8 @@ const ProductCard = ({
   slug,
   priority = false,
   inStock = true,
-  hasDirectSale = false
+  hasDirectSale = false,
+  soldCount = 0
 }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -153,7 +155,14 @@ const ProductCard = ({
           {descriptionAr}
         </p>
       )}
-      
+
+      {soldCount > 0 && (
+        <div className="flex items-center gap-0.5 mb-1">
+          <span className="text-[9px] text-muted-foreground/70">
+            🔥 {soldCount} قطعة مباعة
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-1">
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-0.5">

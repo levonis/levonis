@@ -288,6 +288,7 @@ const Products = () => {
                   slug={product.slug}
                   inStock={product.in_stock ?? true}
                   hasDirectSale={product.has_in_stock ?? false}
+                  soldCount={product.sold_count ?? 0}
                 />
               ))}
             </div>

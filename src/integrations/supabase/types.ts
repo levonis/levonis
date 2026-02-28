@@ -5233,6 +5233,7 @@ export type Database = {
           shipping_cost_iqd: number | null
           shipping_type: string | null
           slug: string
+          sold_count: number
           taobao_availability_cache: Json | null
           taobao_last_sync_at: string | null
           taobao_sync_status: string | null
@@ -5290,6 +5291,7 @@ export type Database = {
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
           slug: string
+          sold_count?: number
           taobao_availability_cache?: Json | null
           taobao_last_sync_at?: string | null
           taobao_sync_status?: string | null
@@ -5347,6 +5349,7 @@ export type Database = {
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
           slug?: string
+          sold_count?: number
           taobao_availability_cache?: Json | null
           taobao_last_sync_at?: string | null
           taobao_sync_status?: string | null
