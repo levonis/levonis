@@ -87,7 +87,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     if (!shippingSettings || !priceUsd) return null;
     const rate = shippingSettings.usd_to_iqd_rate;
     const priceIqd = Math.round(priceUsd * rate);
-    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number }> = [];
+    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number }> = [];
 
     if (hasPreOrder && hasSea) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
@@ -115,6 +115,10 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         shipping: calc.shippingCost,
         commission: commissionAirIqd,
         final: priceIqd + calc.shippingCost + commissionAirIqd,
+        breakdown: calc.breakdown,
+        actualWeight: calc.actualWeight,
+        volumetricWeight: calc.volumetricWeight,
+        usedWeight: calc.usedWeight,
       });
     }
 
@@ -362,6 +366,13 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">تكلفة الشحن</span>
                     <span>{formatPrice(r.shipping)}</span>
+                  </div>
+                )}
+                {r.type === 'air' && r.usedWeight && (
+                  <div className="text-xs text-muted-foreground space-y-0.5 bg-muted/30 rounded p-1.5">
+                    {r.actualWeight && <div>الوزن الفعلي: {r.actualWeight.toFixed(2)} كغ</div>}
+                    {r.volumetricWeight && <div>الوزن الحجمي: {r.volumetricWeight.toFixed(2)} كغ</div>}
+                    <div className="font-medium text-foreground">الوزن المستخدم (الأكبر + هامش أمان): {(r.usedWeight * 1.05).toFixed(2)} كغ</div>
                   </div>
                 )}
                 {r.type === 'direct' && otherCostsIqd > 0 && (
