@@ -64,15 +64,32 @@ const ConfirmDelivery = () => {
         const uploadedImageUrls: string[] = [];
         
         // Upload images
-        for (const img of (productImages[pid] || [])) {
-          const ext = img.name.split('.').pop() || 'jpg';
-          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-          const { error } = await supabase.storage.from("review-media").upload(path, img);
-          if (error) {
-            console.error('Image upload error:', error);
-          } else {
-            const { data } = supabase.storage.from("review-media").getPublicUrl(path);
-            uploadedImageUrls.push(data.publicUrl);
+        const imagesToUpload = productImages[pid] || [];
+        for (const img of imagesToUpload) {
+          try {
+            const ext = img.name.split('.').pop() || 'jpg';
+            const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+            const path = `${user.id}/${uniqueName}`;
+            console.log('Uploading image:', path, 'size:', img.size, 'type:', img.type);
+            
+            const { data: uploadData, error } = await supabase.storage
+              .from("review-media")
+              .upload(path, img, {
+                contentType: img.type || 'image/jpeg',
+                cacheControl: '3600',
+              });
+            
+            if (error) {
+              console.error('Image upload error:', error);
+              toast.error(`فشل رفع الصورة: ${error.message}`);
+            } else {
+              console.log('Image uploaded successfully:', uploadData);
+              const { data } = supabase.storage.from("review-media").getPublicUrl(path);
+              uploadedImageUrls.push(data.publicUrl);
+            }
+          } catch (uploadErr) {
+            console.error('Image upload exception:', uploadErr);
+            toast.error('حدث خطأ غير متوقع أثناء رفع الصورة');
           }
         }
 
@@ -80,13 +97,28 @@ const ConfirmDelivery = () => {
         let videoUrl: string | null = null;
         const vid = productVideos[pid];
         if (vid) {
-          const path = `${user.id}/${Date.now()}-video.mp4`;
-          const { error } = await supabase.storage.from("review-media").upload(path, vid);
-          if (error) {
-            console.error('Video upload error:', error);
-          } else {
-            const { data } = supabase.storage.from("review-media").getPublicUrl(path);
-            videoUrl = data.publicUrl;
+          try {
+            const path = `${user.id}/${Date.now()}-video.mp4`;
+            console.log('Uploading video:', path, 'size:', vid.size);
+            
+            const { data: uploadData, error } = await supabase.storage
+              .from("review-media")
+              .upload(path, vid, {
+                contentType: vid.type || 'video/mp4',
+                cacheControl: '3600',
+              });
+            
+            if (error) {
+              console.error('Video upload error:', error);
+              toast.error(`فشل رفع الفيديو: ${error.message}`);
+            } else {
+              console.log('Video uploaded successfully:', uploadData);
+              const { data } = supabase.storage.from("review-media").getPublicUrl(path);
+              videoUrl = data.publicUrl;
+            }
+          } catch (uploadErr) {
+            console.error('Video upload exception:', uploadErr);
+            toast.error('حدث خطأ غير متوقع أثناء رفع الفيديو');
           }
         }
 
