@@ -349,18 +349,45 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     refetchInterval: 60_000, // Refresh online status every minute
   });
 
-  // Fetch messages
+  // Pagination state
+  const [messageLimit, setMessageLimit] = useState(50);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollToBottom = useRef(true);
+  const prevSelectedConversation = useRef<string | null>(null);
+
+  // Reset pagination when conversation changes
+  useEffect(() => {
+    if (selectedConversation !== prevSelectedConversation.current) {
+      setMessageLimit(50);
+      setHasMoreMessages(false);
+      shouldScrollToBottom.current = true;
+      prevSelectedConversation.current = selectedConversation;
+    }
+  }, [selectedConversation]);
+
+  // Fetch messages with pagination
   const { data: messages, isLoading: loadingMessages } = useQuery({
-    queryKey: ['listing-messages', selectedConversation],
+    queryKey: ['listing-messages', selectedConversation, messageLimit],
     queryFn: async () => {
       if (!selectedConversation) return [];
+      // Get total count first
+      const { count } = await supabase
+        .from('listing_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', selectedConversation);
+      
+      setHasMoreMessages((count || 0) > messageLimit);
+      
       const { data, error } = await supabase
         .from('listing_messages')
         .select('*')
         .eq('conversation_id', selectedConversation)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(messageLimit);
       if (error) throw error;
-      return data;
+      return (data || []).reverse(); // Reverse to show oldest first
     },
     enabled: !!selectedConversation,
     refetchInterval: 3000,
@@ -418,36 +445,56 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     refetchInterval: open ? 5000 : false,
   });
 
+  // Scroll to bottom only on initial load or when user sends a message
   useEffect(() => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    if (shouldScrollToBottom.current && messages?.length) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        shouldScrollToBottom.current = false;
+      }, 100);
+    }
   }, [messages, selectedConversation]);
 
-  // Mark messages as read when conversation selected (don't auto-focus to prevent keyboard popup)
+  // Load older messages on scroll to top
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container || loadingOlder || !hasMoreMessages) return;
+    if (container.scrollTop < 80) {
+      setLoadingOlder(true);
+      const prevScrollHeight = container.scrollHeight;
+      setMessageLimit(prev => prev + 50);
+      // After new messages load, maintain scroll position
+      setTimeout(() => {
+        if (container) {
+          container.scrollTop = container.scrollHeight - prevScrollHeight;
+        }
+        setLoadingOlder(false);
+      }, 500);
+    }
+  };
+
+  // Mark messages as read when conversation selected
   useEffect(() => {
     if (selectedConversation && user) {
-      // Mark all messages as read when opening a conversation
       const markAsRead = async () => {
+        const effectiveId = isAdmin ? SUPPORT_USER_ID : user.id;
         const { error } = await supabase
           .from('listing_messages')
           .update({ is_read: true })
           .eq('conversation_id', selectedConversation)
-          .neq('sender_id', user.id)
+          .neq('sender_id', effectiveId)
           .eq('is_read', false);
         
         if (!error) {
-          // Refetch to update UI
           queryClient.invalidateQueries({ queryKey: ['marketplace-unread-users-count'] });
           queryClient.invalidateQueries({ queryKey: ['unified-chat-unread'] });
           queryClient.invalidateQueries({ queryKey: ['conv-unread-counts'] });
-          queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
           queryClient.invalidateQueries({ queryKey: ['last-messages'] });
         }
       };
       markAsRead();
     }
-  }, [selectedConversation, user?.id, queryClient]);
+  }, [selectedConversation, user?.id, isAdmin, queryClient]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ content, mediaUrl, locationData, addressData, replyToId }: { 
@@ -531,6 +578,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     onSuccess: () => {
       setMessageInput('');
       setReplyTo(null);
+      shouldScrollToBottom.current = true;
       queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
       queryClient.invalidateQueries({ queryKey: ['last-messages'] });
@@ -1399,7 +1447,20 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 })()}
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
+                  {/* Load older messages indicator */}
+                  {hasMoreMessages && (
+                    <div className="flex justify-center py-2">
+                      <button 
+                        onClick={() => setMessageLimit(prev => prev + 50)}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1 rounded-full bg-muted/50"
+                      >
+                        {loadingOlder ? (
+                          <Loader2 className="w-3 h-3 animate-spin inline ml-1" />
+                        ) : 'تحميل الرسائل القديمة'}
+                      </button>
+                    </div>
+                  )}
                   {loadingMessages ? (
                     <div className="flex items-center justify-center h-full">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
