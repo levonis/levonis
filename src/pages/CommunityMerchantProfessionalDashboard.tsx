@@ -21,6 +21,7 @@ import {
   FileText,
   Sparkles,
   DollarSign,
+  Gift,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -438,6 +439,20 @@ export default function CommunityMerchantProfessionalDashboard() {
               </div>
               <div className="text-sm font-bold text-foreground">المنتجات</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">{productsCount || 0} منتج</div>
+            </div>
+            <ChevronLeft className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+
+          <button
+            onClick={() => navigate("/merchant-giveaways")}
+            className="group relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-4 text-right hover:border-amber-500/50 transition-all"
+          >
+            <div className="relative">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center mb-3">
+                <Gift className="h-5 w-5 text-amber-500" />
+              </div>
+              <div className="text-sm font-bold text-foreground">هدايا التجار</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">انضم للمسابقات واربح</div>
             </div>
             <ChevronLeft className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
