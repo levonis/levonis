@@ -5,12 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, MessageCircle } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { sendAllNotifications } from '@/lib/notifications';
 import ImageLightbox from '@/components/chat/ImageLightbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Support user ID - the admin support account
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
@@ -44,7 +45,16 @@ export default function AdminOrderChatDialog({
   const [message, setMessage] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
 
   // Get or create conversation when dialog opens
@@ -200,6 +210,130 @@ export default function AdminOrderChatDialog({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Upload media file and send as message
+  const handleSendMedia = async (file: File) => {
+    if (!conversationId) {
+      await getOrCreateConversation();
+    }
+    const convId = conversationId;
+    if (!convId) return;
+
+    setIsUploadingMedia(true);
+    try {
+      const ext = file.name.split('.').pop() || 'bin';
+      const path = `chat/listing/${SUPPORT_USER_ID}/${Date.now()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(path, file, { contentType: file.type, cacheControl: '3600' });
+
+      if (uploadError) {
+        toast.error('فشل رفع الملف: ' + uploadError.message);
+        return;
+      }
+      
+      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
+      await sendMediaMessage(convId, urlData.publicUrl, file.type);
+    } catch (err) {
+      console.error('Media upload error:', err);
+      toast.error('حدث خطأ أثناء رفع الملف');
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const sendMediaMessage = async (convId: string, mediaUrl: string, mimeType: string) => {
+    const isAudio = mimeType.startsWith('audio/');
+    const isVideo = mimeType.startsWith('video/');
+    const content = isAudio ? '🎤 رسالة صوتية' : isVideo ? '🎥 فيديو' : '📷 صورة';
+
+    const { error } = await supabase.from('listing_messages').insert({
+      conversation_id: convId,
+      sender_id: SUPPORT_USER_ID,
+      content,
+      image_url: mediaUrl,
+    });
+
+    if (error) throw error;
+
+    await supabase.from('listing_conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', convId);
+
+    await sendAllNotifications({
+      userId,
+      title: 'رسالة جديدة من الدعم',
+      message: content,
+      type: 'info',
+      relatedId: orderId,
+    });
+
+    refetchMessages();
+    queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await handleSendMedia(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    setAttachMenuOpen(false);
+  };
+
+  // Voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        await handleSendMedia(audioFile);
+        setRecordingTime(0);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+    } catch {
+      toast.error('لا يمكن الوصول إلى الميكروفون');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleSend = () => {
     if (!message.trim()) return;
     sendMessageMutation.mutate(message.trim());
@@ -245,7 +379,7 @@ export default function AdminOrderChatDialog({
                         key={msg.id}
                         className={`flex ${isSupport ? 'justify-start' : 'justify-end'}`}
                       >
-                        <div
+                         <div
                           className={`max-w-[80%] rounded-xl px-4 py-2 ${
                             isSupport
                               ? 'bg-primary text-primary-foreground'
@@ -253,16 +387,22 @@ export default function AdminOrderChatDialog({
                           }`}
                         >
                           {msg.image_url && (
-                            <ImageLightbox src={msg.image_url} alt="صورة">
-                              {(open) => (
-                                <img
-                                  src={msg.image_url!}
-                                  alt="صورة"
-                                  className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={open}
-                                />
-                              )}
-                            </ImageLightbox>
+                            msg.image_url.endsWith('.webm') || msg.image_url.includes('voice_') ? (
+                              <audio controls src={msg.image_url} className="max-w-full mb-2" />
+                            ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) && !msg.image_url.includes('voice_') ? (
+                              <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" />
+                            ) : (
+                              <ImageLightbox src={msg.image_url} alt="صورة">
+                                {(open) => (
+                                  <img
+                                    src={msg.image_url!}
+                                    alt="صورة"
+                                    className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={open}
+                                  />
+                                )}
+                              </ImageLightbox>
+                            )
                           )}
                           <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                           <p className={`text-xs mt-1 ${isSupport ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
@@ -278,28 +418,67 @@ export default function AdminOrderChatDialog({
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="p-4 border-t shrink-0">
-              <div className="flex gap-2">
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="اكتب رسالتك..."
-                  className="resize-none min-h-[44px] max-h-24"
-                  rows={1}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!message.trim() || sendMessageMutation.isPending}
-                  size="icon"
-                  className="shrink-0"
-                >
-                  {sendMessageMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="p-3 border-t shrink-0">
+              {/* Hidden File Inputs */}
+              <input type="file" ref={fileInputRef} accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
+              <input type="file" ref={cameraInputRef} accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
+
+              <div className="flex items-center gap-1.5">
+                {/* Attach Menu */}
+                <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-full shrink-0" disabled={isRecording}>
+                      {attachMenuOpen ? <X className="h-5 w-5 text-muted-foreground" /> : <Plus className="h-5 w-5 text-muted-foreground" />}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="start" className="w-auto p-2">
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => { cameraInputRef.current?.click(); }} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><Camera className="h-5 w-5 text-primary" /></div>
+                        <span className="text-[10px] text-muted-foreground">كاميرا</span>
+                      </button>
+                      <button type="button" onClick={() => { fileInputRef.current?.click(); }} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><ImageIcon className="h-5 w-5 text-primary" /></div>
+                        <span className="text-[10px] text-muted-foreground">صور/فيديو</span>
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Input or Recording */}
+                <div className="flex-1">
+                  {isRecording ? (
+                    <div className="flex items-center justify-center h-[42px] rounded-full bg-destructive/10 px-4 gap-3">
+                      <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                      <span className="text-destructive font-medium text-sm">{formatTime(recordingTime)}</span>
+                      <span className="text-destructive/70 text-xs">جاري التسجيل...</span>
+                    </div>
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <Textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="اكتب رسالتك..."
+                      className="resize-none min-h-[42px] max-h-24"
+                      rows={1}
+                    />
                   )}
-                </Button>
+                </div>
+
+                {/* Send / Voice / Stop */}
+                {message.trim() && !isRecording ? (
+                  <Button onClick={handleSend} disabled={sendMessageMutation.isPending || isUploadingMedia} size="icon" className="h-10 w-10 rounded-full shrink-0">
+                    {sendMessageMutation.isPending || isUploadingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                ) : isRecording ? (
+                  <Button onClick={stopRecording} variant="destructive" size="icon" className="h-10 w-10 rounded-full shrink-0">
+                    <Square className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button onClick={startRecording} variant="ghost" size="icon" className="h-10 w-10 rounded-full shrink-0" disabled={isUploadingMedia}>
+                    {isUploadingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-5 w-5 text-muted-foreground" />}
+                  </Button>
+                )}
               </div>
             </div>
           </>
