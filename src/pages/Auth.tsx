@@ -445,6 +445,7 @@ const Auth = () => {
         email={verificationEmail}
         type="password_reset"
         onVerified={handleVerificationComplete}
+        autoSendOnOpen={false}
       />
     </div>
   );
