@@ -6,7 +6,6 @@ import {
   CreditCard,
   XCircle,
   Edit,
-  Eye,
   MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,7 +46,7 @@ interface OrderCardProps {
   onConfirmReceipt?: () => void;
   onCancel?: () => void;
   onProposeChange?: () => void;
-  onViewDetails?: () => void;
+  
   onAddNotes?: () => void;
 }
 
@@ -127,9 +126,8 @@ const getAvailableActions = (status: OrderStatus, role: ChatRole) => {
     confirmReceipt?: boolean;
     cancel?: boolean;
     proposeChange?: boolean;
-    viewDetails?: boolean;
     addNotes?: boolean;
-  } = { viewDetails: true };
+  } = {};
 
   // Statuses where order is considered "paid" - merchant cannot edit
   const paidStatuses: OrderStatus[] = ['paid', 'shipped', 'completed'];
@@ -196,7 +194,6 @@ export default function OrderCard({
   onConfirmReceipt,
   onCancel,
   onProposeChange,
-  onViewDetails,
   onAddNotes,
 }: OrderCardProps) {
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.created;
@@ -335,17 +332,6 @@ export default function OrderCard({
               </Button>
             )}
             
-            {availableActions.viewDetails && onViewDetails && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="flex-1 h-8 text-xs"
-                onClick={onViewDetails}
-              >
-                <Eye className="h-3 w-3 ml-1" />
-                التفاصيل
-              </Button>
-            )}
             
             {availableActions.cancel && onCancel && (
               <Button

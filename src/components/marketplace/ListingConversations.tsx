@@ -1530,7 +1530,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         setSelectedOrderForPriceChange(order);
                                         setPriceChangeDialogOpen(true);
                                       }}
-                                      onViewDetails={() => toast.info('تفاصيل الطلب')}
+                                      
                                       onAddNotes={() => toast.info('إضافة ملاحظة')}
                                     />
                                   );
