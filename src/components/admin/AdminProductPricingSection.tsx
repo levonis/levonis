@@ -30,7 +30,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
   const [lengthCm, setLengthCm] = useState<number>(0);
   const [widthCm, setWidthCm] = useState<number>(0);
   const [heightCm, setHeightCm] = useState<number>(0);
-  const [weightKg, setWeightKg] = useState<number>(0);
+  const [weightKg, setWeightKg] = useState<string>('');
 
   // Commissions per type
   const [commissionSeaIqd, setCommissionSeaIqd] = useState<number>(0);
@@ -47,7 +47,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       setLengthCm(editingProduct.length_cm || 0);
       setWidthCm(editingProduct.width_cm || 0);
       setHeightCm(editingProduct.height_cm || 0);
-      setWeightKg(editingProduct.weight_kg || 0);
+      setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
 
       // Determine sale types
@@ -106,7 +106,8 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     if (hasPreOrder && hasAir) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
-      const calc = calculateShippingCost('china', 'air', dims, weightKg > 0 ? weightKg : null, shippingSettings);
+      const weightNum = parseFloat(weightKg) || 0;
+      const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
@@ -285,7 +286,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                 <div className="space-y-2">
                   <Label htmlFor="weight_kg">الوزن (كغ) *</Label>
                   <Input id="weight_kg" name="weight_kg" type="number" step="any" min="0"
-                    value={weightKg || ''} onChange={(e) => setWeightKg(Number(e.target.value))} placeholder="مثال: 0.5" />
+                    value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="مثال: 0.5" />
                 </div>
                 {!hasSea && (
                   <div>
