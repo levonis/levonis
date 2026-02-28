@@ -52,7 +52,7 @@ export default function CommunityGiftsButton() {
             onClick={() => { navigate("/merchant-giveaways"); setOpen(false); }}
           >
             <Gift className="h-4 w-4 text-primary shrink-0" />
-            <span className="flex-1">هدايا التجار</span>
+            <span className="flex-1">المساعدات</span>
             <ChevronLeft className="h-3 w-3 text-muted-foreground" />
           </button>
         )}

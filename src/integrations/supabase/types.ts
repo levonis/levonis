@@ -97,6 +97,222 @@ export type Database = {
         }
         Relationships: []
       }
+      assistance_coupon_claims: {
+        Row: {
+          coupon_code: string
+          coupon_id: string
+          created_at: string
+          id: string
+          is_used: boolean
+          user_id: string
+        }
+        Insert: {
+          coupon_code: string
+          coupon_id: string
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          user_id: string
+        }
+        Update: {
+          coupon_code?: string
+          coupon_id?: string
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistance_coupon_claims_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "assistance_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistance_coupons: {
+        Row: {
+          claimed_count: number
+          created_at: string
+          description_ar: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_claims: number
+          title_ar: string
+          valid_until: string | null
+        }
+        Insert: {
+          claimed_count?: number
+          created_at?: string
+          description_ar?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_claims?: number
+          title_ar: string
+          valid_until?: string | null
+        }
+        Update: {
+          claimed_count?: number
+          created_at?: string
+          description_ar?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_claims?: number
+          title_ar?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      assistance_envelope_claims: {
+        Row: {
+          created_at: string
+          envelope_id: string
+          id: string
+          remaining_discount: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          envelope_id: string
+          id?: string
+          remaining_discount?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          envelope_id?: string
+          id?: string
+          remaining_discount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistance_envelope_claims_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "assistance_red_envelopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistance_gift_claims: {
+        Row: {
+          created_at: string
+          gift_id: string
+          id: string
+          is_redeemed: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gift_id: string
+          id?: string
+          is_redeemed?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gift_id?: string
+          id?: string
+          is_redeemed?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistance_gift_claims_gift_id_fkey"
+            columns: ["gift_id"]
+            isOneToOne: false
+            referencedRelation: "assistance_gifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistance_gifts: {
+        Row: {
+          claimed_count: number
+          created_at: string
+          description_ar: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          max_claims: number
+          product_id: string | null
+          title_ar: string
+        }
+        Insert: {
+          claimed_count?: number
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_claims?: number
+          product_id?: string | null
+          title_ar: string
+        }
+        Update: {
+          claimed_count?: number
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_claims?: number
+          product_id?: string | null
+          title_ar?: string
+        }
+        Relationships: []
+      }
+      assistance_red_envelopes: {
+        Row: {
+          claimed_count: number
+          created_at: string
+          description_ar: string | null
+          discount_amount: number
+          id: string
+          is_active: boolean
+          is_limited: boolean
+          max_claims: number | null
+          max_discount: number
+          spend_threshold: number
+          title_ar: string
+        }
+        Insert: {
+          claimed_count?: number
+          created_at?: string
+          description_ar?: string | null
+          discount_amount?: number
+          id?: string
+          is_active?: boolean
+          is_limited?: boolean
+          max_claims?: number | null
+          max_discount?: number
+          spend_threshold?: number
+          title_ar: string
+        }
+        Update: {
+          claimed_count?: number
+          created_at?: string
+          description_ar?: string | null
+          discount_amount?: number
+          id?: string
+          is_active?: boolean
+          is_limited?: boolean
+          max_claims?: number | null
+          max_discount?: number
+          spend_threshold?: number
+          title_ar?: string
+        }
+        Relationships: []
+      }
       avatar_frames: {
         Row: {
           created_at: string
@@ -7622,6 +7838,18 @@ export type Database = {
       }
       check_username_available: {
         Args: { username_to_check: string }
+        Returns: boolean
+      }
+      claim_assistance_coupon: {
+        Args: { p_coupon_id: string; p_user_id: string }
+        Returns: string
+      }
+      claim_assistance_envelope: {
+        Args: { p_envelope_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      claim_assistance_gift: {
+        Args: { p_gift_id: string; p_user_id: string }
         Returns: boolean
       }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
