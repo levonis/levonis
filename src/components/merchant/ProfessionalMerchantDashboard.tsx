@@ -247,7 +247,7 @@ export default function ProfessionalMerchantDashboard() {
           </button>
 
           <button
-            onClick={() => navigate("/community/messages")}
+            onClick={() => navigate("/chats")}
             className="group relative p-3.5 rounded-xl border border-border/50 bg-card text-right hover:border-border transition-all"
           >
             <div className="h-9 w-9 rounded-lg bg-muted/50 flex items-center justify-center mb-2">

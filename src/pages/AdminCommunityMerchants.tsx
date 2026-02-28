@@ -683,7 +683,7 @@ function MerchantsContent() {
                     
                     if (existing) {
                       // Navigate to community messages and auto-open this conversation
-                      navigate(`/community/messages?auto_open=${existing.id}`);
+                      navigate(`/chats?auto_open=${existing.id}`);
                     } else {
                       // Create new listing_conversation with support as seller
                       const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
@@ -705,7 +705,7 @@ function MerchantsContent() {
                           sender_id: SUPPORT_USER_ID,
                           content: "👋 مرحباً، تم بدء محادثة من قبل الإدارة.",
                         });
-                        navigate(`/community/messages?auto_open=${newConvo.id}`);
+                        navigate(`/chats?auto_open=${newConvo.id}`);
                       }
                     }
                     setOpen(false);

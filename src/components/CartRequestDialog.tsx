@@ -190,7 +190,7 @@ export default function CartRequestDialog({
             .eq("id", conversationId);
 
           onOpenChange(false);
-          navigate(`/community/messages?auto_open=${conversationId}`);
+          navigate(`/chats?auto_open=${conversationId}`);
         } catch (e) {
           console.error('Auto-contact support failed:', e);
         }
@@ -267,7 +267,7 @@ export default function CartRequestDialog({
         .eq("id", conversationId);
 
       onOpenChange(false);
-      navigate(`/community/messages?auto_open=${conversationId}`);
+      navigate(`/chats?auto_open=${conversationId}`);
       toast.success('تم إرسال طلب السلة للدعم');
     } catch (error) {
       console.error('Error contacting support:', error);

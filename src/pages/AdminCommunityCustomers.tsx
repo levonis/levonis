@@ -590,7 +590,7 @@ function CustomersContent() {
                   variant="outline"
                   onClick={() => {
                     setSelectedCustomer(null);
-                    navigate(`/community/messages?merchant_id=support&auto_open_user=${selectedCustomer.user_id}`);
+                    navigate(`/chats?merchant_id=support&auto_open_user=${selectedCustomer.user_id}`);
                   }}
                   className="gap-2"
                 >

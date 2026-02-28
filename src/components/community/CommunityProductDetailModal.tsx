@@ -193,7 +193,7 @@ export default function CommunityProductDetailModal({
       product_id: product.id,
     });
     onOpenChange(false);
-    navigate(`/community/messages?${params.toString()}`);
+    navigate(`/chats?${params.toString()}`);
   };
 
   const handleVisitStore = () => {

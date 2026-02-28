@@ -411,7 +411,7 @@ export default function CommunityMerchantProfessionalDashboard() {
           </button>
 
           <button
-            onClick={() => navigate("/community/messages")}
+            onClick={() => navigate("/chats")}
             className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/80 p-4 text-right hover:border-border transition-all"
           >
             <div className="relative">

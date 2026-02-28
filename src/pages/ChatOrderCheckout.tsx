@@ -221,7 +221,7 @@ export default function ChatOrderCheckout() {
       queryClient.invalidateQueries({ queryKey: ['chat-orders'] });
       queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
       queryClient.invalidateQueries({ queryKey: ['community-cart'] });
-      navigate(`/community/messages?auto_open=${order.conversation_id}`);
+      navigate(`/chats?auto_open=${order.conversation_id}`);
     },
     onError: (error: Error) => {
       toast.error(error.message);

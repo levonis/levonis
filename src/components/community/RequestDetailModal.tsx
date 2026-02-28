@@ -202,12 +202,12 @@ export default function RequestDetailModal({
   };
 
   const handleChatWithMerchant = (merchantAppId: string) => {
-    navigate(`/community/messages?merchant_id=${merchantAppId}&request_id=${request.id}`);
+    navigate(`/chats?merchant_id=${merchantAppId}&request_id=${request.id}`);
     onOpenChange(false);
   };
 
   const handleChatAboutRequest = () => {
-    navigate(`/community/messages?request_id=${request.id}`);
+    navigate(`/chats?request_id=${request.id}`);
     onOpenChange(false);
   };
 

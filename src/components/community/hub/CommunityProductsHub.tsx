@@ -271,7 +271,7 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
                   ...(p.price_iqd ? { product_price: String(p.price_iqd) } : {}),
                   ...(mainImg ? { product_image: mainImg } : {}),
                 });
-                navigate(`/community/messages?${params.toString()}`);
+                navigate(`/chats?${params.toString()}`);
               }}
             />
           );

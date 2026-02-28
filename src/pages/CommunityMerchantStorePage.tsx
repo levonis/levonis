@@ -223,7 +223,7 @@ export default function CommunityMerchantStorePage() {
     }
     const params = new URLSearchParams();
     params.set("merchant_id", merchantId!);
-    navigate(`/community/messages?${params.toString()}`);
+    navigate(`/chats?${params.toString()}`);
   };
 
   const getSpecialtyInfo = (specialty?: string | null) => {

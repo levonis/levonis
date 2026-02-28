@@ -5,7 +5,6 @@ import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Globe } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import AdminPendingOrdersSheet from './admin/AdminPendingOrdersSheet';
-import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -37,7 +36,6 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
   const { t, language, setLanguage } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
-  const [messagesOpen, setMessagesOpen] = useState(false);
   const isHomePage = location.pathname === '/' || location.pathname === '/home';
 
   // Optimized: Only fetch notifications when user is logged in, with longer stale time
@@ -290,7 +288,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setMessagesOpen(true)}
+                  onClick={() => navigate("/chats")}
                   className="relative rounded-full border-primary/30 hover:border-primary"
                   title={t('menu_messages')}
                   aria-label={t('menu_messages')}
@@ -390,14 +388,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
 
       <WalletDialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen} />
       
-      {/* Messages Overlay */}
-      <ListingConversations
-        externalOpen={messagesOpen}
-        onExternalOpenChange={setMessagesOpen}
-        onClose={() => setMessagesOpen(false)}
-      >
-        <span className="sr-only">{t('menu_messages')}</span>
-      </ListingConversations>
+      
     </header>
   );
 });
