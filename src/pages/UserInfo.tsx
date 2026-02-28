@@ -144,7 +144,7 @@ const UserInfo = () => {
     setChangingPassword(true);
     
     try {
-      // First verify the current password by trying to sign in
+      // Verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: profile.email,
         password: passwordData.currentPassword,
@@ -161,7 +161,12 @@ const UserInfo = () => {
         password: passwordData.newPassword,
       });
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        toast.error(updateError.message || 'فشل في تحديث كلمة المرور');
+        setChangingPassword(false);
+        return;
+      }
       
       toast.success('تم تغيير كلمة المرور بنجاح');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
