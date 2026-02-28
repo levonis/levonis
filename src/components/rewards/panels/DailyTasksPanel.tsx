@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,9 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CheckCircle2, Circle, Coins, ChevronDown, Star, Loader2, Flame, Users, Store, Package } from "lucide-react";
+import { CheckCircle2, Circle, Coins, ChevronDown, Star, Loader2, Flame, Users, Store, Package, Camera, Instagram, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import OptimizedImage from "@/components/OptimizedImage";
@@ -20,6 +23,13 @@ export default function DailyTasksPanel() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [expandedReviews, setExpandedReviews] = useState(false);
+  const [proofDialogOpen, setProofDialogOpen] = useState(false);
+  const [proofTask, setProofTask] = useState<any>(null);
+  const [proofImage, setProofImage] = useState<File | null>(null);
+  const [proofImagePreview, setProofImagePreview] = useState<string | null>(null);
+  const [instagramUsername, setInstagramUsername] = useState('');
+  const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['daily-tasks-panel'],
@@ -278,20 +288,11 @@ export default function DailyTasksPanel() {
         throw new Error('يرجى شراء منتج هذا الأسبوع أولاً');
       }
 
-      // Admin-approval tasks: submit for review instead of completing
+      // Admin-approval tasks are now handled via proof dialog (handleSubmitProof)
       if (task.confirmation_type === 'admin_approval') {
-        // Check if already pending
-        const existingPending = pendingApprovals?.find((p: any) => p.task_key === task.task_key && p.status === 'pending');
-        if (existingPending) throw new Error('طلبك قيد المراجعة بالفعل');
-        
-        const { error: approvalError } = await supabase
-          .from('pending_task_approvals' as any)
-          .insert({ user_id: user.id, task_key: task.task_key, status: 'pending' });
-        if (approvalError) throw approvalError;
-        
-        queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
-        return { ...task, totalPoints: 0, bonusPoints: 0, pendingApproval: true };
+        throw new Error('يرجى استخدام نموذج الإرسال');
       }
+
 
       // Calculate streak bonus
       let bonusPoints = 0;
@@ -355,8 +356,71 @@ export default function DailyTasksPanel() {
 
   const handleTaskClick = (task: any) => {
     if (!user) { toast.error(t('tasks_login_required')); return; }
+    
+    // For admin_approval tasks, open proof dialog instead of direct submit
+    if (task.confirmation_type === 'admin_approval') {
+      setProofTask(task);
+      setProofImage(null);
+      setProofImagePreview(null);
+      setInstagramUsername('');
+      setProofDialogOpen(true);
+      return;
+    }
+    
     setActiveTaskKey(task.task_key);
     completeTaskMutation.mutate(task, { onSettled: () => setActiveTaskKey(null) });
+  };
+
+  const handleProofImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة كبير جداً (الحد الأقصى 5MB)');
+      return;
+    }
+    setProofImage(file);
+    setProofImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmitProof = async () => {
+    if (!user || !proofTask) return;
+    if (!proofImage) { toast.error('يرجى رفع صورة إثبات'); return; }
+    if (!instagramUsername.trim()) { toast.error('يرجى كتابة يوزر الانستغرام'); return; }
+    
+    setIsSubmittingProof(true);
+    try {
+      // Check if already pending
+      const existingPending = pendingApprovals?.find((p: any) => p.task_key === proofTask.task_key && p.status === 'pending');
+      if (existingPending) throw new Error('طلبك قيد المراجعة بالفعل');
+
+      // Upload proof image
+      const fileExt = proofImage.name.split('.').pop();
+      const filePath = `task-proofs/${user.id}/${proofTask.task_key}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('uploads').upload(filePath, proofImage);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(filePath);
+
+      // Submit for approval with proof
+      const { error: approvalError } = await supabase
+        .from('pending_task_approvals' as any)
+        .insert({
+          user_id: user.id,
+          task_key: proofTask.task_key,
+          status: 'pending',
+          proof_url: urlData.publicUrl,
+          instagram_username: instagramUsername.trim().replace('@', ''),
+        });
+      if (approvalError) throw approvalError;
+
+      queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
+      toast.success('تم إرسال طلبك للمراجعة ✅');
+      setProofDialogOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || 'حدث خطأ');
+    } finally {
+      setIsSubmittingProof(false);
+    }
   };
 
   const getTaskIcon = (icon: string) => {
@@ -577,6 +641,77 @@ export default function DailyTasksPanel() {
           <CardContent className="p-6 text-center text-muted-foreground">{t('tasks_no_tasks')}</CardContent>
         </Card>
       )}
+
+      {/* Proof Upload Dialog for admin_approval tasks */}
+      <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-right">إرسال إثبات المهمة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-1">{proofTask?.title_ar}</p>
+              <p className="text-xs text-muted-foreground">{proofTask?.description_ar}</p>
+            </div>
+
+            {/* Instagram Username */}
+            <div className="space-y-2">
+              <Label className="text-sm">يوزر الانستغرام</Label>
+              <div className="relative">
+                <Instagram className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="username"
+                  value={instagramUsername}
+                  onChange={(e) => setInstagramUsername(e.target.value)}
+                  className="pr-10 text-left direction-ltr"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label className="text-sm">صورة الإثبات</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProofImageSelect}
+                className="hidden"
+              />
+              {proofImagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border">
+                  <img src={proofImagePreview} alt="إثبات" className="w-full max-h-48 object-contain bg-muted/20" />
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute top-2 left-2 h-6 w-6"
+                    onClick={() => { setProofImage(null); setProofImagePreview(null); }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full h-24 border-dashed flex flex-col gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">اضغط لرفع صورة</span>
+                </Button>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setProofDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={handleSubmitProof} disabled={isSubmittingProof || !proofImage || !instagramUsername.trim()}>
+              {isSubmittingProof ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              إرسال للمراجعة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

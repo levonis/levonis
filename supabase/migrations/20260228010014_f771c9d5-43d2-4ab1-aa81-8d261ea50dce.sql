@@ -1,0 +1,1 @@
+ALTER TABLE public.pending_task_approvals ADD COLUMN IF NOT EXISTS instagram_username TEXT;
