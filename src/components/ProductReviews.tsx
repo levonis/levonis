@@ -249,14 +249,14 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-          <MessageSquareText className="h-5 w-5 text-orange-500" />
+          <MessageSquareText className="h-5 w-5 text-primary" />
           التقييمات والمراجعات
         </h2>
         {user && hasPurchased && !userReview && (
           <Button
             size="sm"
             onClick={() => setShowForm(!showForm)}
-            className="h-8 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-md"
+            className="h-8 rounded-xl"
           >
             <Star className="h-3.5 w-3.5 ml-1" />
             أضف تقييمك
@@ -279,7 +279,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-card rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-orange-200/50 space-y-4">
+            <div className="relative overflow-hidden bg-card/60 backdrop-blur-xl rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-primary/20 space-y-4">
               <h3 className="text-sm font-bold">شارك تجربتك</h3>
 
               {/* Stars */}
@@ -296,7 +296,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                     <Star
                       className={`h-9 w-9 transition-colors ${
                         s <= (hoveredRating || rating)
-                          ? 'fill-orange-400 text-orange-400 drop-shadow-[0_2px_6px_rgba(251,146,60,0.5)]'
+                          ? 'fill-primary text-primary drop-shadow-[0_2px_6px_hsl(var(--primary)/0.5)]'
                           : 'text-muted-foreground/30'
                       }`}
                     />
@@ -353,7 +353,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                 <Button
                   onClick={() => submitMutation.mutate()}
                   disabled={submitMutation.isPending || uploadingMedia}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0"
+                  className="flex-1 rounded-xl"
                 >
                   {(submitMutation.isPending || uploadingMedia) && <Loader2 className="h-4 w-4 animate-spin ml-1" />}
                   {uploadingMedia ? 'جاري الرفع...' : 'إرسال التقييم'}
@@ -369,9 +369,10 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
       {/* No Reviews */}
       {reviews.length === 0 && (
-        <div className="bg-card rounded-2xl p-8 text-center shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-border/50">
-          <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
-            <Star className="h-7 w-7 text-orange-400" />
+        <div className="relative overflow-hidden bg-card/60 backdrop-blur-xl rounded-2xl p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-border/30">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative w-14 h-14 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+            <Star className="h-7 w-7 text-primary" />
           </div>
           <p className="text-sm font-medium text-foreground">لا توجد تقييمات بعد</p>
           <p className="text-xs text-muted-foreground mt-1">كن أول من يقيّم هذا المنتج!</p>
@@ -390,8 +391,8 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   onClick={() => setActiveTab(tab.key)}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.key
-                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      ? 'bg-primary text-primary-foreground shadow-[0_4px_16px_hsl(var(--primary)/0.25)]'
+                      : 'bg-background/50 backdrop-blur-sm text-muted-foreground hover:bg-background/70 border border-border/20'
                   }`}
                 >
                   {tab.label} ({tabCounts[tab.key]})
@@ -416,14 +417,14 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
-                    className="absolute left-0 top-full mt-1 z-50 bg-card rounded-xl shadow-xl border border-border/50 p-1 min-w-[140px]"
+                    className="absolute left-0 top-full mt-1 z-50 bg-card/90 backdrop-blur-xl rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] border border-border/30 p-1 min-w-[140px]"
                   >
                     {SORT_OPTIONS.map((opt) => (
                       <button
                         key={opt.key}
                         onClick={() => { setSortBy(opt.key); setShowSort(false); }}
                         className={`w-full text-right px-3 py-2 text-xs rounded-lg transition ${
-                          sortBy === opt.key ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10' : 'hover:bg-muted'
+                          sortBy === opt.key ? 'bg-primary/10 text-primary' : 'hover:bg-background/50'
                         }`}
                       >
                         {opt.label}
@@ -436,7 +437,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           </div>
 
           {/* Reviews List */}
-          <div className="bg-card rounded-2xl px-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-border/50">
+          <div className="relative overflow-hidden bg-card/60 backdrop-blur-xl rounded-2xl px-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-border/30">
             {displayReviews.length > 0 ? (
               displayReviews.map((review) => (
                 <TaobaoReviewCard
@@ -459,7 +460,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             <Button
               variant="outline"
               onClick={() => setShowAllReviews(true)}
-              className="w-full rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-500/20 dark:hover:bg-orange-500/10"
+              className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/10"
             >
               عرض كل التقييمات ({filtered.length})
             </Button>
