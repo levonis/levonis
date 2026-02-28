@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Gift, Ticket, ChevronLeft } from "lucide-react";
+import { Gift, Ticket, Trophy, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +56,14 @@ export default function CommunityGiftsButton() {
             <ChevronLeft className="h-3 w-3 text-muted-foreground" />
           </button>
         )}
+        <button
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-colors text-right"
+          onClick={() => { navigate("/rewards?tab=competitions"); setOpen(false); }}
+        >
+          <Trophy className="h-4 w-4 text-primary shrink-0" />
+          <span className="flex-1">المسابقات</span>
+          <ChevronLeft className="h-3 w-3 text-muted-foreground" />
+        </button>
         <button
           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-bold hover:bg-primary/10 transition-colors text-right"
           onClick={() => { navigate("/special-coupons"); setOpen(false); }}
