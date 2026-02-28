@@ -68,8 +68,9 @@ export function useCommunityProfileCheck() {
       
       const isEmailVerified = profile.email_verified === true;
 
-      // Profile is complete when ALL fields are filled AND email is verified AND (community profile exists OR merchant is approved)
-      const isComplete = hasBasicFields && hasExtendedFields && hasValidAvatar && isEmailVerified && (hasCommunityProfile || isMerchantApproved);
+      // Approved merchants are considered complete regardless of customer profile fields
+      // Regular users need ALL fields filled AND email verified AND community profile
+      const isComplete = isMerchantApproved || (hasBasicFields && hasExtendedFields && hasValidAvatar && isEmailVerified && hasCommunityProfile);
       
       console.log("[CommunityProfileCheck]", {
         userId: user.id,
