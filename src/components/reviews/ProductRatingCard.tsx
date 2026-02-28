@@ -174,16 +174,21 @@ export default function ProductRatingCard({
             <span className="text-xs font-bold text-foreground">أضف وسائط واحصل على نقاط!</span>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Badge variant="secondary" className="text-[10px] bg-primary/10 border-primary/20 text-primary">
+              ⭐ 5 نجوم خلال 24 ساعة = 10 نقاط
+            </Badge>
             <Badge variant="secondary" className="text-[10px] bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400">
               <Camera className="h-3 w-3 ml-1" />
-              صورة = 50 نقطة
+              صورة = +50 نقطة
             </Badge>
             <Badge variant="secondary" className="text-[10px] bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400">
               <Video className="h-3 w-3 ml-1" />
-              فيديو = 250 نقطة
+              فيديو = +250 نقطة
             </Badge>
           </div>
         </div>
+
+
 
         {/* Media upload section */}
         <div className="flex gap-2">

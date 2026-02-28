@@ -5708,30 +5708,36 @@ export type Database = {
           created_at: string
           id: string
           media_files: string[] | null
+          points_awarded: number | null
           product_id: string
           rating: number
           updated_at: string
           user_id: string
+          video_url: string | null
         }
         Insert: {
           comment?: string | null
           created_at?: string
           id?: string
           media_files?: string[] | null
+          points_awarded?: number | null
           product_id: string
           rating: number
           updated_at?: string
           user_id: string
+          video_url?: string | null
         }
         Update: {
           comment?: string | null
           created_at?: string
           id?: string
           media_files?: string[] | null
+          points_awarded?: number | null
           product_id?: string
           rating?: number
           updated_at?: string
           user_id?: string
+          video_url?: string | null
         }
         Relationships: [
           {
