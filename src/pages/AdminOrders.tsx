@@ -24,7 +24,7 @@ import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent
 import AdminPagination from '@/components/admin/AdminPagination';
 import { usePagination } from '@/hooks/usePagination';
 import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
-
+import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 import { sendAllNotifications } from '@/lib/notifications';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 
@@ -76,6 +76,8 @@ const AdminOrders = () => {
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [selectedOrderForMessage, setSelectedOrderForMessage] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [shippingTypeFilter, setShippingTypeFilter] = useState<string>('all');
@@ -1015,8 +1017,11 @@ const AdminOrders = () => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-primary hover:text-primary"
-                                onClick={() => navigate(`/order/${order.id}`)}
-                                title="فتح لوحة الطلب"
+                                onClick={() => {
+                                  setSelectedOrderForMessage(order);
+                                  setMessageDialogOpen(true);
+                                }}
+                                title="إرسال رسالة للزبون"
                               >
                                 <MessageCircle className="h-4 w-4" />
                               </Button>
@@ -1381,6 +1386,21 @@ const AdminOrders = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Chat Dialog - Opens real conversation */}
+      {selectedOrderForMessage && (
+        <AdminOrderChatDialog
+          open={messageDialogOpen}
+          onOpenChange={(open) => {
+            setMessageDialogOpen(open);
+            if (!open) setSelectedOrderForMessage(null);
+          }}
+          orderId={selectedOrderForMessage.id}
+          orderNumber={selectedOrderForMessage.order_number}
+          userId={selectedOrderForMessage.user_id}
+          customerName={selectedOrderForMessage.profiles?.full_name || selectedOrderForMessage.profiles?.username || 'زبون'}
+          initialOrderData={selectedOrderForMessage}
+        />
+      )}
 
     </AdminLayout>
   );
