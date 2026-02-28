@@ -40,6 +40,50 @@ const validatePassword = (password: string): { valid: boolean; error?: string } 
   return { valid: true };
 };
 
+const findUserIdByEmail = async (
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string | null> => {
+  // First try profiles table (faster and more reliable in this project)
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .ilike('email', email)
+    .limit(1)
+    .maybeSingle();
+
+  if (!profileError && profileData?.id) {
+    return profileData.id;
+  }
+
+  // Fallback to paginated auth users lookup
+  const perPage = 200;
+  const maxPages = 50;
+
+  for (let page = 1; page <= maxPages; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+
+    if (error) {
+      console.error("Error listing users:", error);
+      return null;
+    }
+
+    const foundUser = data.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (foundUser) {
+      return foundUser.id;
+    }
+
+    if (data.users.length < perPage) {
+      break;
+    }
+  }
+
+  return null;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -101,20 +145,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get user by email
-    const { data: users, error: userError } = await supabase.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error("Error listing users:", userError);
-      return new Response(
-        JSON.stringify({ success: false, error: "حدث خطأ في البحث عن المستخدم" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Resolve target user id
+    let targetUserId: string | null = verificationData.user_id ?? null;
+
+    if (!targetUserId) {
+      targetUserId = await findUserIdByEmail(supabase, email);
     }
 
-    const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-
-    if (!user) {
+    if (!targetUserId) {
       return new Response(
         JSON.stringify({ success: false, error: "المستخدم غير موجود" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -122,7 +160,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Update password
-    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+    const { error: updateError } = await supabase.auth.admin.updateUserById(targetUserId, {
       password: new_password
     });
 
