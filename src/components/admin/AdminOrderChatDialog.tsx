@@ -190,7 +190,11 @@ export default function AdminOrderChatDialog({
       if (!existingMessages || existingMessages.length === 0) {
         await supabase.from('listing_messages').insert({
           conversation_id: convId, sender_id: SUPPORT_USER_ID,
-          content: `🔔 مرحباً، هذه رسالة بخصوص طلبك رقم ${orderNumber}`,
+          content: JSON.stringify({
+            type: 'order_tracking',
+            order_number: orderNumber,
+            order_id: orderId,
+          }),
         });
       }
 
