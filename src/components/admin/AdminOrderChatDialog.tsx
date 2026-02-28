@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -99,7 +99,18 @@ export default function AdminOrderChatDialog({
     enabled: open && !!orderId,
   });
 
-  const displayOrder = order ?? initialOrderData;
+  const displayOrder = useMemo(() => {
+    if (!order && !initialOrderData) return null;
+
+    const fetchedItems = Array.isArray(order?.order_items) ? order.order_items : [];
+    const initialItems = Array.isArray(initialOrderData?.order_items) ? initialOrderData.order_items : [];
+
+    return {
+      ...(initialOrderData || {}),
+      ...(order || {}),
+      order_items: fetchedItems.length > 0 ? fetchedItems : initialItems,
+    };
+  }, [order, initialOrderData]);
 
   useEffect(() => {
     if (open && userId) getOrCreateConversation();
@@ -214,13 +225,22 @@ export default function AdminOrderChatDialog({
     const viewport = messageViewportRef.current;
     if (!viewport) return;
 
+    const hasMessages = messages.length > 0;
     const hasNewMessages = messages.length > previousMessagesCountRef.current;
     const distanceToBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
     const isNearBottom = distanceToBottom < 120;
 
+    // لا نستهلك auto-scroll قبل وصول أول دفعة رسائل
+    if (!hasMessages) {
+      previousMessagesCountRef.current = 0;
+      return;
+    }
+
     if (shouldAutoScrollRef.current || (hasNewMessages && isNearBottom)) {
       requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        const currentViewport = messageViewportRef.current;
+        if (!currentViewport) return;
+        currentViewport.scrollTop = currentViewport.scrollHeight;
       });
       shouldAutoScrollRef.current = false;
     }
@@ -389,7 +409,7 @@ export default function AdminOrderChatDialog({
           </TabsList>
 
           {/* Order Details Tab */}
-          <TabsContent value="order" className="flex-1 m-0 overflow-auto">
+          <TabsContent value="order" className="flex-1 m-0 min-h-0">
             <ScrollArea className="h-full">
               {displayOrder ? (
                 <div className="p-4 space-y-3">
