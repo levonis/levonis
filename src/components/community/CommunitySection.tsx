@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Users, MessageCircle, Store, Package, FileText, Search, UserCircle, Sparkles } from 'lucide-react';
+import { Users, MessageCircle, Store, Package, FileText, Search, UserCircle, Sparkles, Gift } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -128,6 +128,25 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
             </h2>
           </div>
         </Link>
+      )}
+
+      {/* Assistance Banner - Community Hub */}
+      {isCommunityHub && user && (
+        <div className="mb-4">
+          <button
+            onClick={() => navigate("/merchant-giveaways")}
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-gradient-to-l from-primary/5 to-card hover:border-primary/40 hover:shadow-md transition-all"
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Gift className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 text-right">
+              <h3 className="text-sm font-black text-foreground">المساعدات</h3>
+              <p className="text-[10px] text-muted-foreground">مسابقات، هدايا، كوبونات وظروف حمراء</p>
+            </div>
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+          </button>
+        </div>
       )}
 
       {/* Merchant Stories Bar */}
