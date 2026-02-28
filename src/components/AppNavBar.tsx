@@ -4,6 +4,9 @@ import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle, Arrow
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/hooks/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -41,6 +44,28 @@ const AppNavBar = memo(() => {
   const { t } = useLanguage();
   const { itemCount } = useCart();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+
+  const { data: unreadMsgCount = 0 } = useQuery({
+    queryKey: ["nav-unread-messages", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data: convs } = await supabase
+        .from("listing_conversations")
+        .select("id")
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+      if (!convs?.length) return 0;
+      const { count } = await supabase
+        .from("listing_messages")
+        .select("id", { count: "exact", head: true })
+        .in("conversation_id", convs.map(c => c.id))
+        .neq("sender_id", user.id)
+        .eq("is_read", false);
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
   const [dockPosition, setDockPosition] = useState<DockPosition>(getStoredPosition);
 
   const isActive = (item: NavItem) => {
@@ -113,6 +138,11 @@ const AppNavBar = memo(() => {
                   {itemCount > 9 ? '9+' : itemCount}
                 </span>
               )}
+              {item.key === 'messages' && unreadMsgCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center animate-pulse">
+                  {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
+                </span>
+              )}
               <span className={cn(
                 "absolute px-2.5 py-1 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-[60]",
                 tooltipClasses[dockPosition]
@@ -163,6 +193,11 @@ const AppNavBar = memo(() => {
                 {item.key === 'cart' && itemCount > 0 && (
                   <span className="absolute top-0 right-1/2 translate-x-4 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm">
                     {itemCount > 9 ? '9+' : itemCount}
+                  </span>
+                )}
+                {item.key === 'messages' && unreadMsgCount > 0 && (
+                  <span className="absolute top-0 right-1/2 translate-x-4 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm animate-pulse">
+                    {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
                   </span>
                 )}
               </span>
