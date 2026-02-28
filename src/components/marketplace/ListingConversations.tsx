@@ -1502,8 +1502,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               const cartCodeMatch = msg.content?.match(/رمز السلة:\s*(CART-[A-Z0-9-]+)/);
                               const isCartMessage = !!cartCodeMatch;
                               
-                              // Check if it's a product message (starts with 📦 or 🛒) but NOT a cart request message
-                              const isProductMessage = !isCartMessage && (msg.content?.startsWith('📦') || msg.content?.startsWith('🛒'));
+                              // Check if it's a product message (starts with 📦 or 🛒) but NOT a cart request message or order reference
+                              const isOrderReferenceMessage = msg.content?.includes('بخصوص طلبك رقم');
+                              const isProductMessage = !isCartMessage && !isOrderReferenceMessage && (msg.content?.startsWith('📦') || msg.content?.startsWith('🛒'));
                               
                               // Check if it's a JSON message (order_card or confirmation_card)
                               let parsedContent: any = null;
