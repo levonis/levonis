@@ -73,6 +73,8 @@ const AdminOrders = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('orders');
+  const [orderTab, setOrderTab] = useState<'preorder' | 'direct'>('preorder');
+  const [preorderShippingTab, setPreorderShippingTab] = useState<'all' | 'sea' | 'air'>('all');
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -80,8 +82,6 @@ const AdminOrders = () => {
   const [selectedOrderForMessage, setSelectedOrderForMessage] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [shippingTypeFilter, setShippingTypeFilter] = useState<string>('all');
-  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [searchParams] = useSearchParams();
   const [uploadingImage, setUploadingImage] = useState(false);
   const [serialImageFile, setSerialImageFile] = useState<File | null>(null);
@@ -699,20 +699,19 @@ const AdminOrders = () => {
         ? !['delivered', 'cancelled'].includes(order.status)
         : order.status === statusFilter;
     
-    // Shipping type filter
+    // Shipping type filter based on tab
     const shippingInfo = getShippingInfo(order.order_items || []);
     const isAirShipping = shippingInfo.isFast;
     const matchesShippingType = 
-      shippingTypeFilter === 'all' || 
-      (shippingTypeFilter === 'air' && isAirShipping) ||
-      (shippingTypeFilter === 'sea' && !isAirShipping);
+      orderTab !== 'preorder' || preorderShippingTab === 'all' || 
+      (preorderShippingTab === 'air' && isAirShipping) ||
+      (preorderShippingTab === 'sea' && !isAirShipping);
     
-    // Order type filter - use order_type column if available
+    // Order type filter based on tab
     const orderType = (order as any).order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
     const matchesOrderType = 
-      orderTypeFilter === 'all' || 
-      (orderTypeFilter === 'preorder' && orderType === 'preorder') ||
-      (orderTypeFilter === 'direct' && orderType === 'direct');
+      (orderTab === 'preorder' && orderType === 'preorder') ||
+      (orderTab === 'direct' && orderType === 'direct');
 
     return matchesSearch && matchesStatus && matchesShippingType && matchesOrderType;
   }) || [];
@@ -766,30 +765,75 @@ const AdminOrders = () => {
         </TabsList>
 
         <TabsContent value="orders">
+          {/* Inner Order Type Tabs */}
+          <Tabs value={orderTab} onValueChange={(v) => { setOrderTab(v as 'preorder' | 'direct'); pagination.resetPage(); }} className="w-full">
+            <TabsList className="mb-4 w-full justify-start">
+              <TabsTrigger value="preorder" className="gap-2 flex-1 md:flex-none">
+                <Package className="h-4 w-4" />
+                حجز مسبق
+              </TabsTrigger>
+              <TabsTrigger value="direct" className="gap-2 flex-1 md:flex-none">
+                <Truck className="h-4 w-4" />
+                طلب مباشر
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Preorder sub-tabs (sea/air) - only when preorder tab is active */}
+            {orderTab === 'preorder' && (
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={preorderShippingTab === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setPreorderShippingTab('all'); pagination.resetPage(); }}
+                >
+                  الكل
+                </Button>
+                <Button
+                  variant={preorderShippingTab === 'sea' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setPreorderShippingTab('sea'); pagination.resetPage(); }}
+                  className="gap-1.5"
+                >
+                  <Ship className="h-4 w-4" />
+                  بحري
+                </Button>
+                <Button
+                  variant={preorderShippingTab === 'air' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setPreorderShippingTab('air'); pagination.resetPage(); }}
+                  className="gap-1.5"
+                >
+                  <Plane className="h-4 w-4" />
+                  جوي
+                </Button>
+              </div>
+            )}
+          </Tabs>
+
           {/* Stats Grid */}
           <AdminStatsGrid>
             <AdminStatCard
               icon={<Package className="h-5 w-5" />}
-              value={orders?.length || 0}
+              value={filteredOrders?.length || 0}
               label="إجمالي الطلبات"
             />
             <AdminStatCard
               icon={<Loader2 className="h-5 w-5" />}
-              value={statusCounts['pending'] || 0}
+              value={filteredOrders?.filter(o => o.status === 'pending').length || 0}
               label="قيد الانتظار"
               colorClass="text-amber-500"
               bgClass="bg-amber-500/10"
             />
             <AdminStatCard
               icon={<Truck className="h-5 w-5" />}
-              value={statusCounts['shipped'] || 0}
+              value={filteredOrders?.filter(o => o.status === 'shipped').length || 0}
               label="تم الشحن"
               colorClass="text-blue-500"
               bgClass="bg-blue-500/10"
             />
             <AdminStatCard
               icon={<ShoppingBag className="h-5 w-5" />}
-              value={statusCounts['delivered'] || 0}
+              value={filteredOrders?.filter(o => o.status === 'delivered').length || 0}
               label="تم التوصيل"
               colorClass="text-green-500"
               bgClass="bg-green-500/10"
@@ -802,53 +846,17 @@ const AdminOrders = () => {
           <AdminCardContent>
             <div className="flex flex-col gap-4">
               {/* Search */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="بحث بالرقم، الاسم، أو الهاتف..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      pagination.resetPage();
-                    }}
-                    className="pr-10"
-                  />
-                </div>
-                
-                {/* Shipping Type Filter */}
-                <Select value={shippingTypeFilter} onValueChange={(v) => { setShippingTypeFilter(v); pagination.resetPage(); }}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="نوع الشحن" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">كل الشحنات</SelectItem>
-                    <SelectItem value="air">
-                      <span className="flex items-center gap-2">
-                        <Plane className="h-4 w-4" />
-                        شحن جوي
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="sea">
-                      <span className="flex items-center gap-2">
-                        <Ship className="h-4 w-4" />
-                        شحن بحري
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {/* Order Type Filter */}
-                <Select value={orderTypeFilter} onValueChange={(v) => { setOrderTypeFilter(v); pagination.resetPage(); }}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="نوع الطلب" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">كل الطلبات</SelectItem>
-                    <SelectItem value="preorder">طلب مسبق</SelectItem>
-                    <SelectItem value="direct">طلب مباشر</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex-1 relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="بحث بالرقم، الاسم، أو الهاتف..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    pagination.resetPage();
+                  }}
+                  className="pr-10"
+                />
               </div>
               
               {/* Status Filters */}
@@ -858,49 +866,52 @@ const AdminOrders = () => {
                   size="sm"
                   onClick={() => { setStatusFilter('active'); pagination.resetPage(); }}
                 >
-                  النشطة ({orders?.filter(o => !['delivered', 'cancelled'].includes(o.status)).length || 0})
+                  النشطة ({filteredOrders?.filter(o => !['delivered', 'cancelled'].includes(o.status)).length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('all'); pagination.resetPage(); }}
                 >
-                  الكل ({orders?.length || 0})
+                  الكل ({orders?.filter(o => {
+                    const ot = (o as any).order_type || (checkIfPreOrder(o.order_items || []) ? 'preorder' : 'direct');
+                    return ot === orderTab;
+                  }).length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'pending' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('pending'); pagination.resetPage(); }}
                 >
-                  قيد الانتظار ({statusCounts['pending'] || 0})
+                  قيد الانتظار ({filteredOrders?.filter(o => o.status === 'pending').length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'confirmed' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('confirmed'); pagination.resetPage(); }}
                 >
-                  تم التأكيد ({statusCounts['confirmed'] || 0})
+                  تم التأكيد ({filteredOrders?.filter(o => o.status === 'confirmed').length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'processing' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('processing'); pagination.resetPage(); }}
                 >
-                  قيد المعالجة ({statusCounts['processing'] || 0})
+                  قيد المعالجة ({filteredOrders?.filter(o => o.status === 'processing').length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'shipped' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('shipped'); pagination.resetPage(); }}
                 >
-                  تم الشحن ({statusCounts['shipped'] || 0})
+                  تم الشحن ({filteredOrders?.filter(o => o.status === 'shipped').length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'delivered' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('delivered'); pagination.resetPage(); }}
                 >
-                  تم التوصيل ({statusCounts['delivered'] || 0})
+                  تم التوصيل ({filteredOrders?.filter(o => o.status === 'delivered').length || 0})
                 </Button>
                 <Button
                   variant={statusFilter === 'cancelled' ? 'default' : 'outline'}
@@ -908,7 +919,7 @@ const AdminOrders = () => {
                   onClick={() => { setStatusFilter('cancelled'); pagination.resetPage(); }}
                   className="text-destructive"
                 >
-                  ملغي ({statusCounts['cancelled'] || 0})
+                  ملغي ({filteredOrders?.filter(o => o.status === 'cancelled').length || 0})
                 </Button>
               </div>
             </div>
