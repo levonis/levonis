@@ -2151,7 +2151,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     {adminCartRequest.cart_items.map((item: any, idx: number) => (
                       <div key={idx} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-xs">
                         {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" />}
-                        <span className="flex-1 truncate">{item.product_name}</span>
+                        <span className="flex-1 truncate">{item.name_ar || item.product_name || 'منتج'}</span>
                         <span>×{item.quantity}</span>
                       </div>
                     ))}

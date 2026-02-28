@@ -104,8 +104,8 @@ export default function CartRequestDialog({
         }
 
         // Check option-specific pricing
-        if ((item as any).product_options?.price_modifier) {
-          itemPrice += Number((item as any).product_options.price_modifier);
+        if (item.product_options?.price_adjustment) {
+          itemPrice += Number(item.product_options.price_adjustment);
         }
 
         return {

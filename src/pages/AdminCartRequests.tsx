@@ -390,7 +390,7 @@ export default function AdminCartRequests() {
                         <img src={item.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.product_name}</p>
+                        <p className="text-sm font-medium truncate">{item.name_ar || item.product_name || 'منتج'}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span>الكمية: {item.quantity}</span>
                           {item.price && <span>• {formatPrice(item.price)} د.ع</span>}
