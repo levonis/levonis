@@ -402,7 +402,7 @@ export default function DailyTasksPanel() {
       const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(filePath);
 
       // Submit for approval with proof
-      const { error: approvalError } = await supabase
+      const { data: approvalData, error: approvalError } = await supabase
         .from('pending_task_approvals' as any)
         .insert({
           user_id: user.id,
@@ -410,8 +410,31 @@ export default function DailyTasksPanel() {
           status: 'pending',
           proof_url: urlData.publicUrl,
           instagram_username: instagramUsername.trim().replace('@', ''),
-        });
+        })
+        .select('id')
+        .single();
       if (approvalError) throw approvalError;
+
+      // Get user profile for notification
+      const { data: userProfile } = await supabase.from('profiles').select('full_name, username').eq('id', user.id).single();
+      const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+
+      // Send Telegram notification with approve/reject buttons
+      try {
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `📋 <b>طلب تحقق مهمة جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المهمة: ${proofTask.title_ar}\n📷 انستغرام: @${instagramUsername.trim().replace('@', '')}\n💰 النقاط: ${proofTask.points_reward}\n\n🔗 <a href="${urlData.publicUrl}">عرض صورة الإثبات</a>`,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '✅ موافقة', callback_data: `approve_task:${(approvalData as any)?.id}` },
+                  { text: '❌ رفض', callback_data: `reject_task:${(approvalData as any)?.id}` },
+                ]
+              ]
+            }
+          },
+        });
+      } catch (e) { console.error('Telegram notification error:', e); }
 
       queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
       toast.success('تم إرسال طلبك للمراجعة ✅');

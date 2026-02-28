@@ -128,12 +128,43 @@ export default function Wishes() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["my-wish"] });
       queryClient.invalidateQueries({ queryKey: ["wishes-approved"] });
       setDialogOpen(false);
       resetForm();
       toast.success("تم إرسال أمنيتك بنجاح! سيتم مراجعتها قريباً ✨");
+
+      // Send Telegram notification with approve/reject buttons
+      try {
+        // Get the newly created wish ID
+        const { data: newWish } = await supabase
+          .from("wishes")
+          .select("id")
+          .eq("user_id", user!.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (newWish) {
+          const { data: userProfile } = await supabase.from('profiles').select('full_name, username').eq('id', user!.id).single();
+          const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              message: `⭐ <b>أمنية جديدة</b>\n\n👤 المستخدم: ${userName}\n📝 الأمنية: ${title.trim()}\n${description.trim() ? `📄 الوصف: ${description.trim().substring(0, 100)}` : ''}\n\n⏳ بانتظار الموافقة`,
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '✅ موافقة', callback_data: `approve_wish:${newWish.id}` },
+                    { text: '❌ رفض', callback_data: `reject_wish:${newWish.id}` },
+                  ]
+                ]
+              }
+            },
+          });
+        }
+      } catch (e) { console.error('Telegram notification error:', e); }
     },
     onError: (err: any) => {
       if (err.message === "TAKEN_BY_OTHER") {

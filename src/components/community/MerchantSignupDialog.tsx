@@ -436,6 +436,24 @@ export default function MerchantSignupDialog({
         description: "سيتم خصم الرسوم من المحفظة عند موافقة الإدارة",
       });
       setStep(1);
+
+      // Send Telegram notification with approve/reject buttons
+      try {
+        const storeName = step1.display_name || 'بدون اسم';
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `🏪 <b>طلب تاجر جديد</b>\n\n👤 اسم المتجر: ${storeName}\n📝 الوصف: ${step1.bio?.substring(0, 100) || '-'}\n\n⏳ بانتظار الموافقة`,
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '✅ قبول التاجر', callback_data: `approve_merchant:${app?.id}` },
+                  { text: '❌ رفض', callback_data: `reject_merchant:${app?.id}` },
+                ]
+              ]
+            }
+          },
+        });
+      } catch (e) { console.error('Telegram notification error:', e); }
     },
     onError: (err: any) => {
       toast({ title: "تعذر إرسال الطلب", description: err?.message ?? "حدث خطأ", variant: "destructive" });
