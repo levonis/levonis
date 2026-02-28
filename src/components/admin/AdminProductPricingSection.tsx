@@ -106,7 +106,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         shipping: calc.shippingCost,
         commission: commissionSeaIqd,
         final: finalPrice,
-        finalRounded: roundUpToNearest(finalPrice, 500),
+        finalRounded: roundUpToNearest(finalPrice, 250),
       });
     }
 
@@ -123,7 +123,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         shipping: calc.shippingCost,
         commission: commissionAirIqd,
         final: finalPrice,
-        finalRounded: roundUpToNearest(finalPrice, 500),
+        finalRounded: roundUpToNearest(finalPrice, 250),
         breakdown: calc.breakdown,
         actualWeight: calc.actualWeight,
         volumetricWeight: calc.volumetricWeight,
@@ -140,7 +140,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         shipping: 0,
         commission: commissionDirectIqd,
         final: finalPrice,
-        finalRounded: roundUpToNearest(finalPrice, 500),
+        finalRounded: roundUpToNearest(finalPrice, 250),
       });
     }
 
