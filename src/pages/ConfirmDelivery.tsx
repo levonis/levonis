@@ -66,9 +66,9 @@ const ConfirmDelivery = () => {
         // Upload images
         for (const img of (productImages[pid] || [])) {
           const path = `${user.id}/${pid}/${Date.now()}-${img.name}`;
-          const { error } = await supabase.storage.from("reviews-media").upload(path, img, { upsert: true });
+          const { error } = await supabase.storage.from("review-media").upload(path, img, { upsert: true });
           if (!error) {
-            const { data } = supabase.storage.from("reviews-media").getPublicUrl(path);
+            const { data } = supabase.storage.from("review-media").getPublicUrl(path);
             uploadedImageUrls.push(data.publicUrl);
           }
         }
@@ -78,9 +78,9 @@ const ConfirmDelivery = () => {
         const vid = productVideos[pid];
         if (vid) {
           const path = `${user.id}/${pid}/video-${Date.now()}.mp4`;
-          const { error } = await supabase.storage.from("reviews-media").upload(path, vid, { upsert: true });
+          const { error } = await supabase.storage.from("review-media").upload(path, vid, { upsert: true });
           if (!error) {
-            const { data } = supabase.storage.from("reviews-media").getPublicUrl(path);
+            const { data } = supabase.storage.from("review-media").getPublicUrl(path);
             videoUrl = data.publicUrl;
           }
         }
