@@ -61,6 +61,9 @@ export default function AdminOrderChatDialog({
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageViewportRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+  const previousMessagesCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -167,7 +170,12 @@ export default function AdminOrderChatDialog({
         type: 'info', relatedId: orderId,
       });
     },
-    onSuccess: () => { setMessage(''); refetchMessages(); queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] }); },
+    onSuccess: () => {
+      shouldAutoScrollRef.current = true;
+      setMessage('');
+      refetchMessages();
+      queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
+    },
     onError: () => toast.error('فشل في إرسال الرسالة'),
   });
 
@@ -179,7 +187,34 @@ export default function AdminOrderChatDialog({
     }
   }, [conversationId, messages.length]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    if (open && activeTab === 'chat') {
+      shouldAutoScrollRef.current = true;
+      previousMessagesCountRef.current = 0;
+    }
+  }, [open, activeTab, conversationId]);
+
+  useEffect(() => {
+    const viewport = messageViewportRef.current;
+    const hasNewMessages = messages.length > previousMessagesCountRef.current;
+
+    if (!viewport) {
+      previousMessagesCountRef.current = messages.length;
+      return;
+    }
+
+    const distanceToBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const isNearBottom = distanceToBottom < 120;
+
+    if (shouldAutoScrollRef.current || (hasNewMessages && isNearBottom)) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      });
+      shouldAutoScrollRef.current = false;
+    }
+
+    previousMessagesCountRef.current = messages.length;
+  }, [messages, activeTab]);
 
   const handleSendMedia = async (file: File) => {
     if (!conversationId) await getOrCreateConversation();
@@ -263,6 +298,7 @@ export default function AdminOrderChatDialog({
 
     await supabase.from('listing_conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId);
     await sendAllNotifications({ userId, title: 'رسالة جديدة من الدعم', message: content, type: 'info', relatedId: orderId });
+    shouldAutoScrollRef.current = true;
     refetchMessages();
     queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
   };
@@ -460,7 +496,7 @@ export default function AdminOrderChatDialog({
               </div>
             ) : (
               <>
-                <ScrollArea className="flex-1">
+                <div ref={messageViewportRef} className="flex-1 overflow-y-auto">
                   <div className="p-4 space-y-3">
                     {messages.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
@@ -497,7 +533,7 @@ export default function AdminOrderChatDialog({
                     )}
                     <div ref={messagesEndRef} />
                   </div>
-                </ScrollArea>
+                </div>
 
                 {/* Input Area */}
                 <div className="p-3 border-t shrink-0">
