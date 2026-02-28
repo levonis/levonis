@@ -87,15 +87,28 @@ const ConfirmDelivery = () => {
 
         // Calculate points
         let points = 0;
-        if (uploadedImageUrls.length > 0) points = 50;
-        if (videoUrl) points = 250;
+        const userRating = ratings[pid] || 5;
+        
+        // Check if within 24 hours of delivery for bonus points
+        const deliveredAt = order.delivered_at ? new Date(order.delivered_at) : null;
+        const now = new Date();
+        const isWithin24h = deliveredAt && (now.getTime() - deliveredAt.getTime()) < 24 * 60 * 60 * 1000;
+        
+        // 5-star rating within 24h = 10 base points
+        if (userRating === 5 && isWithin24h) {
+          points = 10;
+        }
+        
+        // Media bonuses stack on top
+        if (uploadedImageUrls.length > 0) points += 50;
+        if (videoUrl) points += 250;
 
         const { error: reviewError } = await supabase
           .from('reviews')
           .insert({
             product_id: pid,
             user_id: user.id,
-            rating: ratings[pid] || 5,
+            rating: userRating,
             comment: comments[pid] || 'ممتاز',
             media_files: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
             video_url: videoUrl,
@@ -257,7 +270,7 @@ const ConfirmDelivery = () => {
               تأكيد الاستلام {ratableItems.length > 0 ? 'وإرسال التقييمات' : ''}
             </Button>
             <p className="text-xs text-center text-muted-foreground mt-4">
-              ⏰ ملاحظة: سيتم تأكيد الاستلام تلقائياً مع تقييم 5 نجوم بعد 7 أيام من التوصيل
+              ⏰ ملاحظة: سيتم تأكيد الاستلام تلقائياً مع تقييم 5 نجوم (بدون نقاط) بعد 7 أيام من التوصيل
             </p>
           </CardContent>
         </Card>
