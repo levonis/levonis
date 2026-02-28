@@ -1398,6 +1398,7 @@ const AdminOrders = () => {
           orderNumber={selectedOrderForMessage.order_number}
           userId={selectedOrderForMessage.user_id}
           customerName={selectedOrderForMessage.profiles?.full_name || selectedOrderForMessage.profiles?.username || 'زبون'}
+          initialOrderData={selectedOrderForMessage}
         />
       )}
 
