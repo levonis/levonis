@@ -5707,6 +5707,7 @@ export type Database = {
       }
       reviews: {
         Row: {
+          additional_comments: Json | null
           comment: string | null
           created_at: string
           id: string
@@ -5714,11 +5715,13 @@ export type Database = {
           points_awarded: number | null
           product_id: string
           rating: number
+          reorder_count: number | null
           updated_at: string
           user_id: string
           video_url: string | null
         }
         Insert: {
+          additional_comments?: Json | null
           comment?: string | null
           created_at?: string
           id?: string
@@ -5726,11 +5729,13 @@ export type Database = {
           points_awarded?: number | null
           product_id: string
           rating: number
+          reorder_count?: number | null
           updated_at?: string
           user_id: string
           video_url?: string | null
         }
         Update: {
+          additional_comments?: Json | null
           comment?: string | null
           created_at?: string
           id?: string
@@ -5738,6 +5743,7 @@ export type Database = {
           points_awarded?: number | null
           product_id?: string
           rating?: number
+          reorder_count?: number | null
           updated_at?: string
           user_id?: string
           video_url?: string | null

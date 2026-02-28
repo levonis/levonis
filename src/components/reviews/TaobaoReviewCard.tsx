@@ -8,6 +8,14 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import ReviewImageViewer from './ReviewImageViewer';
 
+interface AdditionalComment {
+  comment: string;
+  rating: number;
+  date: string;
+  media_files?: string[] | null;
+  video_url?: string | null;
+}
+
 interface ReviewData {
   id: string;
   rating: number;
@@ -16,6 +24,8 @@ interface ReviewData {
   video_url: string | null;
   created_at: string;
   user_id: string;
+  reorder_count?: number;
+  additional_comments?: any;
   profiles?: {
     full_name: string | null;
     username: string | null;
@@ -28,6 +38,13 @@ interface TaobaoReviewCardProps {
   isAdmin?: boolean;
   currentUserId?: string;
   onDelete?: (id: string) => void;
+}
+
+// Helper to safely parse additional_comments from Json
+function parseAdditionalComments(val: any): AdditionalComment[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val as AdditionalComment[];
+  try { return JSON.parse(val); } catch { return []; }
 }
 
 export default function TaobaoReviewCard({ review, isAdmin, currentUserId, onDelete }: TaobaoReviewCardProps) {
@@ -150,6 +167,46 @@ export default function TaobaoReviewCard({ review, isAdmin, currentUserId, onDel
                   </div>
                 )}
               </button>
+            ))}
+          </div>
+        )}
+
+        {/* Reorder Badge */}
+        {(review.reorder_count || 1) > 1 && (
+          <div className="mb-3 flex items-center gap-1.5">
+            <Badge className="bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400 border-0 text-[11px] px-2 py-0.5">
+              🔄 تم إعادة الطلب {review.reorder_count} من المرات
+            </Badge>
+          </div>
+        )}
+
+        {/* Additional Comments (from re-orders) */}
+        {parseAdditionalComments(review.additional_comments).length > 0 && (
+          <div className="mb-3 space-y-2">
+            {parseAdditionalComments(review.additional_comments).map((ac: AdditionalComment, idx: number) => (
+              <div key={idx} className="bg-muted/50 rounded-xl p-3 border border-border/30">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-orange-300 text-orange-600">
+                    تقييم إضافي #{idx + 1}
+                  </Badge>
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className={`h-2.5 w-2.5 ${s <= ac.rating ? 'fill-orange-400 text-orange-400' : 'text-muted-foreground/30'}`} />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatDistanceToNow(new Date(ac.date), { addSuffix: true, locale: ar })}
+                  </span>
+                </div>
+                {ac.comment && <p className="text-xs text-foreground/80">{ac.comment}</p>}
+                {ac.media_files && ac.media_files.length > 0 && (
+                  <div className="flex gap-1 mt-2">
+                    {ac.media_files.map((url, i) => (
+                      <img key={i} src={url} alt="" className="w-12 h-12 rounded-lg object-cover" loading="lazy" />
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

@@ -56,7 +56,7 @@ const ConfirmDelivery = () => {
         .eq('id', order.id);
       if (orderError) throw orderError;
 
-      // Upload media and create reviews
+      // Upload media and create/update reviews
       const ratableItems = order.order_items.filter((item: any) => item.product_id);
       
       for (const item of ratableItems) {
@@ -88,39 +88,64 @@ const ConfirmDelivery = () => {
         // Calculate points
         let points = 0;
         const userRating = ratings[pid] || 5;
-        
-        // Check if within 24 hours of delivery for bonus points
         const deliveredAt = order.delivered_at ? new Date(order.delivered_at) : null;
         const now = new Date();
         const isWithin24h = deliveredAt && (now.getTime() - deliveredAt.getTime()) < 24 * 60 * 60 * 1000;
-        
-        // 5-star rating within 24h = 10 base points
-        if (userRating === 5 && isWithin24h) {
-          points = 10;
-        }
-        
-        // Media bonuses stack on top
+        if (userRating === 5 && isWithin24h) points = 10;
         if (uploadedImageUrls.length > 0) points += 50;
         if (videoUrl) points += 250;
 
-        const { error: reviewError } = await supabase
+        // Check if user already reviewed this product
+        const { data: existingReview } = await supabase
           .from('reviews')
-          .insert({
-            product_id: pid,
-            user_id: user.id,
+          .select('id, reorder_count, additional_comments')
+          .eq('product_id', pid)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existingReview) {
+          // User already reviewed - increment reorder_count and add as additional comment
+          const newCount = (existingReview.reorder_count || 1) + 1;
+          const existingComments = (existingReview.additional_comments as any[]) || [];
+          const newComment: any = {
+            comment: comments[pid] || '',
             rating: userRating,
-            comment: comments[pid] || 'ممتاز',
+            date: new Date().toISOString(),
             media_files: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
             video_url: videoUrl,
-            points_awarded: points,
-          });
-        if (reviewError) console.error('Review error:', reviewError);
+          };
+          
+          const { error: updateError } = await supabase
+            .from('reviews')
+            .update({
+              reorder_count: newCount,
+              additional_comments: [...existingComments, newComment],
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingReview.id);
+          if (updateError) console.error('Review update error:', updateError);
+        } else {
+          // First review for this product
+          const { error: reviewError } = await supabase
+            .from('reviews')
+            .insert({
+              product_id: pid,
+              user_id: user.id,
+              rating: userRating,
+              comment: comments[pid] || 'ممتاز',
+              media_files: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
+              video_url: videoUrl,
+              points_awarded: points,
+              reorder_count: 1,
+            });
+          if (reviewError) console.error('Review error:', reviewError);
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-      toast.success('تم تأكيد الاستلام وإضافة التقييمات بنجاح 🎉');
+      toast.success('تم تأكيد الاستلام والتقييم بنجاح ✅');
       navigate('/my-orders');
     },
     onError: (error) => {
