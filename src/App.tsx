@@ -19,7 +19,7 @@ import AdminRoute from "@/components/AdminRoute";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
-// EmailVerificationBanner removed - verification codes are for password reset only
+// EmailVerificationBanner available for post-login verification
 
 
 // Lazy load unified chat button (global floating button)
