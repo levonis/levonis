@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface VerificationRequest {
   email: string;
-  type: 'signup' | 'password_reset' | 'password_change' | 'email_change';
+  type: 'password_reset';
   user_id?: string;
 }
 
@@ -214,11 +214,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const email = emailValidation.sanitized;
 
-    // Validate type
-    const VALID_TYPES = ['signup', 'password_reset', 'password_change', 'email_change'];
-    if (!type || !VALID_TYPES.includes(type)) {
+  // Only allow password_reset type - verification codes are for password reset only
+    if (!type || type !== 'password_reset') {
       return new Response(
-        JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
+        JSON.stringify({ success: false, error: "هذه الخدمة متاحة فقط لإعادة تعيين كلمة المرور" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
