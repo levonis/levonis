@@ -5,15 +5,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera, Package, Video, VolumeX } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { sendAllNotifications } from '@/lib/notifications';
 import ImageLightbox from '@/components/chat/ImageLightbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
 
-// Support user ID - the admin support account
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
 
 interface AdminOrderChatDialogProps {
@@ -34,13 +35,21 @@ interface Message {
   is_read: boolean;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'قيد الانتظار',
+  confirmed: 'مؤكد',
+  processing: 'قيد المعالجة',
+  purchased: 'تم الشراء',
+  shipped: 'تم الشحن',
+  arrived_warehouse: 'وصل المخزن',
+  arrived_iraq: 'وصل العراق',
+  on_the_way: 'في الطريق',
+  delivered: 'تم التوصيل',
+  cancelled: 'ملغي',
+};
+
 export default function AdminOrderChatDialog({
-  open,
-  onOpenChange,
-  orderId,
-  orderNumber,
-  userId,
-  customerName
+  open, onOpenChange, orderId, orderNumber, userId, customerName
 }: AdminOrderChatDialogProps) {
   const [message, setMessage] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -49,25 +58,38 @@ export default function AdminOrderChatDialog({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
 
-  // Get or create conversation when dialog opens
+  // Fetch order details
+  const { data: order } = useQuery({
+    queryKey: ['admin-order-detail', orderId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', orderId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!orderId,
+  });
+
   useEffect(() => {
-    if (open && userId) {
-      getOrCreateConversation();
-    }
+    if (open && userId) getOrCreateConversation();
   }, [open, userId]);
 
   const getOrCreateConversation = async () => {
     setIsLoading(true);
     try {
-      // Check if conversation already exists
       const { data: existingConv } = await supabase
         .from('listing_conversations')
         .select('id')
@@ -77,28 +99,17 @@ export default function AdminOrderChatDialog({
       if (existingConv) {
         setConversationId(existingConv.id);
       } else {
-        // listing_id is NOT NULL, so we need a valid UUID. 
-        // Use a deterministic UUID from user+support pairing or get any listing
         const { data: anyListing } = await supabase
-          .from('community_customer_profiles')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-
-        // Generate a deterministic listing-like UUID for support conversations
+          .from('community_customer_profiles').select('id').limit(1).maybeSingle();
         const pseudoListingId = anyListing?.id || userId;
 
         const { data: newConv, error } = await supabase
           .from('listing_conversations')
           .insert({
-            listing_id: pseudoListingId,
-            buyer_id: userId,
-            seller_id: SUPPORT_USER_ID,
+            listing_id: pseudoListingId, buyer_id: userId, seller_id: SUPPORT_USER_ID,
             entry_context: { type: 'order_support', order_number: orderNumber },
           })
-          .select('id')
-          .single();
-
+          .select('id').single();
         if (error) throw error;
         setConversationId(newConv.id);
       }
@@ -110,111 +121,67 @@ export default function AdminOrderChatDialog({
     }
   };
 
-  // Fetch messages
   const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: ['admin-order-chat-messages', conversationId],
     queryFn: async () => {
       if (!conversationId) return [];
-      
       const { data, error } = await supabase
-        .from('listing_messages')
-        .select('*')
+        .from('listing_messages').select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
-
       if (error) throw error;
       return data as Message[];
     },
     enabled: !!conversationId,
-    refetchInterval: open ? 5000 : false,
+    refetchInterval: open && activeTab === 'chat' ? 5000 : false,
   });
 
-  // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!conversationId) {
-        await getOrCreateConversation();
-      }
-      
+      if (!conversationId) await getOrCreateConversation();
       const convId = conversationId;
       if (!convId) throw new Error('No conversation');
 
-      // Send initial context message if this is first message
       const { data: existingMessages } = await supabase
-        .from('listing_messages')
-        .select('id')
-        .eq('conversation_id', convId)
-        .limit(1);
+        .from('listing_messages').select('id').eq('conversation_id', convId).limit(1);
 
       if (!existingMessages || existingMessages.length === 0) {
-        // Send context about the order
         await supabase.from('listing_messages').insert({
-          conversation_id: convId,
-          sender_id: SUPPORT_USER_ID,
+          conversation_id: convId, sender_id: SUPPORT_USER_ID,
           content: `📦 مرحباً، هذه رسالة بخصوص طلبك رقم ${orderNumber}`,
         });
       }
 
-      // Send the actual message
       const { error } = await supabase.from('listing_messages').insert({
-        conversation_id: convId,
-        sender_id: SUPPORT_USER_ID,
-        content,
+        conversation_id: convId, sender_id: SUPPORT_USER_ID, content,
       });
-
       if (error) throw error;
 
-      // Update conversation timestamp
-      await supabase
-        .from('listing_conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', convId);
+      await supabase.from('listing_conversations')
+        .update({ updated_at: new Date().toISOString() }).eq('id', convId);
 
-      // Send all notifications (in-app and Telegram only)
       await sendAllNotifications({
-        userId,
-        title: 'رسالة جديدة من الدعم',
+        userId, title: 'رسالة جديدة من الدعم',
         message: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-        type: 'info',
-        relatedId: orderId,
+        type: 'info', relatedId: orderId,
       });
     },
-    onSuccess: () => {
-      setMessage('');
-      refetchMessages();
-      queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
-    },
-    onError: (error) => {
-      console.error('Error sending message:', error);
-      toast.error('فشل في إرسال الرسالة');
-    }
+    onSuccess: () => { setMessage(''); refetchMessages(); queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] }); },
+    onError: () => toast.error('فشل في إرسال الرسالة'),
   });
 
-  // Mark messages as read when viewing
   useEffect(() => {
     if (conversationId && messages.length > 0) {
-      supabase
-        .from('listing_messages')
-        .update({ is_read: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', SUPPORT_USER_ID)
-        .eq('is_read', false)
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
-        });
+      supabase.from('listing_messages').update({ is_read: true })
+        .eq('conversation_id', conversationId).neq('sender_id', SUPPORT_USER_ID).eq('is_read', false)
+        .then(() => queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] }));
     }
   }, [conversationId, messages.length]);
 
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // Upload media file and send as message
   const handleSendMedia = async (file: File) => {
-    if (!conversationId) {
-      await getOrCreateConversation();
-    }
+    if (!conversationId) await getOrCreateConversation();
     const convId = conversationId;
     if (!convId) return;
 
@@ -222,24 +189,65 @@ export default function AdminOrderChatDialog({
     try {
       const ext = file.name.split('.').pop() || 'bin';
       const path = `chat/listing/${SUPPORT_USER_ID}/${Date.now()}.${ext}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
+      const { error: uploadError } = await supabase.storage.from('product-images')
         .upload(path, file, { contentType: file.type, cacheControl: '3600' });
-
-      if (uploadError) {
-        toast.error('فشل رفع الملف: ' + uploadError.message);
-        return;
-      }
-      
+      if (uploadError) { toast.error('فشل رفع الملف'); return; }
       const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
       await sendMediaMessage(convId, urlData.publicUrl, file.type);
-    } catch (err) {
-      console.error('Media upload error:', err);
-      toast.error('حدث خطأ أثناء رفع الملف');
-    } finally {
+    } catch { toast.error('حدث خطأ أثناء رفع الملف'); }
+    finally { setIsUploadingMedia(false); }
+  };
+
+  // Strip audio from video file
+  const stripAudioFromVideo = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.muted = true;
+      video.onloadedmetadata = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d')!;
+        const stream = canvas.captureStream();
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const newFile = new File([blob], `silent_${Date.now()}.webm`, { type: 'video/webm' });
+          URL.revokeObjectURL(video.src);
+          resolve(newFile);
+        };
+        recorder.onerror = () => reject(new Error('Failed to process video'));
+        video.play();
+        recorder.start();
+        const draw = () => {
+          if (video.ended || video.paused) { recorder.stop(); return; }
+          ctx.drawImage(video, 0, 0);
+          requestAnimationFrame(draw);
+        };
+        draw();
+        video.onended = () => recorder.stop();
+      };
+      video.onerror = () => reject(new Error('Failed to load video'));
+    });
+  };
+
+  const handleSendVideoNoAudio = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttachMenuOpen(false);
+    setIsUploadingMedia(true);
+    try {
+      toast.info('جاري معالجة الفيديو بدون صوت...');
+      const silentFile = await stripAudioFromVideo(file);
+      await handleSendMedia(silentFile);
+    } catch {
+      toast.error('فشل في معالجة الفيديو');
       setIsUploadingMedia(false);
     }
+    if (videoInputRef.current) videoInputRef.current.value = '';
   };
 
   const sendMediaMessage = async (convId: string, mediaUrl: string, mimeType: string) => {
@@ -248,26 +256,12 @@ export default function AdminOrderChatDialog({
     const content = isAudio ? '🎤 رسالة صوتية' : isVideo ? '🎥 فيديو' : '📷 صورة';
 
     const { error } = await supabase.from('listing_messages').insert({
-      conversation_id: convId,
-      sender_id: SUPPORT_USER_ID,
-      content,
-      image_url: mediaUrl,
+      conversation_id: convId, sender_id: SUPPORT_USER_ID, content, image_url: mediaUrl,
     });
-
     if (error) throw error;
 
-    await supabase.from('listing_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', convId);
-
-    await sendAllNotifications({
-      userId,
-      title: 'رسالة جديدة من الدعم',
-      message: content,
-      type: 'info',
-      relatedId: orderId,
-    });
-
+    await supabase.from('listing_conversations').update({ updated_at: new Date().toISOString() }).eq('id', convId);
+    await sendAllNotifications({ userId, title: 'رسالة جديدة من الدعم', message: content, type: 'info', relatedId: orderId });
     refetchMessages();
     queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
   };
@@ -280,18 +274,13 @@ export default function AdminOrderChatDialog({
     setAttachMenuOpen(false);
   };
 
-  // Voice recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
@@ -299,32 +288,24 @@ export default function AdminOrderChatDialog({
         await handleSendMedia(audioFile);
         setRecordingTime(0);
       };
-
       mediaRecorder.start();
       setIsRecording(true);
       timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
-    } catch {
-      toast.error('لا يمكن الوصول إلى الميكروفون');
-    }
+    } catch { toast.error('لا يمكن الوصول إلى الميكروفون'); }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     }
   };
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
+      if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
     };
   }, []);
 
@@ -334,155 +315,233 @@ export default function AdminOrderChatDialog({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    sendMessageMutation.mutate(message.trim());
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  const handleSend = () => { if (!message.trim()) return; sendMessageMutation.mutate(message.trim()); };
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] h-full flex flex-col p-0 overflow-hidden" dir="rtl">
         <DialogHeader className="p-4 border-b shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-primary" />
-            <span>محادثة مع {customerName}</span>
+          <DialogTitle className="flex items-center gap-2 text-sm">
+            <MessageCircle className="h-4 w-4 text-primary" />
+            <span>{customerName}</span>
+            <span className="text-muted-foreground">- طلب {orderNumber}</span>
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">طلب رقم: {orderNumber}</p>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <>
-            {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-3">
-                {messages.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">ابدأ المحادثة مع العميل</p>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2 shrink-0 rounded-none border-b">
+            <TabsTrigger value="order" className="gap-1.5 text-xs">
+              <Package className="h-3.5 w-3.5" /> الطلب
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-1.5 text-xs">
+              <MessageCircle className="h-3.5 w-3.5" /> المراسلة
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Order Details Tab */}
+          <TabsContent value="order" className="flex-1 m-0 overflow-auto">
+            <ScrollArea className="h-full">
+              {order ? (
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm">معلومات الطلب</h3>
+                    <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>
+                      {STATUS_LABELS[order.status] || order.status}
+                    </Badge>
                   </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isSupport = msg.sender_id === SUPPORT_USER_ID;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex ${isSupport ? 'justify-start' : 'justify-end'}`}
-                      >
-                         <div
-                          className={`max-w-[80%] rounded-xl px-4 py-2 ${
-                            isSupport
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {msg.image_url && (
-                            msg.image_url.includes('voice_') ? (
-                              <audio controls src={msg.image_url} className="max-w-full mb-2" />
-                            ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) ? (
-                              <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" />
-                            ) : (
-                              <ImageLightbox src={msg.image_url} alt="صورة">
-                                {(open) => (
-                                  <img
-                                    src={msg.image_url!}
-                                    alt="صورة"
-                                    className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={open}
-                                  />
-                                )}
-                              </ImageLightbox>
-                            )
-                          )}
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                          <p className={`text-xs mt-1 ${isSupport ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                            {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
-                          </p>
-                        </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">رقم الطلب</p>
+                      <p className="font-medium">{order.order_number}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">المبلغ الإجمالي</p>
+                      <p className="font-medium">{Number(order.total_amount).toLocaleString()} {order.currency}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">طريقة الدفع</p>
+                      <p className="font-medium">{order.payment_method || '—'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">حالة الدفع</p>
+                      <p className="font-medium">{order.payment_status || '—'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">المحافظة</p>
+                      <p className="font-medium">{order.governorate || '—'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">تاريخ الطلب</p>
+                      <p className="font-medium">{format(new Date(order.created_at), 'yyyy/MM/dd HH:mm', { locale: ar })}</p>
+                    </div>
+                  </div>
+
+                  {order.shipping_address && (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">عنوان الشحن</p>
+                      <p className="text-sm bg-muted/50 rounded-lg p-2">{order.shipping_address}</p>
+                    </div>
+                  )}
+
+                  {order.phone_number && (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">رقم الهاتف</p>
+                      <p className="text-sm font-medium" dir="ltr">{order.phone_number}</p>
+                    </div>
+                  )}
+
+                  {order.shipping_notes && (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">ملاحظات الشحن</p>
+                      <p className="text-sm bg-muted/50 rounded-lg p-2">{order.shipping_notes}</p>
+                    </div>
+                  )}
+
+                  {/* Order Items */}
+                  {order.order_items && (order.order_items as any[]).length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-muted-foreground text-xs font-medium">المنتجات</p>
+                      <div className="space-y-2">
+                        {(order.order_items as any[]).map((item: any, i: number) => (
+                          <div key={i} className="flex items-center gap-3 bg-muted/30 rounded-lg p-2">
+                            {item.product_image && (
+                              <img src={item.product_image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{item.product_name || item.product_name_ar || 'منتج'}</p>
+                              <p className="text-xs text-muted-foreground">الكمية: {item.quantity} × {Number(item.unit_price).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            {/* Input Area */}
-            <div className="p-3 border-t shrink-0">
-              {/* Hidden File Inputs */}
-              <input type="file" ref={fileInputRef} accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
-              <input type="file" ref={cameraInputRef} accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
-
-              <div className="flex items-center gap-1.5">
-                {/* Attach Menu */}
-                <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-full shrink-0" disabled={isRecording}>
-                      {attachMenuOpen ? <X className="h-5 w-5 text-muted-foreground" /> : <Plus className="h-5 w-5 text-muted-foreground" />}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" align="start" className="w-auto p-2">
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => { cameraInputRef.current?.click(); }} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><Camera className="h-5 w-5 text-primary" /></div>
-                        <span className="text-[10px] text-muted-foreground">كاميرا</span>
-                      </button>
-                      <button type="button" onClick={() => { fileInputRef.current?.click(); }} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><ImageIcon className="h-5 w-5 text-primary" /></div>
-                        <span className="text-[10px] text-muted-foreground">صور/فيديو</span>
-                      </button>
                     </div>
-                  </PopoverContent>
-                </Popover>
-
-                {/* Input or Recording */}
-                <div className="flex-1">
-                  {isRecording ? (
-                    <div className="flex items-center justify-center h-[42px] rounded-full bg-destructive/10 px-4 gap-3">
-                      <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                      <span className="text-destructive font-medium text-sm">{formatTime(recordingTime)}</span>
-                      <span className="text-destructive/70 text-xs">جاري التسجيل...</span>
-                    </div>
-                  ) : (
-                    <Textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="اكتب رسالتك..."
-                      className="resize-none min-h-[42px] max-h-24"
-                      rows={1}
-                    />
                   )}
                 </div>
+              ) : (
+                <div className="flex items-center justify-center h-40">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
 
-                {/* Send / Voice / Stop */}
-                {message.trim() && !isRecording ? (
-                  <Button onClick={handleSend} disabled={sendMessageMutation.isPending || isUploadingMedia} size="icon" className="h-10 w-10 rounded-full shrink-0">
-                    {sendMessageMutation.isPending || isUploadingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
-                ) : isRecording ? (
-                  <Button onClick={stopRecording} variant="destructive" size="icon" className="h-10 w-10 rounded-full shrink-0">
-                    <Square className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button onClick={startRecording} variant="ghost" size="icon" className="h-10 w-10 rounded-full shrink-0" disabled={isUploadingMedia}>
-                    {isUploadingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-5 w-5 text-muted-foreground" />}
-                  </Button>
-                )}
+          {/* Chat Tab */}
+          <TabsContent value="chat" className="flex-1 flex flex-col m-0 min-h-0">
+            {isLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            </div>
-          </>
-        )}
+            ) : (
+              <>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-3">
+                    {messages.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">ابدأ المحادثة مع العميل</p>
+                      </div>
+                    ) : (
+                      messages.map((msg) => {
+                        const isSupport = msg.sender_id === SUPPORT_USER_ID;
+                        return (
+                          <div key={msg.id} className={`flex ${isSupport ? 'justify-start' : 'justify-end'}`}>
+                            <div className={`max-w-[80%] rounded-xl px-4 py-2 ${isSupport ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                              {msg.image_url && (
+                                msg.image_url.includes('voice_') ? (
+                                  <audio controls src={msg.image_url} className="max-w-full mb-2" />
+                                ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) ? (
+                                  <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" />
+                                ) : (
+                                  <ImageLightbox src={msg.image_url} alt="صورة">
+                                    {(openLb) => (
+                                      <img src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} />
+                                    )}
+                                  </ImageLightbox>
+                                )
+                              )}
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              <p className={`text-xs mt-1 ${isSupport ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
+
+                {/* Input Area */}
+                <div className="p-3 border-t shrink-0">
+                  <input type="file" ref={fileInputRef} accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
+                  <input type="file" ref={cameraInputRef} accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
+                  <input type="file" ref={videoInputRef} accept="video/*" onChange={handleSendVideoNoAudio} className="hidden" />
+
+                  <div className="flex items-center gap-1.5">
+                    <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-full shrink-0" disabled={isRecording}>
+                          {attachMenuOpen ? <X className="h-5 w-5 text-muted-foreground" /> : <Plus className="h-5 w-5 text-muted-foreground" />}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="top" align="start" className="w-auto p-2">
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => cameraInputRef.current?.click()} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><Camera className="h-5 w-5 text-primary" /></div>
+                            <span className="text-[10px] text-muted-foreground">كاميرا</span>
+                          </button>
+                          <button type="button" onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center"><ImageIcon className="h-5 w-5 text-primary" /></div>
+                            <span className="text-[10px] text-muted-foreground">صور/فيديو</span>
+                          </button>
+                          <button type="button" onClick={() => videoInputRef.current?.click()} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors">
+                            <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                              <div className="relative">
+                                <Video className="h-5 w-5 text-destructive" />
+                                <VolumeX className="h-3 w-3 text-destructive absolute -bottom-1 -left-1" />
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">فيديو صامت</span>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <div className="flex-1">
+                      {isRecording ? (
+                        <div className="flex items-center justify-center h-[42px] rounded-full bg-destructive/10 px-4 gap-3">
+                          <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                          <span className="text-destructive font-medium text-sm">{formatTime(recordingTime)}</span>
+                          <span className="text-destructive/70 text-xs">جاري التسجيل...</span>
+                        </div>
+                      ) : (
+                        <Textarea value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown}
+                          placeholder="اكتب رسالتك..." className="resize-none min-h-[42px] max-h-24" rows={1} />
+                      )}
+                    </div>
+
+                    {message.trim() && !isRecording ? (
+                      <Button onClick={handleSend} disabled={sendMessageMutation.isPending || isUploadingMedia} size="icon" className="h-10 w-10 rounded-full shrink-0">
+                        {sendMessageMutation.isPending || isUploadingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      </Button>
+                    ) : isRecording ? (
+                      <Button onClick={stopRecording} variant="destructive" size="icon" className="h-10 w-10 rounded-full shrink-0">
+                        <Square className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button onClick={startRecording} variant="ghost" size="icon" className="h-10 w-10 rounded-full shrink-0" disabled={isUploadingMedia}>
+                        {isUploadingMedia ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-5 w-5 text-muted-foreground" />}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
