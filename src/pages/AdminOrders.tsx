@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, useCallback, Fragment } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,8 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -92,9 +91,6 @@ const AdminOrders = () => {
   const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [expandedOrderData, setExpandedOrderData] = useState<any>(null);
-  const [expandedOrderLoading, setExpandedOrderLoading] = useState(false);
   // Edit form state
   const [editStatus, setEditStatus] = useState('');
   const [editPaymentStatus, setEditPaymentStatus] = useState('');
@@ -148,56 +144,6 @@ const AdminOrders = () => {
     refetchOnWindowFocus: true,
   });
 
-  // Fetch full order items for inline preview
-  const toggleExpandedOrder = useCallback(async (order: any) => {
-    if (expandedOrderId === order.id) {
-      setExpandedOrderId(null);
-      setExpandedOrderData(null);
-      return;
-    }
-    setExpandedOrderId(order.id);
-    setExpandedOrderLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          order_number,
-          total_amount,
-          phone_number,
-          shipping_address,
-          governorate,
-          profiles(full_name, username),
-          order_items!order_items_order_id_fkey(
-            id,
-            product_id,
-            custom_request_id,
-            product_name_ar,
-            product_name,
-            quantity,
-            unit_price,
-            total_price,
-            selected_color,
-            selected_option,
-            shipping_option_name_ar,
-            color_image_url,
-            products!order_items_product_id_fkey(name_ar, image_url, images),
-            custom_product_requests(product_name, image_url)
-          )
-        `)
-        .eq('id', order.id)
-        .single();
-
-      if (error) {
-        toast.error('تعذر تحميل تفاصيل المنتجات');
-      } else if (data) {
-        setExpandedOrderData(data);
-      }
-    } catch (err) {
-      console.error('Expanded view fetch error:', err);
-    }
-    setExpandedOrderLoading(false);
-  }, [expandedOrderId]);
 
   // Helper function to check if order is pre-order
   const checkIfPreOrder = (orderItems: any[]): boolean => {
@@ -1003,10 +949,8 @@ const AdminOrders = () => {
                       const shippingInfo = getShippingInfo(order.order_items || []);
                       const isPreOrder = checkIfPreOrder(order.order_items || []);
                       
-                      const isExpanded = expandedOrderId === order.id;
                       return (
-                        <React.Fragment key={order.id}>
-                        <TableRow className={cn("admin-table-row cursor-pointer", isExpanded && "bg-muted/30")} onClick={() => toggleExpandedOrder(order)}>
+                        <TableRow key={order.id} className="admin-table-row">
                           <TableCell className="font-mono text-sm font-medium">
                             {order.order_number}
                           </TableCell>
@@ -1058,17 +1002,8 @@ const AdminOrders = () => {
                           <TableCell className="text-sm text-muted-foreground">
                             {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
                           </TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => navigate(`/order/${order.id}`)}
-                                title="عرض التفاصيل"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -1122,76 +1057,6 @@ const AdminOrders = () => {
                             </div>
                           </TableCell>
                         </TableRow>
-                        {isExpanded && (
-                          <TableRow className="bg-muted/20 hover:bg-muted/20">
-                            <TableCell colSpan={9} className="p-3">
-                              {expandedOrderLoading ? (
-                                <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  جاري تحميل المنتجات...
-                                </div>
-                              ) : expandedOrderData ? (
-                                <div className="space-y-3">
-                                  {/* Customer Info */}
-                                  <div className="rounded-lg border border-border bg-card p-3 space-y-1.5 text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground">👤</span>
-                                      <span className="font-medium flex-1">{expandedOrderData.profiles?.full_name || expandedOrderData.profiles?.username}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-muted-foreground">📞</span>
-                                      <span className="flex-1 text-xs">{expandedOrderData.phone_number}</span>
-                                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(expandedOrderData.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-muted-foreground">📍</span>
-                                      <span className="flex-1 text-xs">{expandedOrderData.shipping_address || expandedOrderData.governorate || '-'}</span>
-                                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(expandedOrderData.shipping_address || expandedOrderData.governorate || ''); toast.success('تم نسخ العنوان'); }}>
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                  {/* Products */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {(expandedOrderData.order_items || []).map((item: any, index: number) => {
-                                      const itemName = item.product_name_ar || item.product_name || item.products?.name_ar || item.custom_product_requests?.product_name || 'منتج';
-                                      const itemQty = item.quantity ?? 1;
-                                      const itemPrice = item.unit_price ?? item.total_price ?? 0;
-                                      const itemImage = item.color_image_url || item.products?.images?.[0] || item.products?.image_url || item.custom_product_requests?.image_url;
-                                      return (
-                                        <div key={item.id || `${expandedOrderData.id}-${index}`} className="flex items-center gap-3 rounded-lg border border-border bg-card p-2.5">
-                                          {itemImage && (
-                                            <img src={itemImage} className="w-12 h-12 rounded-lg object-cover border border-border" alt={itemName} loading="lazy" />
-                                          )}
-                                          <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-foreground truncate">{itemName}</p>
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                              {item.selected_color && <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_color}</Badge>}
-                                              {item.selected_option && <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_option}</Badge>}
-                                              {item.shipping_option_name_ar && <Badge variant="secondary" className="text-[10px] px-1.5">{item.shipping_option_name_ar}</Badge>}
-                                            </div>
-                                          </div>
-                                          <div className="text-left shrink-0">
-                                            <span className="text-sm font-bold text-foreground">×{itemQty}</span>
-                                            <p className="text-[11px] text-muted-foreground">{formatPrice(itemPrice)}</p>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                  {/* Total */}
-                                  <div className="flex items-center justify-between pt-2 border-t border-border text-sm font-bold">
-                                    <span>المجموع</span>
-                                    <span className="text-primary">{formatPrice(expandedOrderData.total_amount)}</span>
-                                  </div>
-                                </div>
-                              ) : null}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        </React.Fragment>
                       );
                     })}
                   </TableBody>
