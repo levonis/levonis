@@ -55,11 +55,11 @@
      queryKey: ["customer-rating", requestId, user?.id],
      enabled: !!user?.id,
      queryFn: async () => {
-       const { data, error } = await supabase
-         .from("merchant_ratings")
-         .select("id, rating, review_text, merchant_id")
-         .eq("customer_id", user!.id)
-         .eq("request_id", requestId)
+        const { data, error } = await supabase
+          .from("merchant_ratings")
+          .select("id, rating, review_text, merchant_id, image_urls, video_url")
+          .eq("customer_id", user!.id)
+          .eq("request_id", requestId)
          .maybeSingle();
        if (error) throw error;
        return data;

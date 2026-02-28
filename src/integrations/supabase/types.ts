@@ -3391,6 +3391,57 @@ export type Database = {
           },
         ]
       }
+      merchant_rating_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_admin_reply: boolean | null
+          is_hidden: boolean | null
+          parent_id: string | null
+          rating_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean | null
+          is_hidden?: boolean | null
+          parent_id?: string | null
+          rating_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean | null
+          is_hidden?: boolean | null
+          parent_id?: string | null
+          rating_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_rating_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_rating_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_rating_comments_rating_id_fkey"
+            columns: ["rating_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_ratings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_rating_replies: {
         Row: {
           created_at: string
@@ -3431,31 +3482,46 @@ export type Database = {
           created_at: string
           customer_id: string
           id: string
+          image_urls: string[] | null
+          is_hidden: boolean | null
+          is_published: boolean | null
           merchant_id: string
+          points_awarded: number | null
           rating: number
           request_id: string
           review_text: string | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           created_at?: string
           customer_id: string
           id?: string
+          image_urls?: string[] | null
+          is_hidden?: boolean | null
+          is_published?: boolean | null
           merchant_id: string
+          points_awarded?: number | null
           rating: number
           request_id: string
           review_text?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           created_at?: string
           customer_id?: string
           id?: string
+          image_urls?: string[] | null
+          is_hidden?: boolean | null
+          is_published?: boolean | null
           merchant_id?: string
+          points_awarded?: number | null
           rating?: number
           request_id?: string
           review_text?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
