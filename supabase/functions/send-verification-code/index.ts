@@ -224,20 +224,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     // For password_reset, check if user exists but return generic message to prevent enumeration
     if (type === 'password_reset') {
-      const { data: users, error: userError } = await supabase.auth.admin.listUsers();
+      // Use getUserByEmail for reliable lookup regardless of user count
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email);
       
-      if (userError) {
-        console.error("Error checking user");
-        return new Response(
-          JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const userExists = users.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
-      
-      if (!userExists) {
+      if (userError || !userData?.user) {
         // Return success to prevent email enumeration - don't reveal if email exists
+        console.log("User not found or error, returning generic response");
         return new Response(
           JSON.stringify({ success: true, message: "إذا كان البريد مسجلاً، ستصلك رسالة تحقق" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
