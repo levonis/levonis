@@ -65,9 +65,12 @@ const ConfirmDelivery = () => {
         
         // Upload images
         for (const img of (productImages[pid] || [])) {
-          const path = `${user.id}/${pid}/${Date.now()}-${img.name}`;
-          const { error } = await supabase.storage.from("review-media").upload(path, img, { upsert: true });
-          if (!error) {
+          const ext = img.name.split('.').pop() || 'jpg';
+          const path = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+          const { error } = await supabase.storage.from("review-media").upload(path, img);
+          if (error) {
+            console.error('Image upload error:', error);
+          } else {
             const { data } = supabase.storage.from("review-media").getPublicUrl(path);
             uploadedImageUrls.push(data.publicUrl);
           }
@@ -77,9 +80,11 @@ const ConfirmDelivery = () => {
         let videoUrl: string | null = null;
         const vid = productVideos[pid];
         if (vid) {
-          const path = `${user.id}/${pid}/video-${Date.now()}.mp4`;
-          const { error } = await supabase.storage.from("review-media").upload(path, vid, { upsert: true });
-          if (!error) {
+          const path = `${user.id}/${Date.now()}-video.mp4`;
+          const { error } = await supabase.storage.from("review-media").upload(path, vid);
+          if (error) {
+            console.error('Video upload error:', error);
+          } else {
             const { data } = supabase.storage.from("review-media").getPublicUrl(path);
             videoUrl = data.publicUrl;
           }
