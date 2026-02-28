@@ -915,10 +915,14 @@ export default function CommunityCustomerProfileModal({
         {step === 1 ? (
           <>
             {!hasValidAvatar && (
-              <div className="flex items-center justify-center gap-1.5 text-xs text-amber-500 mb-2 py-2 px-3 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center gap-1.5 text-xs text-amber-500 mb-2 py-2 px-3 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30 w-full cursor-pointer hover:bg-amber-500/20 transition-colors"
+              >
                 <Camera className="h-3 w-3" />
-                يجب رفع صورة شخصية
-              </div>
+                يجب رفع صورة شخصية — اضغط هنا للرفع
+              </button>
             )}
             
             <div className="flex items-center gap-2">
