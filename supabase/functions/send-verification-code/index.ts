@@ -224,16 +224,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     // For password_reset, check if user exists but return generic message to prevent enumeration
     if (type === 'password_reset') {
-      // Use listUsers with filter for reliable lookup
-      const { data: usersData, error: userError } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1,
-        filter: email,
-      });
+      // Check existence via profiles (stable and indexed in this project)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('email', email)
+        .limit(1)
+        .maybeSingle();
       
-      const userExists = usersData?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
-      
-      if (userError || !userExists) {
+      if (profileError || !profile?.id) {
         // Return success to prevent email enumeration - don't reveal if email exists
         console.log("User not found or error, returning generic response");
         return new Response(
