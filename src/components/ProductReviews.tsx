@@ -1,81 +1,109 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Star, Trash2, Loader2, CheckCircle, Upload, X, Image as ImageIcon, Video, Play } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Star, Loader2, Upload, X, Video, Image as ImageIcon,
+  SlidersHorizontal, ChevronDown, CheckCircle, MessageSquareText
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import LevelBadge from '@/components/LevelBadge';
+import { motion, AnimatePresence } from 'framer-motion';
+import ReviewSummary from '@/components/reviews/ReviewSummary';
+import TaobaoReviewCard from '@/components/reviews/TaobaoReviewCard';
+import BuyerShowcase from '@/components/reviews/BuyerShowcase';
 
 interface ProductReviewsProps {
   productId: string;
 }
 
+type TabKey = 'all' | 'media' | 'positive' | 'neutral' | 'negative';
+type SortKey = 'recent' | 'highest' | 'lowest' | 'media';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'all', label: 'الكل' },
+  { key: 'media', label: 'صور/فيديو' },
+  { key: 'positive', label: 'إيجابي' },
+  { key: 'neutral', label: 'محايد' },
+  { key: 'negative', label: 'سلبي' },
+];
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'recent', label: 'الأحدث' },
+  { key: 'highest', label: 'الأعلى تقييماً' },
+  { key: 'lowest', label: 'الأقل تقييماً' },
+  { key: 'media', label: 'مع صور أولاً' },
+];
+
 export default function ProductReviews({ productId }: ProductReviewsProps) {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [sortBy, setSortBy] = useState<SortKey>('recent');
+  const [showSort, setShowSort] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+
+  // Review form state
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [hoveredRating, setHoveredRating] = useState(0);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // جلب المراجعات
-  const { data: reviews, isLoading } = useQuery({
+  // Fetch reviews
+  const { data: reviews = [], isLoading } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            username,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('product_id', productId)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
-      return data || [];
+      if (!data || data.length === 0) return [];
+
+      // Fetch profiles separately
+      const userIds = Array.from(new Set(data.map((r) => r.user_id)));
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .in('id', userIds);
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+      return data.map((r) => ({
+        ...r,
+        profiles: profileMap.get(r.user_id) || null,
+      }));
     },
   });
 
-  // جلب مراجعة المستخدم الحالي
+  // Check if user purchased
   const { data: userReview } = useQuery({
     queryKey: ['user-review', productId, user?.id],
     queryFn: async () => {
       if (!user) return null;
-      
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
         .eq('product_id', productId)
         .eq('user_id', user.id)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // التحقق من أن المستخدم اشترى المنتج واستلمه
   const { data: hasPurchased } = useQuery({
     queryKey: ['has-purchased', productId, user?.id],
     queryFn: async () => {
       if (!user) return false;
-      
       const { data, error } = await supabase
         .from('order_items')
         .select('id, orders!inner(status)')
@@ -84,40 +112,25 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         .eq('orders.status', 'delivered')
         .limit(1)
         .maybeSingle();
-
       if (error) throw error;
       return !!data;
     },
     enabled: !!user,
   });
 
-  // إضافة أو تحديث مراجعة
-  const submitReviewMutation = useMutation({
+  // Submit review
+  const submitMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('يجب تسجيل الدخول');
-
       setUploadingMedia(true);
-      
-      // رفع الملفات
-      const uploadedUrls: string[] = [];
-      
-      for (const file of mediaFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('review-media')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
 
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('review-media')
-          .getPublicUrl(fileName);
-        
+      const uploadedUrls: string[] = [];
+      for (const file of mediaFiles) {
+        const ext = file.name.split('.').pop();
+        const name = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        const { error } = await supabase.storage.from('review-media').upload(name, file, { cacheControl: '3600', upsert: false });
+        if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage.from('review-media').getPublicUrl(name);
         uploadedUrls.push(publicUrl);
       }
 
@@ -130,15 +143,10 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       };
 
       if (userReview) {
-        const { error } = await supabase
-          .from('reviews')
-          .update(reviewData)
-          .eq('id', userReview.id);
+        const { error } = await supabase.from('reviews').update(reviewData).eq('id', userReview.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('reviews')
-          .insert([reviewData]);
+        const { error } = await supabase.from('reviews').insert([reviewData]);
         if (error) throw error;
       }
     },
@@ -148,7 +156,8 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       setComment('');
       setMediaFiles([]);
       setUploadingMedia(false);
-      toast.success(userReview ? 'تم تحديث تقييمك بنجاح' : 'تم إضافة تقييمك بنجاح');
+      setShowForm(false);
+      toast.success(userReview ? 'تم تحديث تقييمك بنجاح' : 'تم إضافة تقييمك بنجاح ✨');
     },
     onError: (error: any) => {
       setUploadingMedia(false);
@@ -156,478 +165,306 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
     },
   });
 
-  // حذف مراجعة
-  const deleteReviewMutation = useMutation({
-    mutationFn: async (reviewId: string) => {
-      const { error } = await supabase
-        .from('reviews')
-        .delete()
-        .eq('id', reviewId);
+  // Delete review
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('reviews').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
       queryClient.invalidateQueries({ queryKey: ['user-review', productId, user?.id] });
-      toast.success('تم حذف التقييم بنجاح');
-    },
-    onError: () => {
-      toast.error('حدث خطأ أثناء حذف التقييم');
+      toast.success('تم حذف التقييم');
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      toast.error('يجب تسجيل الدخول أولاً');
-      return;
-    }
-    submitReviewMutation.mutate();
-  };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    
-    // التحقق من الحجم والنوع
-    const validFiles = files.filter(file => {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`الملف ${file.name} أكبر من 10 ميجابايت`);
-        return false;
-      }
+    const files = Array.from(e.target.files || []).filter((f) => {
+      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name} أكبر من 10 ميجابايت`); return false; }
       return true;
     });
+    setMediaFiles((prev) => [...prev, ...files].slice(0, 5));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    // السماح بـ 5 ملفات كحد أقصى
-    const currentTotal = mediaFiles.length + validFiles.length;
-    if (currentTotal > 5) {
-      toast.error('يمكنك إضافة 5 ملفات كحد أقصى');
-      setMediaFiles([...mediaFiles, ...validFiles].slice(0, 5));
-    } else {
-      setMediaFiles([...mediaFiles, ...validFiles]);
+  // Filter + Sort
+  const filtered = useMemo(() => {
+    let list = [...reviews];
+    switch (activeTab) {
+      case 'media':
+        list = list.filter((r) => (r.media_files?.length || 0) > 0 || r.video_url);
+        break;
+      case 'positive':
+        list = list.filter((r) => r.rating >= 4);
+        break;
+      case 'neutral':
+        list = list.filter((r) => r.rating === 3);
+        break;
+      case 'negative':
+        list = list.filter((r) => r.rating <= 2);
+        break;
     }
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    switch (sortBy) {
+      case 'recent':
+        list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'highest':
+        list.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'lowest':
+        list.sort((a, b) => a.rating - b.rating);
+        break;
+      case 'media':
+        list.sort((a, b) => ((b.media_files?.length || 0) + (b.video_url ? 1 : 0)) - ((a.media_files?.length || 0) + (a.video_url ? 1 : 0)));
+        break;
     }
-  };
+    return list;
+  }, [reviews, activeTab, sortBy]);
 
-  const removeFile = (index: number) => {
-    setMediaFiles(mediaFiles.filter((_, i) => i !== index));
-  };
+  const displayReviews = showAllReviews ? filtered : filtered.slice(0, 5);
 
-  const isVideo = (filename: string) => {
-    return /\.(mp4|webm|mov)$/i.test(filename);
-  };
+  const isVideo = (name: string) => /\.(mp4|webm|mov)$/i.test(name);
 
-  const canDelete = (review: any) => {
-    return isAdmin || (user && review.user_id === user.id);
-  };
+  const tabCounts = useMemo(() => ({
+    all: reviews.length,
+    media: reviews.filter((r) => (r.media_files?.length || 0) > 0 || r.video_url).length,
+    positive: reviews.filter((r) => r.rating >= 4).length,
+    neutral: reviews.filter((r) => r.rating === 3).length,
+    negative: reviews.filter((r) => r.rating <= 2).length,
+  }), [reviews]);
 
-  // حساب متوسط التقييم
-  const averageRating = reviews?.length
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : 0;
-
-  // عرض 3 تقييمات فقط في البداية
-  const displayedReviews = showAllReviews ? reviews : reviews?.slice(0, 3);
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-36 rounded-2xl" />
+        <Skeleton className="h-10 rounded-xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* ملخص التقييمات */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-primary fill-primary" />
-            التقييمات والمراجعات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {reviews && reviews.length > 0 ? (
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-4xl font-black text-primary">{averageRating}</div>
-                <div className="flex items-center justify-center gap-1 my-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+          <MessageSquareText className="h-5 w-5 text-orange-500" />
+          التقييمات والمراجعات
+        </h2>
+        {user && hasPurchased && !userReview && (
+          <Button
+            size="sm"
+            onClick={() => setShowForm(!showForm)}
+            className="h-8 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-md"
+          >
+            <Star className="h-3.5 w-3.5 ml-1" />
+            أضف تقييمك
+          </Button>
+        )}
+      </div>
+
+      {/* Rating Summary */}
+      {reviews.length > 0 && <ReviewSummary reviews={reviews} totalCount={reviews.length} />}
+
+      {/* Buyer Showcase */}
+      <BuyerShowcase reviews={reviews} />
+
+      {/* Review Form */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-card rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-orange-200/50 space-y-4">
+              <h3 className="text-sm font-bold">شارك تجربتك</h3>
+
+              {/* Stars */}
+              <div className="flex gap-2 justify-center py-2">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setRating(s)}
+                    onMouseEnter={() => setHoveredRating(s)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    className="transition-transform hover:scale-125 active:scale-95"
+                  >
                     <Star
-                      key={star}
-                      className={`h-4 w-4 ${
-                        star <= Math.round(Number(averageRating))
-                          ? 'text-primary fill-primary'
-                          : 'text-muted-foreground'
+                      className={`h-9 w-9 transition-colors ${
+                        s <= (hoveredRating || rating)
+                          ? 'fill-orange-400 text-orange-400 drop-shadow-[0_2px_6px_rgba(251,146,60,0.5)]'
+                          : 'text-muted-foreground/30'
                       }`}
                     />
-                  ))}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {reviews.length} {reviews.length === 1 ? 'تقييم' : 'تقييمات'}
-                </div>
+                  </button>
+                ))}
               </div>
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">لا توجد تقييمات بعد</p>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* نموذج إضافة/تعديل تقييم */}
-      {user && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {userReview ? 'تعديل تقييمك' : 'أضف تقييمك'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {hasPurchased ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">التقييم</label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        onMouseEnter={() => setHoveredRating(star)}
-                        onMouseLeave={() => setHoveredRating(0)}
-                        className="transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`h-8 w-8 ${
-                            star <= (hoveredRating || rating)
-                              ? 'text-primary fill-primary'
-                              : 'text-muted-foreground'
-                          }`}
-                        />
-                      </button>
+              <Textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="شارك تجربتك مع هذا المنتج..."
+                rows={3}
+                maxLength={500}
+                className="rounded-xl border-border/50 resize-none"
+              />
+
+              {/* Media Upload */}
+              <div>
+                <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple onChange={handleFileSelect} className="hidden" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={mediaFiles.length >= 5}
+                  className="w-full rounded-xl border-dashed border-2 h-12"
+                >
+                  <Upload className="h-4 w-4 ml-2" />
+                  {mediaFiles.length > 0 ? `${mediaFiles.length} ملفات مختارة` : 'أضف صور أو فيديو'}
+                </Button>
+                {mediaFiles.length > 0 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                    {mediaFiles.map((file, i) => (
+                      <div key={i} className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-border group">
+                        {isVideo(file.name) ? (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Video className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        ) : (
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                        )}
+                        <button
+                          onClick={() => setMediaFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    التعليق (اختياري)
-                  </label>
-                  <Textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="شارك تجربتك مع هذا المنتج..."
-                    rows={4}
-                    maxLength={500}
-                  />
-                </div>
-
-                {/* رفع الصور والفيديوهات */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    إضافة صور أو فيديوهات (اختياري)
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={mediaFiles.length >= 5}
-                    className="w-full mb-3"
-                  >
-                    <Upload className="ml-2 h-4 w-4" />
-                    {mediaFiles.length > 0 
-                      ? `تم اختيار ${mediaFiles.length} ملف` 
-                      : 'إضافة صور أو فيديوهات'}
-                  </Button>
-
-                  {/* معاينة الملفات */}
-                  {mediaFiles.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2">
-                      {mediaFiles.map((file, index) => (
-                        <div key={index} className="relative group aspect-square rounded-lg overflow-hidden border border-border">
-                          {isVideo(file.name) ? (
-                            <div className="w-full h-full bg-muted flex items-center justify-center">
-                              <Video className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                          ) : (
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`معاينة ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeFile(index)}
-                            className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    الحد الأقصى: 5 ملفات، 10 ميجابايت لكل ملف
-                  </p>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={submitReviewMutation.isPending || uploadingMedia}
-                  className="w-full"
-                >
-                  {(submitReviewMutation.isPending || uploadingMedia) && (
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  )}
-                  {uploadingMedia ? 'جاري الرفع...' : userReview ? 'تحديث التقييم' : 'إضافة التقييم'}
-                </Button>
-              </form>
-            ) : (
-              <div className="text-center py-8 space-y-3">
-                <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
-                  <Star className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground font-medium">
-                  يمكنك التقييم فقط بعد شراء المنتج واستلامه
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  نريد التأكد من أن جميع التقييمات من مشترين حقيقيين
-                </p>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => submitMutation.mutate()}
+                  disabled={submitMutation.isPending || uploadingMedia}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0"
+                >
+                  {(submitMutation.isPending || uploadingMedia) && <Loader2 className="h-4 w-4 animate-spin ml-1" />}
+                  {uploadingMedia ? 'جاري الرفع...' : 'إرسال التقييم'}
+                </Button>
+                <Button variant="outline" onClick={() => setShowForm(false)} className="rounded-xl">
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* No Reviews */}
+      {reviews.length === 0 && (
+        <div className="bg-card rounded-2xl p-8 text-center shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-border/50">
+          <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
+            <Star className="h-7 w-7 text-orange-400" />
+          </div>
+          <p className="text-sm font-medium text-foreground">لا توجد تقييمات بعد</p>
+          <p className="text-xs text-muted-foreground mt-1">كن أول من يقيّم هذا المنتج!</p>
+        </div>
       )}
 
-      {/* قائمة المراجعات */}
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {displayedReviews?.map((review) => (
-            <Card key={review.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
-                  <Avatar>
-                    <AvatarImage src={(review as any).profiles?.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {(review as any).profiles?.full_name?.[0] || (review as any).profiles?.username?.[0] || 'م'}
-                    </AvatarFallback>
-                  </Avatar>
+      {/* Tabs & Sort */}
+      {reviews.length > 0 && (
+        <>
+          <div className="flex items-center gap-2">
+            {/* Tabs */}
+            <div className="flex-1 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.key
+                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {tab.label} ({tabCounts[tab.key]})
+                </button>
+              ))}
+            </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold">
-                            {(review as any).profiles?.username || (review as any).profiles?.full_name || 'مستخدم'}
-                          </span>
-                          <LevelBadge userId={review.user_id} size="sm" />
-                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                            <CheckCircle className="h-3 w-3 ml-1" />
-                            عملية شراء مؤكدة
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-1 my-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`h-4 w-4 ${
-                                star <= review.rating
-                                  ? 'text-primary fill-primary'
-                                  : 'text-muted-foreground'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(review.created_at), {
-                            addSuffix: true,
-                            locale: ar,
-                          })}
-                        </div>
-                      </div>
+            {/* Sort */}
+            <div className="relative shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSort(!showSort)}
+                className="h-7 px-2 rounded-lg text-xs gap-1"
+              >
+                <SlidersHorizontal className="h-3 w-3" />
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+              <AnimatePresence>
+                {showSort && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="absolute left-0 top-full mt-1 z-50 bg-card rounded-xl shadow-xl border border-border/50 p-1 min-w-[140px]"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => { setSortBy(opt.key); setShowSort(false); }}
+                        className={`w-full text-right px-3 py-2 text-xs rounded-lg transition ${
+                          sortBy === opt.key ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10' : 'hover:bg-muted'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
 
-                      {canDelete(review) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteReviewMutation.mutate(review.id)}
-                          disabled={deleteReviewMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
+          {/* Reviews List */}
+          <div className="bg-card rounded-2xl px-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-border/50">
+            {displayReviews.length > 0 ? (
+              displayReviews.map((review) => (
+                <TaobaoReviewCard
+                  key={review.id}
+                  review={review}
+                  isAdmin={isAdmin}
+                  currentUserId={user?.id}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                />
+              ))
+            ) : (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                لا توجد تقييمات في هذا التصنيف
+              </div>
+            )}
+          </div>
 
-                    {review.comment && (
-                      <p className="mt-3 text-muted-foreground">{review.comment}</p>
-                    )}
-
-                    {/* عرض الصور والفيديوهات */}
-                    {review.media_files && review.media_files.length > 0 && (
-                      <div className="mt-4 grid grid-cols-3 gap-2">
-                        {review.media_files.slice(0, 3).map((url: string, idx: number) => (
-                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group cursor-pointer">
-                            {url.match(/\.(mp4|webm|mov)$/i) ? (
-                              <div className="relative w-full h-full">
-                                <video
-                                  src={url}
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                  <Play className="h-8 w-8 text-white" />
-                                </div>
-                              </div>
-                            ) : (
-                              <img
-                                src={url}
-                                alt={`صورة التقييم ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
-                        ))}
-                        {review.media_files.length > 3 && (
-                          <div className="aspect-square rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
-                            <span className="text-sm font-bold text-muted-foreground">
-                              +{review.media_files.length - 3}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {/* زر عرض كل التقييمات */}
-          {reviews && reviews.length > 3 && !showAllReviews && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full" size="lg">
-                  عرض كل التقييمات ({reviews.length})
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>جميع التقييمات ({reviews.length})</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  {reviews.map((review) => (
-                    <Card key={review.id}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-start gap-4">
-                          <Avatar>
-                            <AvatarImage src={(review as any).profiles?.avatar_url || undefined} />
-                            <AvatarFallback>
-                              {(review as any).profiles?.full_name?.[0] || (review as any).profiles?.username?.[0] || 'م'}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-bold">
-                                    {(review as any).profiles?.username || (review as any).profiles?.full_name || 'مستخدم'}
-                                  </span>
-                                  <LevelBadge userId={review.user_id} size="sm" />
-                                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                                    <CheckCircle className="h-3 w-3 ml-1" />
-                                    عملية شراء مؤكدة
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-1 my-1">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star
-                                      key={star}
-                                      className={`h-4 w-4 ${
-                                        star <= review.rating
-                                          ? 'text-primary fill-primary'
-                                          : 'text-muted-foreground'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {formatDistanceToNow(new Date(review.created_at), {
-                                    addSuffix: true,
-                                    locale: ar,
-                                  })}
-                                </div>
-                              </div>
-
-                              {canDelete(review) && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteReviewMutation.mutate(review.id)}
-                                  disabled={deleteReviewMutation.isPending}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              )}
-                            </div>
-
-                            {review.comment && (
-                              <p className="mt-3 text-muted-foreground">{review.comment}</p>
-                            )}
-
-                            {/* عرض الصور والفيديوهات في الـ dialog */}
-                            {review.media_files && review.media_files.length > 0 && (
-                              <div className="mt-4 grid grid-cols-4 gap-2">
-                                {review.media_files.map((url: string, idx: number) => (
-                                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group cursor-pointer">
-                                    {url.match(/\.(mp4|webm|mov)$/i) ? (
-                                      <div className="relative w-full h-full">
-                                        <video
-                                          src={url}
-                                          controls
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <a href={url} target="_blank" rel="noopener noreferrer">
-                                        <img
-                                          src={url}
-                                          alt={`صورة التقييم ${idx + 1}`}
-                                          className="w-full h-full object-cover hover:scale-110 transition-transform"
-                                        />
-                                      </a>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-          
-          {reviews && reviews.length > 3 && showAllReviews && (
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => setShowAllReviews(false)}
+          {/* Load More */}
+          {filtered.length > 5 && !showAllReviews && (
+            <Button
+              variant="outline"
+              onClick={() => setShowAllReviews(true)}
+              className="w-full rounded-xl border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-500/20 dark:hover:bg-orange-500/10"
             >
-              إخفاء التقييمات الإضافية
+              عرض كل التقييمات ({filtered.length})
             </Button>
           )}
-        </div>
+        </>
       )}
     </div>
   );
