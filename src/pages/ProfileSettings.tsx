@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut, Users, FileText } from "lucide-react";
 import { useLanguage, LANGUAGE_LABELS } from "@/lib/i18n";
 import type { Language } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ImageCropper from "@/components/marketplace/ImageCropper";
@@ -68,6 +69,8 @@ export default function ProfileSettings() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const cropObjectUrlRef = useRef<string | null>(null);
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const [communityDisplayName, setCommunityDisplayName] = useState("");
+  const [communityBio, setCommunityBio] = useState("");
   const [telegramNotifs, setTelegramNotifs] = useState({
     orders: true,
     wallet: true,
@@ -110,11 +113,32 @@ export default function ProfileSettings() {
     },
   });
 
+  const { data: communityProfile } = useQuery({
+    queryKey: ["community-profile-settings", user?.id],
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("community_customer_profiles")
+        .select("id, display_name, bio, avatar_url, is_verified, reputation_score")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useMemo(() => {
     if (!profile) return;
     setFullName((prev) => (prev ? prev : (profile.full_name as string | null) ?? ""));
     setUsername((prev) => (prev ? prev : (profile.username as string | null) ?? ""));
   }, [profile]);
+
+  useMemo(() => {
+    if (!communityProfile) return;
+    setCommunityDisplayName((prev) => prev || ((communityProfile.display_name as string | null) ?? ""));
+    setCommunityBio((prev) => prev || ((communityProfile.bio as string | null) ?? ""));
+  }, [communityProfile]);
 
   useMemo(() => {
     if (!profile) return;
@@ -178,6 +202,18 @@ export default function ProfileSettings() {
         if (setErr) throw setErr;
       }
 
+      // Update community profile if exists
+      if (communityProfile) {
+        const { error: communityErr } = await supabase
+          .from("community_customer_profiles")
+          .update({
+            display_name: communityDisplayName.trim() || null,
+            bio: communityBio.trim() || null,
+          })
+          .eq("user_id", user.id);
+        if (communityErr) console.error("Community profile update error:", communityErr);
+      }
+
       return true;
     },
     onSuccess: async () => {
@@ -185,6 +221,8 @@ export default function ProfileSettings() {
         qc.invalidateQueries({ queryKey: ["my-profile", user?.id] }),
         qc.invalidateQueries({ queryKey: ["profile-settings-profile", user?.id] }),
         qc.invalidateQueries({ queryKey: ["my-addresses", user?.id] }),
+        qc.invalidateQueries({ queryKey: ["community-profile-settings", user?.id] }),
+        qc.invalidateQueries({ queryKey: ["community-profile-status", user?.id] }),
       ]);
       toast({ title: "تم حفظ الإعدادات" });
       setAvatarFile(null);
@@ -338,6 +376,51 @@ export default function ProfileSettings() {
             </RadioGroup>
           )}
         </SettingsSection>
+
+        {/* Community Profile Section */}
+        {communityProfile && (
+          <SettingsSection icon={Users} title="ملف المجتمع">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">الاسم المعروض في المجتمع</Label>
+                <Input
+                  value={communityDisplayName}
+                  onChange={(e) => setCommunityDisplayName(e.target.value)}
+                  placeholder="اسمك في مجتمع ليفو"
+                  maxLength={120}
+                  className="rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">النبذة التعريفية</Label>
+                <Textarea
+                  value={communityBio}
+                  onChange={(e) => setCommunityBio(e.target.value)}
+                  placeholder="اكتب نبذة قصيرة عنك..."
+                  maxLength={500}
+                  rows={3}
+                  className="rounded-xl resize-none"
+                />
+                <p className="text-[11px] text-muted-foreground text-left">{communityBio.length}/500</p>
+              </div>
+
+              {communityProfile.is_verified && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold text-primary">حساب موثّق</span>
+                </div>
+              )}
+
+              {(communityProfile.reputation_score != null && communityProfile.reputation_score > 0) && (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                  <span className="text-xs text-muted-foreground">نقاط السمعة</span>
+                  <span className="text-sm font-black text-foreground">{communityProfile.reputation_score}</span>
+                </div>
+              )}
+            </div>
+          </SettingsSection>
+        )}
 
         {/* Security Section */}
         <SettingsSection icon={Lock} title="الأمان">
