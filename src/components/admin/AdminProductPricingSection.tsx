@@ -284,8 +284,8 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="weight_kg">الوزن (كغ) *</Label>
-                  <Input id="weight_kg" name="weight_kg" type="number" step="0.01" min="0"
-                    value={weightKg || ''} onChange={(e) => setWeightKg(Number(e.target.value))} placeholder="كغ" />
+                  <Input id="weight_kg" name="weight_kg" type="number" step="any" min="0"
+                    value={weightKg || ''} onChange={(e) => setWeightKg(Number(e.target.value))} placeholder="مثال: 0.5" />
                 </div>
                 {!hasSea && (
                   <div>
