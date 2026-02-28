@@ -348,7 +348,7 @@ export default function AdminOrderChatDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[80vh] h-full flex flex-col p-0 overflow-hidden" dir="rtl">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5 text-primary" />
@@ -387,9 +387,9 @@ export default function AdminOrderChatDialog({
                           }`}
                         >
                           {msg.image_url && (
-                            msg.image_url.endsWith('.webm') || msg.image_url.includes('voice_') ? (
+                            msg.image_url.includes('voice_') ? (
                               <audio controls src={msg.image_url} className="max-w-full mb-2" />
-                            ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) && !msg.image_url.includes('voice_') ? (
+                            ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) ? (
                               <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" />
                             ) : (
                               <ImageLightbox src={msg.image_url} alt="صورة">
