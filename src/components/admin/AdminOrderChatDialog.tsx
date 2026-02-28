@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera, Package, Video, VolumeX } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera, Package, Video, VolumeX, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -14,6 +14,7 @@ import { sendAllNotifications } from '@/lib/notifications';
 import ImageLightbox from '@/components/chat/ImageLightbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { formatPrice } from '@/lib/utils';
 
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
 
@@ -68,13 +69,13 @@ export default function AdminOrderChatDialog({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch order details
+  // Fetch order details with product info
   const { data: order } = useQuery({
     queryKey: ['admin-order-detail', orderId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('*, order_items(*, products(name_ar, images, image_url), custom_product_requests(product_name, image_url))')
         .eq('id', orderId)
         .single();
       if (error) throw error;
@@ -343,81 +344,105 @@ export default function AdminOrderChatDialog({
           <TabsContent value="order" className="flex-1 m-0 overflow-auto">
             <ScrollArea className="h-full">
               {order ? (
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-3">
+                  {/* Status & Order Number */}
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm">معلومات الطلب</h3>
+                    <span className="text-sm font-bold">طلب {order.order_number}</span>
                     <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>
                       {STATUS_LABELS[order.status] || order.status}
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">رقم الطلب</p>
-                      <p className="font-medium">{order.order_number}</p>
+                  {/* Customer Info with copy */}
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">👤</span>
+                      <span className="font-medium flex-1">{customerName}</span>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">المبلغ الإجمالي</p>
-                      <p className="font-medium">{Number(order.total_amount).toLocaleString()} {order.currency}</p>
+                    {order.phone_number && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">📞</span>
+                        <span className="flex-1 text-xs" dir="ltr">{order.phone_number}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(order.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <span className="text-muted-foreground">📍</span>
+                      <span className="flex-1 text-xs">{order.shipping_address || order.governorate || '-'}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(order.shipping_address || order.governorate || ''); toast.success('تم نسخ العنوان'); }}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">طريقة الدفع</p>
-                      <p className="font-medium">{order.payment_method || '—'}</p>
+                    {order.shipping_notes && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">📝</span>
+                        <span className="flex-1 text-xs">{order.shipping_notes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Info */}
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="rounded-lg border border-border p-2 text-center">
+                      <p className="text-muted-foreground text-[10px]">طريقة الدفع</p>
+                      <p className="font-medium text-xs mt-0.5">{order.payment_method || '—'}</p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">حالة الدفع</p>
-                      <p className="font-medium">{order.payment_status || '—'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">المحافظة</p>
-                      <p className="font-medium">{order.governorate || '—'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">تاريخ الطلب</p>
-                      <p className="font-medium">{format(new Date(order.created_at), 'yyyy/MM/dd HH:mm', { locale: ar })}</p>
+                    <div className="rounded-lg border border-border p-2 text-center">
+                      <p className="text-muted-foreground text-[10px]">حالة الدفع</p>
+                      <p className="font-medium text-xs mt-0.5">{order.payment_status || '—'}</p>
                     </div>
                   </div>
 
-                  {order.shipping_address && (
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">عنوان الشحن</p>
-                      <p className="text-sm bg-muted/50 rounded-lg p-2">{order.shipping_address}</p>
-                    </div>
-                  )}
+                  {/* Products */}
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground text-xs font-medium">المنتجات</p>
+                    {(order.order_items as any[] || []).length === 0 ? (
+                      <div className="rounded-lg border border-border p-4 text-center text-sm text-muted-foreground">
+                        لا توجد منتجات في هذا الطلب
+                      </div>
+                    ) : (
+                      (order.order_items as any[]).map((item: any, index: number) => {
+                        const itemName = item.product_name_ar || item.product_name || item.products?.name_ar || item.custom_product_requests?.product_name || 'منتج';
+                        const itemQty = item.quantity ?? 1;
+                        const itemPrice = item.unit_price ?? item.total_price ?? 0;
+                        const itemImage = item.color_image_url || item.product_image || item.products?.images?.[0] || item.products?.image_url || item.custom_product_requests?.image_url;
 
-                  {order.phone_number && (
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">رقم الهاتف</p>
-                      <p className="text-sm font-medium" dir="ltr">{order.phone_number}</p>
-                    </div>
-                  )}
-
-                  {order.shipping_notes && (
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground text-xs">ملاحظات الشحن</p>
-                      <p className="text-sm bg-muted/50 rounded-lg p-2">{order.shipping_notes}</p>
-                    </div>
-                  )}
-
-                  {/* Order Items */}
-                  {order.order_items && (order.order_items as any[]).length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-muted-foreground text-xs font-medium">المنتجات</p>
-                      <div className="space-y-2">
-                        {(order.order_items as any[]).map((item: any, i: number) => (
-                          <div key={i} className="flex items-center gap-3 bg-muted/30 rounded-lg p-2">
-                            {item.product_image && (
-                              <img src={item.product_image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+                        return (
+                          <div key={item.id || `${order.id}-${index}`} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                            {itemImage && (
+                              <img src={itemImage} className="w-12 h-12 rounded-lg object-cover border border-border" alt={itemName} loading="lazy" />
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{item.product_name || item.product_name_ar || 'منتج'}</p>
-                              <p className="text-xs text-muted-foreground">الكمية: {item.quantity} × {Number(item.unit_price).toLocaleString()}</p>
+                              <p className="text-sm font-bold text-foreground truncate">{itemName}</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.selected_color && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_color}</Badge>
+                                )}
+                                {item.selected_option && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5">{item.selected_option}</Badge>
+                                )}
+                                {item.shipping_option_name_ar && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5">{item.shipping_option_name_ar}</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-left shrink-0">
+                              <span className="text-sm font-bold text-foreground">×{itemQty}</span>
+                              <p className="text-[11px] text-muted-foreground">{formatPrice(itemPrice)}</p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex items-center justify-between pt-2 border-t border-border text-sm font-bold">
+                    <span>المجموع</span>
+                    <span className="text-primary">{formatPrice(order.total_amount)}</span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-40">
