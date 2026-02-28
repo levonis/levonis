@@ -3,7 +3,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
@@ -170,11 +169,13 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="round_up_switch" className="text-xs text-muted-foreground cursor-pointer">تقريب لأقرب 1,000</Label>
-          <Switch id="round_up_switch" checked={roundUp} onCheckedChange={setRoundUp} />
-          <ArrowUp className={`h-3.5 w-3.5 transition-colors ${roundUp ? 'text-primary' : 'text-muted-foreground'}`} />
-        </div>
+        <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
+          roundUp ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+        }`}>
+          <Checkbox checked={roundUp} onCheckedChange={(checked) => setRoundUp(!!checked)} />
+          <ArrowUp className="h-3.5 w-3.5" />
+          <span className="text-xs font-medium">تقريب لأقرب 250</span>
+        </label>
       </div>
 
       <div className="p-4 border border-primary/20 rounded-lg bg-primary/5 space-y-4">
