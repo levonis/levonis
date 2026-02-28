@@ -1438,11 +1438,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                                      msg.content?.startsWith('🔔');
                               
                               // Check if it's a cart code message for admin
-                              const cartCodeMatch = msg.content?.match(/رمز السلة:\s*(CART-[A-Z0-9]+)/);
-                              const isCartMessage = !!cartCodeMatch && isAdmin;
+                              const cartCodeMatch = msg.content?.match(/رمز السلة:\s*(CART-[A-Z0-9-]+)/);
+                              const isCartMessage = !!cartCodeMatch;
                               
-                              // Check if it's a product message (starts with 📦 or 🛒)
-                              const isProductMessage = msg.content?.startsWith('📦') || msg.content?.startsWith('🛒');
+                              // Check if it's a product message (starts with 📦 or 🛒) but NOT a cart request message
+                              const isProductMessage = !isCartMessage && (msg.content?.startsWith('📦') || msg.content?.startsWith('🛒'));
                               
                               // Check if it's a JSON message (order_card or confirmation_card)
                               let parsedContent: any = null;
@@ -1785,7 +1785,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     })()}
                                     
                                     {/* Admin Cart Edit Button */}
-                                    {isCartMessage && (
+                                    {isCartMessage && isAdmin && (
                                       <Button
                                         variant="outline"
                                         size="sm"
