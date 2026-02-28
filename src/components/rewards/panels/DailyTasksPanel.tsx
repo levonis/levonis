@@ -152,13 +152,14 @@ export default function DailyTasksPanel() {
         .eq('user_id', user.id);
       const hasReview = (reviewCount || 0) > 0;
 
-      // Has purchase this week
+      // Has purchase this week (exclude cancelled orders)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       const { count: orderCount } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
+        .neq('status', 'cancelled')
         .gte('created_at', weekAgo.toISOString());
       const hasWeeklyPurchase = (orderCount || 0) > 0;
 
