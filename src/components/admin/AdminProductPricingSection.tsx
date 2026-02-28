@@ -99,7 +99,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         priceIqd,
         shipping: calc.shippingCost,
         commission: commissionSeaIqd,
-        final: Math.ceil((priceIqd + calc.shippingCost + commissionSeaIqd) / 1000) * 1000,
+        final: priceIqd + calc.shippingCost + commissionSeaIqd,
       });
     }
 
@@ -114,7 +114,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         priceIqd,
         shipping: calc.shippingCost,
         commission: commissionAirIqd,
-        final: Math.ceil((priceIqd + calc.shippingCost + commissionAirIqd) / 1000) * 1000,
+        final: priceIqd + calc.shippingCost + commissionAirIqd,
         breakdown: calc.breakdown,
         actualWeight: calc.actualWeight,
         volumetricWeight: calc.volumetricWeight,
@@ -129,7 +129,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         priceIqd,
         shipping: 0,
         commission: commissionDirectIqd,
-        final: Math.ceil((priceIqd + otherCostsIqd + commissionDirectIqd) / 1000) * 1000,
+        final: priceIqd + otherCostsIqd + commissionDirectIqd,
       });
     }
 

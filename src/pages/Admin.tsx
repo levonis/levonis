@@ -1251,14 +1251,14 @@ const Admin = () => {
 
           if (shippingType === 'sea' || shippingType === 'both') {
             const seaCalc = calculateShippingCost('china', 'sea', dims, null, settings);
-            const seaFinalPrice = Math.ceil((priceIqd + seaCalc.shippingCost + commissionSeaIqdVal) / 1000) * 1000;
+            const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal;
             prices.push(seaFinalPrice);
             values.sea_price = seaFinalPrice;
             values.shipping_cost_iqd = seaCalc.shippingCost;
           }
           if (shippingType === 'air' || shippingType === 'both') {
             const airCalc = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings);
-            const airFinalPrice = Math.ceil((priceIqd + airCalc.shippingCost + commissionAirIqdVal) / 1000) * 1000;
+            const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal;
             prices.push(airFinalPrice);
             values.air_price = airFinalPrice;
             if (!values.shipping_cost_iqd) values.shipping_cost_iqd = airCalc.shippingCost;
@@ -1275,7 +1275,7 @@ const Admin = () => {
         }
 
         if (hasInStock) {
-          const directFinalPrice = Math.ceil((priceIqd + otherCostsIqdVal + commissionDirectIqdVal) / 1000) * 1000;
+          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }
@@ -1290,17 +1290,17 @@ const Admin = () => {
           const origPriceIqd = Math.round(origUsd * settings.usd_to_iqd_rate);
           // Use lowest-price type's commission/costs for original price too
           if (hasInStock) {
-            values.original_price = Math.ceil((origPriceIqd + otherCostsIqdVal + commissionDirectIqdVal) / 1000) * 1000;
+            values.original_price = origPriceIqd + otherCostsIqdVal + commissionDirectIqdVal;
           } else if (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) {
             const dims2 = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
               ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 } : null;
             const seaCalc2 = calculateShippingCost('china', 'sea', dims2, null, settings);
-            values.original_price = Math.ceil((origPriceIqd + seaCalc2.shippingCost + commissionSeaIqdVal) / 1000) * 1000;
+            values.original_price = origPriceIqd + seaCalc2.shippingCost + commissionSeaIqdVal;
           } else if (hasPreOrder && shippingType === 'air') {
             const dims2 = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
               ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 } : null;
             const airCalc2 = calculateShippingCost('china', 'air', dims2, values.weight_kg > 0 ? values.weight_kg : null, settings);
-            values.original_price = Math.ceil((origPriceIqd + airCalc2.shippingCost + commissionAirIqdVal) / 1000) * 1000;
+            values.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqdVal;
           } else {
             values.original_price = origPriceIqd;
           }
