@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface VerificationRequest {
   email: string;
-  type: 'password_reset';
+  type: 'password_reset' | 'signup';
   user_id?: string;
 }
 
@@ -214,17 +214,17 @@ const handler = async (req: Request): Promise<Response> => {
     }
     const email = emailValidation.sanitized;
 
-  // Only allow password_reset type - verification codes are for password reset only
-    if (!type || type !== 'password_reset') {
+  // Allow password_reset and signup types
+    const allowedTypes = ['password_reset', 'signup'];
+    if (!type || !allowedTypes.includes(type)) {
       return new Response(
-        JSON.stringify({ success: false, error: "هذه الخدمة متاحة فقط لإعادة تعيين كلمة المرور" }),
+        JSON.stringify({ success: false, error: "نوع الطلب غير مدعوم" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // For password_reset, check if user exists but return generic message to prevent enumeration
     if (type === 'password_reset') {
-      // Check existence via profiles (stable and indexed in this project)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -233,7 +233,6 @@ const handler = async (req: Request): Promise<Response> => {
         .maybeSingle();
       
       if (profileError || !profile?.id) {
-        // Return success to prevent email enumeration - don't reveal if email exists
         console.log("User not found or error, returning generic response");
         return new Response(
           JSON.stringify({ success: true, message: "إذا كان البريد مسجلاً، ستصلك رسالة تحقق" }),
@@ -241,6 +240,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
     }
+    // For signup, no user existence check needed - just send the code
 
     // Check rate limiting - max 3 codes per email per hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();

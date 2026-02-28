@@ -8,9 +8,10 @@ import Step2Profile from './Step2Profile';
 import Step3Verification from './Step3Verification';
 import Step4OptionalInfo from './Step4OptionalInfo';
 import Step5Review from './Step5Review';
+import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import { SignupFormData, initialFormData } from './types';
 
-const STEP_LABELS = ['الحساب', 'الملف', 'إضافية', 'مراجعة'];
+const STEP_LABELS = ['الحساب', 'الملف', 'التحقق', 'إضافية', 'مراجعة'];
 
 interface MultiStepSignupProps {
   onSwitchToLogin: () => void;
@@ -22,6 +23,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
   const navigate = useNavigate();
 
   const updateFormData = (updates: Partial<SignupFormData>) => {
@@ -67,8 +69,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         return;
       }
 
-      // Skip verification - go directly to optional info (now step 3)
-      setEmailVerified(true);
+      // Go to verification step
       setCurrentStep(3);
     } catch (error) {
       console.error('Username check error:', error);
@@ -216,21 +217,62 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         );
       case 3:
         return (
+          <div className="space-y-6 text-center py-8">
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold">التحقق من البريد الإلكتروني</h3>
+              <p className="text-sm text-muted-foreground">
+                يرجى التحقق من بريدك الإلكتروني لتأكيد حسابك
+              </p>
+              <p className="text-sm font-medium" dir="ltr">{formData.email}</p>
+            </div>
+            {emailVerified ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                  <span className="text-emerald-500 text-2xl">✓</span>
+                </div>
+                <p className="text-emerald-500 font-bold">تم التحقق بنجاح!</p>
+                <button
+                  onClick={() => setCurrentStep(4)}
+                  className="mt-4 px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold"
+                >
+                  التالي
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <button
+                  onClick={() => setShowEmailVerification(true)}
+                  className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold"
+                >
+                  إرسال رمز التحقق
+                </button>
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  رجوع
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      case 4:
+        return (
           <Step4OptionalInfo
             data={formData}
             updateData={updateFormData}
-            onNext={() => setCurrentStep(4)}
-            onBack={() => setCurrentStep(2)}
+            onNext={() => setCurrentStep(5)}
+            onBack={() => setCurrentStep(3)}
             loading={loading}
           />
         );
-      case 4:
+      case 5:
         return (
           <Step5Review
             data={formData}
             updateData={updateFormData}
             onNext={() => {}}
-            onBack={() => setCurrentStep(3)}
+            onBack={() => setCurrentStep(4)}
             onSubmit={handleFinalSubmit}
             loading={loading}
             submitting={submitting}
@@ -245,7 +287,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
     <div className="space-y-4">
       <StepIndicator
         currentStep={currentStep}
-        totalSteps={4}
+        totalSteps={5}
         labels={STEP_LABELS}
       />
       
@@ -263,6 +305,18 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
           </button>
         </p>
       )}
+
+      <EmailVerificationDialog
+        open={showEmailVerification}
+        onOpenChange={setShowEmailVerification}
+        email={formData.email}
+        type="signup"
+        onVerified={() => {
+          setEmailVerified(true);
+          setShowEmailVerification(false);
+          setCurrentStep(4);
+        }}
+      />
     </div>
   );
 }
