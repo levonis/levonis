@@ -1280,6 +1280,34 @@ const Admin = () => {
           values.direct_sale_price = directFinalPrice;
         }
 
+        // Round up logic
+        const shouldRoundUp = formData.get('round_up_price') === 'true';
+        const roundUpTo250 = (v: number) => Math.ceil(v / 250) * 250;
+        
+        if (shouldRoundUp) {
+          if (values.sea_price) values.sea_price = roundUpTo250(values.sea_price);
+          if (values.air_price) values.air_price = roundUpTo250(values.air_price);
+          if (values.direct_sale_price) values.direct_sale_price = roundUpTo250(values.direct_sale_price);
+          // Recalculate prices array with rounded values
+          const roundedPrices: number[] = [];
+          if (values.sea_price) roundedPrices.push(values.sea_price);
+          if (values.air_price) roundedPrices.push(values.air_price);
+          if (values.direct_sale_price) roundedPrices.push(values.direct_sale_price);
+          prices.length = 0;
+          roundedPrices.forEach(p => prices.push(p));
+
+          // Recalculate shipping options with rounded prices
+          if (values.shipping_type === 'both' && values.sea_price && values.air_price) {
+            const basePreOrderPrice = Math.min(values.sea_price, values.air_price);
+            values.pre_order_shipping_options = [
+              { name_ar: 'شحن بحري', price_adjustment: values.sea_price - basePreOrderPrice },
+              { name_ar: 'شحن جوي', price_adjustment: values.air_price - basePreOrderPrice },
+            ];
+          }
+        }
+
+        values.round_up_price = shouldRoundUp;
+
         // Use the lowest price as the main display price
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
@@ -1303,6 +1331,9 @@ const Admin = () => {
             values.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqdVal;
           } else {
             values.original_price = origPriceIqd;
+          }
+          if (shouldRoundUp) {
+            values.original_price = roundUpTo250(values.original_price);
           }
         } else {
           values.original_price = null;

@@ -5162,6 +5162,7 @@ export type Database = {
           pre_order_shipping_options: Json | null
           price: number
           price_usd: number | null
+          round_up_price: boolean | null
           sea_price: number | null
           shipping_cost_iqd: number | null
           shipping_type: string | null
@@ -5218,6 +5219,7 @@ export type Database = {
           pre_order_shipping_options?: Json | null
           price: number
           price_usd?: number | null
+          round_up_price?: boolean | null
           sea_price?: number | null
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
@@ -5274,6 +5276,7 @@ export type Database = {
           pre_order_shipping_options?: Json | null
           price?: number
           price_usd?: number | null
+          round_up_price?: boolean | null
           sea_price?: number | null
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
