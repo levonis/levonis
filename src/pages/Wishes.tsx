@@ -94,15 +94,24 @@ export default function Wishes() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      // Check for duplicate wish title
+      // Check for duplicate wish title (each product = one wish = one user only)
       const { data: existing } = await supabase
         .from("wishes")
-        .select("id, title")
+        .select("id, title, user_id")
         .neq("status", "rejected")
         .ilike("title", title.trim());
       
       if (existing && existing.length > 0) {
-        throw new Error("DUPLICATE");
+        // If another user already wished for this product
+        const otherUserWish = existing.find((w: any) => w.user_id !== user!.id);
+        if (otherUserWish) {
+          throw new Error("TAKEN_BY_OTHER");
+        }
+        // If current user already has this wish
+        const myExisting = existing.find((w: any) => w.user_id === user!.id);
+        if (myExisting) {
+          throw new Error("DUPLICATE");
+        }
       }
 
       const imgUrl = await uploadImage();
@@ -114,7 +123,7 @@ export default function Wishes() {
       });
       if (error) {
         if (error.message?.includes("wishes_unique_title_idx")) {
-          throw new Error("DUPLICATE");
+          throw new Error("TAKEN_BY_OTHER");
         }
         throw error;
       }
@@ -127,8 +136,10 @@ export default function Wishes() {
       toast.success("تم إرسال أمنيتك بنجاح! سيتم مراجعتها قريباً ✨");
     },
     onError: (err: any) => {
-      if (err.message === "DUPLICATE") {
-        toast.error("هذه الأمنية موجودة بالفعل! كل أمنية من نصيب شخص واحد فقط 🎯");
+      if (err.message === "TAKEN_BY_OTHER") {
+        toast.error("هذه الأمنية تمناها شخص آخر! تمنّى غيرها 🎯");
+      } else if (err.message === "DUPLICATE") {
+        toast.error("لديك هذه الأمنية بالفعل!");
       } else {
         toast.error("حدث خطأ، حاول مرة أخرى");
       }
