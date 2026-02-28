@@ -4174,6 +4174,7 @@ export type Database = {
           admin_notes: string | null
           created_at: string
           id: string
+          instagram_username: string | null
           proof_url: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -4185,6 +4186,7 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           id?: string
+          instagram_username?: string | null
           proof_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -4196,6 +4198,7 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string
           id?: string
+          instagram_username?: string | null
           proof_url?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
