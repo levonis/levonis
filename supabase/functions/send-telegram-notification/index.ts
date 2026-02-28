@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { message, parse_mode = "HTML", chat_id, user_id, conversation_id, customer_user_id, channel_key } = await req.json();
+    const { message, parse_mode = "HTML", chat_id, user_id, conversation_id, customer_user_id, channel_key, reply_markup } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -91,14 +91,21 @@ Deno.serve(async (req) => {
     }
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const telegramBody: Record<string, unknown> = {
+      chat_id: targetChatId,
+      text: message,
+      parse_mode,
+    };
+
+    // Support inline keyboard buttons
+    if (reply_markup) {
+      telegramBody.reply_markup = reply_markup;
+    }
+
     const response = await fetch(telegramUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: targetChatId,
-        text: message,
-        parse_mode,
-      }),
+      body: JSON.stringify(telegramBody),
     });
 
     const result = await response.json();
