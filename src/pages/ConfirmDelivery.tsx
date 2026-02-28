@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,17 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowRight, CheckCircle, Package, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import ProductRatingCard from '@/components/reviews/ProductRatingCard';
 
 const ConfirmDelivery = () => {
   const { orderId } = useParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-  const [comments, setComments] = useState<Record<string, string>>({});
-  const [productImages, setProductImages] = useState<Record<string, File[]>>({});
-  const [productVideos, setProductVideos] = useState<Record<string, File | null>>({});
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['order-detail', orderId],
@@ -55,129 +49,6 @@ const ConfirmDelivery = () => {
         })
         .eq('id', order.id);
       if (orderError) throw orderError;
-
-      // Upload media and create/update reviews
-      const ratableItems = order.order_items.filter((item: any) => item.product_id);
-      
-      for (const item of ratableItems) {
-        const pid = item.product_id;
-        const uploadedImageUrls: string[] = [];
-        
-        // Upload images
-        const imagesToUpload = productImages[pid] || [];
-        for (const img of imagesToUpload) {
-          try {
-            const ext = img.name.split('.').pop() || 'jpg';
-            const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
-            const path = `${user.id}/${uniqueName}`;
-            console.log('Uploading image:', path, 'size:', img.size, 'type:', img.type);
-            
-            const { data: uploadData, error } = await supabase.storage
-              .from("review-media")
-              .upload(path, img, {
-                contentType: img.type || 'image/jpeg',
-                cacheControl: '3600',
-              });
-            
-            if (error) {
-              console.error('Image upload error:', error);
-              toast.error(`فشل رفع الصورة: ${error.message}`);
-            } else {
-              console.log('Image uploaded successfully:', uploadData);
-              const { data } = supabase.storage.from("review-media").getPublicUrl(path);
-              uploadedImageUrls.push(data.publicUrl);
-            }
-          } catch (uploadErr) {
-            console.error('Image upload exception:', uploadErr);
-            toast.error('حدث خطأ غير متوقع أثناء رفع الصورة');
-          }
-        }
-
-        // Upload video
-        let videoUrl: string | null = null;
-        const vid = productVideos[pid];
-        if (vid) {
-          try {
-            const path = `${user.id}/${Date.now()}-video.mp4`;
-            console.log('Uploading video:', path, 'size:', vid.size);
-            
-            const { data: uploadData, error } = await supabase.storage
-              .from("review-media")
-              .upload(path, vid, {
-                contentType: vid.type || 'video/mp4',
-                cacheControl: '3600',
-              });
-            
-            if (error) {
-              console.error('Video upload error:', error);
-              toast.error(`فشل رفع الفيديو: ${error.message}`);
-            } else {
-              console.log('Video uploaded successfully:', uploadData);
-              const { data } = supabase.storage.from("review-media").getPublicUrl(path);
-              videoUrl = data.publicUrl;
-            }
-          } catch (uploadErr) {
-            console.error('Video upload exception:', uploadErr);
-            toast.error('حدث خطأ غير متوقع أثناء رفع الفيديو');
-          }
-        }
-
-        // Calculate points
-        let points = 0;
-        const userRating = ratings[pid] || 5;
-        const deliveredAt = order.delivered_at ? new Date(order.delivered_at) : null;
-        const now = new Date();
-        const isWithin24h = deliveredAt && (now.getTime() - deliveredAt.getTime()) < 24 * 60 * 60 * 1000;
-        if (userRating === 5 && isWithin24h) points = 10;
-        if (uploadedImageUrls.length > 0) points += 50;
-        if (videoUrl) points += 250;
-
-        // Check if user already reviewed this product
-        const { data: existingReview } = await supabase
-          .from('reviews')
-          .select('id, reorder_count, additional_comments')
-          .eq('product_id', pid)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (existingReview) {
-          // User already reviewed - increment reorder_count and add as additional comment
-          const newCount = (existingReview.reorder_count || 1) + 1;
-          const existingComments = (existingReview.additional_comments as any[]) || [];
-          const newComment: any = {
-            comment: comments[pid] || '',
-            rating: userRating,
-            date: new Date().toISOString(),
-            media_files: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
-            video_url: videoUrl,
-          };
-          
-          const { error: updateError } = await supabase
-            .from('reviews')
-            .update({
-              reorder_count: newCount,
-              additional_comments: [...existingComments, newComment],
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingReview.id);
-          if (updateError) console.error('Review update error:', updateError);
-        } else {
-          // First review for this product
-          const { error: reviewError } = await supabase
-            .from('reviews')
-            .insert({
-              product_id: pid,
-              user_id: user.id,
-              rating: userRating,
-              comment: comments[pid] || 'ممتاز',
-              media_files: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
-              video_url: videoUrl,
-              points_awarded: points,
-              reorder_count: 1,
-            });
-          if (reviewError) console.error('Review error:', reviewError);
-        }
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
@@ -256,27 +127,26 @@ const ConfirmDelivery = () => {
           </CardContent>
         </Card>
 
-        {/* Product ratings */}
+        {/* Product list (no rating) */}
         {ratableItems.length > 0 && (
-          <div className="mb-6 space-y-4">
+          <div className="mb-6 space-y-3">
             {ratableItems.map((item: any) => {
               const imageUrl = item.products?.images?.[0] || item.products?.image_url;
               return (
-                <ProductRatingCard
-                  key={item.id}
-                  itemId={item.id}
-                  productId={item.product_id}
-                  productName={item.product_name_ar}
-                  imageUrl={imageUrl}
-                  rating={ratings[item.product_id] || 5}
-                  comment={comments[item.product_id] || ''}
-                  onRatingChange={(pid, r) => setRatings(prev => ({ ...prev, [pid]: r }))}
-                  onCommentChange={(pid, c) => setComments(prev => ({ ...prev, [pid]: c }))}
-                  images={productImages[item.product_id] || []}
-                  onImagesChange={(pid, imgs) => setProductImages(prev => ({ ...prev, [pid]: imgs }))}
-                  video={productVideos[item.product_id] || null}
-                  onVideoChange={(pid, v) => setProductVideos(prev => ({ ...prev, [pid]: v }))}
-                />
+                <Card key={item.id} className="border border-border/50 bg-card/40 backdrop-blur-xl">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-4">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={item.product_name_ar} className="w-16 h-16 object-cover rounded-xl border border-border/50" />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted/50 rounded-xl flex items-center justify-center">
+                          <Package className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="font-bold">{item.product_name_ar}</span>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -329,7 +199,7 @@ const ConfirmDelivery = () => {
               ) : (
                 <CheckCircle className="ml-2 h-5 w-5" />
               )}
-              تأكيد الاستلام {ratableItems.length > 0 ? 'وإرسال التقييمات' : ''}
+              تأكيد الاستلام
             </Button>
             <p className="text-xs text-center text-muted-foreground mt-4">
               ⏰ ملاحظة: سيتم تأكيد الاستلام تلقائياً مع تقييم 5 نجوم (بدون نقاط) بعد 7 أيام من التوصيل
