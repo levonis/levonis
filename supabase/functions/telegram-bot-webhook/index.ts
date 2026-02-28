@@ -440,6 +440,65 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check review Q&A reply context
+    const { data: reviewContext } = await supabase
+      .from("review_telegram_context")
+      .select("question_id, user_id")
+      .eq("telegram_chat_id", chatId)
+      .single();
+
+    if (reviewContext && text) {
+      // Insert answer
+      const { error: ansError } = await supabase
+        .from("review_answers")
+        .insert({
+          question_id: reviewContext.question_id,
+          answerer_id: reviewContext.user_id,
+          answer: text,
+        });
+
+      if (ansError) {
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, "❌ حدث خطأ في إرسال الإجابة");
+      } else {
+        // Award 5 points
+        const { data: currentPoints } = await supabase
+          .from("user_points")
+          .select("*")
+          .eq("user_id", reviewContext.user_id)
+          .maybeSingle();
+
+        if (currentPoints) {
+          await supabase.from("user_points").update({
+            total_points: (currentPoints.total_points || 0) + 5,
+            available_points: (currentPoints.available_points || 0) + 5,
+          }).eq("user_id", reviewContext.user_id);
+        } else {
+          await supabase.from("user_points").insert({
+            user_id: reviewContext.user_id,
+            total_points: 5,
+            available_points: 5,
+          });
+        }
+
+        await supabase.from("points_transactions").insert({
+          user_id: reviewContext.user_id,
+          points: 5,
+          type: 'earned',
+          source: 'review_answer',
+          description: 'إجابة على سؤال في التقييمات (تيليكرام)',
+        });
+
+        // Clear context
+        await supabase.from("review_telegram_context").delete().eq("telegram_chat_id", chatId);
+
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, "✅ تم إرسال إجابتك بنجاح (+5 نقاط)");
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Default response
     if (text) {
       const responseText = `🔢 رقم الـ ID الخاص بك:\n\`${chatId}\`\n\nانسخ رقم الـ ID الخاص بك وضعه في الموقع لتلقي الإشعارات.`;

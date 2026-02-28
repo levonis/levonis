@@ -11,6 +11,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import ReviewImageViewer from './ReviewImageViewer';
+import LevelBadge from '@/components/LevelBadge';
+import AdminReplySection from './AdminReplySection';
+import ReviewQASection from './ReviewQASection';
 
 interface AdditionalComment {
   comment: string;
@@ -28,6 +31,7 @@ interface ReviewData {
   video_url: string | null;
   created_at: string;
   user_id: string;
+  product_id?: string;
   reorder_count?: number;
   additional_comments?: any;
   profiles?: {
@@ -145,9 +149,7 @@ export default function TaobaoReviewCard({ review, isAdmin, currentUserId, onDel
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold text-foreground truncate">{name}</span>
-              <Badge className="h-4 px-1.5 text-[10px] font-bold bg-gradient-to-r from-primary-glow to-primary text-primary-foreground border-0 shadow-[0_2px_8px_hsl(var(--primary)/0.25)]">
-                VIP
-              </Badge>
+              <LevelBadge userId={review.user_id} size="sm" />
             </div>
             <div className="flex items-center gap-2 mt-0.5">
               <div className="flex items-center gap-0.5">
@@ -265,8 +267,11 @@ export default function TaobaoReviewCard({ review, isAdmin, currentUserId, onDel
           </div>
         )}
 
+        {/* Admin Reply */}
+        <AdminReplySection reviewId={review.id} />
+
         {/* Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 mt-2">
           <Button
             variant="ghost"
             size="sm"
@@ -305,6 +310,14 @@ export default function TaobaoReviewCard({ review, isAdmin, currentUserId, onDel
             إبلاغ
           </Button>
         </div>
+
+        {/* Q&A Section */}
+        <ReviewQASection
+          reviewId={review.id}
+          productId={review.product_id || ''}
+          reviewerId={review.user_id}
+          reviewerName={name}
+        />
       </div>
 
       <ReviewImageViewer
