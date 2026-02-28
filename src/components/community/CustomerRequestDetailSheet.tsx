@@ -201,7 +201,7 @@ export default function CustomerRequestDetailSheet({
     const params = new URLSearchParams();
     params.set("merchant_id", merchantId);
     params.set("request_id", request.id);
-    navigate(`/community/messages?${params.toString()}`);
+    navigate(`/chats?${params.toString()}`);
     onOpenChange(false);
   };
 

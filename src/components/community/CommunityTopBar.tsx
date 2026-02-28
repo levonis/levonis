@@ -17,7 +17,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import { ListingConversations } from "@/components/marketplace/ListingConversations";
 import { useLanguage } from "@/lib/i18n";
 
 /**
@@ -36,7 +35,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false); // kept for legacy
 
   useEffect(() => {
     let ticking = false;
@@ -159,7 +158,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
                   size="icon"
                   className="rounded-full"
                   aria-label="المحادثات"
-                  onClick={() => setMessagesOpen(true)}
+                  onClick={() => navigate("/chats")}
                 >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
@@ -181,7 +180,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
                   size="icon"
                   className="rounded-full"
                   aria-label="المحادثات"
-                  onClick={() => setMessagesOpen(true)}
+                  onClick={() => navigate("/chats")}
                 >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
@@ -235,14 +234,6 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
       </div>
     </header>
 
-    {/* Messages Overlay */}
-    <ListingConversations
-      externalOpen={messagesOpen}
-      onExternalOpenChange={setMessagesOpen}
-      onClose={() => setMessagesOpen(false)}
-    >
-      <span className="sr-only">فتح المحادثات</span>
-    </ListingConversations>
     </>
   );
 });

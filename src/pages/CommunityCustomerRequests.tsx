@@ -493,7 +493,7 @@ export default function CommunityCustomerRequests() {
                                   className="h-6 w-6"
                                   onClick={() => {
                                     if (offer.merchant?.id) {
-                                      navigate(`/community/messages?merchant_id=${offer.merchant.id}&request_id=${r.id}`);
+                                      navigate(`/chats?merchant_id=${offer.merchant.id}&request_id=${r.id}`);
                                     }
                                   }}
                                   title="مراسلة"

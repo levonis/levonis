@@ -16,14 +16,13 @@ export default function CommunityMessages() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [creatingConversation, setCreatingConversation] = useState(false);
   
   // Get params for automatic conversation opening or creation
   const autoOpenConversationId = searchParams.get('auto_open');
   const merchantId = searchParams.get('merchant_id');
-  const userId = searchParams.get('user_id'); // Direct user_id for messaging any user
+  const userId = searchParams.get('user_id');
   const productTitle = searchParams.get('product_title');
   const productPrice = searchParams.get('product_price');
   const productImage = searchParams.get('product_image');
@@ -60,7 +59,6 @@ export default function CommunityMessages() {
       let displayName: string = 'مستخدم';
 
       if (merchantId) {
-        // Merchant flow: resolve merchant_applications.id -> user_id
         const { data: merchantApp, error: merchantError } = await supabase
           .from('merchant_applications')
           .select('user_id, display_name, inquiry_template, welcome_message, away_message, is_away')
@@ -73,9 +71,7 @@ export default function CommunityMessages() {
         sellerId = merchantApp.user_id;
         displayName = merchantApp.display_name || 'تاجر';
       } else if (userId) {
-        // Direct user flow: use user_id directly
         sellerId = userId;
-        // Fetch user name
         const { data: targetProfile } = await supabase
           .from('profiles')
           .select('full_name, username')
@@ -86,12 +82,10 @@ export default function CommunityMessages() {
         throw new Error('Missing merchant_id or user_id');
       }
 
-      // Prevent self-conversations
       if (sellerId === user.id) {
         throw new Error('لا يمكنك مراسلة نفسك');
       }
 
-      // If request_id is provided, fetch request details
       let requestDetails: { title: string; description: string; size: string; colors: string; image_url?: string | null } | null = null;
       if (requestId) {
         const { data: reqData } = await supabase
@@ -118,18 +112,15 @@ export default function CommunityMessages() {
         });
       }
 
-      // Check if conversation already exists between buyer and seller (bidirectional)
       const { data: existingConvs } = await supabase
         .from('listing_conversations')
         .select('id, buyer_id, seller_id')
         .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`);
 
       let conversationId: string;
-      let isNewConversation = false;
 
       if (existingConvs && existingConvs.length > 0) {
         conversationId = existingConvs[0].id;
-        // Update conversation context
         await supabase.from('listing_conversations')
           .update({ 
             updated_at: new Date().toISOString(),
@@ -142,7 +133,6 @@ export default function CommunityMessages() {
           })
           .eq('id', conversationId);
       } else {
-        isNewConversation = true;
         const convCode = `CONV-${Date.now().toString(36).toUpperCase()}`;
         const { data: newConv, error: convError } = await supabase
           .from('listing_conversations')
@@ -165,7 +155,6 @@ export default function CommunityMessages() {
         if (convError) throw convError;
         conversationId = newConv.id;
 
-        // Send initial greeting
         await supabase.from('listing_messages').insert({
           conversation_id: conversationId,
           sender_id: user.id,
@@ -194,7 +183,6 @@ export default function CommunityMessages() {
             });
           }
 
-          // Send user's address for confirmation
           const { data: defaultAddr } = await supabase
             .from('user_addresses')
             .select('*')
@@ -259,8 +247,7 @@ export default function CommunityMessages() {
     },
     onSuccess: (conversationId) => {
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-      // Build URL with entry context preserved as params
-      const url = new URL(`/community/messages`, window.location.origin);
+      const url = new URL(`/chats`, window.location.origin);
       url.searchParams.set('auto_open', conversationId);
       if (entryContext) {
         url.searchParams.set('product_title', entryContext.title);
@@ -290,14 +277,9 @@ export default function CommunityMessages() {
     return () => window.clearTimeout(t);
   }, []);
 
-  const handleClose = () => {
-    setOpen(false);
-    navigate('/community');
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-6 pt-20 max-w-6xl">
+      <main className="container mx-auto px-0 pt-16 max-w-6xl h-screen">
         {(loading || creatingConversation) && (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -308,13 +290,14 @@ export default function CommunityMessages() {
         )}
 
         <ListingConversations
-          externalOpen={open}
-          onExternalOpenChange={setOpen}
-          onClose={handleClose}
+          externalOpen={true}
+          onExternalOpenChange={() => {}}
+          onClose={() => navigate('/')}
           autoOpenConversationId={autoOpenConversationId}
           entryContext={entryContext}
+          embedded
         >
-          <span className="sr-only">فتح المحادثات</span>
+          <span className="sr-only">المحادثات</span>
         </ListingConversations>
       </main>
     </div>

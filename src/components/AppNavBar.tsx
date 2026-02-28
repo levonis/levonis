@@ -22,7 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'community', labelKey: 'nav_community', icon: Users, path: '/community' },
   { key: 'rewards', labelKey: 'menu_rewards', icon: Trophy, path: '/rewards' },
   { key: 'games', labelKey: 'nav_games', icon: Gamepad2, path: '/games' },
-  { key: 'messages', labelKey: 'menu_messages', icon: MessageCircle, path: '/community/messages' },
+  { key: 'messages', labelKey: 'menu_messages', icon: MessageCircle, path: '/chats' },
   { key: 'account', labelKey: 'menu_account_info', icon: User, path: '/profile' },
 ];
 

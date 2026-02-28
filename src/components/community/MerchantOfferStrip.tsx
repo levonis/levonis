@@ -104,7 +104,7 @@ export default function MerchantOfferStrip({
       toast({ title: "لا يمكن بدء المحادثة", variant: "destructive" });
       return;
     }
-    navigate(`/community/messages?merchant_id=${merchantAppId}&request_id=${requestId}`);
+    navigate(`/chats?merchant_id=${merchantAppId}&request_id=${requestId}`);
   };
 
   const handleVisitStore = () => {

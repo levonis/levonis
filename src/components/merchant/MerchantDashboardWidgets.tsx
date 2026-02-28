@@ -600,7 +600,7 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
                     className={`p-1.5 rounded-md border cursor-pointer hover:bg-muted/40 transition-colors ${
                       c.isUnread ? "bg-primary/5 border-primary/20" : "bg-muted/20 border-border/20"
                     }`}
-                    onClick={() => navigate("/community/messages")}
+                    onClick={() => navigate("/chats")}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-semibold">{c.buyerName}</span>
@@ -766,7 +766,7 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
           className="w-full mt-2 gap-1.5 text-[10px] h-7 text-muted-foreground hover:text-primary"
           onClick={() => {
             if (pinnedWidget === "financial" || pinnedWidget === "orders") navigate("/community/merchant/orders");
-            else if (pinnedWidget === "conversations") navigate("/community/messages");
+            else if (pinnedWidget === "conversations") navigate("/chats");
             else if (pinnedWidget === "ratings") navigate(`/store/${merchantId}`);
             else if (pinnedWidget === "requests") navigate("/community/requests");
           }}

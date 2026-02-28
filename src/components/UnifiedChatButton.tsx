@@ -1,29 +1,20 @@
-import { useState, lazy, Suspense } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { MessageCircle, Loader2 } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-// Lazy load the conversations component for better performance
-const ListingConversations = lazy(() => import("@/components/marketplace/ListingConversations").then(m => ({ default: m.ListingConversations })));
 
 // Support account ID (admin) - used for identification only, chat bubble now visible for all users
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
 
 export default function UnifiedChatButton() {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Get unread count from community system
-  const { data: totalUnread = 0, refetch: refetchUnread } = useQuery({
+  const { data: totalUnread = 0 } = useQuery({
     queryKey: ["unified-chat-unread", user?.id],
     queryFn: async () => {
       if (!user) return 0;
@@ -48,17 +39,12 @@ export default function UnifiedChatButton() {
     refetchInterval: 30000,
   });
 
-  const handleClose = (val: boolean) => {
-    setOpen(val);
-    if (!val) {
-      // Refetch unread count when closing chat dialog
-      refetchUnread();
-    }
-  };
-
   // Hide for non-logged users
   if (!user) return null;
   
+  // Hide on chats page itself
+  if (location.pathname === '/chats' || location.pathname === '/community/messages') return null;
+
   // Only show on community main and main site pages
   const restrictedPaths = [
     '/community/merchant/store',
@@ -70,43 +56,23 @@ export default function UnifiedChatButton() {
     '/games',
   ];
   const isOnRestrictedPage = restrictedPaths.some(p => location.pathname.startsWith(p));
-  if (isOnRestrictedPage && !open) return null;
+  if (isOnRestrictedPage) return null;
 
   return (
-    <>
-      <Button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 left-4 sm:left-6 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90 border-2 border-primary-foreground/20"
-        size="icon"
-      >
-        <div className="relative">
-          <MessageCircle className="h-6 w-6 text-primary-foreground" />
-          {totalUnread > 0 && (
-            <span className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
-              {totalUnread > 9 ? "9+" : totalUnread}
-            </span>
-          )}
-        </div>
-      </Button>
-
-      {/* Direct usage of ListingConversations which has its own Dialog */}
-      {open && (
-        <Suspense fallback={
-          <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-6xl h-[90vh] flex items-center justify-center">
-              <DialogTitle className="sr-only">المحادثات</DialogTitle>
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </DialogContent>
-          </Dialog>
-        }>
-          <ListingConversations
-            externalOpen={open}
-            onExternalOpenChange={handleClose}
-            onClose={() => handleClose(false)}
-          />
-        </Suspense>
-      )}
-    </>
+    <Button
+      onClick={() => navigate("/chats")}
+      className="fixed bottom-6 left-4 sm:left-6 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90 border-2 border-primary-foreground/20"
+      size="icon"
+    >
+      <div className="relative">
+        <MessageCircle className="h-6 w-6 text-primary-foreground" />
+        {totalUnread > 0 && (
+          <span className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+            {totalUnread > 9 ? "9+" : totalUnread}
+          </span>
+        )}
+      </div>
+    </Button>
   );
 }
 

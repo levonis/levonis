@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import CommunityCustomerProfileModal from '@/components/community/CommunityCustomerProfileModal';
 import MerchantSignupDialog from '@/components/community/MerchantSignupDialog';
 import NewPrintRequestDialog from '@/components/community/NewPrintRequestDialog';
-import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import { useLanguage } from '@/lib/i18n';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
@@ -95,19 +94,19 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
   // Quick action buttons for merchants and customers - only show if profile is complete
   // Dialog state for new request and messages
   const [newRequestOpen, setNewRequestOpen] = useState(false);
-  const [messagesOpen, setMessagesOpen] = useState(false);
+  
   
   const quickActions = useMemo(() => {
     if (isMerchant) {
       return [
-        { key: "messages", label: t('community_messages'), icon: MessageCircle, action: () => setMessagesOpen(true) },
+        { key: "messages", label: t('community_messages'), icon: MessageCircle, to: "/chats" },
         { key: "store", label: t('community_manage_store'), icon: Store, to: "/community/merchant/store" },
         { key: "orders", label: t('community_orders'), icon: Package, to: "/community/merchant/orders" },
         { key: "requests", label: t('community_customer_requests'), icon: FileText, to: "/community/requests" },
       ];
     }
     return [
-      { key: "messages", label: t('community_messages'), icon: MessageCircle, action: () => setMessagesOpen(true) },
+      { key: "messages", label: t('community_messages'), icon: MessageCircle, to: "/chats" },
       { key: "new-request", label: t('community_new_request'), icon: FileText, action: () => setNewRequestOpen(true) },
       { key: "my-requests", label: t('community_my_requests'), icon: Package, to: "/community/customer/requests" },
       { key: "profile", label: t('community_my_profile'), icon: Users, to: "/profile" },
@@ -304,14 +303,6 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         <CommunityExploreStrip searchQuery={searchQuery} />
       </div>
 
-      {/* Messages Overlay Dialog */}
-      <ListingConversations
-        externalOpen={messagesOpen}
-        onExternalOpenChange={setMessagesOpen}
-        onClose={() => setMessagesOpen(false)}
-      >
-        <span className="sr-only">{t('community_open_messages')}</span>
-      </ListingConversations>
     </section>
   );
 }

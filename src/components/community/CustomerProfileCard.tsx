@@ -184,7 +184,7 @@ export default function CustomerProfileCard({
             <p className="text-[8px] text-muted-foreground">مكتمل</p>
           </div>
           <button
-            onClick={() => navigate("/community/messages")}
+            onClick={() => navigate("/chats")}
             className="p-2 rounded-xl bg-muted/30 border border-border/30 text-center hover:border-primary/30 transition-all relative"
           >
             <MessageCircle className="h-3.5 w-3.5 text-blue-500 mx-auto mb-0.5" />

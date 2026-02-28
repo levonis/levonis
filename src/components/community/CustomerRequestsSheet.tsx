@@ -260,7 +260,7 @@ export default function CustomerRequestsSheet({
                               size="sm"
                               variant="outline"
                               className="h-7 px-2 text-[10px]"
-                              onClick={() => navigate(`/community/messages?request=${r.id}`)}
+                              onClick={() => navigate(`/chats?request=${r.id}`)}
                             >
                               <Eye className="h-3 w-3 ml-1" />
                               العروض

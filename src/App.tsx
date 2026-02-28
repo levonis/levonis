@@ -205,13 +205,14 @@ function AppContent() {
             {/* Community (requires login + complete profile) */}
             <Route path="/community" element={<RequireCommunityProfile><CommunityHome /></RequireCommunityProfile>} />
             <Route path="/community/reels" element={<ReelsPage />} />
-            <Route path="/community/messages" element={<RequireCommunityProfile><CommunityMessages /></RequireCommunityProfile>} />
+            <Route path="/community/messages" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
+            <Route path="/chats" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
             <Route path="/community/customer/dashboard" element={<RequireCommunityProfile><CommunityCustomerDashboard /></RequireCommunityProfile>} />
             <Route path="/community/merchant/dashboard" element={<RequireCommunityProfile><CommunityMerchantProfessionalDashboard /></RequireCommunityProfile>} />
             <Route path="/community/customer/requests" element={<RequireCommunityProfile><CommunityCustomerRequests /></RequireCommunityProfile>} />
             <Route path="/community/customer/new" element={<RequireCommunityProfile><CommunityCustomerNewRequest /></RequireCommunityProfile>} />
             <Route path="/community/customer/profile" element={<RequireAuth><CommunityCustomerProfile /></RequireAuth>} />
-            <Route path="/community/merchant/signup" element={<RequireCommunityProfile><CommunityMerchantSignup /></RequireCommunityProfile>} />
+            <Route path="/community/merchant/signup" element={<RequireAuth><CommunityMerchantSignup /></RequireAuth>} />
             <Route path="/community/merchant/store" element={<RequireCommunityProfile><CommunityMerchantStore /></RequireCommunityProfile>} />
             <Route path="/community/merchant/orders" element={<RequireCommunityProfile><CommunityMerchantOrders /></RequireCommunityProfile>} />
             <Route path="/community/customer/track" element={<RequireCommunityProfile><CommunityCustomerTrack /></RequireCommunityProfile>} />

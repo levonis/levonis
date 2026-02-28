@@ -16,7 +16,7 @@ const SERVICES = [
   { icon: Store, label: "المتاجر", path: "/community", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   { icon: History, label: "سجل التصفح", path: "/products", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   { icon: MapPin, label: "العناوين", path: "/addresses", color: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
-  { icon: Headphones, label: "خدمة العملاء", path: "/community/messages", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
+  { icon: Headphones, label: "خدمة العملاء", path: "/chats", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
   { icon: Gift, label: "الجوائز", path: "/rewards", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
   { icon: Settings, label: "الإعدادات", path: "/profile/settings", color: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
 ];

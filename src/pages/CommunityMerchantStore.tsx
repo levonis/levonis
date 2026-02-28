@@ -491,7 +491,7 @@ export default function CommunityMerchantStore() {
                         <span className="text-[10px] text-muted-foreground">{new Date(review.created_at).toLocaleDateString("ar-IQ")}</span>
                       </div>
                       {review.comment && <p className="text-xs text-muted-foreground">{review.comment}</p>}
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 mt-2 text-primary" onClick={() => navigate(`/community/messages?user_id=${review.user_id}`)}>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 mt-2 text-primary" onClick={() => navigate(`/chats?user_id=${review.user_id}`)}>
                         <MessageSquare className="h-3 w-3" />رد
                       </Button>
                     </div>

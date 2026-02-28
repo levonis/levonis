@@ -155,7 +155,7 @@ export default function OffersListSection({
       toast({ title: "لا يمكن بدء المحادثة", variant: "destructive" });
       return;
     }
-    navigate(`/community/messages?merchant_id=${merchantAppId}&request_id=${requestId}`);
+    navigate(`/chats?merchant_id=${merchantAppId}&request_id=${requestId}`);
   };
 
   const handleVisitStore = (offer: MerchantOffer) => {

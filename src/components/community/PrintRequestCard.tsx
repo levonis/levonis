@@ -177,7 +177,7 @@ export default function PrintRequestCard({
           )}
 
           {(isOwner || !isMerchant) && (
-            <Button size="sm" variant="secondary" className="flex-1 text-[10px] h-7 bg-muted/50" onClick={() => navigate(`/community/messages?request=${request.id}`)}>
+            <Button size="sm" variant="secondary" className="flex-1 text-[10px] h-7 bg-muted/50" onClick={() => navigate(`/chats?request=${request.id}`)}>
               <MessageSquare className="h-3 w-3 ml-0.5" />
               {t('request_conversations')}
             </Button>

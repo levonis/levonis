@@ -388,7 +388,7 @@ export default function CommunityMerchantOrders() {
                   {(actions.length > 0) && (
                     <div className="flex gap-1 mt-2 pt-2 border-t border-border/30">
                       <Button size="sm" variant="outline" className="h-6 text-[9px] gap-0.5 px-2"
-                        onClick={() => navigate(`/community/messages?user_id=${req?.user_id}&request_id=${offer.request_id}`)}>
+                        onClick={() => navigate(`/chats?user_id=${req?.user_id}&request_id=${offer.request_id}`)}>
                         <MessageSquare className="h-2.5 w-2.5" />مراسلة
                       </Button>
                       {actions.map((action) => (
