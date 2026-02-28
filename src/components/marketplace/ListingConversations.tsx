@@ -57,6 +57,7 @@ import TextMessage from '@/components/chat/messages/TextMessage';
 import ProductCard from '@/components/chat/messages/ProductCard';
 import OrderCard from '@/components/chat/messages/OrderCard';
 import ConfirmationCard from '@/components/chat/messages/ConfirmationCard';
+import OrderTrackingCard from '@/components/chat/messages/OrderTrackingCard';
 import LocationMessage from '@/components/chat/messages/LocationMessage';
 import AddressMessage from '@/components/chat/messages/AddressMessage';
 import ProductSelector from '@/components/chat/ProductSelector';
@@ -1597,6 +1598,19 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     />
                                   );
                                 }
+                              }
+                              
+                              // Render Order Tracking Card
+                              if (parsedContent?.type === 'order_tracking') {
+                                return (
+                                  <OrderTrackingCard
+                                    key={msg.id}
+                                    orderNumber={parsedContent.order_number}
+                                    orderId={parsedContent.order_id}
+                                    isMe={isMe}
+                                    timestamp={timestamp}
+                                  />
+                                );
                               }
                               
                               // Render Confirmation Card
