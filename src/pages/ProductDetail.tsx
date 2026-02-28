@@ -567,6 +567,15 @@ const ProductDetail = () => {
                 {isAdmin && (product as any).taobao_url && <TaobaoLinkButton taobaoUrl={(product as any).taobao_url} />}
               </h1>
 
+              {/* Sold Count */}
+              {(product as any).sold_count > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                    🔥 {(product as any).sold_count} قطعة مباعة
+                  </span>
+                </div>
+              )}
+
               {/* Description */}
               {product.description_ar && (
                 <div className="text-muted-foreground text-sm leading-relaxed">
