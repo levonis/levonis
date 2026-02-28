@@ -25,6 +25,7 @@ interface AdminOrderChatDialogProps {
   orderNumber: string;
   userId: string;
   customerName: string;
+  initialOrderData?: any;
 }
 
 interface Message {
@@ -50,7 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function AdminOrderChatDialog({
-  open, onOpenChange, orderId, orderNumber, userId, customerName
+  open, onOpenChange, orderId, orderNumber, userId, customerName, initialOrderData
 }: AdminOrderChatDialogProps) {
   const [message, setMessage] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -73,12 +74,23 @@ export default function AdminOrderChatDialog({
   const queryClient = useQueryClient();
 
   // Fetch order details with product info
-  const { data: order } = useQuery({
+  const {
+    data: order,
+    isLoading: isOrderLoading,
+    refetch: refetchOrder,
+  } = useQuery({
     queryKey: ['admin-order-detail', orderId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(name_ar, images, image_url), custom_product_requests(product_name, image_url))')
+        .select(`
+          *,
+          order_items!order_items_order_id_fkey(
+            *,
+            products!order_items_product_id_fkey(name_ar, images, image_url),
+            custom_product_requests(product_name, image_url)
+          )
+        `)
         .eq('id', orderId)
         .single();
       if (error) throw error;
@@ -86,6 +98,8 @@ export default function AdminOrderChatDialog({
     },
     enabled: open && !!orderId,
   });
+
+  const displayOrder = order ?? initialOrderData;
 
   useEffect(() => {
     if (open && userId) getOrCreateConversation();
@@ -195,14 +209,12 @@ export default function AdminOrderChatDialog({
   }, [open, activeTab, conversationId]);
 
   useEffect(() => {
+    if (!open || activeTab !== 'chat' || isLoading) return;
+
     const viewport = messageViewportRef.current;
+    if (!viewport) return;
+
     const hasNewMessages = messages.length > previousMessagesCountRef.current;
-
-    if (!viewport) {
-      previousMessagesCountRef.current = messages.length;
-      return;
-    }
-
     const distanceToBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
     const isNearBottom = distanceToBottom < 120;
 
@@ -214,7 +226,7 @@ export default function AdminOrderChatDialog({
     }
 
     previousMessagesCountRef.current = messages.length;
-  }, [messages, activeTab]);
+  }, [messages, activeTab, isLoading, open]);
 
   const handleSendMedia = async (file: File) => {
     if (!conversationId) await getOrCreateConversation();
@@ -379,13 +391,13 @@ export default function AdminOrderChatDialog({
           {/* Order Details Tab */}
           <TabsContent value="order" className="flex-1 m-0 overflow-auto">
             <ScrollArea className="h-full">
-              {order ? (
+              {displayOrder ? (
                 <div className="p-4 space-y-3">
                   {/* Status & Order Number */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold">طلب {order.order_number}</span>
-                    <Badge variant={order.status === 'delivered' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>
-                      {STATUS_LABELS[order.status] || order.status}
+                    <span className="text-sm font-bold">طلب {displayOrder.order_number || orderNumber}</span>
+                    <Badge variant={displayOrder.status === 'delivered' ? 'default' : displayOrder.status === 'cancelled' ? 'destructive' : 'secondary'}>
+                      {STATUS_LABELS[displayOrder.status] || displayOrder.status || '—'}
                     </Badge>
                   </div>
 
@@ -395,26 +407,26 @@ export default function AdminOrderChatDialog({
                       <span className="text-muted-foreground">👤</span>
                       <span className="font-medium flex-1">{customerName}</span>
                     </div>
-                    {order.phone_number && (
+                    {displayOrder.phone_number && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">📞</span>
-                        <span className="flex-1 text-xs" dir="ltr">{order.phone_number}</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(order.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
+                        <span className="flex-1 text-xs" dir="ltr">{displayOrder.phone_number}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(displayOrder.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
                     )}
                     <div className="flex items-center gap-1">
                       <span className="text-muted-foreground">📍</span>
-                      <span className="flex-1 text-xs">{order.shipping_address || order.governorate || '-'}</span>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(order.shipping_address || order.governorate || ''); toast.success('تم نسخ العنوان'); }}>
+                      <span className="flex-1 text-xs">{displayOrder.shipping_address || displayOrder.governorate || '-'}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(displayOrder.shipping_address || displayOrder.governorate || ''); toast.success('تم نسخ العنوان'); }}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
-                    {order.shipping_notes && (
+                    {displayOrder.shipping_notes && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">📝</span>
-                        <span className="flex-1 text-xs">{order.shipping_notes}</span>
+                        <span className="flex-1 text-xs">{displayOrder.shipping_notes}</span>
                       </div>
                     )}
                   </div>
@@ -423,30 +435,30 @@ export default function AdminOrderChatDialog({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="rounded-lg border border-border p-2 text-center">
                       <p className="text-muted-foreground text-[10px]">طريقة الدفع</p>
-                      <p className="font-medium text-xs mt-0.5">{order.payment_method || '—'}</p>
+                      <p className="font-medium text-xs mt-0.5">{displayOrder.payment_method || '—'}</p>
                     </div>
                     <div className="rounded-lg border border-border p-2 text-center">
                       <p className="text-muted-foreground text-[10px]">حالة الدفع</p>
-                      <p className="font-medium text-xs mt-0.5">{order.payment_status || '—'}</p>
+                      <p className="font-medium text-xs mt-0.5">{displayOrder.payment_status || '—'}</p>
                     </div>
                   </div>
 
                   {/* Products */}
                   <div className="space-y-2">
                     <p className="text-muted-foreground text-xs font-medium">المنتجات</p>
-                    {(order.order_items as any[] || []).length === 0 ? (
+                    {(displayOrder.order_items as any[] || []).length === 0 ? (
                       <div className="rounded-lg border border-border p-4 text-center text-sm text-muted-foreground">
                         لا توجد منتجات في هذا الطلب
                       </div>
                     ) : (
-                      (order.order_items as any[]).map((item: any, index: number) => {
+                      (displayOrder.order_items as any[]).map((item: any, index: number) => {
                         const itemName = item.product_name_ar || item.product_name || item.products?.name_ar || item.custom_product_requests?.product_name || 'منتج';
                         const itemQty = item.quantity ?? 1;
                         const itemPrice = item.unit_price ?? item.total_price ?? 0;
                         const itemImage = item.color_image_url || item.product_image || item.products?.images?.[0] || item.products?.image_url || item.custom_product_requests?.image_url;
 
                         return (
-                          <div key={item.id || `${order.id}-${index}`} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                          <div key={item.id || `${displayOrder.id || orderId}-${index}`} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
                             {itemImage && (
                               <img src={itemImage} className="w-12 h-12 rounded-lg object-cover border border-border" alt={itemName} loading="lazy" />
                             )}
@@ -477,12 +489,19 @@ export default function AdminOrderChatDialog({
                   {/* Total */}
                   <div className="flex items-center justify-between pt-2 border-t border-border text-sm font-bold">
                     <span>المجموع</span>
-                    <span className="text-primary">{formatPrice(order.total_amount)}</span>
+                    <span className="text-primary">{formatPrice(displayOrder.total_amount || 0)}</span>
                   </div>
                 </div>
-              ) : (
+              ) : isOrderLoading ? (
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-3 h-40 px-4 text-center">
+                  <p className="text-sm text-muted-foreground">تعذر تحميل معاينة الطلب</p>
+                  <Button size="sm" variant="outline" onClick={() => refetchOrder()}>
+                    إعادة المحاولة
+                  </Button>
                 </div>
               )}
             </ScrollArea>
