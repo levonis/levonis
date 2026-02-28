@@ -3,7 +3,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 
@@ -39,6 +40,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
 
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
+  const [roundUp, setRoundUp] = useState<boolean>(false);
 
   useEffect(() => {
     if (editingProduct) {
@@ -49,6 +51,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       setHeightCm(editingProduct.height_cm || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
+      setRoundUp(editingProduct.round_up_price ?? false);
 
       // Determine sale types
       setHasPreOrder(editingProduct.has_pre_order ?? false);
@@ -83,23 +86,27 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
   }, [hasSea, hasAir]);
 
   // Calculations
+  const roundUpToNearest = (value: number, nearest: number) => Math.ceil(value / nearest) * nearest;
+
   const calculations = useMemo(() => {
     if (!shippingSettings || !priceUsd) return null;
     const rate = shippingSettings.usd_to_iqd_rate;
     const priceIqd = Math.round(priceUsd * rate);
-    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number }> = [];
+    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number }> = [];
 
     if (hasPreOrder && hasSea) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
+      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd;
       results.push({
         label: 'حجز مسبق - بحري',
         type: 'sea',
         priceIqd,
         shipping: calc.shippingCost,
         commission: commissionSeaIqd,
-        final: priceIqd + calc.shippingCost + commissionSeaIqd,
+        final: finalPrice,
+        finalRounded: roundUpToNearest(finalPrice, 1000),
       });
     }
 
@@ -108,13 +115,15 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
+      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd;
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
         priceIqd,
         shipping: calc.shippingCost,
         commission: commissionAirIqd,
-        final: priceIqd + calc.shippingCost + commissionAirIqd,
+        final: finalPrice,
+        finalRounded: roundUpToNearest(finalPrice, 1000),
         breakdown: calc.breakdown,
         actualWeight: calc.actualWeight,
         volumetricWeight: calc.volumetricWeight,
@@ -123,13 +132,15 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     }
 
     if (hasDirectSale) {
+      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
         priceIqd,
         shipping: 0,
         commission: commissionDirectIqd,
-        final: priceIqd + otherCostsIqd + commissionDirectIqd,
+        final: finalPrice,
+        finalRounded: roundUpToNearest(finalPrice, 1000),
       });
     }
 
@@ -147,15 +158,23 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       <input type="hidden" name="commission_direct_iqd" value={commissionDirectIqd} />
       <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, commissionDirectIqd)} />
       <input type="hidden" name="other_costs_iqd" value={otherCostsIqd} />
+      <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
 
-      <div className="flex items-center gap-2 text-sm font-medium text-primary">
-        <DollarSign className="h-4 w-4" />
-        <span>التسعير بالدولار</span>
-        {shippingSettings && (
-          <Badge variant="outline" className="text-xs">
-            سعر الصرف: {shippingSettings.usd_to_iqd_rate.toLocaleString()} د.ع
-          </Badge>
-        )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+          <DollarSign className="h-4 w-4" />
+          <span>التسعير بالدولار</span>
+          {shippingSettings && (
+            <Badge variant="outline" className="text-xs">
+              سعر الصرف: {shippingSettings.usd_to_iqd_rate.toLocaleString()} د.ع
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="round_up_switch" className="text-xs text-muted-foreground cursor-pointer">تقريب لأقرب 1,000</Label>
+          <Switch id="round_up_switch" checked={roundUp} onCheckedChange={setRoundUp} />
+          <ArrowUp className={`h-3.5 w-3.5 transition-colors ${roundUp ? 'text-primary' : 'text-muted-foreground'}`} />
+        </div>
       </div>
 
       <div className="p-4 border border-primary/20 rounded-lg bg-primary/5 space-y-4">
@@ -389,8 +408,19 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                 )}
                 <div className="flex justify-between font-bold text-primary pt-1">
                   <span>السعر النهائي</span>
-                  <span>{formatPrice(r.final)}</span>
+                  <span className={roundUp && r.final !== r.finalRounded ? 'line-through text-muted-foreground font-normal text-xs' : ''}>
+                    {formatPrice(r.final)}
+                  </span>
                 </div>
+                {roundUp && r.final !== r.finalRounded && (
+                  <div className="flex justify-between font-bold text-green-600 dark:text-green-400">
+                    <span className="flex items-center gap-1">
+                      <ArrowUp className="h-3 w-3" />
+                      السعر بعد التقريب
+                    </span>
+                    <span>{formatPrice(r.finalRounded)}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
