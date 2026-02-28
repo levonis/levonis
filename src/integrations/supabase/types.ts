@@ -1848,6 +1848,65 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_category_exceptions: {
+        Row: {
+          category_id: string
+          created_at: string
+          delivery_price: number
+          governorate: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          delivery_price?: number
+          governorate?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          delivery_price?: number
+          governorate?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_category_exceptions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_governorate_exceptions: {
+        Row: {
+          created_at: string
+          delivery_price: number
+          governorate: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_price?: number
+          governorate: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_price?: number
+          governorate?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_verification_codes: {
         Row: {
           attempts: number | null
