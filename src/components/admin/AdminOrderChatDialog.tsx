@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera, Package, Video, VolumeX, Copy } from 'lucide-react';
 import { toast } from 'sonner';
@@ -63,6 +63,7 @@ export default function AdminOrderChatDialog({
   const [activeTab, setActiveTab] = useState('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageViewportRef = useRef<HTMLDivElement>(null);
+  const orderViewportRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
   const previousMessagesCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +73,18 @@ export default function AdminOrderChatDialog({
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
+
+  const scrollMessagesToBottom = (retries = 2) => {
+    const viewport = messageViewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollTop = viewport.scrollHeight;
+    messagesEndRef.current?.scrollIntoView({ block: 'end' });
+
+    if (retries > 0) {
+      window.setTimeout(() => scrollMessagesToBottom(retries - 1), 80);
+    }
+  };
 
   // Fetch order details with product info
   const {
@@ -220,6 +233,16 @@ export default function AdminOrderChatDialog({
   }, [open, activeTab, conversationId]);
 
   useEffect(() => {
+    if (!open || activeTab !== 'order') return;
+
+    requestAnimationFrame(() => {
+      if (orderViewportRef.current) {
+        orderViewportRef.current.scrollTop = 0;
+      }
+    });
+  }, [open, activeTab, orderId]);
+
+  useEffect(() => {
     if (!open || activeTab !== 'chat' || isLoading) return;
 
     const viewport = messageViewportRef.current;
@@ -230,18 +253,13 @@ export default function AdminOrderChatDialog({
     const distanceToBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
     const isNearBottom = distanceToBottom < 120;
 
-    // لا نستهلك auto-scroll قبل وصول أول دفعة رسائل
     if (!hasMessages) {
       previousMessagesCountRef.current = 0;
       return;
     }
 
     if (shouldAutoScrollRef.current || (hasNewMessages && isNearBottom)) {
-      requestAnimationFrame(() => {
-        const currentViewport = messageViewportRef.current;
-        if (!currentViewport) return;
-        currentViewport.scrollTop = currentViewport.scrollHeight;
-      });
+      requestAnimationFrame(() => scrollMessagesToBottom(3));
       shouldAutoScrollRef.current = false;
     }
 
@@ -409,8 +427,8 @@ export default function AdminOrderChatDialog({
           </TabsList>
 
           {/* Order Details Tab */}
-          <TabsContent value="order" className="flex-1 m-0 min-h-0">
-            <ScrollArea className="h-full">
+          <TabsContent value="order" className="flex-1 m-0 min-h-0 overflow-hidden">
+            <div ref={orderViewportRef} className="h-full overflow-y-auto">
               {displayOrder ? (
                 <div className="p-4 space-y-3">
                   {/* Status & Order Number */}
@@ -524,7 +542,7 @@ export default function AdminOrderChatDialog({
                   </Button>
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* Chat Tab */}
@@ -536,39 +554,41 @@ export default function AdminOrderChatDialog({
             ) : (
               <>
                 <div ref={messageViewportRef} className="flex-1 overflow-y-auto">
-                  <div className="p-4 space-y-3">
+                  <div className="p-4 min-h-full flex flex-col">
                     {messages.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">ابدأ المحادثة مع العميل</p>
                       </div>
                     ) : (
-                      messages.map((msg) => {
-                        const isSupport = msg.sender_id === SUPPORT_USER_ID;
-                        return (
-                          <div key={msg.id} className={`flex ${isSupport ? 'justify-start' : 'justify-end'}`}>
-                            <div className={`max-w-[80%] rounded-xl px-4 py-2 ${isSupport ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                              {msg.image_url && (
-                                msg.image_url.includes('voice_') ? (
-                                  <audio controls src={msg.image_url} className="max-w-full mb-2" />
-                                ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) ? (
-                                  <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" />
-                                ) : (
-                                  <ImageLightbox src={msg.image_url} alt="صورة">
-                                    {(openLb) => (
-                                      <img src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} />
-                                    )}
-                                  </ImageLightbox>
-                                )
-                              )}
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                              <p className={`text-xs mt-1 ${isSupport ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
-                              </p>
+                      <div className="mt-auto space-y-3">
+                        {messages.map((msg) => {
+                          const isSupport = msg.sender_id === SUPPORT_USER_ID;
+                          return (
+                            <div key={msg.id} className={`flex ${isSupport ? 'justify-start' : 'justify-end'}`}>
+                              <div className={`max-w-[80%] rounded-xl px-4 py-2 ${isSupport ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                {msg.image_url && (
+                                  msg.image_url.includes('voice_') ? (
+                                    <audio controls src={msg.image_url} className="max-w-full mb-2" onLoadedData={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                  ) : msg.image_url.match(/\.(mp4|mov|avi|webm)$/i) ? (
+                                    <video controls src={msg.image_url} className="max-w-full rounded-lg mb-2" onLoadedMetadata={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                  ) : (
+                                    <ImageLightbox src={msg.image_url} alt="صورة">
+                                      {(openLb) => (
+                                        <img src={msg.image_url!} alt="صورة" className="max-w-full rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity" onClick={openLb} onLoad={() => { if (shouldAutoScrollRef.current) scrollMessagesToBottom(2); }} />
+                                      )}
+                                    </ImageLightbox>
+                                  )
+                                )}
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className={`text-xs mt-1 ${isSupport ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                  {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })
+                          );
+                        })}
+                      </div>
                     )}
                     <div ref={messagesEndRef} />
                   </div>
