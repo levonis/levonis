@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { user_id, title, message, notification_type, channel_key } = await req.json();
+    const { user_id, title, message, notification_type, channel_key, review_question_id } = await req.json();
 
     if (!user_id || !title || !message) {
       return new Response(
@@ -79,14 +79,27 @@ Deno.serve(async (req) => {
     const telegramMessage = `${emoji} <b>${title}</b>\n${message}`;
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    
+    const body: any = {
+      chat_id: profile.telegram_chat_id,
+      text: telegramMessage,
+      parse_mode: "HTML",
+    };
+
+    // If this is a review question, store context so user can reply via Telegram
+    if (review_question_id) {
+      await supabase.from("review_telegram_context").upsert({
+        telegram_chat_id: profile.telegram_chat_id,
+        question_id: review_question_id,
+        user_id: user_id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'telegram_chat_id' });
+    }
+
     const response = await fetch(telegramUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: profile.telegram_chat_id,
-        text: telegramMessage,
-        parse_mode: "HTML",
-      }),
+      body: JSON.stringify(body),
     });
 
     const result = await response.json();

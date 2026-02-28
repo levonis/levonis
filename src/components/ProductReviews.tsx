@@ -78,6 +78,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
       return data.map((r) => ({
         ...r,
+        product_id: productId,
         profiles: profileMap.get(r.user_id) || null,
       }));
     },

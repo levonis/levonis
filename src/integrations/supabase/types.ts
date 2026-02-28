@@ -5705,6 +5705,73 @@ export type Database = {
           },
         ]
       }
+      review_admin_replies: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          reply: string
+          review_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          reply: string
+          review_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          reply?: string
+          review_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_admin_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_answers: {
+        Row: {
+          answer: string
+          answerer_id: string
+          created_at: string
+          id: string
+          question_id: string
+        }
+        Insert: {
+          answer: string
+          answerer_id: string
+          created_at?: string
+          id?: string
+          question_id: string
+        }
+        Update: {
+          answer?: string
+          answerer_id?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "review_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_helpful: {
         Row: {
           created_at: string
@@ -5727,6 +5794,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "review_helpful_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_questions: {
+        Row: {
+          asker_id: string
+          created_at: string
+          id: string
+          product_id: string
+          question: string
+          review_id: string
+        }
+        Insert: {
+          asker_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          question: string
+          review_id: string
+        }
+        Update: {
+          asker_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          question?: string
+          review_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_questions_review_id_fkey"
             columns: ["review_id"]
             isOneToOne: false
             referencedRelation: "reviews"
@@ -5762,6 +5864,38 @@ export type Database = {
             columns: ["review_id"]
             isOneToOne: false
             referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_telegram_context: {
+        Row: {
+          id: string
+          question_id: string
+          telegram_chat_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          telegram_chat_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          telegram_chat_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_telegram_context_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "review_questions"
             referencedColumns: ["id"]
           },
         ]
