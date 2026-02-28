@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Star, Loader2, ArrowRight, CheckCircle, Package } from 'lucide-react';
+import { Loader2, ArrowRight, CheckCircle, Package, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import ProductRatingCard from '@/components/reviews/ProductRatingCard';
 
 const ConfirmDelivery = () => {
   const { orderId } = useParams();
@@ -17,12 +17,13 @@ const ConfirmDelivery = () => {
   const queryClient = useQueryClient();
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
+  const [productImages, setProductImages] = useState<Record<string, File[]>>({});
+  const [productVideos, setProductVideos] = useState<Record<string, File | null>>({});
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['order-detail', orderId],
     queryFn: async () => {
       if (!orderId || !user) return null;
-
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -36,7 +37,6 @@ const ConfirmDelivery = () => {
         .eq('id', orderId)
         .eq('user_id', user.id)
         .maybeSingle();
-
       if (error) throw error;
       return data;
     },
@@ -47,7 +47,6 @@ const ConfirmDelivery = () => {
     mutationFn: async () => {
       if (!order || !user) throw new Error('Missing data');
 
-      // Update order to confirmed
       const { error: orderError } = await supabase
         .from('orders')
         .update({
@@ -55,31 +54,60 @@ const ConfirmDelivery = () => {
           user_confirmed_at: new Date().toISOString()
         })
         .eq('id', order.id);
-
       if (orderError) throw orderError;
 
-      // Create reviews for each product (only for regular products, not custom requests)
-      const reviews = order.order_items
-        .filter((item: any) => item.product_id) // Only products, not custom requests
-        .map((item: any) => ({
-          product_id: item.product_id,
-          user_id: user.id,
-          rating: ratings[item.product_id] || 5,
-          comment: comments[item.product_id] || 'ممتاز'
-        }));
+      // Upload media and create reviews
+      const ratableItems = order.order_items.filter((item: any) => item.product_id);
+      
+      for (const item of ratableItems) {
+        const pid = item.product_id;
+        const uploadedImageUrls: string[] = [];
+        
+        // Upload images
+        for (const img of (productImages[pid] || [])) {
+          const path = `${user.id}/${pid}/${Date.now()}-${img.name}`;
+          const { error } = await supabase.storage.from("reviews-media").upload(path, img, { upsert: true });
+          if (!error) {
+            const { data } = supabase.storage.from("reviews-media").getPublicUrl(path);
+            uploadedImageUrls.push(data.publicUrl);
+          }
+        }
 
-      if (reviews.length > 0) {
+        // Upload video
+        let videoUrl: string | null = null;
+        const vid = productVideos[pid];
+        if (vid) {
+          const path = `${user.id}/${pid}/video-${Date.now()}.mp4`;
+          const { error } = await supabase.storage.from("reviews-media").upload(path, vid, { upsert: true });
+          if (!error) {
+            const { data } = supabase.storage.from("reviews-media").getPublicUrl(path);
+            videoUrl = data.publicUrl;
+          }
+        }
+
+        // Calculate points
+        let points = 0;
+        if (uploadedImageUrls.length > 0) points = 50;
+        if (videoUrl) points = 250;
+
         const { error: reviewError } = await supabase
           .from('reviews')
-          .insert(reviews);
-
-        if (reviewError) throw reviewError;
+          .insert({
+            product_id: pid,
+            user_id: user.id,
+            rating: ratings[pid] || 5,
+            comment: comments[pid] || 'ممتاز',
+            media_files: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
+            video_url: videoUrl,
+            points_awarded: points,
+          });
+        if (reviewError) console.error('Review error:', reviewError);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-      toast.success('تم تأكيد الاستلام وإضافة التقييمات بنجاح');
+      toast.success('تم تأكيد الاستلام وإضافة التقييمات بنجاح 🎉');
       navigate('/my-orders');
     },
     onError: (error) => {
@@ -100,10 +128,10 @@ const ConfirmDelivery = () => {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm">
         <main className="container mx-auto px-4 py-8 pt-24">
-          <Card className="border-border/50">
+          <Card className="border-border/50 bg-card/40 backdrop-blur-xl">
             <CardContent className="py-12 text-center">
               <h3 className="text-xl font-bold text-foreground mb-2">
-                {order?.user_confirmed_delivery ? 'تم تأكيد الاستلام مسبقاً' : 'الطلب غير متاح'}
+                {order?.user_confirmed_delivery ? 'تم تأكيد الاستلام مسبقاً ✅' : 'الطلب غير متاح'}
               </h3>
               <Button onClick={() => navigate('/my-orders')} className="mt-4">
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -116,24 +144,15 @@ const ConfirmDelivery = () => {
     );
   }
 
-  const handleRatingClick = (productId: string, rating: number) => {
-    setRatings(prev => ({ ...prev, [productId]: rating }));
-  };
-
-  // Get items that can be rated (only regular products)
   const ratableItems = order.order_items.filter((item: any) => item.product_id);
-  // Get custom request items (cannot be rated)
   const customItems = order.order_items.filter((item: any) => item.custom_request_id);
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
       <main className="container mx-auto px-4 py-8 pt-24 max-w-3xl">
+        {/* Header */}
         <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(`/order/${orderId}`)}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => navigate(`/order/${orderId}`)} className="mb-4">
             <ArrowRight className="ml-2 h-4 w-4" />
             العودة إلى تفاصيل الطلب
           </Button>
@@ -141,100 +160,67 @@ const ConfirmDelivery = () => {
           <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
         </div>
 
-        <Card className="mb-6 border-green-500/50 bg-green-50/50 dark:bg-green-950/20">
-          <CardContent className="py-6 text-center">
-            <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-green-700 dark:text-green-400 mb-2">تهانينا!</h2>
+        {/* Success banner - glassmorphism */}
+        <Card className="mb-6 relative overflow-hidden border border-green-500/30 bg-green-500/5 backdrop-blur-xl shadow-[0_8px_32px_rgba(34,197,94,0.1)]">
+          <div className="absolute -top-16 -right-16 w-32 h-32 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
+          <CardContent className="relative py-8 text-center">
+            <div className="relative inline-block mb-4">
+              <CheckCircle className="h-16 w-16 text-green-500" />
+              <div className="absolute inset-0 translate-y-1 blur-md -z-10">
+                <CheckCircle className="h-16 w-16 text-green-500/30" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2 flex items-center justify-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              تهانينا!
+              <Sparkles className="h-5 w-5" />
+            </h2>
             <p className="text-muted-foreground">
               نرجو تأكيد استلام طلبك وتقييم المنتجات لمساعدة العملاء الآخرين
             </p>
           </CardContent>
         </Card>
 
-        {/* Regular products that can be rated */}
+        {/* Product ratings */}
         {ratableItems.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500" />
-              قيّم المنتجات
-            </h3>
+          <div className="mb-6 space-y-4">
             {ratableItems.map((item: any) => {
               const imageUrl = item.products?.images?.[0] || item.products?.image_url;
               return (
-                <Card key={item.id} className="mb-4 border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-4">
-                      {imageUrl && (
-                        <img
-                          src={imageUrl}
-                          alt={item.product_name_ar}
-                          className="w-16 h-16 object-cover rounded-lg border"
-                        />
-                      )}
-                      <span className="text-base">{item.product_name_ar}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">التقييم</label>
-                      <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => handleRatingClick(item.product_id, star)}
-                            className="transition-transform hover:scale-110"
-                          >
-                            <Star
-                              className={`h-8 w-8 ${
-                                star <= (ratings[item.product_id] || 5)
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">التعليق (اختياري)</label>
-                      <Textarea
-                        value={comments[item.product_id] || ''}
-                        onChange={(e) => setComments(prev => ({ ...prev, [item.product_id]: e.target.value }))}
-                        placeholder="شاركنا رأيك في المنتج..."
-                        rows={3}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProductRatingCard
+                  key={item.id}
+                  itemId={item.id}
+                  productId={item.product_id}
+                  productName={item.product_name_ar}
+                  imageUrl={imageUrl}
+                  rating={ratings[item.product_id] || 5}
+                  comment={comments[item.product_id] || ''}
+                  onRatingChange={(pid, r) => setRatings(prev => ({ ...prev, [pid]: r }))}
+                  onCommentChange={(pid, c) => setComments(prev => ({ ...prev, [pid]: c }))}
+                  images={productImages[item.product_id] || []}
+                  onImagesChange={(pid, imgs) => setProductImages(prev => ({ ...prev, [pid]: imgs }))}
+                  video={productVideos[item.product_id] || null}
+                  onVideoChange={(pid, v) => setProductVideos(prev => ({ ...prev, [pid]: v }))}
+                />
               );
             })}
           </div>
         )}
 
-        {/* Custom request items (cannot be rated) */}
+        {/* Custom items */}
         {customItems.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              الطلبات المخصصة
-            </h3>
+          <div className="mb-6 space-y-3">
             {customItems.map((item: any) => {
               const imageUrl = item.custom_product_requests?.image_url;
               const productName = item.custom_product_requests?.product_name || item.product_name_ar;
               return (
-                <Card key={item.id} className="mb-4 border-amber-500/20 bg-amber-50/50 dark:bg-amber-950/20">
+                <Card key={item.id} className="border border-amber-500/20 bg-amber-500/5 backdrop-blur-xl">
                   <CardContent className="py-4">
                     <div className="flex items-center gap-4">
                       {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={productName}
-                          className="w-16 h-16 object-cover rounded-lg border"
-                        />
+                        <img src={imageUrl} alt={productName} className="w-16 h-16 object-cover rounded-xl border border-border/50" />
                       ) : (
-                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-16 h-16 bg-muted/50 rounded-xl flex items-center justify-center">
                           <Package className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
@@ -243,9 +229,7 @@ const ConfirmDelivery = () => {
                           <span className="font-bold">{productName}</span>
                           <Badge variant="secondary" className="text-xs">طلب خاص</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          الطلبات المخصصة لا يمكن تقييمها
-                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">الطلبات المخصصة لا يمكن تقييمها</p>
                       </div>
                     </div>
                   </CardContent>
@@ -255,12 +239,14 @@ const ConfirmDelivery = () => {
           </div>
         )}
 
-        <Card className="border-primary/20">
-          <CardContent className="py-6">
+        {/* Confirm button - 3D glassmorphism */}
+        <Card className="relative overflow-hidden border border-green-500/30 bg-card/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(34,197,94,0.1)]">
+          <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-green-500/10 rounded-full blur-2xl pointer-events-none" />
+          <CardContent className="relative py-6">
             <Button
               onClick={() => confirmMutation.mutate()}
               disabled={confirmMutation.isPending}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full bg-green-600 hover:bg-green-700 shadow-[0_4px_16px_rgba(34,197,94,0.3)] hover:shadow-[0_6px_24px_rgba(34,197,94,0.4)] transition-all duration-300"
               size="lg"
             >
               {confirmMutation.isPending ? (
@@ -271,7 +257,7 @@ const ConfirmDelivery = () => {
               تأكيد الاستلام {ratableItems.length > 0 ? 'وإرسال التقييمات' : ''}
             </Button>
             <p className="text-xs text-center text-muted-foreground mt-4">
-              ملاحظة: سيتم تأكيد الاستلام تلقائياً مع تقييم 5 نجوم بعد 7 أيام من التوصيل
+              ⏰ ملاحظة: سيتم تأكيد الاستلام تلقائياً مع تقييم 5 نجوم بعد 7 أيام من التوصيل
             </p>
           </CardContent>
         </Card>
