@@ -929,7 +929,91 @@ const AdminOrders = () => {
             />
           ) : (
             <>
-              <div className="admin-table-container overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3 p-3">
+                {pagination.paginatedItems.map((order) => {
+                  const shippingInfo = getShippingInfo(order.order_items || []);
+                  const isPreOrder = checkIfPreOrder(order.order_items || []);
+                  return (
+                    <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
+                      {/* Header row: order number + status */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
+                        <div className="flex items-center gap-1.5">
+                          {getStatusBadge(order.status)}
+                          {(order as any).order_type === 'direct' ? (
+                            <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 gap-0.5"><Truck className="h-3 w-3" />مباشر</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] gap-0.5">
+                              {shippingInfo.isFast ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
+                              {isPreOrder ? 'مسبق' : 'متوفر'}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Customer + amount */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium truncate">{order.profiles?.full_name || order.profiles?.username}</span>
+                          <span className="text-xs text-muted-foreground">{order.governorate} • {order.phone_number}</span>
+                        </div>
+                        <span className="font-bold text-foreground whitespace-nowrap">{formatPrice(order.total_amount)}</span>
+                      </div>
+
+                      {/* Date */}
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
+                      </div>
+
+                      {/* Quick status + actions */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => handleQuickStatusChange(order.id, value, order.status, order)}
+                        >
+                          <SelectTrigger className="flex-1 h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getStatusOptionsForOrder(order, checkIfPreOrder).map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openEditDialog(order)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-primary" onClick={() => { setSelectedOrderForMessage(order); setMessageDialogOpen(true); }}>
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>إلغاء الطلب</AlertDialogTitle>
+                              <AlertDialogDescription>هل أنت متأكد من إلغاء هذا الطلب؟ سيتم إرجاع المخزون والمبلغ المدفوع للزبون.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>تراجع</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteOrderMutation.mutate(order.id)}>إلغاء الطلب</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="admin-table-container overflow-x-auto hidden md:block">
                 <Table className="min-w-[900px]">
                   <TableHeader>
                     <TableRow className="admin-table-header">
