@@ -71,6 +71,9 @@ export default function ProfileSettings() {
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [communityDisplayName, setCommunityDisplayName] = useState("");
   const [communityBio, setCommunityBio] = useState("");
+  const [newPhoneNumber, setNewPhoneNumber] = useState("");
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
   const [telegramNotifs, setTelegramNotifs] = useState({
     orders: true,
     wallet: true,
@@ -89,7 +92,7 @@ export default function ProfileSettings() {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, full_name, username, avatar_url, phone_number, phone_verified, phone_verification_status, last_username_change_at, telegram_chat_id, telegram_notifications"
+          "id, full_name, username, avatar_url, phone_number, phone_verified, phone_verification_status, last_username_change_at, last_phone_change_at, telegram_chat_id, telegram_notifications"
         )
         .eq("id", user!.id)
         .single();
@@ -156,8 +159,37 @@ export default function ProfileSettings() {
 
   const cooldownDaysLeft = daysUntilAllowed((profile as any)?.last_username_change_at ?? null);
   const canEditUsername = cooldownDaysLeft === 0;
+  const phoneCooldownDaysLeft = daysUntilAllowed((profile as any)?.last_phone_change_at ?? null);
+  const canEditPhone = phoneCooldownDaysLeft === 0;
   const phoneVerified = Boolean((profile as any)?.phone_verified) || (profile as any)?.phone_verification_status === "verified";
   const phoneNumber = ((profile as any)?.phone_number as string | null) ?? "";
+
+  const handleSavePhone = async () => {
+    if (!user?.id) return;
+    const normalized = normalizePhone(newPhoneNumber);
+    if (!isValidPhone(normalized)) {
+      toast({ title: "رقم الهاتف غير صحيح", description: "أدخل رقم عراقي صحيح (07xxxxxxxxx)", variant: "destructive" });
+      return;
+    }
+    setSavingPhone(true);
+    try {
+      const { error } = await supabase.from("profiles").update({
+        phone_number: normalized,
+        phone_verified: false,
+        phone_verification_status: "unverified",
+        last_phone_change_at: new Date().toISOString(),
+      }).eq("id", user.id);
+      if (error) throw error;
+      toast({ title: "تم تغيير رقم الهاتف" });
+      setEditingPhone(false);
+      setNewPhoneNumber("");
+      qc.invalidateQueries({ queryKey: ["profile-settings-profile", user.id] });
+    } catch (err: any) {
+      toast({ title: "فشل في تغيير الرقم", description: err?.message, variant: "destructive" });
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -333,7 +365,38 @@ export default function ProfileSettings() {
 
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">رقم الهاتف</Label>
-              <Input value={phoneNumber || ""} disabled placeholder="—" inputMode="tel" className="rounded-xl" />
+              {editingPhone ? (
+                <div className="space-y-2">
+                  <Input
+                    value={newPhoneNumber}
+                    onChange={(e) => setNewPhoneNumber(e.target.value)}
+                    placeholder="07xxxxxxxxx"
+                    inputMode="tel"
+                    dir="ltr"
+                    className="rounded-xl"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" className="rounded-xl flex-1" onClick={handleSavePhone} disabled={savingPhone}>
+                      {savingPhone && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
+                      حفظ الرقم
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-xl" onClick={() => { setEditingPhone(false); setNewPhoneNumber(""); }}>
+                      إلغاء
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input value={phoneNumber || "—"} disabled placeholder="—" inputMode="tel" className="rounded-xl flex-1" />
+                  {canEditPhone ? (
+                    <Button size="sm" variant="outline" className="rounded-xl text-xs" onClick={() => { setEditingPhone(true); setNewPhoneNumber(phoneNumber); }}>
+                      تغيير
+                    </Button>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground whitespace-nowrap">بعد {phoneCooldownDaysLeft} يوم</p>
+                  )}
+                </div>
+              )}
               <Badge variant={phoneVerified ? "secondary" : "outline"} className="gap-1.5 text-[11px]">
                 {phoneVerified ? <ShieldCheck className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
                 {phoneVerified ? "تم تأكيد الرقم" : "غير مؤكد"}

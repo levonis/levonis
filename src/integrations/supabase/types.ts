@@ -5609,6 +5609,7 @@ export type Database = {
           id: string
           is_banned: boolean | null
           last_active_at: string | null
+          last_phone_change_at: string | null
           last_username_change_at: string | null
           phone_number: string | null
           phone_verification_status: string
@@ -5636,6 +5637,7 @@ export type Database = {
           id: string
           is_banned?: boolean | null
           last_active_at?: string | null
+          last_phone_change_at?: string | null
           last_username_change_at?: string | null
           phone_number?: string | null
           phone_verification_status?: string
@@ -5663,6 +5665,7 @@ export type Database = {
           id?: string
           is_banned?: boolean | null
           last_active_at?: string | null
+          last_phone_change_at?: string | null
           last_username_change_at?: string | null
           phone_number?: string | null
           phone_verification_status?: string

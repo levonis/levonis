@@ -8,6 +8,7 @@ import UserInfoPageHeader from '@/components/user-info/UserInfoPageHeader';
 import UserInfoProfileCard from '@/components/user-info/UserInfoProfileCard';
 import UserInfoAccountDetailsCard from '@/components/user-info/UserInfoAccountDetailsCard';
 import UserInfoSecurityCard from '@/components/user-info/UserInfoSecurityCard';
+import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 
 const UserInfo = () => {
   const { user, loading: authLoading } = useAuth();
@@ -34,6 +35,10 @@ const UserInfo = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Email verification for password change
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [pendingPasswordChange, setPendingPasswordChange] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -141,10 +146,9 @@ const UserInfo = () => {
       return;
     }
     
+    // Verify current password first
     setChangingPassword(true);
-    
     try {
-      // Verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: profile.email,
         password: passwordData.currentPassword,
@@ -156,7 +160,20 @@ const UserInfo = () => {
         return;
       }
       
-      // Update the password
+      // Show email verification dialog
+      setChangingPassword(false);
+      setPendingPasswordChange(true);
+      setShowEmailVerification(true);
+    } catch (error: any) {
+      console.error('Error verifying password:', error);
+      toast.error('حدث خطأ في التحقق من كلمة المرور');
+      setChangingPassword(false);
+    }
+  };
+
+  const handlePasswordChangeVerified = async () => {
+    setChangingPassword(true);
+    try {
       const { error: updateError } = await supabase.auth.updateUser({
         password: passwordData.newPassword,
       });
@@ -164,7 +181,6 @@ const UserInfo = () => {
       if (updateError) {
         console.error('Password update error:', updateError);
         toast.error(updateError.message || 'فشل في تحديث كلمة المرور');
-        setChangingPassword(false);
         return;
       }
       
@@ -176,6 +192,7 @@ const UserInfo = () => {
       toast.error('حدث خطأ في تغيير كلمة المرور');
     } finally {
       setChangingPassword(false);
+      setPendingPasswordChange(false);
     }
   };
 
@@ -223,6 +240,19 @@ const UserInfo = () => {
             onSubmit={handleChangePassword}
           />
         </section>
+
+        {/* Email Verification Dialog for Password Change */}
+        <EmailVerificationDialog
+          open={showEmailVerification}
+          onOpenChange={(open) => {
+            setShowEmailVerification(open);
+            if (!open) setPendingPasswordChange(false);
+          }}
+          email={profile.email}
+          type="password_change"
+          userId={user?.id}
+          onVerified={handlePasswordChangeVerified}
+        />
       </main>
     </div>
   );
