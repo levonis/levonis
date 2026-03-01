@@ -73,7 +73,7 @@ const ConfirmDelivery = () => {
   if (!order || order.status !== 'delivered' || order.user_confirmed_delivery) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-        <main className="container mx-auto px-4 py-8 pt-24">
+        <main className="container mx-auto px-4 py-8">
           <Card className="border-border/50 bg-card/40 backdrop-blur-xl">
             <CardContent className="py-12 text-center">
               <h3 className="text-xl font-bold text-foreground mb-2">
@@ -95,7 +95,7 @@ const ConfirmDelivery = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-3xl">
+      <main className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Header */}
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate(`/order/${orderId}`)} className="mb-4">

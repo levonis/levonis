@@ -55,7 +55,7 @@ const MyCustomRequests = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -65,7 +65,7 @@ const MyCustomRequests = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">طلباتي المخصصة</h1>
           <p className="text-muted-foreground">جميع طلبات المنتجات المخصصة التي قمت بها</p>

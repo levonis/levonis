@@ -22,7 +22,7 @@ const Categories = () => {
   return (
     <div className="min-h-screen bg-transparent relative">
       <div className="fixed inset-0 pointer-events-none z-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5" />
-      <main className="container mx-auto px-4 py-8 pt-28 relative z-10">
+      <main className="container mx-auto px-4 py-8 relative z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">{t('category_all')}</h1>
           <p className="text-muted-foreground">{t('category_browse_desc')}</p>

@@ -219,7 +219,7 @@ const OrderDetail = () => {
 
   return (
     <div className="min-h-screen bg-background relative" dir="rtl">
-      <main className="container mx-auto px-4 py-6 pt-20 pb-32 max-w-2xl space-y-4">
+      <main className="container mx-auto px-4 py-6 pb-32 max-w-2xl space-y-4">
         
         {/* Back Button */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

@@ -88,7 +88,7 @@ const Notifications = () => {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background pt-24 flex items-center justify-center">
+      <div className="min-h-screen bg-background pt-6 flex items-center justify-center">
         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 backdrop-blur-xl flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/10">
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </div>
@@ -99,7 +99,7 @@ const Notifications = () => {
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-24" dir="rtl">
+    <div className="min-h-screen bg-background pt-6 pb-24" dir="rtl">
       {/* Hero Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />

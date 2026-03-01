@@ -51,7 +51,7 @@ export default function CommunityCustomerNewRequest() {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
         <header className="mb-6 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-primary">إضافة طلب جديد</h1>

@@ -496,10 +496,10 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Full-width image section (mobile) / grid (desktop) */}
-      <div className="md:container md:mx-auto md:px-4 md:pt-24">
+      <div className="md:container md:mx-auto md:px-4 md:pt-6">
         <div className="md:grid md:grid-cols-2 md:gap-8">
           {/* Image */}
-          <div className="relative md:sticky md:top-24 md:self-start">
+          <div className="relative md:sticky md:top-6 md:self-start">
             {/* Back button overlay */}
             <button
               onClick={() => navigate(-1)}

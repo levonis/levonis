@@ -198,7 +198,7 @@ const UserInfo = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -208,7 +208,7 @@ const UserInfo = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 pt-24 pb-10 max-w-4xl">
+      <main className="container mx-auto px-4 pt-6 pb-10 max-w-4xl">
         <UserInfoPageHeader />
 
         <section className="space-y-6">

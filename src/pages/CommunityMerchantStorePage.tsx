@@ -238,7 +238,7 @@ export default function CommunityMerchantStorePage() {
   if (appLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-6 pt-20 max-w-5xl">
+        <main className="container mx-auto px-4 py-6 max-w-5xl">
           <Skeleton className="h-48 rounded-2xl mb-4" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -253,7 +253,7 @@ export default function CommunityMerchantStorePage() {
   if (!merchantApp) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-6 pt-20 max-w-3xl">
+        <main className="container mx-auto px-4 py-6 max-w-3xl">
           <Card className="p-8 text-center rounded-2xl border-border/50">
             <Store className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-lg font-bold mb-1">لا يمكن العثور على المتجر</p>
@@ -269,7 +269,7 @@ export default function CommunityMerchantStorePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-6 pt-20 max-w-5xl">
+      <main className="container mx-auto px-4 py-6 max-w-5xl">
         {/* Professional Hero Section */}
         <div className="relative mb-6 rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-[hsl(160_52%_18%)] via-[hsl(160_50%_14%)] to-[hsl(160_48%_10%)]">
           {/* Decorative elements */}

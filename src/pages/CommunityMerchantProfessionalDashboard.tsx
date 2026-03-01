@@ -216,7 +216,7 @@ export default function CommunityMerchantProfessionalDashboard() {
   if (appLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
+        <main className="container mx-auto px-4 py-8 max-w-6xl">
           <Skeleton className="h-56 rounded-2xl mb-6" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => (
@@ -231,7 +231,7 @@ export default function CommunityMerchantProfessionalDashboard() {
   if (!merchantApp) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
               <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -256,7 +256,7 @@ export default function CommunityMerchantProfessionalDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl space-y-6">
+      <main className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
         
         {/* Hero Merchant Card */}
         <Card className="relative overflow-hidden border-border bg-gradient-to-br from-card via-card to-primary/5">

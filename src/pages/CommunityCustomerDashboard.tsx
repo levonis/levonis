@@ -164,7 +164,7 @@ export default function CommunityCustomerDashboard() {
   if (profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
+        <main className="container mx-auto px-4 py-8 max-w-5xl">
           <Skeleton className="h-48 rounded-2xl mb-6" />
           <div className="grid grid-cols-2 gap-4">
             {[1, 2, 3, 4].map(i => (
@@ -178,7 +178,7 @@ export default function CommunityCustomerDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl space-y-6">
+      <main className="container mx-auto px-4 py-8 max-w-5xl space-y-6">
         
         {/* Hero Profile Card */}
         <Card className="relative overflow-hidden border-border bg-gradient-to-br from-card via-card to-primary/5">

@@ -37,7 +37,7 @@ export default function CommunityMerchantDashboard() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background/95">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
+        <main className="container mx-auto px-4 py-8 max-w-5xl">
           <Skeleton className="h-12 w-64 rounded-xl" />
           <Skeleton className="mt-4 h-40 rounded-2xl" />
         </main>
@@ -48,7 +48,7 @@ export default function CommunityMerchantDashboard() {
   if (!allowed) {
     return (
       <div className="min-h-screen bg-background/95">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle>{t('merchant_dashboard')}</CardTitle>
@@ -66,7 +66,7 @@ export default function CommunityMerchantDashboard() {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         <header className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">

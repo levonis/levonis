@@ -163,7 +163,7 @@ export default function CommunityRequestsBrowse() {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-20 max-w-6xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <header className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
