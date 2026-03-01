@@ -1,6 +1,7 @@
 import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import SearchBar from '@/components/SearchBar';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
@@ -59,17 +60,23 @@ const Home = () => {
     gcTime: 30 * 60 * 1000,
   });
 
-  // Fetch category IDs that have at least one direct-sale product
+  // Fetch category IDs that have at least one direct-sale product with available stock
   const { data: directSaleCategoryIds } = useQuery({
     queryKey: ['direct-sale-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('category_id')
+        .select('category_id, direct_stock, colors')
         .eq('has_in_stock', true)
         .eq('is_pricing_updated', true);
       if (error) throw error;
-      const ids = new Set((data || []).map(p => p.category_id));
+      const ids = new Set<string>();
+      for (const p of (data || [])) {
+        if (!p.category_id) continue;
+        if (!isAllDirectStockDepleted(p)) {
+          ids.add(p.category_id);
+        }
+      }
       return ids;
     },
     staleTime: 5 * 60 * 1000,
