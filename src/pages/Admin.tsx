@@ -1205,6 +1205,13 @@ const Admin = () => {
         height_cm: formData.get('height_cm') && formData.get('height_cm') !== '' 
           ? Number(formData.get('height_cm')) 
           : null,
+        // Stock for products without options/colors
+        direct_stock: formData.get('direct_stock') && formData.get('direct_stock') !== '' 
+          ? Number(formData.get('direct_stock')) 
+          : null,
+        pre_order_stock: formData.get('pre_order_stock') && formData.get('pre_order_stock') !== '' 
+          ? Number(formData.get('pre_order_stock')) 
+          : null,
       } as any;
 
       const priceUsdVal = values.price_usd;
@@ -2341,6 +2348,38 @@ const Admin = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Product Stock (only when no options and no colors) */}
+                    {productOptions.length === 0 && productColors.length === 0 && (
+                      <div className="space-y-3 border-t pt-4">
+                        <Label className="text-sm font-medium">ستوك المنتج (بدون خيارات/ألوان)</Label>
+                        <p className="text-xs text-muted-foreground">حدد الكمية المتوفرة للبيع المباشر أو الحجز المسبق</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="direct_stock" className="text-xs">ستوك البيع المباشر</Label>
+                            <Input
+                              id="direct_stock"
+                              name="direct_stock"
+                              type="number"
+                              min="0"
+                              placeholder="غير محدود"
+                              defaultValue={editingProduct?.direct_stock ?? ''}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="pre_order_stock" className="text-xs">ستوك الحجز المسبق</Label>
+                            <Input
+                              id="pre_order_stock"
+                              name="pre_order_stock"
+                              type="number"
+                              min="0"
+                              placeholder="غير محدود"
+                              defaultValue={editingProduct?.pre_order_stock ?? ''}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Product Options Section */}
                     <div className="space-y-2 border-t pt-4">
