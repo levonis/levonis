@@ -1,20 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Users, Calendar, Crown, CheckCircle } from "lucide-react";
+import { Trophy, Calendar, Crown, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
 
 export default function AssistanceCompetitions() {
-  const navigate = useNavigate();
-
-  const { data: competitions, isLoading } = useQuery({
-    queryKey: ["assistance-competitions"],
+  const { data: giveaways, isLoading } = useQuery({
+    queryKey: ["assistance-merchant-giveaways"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("competitions")
-        .select("id, title_ar, description_ar, image_url, status, start_date, end_date, draw_date, prize_description_ar, prize_value, winner_user_id, required_tickets, ticket_price")
+        .from("merchant_giveaways")
+        .select("*")
         .in("status", ["active", "completed"])
         .order("created_at", { ascending: false })
         .limit(20);
@@ -23,8 +20,8 @@ export default function AssistanceCompetitions() {
     },
   });
 
-  const active = competitions?.filter(c => c.status === "active") || [];
-  const completed = competitions?.filter(c => c.status === "completed") || [];
+  const active = giveaways?.filter(c => c.status === "active") || [];
+  const completed = giveaways?.filter(c => c.status === "completed") || [];
 
   if (isLoading) {
     return (
@@ -36,11 +33,11 @@ export default function AssistanceCompetitions() {
     );
   }
 
-  if (!competitions?.length) {
+  if (!giveaways?.length) {
     return (
       <div className="text-center py-12">
         <Trophy className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground">لا توجد مسابقات حالياً</p>
+        <p className="text-sm text-muted-foreground">لا توجد مسابقات تجار حالياً</p>
       </div>
     );
   }
@@ -56,12 +53,11 @@ export default function AssistanceCompetitions() {
           {active.map(c => (
             <div
               key={c.id}
-              onClick={() => navigate(`/rewards?tab=competitions`)}
-              className="rounded-xl border border-border/40 bg-card p-4 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer"
+              className="rounded-xl border border-border/40 bg-card p-4 hover:border-primary/30 hover:shadow-md transition-all"
             >
               <div className="flex items-start gap-3">
-                {c.image_url ? (
-                  <img src={c.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                {c.prize_image_url ? (
+                  <img src={c.prize_image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Trophy className="h-7 w-7 text-primary" />
@@ -72,7 +68,7 @@ export default function AssistanceCompetitions() {
                     <Badge className="bg-primary/10 text-primary text-[10px] border-0">نشطة</Badge>
                   </div>
                   <h4 className="font-bold text-sm text-foreground truncate">{c.title_ar}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">{c.prize_description_ar}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{c.prize_name_ar}</p>
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
                     {c.draw_date && (
                       <span className="flex items-center gap-1">
@@ -105,10 +101,10 @@ export default function AssistanceCompetitions() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-xs text-foreground truncate">{c.title_ar}</h4>
-                  <p className="text-[10px] text-muted-foreground">{c.prize_description_ar}</p>
-                  {c.winner_user_id && (
+                  <p className="text-[10px] text-muted-foreground">{c.prize_name_ar}</p>
+                  {c.winner_merchant_id && (
                     <div className="flex items-center gap-1 mt-1">
-                    <Crown className="h-3 w-3 text-primary" />
+                      <Crown className="h-3 w-3 text-primary" />
                       <span className="text-[10px] font-bold text-primary">تم تحديد الفائز</span>
                     </div>
                   )}
