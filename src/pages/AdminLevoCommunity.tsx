@@ -26,7 +26,7 @@ const AdminCommunityCustomers = lazy(() => import("@/pages/AdminCommunityCustome
 const AdminBadgeSettings = lazy(() => import("@/pages/AdminBadgeSettings"));
 const AdminAvatarFrames = lazy(() => import("@/pages/AdminAvatarFrames"));
 const AdminCommunityRequests = lazy(() => import("@/components/admin/AdminCommunityRequests"));
-const AdminGiveawaysCoupons = lazy(() => import("@/pages/AdminGiveawaysCoupons"));
+const AdminAssistanceManager = lazy(() => import("@/components/admin/AdminAssistanceManager"));
 
 interface TabConfig {
   value: string;
@@ -38,7 +38,7 @@ const tabs: TabConfig[] = [
   { value: "merchants", icon: Store, label: "التجار" },
   { value: "customers", icon: Users, label: "العملاء" },
   { value: "requests", icon: FileText, label: "الطلبات" },
-  { value: "giveaways", icon: Gift, label: "الهدايا والكوبونات" },
+  { value: "assistance", icon: Gift, label: "المساعدات" },
   { value: "badges", icon: Award, label: "الشارات" },
   { value: "frames", icon: ImageIcon, label: "الإطارات" },
   { value: "settings", icon: Settings, label: "الإعدادات" },
@@ -1043,7 +1043,7 @@ export default function AdminLevoCommunity() {
                 {activeTab === "merchants" && "إدارة طلبات التجار والموافقات"}
                 {activeTab === "customers" && "عرض وإدارة ملفات العملاء"}
                 {activeTab === "requests" && "مراجعة طلبات الطباعة"}
-                {activeTab === "giveaways" && "هدايا التجار وكوبونات العملاء"}
+                {activeTab === "assistance" && "إدارة مسابقات التجار والهدايا والكوبونات والظروف"}
                 {activeTab === "badges" && "إعدادات شارات الأداء"}
                 {activeTab === "frames" && "إدارة إطارات الصور"}
                 {activeTab === "settings" && "إعدادات المنصة"}
@@ -1058,7 +1058,7 @@ export default function AdminLevoCommunity() {
             {activeTab === "merchants" && <AdminCommunityMerchants embedded />}
             {activeTab === "customers" && <AdminCommunityCustomers embedded />}
             {activeTab === "requests" && <AdminCommunityRequests />}
-            {activeTab === "giveaways" && <AdminGiveawaysCoupons embedded />}
+            {activeTab === "assistance" && <AdminAssistanceManager />}
             {activeTab === "badges" && <AdminBadgeSettings embedded />}
             {activeTab === "frames" && <AdminAvatarFrames embedded />}
             {activeTab === "settings" && <CommunitySettings />}
