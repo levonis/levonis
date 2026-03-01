@@ -1,62 +1,37 @@
 
 
-## Plan
+## المشكلة
 
-### Issue 1: Add Product Notes in ProductShop (متجر المنتجات)
+فرق السعر في الخيارات (`price_adjustment`) مخزّن بالدولار ومعروض بعلامة `$`، لكن عند حساب السعر النهائي يُضاف مباشرة للسعر بالدينار العراقي بدون تحويل.
 
-The `ProductShop.tsx` page currently has no mechanism for per-product notes. The purchase flow uses `purchase_product_with_gift_tickets` RPC which doesn't accept notes.
+مثال: إذا كان سعر المنتج 50,000 د.ع وفرق الخيار +5$، يصبح السعر 50,005 د.ع بدل ما يجب أن يكون ~56,500 د.ع (بعد تحويل 5$ لعراقي).
 
-**Steps:**
-1. **Database**: Add `customer_notes` column to `order_items` table (nullable text)
-2. **State management in ProductShop.tsx**: Add a `productNotes` state (`Record<string, string>`) to track notes per product ID
-3. **UI on ProductWithGiftCard**: Add an expandable notes section with a toggle button (e.g., pen icon). When expanded, show a glassmorphism-styled textarea with 3D depth effect (backdrop-blur, glass borders, shadow). Animation via framer-motion for smooth expand/collapse
-4. **Pass notes through purchase flow**: Update `handlePurchaseClick` to carry notes, show them in the confirmation dialog, and pass to the RPC or store separately after purchase
+## الحل
 
-Since the RPC `purchase_product_with_gift_tickets` doesn't support notes, after successful purchase we'll update the created record with notes via a separate query, or modify the approach to store notes in a `user_purchased_products` table if it exists.
+تحويل `price_adjustment` من دولار إلى دينار عراقي باستخدام سعر الصرف (`usd_to_iqd_rate`) من إعدادات الشحن في كل مكان يُستخدم فيه.
 
-### Issue 2: Order Preview Dialog Showing Half Page
+## الملفات المتأثرة
 
-In `AdminOrderChatDialog.tsx` line 434:
-```tsx
-<TabsContent value="order" className="flex-1 m-0 min-h-0 overflow-hidden">
-  <div ref={orderViewportRef} className="h-full overflow-y-auto">
-```
+1. **`src/pages/ProductDetail.tsx`** - حساب السعر النهائي + عرض فرق السعر
+   - جلب `shippingSettings` عبر `useShippingSettings`
+   - تحويل `optionAdjustment` بضربه بسعر الصرف: `optionAdjustment * rate`
+   - تحديث عرض فرق السعر في UI (تحويله وعرضه بالدينار بدل الدولار)
 
-The issue is the `overflow-hidden` on TabsContent combined with flex layout not properly giving height to the order tab. The fix:
-- Change TabsContent for "order" to properly fill available space with `overflow-y-auto` directly
-- Ensure the inner div gets proper height calculation
+2. **`src/pages/Cart.tsx`** - حساب سعر العنصر عند الطلب وعند العرض
+   - جلب سعر الصرف وتحويل `price_adjustment` في جميع المواضع (~5 مواضع)
 
-### Issue 3: Order Notes Missing in Preview
+3. **`src/components/community/AddToCartSheet.tsx`** - حساب السعر الحالي وعرض الخيارات
+   - تحويل `price_adjustment` عند حساب `currentPrice`
+   - تحديث عرض فرق السعر
 
-The order preview in `AdminOrderChatDialog.tsx` only shows `shipping_notes` (line 468-473) but doesn't show `internal_notes` or `financial_notes`. 
+4. **`src/components/CartRequestDialog.tsx`** - حساب سعر العنصر
 
-**Fix:** Add display sections for:
-- `internal_notes` (ملاحظات داخلية)  
-- `shipping_notes` (already shown)
-- `financial_notes` (ملاحظات مالية)
+5. **`src/pages/ProductOffersPage.tsx`** و **`src/components/ProductOfferDetailModal.tsx`** - عروض المنتجات (إن كانت تستخدم أسعار IQD)
 
-All in the order details tab after the customer info section.
+## التفاصيل التقنية
 
----
-
-### Technical Details
-
-**Database migration:**
-```sql
-ALTER TABLE order_items ADD COLUMN customer_notes TEXT;
-```
-
-**ProductShop.tsx changes:**
-- Add `productNotes` state
-- Pass `notes` and `onNotesChange` props to `ProductWithGiftCard`
-
-**ProductWithGiftCard.tsx changes:**
-- Add expandable notes area with glassmorphism styling:
-  - `bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)]`
-  - framer-motion `AnimatePresence` for expand/collapse
-  - Pen/notebook icon button to toggle
-
-**AdminOrderChatDialog.tsx changes:**
-- Fix overflow: change TabsContent order tab to `className="flex-1 m-0 min-h-0 overflow-y-auto"`
-- Add `internal_notes` and `financial_notes` display blocks alongside existing `shipping_notes`
+- سيتم استيراد `useShippingSettings` من `@/hooks/useShippingCalculator` في الملفات التي تحتاجه
+- صيغة التحويل: `Math.round(price_adjustment_usd * usd_to_iqd_rate)`
+- عرض فرق السعر في UI سيتحول من `+5$` إلى `+6,500 د.ع` (مثلاً)
+- في حال عدم توفر سعر الصرف، يُستخدم fallback (مثلاً 1300)
 
