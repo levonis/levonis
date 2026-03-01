@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle, ArrowLeft, Sparkles, BellRing, CheckCheck, Settings } from 'lucide-react';
+import { Loader2, Bell, Info, AlertCircle, CheckCircle, XCircle, ArrowLeft, Sparkles, BellRing, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
@@ -64,36 +64,27 @@ const Notifications = () => {
     enabled: !!user?.id,
   });
 
-  const markAsRead = useMutation({
-    mutationFn: async (notificationId: string) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
-      toast.success(t('notif_marked_read'));
-    },
-  });
+  // Auto-mark all unread notifications as read when they load
+  useEffect(() => {
+    if (!notifications || !user?.id) return;
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+    if (unreadIds.length === 0) return;
 
-  const markAllAsRead = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
+    const markAllRead = async () => {
+      await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('read', false);
-      if (error) throw error;
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
-      toast.success(t('notif_all_marked_read'));
-    },
-  });
+      queryClient.invalidateQueries({ queryKey: ['unread-notifications-count'] });
+    };
+    // Small delay so user sees the "new" badges briefly
+    const timer = setTimeout(markAllRead, 2000);
+    return () => clearTimeout(timer);
+  }, [notifications, user?.id, queryClient]);
+
 
   if (authLoading || isLoading) {
     return (
@@ -158,22 +149,6 @@ const Notifications = () => {
                 <Settings className="h-4 w-4 text-muted-foreground" />
               </Button>
 
-              {unreadCount > 0 && (
-                <Button
-                  onClick={() => markAllAsRead.mutate()}
-                  disabled={markAllAsRead.isPending}
-                  size="sm"
-                  className="rounded-xl gap-1.5 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 backdrop-blur-sm font-bold text-xs"
-                  variant="ghost"
-                >
-                  {markAllAsRead.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <CheckCheck className="h-3.5 w-3.5" />
-                  )}
-                  قراءة الكل
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -273,17 +248,6 @@ const Notifications = () => {
                             </Button>
                           )}
 
-                          {!notification.read && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => markAsRead.mutate(notification.id)}
-                              disabled={markAsRead.isPending}
-                              className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10"
-                            >
-                              <Check className="h-3.5 w-3.5 text-primary" />
-                            </Button>
-                          )}
                         </div>
                       </div>
                     </div>
