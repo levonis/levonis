@@ -147,12 +147,12 @@ const ProductDetail = () => {
     enabled: !!product && !!product.category_id
   });
 
-  const { data: isNotifySubscribed } = useQuery({
+  const { data: notifySubscriptions } = useQuery({
     queryKey: ['stock-notify', product?.id, user?.id],
     queryFn: async () => {
-      if (!user || !product) return false;
-      const { data } = await supabase.from('stock_notifications').select('id').eq('user_id', user.id).eq('product_id', product.id).maybeSingle();
-      return !!data;
+      if (!user || !product) return [];
+      const { data } = await supabase.from('stock_notifications').select('id, selected_color, selected_option').eq('user_id', user.id).eq('product_id', product.id);
+      return (data as any[]) || [];
     },
     enabled: !!user && !!product
   });
@@ -211,6 +211,17 @@ const ProductDetail = () => {
     }
   }, [productOptions, activeSaleType]);
 
+  const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
+  const selectedOptionName = selectedOptionData?.name_ar;
+
+  const isNotifySubscribed = useMemo(() => {
+    if (!notifySubscriptions || notifySubscriptions.length === 0) return false;
+    return notifySubscriptions.some((s: any) => 
+      (s.selected_color || null) === (selectedColor || null) &&
+      (s.selected_option || null) === (selectedOptionName || null)
+    );
+  }, [notifySubscriptions, selectedColor, selectedOptionName]);
+
   if (isLoading) return <ProductDetailSkeleton />;
 
   if (!product) {
@@ -232,8 +243,6 @@ const ProductDetail = () => {
   const productImages = getProductImages();
   const currency = product.currency || 'دينار عراقي';
 
-  const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
-  const selectedOptionName = selectedOptionData?.name_ar;
 
   const allColors = Array.isArray(product.colors) ? (product.colors as any[]) : [];
   const normalizeOptionValue = (value?: string | null) =>
@@ -478,19 +487,31 @@ const ProductDetail = () => {
 
   const handleNotifyMe = async () => {
     if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+    const notifyColor = selectedColor || null;
+    const notifyOption = selectedOptionName || null;
     setNotifyLoading(true);
     try {
       if (isNotifySubscribed) {
         // Unsubscribe
-        const { error } = await supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
+        let q = supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
+        if (notifyColor) q = q.eq('selected_color', notifyColor);
+        else q = q.is('selected_color', null);
+        if (notifyOption) q = q.eq('selected_option', notifyOption);
+        else q = q.is('selected_option', null);
+        const { error } = await q;
         if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['stock-notify', product.id, user.id] });
+        queryClient.invalidateQueries({ queryKey: ['stock-notify'] });
         toast.success('تم إلغاء الإشعار عند التوفر');
       } else {
         // Subscribe
-        const { error } = await supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id });
+        const { error } = await supabase.from('stock_notifications').insert({
+          user_id: user.id,
+          product_id: product.id,
+          selected_color: notifyColor || null,
+          selected_option: notifyOption || null,
+        } as any);
         if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ['stock-notify', product.id, user.id] });
+        queryClient.invalidateQueries({ queryKey: ['stock-notify'] });
         toast.success('سيتم إعلامك عند توفر المنتج ✅');
       }
     } catch (err) {
@@ -730,7 +751,7 @@ const ProductDetail = () => {
                                   {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
                                 </div>
                                 {option.price_adjustment > 0 ? (
-                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(option.price_adjustment)}</span>
+                                  <span className="text-[10px] font-black text-primary shrink-0">+${option.price_adjustment}</span>
                                 ) : (
                                   <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 h-4">{t('product_free')}</Badge>
                                 )}
@@ -781,14 +802,51 @@ const ProductDetail = () => {
                                 {activeSaleType === 'direct' && option.stock_quantity != null && option.stock_quantity > 0 && (
                                   <span className="text-[9px] text-muted-foreground">متبقي {option.stock_quantity}</span>
                                 )}
+                                {activeSaleType === 'direct' && option.stock_quantity != null && option.stock_quantity <= 0 && (
+                                  <span className="text-[9px] text-destructive">غير متوفر</span>
+                                )}
                               </div>
                               <div className="flex items-center gap-1 shrink-0">
                                 {option.price_adjustment !== 0 && (
                                   <span className={cn("text-[10px] font-black", option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600')}>
-                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
+                                    {option.price_adjustment > 0 ? '+' : ''}{option.price_adjustment}$
                                   </span>
                                 )}
-                                {!option.isAvailable && <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">{t('product_out_of_stock')}</Badge>}
+                                {!option.isAvailable && (
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">{t('product_out_of_stock')}</Badge>
+                                    {(() => {
+                                      const isSubbed = notifySubscriptions?.some((s: any) =>
+                                        (s.selected_color || null) === (selectedColor || null) &&
+                                        (s.selected_option || null) === (option.name_ar || null)
+                                      );
+                                      return (
+                                        <button
+                                          type="button"
+                                          className="p-0.5 rounded-full hover:bg-primary/10"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+                                            const colorName = selectedColor || null;
+                                            const optName = option.name_ar || null;
+                                            if (isSubbed) {
+                                              let q = supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
+                                              if (colorName) q = q.eq('selected_color', colorName); else q = q.is('selected_color', null);
+                                              if (optName) q = q.eq('selected_option', optName); else q = q.is('selected_option', null);
+                                              q.then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('تم إلغاء الإشعار'); });
+                                            } else {
+                                              supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id, selected_color: colorName, selected_option: optName } as any)
+                                                .then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('سيتم إعلامك عند التوفر ✅'); });
+                                            }
+                                          }}
+                                        >
+                                          {isSubbed ? <BellRing className="h-3 w-3 text-primary" /> : <Bell className="h-3 w-3 text-muted-foreground" />}
+                                        </button>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </button>
@@ -861,6 +919,38 @@ const ProductDetail = () => {
                             <span className="font-bold text-[10px] leading-tight text-center">{color.name_ar}</span>
                             {activeSaleType === 'direct' && (() => {
                               const stock = getColorStockForOption(color, selectedOptionName) ?? color.stock_quantity;
+                              if (stock != null && stock <= 0) {
+                                // Out of stock - show notify bell
+                                const isSubbed = notifySubscriptions?.some((s: any) =>
+                                  (s.selected_color || null) === (color.name_ar || null) &&
+                                  (s.selected_option || null) === (selectedOptionName || null)
+                                );
+                                return (
+                                  <button
+                                    type="button"
+                                    className="text-[8px] text-primary flex items-center gap-0.5 z-10"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+                                      const colorName = color.name_ar || null;
+                                      const optName = selectedOptionName || null;
+                                      if (isSubbed) {
+                                        let q = supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
+                                        if (colorName) q = q.eq('selected_color', colorName); else q = q.is('selected_color', null);
+                                        if (optName) q = q.eq('selected_option', optName); else q = q.is('selected_option', null);
+                                        q.then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('تم إلغاء الإشعار'); });
+                                      } else {
+                                        supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id, selected_color: colorName, selected_option: optName } as any)
+                                          .then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('سيتم إعلامك عند التوفر ✅'); });
+                                      }
+                                    }}
+                                  >
+                                    {isSubbed ? <BellRing className="h-3 w-3" /> : <Bell className="h-3 w-3" />}
+                                    <span>{isSubbed ? 'إلغاء' : 'أعلمني'}</span>
+                                  </button>
+                                );
+                              }
                               return stock != null && stock > 0 ? <span className="text-[8px] text-muted-foreground">متبقي {stock}</span> : null;
                             })()}
                             {activeSaleType === 'direct' && color.direct_sale_price && (
