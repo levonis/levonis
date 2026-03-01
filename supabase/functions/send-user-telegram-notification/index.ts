@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check notification settings
+    // Check global notification settings
     const { data: settings } = await supabase
       .from("default_settings")
       .select("setting_value")
@@ -57,10 +57,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch user's telegram_chat_id
+    // Fetch user's telegram_chat_id AND telegram_notifications preferences
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("telegram_chat_id, full_name")
+      .select("telegram_chat_id, full_name, telegram_notifications")
       .eq("id", user_id)
       .single();
 
@@ -69,6 +69,33 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: true, skipped: true, reason: "No telegram_chat_id" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
+    }
+
+    // Check user-level notification preferences
+    const userNotifPrefs = profile.telegram_notifications as Record<string, boolean> | null;
+    if (userNotifPrefs && channel_key) {
+      // Map channel_key to user preference key
+      const channelToUserPrefMap: Record<string, string> = {
+        'order_updates': 'orders',
+        'wallet_updates': 'wallet',
+        'support_messages': 'support',
+        'promotions': 'promotions',
+        'community_messages': 'community_messages',
+        'print_offers': 'print_offers',
+        'merchant_updates': 'merchant_updates',
+        // Direct keys also work
+        'orders': 'orders',
+        'wallet': 'wallet',
+        'support': 'support',
+      };
+      
+      const userPrefKey = channelToUserPrefMap[channel_key] || channel_key;
+      if (userNotifPrefs[userPrefKey] === false) {
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: `User disabled ${channel_key} notifications` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
     }
 
     // Compact formatted message
