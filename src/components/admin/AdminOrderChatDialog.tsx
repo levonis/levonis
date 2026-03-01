@@ -431,8 +431,8 @@ export default function AdminOrderChatDialog({
           </TabsList>
 
           {/* Order Details Tab */}
-          <TabsContent value="order" className="flex-1 m-0 min-h-0 overflow-hidden">
-            <div ref={orderViewportRef} className="h-full overflow-y-auto">
+          <TabsContent value="order" className="flex-1 m-0 min-h-0 overflow-y-auto">
+            <div ref={orderViewportRef} className="h-full">
               {displayOrder ? (
                 <div className="p-4 space-y-3">
                   {/* Status & Order Number */}
@@ -468,7 +468,19 @@ export default function AdminOrderChatDialog({
                     {displayOrder.shipping_notes && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">📝</span>
-                        <span className="flex-1 text-xs">{displayOrder.shipping_notes}</span>
+                        <span className="flex-1 text-xs"><span className="font-medium text-muted-foreground">ملاحظات الشحن:</span> {displayOrder.shipping_notes}</span>
+                      </div>
+                    )}
+                    {displayOrder.internal_notes && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">🔒</span>
+                        <span className="flex-1 text-xs"><span className="font-medium text-muted-foreground">ملاحظات داخلية:</span> {displayOrder.internal_notes}</span>
+                      </div>
+                    )}
+                    {displayOrder.financial_notes && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">💰</span>
+                        <span className="flex-1 text-xs"><span className="font-medium text-muted-foreground">ملاحظات مالية:</span> {displayOrder.financial_notes}</span>
                       </div>
                     )}
                   </div>
