@@ -134,8 +134,8 @@ const ProductsTable = memo(({
         </select>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border overflow-x-auto">
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border overflow-x-auto">
         <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
@@ -199,6 +199,52 @@ const ProductsTable = memo(({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-2">
+        {filteredProducts.map((product) => (
+          <div key={product.id} className="rounded-lg border border-border/50 bg-card p-3">
+            <div className="flex items-start gap-3">
+              <img 
+                src={product.image_url || '/placeholder.svg'} 
+                alt={product.name_ar}
+                className="w-14 h-14 object-cover rounded-md shrink-0"
+                loading="lazy"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-foreground truncate">{product.name_ar}</h4>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{product.categories?.name_ar || '-'}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-bold text-primary">{formatPrice(product.price)}</span>
+                  <Badge variant={product.in_stock ? "default" : "destructive"} className="text-[9px] h-4 px-1.5">
+                    {product.in_stock ? 'متوفر' : 'نفد'}
+                  </Badge>
+                  {product.featured && <Badge variant="secondary" className="text-[9px] h-4 px-1.5">مميز</Badge>}
+                  {!product.is_pricing_updated && (
+                    <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-500 text-amber-500">غير محدّث</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/30">
+              <TaobaoLinkButton taobaoUrl={product.taobao_url} size="sm" variant="outline" />
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => onEdit(product)}>
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => onDuplicate(product)}>
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => onReExtract(product)}>
+                <Sparkles className="h-3 w-3" />
+              </Button>
+              <div className="flex-1" />
+              <Button size="sm" variant="destructive" className="h-7 w-7 p-0" onClick={() => onDelete(product.id)}>
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
       
       <p className="text-sm text-muted-foreground">
