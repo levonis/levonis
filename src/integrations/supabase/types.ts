@@ -5420,6 +5420,7 @@ export type Database = {
           description_en: string | null
           description_ku: string | null
           direct_sale_price: number | null
+          direct_stock: number | null
           featured: boolean | null
           features: Json | null
           has_in_stock: boolean | null
@@ -5442,6 +5443,7 @@ export type Database = {
           pre_order_fast_shipping_price: number | null
           pre_order_free_shipping_price: number | null
           pre_order_shipping_options: Json | null
+          pre_order_stock: number | null
           price: number
           price_usd: number | null
           round_up_price: boolean | null
@@ -5478,6 +5480,7 @@ export type Database = {
           description_en?: string | null
           description_ku?: string | null
           direct_sale_price?: number | null
+          direct_stock?: number | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -5500,6 +5503,7 @@ export type Database = {
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
           pre_order_shipping_options?: Json | null
+          pre_order_stock?: number | null
           price: number
           price_usd?: number | null
           round_up_price?: boolean | null
@@ -5536,6 +5540,7 @@ export type Database = {
           description_en?: string | null
           description_ku?: string | null
           direct_sale_price?: number | null
+          direct_stock?: number | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -5558,6 +5563,7 @@ export type Database = {
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
           pre_order_shipping_options?: Json | null
+          pre_order_stock?: number | null
           price?: number
           price_usd?: number | null
           round_up_price?: boolean | null
