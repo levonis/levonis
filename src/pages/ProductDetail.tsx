@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2, Trash2 } from 'lucide-react';
+import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2, Trash2, Bell, BellRing } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatPrice, cn } from '@/lib/utils';
@@ -72,7 +72,7 @@ const ProductDetail = () => {
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
-
+  const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     staleTime: 5 * 60 * 1000,
@@ -146,6 +146,16 @@ const ProductDetail = () => {
     enabled: !!product && !!product.category_id
   });
 
+  const { data: isNotifySubscribed } = useQuery({
+    queryKey: ['stock-notify', product?.id, user?.id],
+    queryFn: async () => {
+      if (!user || !product) return false;
+      const { data } = await supabase.from('stock_notifications').select('id').eq('user_id', user.id).eq('product_id', product.id).maybeSingle();
+      return !!data;
+    },
+    enabled: !!user && !!product
+  });
+
   const toggleFavoriteMutation = useMutation({
     mutationFn: async () => {
       if (!user || !product) throw new Error('User not authenticated');
@@ -169,6 +179,11 @@ const ProductDetail = () => {
 
   const hasDirectSale = product?.has_in_stock ?? false;
   const hasPreOrder = product?.has_pre_order ?? false;
+
+  // Check if product without options/colors has direct_stock = 0
+  const hasNoVariants = (!productOptions || productOptions.length === 0) && (!Array.isArray(product?.colors) || (product?.colors as any[]).length === 0);
+  const directStockDepleted = hasNoVariants && hasDirectSale && (product as any)?.direct_stock != null && Number((product as any).direct_stock) <= 0;
+
   const hasBothTypes = hasDirectSale && hasPreOrder;
 
   const activeSaleType = useMemo(() => {
@@ -458,7 +473,24 @@ const ProductDetail = () => {
     });
   };
   const filteredOptions = getFilteredOptions();
-  const isAvailableForCurrentSaleType = activeSaleType === 'preorder' ? hasPreOrder : (hasDirectSale && !!product.in_stock);
+  const isAvailableForCurrentSaleType = activeSaleType === 'preorder' ? hasPreOrder : (hasDirectSale && !!product.in_stock && !directStockDepleted);
+
+  const handleNotifyMe = async () => {
+    if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+    if (isNotifySubscribed) { toast.info('أنت مسجل بالفعل للإشعار عند التوفر'); return; }
+    setNotifyLoading(true);
+    try {
+      const { error } = await supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['stock-notify', product.id, user.id] });
+      toast.success('سيتم إعلامك عند توفر المنتج ✅');
+    } catch (err) {
+      console.error(err);
+      toast.error('حدث خطأ، حاول مرة أخرى');
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -604,6 +636,24 @@ const ProductDetail = () => {
                     <BoxIcon className="h-3 w-3" />
                     متبقي {directStockQuantity} قطعة
                   </p>
+                )}
+                {directStockDepleted && activeSaleType === 'direct' && (
+                  <div className="mt-2 space-y-2">
+                    <Badge variant="destructive" className="text-xs">غير متوفر حالياً</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 text-xs font-bold"
+                      onClick={handleNotifyMe}
+                      disabled={notifyLoading || isNotifySubscribed === true}
+                    >
+                      {isNotifySubscribed ? (
+                        <><BellRing className="h-3.5 w-3.5" /> سيتم إعلامك عند التوفر</>
+                      ) : (
+                        <><Bell className="h-3.5 w-3.5" /> أعلمني عند توفر المنتج</>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -908,11 +958,22 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Add to cart */}
-            <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!isAvailableForCurrentSaleType || optionsLoading}>
-              <ShoppingCart className="ml-1 h-4 w-4 shrink-0" />
-              <span className="truncate">{isAvailableForCurrentSaleType ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}</span>
-            </Button>
+            {/* Add to cart or Notify me */}
+            {directStockDepleted && activeSaleType === 'direct' ? (
+              <Button
+                className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal gap-2"
+                variant="outline"
+                onClick={handleNotifyMe}
+                disabled={notifyLoading || isNotifySubscribed === true}
+              >
+                {isNotifySubscribed ? <><BellRing className="h-4 w-4 shrink-0" /> مسجل للإشعار</> : <><Bell className="h-4 w-4 shrink-0" /> أعلمني عند التوفر</>}
+              </Button>
+            ) : (
+              <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!isAvailableForCurrentSaleType || optionsLoading}>
+                <ShoppingCart className="ml-1 h-4 w-4 shrink-0" />
+                <span className="truncate">{isAvailableForCurrentSaleType ? `${t('product_add_to_cart')} • ${formatPrice(finalPrice * quantity)}` : t('product_out_of_stock')}</span>
+              </Button>
+            )}
 
             {/* Favorite */}
             <Button
