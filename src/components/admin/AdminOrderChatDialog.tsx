@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera, Package, Video, VolumeX, Copy } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Image as ImageIcon, Mic, Square, Plus, X, Camera, Package, Video, VolumeX, Copy, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -61,6 +61,12 @@ export default function AdminOrderChatDialog({
   const [recordingTime, setRecordingTime] = useState(0);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  // Inline uploading message shown in chat bubble
+  const [uploadingMessage, setUploadingMessage] = useState<{
+    type: 'image' | 'video' | 'voice' | 'text';
+    previewUrl?: string;
+    label: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageViewportRef = useRef<HTMLDivElement>(null);
   const orderViewportRef = useRef<HTMLDivElement>(null);
@@ -215,10 +221,11 @@ export default function AdminOrderChatDialog({
     onSuccess: () => {
       shouldAutoScrollRef.current = true;
       setMessage('');
+      setUploadingMessage(null);
       refetchMessages();
       queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
     },
-    onError: () => toast.error('فشل في إرسال الرسالة'),
+    onError: () => { setUploadingMessage(null); toast.error('فشل في إرسال الرسالة'); },
   });
 
   useEffect(() => {
@@ -275,7 +282,17 @@ export default function AdminOrderChatDialog({
     const convId = conversationId;
     if (!convId) return;
 
+    // Determine type and create local preview
+    const isAudio = file.type.startsWith('audio/');
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    const previewUrl = (isImage || isVideo) ? URL.createObjectURL(file) : undefined;
+    const label = isAudio ? '🎤 جاري رفع الرسالة الصوتية...' : isVideo ? '🎥 جاري رفع الفيديو...' : '📷 جاري رفع الصورة...';
+    
+    setUploadingMessage({ type: isAudio ? 'voice' : isVideo ? 'video' : 'image', previewUrl, label });
+    shouldAutoScrollRef.current = true;
     setIsUploadingMedia(true);
+
     try {
       const ext = file.name.split('.').pop() || 'bin';
       const path = `chat/listing/${SUPPORT_USER_ID}/${Date.now()}.${ext}`;
@@ -285,7 +302,11 @@ export default function AdminOrderChatDialog({
       const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
       await sendMediaMessage(convId, urlData.publicUrl, file.type);
     } catch { toast.error('حدث خطأ أثناء رفع الملف'); }
-    finally { setIsUploadingMedia(false); }
+    finally {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setUploadingMessage(null);
+      setIsUploadingMedia(false);
+    }
   };
 
   // Strip audio from video file
@@ -328,13 +349,16 @@ export default function AdminOrderChatDialog({
     const file = e.target.files?.[0];
     if (!file) return;
     setAttachMenuOpen(false);
+    setUploadingMessage({ type: 'video', label: '🎥 جاري معالجة الفيديو بدون صوت...' });
+    shouldAutoScrollRef.current = true;
     setIsUploadingMedia(true);
     try {
-      toast.info('جاري معالجة الفيديو بدون صوت...');
       const silentFile = await stripAudioFromVideo(file);
+      setUploadingMessage({ type: 'video', previewUrl: URL.createObjectURL(silentFile), label: '🎥 جاري رفع الفيديو...' });
       await handleSendMedia(silentFile);
     } catch {
       toast.error('فشل في معالجة الفيديو');
+      setUploadingMessage(null);
       setIsUploadingMedia(false);
     }
     if (videoInputRef.current) videoInputRef.current.value = '';
@@ -406,7 +430,14 @@ export default function AdminOrderChatDialog({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSend = () => { if (!message.trim()) return; sendMessageMutation.mutate(message.trim()); };
+  const handleSend = () => {
+    if (!message.trim()) return;
+    const text = message.trim();
+    setUploadingMessage({ type: 'text', label: text });
+    shouldAutoScrollRef.current = true;
+    setMessage('');
+    sendMessageMutation.mutate(text);
+  };
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
 
   return (
@@ -604,6 +635,25 @@ export default function AdminOrderChatDialog({
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+                    {/* Inline uploading bubble */}
+                    {uploadingMessage && (
+                      <div className="flex justify-start mt-3">
+                        <div className="max-w-[80%] rounded-xl px-4 py-2 bg-primary/60 text-primary-foreground relative overflow-hidden">
+                          {/* Shimmer animation */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+                          {uploadingMessage.previewUrl && uploadingMessage.type === 'image' && (
+                            <img src={uploadingMessage.previewUrl} alt="uploading" className="max-w-full rounded-lg mb-2 opacity-60" />
+                          )}
+                          {uploadingMessage.previewUrl && uploadingMessage.type === 'video' && (
+                            <video src={uploadingMessage.previewUrl} className="max-w-full rounded-lg mb-2 opacity-60" muted />
+                          )}
+                          <div className="flex items-center gap-2 relative z-10">
+                            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                            <p className="text-sm">{uploadingMessage.label}</p>
+                          </div>
+                        </div>
                       </div>
                     )}
                     <div ref={messagesEndRef} />
