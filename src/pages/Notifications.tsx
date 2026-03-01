@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle, Send, ArrowLeft, Sparkles, BellRing, CheckCheck } from 'lucide-react';
+import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle, ArrowLeft, Sparkles, BellRing, CheckCheck, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
@@ -19,7 +17,6 @@ const GlassCard = ({ children, className = '', glow = false, ...props }: any) =>
     className={`relative rounded-2xl border border-border/30 bg-card/40 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] ${glow ? 'shadow-[0_8px_32px_rgba(199,180,108,0.15)]' : ''} ${className}`}
     {...props}
   >
-    {/* Top highlight */}
     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent rounded-t-2xl" />
     {children}
   </div>
@@ -48,13 +45,9 @@ const Notifications = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [telegramChatId, setTelegramChatId] = useState('');
-  const [savingTelegram, setSavingTelegram] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
+    if (!authLoading && !user) navigate('/auth');
   }, [user, authLoading, navigate]);
 
   const { data: notifications, isLoading } = useQuery({
@@ -70,45 +63,6 @@ const Notifications = () => {
     },
     enabled: !!user?.id,
   });
-
-  const { data: profile } = useQuery({
-    queryKey: ['profile-telegram', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('telegram_chat_id')
-        .eq('id', user?.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  useEffect(() => {
-    if (profile?.telegram_chat_id) {
-      setTelegramChatId(profile.telegram_chat_id);
-    }
-  }, [profile]);
-
-  const saveTelegramChatId = async () => {
-    if (!user?.id) return;
-    setSavingTelegram(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ telegram_chat_id: telegramChatId || null })
-        .eq('id', user.id);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['profile-telegram'] });
-      toast.success(telegramChatId ? t('notif_telegram_saved') : t('notif_telegram_removed'));
-    } catch (error) {
-      console.error('Error saving telegram chat ID:', error);
-      toast.error(t('notif_telegram_save_error'));
-    } finally {
-      setSavingTelegram(false);
-    }
-  };
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
@@ -144,10 +98,8 @@ const Notifications = () => {
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background pt-24 flex items-center justify-center">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 backdrop-blur-xl flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/10">
-            <Loader2 className="h-7 w-7 animate-spin text-primary" />
-          </div>
+        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 backdrop-blur-xl flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/10">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </div>
       </div>
     );
@@ -164,7 +116,6 @@ const Notifications = () => {
         <div className="absolute top-10 left-8 h-24 w-24 rounded-full bg-accent/8 blur-2xl" />
 
         <div className="relative container mx-auto px-4 py-6 max-w-2xl">
-          {/* Back button */}
           <button
             onClick={() => navigate(-1)}
             className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -175,7 +126,6 @@ const Notifications = () => {
 
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              {/* 3D Icon */}
               <div className="relative">
                 <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/25 to-accent/15 backdrop-blur-xl flex items-center justify-center border border-primary/30 shadow-lg shadow-primary/10">
                   <BellRing className="h-7 w-7 text-primary" />
@@ -197,93 +147,39 @@ const Notifications = () => {
               </div>
             </div>
 
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
+              {/* Settings button */}
               <Button
-                onClick={() => markAllAsRead.mutate()}
-                disabled={markAllAsRead.isPending}
+                onClick={() => navigate('/notification-settings')}
                 size="sm"
-                className="rounded-xl gap-1.5 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 backdrop-blur-sm font-bold text-xs"
                 variant="ghost"
+                className="rounded-xl h-9 w-9 p-0 bg-card/40 backdrop-blur-sm border border-border/30 hover:bg-card/60"
               >
-                {markAllAsRead.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CheckCheck className="h-3.5 w-3.5" />
-                )}
-                قراءة الكل
+                <Settings className="h-4 w-4 text-muted-foreground" />
               </Button>
-            )}
+
+              {unreadCount > 0 && (
+                <Button
+                  onClick={() => markAllAsRead.mutate()}
+                  disabled={markAllAsRead.isPending}
+                  size="sm"
+                  className="rounded-xl gap-1.5 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 backdrop-blur-sm font-bold text-xs"
+                  variant="ghost"
+                >
+                  {markAllAsRead.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CheckCheck className="h-3.5 w-3.5" />
+                  )}
+                  قراءة الكل
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <main className="container mx-auto px-4 max-w-2xl space-y-4 mt-2">
-        {/* Telegram Card */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-          <GlassCard glow className="p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-[#0088cc]/30 to-[#0088cc]/10 backdrop-blur-sm flex items-center justify-center border border-[#0088cc]/20 shadow-lg shadow-[#0088cc]/10">
-                <Send className="h-5 w-5 text-[#0088cc]" />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-foreground">{t('notif_telegram_title')}</h3>
-                <p className="text-xs text-muted-foreground">{t('notif_telegram_desc')}</p>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="rounded-xl bg-background/40 border border-border/20 p-4 mb-4 space-y-3">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t('notif_telegram_get_id')}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 rounded-xl border-[#0088cc]/30 hover:bg-[#0088cc]/10 text-foreground font-bold"
-                asChild
-              >
-                <a href="https://t.me/Updatelevobot?start=getid" target="_blank" rel="noopener noreferrer">
-                  <Send className="h-4 w-4 text-[#0088cc]" />
-                  {t('notif_telegram_open_bot')}
-                </a>
-              </Button>
-              <p className="text-[11px] text-muted-foreground text-center">{t('notif_telegram_paste')}</p>
-            </div>
-
-            {/* Input */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="telegram_chat_id" className="text-xs font-bold">{t('notif_telegram_id_label')}</Label>
-                <Input
-                  id="telegram_chat_id"
-                  value={telegramChatId}
-                  onChange={(e) => setTelegramChatId(e.target.value)}
-                  placeholder="123456789"
-                  dir="ltr"
-                  className="font-mono rounded-xl bg-background/50 border-border/30 h-10"
-                />
-              </div>
-              <Button
-                onClick={saveTelegramChatId}
-                disabled={savingTelegram}
-                size="sm"
-                className="rounded-xl h-10 px-5 font-bold"
-              >
-                {savingTelegram && <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />}
-                {profile?.telegram_chat_id ? t('common_update') : t('common_save')}
-              </Button>
-            </div>
-            {profile?.telegram_chat_id && (
-              <p className="text-xs text-emerald-400 flex items-center gap-1.5 mt-2 font-bold">
-                <CheckCircle className="h-3.5 w-3.5" />
-                {t('notif_telegram_active')}
-              </p>
-            )}
-          </GlassCard>
-        </motion.div>
-
-        {/* Notifications List */}
         <AnimatePresence mode="popLayout">
           {!notifications || notifications.length === 0 ? (
             <motion.div
@@ -337,7 +233,6 @@ const Notifications = () => {
                         )}
                       </div>
 
-                      {/* Message */}
                       <div
                         className="rounded-xl bg-background/30 border border-border/10 p-3 mt-2"
                         style={{
