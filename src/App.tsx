@@ -205,10 +205,16 @@ function AppContent() {
             <Route path="/admin" element={<NotFound />} />
             
             {/* Community (requires login + complete profile) */}
-            <Route path="/community" element={<RequireCommunityProfile><CommunityHome /></RequireCommunityProfile>} />
+            {/* Community browsing - no profile required (so users can browse & chat) */}
+            <Route path="/community" element={<RequireAuth><CommunityHome /></RequireAuth>} />
             <Route path="/community/reels" element={<ReelsPage />} />
             <Route path="/community/messages" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
             <Route path="/chats" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
+            <Route path="/community/merchants/products" element={<RequireAuth><CommunityMerchantsProducts /></RequireAuth>} />
+            <Route path="/community/merchants/all-products" element={<CommunityAllMerchantsProducts />} />
+            <Route path="/community/requests" element={<RequireAuth><CommunityRequestsBrowse /></RequireAuth>} />
+            <Route path="/community/merchants" element={<RequireAuth><CommunityMerchantsPages /></RequireAuth>} />
+            {/* Community actions - require complete profile */}
             <Route path="/community/customer/dashboard" element={<RequireCommunityProfile><CommunityCustomerDashboard /></RequireCommunityProfile>} />
             <Route path="/community/merchant/dashboard" element={<RequireCommunityProfile><CommunityMerchantProfessionalDashboard /></RequireCommunityProfile>} />
             <Route path="/community/customer/requests" element={<RequireCommunityProfile><CommunityCustomerRequests /></RequireCommunityProfile>} />
@@ -218,10 +224,6 @@ function AppContent() {
             <Route path="/community/merchant/store" element={<RequireCommunityProfile><CommunityMerchantStore /></RequireCommunityProfile>} />
             <Route path="/community/merchant/orders" element={<RequireCommunityProfile><CommunityMerchantOrders /></RequireCommunityProfile>} />
             <Route path="/community/customer/track" element={<RequireCommunityProfile><CommunityCustomerTrack /></RequireCommunityProfile>} />
-            <Route path="/community/merchants/products" element={<RequireCommunityProfile><CommunityMerchantsProducts /></RequireCommunityProfile>} />
-            <Route path="/community/merchants/all-products" element={<CommunityAllMerchantsProducts />} />
-            <Route path="/community/requests" element={<RequireCommunityProfile><CommunityRequestsBrowse /></RequireCommunityProfile>} />
-            <Route path="/community/merchants" element={<RequireCommunityProfile><CommunityMerchantsPages /></RequireCommunityProfile>} />
             <Route path="/community/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
