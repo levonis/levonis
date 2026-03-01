@@ -411,7 +411,7 @@ export default function AdminOrderChatDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] h-full flex flex-col p-0 overflow-hidden" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 overflow-hidden top-[50%] translate-y-[-50%]" dir="rtl">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-sm">
             <MessageCircle className="h-4 w-4 text-primary" />
