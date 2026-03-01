@@ -6463,6 +6463,8 @@ export type Database = {
           id: string
           notified_at: string | null
           product_id: string
+          selected_color: string | null
+          selected_option: string | null
           user_id: string
         }
         Insert: {
@@ -6470,6 +6472,8 @@ export type Database = {
           id?: string
           notified_at?: string | null
           product_id: string
+          selected_color?: string | null
+          selected_option?: string | null
           user_id: string
         }
         Update: {
@@ -6477,6 +6481,8 @@ export type Database = {
           id?: string
           notified_at?: string | null
           product_id?: string
+          selected_color?: string | null
+          selected_option?: string | null
           user_id?: string
         }
         Relationships: [

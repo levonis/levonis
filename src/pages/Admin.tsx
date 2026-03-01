@@ -2440,7 +2440,7 @@ const Admin = () => {
 
                               <div className="space-y-3">
                                 <div className="space-y-1">
-                                  <Label className="text-xs">فرق السعر (+ أو -)</Label>
+                                  <Label className="text-xs">فرق السعر بالدولار ($)</Label>
                                   <Input
                                     type="number"
                                     step="0.01"
@@ -2450,7 +2450,7 @@ const Admin = () => {
                                     className="h-9"
                                   />
                                   <p className="text-xs text-muted-foreground">
-                                    أدخل رقم موجب للإضافة أو سالب للخصم
+                                    أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
                                   </p>
                                 </div>
                                 
