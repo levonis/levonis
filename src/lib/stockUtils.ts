@@ -17,10 +17,13 @@ export function isAllDirectStockDepleted(product: any): boolean {
     return false; // no stock tracking = unlimited
   }
 
-  // Products WITH colors: check option_stocks across all colors
+  // Products WITH colors: check option_stocks across direct-sale-eligible colors only
   let hasAnyStockData = false;
 
   for (const color of colors) {
+    // Skip colors not available for direct sale
+    if (color?.available_for_direct_sale === false) continue;
+
     const stocks = color?.option_stocks;
     if (stocks && typeof stocks === 'object' && Object.keys(stocks).length > 0) {
       hasAnyStockData = true;
