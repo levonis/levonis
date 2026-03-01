@@ -1546,7 +1546,7 @@ const Admin = () => {
         <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/8 rounded-full blur-3xl" />
       </div>
       
-      <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
+      <main className="container mx-auto px-4 py-8 relative z-10">
         {/* Admin Header */}
         <div className="admin-header">
           <h1>لوحة التحكم</h1>

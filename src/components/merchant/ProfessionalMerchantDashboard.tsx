@@ -120,7 +120,7 @@ export default function ProfessionalMerchantDashboard() {
   if (appLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
+        <main className="container mx-auto px-4 py-8 max-w-5xl">
           <Skeleton className="h-40 rounded-xl mb-4" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-lg" />)}
@@ -133,7 +133,7 @@ export default function ProfessionalMerchantDashboard() {
   if (!merchantApp) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
           <Card className="p-6 text-center">
             <Store className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
             <h2 className="text-lg font-bold mb-1">لوحة التاجر</h2>
@@ -150,7 +150,7 @@ export default function ProfessionalMerchantDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl space-y-4">
+      <main className="container mx-auto px-4 py-8 max-w-5xl space-y-4">
         
         {/* Hero Card - Compact */}
         <Card className="overflow-hidden border-primary/20">

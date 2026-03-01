@@ -66,7 +66,7 @@ export default function SellerProfile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="h-10 w-32 bg-muted rounded animate-pulse" />
           <div className="mt-4 h-40 bg-muted rounded-2xl animate-pulse" />
@@ -77,7 +77,7 @@ export default function SellerProfile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">المستخدم غير موجود</h1>
           <Button onClick={() => navigate(-1)} className="gap-2">
@@ -91,7 +91,7 @@ export default function SellerProfile() {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 pt-24 pb-10 max-w-4xl">
+      <main className="container mx-auto px-4 pt-6 pb-10 max-w-4xl">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2">
           <ArrowRight className="h-4 w-4" />
           رجوع

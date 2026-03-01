@@ -85,7 +85,7 @@ export default function CommunityAllMerchantsProducts() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background/95">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
+        <main className="container mx-auto px-4 py-8 max-w-6xl">
           <Skeleton className="h-12 w-64 rounded-xl mb-6" />
           <Skeleton className="h-10 rounded-xl mb-4" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -100,7 +100,7 @@ export default function CommunityAllMerchantsProducts() {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         <header className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">

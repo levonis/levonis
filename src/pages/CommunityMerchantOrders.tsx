@@ -221,7 +221,7 @@ export default function CommunityMerchantOrders() {
   if (appLoading || offersLoading || requestsLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-3xl space-y-4">
+        <main className="container mx-auto px-4 py-8 max-w-3xl space-y-4">
           <Skeleton className="h-12 w-48 rounded-xl" />
           <Skeleton className="h-24 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
@@ -233,7 +233,7 @@ export default function CommunityMerchantOrders() {
   if (!merchantApp) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-3xl">
+        <main className="container mx-auto px-4 py-8 max-w-3xl">
           <div className="rounded-2xl border border-border bg-card p-8 text-center">
             <p className="text-sm text-muted-foreground mb-4">هذه الصفحة متاحة للتجار المقبولين فقط</p>
             <Button variant="outline" onClick={() => navigate("/community")}>العودة للمجتمع</Button>
@@ -245,7 +245,7 @@ export default function CommunityMerchantOrders() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8 pt-20 max-w-3xl space-y-5">
+      <main className="container mx-auto px-4 py-8 max-w-3xl space-y-5">
         {/* Header */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">

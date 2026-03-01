@@ -104,7 +104,7 @@ const PublicProfile = () => {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -114,7 +114,7 @@ const PublicProfile = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
+      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="container mx-auto px-4 py-8 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">{t('profile_not_found')}</h1>
           <Button onClick={() => navigate(-1)}>
@@ -128,7 +128,7 @@ const PublicProfile = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Back Button */}
         <Button 
           variant="ghost" 

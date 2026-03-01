@@ -165,7 +165,7 @@ const Products = () => {
           backgroundRepeat: 'no-repeat'
         }}
       />
-      <main className="container mx-auto px-3 sm:px-4 py-4 pt-24 relative z-10">
+      <main className="container mx-auto px-3 sm:px-4 py-4 pt-6 relative z-10">
         <div className="mb-4">
           <SearchBar />
         </div>

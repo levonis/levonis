@@ -363,7 +363,7 @@ export default function CommunityMerchantStore() {
   if (appLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
+        <main className="container mx-auto px-4 py-8 max-w-6xl">
           <Skeleton className="h-80 rounded-[2rem] mb-8" />
           <Skeleton className="h-24 rounded-2xl mb-6" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -377,7 +377,7 @@ export default function CommunityMerchantStore() {
   if (!merchantApp) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+        <main className="container mx-auto px-4 py-8 max-w-4xl">
           <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 p-12 text-center rounded-3xl">
             <div className="h-20 w-20 rounded-3xl bg-muted/30 flex items-center justify-center mx-auto mb-6">
               <Store className="h-10 w-10 text-muted-foreground" />
@@ -393,7 +393,7 @@ export default function CommunityMerchantStore() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/5">
-      <main className="container mx-auto px-4 py-8 pt-20 max-w-6xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Hero Section */}
         <StoreHeroSection
           merchantApp={{ display_name: merchantApp.display_name, bio: merchantApp.bio, store_image_url: merchantApp.store_image_url, specialty: merchantApp.specialty, is_verified: merchantApp.is_verified, badge_tier: merchantApp.badge_tier }}

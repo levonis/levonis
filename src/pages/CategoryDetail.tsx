@@ -76,7 +76,7 @@ const CategoryDetail = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24">
+      <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
           <Link to="/" className="hover:text-primary transition-colors">
