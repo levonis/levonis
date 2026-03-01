@@ -478,13 +478,21 @@ const ProductDetail = () => {
 
   const handleNotifyMe = async () => {
     if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
-    if (isNotifySubscribed) { toast.info('أنت مسجل بالفعل للإشعار عند التوفر'); return; }
     setNotifyLoading(true);
     try {
-      const { error } = await supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id });
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['stock-notify', product.id, user.id] });
-      toast.success('سيتم إعلامك عند توفر المنتج ✅');
+      if (isNotifySubscribed) {
+        // Unsubscribe
+        const { error } = await supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['stock-notify', product.id, user.id] });
+        toast.success('تم إلغاء الإشعار عند التوفر');
+      } else {
+        // Subscribe
+        const { error } = await supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id });
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ['stock-notify', product.id, user.id] });
+        toast.success('سيتم إعلامك عند توفر المنتج ✅');
+      }
     } catch (err) {
       console.error(err);
       toast.error('حدث خطأ، حاول مرة أخرى');
@@ -646,10 +654,10 @@ const ProductDetail = () => {
                       size="sm"
                       className="w-full gap-2 text-xs font-bold"
                       onClick={handleNotifyMe}
-                      disabled={notifyLoading || isNotifySubscribed === true}
+                      disabled={notifyLoading}
                     >
                       {isNotifySubscribed ? (
-                        <><BellRing className="h-3.5 w-3.5" /> سيتم إعلامك عند التوفر</>
+                        <><BellRing className="h-3.5 w-3.5" /> إلغاء الإشعار عند التوفر</>
                       ) : (
                         <><Bell className="h-3.5 w-3.5" /> أعلمني عند توفر المنتج</>
                       )}
@@ -965,9 +973,9 @@ const ProductDetail = () => {
                 className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal gap-2"
                 variant="outline"
                 onClick={handleNotifyMe}
-                disabled={notifyLoading || isNotifySubscribed === true}
+                disabled={notifyLoading}
               >
-                {isNotifySubscribed ? <><BellRing className="h-4 w-4 shrink-0" /> مسجل للإشعار</> : <><Bell className="h-4 w-4 shrink-0" /> أعلمني عند التوفر</>}
+                {isNotifySubscribed ? <><BellRing className="h-4 w-4 shrink-0" /> إلغاء الإشعار</> : <><Bell className="h-4 w-4 shrink-0" /> أعلمني عند التوفر</>}
               </Button>
             ) : (
               <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!isAvailableForCurrentSaleType || optionsLoading}>
