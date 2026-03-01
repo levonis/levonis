@@ -32,7 +32,6 @@ const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
   { value: 'processing', label: 'قيد التجهيز' },
-  { value: 'shipped', label: 'تم الشحن' },
   { value: 'on_the_way', label: 'في الطريق إليك' },
   { value: 'delivered', label: 'تم التوصيل' },
   { value: 'cancelled', label: 'ملغي' },

@@ -118,7 +118,7 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
   };
 
   const getDirectOrderSteps = (): TimelineStep[] => {
-    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'on_the_way', 'delivered'];
+    const statusOrder = ['pending', 'confirmed', 'processing', 'on_the_way', 'delivered'];
     const currentIndex = statusOrder.indexOf(order.status);
     
     return [
@@ -147,19 +147,11 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         timestamp: order.processing_at,
       },
       {
-        key: 'shipped',
-        title: 'تم إرسال الشحنة',
-        description: 'تم شحن طلبك',
-        icon: <Truck className="h-4 w-4" />,
-        isCompleted: currentIndex >= 3,
-        timestamp: order.shipped_at,
-      },
-      {
         key: 'on_the_way',
         title: 'في الطريق إليك',
         description: 'الشحنة في الطريق إلى عنوانك',
         icon: <Truck className="h-4 w-4" />,
-        isCompleted: currentIndex >= 4,
+        isCompleted: currentIndex >= 3,
         timestamp: order.on_the_way_at,
       },
       {
@@ -167,7 +159,7 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         title: 'تم التوصيل',
         description: 'تم توصيل طلبك بنجاح',
         icon: <CheckCircle2 className="h-4 w-4" />,
-        isCompleted: currentIndex >= 5,
+        isCompleted: currentIndex >= 4,
         timestamp: order.delivered_at,
       },
     ];
