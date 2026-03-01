@@ -5615,6 +5615,7 @@ export type Database = {
           phone_verification_status: string
           phone_verified: boolean
           selected_frame_id: string | null
+          site_notifications: Json | null
           telegram_chat_id: string | null
           telegram_notifications: Json | null
           username: string
@@ -5643,6 +5644,7 @@ export type Database = {
           phone_verification_status?: string
           phone_verified?: boolean
           selected_frame_id?: string | null
+          site_notifications?: Json | null
           telegram_chat_id?: string | null
           telegram_notifications?: Json | null
           username: string
@@ -5671,6 +5673,7 @@ export type Database = {
           phone_verification_status?: string
           phone_verified?: boolean
           selected_frame_id?: string | null
+          site_notifications?: Json | null
           telegram_chat_id?: string | null
           telegram_notifications?: Json | null
           username?: string
