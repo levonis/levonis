@@ -411,7 +411,7 @@ export default function AdminOrderChatDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 overflow-hidden top-[50%] translate-y-[-50%]" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] h-[90vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0 overflow-hidden top-[50%] translate-y-[-50%] [&>*]:max-h-none" dir="rtl">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-sm">
             <MessageCircle className="h-4 w-4 text-primary" />
@@ -420,7 +420,7 @@ export default function AdminOrderChatDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <TabsList className="grid w-full grid-cols-2 shrink-0 rounded-none border-b">
             <TabsTrigger value="order" className="gap-1.5 text-xs">
               <Package className="h-3.5 w-3.5" /> الطلب
@@ -431,8 +431,8 @@ export default function AdminOrderChatDialog({
           </TabsList>
 
           {/* Order Details Tab */}
-          <TabsContent value="order" className="flex-1 m-0 min-h-0 overflow-y-auto">
-            <div ref={orderViewportRef} className="h-full">
+          <TabsContent value="order" className="flex-1 m-0 min-h-0 overflow-y-auto data-[state=active]:flex data-[state=active]:flex-col">
+            <div ref={orderViewportRef} className="flex-1 overflow-y-auto">
               {displayOrder ? (
                 <div className="p-4 space-y-3">
                   {/* Status & Order Number */}
