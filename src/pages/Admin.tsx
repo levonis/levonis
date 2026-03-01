@@ -3086,7 +3086,14 @@ const Admin = () => {
                             />
                           )}
                         </TableCell>
-                        <TableCell className="font-medium">{product.name_ar}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium">{product.name_ar}</span>
+                            {!product.is_pricing_updated && (
+                              <Badge variant="outline" className="border-amber-500 text-amber-500 text-[10px] px-1.5 py-0">غير محدّث</Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{(product as any).categories?.name_ar}</TableCell>
                         <TableCell>{formatPrice(Number(product.price))} دينار عراقي</TableCell>
                         <TableCell>
@@ -3163,7 +3170,12 @@ const Admin = () => {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-foreground truncate">{product.name_ar}</h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-bold text-foreground truncate">{product.name_ar}</h4>
+                          {!product.is_pricing_updated && (
+                            <Badge variant="outline" className="border-amber-500 text-amber-500 text-[9px] px-1 py-0 shrink-0">غير محدّث</Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{(product as any).categories?.name_ar || '-'}</p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className="text-xs font-bold text-primary">{formatPrice(Number(product.price))}</span>
