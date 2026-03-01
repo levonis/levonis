@@ -8,6 +8,7 @@ import {
   Headphones,
   Settings,
   Gift,
+  BellRing,
 } from "lucide-react";
 
 const SERVICES = [
@@ -18,6 +19,7 @@ const SERVICES = [
   { icon: MapPin, label: "العناوين", path: "/addresses", color: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
   { icon: Headphones, label: "خدمة العملاء", path: "/chats", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
   { icon: Gift, label: "الجوائز", path: "/rewards", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
+  { icon: BellRing, label: "الإشعارات", path: "/notifications", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" },
   { icon: Settings, label: "الإعدادات", path: "/profile/settings", color: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
 ];
 
