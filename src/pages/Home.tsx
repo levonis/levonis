@@ -62,7 +62,7 @@ const Home = () => {
 
   // Fetch category IDs that have at least one direct-sale product with available stock
   const { data: directSaleCategoryIds } = useQuery({
-    queryKey: ['direct-sale-categories'],
+    queryKey: ['direct-sale-categories-v2'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
@@ -79,8 +79,10 @@ const Home = () => {
       }
       return ids;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const categoriesByMainSection = useMemo(() => {
