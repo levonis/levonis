@@ -11,25 +11,9 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     sourcemap: mode === "development",
-    // Code splitting for better caching
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          'react-vendor': ['react', 'react-dom'],
-          'router': ['react-router-dom'],
-          'query': ['@tanstack/react-query'],
-          'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip'],
-        },
-      },
-    },
-    // Optimize chunk size
-    chunkSizeWarningLimit: 500,
-    // CSS code splitting
+    chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
-    // Minify CSS
     cssMinify: true,
-    // Target modern browsers for smaller bundles
     target: 'es2020',
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
