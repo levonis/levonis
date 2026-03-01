@@ -22,6 +22,7 @@ import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 import ProductRewardsSection from '@/components/ProductRewardsSection';
 import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamic icon map for features
@@ -922,7 +923,7 @@ const ProductDetail = () => {
                         price={Number(rp.price)} originalPrice={rp.original_price ? Number(rp.original_price) : undefined}
                         imageUrl={rp.image_url} images={rp.images}
                         currency={rp.currency || 'دينار عراقي'} slug={rp.slug}
-                        hasDirectSale={rp.has_in_stock ?? false} />
+                        hasDirectSale={(rp.has_in_stock ?? false) && !isAllDirectStockDepleted(rp)} />
                     ))}
                   </div>
                 </div>

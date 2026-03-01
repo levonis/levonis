@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLanguage } from '@/lib/i18n';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 
 const CategoryDetail = () => {
   const { t } = useLanguage();
@@ -203,7 +204,7 @@ const CategoryDetail = () => {
                         images={product.images || undefined}
                         currency={product.currency || undefined}
                         slug={product.slug}
-                        hasDirectSale={product.has_in_stock ?? false}
+                        hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                         soldCount={product.sold_count ?? 0}
                       />
                     ))}
