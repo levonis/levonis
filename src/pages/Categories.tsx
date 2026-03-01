@@ -4,6 +4,7 @@ import CategoryCard from '@/components/CategoryCard';
 import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useMemo } from 'react';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 
 const Categories = () => {
   const { t } = useLanguage();
@@ -26,10 +27,10 @@ const Categories = () => {
     queryKey: ['categories-direct-sale', categoryIds],
     enabled: categoryIds.length > 0,
     queryFn: async () => {
-      // Get products that have direct sale AND stock > 0
+      // Get products that have direct sale - include colors for variant stock check
       const { data, error } = await supabase
         .from('products')
-        .select('category_id, has_in_stock, direct_stock')
+        .select('category_id, has_in_stock, direct_stock, colors')
         .eq('has_in_stock', true)
         .in('category_id', categoryIds);
       
@@ -38,8 +39,9 @@ const Categories = () => {
       // Build set of category IDs that have at least one product with available direct stock
       const availableCategories = new Set<string>();
       for (const p of (data || [])) {
-        // If direct_stock is null (unlimited) or > 0, it's available
-        if (p.category_id && (p.direct_stock == null || Number(p.direct_stock) > 0)) {
+        if (!p.category_id) continue;
+        // Use the same stock check logic as product cards
+        if (!isAllDirectStockDepleted(p)) {
           availableCategories.add(p.category_id);
         }
       }
