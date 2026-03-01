@@ -518,9 +518,18 @@ export default function ProfileSettings() {
         {/* Telegram Notifications */}
         <SettingsSection icon={Bell} title="إشعارات التليجرام">
           {!(profile as any)?.telegram_chat_id ? (
-            <div className="text-center py-3">
-              <p className="text-sm text-muted-foreground mb-2">لم يتم ربط حسابك بتليجرام بعد</p>
-              <p className="text-xs text-muted-foreground">أرسل <span className="font-mono font-bold">/start</span> للبوت على تليجرام ثم أضف الـ ID في ملفك الشخصي</p>
+            <div className="text-center py-3 space-y-3">
+              <p className="text-sm text-muted-foreground">لم يتم ربط حسابك بتليجرام بعد</p>
+              <p className="text-xs text-muted-foreground">أرسل <span className="font-mono font-bold">/start</span> للبوت على تليجرام ثم أضف الـ Chat ID من صفحة الإشعارات</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl gap-2"
+                onClick={() => navigate('/notifications')}
+              >
+                <Bell className="h-4 w-4" />
+                ربط حساب تليجرام
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
