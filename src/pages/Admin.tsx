@@ -3060,7 +3060,9 @@ const Admin = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
-              <div className="glass-effect rounded-2xl border border-border/50 overflow-x-auto w-full max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <>
+              {/* Desktop Table */}
+              <div className="hidden md:block glass-effect rounded-2xl border border-border/50 overflow-x-auto w-full max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <Table className="min-w-[800px]">
                   <TableHeader>
                     <TableRow>
@@ -3146,6 +3148,50 @@ const Admin = () => {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-2">
+                {filteredProducts?.map((product) => (
+                  <div key={product.id} className="rounded-xl border border-border/50 bg-card p-3">
+                    <div className="flex items-start gap-3">
+                      {product.image_url && (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.name_ar}
+                          className="w-14 h-14 object-cover rounded-lg shrink-0"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-foreground truncate">{product.name_ar}</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">{(product as any).categories?.name_ar || '-'}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs font-bold text-primary">{formatPrice(Number(product.price))}</span>
+                          {product.original_price && (
+                            <span className="text-[10px] text-muted-foreground line-through">{formatPrice(Number(product.original_price))}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/30">
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleReExtractImages(product)} disabled={reExtractingImages === product.id} title="إعادة استخراج الصور">
+                        {reExtractingImages === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductDialogOpen(true); }} title="تعديل">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleDuplicateProduct(product)} title="تكرار">
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="flex-1" />
+                      <Button size="sm" variant="destructive" className="h-8 w-8 p-0" onClick={() => { if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) deleteProduct.mutate(product.id); }} title="حذف">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </>
             )}
           </TabsContent>
 
