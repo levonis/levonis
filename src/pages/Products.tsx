@@ -10,6 +10,7 @@ import { Loader2, Grid3x3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { z } from 'zod';
 import { useLanguage } from '@/lib/i18n';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 
 // Security: Validate and sanitize search input to prevent SQL injection
 const searchSchema = z.string()
@@ -287,7 +288,7 @@ const Products = () => {
                   currency={product.currency || undefined}
                   slug={product.slug}
                   inStock={product.in_stock ?? true}
-                  hasDirectSale={product.has_in_stock ?? false}
+                  hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                   soldCount={product.sold_count ?? 0}
                 />
               ))}
