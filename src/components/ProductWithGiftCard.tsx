@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, ShoppingBag, ChevronLeft, ChevronRight, Images, Ticket, Package, Sparkles, Info } from "lucide-react";
+import { Gift, ShoppingBag, ChevronLeft, ChevronRight, Images, Ticket, Package, Sparkles, Info, StickyNote } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import OptimizedImage from "@/components/OptimizedImage";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface ProductWithGiftCardProps {
   competition: {
@@ -33,6 +35,8 @@ interface ProductWithGiftCardProps {
   isPurchasing: boolean;
   isAuthenticated: boolean;
   walletBalance: number;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
 }
 
 const ProductWithGiftCard = memo(({
@@ -41,10 +45,13 @@ const ProductWithGiftCard = memo(({
   onPurchase,
   isPurchasing,
   isAuthenticated,
-  walletBalance
+  walletBalance,
+  notes = '',
+  onNotesChange
 }: ProductWithGiftCardProps) => {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showNotes, setShowNotes] = useState(false);
 
   const compImages = competition.images?.length ? competition.images : (competition.image_url ? [competition.image_url] : []);
   const displayPrice = product?.price || competition.ticket_price;
@@ -192,6 +199,46 @@ const ProductWithGiftCard = memo(({
             <ShoppingBag className="h-3 w-3" />
             شراء المنتج
           </Button>
+        </div>
+
+        {/* Notes Toggle */}
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full gap-1.5 text-[10px] sm:text-xs h-7 text-muted-foreground hover:text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowNotes(prev => !prev);
+            }}
+          >
+            <StickyNote className="h-3 w-3" />
+            {showNotes ? 'إخفاء الملاحظات' : 'إضافة ملاحظات'}
+          </Button>
+          
+          <AnimatePresence>
+            {showNotes && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, rotateX: -10 }}
+                animate={{ height: 'auto', opacity: 1, rotateX: 0 }}
+                exit={{ height: 0, opacity: 0, rotateX: -10 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="overflow-hidden"
+                style={{ perspective: 800 }}
+              >
+                <div className="mt-1.5 rounded-lg p-2 bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+                  <Textarea
+                    placeholder="اكتب ملاحظاتك هنا..."
+                    value={notes}
+                    onChange={(e) => onNotesChange?.(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="min-h-[60px] text-[11px] bg-transparent border-0 shadow-none focus-visible:ring-0 resize-none p-1 placeholder:text-muted-foreground/50"
+                    dir="rtl"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {!canAfford && isAuthenticated && (

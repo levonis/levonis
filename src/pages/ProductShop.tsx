@@ -39,6 +39,7 @@ export default function ProductShop() {
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductBasedCompetition | null>(null);
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
+  const [productNotes, setProductNotes] = useState<Record<string, string>>({});
 
   // Fetch product-based competitions
   const { data: products, isLoading } = useQuery({
@@ -207,6 +208,12 @@ export default function ProductShop() {
                         <span className="font-bold">+{selectedProduct.gift_tickets_per_purchase} تذكرة</span>
                       </div>
                     </div>
+                    {productNotes[selectedProduct.id] && (
+                      <div className="bg-muted/50 rounded-lg p-3 border">
+                        <p className="text-[10px] text-muted-foreground mb-1">📝 ملاحظاتك:</p>
+                        <p className="text-xs">{productNotes[selectedProduct.id]}</p>
+                      </div>
+                    )}
                     <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
                       <div className="flex items-start gap-2">
                         <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -321,6 +328,8 @@ export default function ProductShop() {
                 isPurchasing={purchaseMutation.isPending}
                 isAuthenticated={!!user}
                 walletBalance={wallet?.balance || 0}
+                notes={productNotes[product.id] || ''}
+                onNotesChange={(notes) => setProductNotes(prev => ({ ...prev, [product.id]: notes }))}
               />
             ))}
           </div>
