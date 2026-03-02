@@ -80,7 +80,8 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       autoShoot: false, screenFlash: 0,
       fireRateLevel: shopLevels['fire_rate'] || 0,
       doubleBullets: (shopLevels['double_bullets'] || 0) > 0,
-      shieldActive: (shopLevels['shield'] || 0) > 0 ? 900 : 0,
+      shieldActive: 0,
+      shieldInventory: shopLevels['shield'] || 0,
       transitionTimer: 0,
     };
     setScreen('playing');
@@ -119,6 +120,8 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    let lastTapTime = 0;
+
     const onKeyDown = (e: KeyboardEvent) => { stateRef.current?.keys.add(e.key); };
     const onKeyUp = (e: KeyboardEvent) => { stateRef.current?.keys.delete(e.key); };
     const updateTouch = (e: TouchEvent) => {
@@ -130,13 +133,26 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         stateRef.current.autoShoot = true;
       }
     };
+    const onTouchStart = (e: TouchEvent) => {
+      updateTouch(e);
+      // Double-tap detection for shield
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        const s = stateRef.current;
+        if (s && s.shieldInventory > 0 && s.shieldActive <= 0) {
+          s.shieldActive = 900; // 15 seconds at 60fps
+          s.shieldInventory--;
+        }
+      }
+      lastTapTime = now;
+    };
     const onTouchEnd = () => {
       if (stateRef.current) { stateRef.current.touchX = null; stateRef.current.touchY = null; stateRef.current.autoShoot = false; }
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     canvas.addEventListener('touchmove', updateTouch, { passive: false });
-    canvas.addEventListener('touchstart', updateTouch, { passive: false });
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
 
     const spawnParticles = (x: number, y: number, count: number, colors: string[]) => {
@@ -375,7 +391,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       canvas.removeEventListener('touchmove', updateTouch);
-      canvas.removeEventListener('touchstart', updateTouch);
+      canvas.removeEventListener('touchstart', onTouchStart);
       canvas.removeEventListener('touchend', onTouchEnd);
     };
   }, [screen, syncPoints, stopMusic]);
@@ -426,7 +442,8 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
                     <div className="text-right flex-1">
                       <div className="font-mono text-sm font-bold">{item.icon} {item.nameAr}</div>
                       <div className="text-xs text-muted-foreground">{item.description}</div>
-                      {item.maxLevel > 1 && <div className="text-xs text-primary">المستوى: {level}/{item.maxLevel}</div>}
+                      {item.id === 'shield' && <div className="text-xs text-primary">المخزون: {level}/{item.maxLevel}</div>}
+                      {item.maxLevel > 1 && item.id !== 'shield' && <div className="text-xs text-primary">المستوى: {level}/{item.maxLevel}</div>}
                     </div>
                     <Button
                       size="sm"

@@ -63,6 +63,7 @@ export interface GameState {
   fireRateLevel: number;
   doubleBullets: boolean;
   shieldActive: number;
+  shieldInventory: number;
   transitionTimer: number;
 }
 
