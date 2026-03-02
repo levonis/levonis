@@ -39,23 +39,61 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const { startMusic, stopMusic } = useSpaceMusic();
 
   // Fetch user points for shop
+  const refreshUserPoints = useCallback(async () => {
+    if (!user) {
+      setUserPoints(0);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('user_points')
+      .select('available_points')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Failed to load user points', error);
+      return;
+    }
+
+    setUserPoints(Number((data as any)?.available_points ?? 0));
+  }, [user]);
+
   useEffect(() => {
-    if (!user) return;
-    supabase.from('user_points').select('available_points').eq('user_id', user.id).single()
-      .then(({ data }) => { if (data) setUserPoints((data as any).available_points ?? 0); });
-  }, [user, screen]);
+    void refreshUserPoints();
+  }, [refreshUserPoints, screen]);
 
   const syncPoints = useCallback(async (points: number) => {
-    if (!user || points === 0) return;
+    if (points <= 0) return;
+    if (!user) {
+      toast.error('سجّل الدخول حتى تُحفظ النقاط');
+      return;
+    }
+
     try {
-      await supabase.rpc('game_award_points' as any, {
-        p_user_id: user.id, p_amount: points,
-        p_game_name: 'Space Blaster'
-      });
-      queryClient.invalidateQueries({ queryKey: ['user-points'] });
-      if (points > 0) toast.success(`+${points} نقطة!`);
-    } catch { toast.error('خطأ في حفظ النقاط'); }
-  }, [user, queryClient]);
+      let remaining = points;
+      while (remaining > 0) {
+        const chunk = Math.min(100, remaining);
+        const { error } = await supabase.rpc('game_award_points' as any, {
+          p_user_id: user.id,
+          p_amount: chunk,
+          p_game_name: 'Space Blaster',
+        });
+        if (error) throw error;
+        remaining -= chunk;
+      }
+
+      await refreshUserPoints();
+      await queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      await queryClient.invalidateQueries({ queryKey: ['user-points-redeem'] });
+      toast.success(`+${points} نقطة!`);
+    } catch (error: any) {
+      const msg = error?.message?.includes('Unauthorized')
+        ? 'لازم تسجّل دخول حتى تنحفظ النقاط'
+        : (error?.message || 'خطأ في حفظ النقاط');
+      toast.error(msg);
+    }
+  }, [user, queryClient, refreshUserPoints]);
 
   const initStars = () =>
     Array.from({ length: 80 }, () => ({
@@ -94,7 +132,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     startMusic();
   }, [shopLevels, startMusic]);
 
-  // Shop buy
   const buyItem = useCallback(async (itemId: string) => {
     const item = SHOP_ITEMS.find(i => i.id === itemId);
     if (!item) return;
@@ -102,17 +139,23 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     if (currentLevel >= item.maxLevel) { toast.error('الحد الأقصى!'); return; }
     if (userPoints < item.cost) { toast.error('نقاط غير كافية!'); return; }
     try {
-      await supabase.rpc('admin_adjust_points', {
-        p_user_id: user!.id, p_amount: -item.cost,
-        p_reason: `Shop: ${item.nameAr}`
+      const { error } = await supabase.rpc('deduct_user_points' as any, {
+        p_user_id: user!.id,
+        p_amount: item.cost,
+        p_source: 'game_shop',
+        p_description: `Space Blaster Shop: ${item.nameAr}`,
       });
+      if (error) throw error;
+
       setShopLevels(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-      setUserPoints(prev => prev - item.cost);
+      await refreshUserPoints();
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       toast.success(`تم شراء ${item.nameAr}!`);
       playClick();
-    } catch { toast.error('خطأ!'); }
-  }, [shopLevels, userPoints, user, queryClient, playClick]);
+    } catch (error: any) {
+      toast.error(error?.message || 'خطأ!');
+    }
+  }, [shopLevels, userPoints, user, queryClient, playClick, refreshUserPoints]);
 
   // Cleanup music on unmount
   useEffect(() => () => stopMusic(), [stopMusic]);
