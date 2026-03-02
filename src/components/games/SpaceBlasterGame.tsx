@@ -67,6 +67,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     shootCooldown: number;
     invincible: number;
     touchX: number | null;
+    touchY: number | null;
     keys: Set<string>;
     gameTime: number;
     autoShoot: boolean;
@@ -81,7 +82,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { playClick } = useGameSounds();
+  const { playClick, playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory } = useGameSounds();
+  const soundsRef = useRef({ playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory });
+  soundsRef.current = { playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory };
 
   // ── Points sync ──
   const syncPoints = useCallback(async (points: number) => {
@@ -158,6 +161,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       shootCooldown: 0,
       invincible: 120,
       touchX: null,
+      touchY: null,
       keys: new Set(),
       gameTime: 0,
       autoShoot: false,
@@ -251,27 +255,23 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     // Input handlers
     const onKeyDown = (e: KeyboardEvent) => { stateRef.current?.keys.add(e.key); };
     const onKeyUp = (e: KeyboardEvent) => { stateRef.current?.keys.delete(e.key); };
-    const onTouchMove = (e: TouchEvent) => {
+    const updateTouch = (e: TouchEvent) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
       if (stateRef.current) {
         stateRef.current.touchX = (e.touches[0].clientX - rect.left) * scaleX;
+        stateRef.current.touchY = (e.touches[0].clientY - rect.top) * scaleY;
         stateRef.current.autoShoot = true;
       }
     };
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = W / rect.width;
-      if (stateRef.current) {
-        stateRef.current.touchX = (e.touches[0].clientX - rect.left) * scaleX;
-        stateRef.current.autoShoot = true;
-      }
-    };
+    const onTouchMove = updateTouch;
+    const onTouchStart = updateTouch;
     const onTouchEnd = () => {
       if (stateRef.current) {
         stateRef.current.touchX = null;
+        stateRef.current.touchY = null;
         stateRef.current.autoShoot = false;
       }
     };
@@ -314,8 +314,12 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       if (s.keys.has('ArrowUp') || s.keys.has('w')) s.player.y -= spd;
       if (s.keys.has('ArrowDown') || s.keys.has('s')) s.player.y += spd;
       if (s.touchX !== null) {
-        const target = s.touchX - PLAYER_W / 2;
-        s.player.x += clamp(target - s.player.x, -spd * 1.5, spd * 1.5);
+        const targetX = s.touchX - PLAYER_W / 2;
+        s.player.x += clamp(targetX - s.player.x, -spd * 1.5, spd * 1.5);
+      }
+      if (s.touchY !== null) {
+        const targetY = s.touchY - PLAYER_H / 2;
+        s.player.y += clamp(targetY - s.player.y, -spd * 1.5, spd * 1.5);
       }
       s.player.x = clamp(s.player.x, 0, W - PLAYER_W);
       s.player.y = clamp(s.player.y, 0, H - PLAYER_H);
@@ -325,6 +329,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       if ((s.keys.has(' ') || s.keys.has('Space') || s.autoShoot) && s.shootCooldown <= 0) {
         s.bullets.push({ x: s.player.x + PLAYER_W / 2 - BULLET_W / 2, y: s.player.y - BULLET_H, dy: -6 });
         s.shootCooldown = 10;
+        soundsRef.current.playShoot();
       }
 
       // Invincibility
@@ -350,7 +355,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             s.lives--;
             s.invincible = 90;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 15, C.explosion);
-            s.bullets.splice(i, 1);
+            soundsRef.current.playHit();
             if (s.lives <= 0) {
               s.screen = 'gameover';
               setScreen('gameover');
@@ -376,6 +381,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
                 s.score += pts;
                 s.enemiesLeftInWave--;
                 spawnParticles(e.x + e.w / 2, e.y + e.h / 2, e.type === 'boss' ? 40 : 15, C.explosion);
+                e.type === 'boss' ? soundsRef.current.playBossExplosion() : soundsRef.current.playExplosion();
                 s.enemies.splice(j, 1);
               }
               break;
@@ -412,6 +418,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           s.lives--;
           s.invincible = 90;
           spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 15, C.explosion);
+          soundsRef.current.playHit();
           if (s.lives <= 0) {
             s.screen = 'gameover';
             setScreen('gameover');
@@ -452,6 +459,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             const pts = Math.floor(s.score / 10);
             setPendingPoints(pts);
             syncPoints(pts);
+            soundsRef.current.playVictory();
             return;
           }
           s.wave++;
@@ -459,6 +467,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           s.enemies = enemies;
           s.enemiesLeftInWave = total;
           s.waveDelay = 0;
+          soundsRef.current.playWave();
         }
       }
 
