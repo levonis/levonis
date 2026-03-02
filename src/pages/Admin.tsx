@@ -1311,6 +1311,15 @@ const Admin = () => {
               { name_ar: 'شحن جوي', price_adjustment: values.air_price - basePreOrderPrice },
             ];
           }
+
+          // Round colors prices (IQD values)
+          if (Array.isArray(values.colors)) {
+            values.colors = values.colors.map((c: any) => ({
+              ...c,
+              price: c.price ? roundUpTo250(Number(c.price)) : c.price,
+              direct_sale_price: c.direct_sale_price ? roundUpTo250(Number(c.direct_sale_price)) : c.direct_sale_price,
+            }));
+          }
         }
 
         values.round_up_price = shouldRoundUp;
@@ -1376,19 +1385,32 @@ const Admin = () => {
         }
 
         // Insert new options if any
+        const shouldRoundOpts = formData.get('round_up_price') === 'true';
+        const { data: rateData } = await supabase.from('shipping_settings').select('setting_value').eq('setting_key', 'usd_to_iqd_rate').maybeSingle();
+        const optRoundRate = rateData ? Number(rateData.setting_value) : 1300;
+        const roundUpTo250Opt = (v: number) => Math.ceil(v / 250) * 250;
         const optionsToInsert = productOptions
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
-          .map(opt => ({
-            product_id: productId,
-            name: opt.name,
-            name_ar: opt.name_ar,
-            price_adjustment: opt.price_adjustment,
-            in_stock: opt.in_stock,
-            image_url: opt.image_url || null,
-            stock_quantity: opt.stock_quantity ?? null,
-            available_for_direct_sale: opt.available_for_direct_sale ?? true,
-            available_for_pre_order: opt.available_for_pre_order ?? false
-          }));
+          .map(opt => {
+            let adj = opt.price_adjustment;
+            // Round price_adjustment: convert to IQD, round, convert back to USD
+            if (shouldRoundOpts && adj && adj !== 0) {
+              const adjIqd = Math.round(adj * optRoundRate);
+              const roundedIqd = roundUpTo250Opt(adjIqd);
+              adj = roundedIqd / optRoundRate;
+            }
+            return {
+              product_id: productId,
+              name: opt.name,
+              name_ar: opt.name_ar,
+              price_adjustment: adj,
+              in_stock: opt.in_stock,
+              image_url: opt.image_url || null,
+              stock_quantity: opt.stock_quantity ?? null,
+              available_for_direct_sale: opt.available_for_direct_sale ?? true,
+              available_for_pre_order: opt.available_for_pre_order ?? false
+            };
+          });
 
         if (optionsToInsert.length > 0) {
           const { error: optionsError } = await supabase
