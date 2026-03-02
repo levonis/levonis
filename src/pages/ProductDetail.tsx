@@ -186,8 +186,41 @@ const ProductDetail = () => {
   const hasOptionVariants = (productOptions?.length ?? 0) > 0;
   const hasColorVariants = Array.isArray(product?.colors) && (product?.colors as any[]).length > 0;
 
+  // Check if colors have option_stocks (colors become primary stock source)
+  const colorsHaveOptionStocks = useMemo(() => {
+    if (!hasColorVariants) return false;
+    const colors = Array.isArray(product?.colors) ? (product?.colors as any[]) : [];
+    return colors.some((c: any) => c.option_stocks && typeof c.option_stocks === 'object' && Object.keys(c.option_stocks).length > 0);
+  }, [hasColorVariants, product]);
+
+  // Get total stock for a given option name across all colors
+  const getOptionStockFromColors = (optionName: string): number => {
+    if (!hasColorVariants || !optionName) return 0;
+    const colors = Array.isArray(product?.colors) ? (product?.colors as any[]) : [];
+    const normalizedName = (optionName ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '').replace(/\s+/g, ' ').trim();
+    let total = 0;
+    for (const color of colors) {
+      if ((color.available_for_direct_sale ?? true) === false) continue;
+      const stocks = color.option_stocks;
+      if (!stocks || typeof stocks !== 'object') continue;
+      const matchingKey = Object.keys(stocks).find(
+        (key) => (key ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '').replace(/\s+/g, ' ').trim() === normalizedName
+      );
+      if (matchingKey) total += Math.max(0, Number(stocks[matchingKey]) || 0);
+    }
+    return total;
+  };
+
   const hasDirectOptionStock = useMemo(() => {
     if (!hasOptionVariants) return true;
+
+    // If colors have option_stocks, colors are the stock source - ignore option-level stock
+    if (colorsHaveOptionStocks) {
+      return (productOptions || []).some((opt: any) => {
+        if ((opt.available_for_direct_sale ?? true) === false) return false;
+        return getOptionStockFromColors(opt.name_ar) > 0;
+      });
+    }
 
     return (productOptions || []).some((opt: any) => {
       if ((opt.available_for_direct_sale ?? true) === false) return false;
@@ -195,7 +228,7 @@ const ProductDetail = () => {
       // No stock data = out of stock (no unlimited concept)
       return false;
     });
-  }, [hasOptionVariants, productOptions]);
+  }, [hasOptionVariants, productOptions, colorsHaveOptionStocks, product]);
 
   const hasDirectColorStock = useMemo(() => {
     if (!hasColorVariants) return true;
@@ -229,9 +262,14 @@ const ProductDetail = () => {
     if (!productOptions || productOptions.length === 0 || selectedOption) return;
     const firstAvailable = productOptions.find((opt: any) => {
       const isAvailable = activeSaleType === 'direct' ? (opt.available_for_direct_sale ?? true) : (opt.available_for_pre_order ?? true);
-      const passesStockCheck = activeSaleType === 'preorder'
-        ? true
-        : (opt.stock_quantity != null ? Number(opt.stock_quantity) > 0 : (opt.in_stock ?? true));
+      let passesStockCheck: boolean;
+      if (activeSaleType === 'preorder') {
+        passesStockCheck = true;
+      } else if (colorsHaveOptionStocks) {
+        passesStockCheck = getOptionStockFromColors(opt.name_ar) > 0;
+      } else {
+        passesStockCheck = opt.stock_quantity != null ? Number(opt.stock_quantity) > 0 : false;
+      }
       return isAvailable && passesStockCheck;
     });
     if (firstAvailable) {
@@ -241,7 +279,7 @@ const ProductDetail = () => {
         setSelectedImage(0);
       }
     }
-  }, [productOptions, activeSaleType]);
+  }, [productOptions, activeSaleType, colorsHaveOptionStocks]);
 
   const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
   const selectedOptionName = selectedOptionData?.name_ar;
@@ -577,10 +615,19 @@ const ProductDetail = () => {
     if (!productOptions) return [];
     return productOptions.map((option: any) => {
       const isAvailableForType = activeSaleType === 'direct' ? (option.available_for_direct_sale ?? true) : (option.available_for_pre_order ?? true);
-      const passesStockCheck = activeSaleType === 'preorder'
-        ? true
-        : (option.stock_quantity != null ? Number(option.stock_quantity) > 0 : (option.in_stock ?? true));
-      return { ...option, isAvailable: isAvailableForType && passesStockCheck };
+      let passesStockCheck: boolean;
+      if (activeSaleType === 'preorder') {
+        passesStockCheck = true;
+      } else if (colorsHaveOptionStocks) {
+        // Colors are the primary stock source - ignore option's own stock_quantity
+        const colorStock = getOptionStockFromColors(option.name_ar);
+        passesStockCheck = colorStock > 0;
+      } else {
+        passesStockCheck = option.stock_quantity != null ? Number(option.stock_quantity) > 0 : false;
+      }
+      // Attach computed stock for display
+      const computedDirectStock = colorsHaveOptionStocks ? getOptionStockFromColors(option.name_ar) : option.stock_quantity;
+      return { ...option, isAvailable: isAvailableForType && passesStockCheck, computedDirectStock };
     });
   };
   const filteredOptions = getFilteredOptions();
@@ -900,10 +947,10 @@ const ProductDetail = () => {
                             <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
                               <div className="min-w-0">
                                 <span className="font-bold text-xs truncate block">{option.name_ar}</span>
-                                {activeSaleType === 'direct' && option.stock_quantity != null && option.stock_quantity > 0 && (
-                                  <span className="text-[9px] text-muted-foreground">متبقي {option.stock_quantity}</span>
+                                {activeSaleType === 'direct' && option.computedDirectStock != null && option.computedDirectStock > 0 && (
+                                  <span className="text-[9px] text-muted-foreground">متبقي {option.computedDirectStock}</span>
                                 )}
-                                {activeSaleType === 'direct' && option.stock_quantity != null && option.stock_quantity <= 0 && (
+                                {activeSaleType === 'direct' && option.computedDirectStock != null && option.computedDirectStock <= 0 && (
                                   <span className="text-[9px] text-destructive">غير متوفر</span>
                                 )}
                               </div>

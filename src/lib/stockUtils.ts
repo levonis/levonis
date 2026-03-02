@@ -1,7 +1,7 @@
 /**
  * Check if ALL direct-sale stock is depleted for a product.
- * Returns true only when we have explicit stock data and everything is <= 0,
- * OR when has_in_stock is true but no stock data exists (null direct_stock, no colors).
+ * When colors have option_stocks, colors are the PRIMARY stock source (options stock is ignored).
+ * Returns true only when we have explicit stock data and everything is <= 0.
  * Returns false (meaning "in stock") when stock data shows positive values.
  */
 export function isAllDirectStockDepleted(product: any): boolean {
@@ -15,7 +15,7 @@ export function isAllDirectStockDepleted(product: any): boolean {
     if (product.direct_stock != null) {
       return Number(product.direct_stock) <= 0;
     }
-    // No stock tracking data = treat as depleted (no stock set up yet)
+    // No stock tracking data = treat as depleted
     return true;
   }
 
@@ -31,6 +31,18 @@ export function isAllDirectStockDepleted(product: any): boolean {
       hasAnyStockData = true;
       const hasPositive = Object.values(stocks).some((v) => Number(v) > 0);
       if (hasPositive) return false; // at least one option still in stock
+    }
+  }
+
+  // If colors had option_stocks data, and none had positive → depleted
+  if (hasAnyStockData) return true;
+
+  // Fallback: check color-level stock_quantity (no option_stocks)
+  for (const color of colors) {
+    if (color?.available_for_direct_sale === false) continue;
+    if (color?.stock_quantity != null) {
+      if (Number(color.stock_quantity) > 0) return false;
+      hasAnyStockData = true;
     }
   }
 
