@@ -1385,16 +1385,10 @@ const Admin = () => {
         }
 
         // Insert new options if any
-        const shouldRoundOpts = formData.get('round_up_price') === 'true';
-        const roundUpTo250Opt = (v: number) => Math.ceil(v / 250) * 250;
         const optionsToInsert = productOptions
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => {
-            let adj = opt.price_adjustment;
-            // Round price_adjustment (already in IQD) to nearest 250
-            if (shouldRoundOpts && adj && adj !== 0) {
-              adj = roundUpTo250Opt(adj);
-            }
+            const adj = opt.price_adjustment;
             return {
               product_id: productId,
               name: opt.name,

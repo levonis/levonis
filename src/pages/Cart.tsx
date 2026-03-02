@@ -582,6 +582,11 @@ const Cart = () => {
             itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
           }
 
+          // Round to nearest 250 if enabled
+          if ((item.products as any)?.round_up_price === true) {
+            itemPrice = Math.ceil(itemPrice / 250) * 250;
+          }
+
           return {
             order_id: orderResult.id,
             product_id: isCustomRequest ? null : item.product_id,
@@ -891,6 +896,11 @@ const Cart = () => {
             itemPrice += shippingAdjustment;
           }
 
+          // Round to nearest 250 if enabled
+          if ((item.products as any)?.round_up_price === true) {
+            itemPrice = Math.ceil(itemPrice / 250) * 250;
+          }
+
           // Get product name - ensure it's never empty
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
@@ -1017,6 +1027,11 @@ const Cart = () => {
         if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
           const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
           itemPrice += shippingAdjustment;
+        }
+        
+        // Round to nearest 250 if enabled
+        if ((item.products as any)?.round_up_price === true) {
+          itemPrice = Math.ceil(itemPrice / 250) * 250;
         }
         
         message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
@@ -1226,6 +1241,11 @@ const Cart = () => {
                     if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
                       const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
                       itemPrice += shippingAdjustment;
+                    }
+                    
+                    // Round to nearest 250 if enabled
+                    if ((item.products as any)?.round_up_price === true) {
+                      itemPrice = Math.ceil(itemPrice / 250) * 250;
                     }
                     
                     const isRemoving = removingItemIds.has(item.id);
