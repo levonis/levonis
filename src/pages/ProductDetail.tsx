@@ -209,7 +209,8 @@ const ProductDetail = () => {
   }, [hasOptionVariants, hasColorVariants, product]);
 
   const directStockDepleted = rawHasDirectSale && (!hasDirectOptionStock || !hasDirectColorStock || !hasSimpleDirectStock);
-  const hasDirectSale = rawHasDirectSale && !directStockDepleted;
+  // Keep direct sale visible even when depleted - just show as out of stock
+  const hasDirectSale = rawHasDirectSale;
   const hasBothTypes = hasDirectSale && hasPreOrder;
 
   const activeSaleType = useMemo(() => {
@@ -220,12 +221,6 @@ const ProductDetail = () => {
     if (hasPreOrder) return 'preorder';
     return 'direct';
   }, [selectedSaleType, hasDirectSale, hasPreOrder]);
-
-  useEffect(() => {
-    if (!hasDirectSale && hasPreOrder && selectedSaleType !== 'preorder') {
-      setSelectedSaleType('preorder');
-    }
-  }, [hasDirectSale, hasPreOrder, selectedSaleType]);
 
   // Auto-select first available option when options load
   useEffect(() => {
@@ -587,7 +582,7 @@ const ProductDetail = () => {
     });
   };
   const filteredOptions = getFilteredOptions();
-  const isAvailableForCurrentSaleType = activeSaleType === 'preorder' ? hasPreOrder : (hasDirectSale && !!product.in_stock && !directStockDepleted);
+  const isAvailableForCurrentSaleType = activeSaleType === 'preorder' ? hasPreOrder : (hasDirectSale && !directStockDepleted);
 
   const handleNotifyMe = async () => {
     if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
