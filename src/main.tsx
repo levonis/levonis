@@ -4,28 +4,34 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Register Service Worker for PWA
+// Service Worker: enable only in production, and clear it in preview/dev to avoid white-screen cache issues
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      // Check for updates every time user returns to the app
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          reg.update();
-        }
-      });
-    }).catch(() => {});
-  });
-}
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            reg.update();
+          }
+        });
+      }).catch(() => {});
+    });
 
-// Auto-reload when a new service worker takes over
-let refreshing = false;
-navigator.serviceWorker?.addEventListener('controllerchange', () => {
-  if (!refreshing) {
-    refreshing = true;
-    window.location.reload();
+    // Auto-reload when a new service worker takes over
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+  } else {
+    // Prevent stale SW in preview/dev
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((reg) => reg.unregister());
+    }).catch(() => {});
   }
-});
+}
 
 // Telegram Mini App: expand viewport to full height
 declare global {
