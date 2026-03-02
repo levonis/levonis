@@ -1,10 +1,17 @@
 import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES } from './types';
 import { getPlanetForWave, PLANETS } from './planets';
 import playerShipSrc from '@/assets/player-ship.png';
+import shipDmg1Src from '@/assets/ship-damage-1.png';
+import shipDmg2Src from '@/assets/ship-damage-2.png';
+import shipDmg3Src from '@/assets/ship-damage-3.png';
 
-// ── Load player ship image ──
-const playerShipImg = new Image();
-playerShipImg.src = playerShipSrc;
+// ── Load player ship images (4 states: healthy → 3 damage levels) ──
+const shipImages: HTMLImageElement[] = [];
+for (const src of [playerShipSrc, shipDmg1Src, shipDmg2Src, shipDmg3Src]) {
+  const img = new Image();
+  img.src = src;
+  shipImages.push(img);
+}
 
 // ── Enemy Colors by type ──
 const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; eye: string }> = {
@@ -237,13 +244,20 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, t: number, pl
   }
 }
 
-export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number, shieldActive: number) {
+export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number, shieldActive: number, lives: number = 3, maxLives: number = 3) {
   if (inv > 0 && Math.floor(inv / 4) % 2 === 0) return;
   ctx.save();
-  if (playerShipImg.complete && playerShipImg.naturalWidth > 0) {
+  // Pick damage stage: 0=healthy, 1=light, 2=heavy, 3=critical (but 4th = death handled elsewhere)
+  let dmgIndex = 0;
+  const ratio = lives / maxLives;
+  if (ratio <= 0.25) dmgIndex = 3;
+  else if (ratio <= 0.5) dmgIndex = 2;
+  else if (ratio <= 0.75) dmgIndex = 1;
+  const img = shipImages[Math.min(dmgIndex, shipImages.length - 1)];
+  if (img.complete && img.naturalWidth > 0) {
     ctx.shadowColor = PLAYER_COLOR;
     ctx.shadowBlur = 10;
-    ctx.drawImage(playerShipImg, x - 2, y - 2, PLAYER_W + 4, PLAYER_H + 4);
+    ctx.drawImage(img, x - 2, y - 2, PLAYER_W + 4, PLAYER_H + 4);
   } else {
     drawPixelShip(ctx, x, y, 0, t);
   }
