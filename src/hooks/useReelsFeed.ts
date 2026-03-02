@@ -29,6 +29,13 @@ export interface Reel {
     original_price_iqd: number | null;
     image_urls: string[] | null;
   } | null;
+  siteProduct: {
+    id: string;
+    name_ar: string;
+    price: number | null;
+    original_price: number | null;
+    image_url: string | null;
+  } | null;
   isLiked?: boolean;
   isSaved?: boolean;
 }
@@ -50,7 +57,8 @@ export function useReelsFeed() {
           views_count, likes_count, saves_count, clicks_count,
           is_sponsored, created_at, ranking_score,
           merchant:merchant_applications!merchant_reels_merchant_id_fkey(id, display_name, store_image_url),
-          product:merchant_products!merchant_reels_product_id_fkey(id, title, price_iqd, original_price_iqd, image_urls)
+          product:merchant_products!merchant_reels_product_id_fkey(id, title, price_iqd, original_price_iqd, image_urls),
+          siteProduct:products!merchant_reels_site_product_id_fkey(id, name_ar, price, original_price, image_url)
         `)
         .eq('status', 'approved')
         .order('ranking_score', { ascending: false })
