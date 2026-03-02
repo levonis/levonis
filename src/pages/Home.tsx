@@ -9,6 +9,7 @@ import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import StoriesBar from '@/components/stories/StoriesBar';
+import ReelsBar from '@/components/reels/ReelsBar';
 import { useLanguage } from '@/lib/i18n';
 
 const CommunitySection = lazy(() => import('@/components/community/CommunitySection').catch(() => {
@@ -135,6 +136,10 @@ const Home = () => {
 
         <section className="w-full">
           <BannerCarousel />
+        </section>
+
+        <section className="container mx-auto px-0">
+          <ReelsBar />
         </section>
 
         <section className="container mx-auto px-4 py-6 md:py-10 text-center">
