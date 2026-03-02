@@ -224,7 +224,7 @@ export default function MyPoints() {
         points: -points,
         type: "redeemed",
         source: "coupon",
-        description: `تحويل ${points} نقطة إلى كوبون بقيمة ${couponValue} دينار عراقي`,
+        description: `تحويل ${points.toLocaleString()} نقطة إلى كوبون بقيمة ${couponValue.toLocaleString()} دينار عراقي`,
       });
 
       return couponCode;

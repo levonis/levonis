@@ -224,7 +224,7 @@ export default function AdminWallet() {
       await supabase.from('notifications').insert({
         user_id: userId,
         title: 'تم إضافة رصيد لمحفظتك',
-        message: `تم إضافة ${amount} دينار عراقي إلى محفظتك من قبل الإدارة`,
+        message: `تم إضافة ${amount.toLocaleString()} دينار عراقي إلى محفظتك من قبل الإدارة`,
         type: 'success',
         is_general: false,
       });
@@ -259,7 +259,7 @@ export default function AdminWallet() {
       await supabase.from('notifications').insert({
         user_id: userId,
         title: 'تم خصم رصيد من محفظتك',
-        message: `تم خصم ${amount} دينار عراقي من محفظتك من قبل الإدارة. ${notes ? `السبب: ${notes}` : ''}`,
+        message: `تم خصم ${amount.toLocaleString()} دينار عراقي من محفظتك من قبل الإدارة. ${notes ? `السبب: ${notes}` : ''}`,
         type: 'info',
         is_general: false,
       });

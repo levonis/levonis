@@ -302,7 +302,7 @@ export default function CustomerSpecialCoupons() {
                           <span className="text-sm font-black text-primary">{coupon.discount_value}%</span>
                         )}
                         {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
-                          <span className="text-[9px] font-black text-primary">{coupon.discount_value}<span className="text-[6px]"> د.ع</span></span>
+                          <span className="text-[9px] font-black text-primary">{coupon.discount_value?.toLocaleString()}<span className="text-[6px]"> د.ع</span></span>
                         )}
                         {coupon.coupon_type === "free_delivery" && (
                           <span className="text-[8px] font-black text-primary">مجاني</span>
