@@ -1,7 +1,8 @@
 /**
  * Check if ALL direct-sale stock is depleted for a product.
- * Returns true only when we have explicit stock data and everything is <= 0.
- * Returns false (meaning "in stock" / unlimited) when no stock data exists.
+ * Returns true only when we have explicit stock data and everything is <= 0,
+ * OR when has_in_stock is true but no stock data exists (null direct_stock, no colors).
+ * Returns false (meaning "in stock") when stock data shows positive values.
  */
 export function isAllDirectStockDepleted(product: any): boolean {
   if (!product) return false;
@@ -14,7 +15,8 @@ export function isAllDirectStockDepleted(product: any): boolean {
     if (product.direct_stock != null) {
       return Number(product.direct_stock) <= 0;
     }
-    return false; // no stock tracking = unlimited
+    // No stock tracking data = treat as depleted (no stock set up yet)
+    return true;
   }
 
   // Products WITH colors: check option_stocks across direct-sale-eligible colors only
@@ -33,5 +35,6 @@ export function isAllDirectStockDepleted(product: any): boolean {
   }
 
   // If we found stock data and none had positive values → depleted
-  return hasAnyStockData;
+  // If no stock data found at all → treat as depleted
+  return true;
 }
