@@ -276,21 +276,21 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
   const drawX = x - 4;
   const drawY = y - 4;
 
-  // ── Engine animation (below ship) ──
+  // ── Engine animation (below ship, frame-based like HealLoadingSprite) ──
   const isSupercharge = shieldActive > 0;
   const spriteSheet = isSupercharge ? engineSuperImg : engineNormalImg;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
     const frameW = spriteSheet.naturalWidth / ENGINE_FRAMES;
     const frameH = spriteSheet.naturalHeight;
     const frameIndex = Math.floor(t / ENGINE_ANIM_SPEED) % ENGINE_FRAMES;
-    const engineW = shipW * 0.8;
+    const engineW = shipW * 0.9;
     const engineH = engineW * (frameH / frameW);
     const engineX = drawX + (shipW - engineW) / 2;
-    const engineY = drawY + shipH - 2;
+    const engineY = drawY + shipH - engineH * 0.55;
     ctx.drawImage(
       spriteSheet,
-      frameIndex * frameW, 0, frameW, frameH,
-      engineX, engineY, engineW, engineH
+      Math.round(frameIndex * frameW), 0, Math.round(frameW), frameH,
+      Math.round(engineX), Math.round(engineY), Math.round(engineW), Math.round(engineH)
     );
   }
 
