@@ -238,7 +238,7 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
 };
 
 const MyOrders = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
@@ -303,10 +303,25 @@ const MyOrders = () => {
   const filteredPreorders = preorderTab === 'all' ? preorders : preorders.filter((o: any) => o.status === preorderTab);
   const filteredDirect = directTab === 'all' ? directOrders : directOrders.filter((o: any) => o.status === directTab);
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Package className="h-8 w-8 animate-pulse text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir="rtl">
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center space-y-3">
+          <h1 className="text-base font-bold text-foreground">يلزم تسجيل الدخول</h1>
+          <p className="text-sm text-muted-foreground">ادخل إلى حسابك لعرض طلباتك.</p>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/auth')} className="flex-1">تسجيل الدخول</Button>
+            <Button variant="outline" onClick={() => navigate('/')} className="flex-1">الرئيسية</Button>
+          </div>
+        </div>
       </div>
     );
   }

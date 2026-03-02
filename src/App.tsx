@@ -157,9 +157,9 @@ function AppContent() {
             <Route path="/notification-settings" element={<NotificationSettings />} />
             <Route path="/my-requests" element={<MyCustomRequests />} />
             <Route path="/addresses" element={<UserAddresses />} />
-            <Route path="/my-orders" element={<MyOrders />} />
-            <Route path="/order/:orderId" element={<OrderDetail />} />
-            <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
+            <Route path="/my-orders" element={<RequireAuth><MyOrders /></RequireAuth>} />
+            <Route path="/order/:orderId" element={<RequireAuth><OrderDetail /></RequireAuth>} />
+            <Route path="/my-orders/:orderId/confirm" element={<RequireAuth><ConfirmDelivery /></RequireAuth>} />
             <Route path="/auth" element={<Auth />} />
             
             {/* Secure Admin Routes - Using obfuscated path */}
