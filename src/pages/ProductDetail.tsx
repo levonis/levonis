@@ -217,10 +217,12 @@ const ProductDetail = () => {
     if (selectedSaleType === 'direct' && !hasDirectSale) return hasPreOrder ? 'preorder' : 'direct';
     if (selectedSaleType === 'preorder' && !hasPreOrder) return hasDirectSale ? 'direct' : 'preorder';
     if (selectedSaleType) return selectedSaleType;
+    // Auto-default to preorder when all direct stock is depleted
+    if (hasDirectSale && directStockDepleted && hasPreOrder) return 'preorder';
     if (hasDirectSale) return 'direct';
     if (hasPreOrder) return 'preorder';
     return 'direct';
-  }, [selectedSaleType, hasDirectSale, hasPreOrder]);
+  }, [selectedSaleType, hasDirectSale, hasPreOrder, directStockDepleted]);
 
   // Auto-select first available option when options load
   useEffect(() => {
