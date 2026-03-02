@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MapPin, Phone, Clock, FileText, Truck, CheckCircle2, Loader2, Package, Zap, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { MapPin, Phone, Clock, FileText, Truck, CheckCircle2, Loader2, Package, Zap, Info, Wallet } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 interface DirectSaleCheckoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (data: { notes: string }) => Promise<void>;
+  onConfirm: (data: { notes: string; useWallet: boolean; walletDeduction: number }) => Promise<void>;
   address: {
     full_name: string;
     phone_number: string;
@@ -27,6 +27,7 @@ interface DirectSaleCheckoutDialogProps {
   deliveryFee: number;
   itemCount: number;
   isProcessing: boolean;
+  walletBalance: number;
 }
 
 const DirectSaleCheckoutDialog = ({
@@ -38,10 +39,12 @@ const DirectSaleCheckoutDialog = ({
   deliveryFee,
   itemCount,
   isProcessing,
+  walletBalance,
 }: DirectSaleCheckoutDialogProps) => {
   const [notes, setNotes] = useState('');
   const [countdown, setCountdown] = useState(5);
   const [canConfirm, setCanConfirm] = useState(false);
+  const [useWallet, setUseWallet] = useState(false);
 
   // Calculate time until 5 PM cutoff
   const now = new Date();
@@ -58,6 +61,7 @@ const DirectSaleCheckoutDialog = ({
       setCountdown(5);
       setCanConfirm(false);
       setNotes('');
+      setUseWallet(false);
       return;
     }
 
@@ -75,13 +79,16 @@ const DirectSaleCheckoutDialog = ({
     return () => clearInterval(timer);
   }, [open]);
 
+  const grandTotal = totalAmount + deliveryFee;
+  const walletDeduction = useWallet ? Math.min(walletBalance, grandTotal) : 0;
+  const codAmount = grandTotal - walletDeduction;
+
   const handleConfirm = useCallback(async () => {
     if (!canConfirm || isProcessing) return;
-    await onConfirm({ notes });
-  }, [canConfirm, isProcessing, notes, onConfirm]);
+    await onConfirm({ notes, useWallet, walletDeduction });
+  }, [canConfirm, isProcessing, notes, onConfirm, useWallet, walletDeduction]);
 
   const progressValue = ((5 - countdown) / 5) * 100;
-  const grandTotal = totalAmount + deliveryFee;
   const estimatedTime = address?.governorate?.includes('بغداد') ? '1-3 أيام' : '3-5 أيام';
 
   return (
@@ -103,7 +110,7 @@ const DirectSaleCheckoutDialog = ({
             </div>
             <Badge variant="outline" className="w-fit border-primary/30 text-primary bg-primary/5">
               <Package className="h-3 w-3 ml-1" />
-              الدفع عند الاستلام
+              {walletDeduction >= grandTotal ? 'الدفع من المحفظة' : walletDeduction > 0 ? 'دفع مختلط' : 'الدفع عند الاستلام'}
             </Badge>
           </DialogHeader>
 
@@ -169,6 +176,43 @@ const DirectSaleCheckoutDialog = ({
             </div>
           )}
 
+          {/* Wallet Balance Option */}
+          {walletBalance > 0 && (
+            <div className={`rounded-xl border p-4 space-y-3 transition-all ${useWallet ? 'border-primary/40 bg-primary/5' : 'border-border/50 bg-muted/30'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-foreground">استخدام رصيد المحفظة</span>
+                </div>
+                <Switch
+                  checked={useWallet}
+                  onCheckedChange={setUseWallet}
+                />
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">رصيد المحفظة</span>
+                <span className="font-bold text-primary">{formatPrice(walletBalance)} د.ع</span>
+              </div>
+              {useWallet && (
+                <div className="space-y-1.5 pt-1 border-t border-border/30">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">سيتم خصم</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">-{formatPrice(walletDeduction)} د.ع</span>
+                  </div>
+                  {codAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">المتبقي عند الاستلام</span>
+                      <span className="font-bold text-foreground">{formatPrice(codAmount)} د.ع</span>
+                    </div>
+                  )}
+                  {codAmount === 0 && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 text-center mt-1">✅ سيتم الدفع بالكامل من المحفظة</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Order Summary */}
           <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -183,10 +227,18 @@ const DirectSaleCheckoutDialog = ({
               <span className="text-muted-foreground">التوصيل</span>
               <span className="font-bold text-foreground">{formatPrice(deliveryFee)} د.ع</span>
             </div>
+            {walletDeduction > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>خصم المحفظة</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">-{formatPrice(walletDeduction)} د.ع</span>
+              </div>
+            )}
             <Separator className="bg-border/30" />
             <div className="flex justify-between text-base">
-              <span className="font-bold text-foreground">الإجمالي (عند الاستلام)</span>
-              <span className="font-black text-primary text-lg">{formatPrice(grandTotal)} د.ع</span>
+              <span className="font-bold text-foreground">
+                {codAmount > 0 ? 'الإجمالي (عند الاستلام)' : 'الإجمالي (مدفوع من المحفظة)'}
+              </span>
+              <span className="font-black text-primary text-lg">{formatPrice(codAmount)} د.ع</span>
             </div>
           </div>
 
@@ -232,7 +284,7 @@ const DirectSaleCheckoutDialog = ({
             ) : canConfirm ? (
               <>
                 <CheckCircle2 className="ml-2 h-5 w-5" />
-                تأكيد الطلب - الدفع عند الاستلام
+                {codAmount > 0 ? `تأكيد الطلب - ${codAmount === grandTotal ? 'الدفع عند الاستلام' : `دفع ${formatPrice(codAmount)} عند الاستلام`}` : 'تأكيد الطلب - الدفع من المحفظة'}
               </>
             ) : (
               `انتظر ${countdown} ثوانٍ...`
