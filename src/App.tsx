@@ -136,7 +136,7 @@ function AppContent() {
   useOnlineHeartbeat();
   const location = useLocation();
   const isGamesPage = location.pathname === "/games";
-  const isReelsPage = location.pathname === "/community/reels";
+  const isReelsPage = location.pathname.startsWith("/community/reels");
   const hideChrome = isGamesPage || isReelsPage;
   
   return (
