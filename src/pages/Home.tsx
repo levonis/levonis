@@ -79,10 +79,9 @@ const Home = () => {
       }
       return ids;
     },
-    staleTime: 0,
+    staleTime: 60 * 1000,
     gcTime: 30 * 60 * 1000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   const categoriesByMainSection = useMemo(() => {

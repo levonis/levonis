@@ -45,7 +45,7 @@ const CategoryDetail = () => {
       
       let query = supabase
         .from('products')
-        .select('*')
+        .select('id, name, name_ar, description, description_ar, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at')
         .eq('category_id', category.id)
         .eq('in_stock', true);
 
@@ -71,7 +71,8 @@ const CategoryDetail = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!category?.id
+    enabled: !!category?.id,
+    staleTime: 2 * 60 * 1000,
   });
 
   return (

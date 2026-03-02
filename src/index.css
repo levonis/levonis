@@ -1279,6 +1279,15 @@
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
 }
 
+@keyframes progress-bar-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.animate-progress-bar {
+  animation: progress-bar-fill 5s linear forwards;
+}
+
 .skeleton-gradient {
   background: linear-gradient(
     90deg,

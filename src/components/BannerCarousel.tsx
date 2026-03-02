@@ -69,7 +69,6 @@ const BannerImage = memo(({
       )}
       loading={isFirst ? 'eager' : 'lazy'}
       decoding={isFirst ? 'sync' : 'async'}
-      fetchPriority={isFirst ? 'high' : 'auto'}
       onLoad={() => setLoaded(true)}
       // Add intrinsic size hints to prevent layout shift
       width={1200}
@@ -83,7 +82,7 @@ const BannerCarousel = memo(() => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const [progress, setProgress] = useState(0);
+  const progressKey = useRef(0);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -107,26 +106,15 @@ const BannerCarousel = memo(() => {
     gcTime: 30 * 60 * 1000, // 30 minutes - match other queries
   });
 
-  // Auto-play with progress bar
+  // Auto-play - single timeout for slide transition (progress bar is CSS-only)
   useEffect(() => {
     if (!banners || banners.length <= 1 || !isAutoPlaying) return;
 
-    const duration = 5000;
-    const interval = 50;
-    let elapsed = 0;
+    const timer = setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % banners.length);
+    }, 5000);
 
-    const timer = setInterval(() => {
-      elapsed += interval;
-      setProgress((elapsed / duration) * 100);
-      
-      if (elapsed >= duration) {
-        setCurrentIndex((prev) => (prev + 1) % banners.length);
-        elapsed = 0;
-        setProgress(0);
-      }
-    }, interval);
-
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
   }, [banners, isAutoPlaying, currentIndex]);
 
   // Touch handlers for swipe
@@ -153,7 +141,6 @@ const BannerCarousel = memo(() => {
         setCurrentIndex((prev) => (prev + 1) % banners.length);
       }
       setIsAutoPlaying(false);
-      setProgress(0);
       setTimeout(() => setIsAutoPlaying(true), 10000);
     }
 
@@ -303,12 +290,15 @@ const BannerCarousel = memo(() => {
         ))}
       </div>
 
-      {/* Progress Bar Indicator */}
+      {/* Progress Bar Indicator - CSS animation only, no re-renders */}
       {banners.length > 1 && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
           <div 
-            className="h-full bg-white/80 transition-all duration-50 ease-linear"
-            style={{ width: `${progress}%` }}
+            key={`progress-${currentIndex}-${isAutoPlaying}`}
+            className={cn(
+              "h-full bg-white/80",
+              isAutoPlaying ? "animate-progress-bar" : "w-0"
+            )}
           />
         </div>
       )}
@@ -322,7 +312,6 @@ const BannerCarousel = memo(() => {
               onClick={() => {
                 setCurrentIndex(index);
                 setIsAutoPlaying(false);
-                setProgress(0);
                 setTimeout(() => setIsAutoPlaying(true), 10000);
               }}
               className={cn(
