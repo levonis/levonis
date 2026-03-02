@@ -11,11 +11,16 @@ export function useNotificationPermission() {
     }
     setPermission(Notification.permission);
 
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
-        setSwRegistration(reg);
-      }).catch(console.error);
+    // Reuse existing SW only in real production (never register from preview/dev)
+    const isLovablePreview =
+      window.location.hostname.includes('lovableproject.com') ||
+      window.location.hostname.startsWith('id-preview--') ||
+      window.location.search.includes('__lovable_token=');
+
+    if ('serviceWorker' in navigator && import.meta.env.PROD && !isLovablePreview) {
+      navigator.serviceWorker.getRegistration('/sw.js').then((reg) => {
+        if (reg) setSwRegistration(reg);
+      }).catch(() => {});
     }
   }, []);
 

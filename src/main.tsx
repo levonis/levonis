@@ -4,20 +4,24 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Service Worker: enable only in production, and clear it in preview/dev to avoid white-screen cache issues
+// Service Worker: enable only for real production, never on Lovable preview hosts
+const isLovablePreview =
+  window.location.hostname.includes('lovableproject.com') ||
+  window.location.hostname.startsWith('id-preview--') ||
+  window.location.search.includes('__lovable_token=');
+
 if ('serviceWorker' in navigator) {
-  if (import.meta.env.PROD) {
+  const shouldRegisterSW = import.meta.env.PROD && !isLovablePreview;
+
+  if (shouldRegisterSW) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').then((reg) => {
         document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            reg.update();
-          }
+          if (document.visibilityState === 'visible') reg.update();
         });
       }).catch(() => {});
     });
 
-    // Auto-reload when a new service worker takes over
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!refreshing) {
@@ -26,9 +30,13 @@ if ('serviceWorker' in navigator) {
       }
     });
   } else {
-    // Prevent stale SW in preview/dev
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((reg) => reg.unregister());
+    // Aggressively clean stale SW/cache in preview to prevent blank-screen chunk mismatches
+    navigator.serviceWorker.getRegistrations().then(async (regs) => {
+      await Promise.all(regs.map((reg) => reg.unregister()));
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((key) => caches.delete(key)));
+      }
     }).catch(() => {});
   }
 }
