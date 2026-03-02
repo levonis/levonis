@@ -1,4 +1,5 @@
-const CACHE_NAME = 'levonis-v5';
+const CACHE_NAME = 'levonis-v6';
+const STATIC_EXTENSIONS = /\.(js|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico)$/i;
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -15,8 +16,41 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Skip API calls
-  if (event.request.url.includes('/rest/') || event.request.url.includes('/functions/')) {
+  const url = new URL(event.request.url);
+
+  // Skip API calls and non-GET requests
+  if (event.request.method !== 'GET') return;
+  if (url.pathname.includes('/rest/') || url.pathname.includes('/functions/') || url.pathname.includes('/auth/')) return;
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+
+  // Static assets: cache-first
+  if (STATIC_EXTENSIONS.test(url.pathname) || url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        }).catch(() => cached);
+      })
+    );
+    return;
+  }
+
+  // HTML: network-first with cache fallback
+  if (event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
     return;
   }
 });
@@ -64,7 +98,6 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Try to focus existing window
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(url);
