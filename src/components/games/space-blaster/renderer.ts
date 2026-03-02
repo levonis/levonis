@@ -24,11 +24,11 @@ engineSuperImg.src = engineSuperSrc;
 const ENGINE_FRAMES = 4;
 const ENGINE_ANIM_SPEED = 6; // ticks per frame
 
-// ── Load shield sprite sheet (12 frames) ──
+// ── Load shield sprite sheet (10 frames, horizontal strip) ──
 const shieldAnimImg = new Image();
 shieldAnimImg.src = shieldAnimSrc;
-const SHIELD_FRAMES = 12;
-const SHIELD_ANIM_SPEED = 5;
+const SHIELD_FRAMES = 10;
+const SHIELD_ANIM_SPEED = 6;
 
 // ── Enemy Colors by type ──
 const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; eye: string }> = {
@@ -248,17 +248,17 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
   const drawX = x - 4;
   const drawY = y - 4;
 
-  // ── Engine animation (frame-based, attached to ship bottom) ──
+  // ── Engine animation (frame-based, exits from ship bottom) ──
   const isSupercharge = shieldActive > 0;
   const spriteSheet = isSupercharge ? engineSuperImg : engineNormalImg;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
     const frameW = Math.round(spriteSheet.naturalWidth / ENGINE_FRAMES);
     const frameH = spriteSheet.naturalHeight;
     const frameIndex = Math.floor(t / ENGINE_ANIM_SPEED) % ENGINE_FRAMES;
-    const engineW = shipW * 0.7;
+    const engineW = shipW * 0.5;
     const engineH = engineW * (frameH / frameW);
     const engineX = drawX + (shipW - engineW) / 2;
-    const engineY = drawY + shipH - engineH * 0.85;
+    const engineY = drawY + shipH - 6;
     ctx.drawImage(
       spriteSheet,
       frameIndex * frameW, 0, frameW, frameH,
