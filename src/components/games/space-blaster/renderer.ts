@@ -1,4 +1,4 @@
-import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES } from './types';
+import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES, PowerUp } from './types';
 import missileSrc from '@/assets/missile-sprite.png';
 import missileBaseSrc from '@/assets/missile-base-sprite.png';
 import { getPlanetForWave, PLANETS } from './planets';
@@ -360,11 +360,53 @@ export function drawHUD(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.fillStyle = '#aaaaaa';
     ctx.fillText(`🛡 ×${s.shieldInventory}`, 8, 34);
   }
+  // Fire rate boost indicator
+  if (s.fireRateBoost > 0) {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffcc00';
+    ctx.fillText(`⚡×${s.fireRateBoost}`, W / 2, 34);
+  }
   // Missile info
   if (s.missileBaseActive) {
     ctx.textAlign = 'right';
     ctx.fillStyle = '#ff8800';
     ctx.fillText(`🚀 ${s.missileCount}/${MAX_MISSILES}`, W - 8, 34);
+  }
+}
+
+export function drawPowerUps(ctx: CanvasRenderingContext2D, powerUps: PowerUp[], t: number) {
+  for (const p of powerUps) {
+    ctx.save();
+    const pulse = 0.8 + Math.sin(t * 0.15) * 0.2;
+    ctx.globalAlpha = pulse;
+    const size = 14;
+    const cx = p.x, cy = p.y;
+    // Glow
+    let color = '#ffcc00';
+    let icon = '⚡';
+    if (p.type === 'missile') { color = '#ff8800'; icon = '🚀'; }
+    else if (p.type === 'shield') { color = '#00ffff'; icon = '🛡'; }
+    else { color = '#ffcc00'; icon = '⚡'; }
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    // Background diamond
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - size / 2);
+    ctx.lineTo(cx + size / 2, cy);
+    ctx.lineTo(cx, cy + size / 2);
+    ctx.lineTo(cx - size / 2, cy);
+    ctx.closePath();
+    ctx.fill();
+    // Icon
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, cx, cy);
+    ctx.restore();
   }
 }
 

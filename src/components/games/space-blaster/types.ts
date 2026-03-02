@@ -14,10 +14,18 @@ export interface Enemy {
 
 export interface Missile {
   x: number; y: number;
-  targetId: number; // index in enemies array — re-acquired each frame
+  targetId: number;
   speed: number;
   angle: number;
-  life: number; // frames remaining
+  life: number;
+}
+
+export type PowerUpType = 'missile' | 'shield' | 'fire_rate';
+export interface PowerUp {
+  x: number; y: number;
+  type: PowerUpType;
+  vy: number;
+  life: number;
 }
 
 export type EnemyType = 'drone' | 'fighter' | 'tank' | 'speeder' | 'bomber' | 'boss';
@@ -57,6 +65,7 @@ export interface GameState {
   particles: Particle[];
   stars: Star[];
   missiles: Missile[];
+  powerUps: PowerUp[];
   spawnTimer: number;
   enemiesLeftInWave: number;
   waveDelay: number;
@@ -70,15 +79,18 @@ export interface GameState {
   screenFlash: number;
   // Shop upgrades
   fireRateLevel: number;
+  fireRateBoost: number; // 0-3 from pickups
+  fireRateDecayTimer: number; // frames since last pickup (decays after 7s = 420 frames)
   doubleBullets: boolean;
   shieldActive: number;
   shieldInventory: number;
   transitionTimer: number;
   // Missile launcher
   missileBaseActive: boolean;
-  missileCount: number; // current loaded missiles (max 6)
+  missileCount: number;
   missileReloadTimer: number;
   missileFireTimer: number;
+  missileDoubleTap: boolean; // flag: double-tap triggers missile volley
 }
 
 export const W = 360;
