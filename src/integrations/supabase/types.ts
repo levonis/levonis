@@ -8013,10 +8013,6 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
-      game_award_points: {
-        Args: { p_amount: number; p_game_name: string; p_user_id: string }
-        Returns: string
-      }
       generate_cart_code: { Args: never; Returns: string }
       generate_conversation_code: { Args: never; Returns: string }
       generate_listing_code: { Args: never; Returns: string }
