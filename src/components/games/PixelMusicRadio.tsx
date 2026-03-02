@@ -8,9 +8,10 @@ type Station = { id: string; name_ar: string; file_url: string };
 
 // Fallback procedural stations when no uploaded music exists
 const FALLBACK_STATIONS = [
-  { id: "f1", name_ar: "هادئ 🌙", notes: [262, 294, 330, 349, 330, 294, 262, 247], tempo: 320, wave: "triangle" as OscillatorType },
-  { id: "f2", name_ar: "مغامرة ⚔️", notes: [330, 392, 440, 523, 440, 392, 330, 262], tempo: 200, wave: "square" as OscillatorType },
-  { id: "f3", name_ar: "تشيبتون 🎵", notes: [523, 494, 440, 392, 349, 330, 294, 262], tempo: 160, wave: "square" as OscillatorType },
+  { id: "f1", name_ar: "أركيد 👾", notes: [523, 587, 659, 784, 659, 587, 523, 440, 392, 440, 523, 587], tempo: 180, wave: "square" as OscillatorType },
+  { id: "f2", name_ar: "فضاء 🚀", notes: [130.81, 155.56, 196, 233.08, 261.63, 233.08, 196, 155.56], tempo: 350, wave: "square" as OscillatorType },
+  { id: "f3", name_ar: "بوس ⚔️", notes: [196, 233, 262, 294, 330, 294, 262, 196, 165, 196, 220, 262], tempo: 160, wave: "square" as OscillatorType },
+  { id: "f4", name_ar: "ريترو 🎮", notes: [440, 494, 523, 587, 659, 587, 523, 494, 440, 392, 349, 392], tempo: 200, wave: "triangle" as OscillatorType },
 ];
 
 export default function PixelMusicRadio() {
