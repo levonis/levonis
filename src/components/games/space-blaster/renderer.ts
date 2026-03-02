@@ -6,6 +6,7 @@ import shipDmg2Src from '@/assets/ship-damage-2.png';
 import shipDmg3Src from '@/assets/ship-damage-3.png';
 import engineNormalSrc from '@/assets/engine-normal.png';
 import engineSuperSrc from '@/assets/engine-supercharge.png';
+import shieldAnimSrc from '@/assets/shield-anim.png';
 
 // ── Load player ship images (4 states: healthy → 3 damage levels) ──
 const shipImages: HTMLImageElement[] = [];
@@ -22,6 +23,12 @@ const engineSuperImg = new Image();
 engineSuperImg.src = engineSuperSrc;
 const ENGINE_FRAMES = 4;
 const ENGINE_ANIM_SPEED = 6; // ticks per frame
+
+// ── Load shield sprite sheet (12 frames) ──
+const shieldAnimImg = new Image();
+shieldAnimImg.src = shieldAnimSrc;
+const SHIELD_FRAMES = 12;
+const SHIELD_ANIM_SPEED = 5;
 
 // ── Enemy Colors by type ──
 const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; eye: string }> = {
@@ -298,16 +305,33 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
   }
   ctx.restore();
 
-  // Shield effect
+  // Shield animation (sprite sheet)
   if (shieldActive > 0) {
     ctx.save();
-    ctx.strokeStyle = '#00ffff';
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.3 + Math.sin(t * 0.2) * 0.2;
-    ctx.beginPath();
-    ctx.arc(x + PLAYER_W / 2, y + PLAYER_H / 2, 18, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+    if (shieldAnimImg.complete && shieldAnimImg.naturalWidth > 0) {
+      const frameW = shieldAnimImg.naturalWidth / SHIELD_FRAMES;
+      const frameH = shieldAnimImg.naturalHeight;
+      const frameIndex = Math.floor(t / SHIELD_ANIM_SPEED) % SHIELD_FRAMES;
+      const shieldSize = shipW + 16;
+      const sx = drawX + (shipW - shieldSize) / 2;
+      const sy = drawY + (shipH - shieldSize) / 2;
+      ctx.globalAlpha = 0.7 + Math.sin(t * 0.15) * 0.2;
+      ctx.drawImage(
+        shieldAnimImg,
+        frameIndex * frameW, 0, frameW, frameH,
+        sx, sy, shieldSize, shieldSize
+      );
+      ctx.globalAlpha = 1;
+    } else {
+      // Fallback circle
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.3 + Math.sin(t * 0.2) * 0.2;
+      ctx.beginPath();
+      ctx.arc(x + PLAYER_W / 2, y + PLAYER_H / 2, 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 }
@@ -360,10 +384,18 @@ export function drawHUD(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.fillText(`${planet.nameAr} | W${s.wave}/${MAX_WAVES}`, W / 2, 18);
   ctx.textAlign = 'right';
   ctx.fillText(`★ ${s.score}`, W - 8, 18);
+  // Shield info
+  ctx.textAlign = 'left';
   if (s.shieldActive > 0) {
     ctx.fillStyle = '#00ffff';
-    ctx.textAlign = 'left';
     ctx.fillText(`🛡 ${Math.ceil(s.shieldActive / 60)}s`, 8, 34);
+    if (s.shieldInventory > 0) {
+      ctx.fillStyle = '#aaaaaa';
+      ctx.fillText(`+${s.shieldInventory}`, 70, 34);
+    }
+  } else if (s.shieldInventory > 0) {
+    ctx.fillStyle = '#aaaaaa';
+    ctx.fillText(`🛡 ×${s.shieldInventory}`, 8, 34);
   }
 }
 
