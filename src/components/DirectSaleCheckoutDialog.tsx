@@ -106,7 +106,7 @@ const DirectSaleCheckoutDialog = ({
         className="max-w-md mx-auto p-0 overflow-hidden max-h-[90vh] overflow-y-auto border-primary/20 shadow-[0_8px_40px_hsl(var(--primary)/0.15),0_0_80px_hsl(var(--primary)/0.05)]"
       >
         {/* Header with glass gradient */}
-        <div className="relative p-6 pb-4 overflow-hidden">
+        <div className="relative p-6 pb-4">
           {/* Subtle glow behind header */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-transparent to-transparent pointer-events-none" />
           
