@@ -116,6 +116,24 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
+  // Check if user has active direct sale orders
+  const { data: activeDirectOrders } = useQuery({
+    queryKey: ['active-direct-orders', user?.id],
+    queryFn: async (): Promise<{id: string}[]> => {
+      if (!user?.id) return [];
+      const result = await (supabase as any)
+        .from('orders')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('sale_type', 'direct');
+      const filtered = (result.data || []).filter((o: any) => 
+        ['pending', 'confirmed', 'processing'].includes(o.status)
+      );
+      return filtered.slice(0, 1) as {id: string}[];
+    },
+    enabled: !!user?.id && isDirectSaleCart,
+  });
+
   // Set default selected address
   useEffect(() => {
     if (userAddresses && userAddresses.length > 0 && !selectedAddressId) {
@@ -1924,6 +1942,7 @@ const Cart = () => {
         itemCount={itemCount}
         isProcessing={isDirectSaleProcessing}
         walletBalance={walletBalance}
+        hasActiveDirectOrders={(activeDirectOrders?.length || 0) > 0}
       />
 
       {/* Order Success Animation */}
