@@ -135,7 +135,11 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
     return Object.keys(newErrors).length === 0 && usernameAvailable !== false;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Force re-check username if not yet verified
+    if (usernameAvailable === null && validateUsername(data.username)) {
+      await checkUsernameAvailability(data.username);
+    }
     if (validateForm()) {
       onNext();
     }

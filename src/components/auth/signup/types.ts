@@ -58,16 +58,16 @@ export const IRAQI_GOVERNORATES = [
   'دهوك',
 ];
 
-// Default avatars from Dicebear
+// Default avatars from Dicebear - bottts-neutral style (tech-friendly)
 export const DEFAULT_AVATARS = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna&backgroundColor=c0aede',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Bella&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Max&backgroundColor=ffdfbf',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Milo&backgroundColor=c4f4e8',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Zara&backgroundColor=f4c4d4',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar&backgroundColor=d4e8c4',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Felix&backgroundColor=b6e3f4',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Luna&backgroundColor=c0aede',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Bella&backgroundColor=d1d4f9',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Leo&backgroundColor=ffd5dc',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Max&backgroundColor=ffdfbf',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Milo&backgroundColor=c4f4e8',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Zara&backgroundColor=f4c4d4',
+  'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Omar&backgroundColor=d4e8c4',
 ];
 
 export const initialFormData: SignupFormData = {

@@ -60,7 +60,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       const { data: existingUsername } = await supabase
         .from('profiles')
         .select('id')
-        .eq('username', formData.username.trim().toLowerCase())
+        .ilike('username', formData.username.trim())
         .maybeSingle();
 
       if (existingUsername) {
@@ -178,7 +178,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         }
       }
 
-      toast.success('تم إنشاء حسابك بنجاح! مرحباً بك في ليفونيس 🎉');
+      toast.success('تم إنشاء حسابك بنجاح! مرحباً بك في عائلة ليفو 🎉');
       navigate('/');
     } catch (error) {
       console.error('Error completing signup:', error);
