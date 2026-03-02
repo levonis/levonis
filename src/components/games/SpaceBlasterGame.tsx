@@ -10,11 +10,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
-import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_RELOAD_RATE, MISSILE_FIRE_RATE } from "./space-blaster/types";
+import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_RELOAD_RATE, MISSILE_FIRE_RATE, PowerUp, PowerUpType } from "./space-blaster/types";
 import { getPlanetForWave, PLANETS } from "./space-blaster/planets";
 import { spawnWaveEnemies, getEnemyScore } from "./space-blaster/enemies";
 import { SHOP_ITEMS } from "./space-blaster/shop";
-import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase } from "./space-blaster/renderer";
+import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps } from "./space-blaster/renderer";
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 
@@ -75,11 +75,14 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       score: 0, wave: 1, planet: 1,
       enemies, bullets: [], particles: [], stars: initStars(),
       missiles: [],
+      powerUps: [],
       spawnTimer: 0, enemiesLeftInWave: total, waveDelay: 0,
       shootCooldown: 0, invincible: 120,
       touchX: null, touchY: null, keys: new Set(), gameTime: 0,
       autoShoot: false, screenFlash: 0,
       fireRateLevel: shopLevels['fire_rate'] || 0,
+      fireRateBoost: 0,
+      fireRateDecayTimer: 0,
       doubleBullets: (shopLevels['double_bullets'] || 0) > 0,
       shieldActive: 0,
       shieldInventory: shopLevels['shield'] || 0,
@@ -88,6 +91,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       missileCount: (shopLevels['missile_base'] || 0) > 0 ? MAX_MISSILES : 0,
       missileReloadTimer: 0,
       missileFireTimer: 0,
+      missileDoubleTap: false,
     };
     setScreen('playing');
     lastTimeRef.current = 0;
@@ -140,13 +144,12 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     };
     const onTouchStart = (e: TouchEvent) => {
       updateTouch(e);
-      // Double-tap detection for shield
+      // Double-tap detection: fires missiles (not shield anymore)
       const now = Date.now();
       if (now - lastTapTime < 300) {
         const s = stateRef.current;
-        if (s && s.shieldInventory > 0 && s.shieldActive <= 0) {
-          s.shieldActive = 900; // 15 seconds at 60fps
-          s.shieldInventory--;
+        if (s && s.missileBaseActive && s.missileCount > 0) {
+          s.missileDoubleTap = true;
         }
       }
       lastTapTime = now;
@@ -176,6 +179,26 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       }
     };
 
+    // Power-up drop chances based on enemy type
+    const DROP_CHANCES: Record<string, number> = {
+      drone: 0.05, fighter: 0.08, tank: 0.12, speeder: 0.06, bomber: 0.15, boss: 0.6,
+    };
+    const spawnPowerUp = (x: number, y: number, enemyType: string) => {
+      const s = stateRef.current;
+      if (!s) return;
+      const chance = DROP_CHANCES[enemyType] || 0.05;
+      if (Math.random() > chance) return;
+      // Weighted random type
+      const types: PowerUpType[] = ['fire_rate', 'shield', 'missile'];
+      const weights = [0.5, 0.3, 0.2]; // fire_rate most common, missile rarest
+      let r = Math.random(), cumulative = 0;
+      let type: PowerUpType = 'fire_rate';
+      for (let i = 0; i < types.length; i++) {
+        cumulative += weights[i];
+        if (r <= cumulative) { type = types[i]; break; }
+      }
+      s.powerUps.push({ x, y, type, vy: 1.2, life: 600 }); // lasts 10 seconds
+    };
     const explosionColors = ['#ffff00', '#ff8800', '#ff3300', '#ff0000', '#ffffff', '#ff6600'];
 
     const endGame = (s: GameState, victory: boolean) => {
@@ -212,9 +235,10 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       s.player.x = clamp(s.player.x, 0, W - PLAYER_W);
       s.player.y = clamp(s.player.y, 0, H - PLAYER_H);
 
-      // Shooting
+      // Shooting (fire rate combines shop level + boost from pickups)
       s.shootCooldown -= dt;
-      const fireRate = 10 - s.fireRateLevel * 2;
+      const totalFireRate = s.fireRateLevel + s.fireRateBoost;
+      const fireRate = Math.max(3, 10 - totalFireRate * 2);
       if ((s.keys.has(' ') || s.keys.has('Space') || s.autoShoot) && s.shootCooldown <= 0) {
         s.bullets.push({ x: s.player.x + PLAYER_W / 2 - BULLET_W / 2, y: s.player.y - BULLET_H, dy: -6 });
         if (s.doubleBullets) {
@@ -223,6 +247,15 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         }
         s.shootCooldown = fireRate;
         soundsRef.current.playShoot();
+      }
+
+      // Fire rate boost decay (7 seconds = 420 frames without pickup → lose 1 level)
+      if (s.fireRateBoost > 0) {
+        s.fireRateDecayTimer += dt;
+        if (s.fireRateDecayTimer >= 420) {
+          s.fireRateBoost--;
+          s.fireRateDecayTimer = 0;
+        }
       }
 
       if (s.invincible > 0) s.invincible -= dt;
@@ -281,6 +314,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
                 s.enemiesLeftInWave--;
                 const pCount = e.type === 'boss' ? 50 : 20;
                 spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
+                spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
                 if (e.type === 'boss') {
                   s.screenFlash = 20;
                   soundsRef.current.playBossExplosion();
@@ -382,25 +416,23 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             s.missileCount++;
           }
         }
-        // Auto-fire missiles at nearest enemy
+        // Fire missiles on double-tap — target highest HP enemy
         s.missileFireTimer -= dt;
-        if (s.missileFireTimer <= 0 && s.missileCount > 0 && s.enemies.length > 0) {
-          // Find nearest enemy
+        if (s.missileDoubleTap && s.missileFireTimer <= 0 && s.missileCount > 0 && s.enemies.length > 0) {
           const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
-          let nearestIdx = -1, nearestDist = Infinity;
+          // Find enemy with highest HP
+          let bestIdx = -1, bestHp = -1;
           for (let i = 0; i < s.enemies.length; i++) {
             const e = s.enemies[i];
             if (e.spawnDelay > 0) continue;
-            const dx = (e.x + e.w / 2) - px, dy = (e.y + e.h / 2) - py;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+            if (e.hp > bestHp) { bestHp = e.hp; bestIdx = i; }
           }
-          if (nearestIdx >= 0) {
-            const e = s.enemies[nearestIdx];
+          if (bestIdx >= 0) {
+            const e = s.enemies[bestIdx];
             const dx = (e.x + e.w / 2) - px, dy = (e.y + e.h / 2) - py;
             s.missiles.push({
               x: px, y: py,
-              targetId: nearestIdx,
+              targetId: bestIdx,
               speed: 4,
               angle: Math.atan2(dy, dx),
               life: 180,
@@ -409,29 +441,29 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             s.missileFireTimer = MISSILE_FIRE_RATE;
             soundsRef.current.playShoot();
           }
+          if (s.missileCount <= 0) s.missileDoubleTap = false;
         }
-        // Update missiles
+        // Stop firing when all missiles are out
+        if (s.missileCount <= 0) s.missileDoubleTap = false;
+
+        // Update missiles — steer towards highest HP enemy
         for (let i = s.missiles.length - 1; i >= 0; i--) {
           const m = s.missiles[i];
           m.life -= dt;
           if (m.life <= 0) { s.missiles.splice(i, 1); continue; }
-          // Re-acquire nearest target
           let tx = m.x + Math.cos(m.angle) * 100, ty = m.y + Math.sin(m.angle) * 100;
           if (s.enemies.length > 0) {
-            let best = -1, bestD = Infinity;
+            let best = -1, bestHp = -1;
             for (let j = 0; j < s.enemies.length; j++) {
               const e = s.enemies[j];
               if (e.spawnDelay > 0) continue;
-              const dx = (e.x + e.w / 2) - m.x, dy = (e.y + e.h / 2) - m.y;
-              const d = Math.sqrt(dx * dx + dy * dy);
-              if (d < bestD) { bestD = d; best = j; }
+              if (e.hp > bestHp) { bestHp = e.hp; best = j; }
             }
             if (best >= 0) {
               tx = s.enemies[best].x + s.enemies[best].w / 2;
               ty = s.enemies[best].y + s.enemies[best].h / 2;
             }
           }
-          // Steer towards target
           const desired = Math.atan2(ty - m.y, tx - m.x);
           let diff = desired - m.angle;
           while (diff > Math.PI) diff -= Math.PI * 2;
@@ -439,14 +471,12 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           m.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.12 * dt);
           m.x += Math.cos(m.angle) * m.speed * dt;
           m.y += Math.sin(m.angle) * m.speed * dt;
-          // Off screen
           if (m.x < -20 || m.x > W + 20 || m.y < -20 || m.y > H + 20) { s.missiles.splice(i, 1); continue; }
-          // Hit detection
           for (let j = s.enemies.length - 1; j >= 0; j--) {
             const e = s.enemies[j];
             if (e.spawnDelay > 0) continue;
             if (m.x > e.x && m.x < e.x + e.w && m.y > e.y && m.y < e.y + e.h) {
-              e.hp -= 2; // missiles do double damage
+              e.hp -= 2;
               s.missiles.splice(i, 1);
               spawnParticles(m.x, m.y, 12, ['#ff8800', '#ffcc00', '#ff3300']);
               if (e.hp <= 0) {
@@ -454,6 +484,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
                 s.enemiesLeftInWave--;
                 const pCount = e.type === 'boss' ? 50 : 20;
                 spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
+                spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
                 if (e.type === 'boss') {
                   s.screenFlash = 20;
                   soundsRef.current.playBossExplosion();
@@ -465,6 +496,40 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               break;
             }
           }
+        }
+      }
+
+      // ── Power-up update & pickup ──
+      const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
+      for (let i = s.powerUps.length - 1; i >= 0; i--) {
+        const pu = s.powerUps[i];
+        pu.y += pu.vy * dt;
+        pu.life -= dt;
+        if (pu.y > H + 20 || pu.life <= 0) { s.powerUps.splice(i, 1); continue; }
+        // Pickup detection
+        const dx = pu.x - px, dy = pu.y - py;
+        if (Math.abs(dx) < 18 && Math.abs(dy) < 18) {
+          s.powerUps.splice(i, 1);
+          switch (pu.type) {
+            case 'fire_rate':
+              if (s.fireRateBoost < 3) s.fireRateBoost++;
+              s.fireRateDecayTimer = 0; // reset decay timer
+              break;
+            case 'shield':
+              // Auto-activate shield for 15 seconds (900 frames), protects from 1 hit
+              s.shieldActive = 900;
+              break;
+            case 'missile':
+              if (s.missileBaseActive) {
+                s.missileCount = Math.min(s.missileCount + 2, MAX_MISSILES);
+              } else {
+                // Grant temporary missile base if not purchased
+                s.missileBaseActive = true;
+                s.missileCount = 3;
+              }
+              break;
+          }
+          spawnParticles(pu.x, pu.y, 10, ['#ffffff', '#ffcc00', '#00ffff']);
         }
       }
 
@@ -497,6 +562,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive, s.lives, 3 + (shopLevels['extra_life'] || 0));
       drawBullets(ctx, s);
       drawMissiles(ctx, s);
+      drawPowerUps(ctx, s.powerUps, s.gameTime);
       drawParticles(ctx, s.particles);
       drawHUD(ctx, s);
       drawWaveTransition(ctx, s);
