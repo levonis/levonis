@@ -359,7 +359,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       // ── Draw ──
       drawBackground(ctx, s);
       for (const e of s.enemies) drawEnemy(ctx, e, s.gameTime, planet.id);
-      drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive);
+      drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive, s.lives, 3 + (shopLevels['extra_life'] || 0));
       drawBullets(ctx, s);
       drawParticles(ctx, s.particles);
       drawHUD(ctx, s);
