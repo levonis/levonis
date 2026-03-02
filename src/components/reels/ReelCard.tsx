@@ -98,15 +98,16 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
   }, [isMuted]);
 
   const handleProductClick = useCallback(() => {
-    if (reel.product?.id) {
+    const productId = reel.product?.id || reel.siteProduct?.id;
+    if (productId) {
       if (!viewRecordedRef.current) {
         const duration = (Date.now() - watchStartRef.current) / 1000;
         onRecordView(reel.id, duration, false, false, true);
         viewRecordedRef.current = true;
       }
-      onProductClick?.(reel.product.id);
+      onProductClick?.(productId);
     }
-  }, [reel.product?.id, reel.id, onRecordView, onProductClick]);
+  }, [reel.product?.id, reel.siteProduct?.id, reel.id, onRecordView, onProductClick]);
 
   const formatCount = (n: number) => {
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
@@ -114,8 +115,17 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
     return n.toString();
   };
 
-  const discount = reel.product?.original_price_iqd && reel.product?.price_iqd
-    ? Math.round((1 - reel.product.price_iqd / reel.product.original_price_iqd) * 100)
+  const isSiteReel = !reel.merchant;
+  const activeProduct = reel.product || (reel.siteProduct ? {
+    id: reel.siteProduct.id,
+    title: reel.siteProduct.name_ar,
+    price_iqd: reel.siteProduct.price,
+    original_price_iqd: reel.siteProduct.original_price,
+    image_urls: reel.siteProduct.image_url ? [reel.siteProduct.image_url] : null,
+  } : null);
+
+  const discount = activeProduct?.original_price_iqd && activeProduct?.price_iqd
+    ? Math.round((1 - activeProduct.price_iqd / activeProduct.original_price_iqd) * 100)
     : 0;
 
   return (
@@ -196,22 +206,32 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
 
       {/* Bottom content */}
       <div className="absolute bottom-0 right-0 left-14 p-4 z-20" dir="rtl">
-        {/* Merchant info */}
-        <div
-          className="flex items-center gap-2 mb-3 cursor-pointer"
-          onClick={() => reel.merchant?.id && onMerchantClick?.(reel.merchant.id)}
-        >
-          <div className="w-9 h-9 rounded-full border-2 border-primary overflow-hidden bg-card">
-            {reel.merchant?.store_image_url ? (
-              <img src={reel.merchant.store_image_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-primary text-xs font-bold">
-                {reel.merchant?.display_name?.[0] || '?'}
-              </div>
-            )}
+        {/* Merchant / Site info */}
+        {isSiteReel ? (
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-9 h-9 rounded-full border-2 border-primary overflow-hidden bg-primary/20 flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-white font-bold text-sm">الموقع الرسمي</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-primary/80 text-primary-foreground text-[9px] font-bold">رسمي</span>
           </div>
-          <span className="text-white font-bold text-sm truncate">{reel.merchant?.display_name || 'تاجر'}</span>
-        </div>
+        ) : (
+          <div
+            className="flex items-center gap-2 mb-3 cursor-pointer"
+            onClick={() => reel.merchant?.id && onMerchantClick?.(reel.merchant.id)}
+          >
+            <div className="w-9 h-9 rounded-full border-2 border-primary overflow-hidden bg-card">
+              {reel.merchant?.store_image_url ? (
+                <img src={reel.merchant.store_image_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-primary text-xs font-bold">
+                  {reel.merchant?.display_name?.[0] || '?'}
+                </div>
+              )}
+            </div>
+            <span className="text-white font-bold text-sm truncate">{reel.merchant?.display_name || 'تاجر'}</span>
+          </div>
+        )}
 
         {/* Caption */}
         {reel.caption && (
@@ -219,22 +239,25 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
         )}
 
         {/* Product card */}
-        {reel.product && (
+        {activeProduct && (
           <button
             onClick={handleProductClick}
             className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors"
           >
-            {reel.product.image_urls?.[0] && (
-              <img src={reel.product.image_urls[0]} alt={reel.product.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+            {activeProduct.image_urls?.[0] && (
+              <img src={activeProduct.image_urls[0]} alt={activeProduct.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-white font-bold text-xs truncate">{reel.product.title}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-white font-bold text-xs truncate">{activeProduct.title}</p>
+                {isSiteReel && <span className="px-1 py-0.5 rounded bg-primary/70 text-primary-foreground text-[8px] font-bold flex-shrink-0">من الموقع</span>}
+              </div>
               <div className="flex items-center gap-2 mt-1">
-                {reel.product.price_iqd && (
-                  <span className="text-primary font-black text-sm">{reel.product.price_iqd.toLocaleString()} د.ع</span>
+                {activeProduct.price_iqd && (
+                  <span className="text-primary font-black text-sm">{activeProduct.price_iqd.toLocaleString()} د.ع</span>
                 )}
                 {discount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">-{discount}%</span>
+                  <span className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">-{discount}%</span>
                 )}
               </div>
             </div>
