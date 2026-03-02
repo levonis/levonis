@@ -48,9 +48,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const syncPoints = useCallback(async (points: number) => {
     if (!user || points === 0) return;
     try {
-      await supabase.rpc('admin_adjust_points', {
+      await supabase.rpc('game_award_points' as any, {
         p_user_id: user.id, p_amount: points,
-        p_reason: `Space Blaster: ${points > 0 ? '+' : ''}${points} نقطة`
+        p_game_name: 'Space Blaster'
       });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       if (points > 0) toast.success(`+${points} نقطة!`);
