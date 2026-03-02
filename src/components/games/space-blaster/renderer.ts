@@ -43,35 +43,7 @@ const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; e
 const PLAYER_COLOR = '#00e5ff';
 const PLAYER_DARK = '#0088aa';
 
-function drawPixelShip(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number) {
-  if (inv > 0 && Math.floor(inv / 4) % 2 === 0) return;
-  ctx.save();
-  ctx.shadowColor = PLAYER_COLOR;
-  ctx.shadowBlur = 10;
-  // Body
-  ctx.fillStyle = PLAYER_DARK;
-  ctx.fillRect(x + 6, y + 4, 8, 16);
-  ctx.fillStyle = PLAYER_COLOR;
-  ctx.fillRect(x + 8, y, 4, 20);
-  // Wings
-  ctx.fillStyle = PLAYER_DARK;
-  ctx.fillRect(x, y + 12, 6, 8);
-  ctx.fillRect(x + 14, y + 12, 6, 8);
-  ctx.fillStyle = PLAYER_COLOR;
-  ctx.fillRect(x + 2, y + 14, 4, 4);
-  ctx.fillRect(x + 14, y + 14, 4, 4);
-  // Cockpit
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x + 9, y + 6, 2, 3);
-  // Engine flames
-  const fl = 2 + Math.sin(t * 0.5) * 1.5;
-  ctx.fillStyle = '#ff8800';
-  ctx.fillRect(x + 9, y + 18, 2, fl);
-  ctx.fillStyle = '#ffff00';
-  ctx.fillRect(x + 3, y + 20, 2, fl * 0.7);
-  ctx.fillRect(x + 15, y + 20, 2, fl * 0.7);
-  ctx.restore();
-}
+// Old pixel ship removed — sprite images are used exclusively now
 
 function drawDrone(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
   const c = ENEMY_COLORS.drone;
@@ -276,20 +248,20 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
   const drawX = x - 4;
   const drawY = y - 4;
 
-  // ── Engine animation (below ship, frame-based like HealLoadingSprite) ──
+  // ── Engine animation (frame-based, attached to ship bottom) ──
   const isSupercharge = shieldActive > 0;
   const spriteSheet = isSupercharge ? engineSuperImg : engineNormalImg;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
-    const frameW = spriteSheet.naturalWidth / ENGINE_FRAMES;
+    const frameW = Math.round(spriteSheet.naturalWidth / ENGINE_FRAMES);
     const frameH = spriteSheet.naturalHeight;
     const frameIndex = Math.floor(t / ENGINE_ANIM_SPEED) % ENGINE_FRAMES;
-    const engineW = shipW * 0.9;
+    const engineW = shipW * 0.7;
     const engineH = engineW * (frameH / frameW);
     const engineX = drawX + (shipW - engineW) / 2;
-    const engineY = drawY + shipH - engineH * 0.55;
+    const engineY = drawY + shipH - engineH * 0.85;
     ctx.drawImage(
       spriteSheet,
-      Math.round(frameIndex * frameW), 0, Math.round(frameW), frameH,
+      frameIndex * frameW, 0, frameW, frameH,
       Math.round(engineX), Math.round(engineY), Math.round(engineW), Math.round(engineH)
     );
   }
@@ -300,36 +272,25 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
     ctx.shadowColor = PLAYER_COLOR;
     ctx.shadowBlur = 10;
     ctx.drawImage(img, drawX, drawY, shipW, shipH);
-  } else {
-    drawPixelShip(ctx, x, y, 0, t);
   }
   ctx.restore();
 
-  // Shield animation (sprite sheet)
+  // ── Shield animation (frame-based sprite sheet) ──
   if (shieldActive > 0) {
     ctx.save();
     if (shieldAnimImg.complete && shieldAnimImg.naturalWidth > 0) {
-      const frameW = shieldAnimImg.naturalWidth / SHIELD_FRAMES;
-      const frameH = shieldAnimImg.naturalHeight;
-      const frameIndex = Math.floor(t / SHIELD_ANIM_SPEED) % SHIELD_FRAMES;
-      const shieldSize = shipW + 16;
+      const sFrameW = Math.round(shieldAnimImg.naturalWidth / SHIELD_FRAMES);
+      const sFrameH = shieldAnimImg.naturalHeight;
+      const sFrameIndex = Math.floor(t / SHIELD_ANIM_SPEED) % SHIELD_FRAMES;
+      const shieldSize = shipW + 20;
       const sx = drawX + (shipW - shieldSize) / 2;
       const sy = drawY + (shipH - shieldSize) / 2;
-      ctx.globalAlpha = 0.7 + Math.sin(t * 0.15) * 0.2;
+      ctx.globalAlpha = 0.75 + Math.sin(t * 0.15) * 0.2;
       ctx.drawImage(
         shieldAnimImg,
-        frameIndex * frameW, 0, frameW, frameH,
-        sx, sy, shieldSize, shieldSize
+        sFrameIndex * sFrameW, 0, sFrameW, sFrameH,
+        Math.round(sx), Math.round(sy), Math.round(shieldSize), Math.round(shieldSize)
       );
-      ctx.globalAlpha = 1;
-    } else {
-      // Fallback circle
-      ctx.strokeStyle = '#00ffff';
-      ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.3 + Math.sin(t * 0.2) * 0.2;
-      ctx.beginPath();
-      ctx.arc(x + PLAYER_W / 2, y + PLAYER_H / 2, 18, 0, Math.PI * 2);
-      ctx.stroke();
       ctx.globalAlpha = 1;
     }
     ctx.restore();
