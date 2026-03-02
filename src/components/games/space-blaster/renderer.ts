@@ -497,7 +497,7 @@ export function drawMissiles(ctx: CanvasRenderingContext2D, s: GameState) {
 }
 
 export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
-  if (!s.missileBaseActive) return;
+  if (!s.missileBaseActive || !s.missileDoubleTap) return; // Only show during active firing
 
   const cx = s.player.x + PLAYER_W / 2;
   const cy = s.player.y + PLAYER_H / 2;
