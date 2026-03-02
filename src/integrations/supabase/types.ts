@@ -3770,12 +3770,13 @@ export type Database = {
           id: string
           is_sponsored: boolean | null
           likes_count: number
-          merchant_id: string
+          merchant_id: string | null
           product_id: string | null
           quality_score: number | null
           ranking_score: number | null
           rejection_reason: string | null
           saves_count: number
+          site_product_id: string | null
           status: string
           thumbnail_url: string | null
           updated_at: string
@@ -3795,12 +3796,13 @@ export type Database = {
           id?: string
           is_sponsored?: boolean | null
           likes_count?: number
-          merchant_id: string
+          merchant_id?: string | null
           product_id?: string | null
           quality_score?: number | null
           ranking_score?: number | null
           rejection_reason?: string | null
           saves_count?: number
+          site_product_id?: string | null
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
@@ -3820,12 +3822,13 @@ export type Database = {
           id?: string
           is_sponsored?: boolean | null
           likes_count?: number
-          merchant_id?: string
+          merchant_id?: string | null
           product_id?: string | null
           quality_score?: number | null
           ranking_score?: number | null
           rejection_reason?: string | null
           saves_count?: number
+          site_product_id?: string | null
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
@@ -3852,6 +3855,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "merchant_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_reels_site_product_id_fkey"
+            columns: ["site_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
