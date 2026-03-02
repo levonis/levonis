@@ -75,6 +75,8 @@ const ProductDetail = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
   const [notifyLoading, setNotifyLoading] = useState(false);
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     staleTime: 5 * 60 * 1000,
@@ -389,9 +391,6 @@ const ProductDetail = () => {
     const base = selectedColorData?.price != null ? Number(selectedColorData.price) : Number(product.price);
     return base;
   };
-
-  const { data: shippingSettings } = useShippingSettings();
-  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
 
   const basePrice = getPrice();
   const optionAdjustmentUsd = selectedOptionData ? Number(selectedOptionData.price_adjustment) : 0;
