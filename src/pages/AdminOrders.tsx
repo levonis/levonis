@@ -221,7 +221,7 @@ const AdminOrders = () => {
           <h3>المنتجات:</h3>
           <ul>
             ${order.order_items?.map((item: any) => `
-              <li>${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${item.total_price}</li>
+              <li>${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${item.total_price?.toLocaleString()}</li>
             `).join('') || ''}
           </ul>
           <hr/>
