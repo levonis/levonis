@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useRef, useState, lazy, Suspense } from 'react';
-import { Play, Loader2 } from 'lucide-react';
-
-const ReelsFeed = lazy(() => import('@/components/reels/ReelsFeed'));
+import { useRef } from 'react';
+import { Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ReelThumb {
   id: string;
@@ -16,7 +15,7 @@ interface ReelThumb {
 
 export default function ReelsBar() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showViewer, setShowViewer] = useState(false);
+  const navigate = useNavigate();
 
   const { data: reels = [] } = useQuery({
     queryKey: ['home-reels-bar'],
@@ -53,7 +52,7 @@ export default function ReelsBar() {
           <div className="w-1 h-4 bg-gradient-to-b from-primary to-accent rounded-full" />
           <h3 className="text-sm font-bold text-foreground">ريلز</h3>
           <button
-            onClick={() => setShowViewer(true)}
+            onClick={() => navigate('/community/reels')}
             className="mr-auto text-[11px] text-primary font-medium hover:underline"
           >
             عرض الكل
@@ -67,7 +66,7 @@ export default function ReelsBar() {
           {reels.map((reel) => (
             <button
               key={reel.id}
-              onClick={() => setShowViewer(true)}
+              onClick={() => navigate('/community/reels')}
               className="relative flex-shrink-0 w-[100px] h-[160px] md:w-[120px] md:h-[190px] rounded-xl overflow-hidden bg-muted group"
             >
               {reel.thumbnail_url ? (
@@ -101,15 +100,6 @@ export default function ReelsBar() {
         </div>
       </div>
 
-      {showViewer && (
-        <Suspense fallback={
-          <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        }>
-          <ReelsFeed onClose={() => setShowViewer(false)} />
-        </Suspense>
-      )}
     </>
   );
 }
