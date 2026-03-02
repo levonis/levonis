@@ -452,11 +452,19 @@ const missileBaseImg = new Image();
 missileBaseImg.src = missileBaseSrc;
 let missileBaseFrameW = 0;
 let missileBaseTotalFrames = 0;
-missileBaseImg.onload = () => {
-  const frameH = missileBaseImg.naturalHeight;
-  missileBaseTotalFrames = Math.round(missileBaseImg.naturalWidth / frameH) || 1;
-  missileBaseFrameW = Math.round(missileBaseImg.naturalWidth / missileBaseTotalFrames);
-};
+
+function calcMissileBaseFrames() {
+  if (missileBaseImg.naturalWidth > 0 && missileBaseImg.naturalHeight > 0) {
+    const frameH = missileBaseImg.naturalHeight;
+    missileBaseTotalFrames = Math.round(missileBaseImg.naturalWidth / frameH) || 1;
+    missileBaseFrameW = Math.round(missileBaseImg.naturalWidth / missileBaseTotalFrames);
+  }
+}
+missileBaseImg.onload = calcMissileBaseFrames;
+// Handle already-cached image (onload won't fire if already complete)
+if (missileBaseImg.complete && missileBaseImg.naturalWidth > 0) {
+  calcMissileBaseFrames();
+}
 const MISSILE_BASE_ANIM_SPEED = 6;
 
 // Track launch animation state
@@ -538,7 +546,10 @@ export function drawMissiles(ctx: CanvasRenderingContext2D, s: GameState) {
 
 export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
   if (!s.missileBaseActive) return;
-  if (!missileBaseImg.complete || missileBaseImg.naturalWidth <= 0 || missileBaseTotalFrames < 2) return;
+  if (!missileBaseImg.complete || missileBaseImg.naturalWidth <= 0) return;
+  // Lazy-init frame dimensions (handles cached images where onload already fired)
+  if (missileBaseTotalFrames < 2) calcMissileBaseFrames();
+  if (missileBaseTotalFrames < 2) return;
 
   const isFiring = s.missileDoubleTap;
   const cx = s.player.x + PLAYER_W / 2;
