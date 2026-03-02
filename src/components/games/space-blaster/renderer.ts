@@ -460,10 +460,45 @@ missileBaseImg.onload = () => {
 const MISSILE_BASE_ANIM_SPEED = 6;
 
 // Track launch animation state
-let missileBaseLaunchFrame = 0; // current frame in launch sequence
+let missileBaseLaunchFrame = 0;
 let missileBaseLaunchTimer = 0;
 let missileBaseWasFiring = false;
-const MISSILE_LAUNCH_PAIRS = () => Math.max(0, Math.floor((missileBaseTotalFrames - 2) / 2)); // number of missile launch pairs
+let missileBasePairIndex = -1; // which launch pair we're on (-1 = base frames)
+const MISSILE_LAUNCH_PAIRS = () => Math.max(0, Math.floor((missileBaseTotalFrames - 2) / 2));
+
+// Returns true on the exact frame a new missile should be fired (entering a new 2-frame pair)
+export function updateMissileBaseAnim(isFiring: boolean): boolean {
+  if (isFiring && !missileBaseWasFiring) {
+    missileBaseLaunchFrame = 0;
+    missileBaseLaunchTimer = 0;
+    missileBasePairIndex = -1;
+  }
+  missileBaseWasFiring = isFiring;
+  if (!isFiring) return false;
+
+  missileBaseLaunchTimer++;
+  let shouldFire = false;
+  if (missileBaseLaunchTimer >= MISSILE_BASE_ANIM_SPEED) {
+    missileBaseLaunchTimer = 0;
+    missileBaseLaunchFrame++;
+
+    const launchPairs = MISSILE_LAUNCH_PAIRS();
+    if (missileBaseLaunchFrame >= 2) {
+      const launchIdx = missileBaseLaunchFrame - 2;
+      const newPair = Math.floor(launchIdx / 2);
+      if (newPair !== missileBasePairIndex && newPair < launchPairs) {
+        missileBasePairIndex = newPair;
+        shouldFire = true; // fire a missile at start of each pair
+      }
+      if (launchIdx >= launchPairs * 2) {
+        // Animation complete, reset
+        missileBaseLaunchFrame = 0;
+        missileBasePairIndex = -1;
+      }
+    }
+  }
+  return shouldFire;
+}
 
 export function drawMissiles(ctx: CanvasRenderingContext2D, s: GameState) {
   for (const m of s.missiles) {
@@ -492,7 +527,6 @@ export function drawMissiles(ctx: CanvasRenderingContext2D, s: GameState) {
       ctx.fill();
     }
 
-    // Trail particles
     ctx.fillStyle = '#ff6600';
     ctx.globalAlpha = 0.6;
     ctx.fillRect(-1, 4, 2, 3 + Math.random() * 3);
@@ -513,38 +547,15 @@ export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
   const drawSize = baseRadius * 2 + 8;
   const frameH = missileBaseImg.naturalHeight;
 
-  // When firing starts, begin launch animation from frame 0
-  if (isFiring && !missileBaseWasFiring) {
-    missileBaseLaunchFrame = 0;
-    missileBaseLaunchTimer = 0;
-  }
-  missileBaseWasFiring = isFiring;
-
   if (isFiring) {
-    // Advance launch animation
-    missileBaseLaunchTimer++;
-    if (missileBaseLaunchTimer >= MISSILE_BASE_ANIM_SPEED) {
-      missileBaseLaunchTimer = 0;
-      missileBaseLaunchFrame++;
-    }
-
-    // Determine which frame to show
     let frameIndex: number;
     const launchPairs = MISSILE_LAUNCH_PAIRS();
-    
+
     if (missileBaseLaunchFrame < 2) {
-      // Show base frames (first 2 frames)
       frameIndex = missileBaseLaunchFrame;
     } else {
-      // Show missile launch frames (pairs after the first 2)
       const launchIdx = missileBaseLaunchFrame - 2;
-      if (launchIdx < launchPairs * 2) {
-        frameIndex = 2 + launchIdx;
-      } else {
-        // Loop back to base idle or stop
-        missileBaseLaunchFrame = 0;
-        frameIndex = 0;
-      }
+      frameIndex = launchIdx < launchPairs * 2 ? 2 + launchIdx : 0;
     }
 
     frameIndex = Math.min(frameIndex, missileBaseTotalFrames - 1);
@@ -560,7 +571,6 @@ export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.globalAlpha = 1;
     ctx.restore();
   }
-  // When not firing, base is hidden (no drawing)
 
   // Draw missile count indicators
   if (s.missileCount > 0) {

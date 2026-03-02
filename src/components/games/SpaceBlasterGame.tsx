@@ -14,7 +14,7 @@ import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WA
 import { getPlanetForWave, PLANETS } from "./space-blaster/planets";
 import { spawnWaveEnemies, getEnemyScore } from "./space-blaster/enemies";
 import { SHOP_ITEMS } from "./space-blaster/shop";
-import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps } from "./space-blaster/renderer";
+import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, updateMissileBaseAnim } from "./space-blaster/renderer";
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 
@@ -416,9 +416,10 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             s.missileCount++;
           }
         }
-        // Fire missiles on double-tap — target highest HP enemy
-        s.missileFireTimer -= dt;
-        if (s.missileDoubleTap && s.missileFireTimer <= 0 && s.missileCount > 0 && s.enemies.length > 0) {
+
+        // Animation-driven missile firing: each 2-frame pair in the base triggers a launch
+        const shouldFireMissile = updateMissileBaseAnim(s.missileDoubleTap && s.missileCount > 0 && s.enemies.length > 0);
+        if (shouldFireMissile && s.missileCount > 0 && s.enemies.length > 0) {
           const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
           // Find enemy with highest HP
           let bestIdx = -1, bestHp = -1;
@@ -438,12 +439,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               life: 180,
             });
             s.missileCount--;
-            s.missileFireTimer = MISSILE_FIRE_RATE;
             soundsRef.current.playShoot();
           }
-          if (s.missileCount <= 0) s.missileDoubleTap = false;
         }
-        // Stop firing when all missiles are out
         if (s.missileCount <= 0) s.missileDoubleTap = false;
 
         // Update missiles — steer towards highest HP enemy
