@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +40,8 @@ export default function CartRequestDialog({
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [contactingSupport, setContactingSupport] = useState(false);
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
 
   // Check for existing pending request
   const { data: existingRequest, isLoading } = useQuery({
@@ -105,7 +108,7 @@ export default function CartRequestDialog({
 
         // Check option-specific pricing
         if (item.product_options?.price_adjustment) {
-          itemPrice += Number(item.product_options.price_adjustment);
+          itemPrice += Math.round(Number(item.product_options.price_adjustment) * usdToIqd);
         }
 
         return {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useShippingSettings } from './useShippingCalculator';
 import { toast } from 'sonner';
 
 export interface CartItem {
@@ -84,6 +85,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
   const { user } = useAuth();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   const optimisticLockRef = useRef(0); // Guard against fetch overwriting optimistic updates
 
   // Fetch pending cart request
@@ -597,7 +600,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Add option price adjustment
       const itemOption = (item as any).product_options;
       if (itemOption?.price_adjustment) {
-        itemPrice += Number(itemOption.price_adjustment);
+        itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
       }
 
       // Add pre-order shipping adjustment (if chosen)

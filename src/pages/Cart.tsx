@@ -24,6 +24,7 @@ import { useLanguage } from '@/lib/i18n';
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Cart = () => {
@@ -33,6 +34,8 @@ const Cart = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -576,7 +579,7 @@ const Cart = () => {
             itemPrice = Number(colorData.price);
           }
           if (itemOption?.price_adjustment) {
-            itemPrice += Number(itemOption.price_adjustment);
+            itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
           }
 
           return {
@@ -877,7 +880,7 @@ const Cart = () => {
           }
           
           if (itemOption?.price_adjustment) {
-            itemPrice += Number(itemOption.price_adjustment);
+            itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
           }
 
           // Add pre-order shipping adjustment (if chosen)
@@ -1005,7 +1008,7 @@ const Cart = () => {
         }
         
         if (itemOption?.price_adjustment) {
-          itemPrice += Number(itemOption.price_adjustment);
+          itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
         }
 
         // Add pre-order shipping adjustment (if chosen)
@@ -1215,7 +1218,7 @@ const Cart = () => {
                     }
                     
                     if (itemOption?.price_adjustment) {
-                      itemPrice += Number(itemOption.price_adjustment);
+                      itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
                     }
 
                     const shippingIndex = (item as any).shipping_option_index;
