@@ -475,8 +475,8 @@ const Cart = () => {
     setShowTermsSheet(false);
   };
 
-  // Direct sale checkout handler (no wallet payment)
-  const handleDirectSaleCheckout = async (data: { notes: string }) => {
+   // Direct sale checkout handler (with optional wallet payment)
+  const handleDirectSaleCheckout = async (data: { notes: string; useWallet: boolean; walletDeduction: number }) => {
     if (!user || isDirectSaleProcessing) return;
     setIsDirectSaleProcessing(true);
 
@@ -518,19 +518,35 @@ const Cart = () => {
       const { data: orderNumberData } = await supabase.rpc('generate_order_number');
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      // Create order directly (no wallet payment)
+      // Wallet deduction for direct sale
+      const walletDeductionAmount = data.useWallet ? Math.min(data.walletDeduction, orderSubtotal + deliveryFeeCalc) : 0;
+      const codRemaining = (orderSubtotal + deliveryFeeCalc) - walletDeductionAmount;
+
+      // Deduct from wallet if applicable
+      if (walletDeductionAmount > 0) {
+        const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
+          p_user_id: user.id,
+          p_amount: walletDeductionAmount,
+          p_description: `خصم من المحفظة لطلب بيع مباشر`,
+        });
+        if (walletError) {
+          toast({ title: "خطأ", description: "فشل في خصم رصيد المحفظة", variant: "destructive" });
+          return;
+        }
+      }
+
       const orderInsertData = {
         user_id: user.id,
         order_number: orderNumber,
         total_amount: orderSubtotal + deliveryFeeCalc,
         subtotal: orderSubtotal,
-        paid_amount: 0,
-        remaining_amount: orderSubtotal + deliveryFeeCalc,
+        paid_amount: walletDeductionAmount,
+        remaining_amount: codRemaining,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
         status: 'confirmed',
-        payment_status: 'cod',
+        payment_status: codRemaining <= 0 ? 'paid' : 'cod',
         order_type: 'direct',
       } as any;
 
@@ -622,8 +638,11 @@ const Cart = () => {
         }
       }
 
-      // Invalidate today-direct-orders cache so next order gets free delivery
+      // Invalidate caches
       queryClient.invalidateQueries({ queryKey: ['today-direct-orders'] });
+      if (walletDeductionAmount > 0) {
+        queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+      }
 
       // Send telegram notification
       try {
@@ -643,7 +662,7 @@ const Cart = () => {
 
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `🛒 <b>طلب جديد - بيع مباشر (دفع عند الاستلام)</b>\n\n` +
+            message: `🛒 <b>طلب جديد - بيع مباشر ${walletDeductionAmount > 0 ? (codRemaining > 0 ? '(دفع مختلط)' : '(مدفوع من المحفظة)') : '(دفع عند الاستلام)'}</b>\n\n` +
               `👤 العميل: ${profileData?.full_name || 'غير محدد'}\n` +
               `📱 اليوزر: @${profileData?.username || 'غير محدد'}\n` +
               `📞 الهاتف: ${selectedAddress.phone_number}\n\n` +
@@ -652,7 +671,8 @@ const Cart = () => {
               `📍 المحافظة: ${selectedAddress.governorate}\n\n` +
               `📝 <b>تفاصيل المنتجات:</b>\n${itemDetailsList}\n\n` +
               `💰 الإجمالي: ${(orderSubtotal + deliveryFeeCalc).toLocaleString()} د.ع\n` +
-              `💳 الدفع: عند الاستلام`,
+              (walletDeductionAmount > 0 ? `💳 مدفوع من المحفظة: ${walletDeductionAmount.toLocaleString()} د.ع\n` : '') +
+              `💳 ${codRemaining > 0 ? `المتبقي عند الاستلام: ${codRemaining.toLocaleString()} د.ع` : 'تم الدفع بالكامل من المحفظة ✅'}`,
           },
         });
       } catch (e) { console.error('Telegram error:', e); }
@@ -1903,6 +1923,7 @@ const Cart = () => {
         deliveryFee={deliveryFee}
         itemCount={itemCount}
         isProcessing={isDirectSaleProcessing}
+        walletBalance={walletBalance}
       />
 
       {/* Order Success Animation */}
