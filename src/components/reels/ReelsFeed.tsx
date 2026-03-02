@@ -42,12 +42,17 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   }, [toggleInteraction]);
 
   const handleProductClick = useCallback((productId: string) => {
-    const reel = reels.find(r => r.product?.id === productId);
-    const merchantId = reel?.merchant?.id;
-    if (merchantId) {
-      navigate(`/store/${merchantId}?product=${productId}`);
+    const reel = reels.find(r => r.product?.id === productId || r.siteProduct?.id === productId);
+    if (reel?.siteProduct?.id === productId) {
+      // Site product - navigate to product detail page
+      navigate(`/product/${productId}`);
     } else {
-      navigate(`/community?tab=products`);
+      const merchantId = reel?.merchant?.id;
+      if (merchantId) {
+        navigate(`/store/${merchantId}?product=${productId}`);
+      } else {
+        navigate(`/community?tab=products`);
+      }
     }
   }, [navigate, reels]);
 

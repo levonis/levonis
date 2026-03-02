@@ -28,7 +28,11 @@ export default function ReelsBar() {
         .order('created_at', { ascending: false })
         .limit(20);
       if (error) throw error;
-      return (data || []) as ReelThumb[];
+      const all = (data || []) as ReelThumb[];
+      // Pin site/admin reels (no merchant_id) first
+      const site = all.filter(r => !r.merchant_id);
+      const merchant = all.filter(r => r.merchant_id);
+      return [...site, ...merchant];
     },
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

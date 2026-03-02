@@ -78,11 +78,16 @@ export function useReelsFeed() {
         interactions = interData || [];
       }
 
-      return (reels || []).map(r => ({
+      const mapped = (reels || []).map(r => ({
         ...r,
         isLiked: interactions.some(i => i.reel_id === r.id && i.interaction_type === 'like'),
         isSaved: interactions.some(i => i.reel_id === r.id && i.interaction_type === 'save'),
       })) as Reel[];
+
+      // Pin site/admin reels (no merchant_id) first
+      const siteReels = mapped.filter(r => !r.merchant);
+      const merchantReels = mapped.filter(r => r.merchant);
+      return [...siteReels, ...merchantReels];
     },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) return undefined;

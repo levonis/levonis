@@ -136,10 +136,12 @@ function AppContent() {
   useOnlineHeartbeat();
   const location = useLocation();
   const isGamesPage = location.pathname === "/games";
+  const isReelsPage = location.pathname === "/community/reels";
+  const hideChrome = isGamesPage || isReelsPage;
   
   return (
     <>
-      <AnnouncementBar />
+      {!isReelsPage && <AnnouncementBar />}
       <main style={{ paddingTop: 0 }}>
         <Suspense fallback={<SuspenseLoader />}>
           <Routes>
@@ -255,10 +257,9 @@ function AppContent() {
         </Suspense>
       </main>
       {/* Bottom/Side Navigation Bar */}
-      {!isGamesPage && <AppNavBar />}
-      {/* Add bottom padding on mobile for the nav bar */}
-      {!isGamesPage && <div className="h-16 md:hidden" />}
-      {!isGamesPage && (
+      {!hideChrome && <AppNavBar />}
+      {!hideChrome && <div className="h-16 md:hidden" />}
+      {!hideChrome && (
         <>
           {/* Levo Help Bot - floating assistant (above chat button) */}
           <Suspense fallback={null}>
