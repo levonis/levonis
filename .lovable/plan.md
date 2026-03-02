@@ -1,55 +1,68 @@
 
 
-## خطة تحسين سرعة تحميل الصفحة واستجابة الموقع
+## تحليل الطلب
 
-### الملاحظات والمشاكل المكتشفة
+الطلب الأصلي يتضمن مشروع لعبة ضخم جداً (3D، multiplayer، متجر، battle pass، إلخ) وهو غير قابل للتنفيذ في بيئة React/Lovable. ما يمكن تنفيذه فعلياً هو **لعبة Space Shooter بأسلوب Pixel Art** باستخدام Canvas 2D تتكامل مع نظام النقاط الحالي، بنفس نمط الألعاب الموجودة (RPS و Bank).
 
-1. **خطأ `fetchPriority` في BannerCarousel** — React 18 لا يدعم `fetchPriority` كـ prop مباشر على `<img>` (يظهر في Console كتحذير). يجب استخدام الكتابة الصغيرة `fetchpriority` أو إزالته.
+## ما سيتم بناؤه
 
-2. **BannerCarousel progress timer مكثف** — `setInterval` كل 50ms يسبب 20 تحديث state/ثانية (re-renders مستمرة). يمكن استبداله بـ CSS animation للـ progress bar.
+**لعبة "حرب الفضاء" - Space Blaster** باستخدام Canvas API:
+- سفينة فضائية يتحكم بها اللاعب (لمس للموبايل + لوحة مفاتيح)
+- أعداء يظهرون بموجات متصاعدة الصعوبة
+- إطلاق نار على الأعداء وتفاديهم
+- 3 حياة للاعب
+- نظام نقاط متصل بنظام المكافآت الحالي
+- خلفية نجوم متحركة (parallax)
+- بوس كل 5 موجات
+- تصميم Pixel Art بالكامل مرسوم بـ Canvas
 
-3. **CategoryDetail يجلب `select('*')` للمنتجات** — يجلب كل الأعمدة بما فيها `colors` (JSON كبير جداً كما يظهر في الـ network). يجب تحديد الأعمدة المطلوبة فقط.
+## الخطة التقنية
 
-4. **Home page: استعلام `direct-sale-categories-v2` بـ `staleTime: 0`** — يعيد الجلب في كل مرة. يمكن رفعه إلى دقيقة واحدة على الأقل.
+### 1. تسجيل اللعبة في GamesData.ts
+- إضافة node جديد `space_blaster` بحالة `LIVE`
+- تصنيف: استراتيجية، شعبية، جديدة
 
-5. **AnnouncementBar: `refetchInterval: 120000`** — مقبول لكن يمكن تحسين الأداء بإضافة `refetchOnWindowFocus: false`.
+### 2. إنشاء `SpaceBlasterGame.tsx` (~500 سطر)
+المكون الرئيسي للعبة يحتوي على:
 
-6. **Service Worker فارغ عملياً** — لا يخزّن أي assets مؤقتاً (الـ fetch handler لا يفعل شيئاً). يمكن إضافة تخزين مؤقت للـ static assets.
+- **رسم Canvas**: سفينة اللاعب، أعداء (روبوتات/طائرات)، رصاصات، انفجارات، نجوم خلفية - كلها مرسومة pixel-by-pixel
+- **Game Loop**: `requestAnimationFrame` لتحديث الحركة والرسم
+- **التحكم**: 
+  - موبايل: لمس وسحب لتحريك السفينة، إطلاق تلقائي
+  - كمبيوتر: أسهم/WASD + Space للإطلاق
+- **موجات أعداء**: 10 موجات، كل موجة أصعب، بوس في الموجة 5 و 10
+- **نظام النقاط**: +5 لكل عدو، +50 للبوس، -10 عند الموت
+- **اتصال بنظام المكافآت**: عبر `supabase.rpc('admin_adjust_points')` مثل RPS
 
-### التحسينات المقترحة
+### 3. تحديث `MiniGames.tsx`
+- تحويل الصفحة من "قريباً" إلى عرض قائمة الألعاب باستخدام `GameCard`
+- عند الضغط على لعبة LIVE يفتح مكون اللعبة المناسب
 
-#### 1. إصلاح خطأ `fetchPriority` في BannerCarousel
-- **الملف**: `src/components/BannerCarousel.tsx`
-- إزالة `fetchPriority` prop من `<img>` واستخدام `link preload` فقط (موجود بالفعل)
+### 4. هيكل اللعبة الداخلي
 
-#### 2. استبدال progress timer بـ CSS animation
-- **الملف**: `src/components/BannerCarousel.tsx`
-- استبدال `setInterval` كل 50ms بـ CSS `@keyframes` + `animation-duration: 5s` لشريط التقدم
-- تقليل re-renders من ~20/ثانية إلى 0 أثناء التشغيل التلقائي
-- استخدام `setTimeout` واحد فقط للانتقال بين البانرات
+```text
+الشاشات:
+┌─────────────┐
+│  شاشة البدء  │ → عنوان + زر PLAY
+├─────────────┤
+│  اللعبة      │ → Canvas + HUD (حياة/نقاط/موجة)
+├─────────────┤
+│  انتهاء اللعبة│ → النتيجة + إعادة اللعب
+└─────────────┘
 
-#### 3. تحسين استعلام المنتجات في CategoryDetail
-- **الملف**: `src/pages/CategoryDetail.tsx`
-- تغيير `select('*')` إلى `select('id, name, name_ar, description_ar, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors')` لتقليل حجم البيانات
-- إضافة `staleTime: 2 * 60 * 1000` لتقليل الاستعلامات المتكررة
-
-#### 4. تحسين staleTime لاستعلام البيع المباشر
-- **الملف**: `src/pages/Home.tsx`
-- رفع `staleTime` من `0` إلى `60 * 1000` (دقيقة واحدة) لـ `direct-sale-categories-v2`
-
-#### 5. تفعيل التخزين المؤقت في Service Worker
-- **الملف**: `public/sw.js`
-- إضافة استراتيجية cache-first للملفات الثابتة (JS, CSS, fonts, images)
-- استراتيجية network-first للـ HTML
-
-#### 6. تحسينات CSS طفيفة
-- **الملف**: `src/index.css`
-- إضافة `content-visibility: auto` للأقسام أسفل الصفحة (CommunitySection, OffersStorageSection) لتأجيل رسمها
+Game Objects (Canvas-drawn):
+- PlayerShip: 16x16 px، أزرق نيون
+- Enemy: 12x12 px، أحمر، أنواع مختلفة
+- Boss: 32x32 px، بنفسجي
+- Bullet: 2x6 px
+- Star: 1-2 px (خلفية)
+- Explosion: 8 frames animation
+```
 
 ### الملفات المتأثرة
-- `src/components/BannerCarousel.tsx`
-- `src/pages/CategoryDetail.tsx`
-- `src/pages/Home.tsx`
-- `public/sw.js`
-- `src/index.css`
+| ملف | تغيير |
+|-----|--------|
+| `src/components/games/SpaceBlasterGame.tsx` | **جديد** - مكون اللعبة الكامل |
+| `src/components/games/GamesData.ts` | إضافة node اللعبة الجديدة |
+| `src/pages/MiniGames.tsx` | تحويل من "قريباً" لعرض الألعاب |
 
