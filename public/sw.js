@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v6';
+const CACHE_NAME = 'levonis-v7';
 const STATIC_EXTENSIONS = /\.(js|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico)$/i;
 
 self.addEventListener('install', (event) => {
@@ -23,8 +23,9 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/rest/') || url.pathname.includes('/functions/') || url.pathname.includes('/auth/')) return;
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
 
-  // Static assets: cache-first
-  if (STATIC_EXTENSIONS.test(url.pathname) || url.pathname.startsWith('/assets/')) {
+  // Never cache Vite preview/dev module paths to avoid stale-chunk blank screens
+  if (url.pathname.startsWith('/src/') || url.pathname.startsWith('/node_modules/') || url.pathname.startsWith('/@vite/')) return;
+
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
