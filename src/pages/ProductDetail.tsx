@@ -181,28 +181,60 @@ const ProductDetail = () => {
     }
   });
 
-  const hasDirectSale = product?.has_in_stock ?? false;
+  const rawHasDirectSale = product?.has_in_stock ?? false;
   const hasPreOrder = product?.has_pre_order ?? false;
+  const hasOptionVariants = (productOptions?.length ?? 0) > 0;
+  const hasColorVariants = Array.isArray(product?.colors) && (product?.colors as any[]).length > 0;
 
-  // Check if product without options/colors has direct_stock = 0
-  const hasNoVariants = (!productOptions || productOptions.length === 0) && (!Array.isArray(product?.colors) || (product?.colors as any[]).length === 0);
-  const directStockDepleted = hasNoVariants && hasDirectSale && (product as any)?.direct_stock != null && Number((product as any).direct_stock) <= 0;
+  const hasDirectOptionStock = useMemo(() => {
+    if (!hasOptionVariants) return true;
 
+    return (productOptions || []).some((opt: any) => {
+      if ((opt.available_for_direct_sale ?? true) === false) return false;
+      if (opt.stock_quantity != null) return Number(opt.stock_quantity) > 0;
+      if (opt.in_stock != null) return !!opt.in_stock;
+      return true;
+    });
+  }, [hasOptionVariants, productOptions]);
+
+  const hasDirectColorStock = useMemo(() => {
+    if (!hasColorVariants) return true;
+    return !isAllDirectStockDepleted(product);
+  }, [hasColorVariants, product]);
+
+  const hasSimpleDirectStock = useMemo(() => {
+    if (hasOptionVariants || hasColorVariants) return true;
+    if ((product as any)?.direct_stock != null) return Number((product as any).direct_stock) > 0;
+    return false;
+  }, [hasOptionVariants, hasColorVariants, product]);
+
+  const directStockDepleted = rawHasDirectSale && (!hasDirectOptionStock || !hasDirectColorStock || !hasSimpleDirectStock);
+  const hasDirectSale = rawHasDirectSale && !directStockDepleted;
   const hasBothTypes = hasDirectSale && hasPreOrder;
 
   const activeSaleType = useMemo(() => {
+    if (selectedSaleType === 'direct' && !hasDirectSale) return hasPreOrder ? 'preorder' : 'direct';
+    if (selectedSaleType === 'preorder' && !hasPreOrder) return hasDirectSale ? 'direct' : 'preorder';
     if (selectedSaleType) return selectedSaleType;
     if (hasDirectSale) return 'direct';
     if (hasPreOrder) return 'preorder';
     return 'direct';
   }, [selectedSaleType, hasDirectSale, hasPreOrder]);
 
+  useEffect(() => {
+    if (!hasDirectSale && hasPreOrder && selectedSaleType !== 'preorder') {
+      setSelectedSaleType('preorder');
+    }
+  }, [hasDirectSale, hasPreOrder, selectedSaleType]);
+
   // Auto-select first available option when options load
   useEffect(() => {
     if (!productOptions || productOptions.length === 0 || selectedOption) return;
     const firstAvailable = productOptions.find((opt: any) => {
       const isAvailable = activeSaleType === 'direct' ? (opt.available_for_direct_sale ?? true) : (opt.available_for_pre_order ?? true);
-      const passesStockCheck = activeSaleType === 'preorder' ? true : !!opt.in_stock;
+      const passesStockCheck = activeSaleType === 'preorder'
+        ? true
+        : (opt.stock_quantity != null ? Number(opt.stock_quantity) > 0 : (opt.in_stock ?? true));
       return isAvailable && passesStockCheck;
     });
     if (firstAvailable) {
@@ -416,12 +448,78 @@ const ProductDetail = () => {
   const hasStockInfo = activeSaleType === 'direct' && directStockQuantity != null && directStockQuantity > 0;
 
   const handleAddToCart = async () => {
-    // Block if options exist but still loading or none selected
+    // Block if options exist but still loading
     if (optionsLoading) { toast.error('جاري تحميل الخيارات...'); return; }
+
+    // If direct stock is fully depleted, force fallback to preorder when available
+    if (activeSaleType === 'direct' && directStockDepleted) {
+      if (hasPreOrder) {
+        setSelectedSaleType('preorder');
+        toast.info('نفد مخزون البيع المباشر، تم التحويل إلى الحجز المسبق');
+      } else {
+        toast.error(t('product_out_of_stock'));
+      }
+      return;
+    }
+
+    const availableOptions = filteredOptions.filter((opt: any) => opt.isAvailable);
+
+    // Block if options exist but none selected
     if (productOptions && productOptions.length > 0 && !selectedOption) { toast.error(t('product_select_option')); return; }
+
+    // In direct sale: no available options means out of stock for direct sale
+    if (activeSaleType === 'direct' && filteredOptions.length > 0 && availableOptions.length === 0) {
+      if (hasPreOrder) {
+        setSelectedSaleType('preorder');
+        toast.info('لا توجد خيارات متاحة للبيع المباشر، تم التحويل إلى الحجز المسبق');
+      } else {
+        toast.error(t('product_out_of_stock'));
+      }
+      return;
+    }
+
+    const selectedOptionState = selectedOption
+      ? filteredOptions.find((opt: any) => opt.id === selectedOption)
+      : null;
+
+    if (selectedOptionState && !selectedOptionState.isAvailable) {
+      if (activeSaleType === 'direct' && hasPreOrder) {
+        setSelectedSaleType('preorder');
+        toast.info('الخيار المحدد غير متوفر للبيع المباشر، تم التحويل إلى الحجز المسبق');
+      } else {
+        toast.error(t('product_out_of_stock'));
+      }
+      return;
+    }
+
     // Block if colors exist but none selected
     const availableColors = filteredColors.filter((c: any) => c.isAvailable);
+
+    if (activeSaleType === 'direct' && filteredColors.length > 0 && availableColors.length === 0) {
+      if (hasPreOrder) {
+        setSelectedSaleType('preorder');
+        toast.info('لا يوجد مخزون مباشر للألوان الحالية، تم التحويل إلى الحجز المسبق');
+      } else {
+        toast.error(t('product_out_of_stock'));
+      }
+      return;
+    }
+
     if (availableColors.length > 0 && !selectedColor) { toast.error('يرجى اختيار اللون'); return; }
+
+    const selectedColorState = selectedColor
+      ? filteredColors.find((c: any) => c.name_ar === selectedColor)
+      : null;
+
+    if (selectedColorState && !selectedColorState.isAvailable) {
+      if (activeSaleType === 'direct' && hasPreOrder) {
+        setSelectedSaleType('preorder');
+        toast.info('اللون المحدد غير متوفر للبيع المباشر، تم التحويل إلى الحجز المسبق');
+      } else {
+        toast.error(t('product_out_of_stock'));
+      }
+      return;
+    }
     const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
     // Build fallback options same as in the UI
     const fallbackOpts: any[] = [];
@@ -482,7 +580,9 @@ const ProductDetail = () => {
     if (!productOptions) return [];
     return productOptions.map((option: any) => {
       const isAvailableForType = activeSaleType === 'direct' ? (option.available_for_direct_sale ?? true) : (option.available_for_pre_order ?? true);
-      const passesStockCheck = activeSaleType === 'preorder' ? true : !!option.in_stock;
+      const passesStockCheck = activeSaleType === 'preorder'
+        ? true
+        : (option.stock_quantity != null ? Number(option.stock_quantity) > 0 : (option.in_stock ?? true));
       return { ...option, isAvailable: isAvailableForType && passesStockCheck };
     });
   };
