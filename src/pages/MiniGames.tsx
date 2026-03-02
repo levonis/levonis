@@ -53,6 +53,7 @@ export default function MiniGames() {
             )}
           </Suspense>
         </div>
+        <PixelMusicRadio />
       </div>
     );
   }
