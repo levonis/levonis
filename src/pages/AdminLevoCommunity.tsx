@@ -2,7 +2,7 @@ import { useState, Suspense, lazy, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Users, Award, ImageIcon, 
-  Loader2, Settings, FileText, Film,
+  Loader2, Settings, FileText, 
   Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent,
   TrendingUp, Clock, Megaphone, Gift, Tag, Truck, Plus, X, MapPin,
   CreditCard, Banknote, AlertTriangle
@@ -27,7 +27,6 @@ const AdminBadgeSettings = lazy(() => import("@/pages/AdminBadgeSettings"));
 const AdminAvatarFrames = lazy(() => import("@/pages/AdminAvatarFrames"));
 const AdminCommunityRequests = lazy(() => import("@/components/admin/AdminCommunityRequests"));
 const AdminAssistanceManager = lazy(() => import("@/components/admin/AdminAssistanceManager"));
-const AdminReelsManager = lazy(() => import("@/components/admin/AdminReelsManager"));
 
 interface TabConfig {
   value: string;
@@ -39,7 +38,6 @@ const tabs: TabConfig[] = [
   { value: "merchants", icon: Store, label: "التجار" },
   { value: "customers", icon: Users, label: "العملاء" },
   { value: "requests", icon: FileText, label: "الطلبات" },
-  { value: "reels", icon: Film, label: "ريلز" },
   { value: "assistance", icon: Gift, label: "المساعدات" },
   { value: "badges", icon: Award, label: "الشارات" },
   { value: "frames", icon: ImageIcon, label: "الإطارات" },
@@ -1045,7 +1043,6 @@ export default function AdminLevoCommunity() {
                 {activeTab === "merchants" && "إدارة طلبات التجار والموافقات"}
                 {activeTab === "customers" && "عرض وإدارة ملفات العملاء"}
                 {activeTab === "requests" && "مراجعة طلبات الطباعة"}
-                {activeTab === "reels" && "رفع وإدارة ريلز الموقع"}
                 {activeTab === "assistance" && "إدارة مسابقات التجار والهدايا والكوبونات والظروف"}
                 {activeTab === "badges" && "إعدادات شارات الأداء"}
                 {activeTab === "frames" && "إدارة إطارات الصور"}
@@ -1061,7 +1058,6 @@ export default function AdminLevoCommunity() {
             {activeTab === "merchants" && <AdminCommunityMerchants embedded />}
             {activeTab === "customers" && <AdminCommunityCustomers embedded />}
             {activeTab === "requests" && <AdminCommunityRequests />}
-            {activeTab === "reels" && <AdminReelsManager />}
             {activeTab === "assistance" && <AdminAssistanceManager />}
             {activeTab === "badges" && <AdminBadgeSettings embedded />}
             {activeTab === "frames" && <AdminAvatarFrames embedded />}
