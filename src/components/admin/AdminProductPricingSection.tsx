@@ -39,7 +39,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
 
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
-  const [roundUp, setRoundUp] = useState<boolean>(false);
+  const [roundUp, setRoundUp] = useState<boolean>(true);
 
   useEffect(() => {
     if (editingProduct) {
@@ -50,7 +50,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       setHeightCm(editingProduct.height_cm || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
-      setRoundUp(editingProduct.round_up_price ?? false);
+      setRoundUp(editingProduct.round_up_price ?? true);
 
       // Determine sale types
       setHasPreOrder(editingProduct.has_pre_order ?? false);
@@ -169,11 +169,8 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
             </Badge>
           )}
         </div>
-        <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
-          roundUp ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
-        }`}>
-          <Checkbox checked={roundUp} onCheckedChange={(checked) => setRoundUp(!!checked)} />
-          <ArrowUp className="h-3.5 w-3.5" />
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <Checkbox checked={roundUp} onCheckedChange={(checked) => setRoundUp(!!checked)} className="data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
           <span className="text-xs font-medium">تقريب لأقرب 250</span>
         </label>
       </div>
