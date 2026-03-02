@@ -1,19 +1,21 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Gamepad2 } from "lucide-react";
+import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PixelBackground from "@/components/games/PixelBackground";
 import PixelLoadingScreen from "@/components/games/PixelLoadingScreen";
 import { useGameSounds } from "@/components/games/useGameSounds";
-import PixelSprite from "@/components/games/PixelSprite";
-import { SPRITE_ICONS } from "@/components/games/SpriteMap";
+import GameCard from "@/components/games/GameCard";
+import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource } from "@/components/games/GamesData";
 
+const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
+
+const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
 export default function MiniGames() {
   const navigate = useNavigate();
   const { playClick } = useGameSounds();
 
-  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -28,7 +30,31 @@ export default function MiniGames() {
   }, []);
 
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
+  const [activeGame, setActiveGame] = useState<string | null>(null);
+
   const handleLoadComplete = useCallback(() => setLoading(false), []);
+
+  const filteredGames = filterGameNodes(GAME_NODES, activeFilter);
+
+  const handlePlay = (game: GameResource) => {
+    setActiveGame(game.node_name);
+  };
+
+  if (activeGame) {
+    return (
+      <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
+        <PixelBackground />
+        <div className="relative z-10 max-w-2xl mx-auto">
+          <Suspense fallback={<div className="flex items-center justify-center h-screen text-primary font-mono">Loading...</div>}>
+            {activeGame === 'space_blaster' && (
+              <SpaceBlasterGame onBack={() => setActiveGame(null)} />
+            )}
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
@@ -39,48 +65,51 @@ export default function MiniGames() {
       <div className="sticky top-0 z-20 pixel-header-bar">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="ghost" size="sm"
             onClick={() => { playClick(); navigate('/rewards?tab=points&sub=games'); }}
             className="gap-1 text-muted-foreground hover:text-foreground font-mono text-xs pixel-btn-ghost"
           >
-            <ArrowRight className="h-4 w-4" />
-            BACK
+            <ArrowRight className="h-4 w-4" /> BACK
           </Button>
+          <div className="flex items-center gap-2">
+            <Gamepad2 className="h-4 w-4 text-primary" />
+            <span className="text-primary font-bold text-xs font-mono tracking-wider">ARCADE</span>
+          </div>
         </div>
       </div>
 
-      {/* Coming Soon */}
-      <div className="max-w-2xl mx-auto px-4 relative z-10 flex flex-col items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
-        <div className="text-center space-y-6">
-          <div className="inline-flex items-center gap-2 pixel-frame px-5 py-2 mb-2">
-            <Gamepad2 className="h-5 w-5 text-primary" />
-            <span className="text-primary font-bold text-sm font-mono tracking-wider">PIXEL GAMES</span>
-          </div>
+      {/* Filters */}
+      <div className="max-w-2xl mx-auto px-4 py-2 relative z-10">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {FILTER_NODES.map(f => {
+            const Icon = FILTER_ICONS[f.icon_name];
+            const isActive = activeFilter === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => { playClick(); setActiveFilter(f.id); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded font-mono text-[10px] whitespace-nowrap transition-all ${
+                  isActive ? 'pixel-btn-active text-primary-foreground' : 'pixel-frame text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-3 w-3" /> {f.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-          <div className="relative">
-            <div className="text-7xl mb-4 animate-pulse">🎮</div>
-            <div className="flex justify-center gap-3 opacity-50">
-              <PixelSprite sprite={SPRITE_ICONS.STAR_FULL} scale={1.5} className="pixel-twinkle" />
-              <PixelSprite sprite={SPRITE_ICONS.GEM_BLUE} scale={1.5} className="pixel-twinkle" style={{ animationDelay: "0.3s" }} />
-              <PixelSprite sprite={SPRITE_ICONS.GEM_GREEN} scale={1.5} className="pixel-twinkle" style={{ animationDelay: "0.6s" }} />
-            </div>
-          </div>
-
-          <h1 className="text-3xl font-black text-foreground font-mono"
-            style={{ textShadow: "3px 3px 0 hsl(var(--accent) / 0.4)" }}>
-            قريباً...
-          </h1>
-          <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
-            نعمل على تجهيز ألعاب مميزة لكم! ترقبوا التحديثات القادمة 🚀
-          </p>
-
-          <Button
-            onClick={() => { playClick(); navigate('/rewards'); }}
-            className="pixel-btn-active font-mono text-xs mt-4"
-          >
-            العودة للمكافآت
-          </Button>
+      {/* Game Grid */}
+      <div className="max-w-2xl mx-auto px-4 py-4 relative z-10">
+        <div className="grid grid-cols-2 gap-3">
+          {filteredGames.map(game => (
+            <GameCard
+              key={game.node_name}
+              game={game}
+              onPlay={() => handlePlay(game)}
+              onClickSound={playClick}
+            />
+          ))}
         </div>
       </div>
     </div>

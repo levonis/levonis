@@ -76,6 +76,19 @@ export interface GameResource {
 
 export const GAME_NODES: GameResource[] = [
   {
+    node_name: "space_blaster",
+    title: "حرب الفضاء",
+    description: "قُد سفينتك الفضائية ودمّر موجات الأعداء في 10 مراحل مثيرة!",
+    icon: "🚀",
+    status: GameStatus.LIVE,
+    category: GameCategory.STRATEGY,
+    reward: "+5 ~ +50",
+    players: "1 لاعب",
+    difficulty: Difficulty.MEDIUM,
+    popular: true,
+    is_new: true,
+  },
+  {
     node_name: "rps",
     title: "حجرة ورقة مقص",
     description: "تحدى الكمبيوتر في 3 جولات واربح حتى 30 نقطة!",
