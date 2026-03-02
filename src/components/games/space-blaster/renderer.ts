@@ -1,4 +1,6 @@
-import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES } from './types';
+import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES } from './types';
+import missileSrc from '@/assets/missile-sprite.png';
+import missileBaseSrc from '@/assets/missile-base-sprite.png';
 import { getPlanetForWave, PLANETS } from './planets';
 import playerShipSrc from '@/assets/player-ship.png';
 import shipDmg1Src from '@/assets/ship-damage-1.png';
@@ -358,6 +360,12 @@ export function drawHUD(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.fillStyle = '#aaaaaa';
     ctx.fillText(`🛡 ×${s.shieldInventory}`, 8, 34);
   }
+  // Missile info
+  if (s.missileBaseActive) {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ff8800';
+    ctx.fillText(`🚀 ${s.missileCount}/${MAX_MISSILES}`, W - 8, 34);
+  }
 }
 
 export function drawScreenFlash(ctx: CanvasRenderingContext2D, flash: number) {
@@ -387,5 +395,107 @@ export function drawWaveTransition(ctx: CanvasRenderingContext2D, s: GameState) 
         ctx.fillText(`WAVE ${s.wave + 1} INCOMING...`, W / 2, H / 2);
       }
     }
+  }
+}
+
+// ── Missile sprite ──
+const missileImg = new Image();
+missileImg.src = missileSrc;
+const MISSILE_SPRITE_FRAMES = 3; // 3 frames in horizontal strip
+const MISSILE_ANIM_SPEED = 6;
+
+// ── Missile base sprite ──
+const missileBaseImg = new Image();
+missileBaseImg.src = missileBaseSrc;
+// The base sprite sheet has multiple frames in horizontal strip
+let missileBaseFrames = 0; // computed on load
+missileBaseImg.onload = () => {
+  // Estimate frames: assume square-ish frames
+  const frameH = missileBaseImg.naturalHeight;
+  missileBaseFrames = Math.round(missileBaseImg.naturalWidth / frameH) || 1;
+};
+const MISSILE_BASE_ANIM_SPEED = 8;
+
+export function drawMissiles(ctx: CanvasRenderingContext2D, s: GameState) {
+  for (const m of s.missiles) {
+    ctx.save();
+    ctx.translate(Math.round(m.x), Math.round(m.y));
+    ctx.rotate(m.angle + Math.PI / 2); // rotate so sprite points in direction of travel
+
+    if (missileImg.complete && missileImg.naturalWidth > 0) {
+      const frameW = Math.round(missileImg.naturalWidth / MISSILE_SPRITE_FRAMES);
+      const frameH = missileImg.naturalHeight;
+      const frameIndex = Math.floor(s.gameTime / MISSILE_ANIM_SPEED) % MISSILE_SPRITE_FRAMES;
+      const drawW = 14;
+      const drawH = drawW * (frameH / frameW);
+      ctx.drawImage(
+        missileImg,
+        frameIndex * frameW, 0, frameW, frameH,
+        Math.round(-drawW / 2), Math.round(-drawH / 2), Math.round(drawW), Math.round(drawH)
+      );
+    } else {
+      // Fallback: simple triangle
+      ctx.fillStyle = '#ff8800';
+      ctx.beginPath();
+      ctx.moveTo(0, -6);
+      ctx.lineTo(-3, 4);
+      ctx.lineTo(3, 4);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Trail particles
+    ctx.fillStyle = '#ff6600';
+    ctx.globalAlpha = 0.6;
+    ctx.fillRect(-1, 4, 2, 3 + Math.random() * 3);
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+}
+
+export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
+  if (!s.missileBaseActive) return;
+
+  const cx = s.player.x + PLAYER_W / 2;
+  const cy = s.player.y + PLAYER_H / 2;
+  const baseRadius = PLAYER_W + 6;
+
+  if (missileBaseImg.complete && missileBaseImg.naturalWidth > 0 && missileBaseFrames > 0) {
+    const frameW = Math.round(missileBaseImg.naturalWidth / missileBaseFrames);
+    const frameH = missileBaseImg.naturalHeight;
+    const frameIndex = Math.floor(s.gameTime / MISSILE_BASE_ANIM_SPEED) % missileBaseFrames;
+    const drawSize = baseRadius * 2 + 8;
+
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(
+      missileBaseImg,
+      frameIndex * frameW, 0, frameW, frameH,
+      Math.round(cx - drawSize / 2), Math.round(cy - drawSize / 2),
+      Math.round(drawSize), Math.round(drawSize)
+    );
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  } else {
+    // Fallback: rotating ring of dots
+    ctx.save();
+    ctx.strokeStyle = '#ff8800';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // Draw missile count indicators around the base
+  for (let i = 0; i < MAX_MISSILES; i++) {
+    const angle = (Math.PI * 2 / MAX_MISSILES) * i - Math.PI / 2 + s.gameTime * 0.02;
+    const ix = cx + Math.cos(angle) * (baseRadius + 2);
+    const iy = cy + Math.sin(angle) * (baseRadius + 2);
+    ctx.fillStyle = i < s.missileCount ? '#ff8800' : '#333333';
+    ctx.fillRect(Math.round(ix - 1.5), Math.round(iy - 1.5), 3, 3);
   }
 }

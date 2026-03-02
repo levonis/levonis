@@ -12,6 +12,14 @@ export interface Enemy {
   spawnDelay: number;
 }
 
+export interface Missile {
+  x: number; y: number;
+  targetId: number; // index in enemies array — re-acquired each frame
+  speed: number;
+  angle: number;
+  life: number; // frames remaining
+}
+
 export type EnemyType = 'drone' | 'fighter' | 'tank' | 'speeder' | 'bomber' | 'boss';
 export type Screen = 'start' | 'shop' | 'playing' | 'planet-transition' | 'gameover';
 
@@ -48,6 +56,7 @@ export interface GameState {
   bullets: Bullet[];
   particles: Particle[];
   stars: Star[];
+  missiles: Missile[];
   spawnTimer: number;
   enemiesLeftInWave: number;
   waveDelay: number;
@@ -65,6 +74,11 @@ export interface GameState {
   shieldActive: number;
   shieldInventory: number;
   transitionTimer: number;
+  // Missile launcher
+  missileBaseActive: boolean;
+  missileCount: number; // current loaded missiles (max 6)
+  missileReloadTimer: number;
+  missileFireTimer: number;
 }
 
 export const W = 360;
@@ -74,3 +88,6 @@ export const PLAYER_H = 26;
 export const BULLET_W = 3;
 export const BULLET_H = 8;
 export const MAX_WAVES = 20;
+export const MAX_MISSILES = 6;
+export const MISSILE_RELOAD_RATE = 90; // frames to reload one missile
+export const MISSILE_FIRE_RATE = 20; // frames between missile launches
