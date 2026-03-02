@@ -258,8 +258,7 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
     const engineW = shipW * 0.5;
     const engineH = engineW * (frameH / frameW);
     const engineX = drawX + (shipW - engineW) / 2;
-    // Pull engine effect upward so it visually attaches to the ship nozzle
-    const engineY = drawY + shipH - engineH * 0.82;
+    const engineY = drawY + shipH - engineH;
     ctx.drawImage(
       spriteSheet,
       frameIndex * frameW, 0, frameW, frameH,
