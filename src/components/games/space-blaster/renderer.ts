@@ -1,5 +1,10 @@
 import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES } from './types';
 import { getPlanetForWave, PLANETS } from './planets';
+import playerShipSrc from '@/assets/player-ship.png';
+
+// ── Load player ship image ──
+const playerShipImg = new Image();
+playerShipImg.src = playerShipSrc;
 
 // ── Enemy Colors by type ──
 const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; eye: string }> = {
@@ -233,7 +238,16 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, t: number, pl
 }
 
 export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number, shieldActive: number) {
-  drawPixelShip(ctx, x, y, inv, t);
+  if (inv > 0 && Math.floor(inv / 4) % 2 === 0) return;
+  ctx.save();
+  if (playerShipImg.complete && playerShipImg.naturalWidth > 0) {
+    ctx.shadowColor = PLAYER_COLOR;
+    ctx.shadowBlur = 10;
+    ctx.drawImage(playerShipImg, x - 2, y - 2, PLAYER_W + 4, PLAYER_H + 4);
+  } else {
+    drawPixelShip(ctx, x, y, 0, t);
+  }
+  ctx.restore();
   if (shieldActive > 0) {
     ctx.save();
     ctx.strokeStyle = '#00ffff';
