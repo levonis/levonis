@@ -44,8 +44,8 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   const handleProductClick = useCallback((productId: string) => {
     const reel = reels.find(r => r.product?.id === productId || r.siteProduct?.id === productId);
     if (reel?.siteProduct?.id === productId) {
-      // Site product - navigate to product detail page
-      navigate(`/product/${productId}`);
+      // Site product - navigate using slug
+      navigate(`/product/${reel.siteProduct.slug}`);
     } else {
       const merchantId = reel?.merchant?.id;
       if (merchantId) {

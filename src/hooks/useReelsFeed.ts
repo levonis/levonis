@@ -32,6 +32,7 @@ export interface Reel {
   siteProduct: {
     id: string;
     name_ar: string;
+    slug: string;
     price: number | null;
     original_price: number | null;
     image_url: string | null;
@@ -58,7 +59,7 @@ export function useReelsFeed() {
           is_sponsored, created_at, ranking_score,
           merchant:merchant_applications!merchant_reels_merchant_id_fkey(id, display_name, store_image_url),
           product:merchant_products!merchant_reels_product_id_fkey(id, title, price_iqd, original_price_iqd, image_urls),
-          siteProduct:products!merchant_reels_site_product_id_fkey(id, name_ar, price, original_price, image_url)
+          siteProduct:products!merchant_reels_site_product_id_fkey(id, name_ar, slug, price, original_price, image_url)
         `)
         .eq('status', 'approved')
         .order('ranking_score', { ascending: false })
