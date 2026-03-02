@@ -192,8 +192,8 @@ const ProductDetail = () => {
     return (productOptions || []).some((opt: any) => {
       if ((opt.available_for_direct_sale ?? true) === false) return false;
       if (opt.stock_quantity != null) return Number(opt.stock_quantity) > 0;
-      if (opt.in_stock != null) return !!opt.in_stock;
-      return true;
+      // No stock data = out of stock (no unlimited concept)
+      return false;
     });
   }, [hasOptionVariants, productOptions]);
 
