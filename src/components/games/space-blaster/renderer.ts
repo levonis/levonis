@@ -4,6 +4,8 @@ import playerShipSrc from '@/assets/player-ship.png';
 import shipDmg1Src from '@/assets/ship-damage-1.png';
 import shipDmg2Src from '@/assets/ship-damage-2.png';
 import shipDmg3Src from '@/assets/ship-damage-3.png';
+import engineNormalSrc from '@/assets/engine-normal.png';
+import engineSuperSrc from '@/assets/engine-supercharge.png';
 
 // ── Load player ship images (4 states: healthy → 3 damage levels) ──
 const shipImages: HTMLImageElement[] = [];
@@ -12,6 +14,14 @@ for (const src of [playerShipSrc, shipDmg1Src, shipDmg2Src, shipDmg3Src]) {
   img.src = src;
   shipImages.push(img);
 }
+
+// ── Load engine sprite sheets (4 frames each) ──
+const engineNormalImg = new Image();
+engineNormalImg.src = engineNormalSrc;
+const engineSuperImg = new Image();
+engineSuperImg.src = engineSuperSrc;
+const ENGINE_FRAMES = 4;
+const ENGINE_ANIM_SPEED = 6; // ticks per frame
 
 // ── Enemy Colors by type ──
 const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; eye: string }> = {
@@ -247,28 +257,55 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, t: number, pl
 export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number, shieldActive: number, lives: number = 3, maxLives: number = 3) {
   if (inv > 0 && Math.floor(inv / 4) % 2 === 0) return;
   ctx.save();
-  // Pick damage stage: 0=healthy, 1=light, 2=heavy, 3=critical (but 4th = death handled elsewhere)
+  // Pick damage stage
   let dmgIndex = 0;
   const ratio = lives / maxLives;
   if (ratio <= 0.25) dmgIndex = 3;
   else if (ratio <= 0.5) dmgIndex = 2;
   else if (ratio <= 0.75) dmgIndex = 1;
+
+  const shipW = PLAYER_W + 8;
+  const shipH = PLAYER_H + 8;
+  const drawX = x - 4;
+  const drawY = y - 4;
+
+  // ── Engine animation (below ship) ──
+  const isSupercharge = shieldActive > 0;
+  const spriteSheet = isSupercharge ? engineSuperImg : engineNormalImg;
+  if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
+    const frameW = spriteSheet.naturalWidth / ENGINE_FRAMES;
+    const frameH = spriteSheet.naturalHeight;
+    const frameIndex = Math.floor(t / ENGINE_ANIM_SPEED) % ENGINE_FRAMES;
+    const engineW = shipW * 0.8;
+    const engineH = engineW * (frameH / frameW);
+    const engineX = drawX + (shipW - engineW) / 2;
+    const engineY = drawY + shipH - 2;
+    ctx.drawImage(
+      spriteSheet,
+      frameIndex * frameW, 0, frameW, frameH,
+      engineX, engineY, engineW, engineH
+    );
+  }
+
+  // ── Ship sprite ──
   const img = shipImages[Math.min(dmgIndex, shipImages.length - 1)];
   if (img.complete && img.naturalWidth > 0) {
     ctx.shadowColor = PLAYER_COLOR;
     ctx.shadowBlur = 10;
-    ctx.drawImage(img, x - 2, y - 2, PLAYER_W + 4, PLAYER_H + 4);
+    ctx.drawImage(img, drawX, drawY, shipW, shipH);
   } else {
     drawPixelShip(ctx, x, y, 0, t);
   }
   ctx.restore();
+
+  // Shield effect
   if (shieldActive > 0) {
     ctx.save();
     ctx.strokeStyle = '#00ffff';
     ctx.lineWidth = 1.5;
     ctx.globalAlpha = 0.3 + Math.sin(t * 0.2) * 0.2;
     ctx.beginPath();
-    ctx.arc(x + PLAYER_W / 2, y + PLAYER_H / 2, 14, 0, Math.PI * 2);
+    ctx.arc(x + PLAYER_W / 2, y + PLAYER_H / 2, 18, 0, Math.PI * 2);
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.restore();

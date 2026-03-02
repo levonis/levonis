@@ -68,8 +68,8 @@ export interface GameState {
 
 export const W = 360;
 export const H = 640;
-export const PLAYER_W = 20;
-export const PLAYER_H = 20;
+export const PLAYER_W = 26;
+export const PLAYER_H = 26;
 export const BULLET_W = 3;
 export const BULLET_H = 8;
 export const MAX_WAVES = 20;
