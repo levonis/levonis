@@ -1,59 +1,77 @@
-const CACHE_NAME = 'levonis-v7';
-const STATIC_EXTENSIONS = /\.(js|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico)$/i;
+const CACHE_NAME = 'levonis-v8';
+const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
+const IS_PREVIEW_HOST =
+  self.location.hostname.includes('lovableproject.com') ||
+  self.location.hostname.startsWith('id-preview--');
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((names) => {
-      return Promise.all(
-        names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
-      );
-    }).then(() => clients.claim())
-  );
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)));
+
+    // Safety valve: preview hosts should never keep a controlling SW
+    if (IS_PREVIEW_HOST) {
+      await self.registration.unregister();
+    }
+
+    await clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  if (IS_PREVIEW_HOST) return;
 
-  // Skip API calls and non-GET requests
-  if (event.request.method !== 'GET') return;
-  if (url.pathname.includes('/rest/') || url.pathname.includes('/functions/') || url.pathname.includes('/auth/')) return;
+  const { request } = event;
+  const url = new URL(request.url);
+
+  if (request.method !== 'GET') return;
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+  if (url.pathname.includes('/rest/') || url.pathname.includes('/functions/') || url.pathname.includes('/auth/')) return;
 
-  // Never cache Vite preview/dev module paths to avoid stale-chunk blank screens
-  if (url.pathname.startsWith('/src/') || url.pathname.startsWith('/node_modules/') || url.pathname.startsWith('/@vite/')) return;
+  // Never cache Vite/dev module paths (prevents stale chunk blank screens)
+  if (
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname.startsWith('/@vite/') ||
+    url.pathname.includes('/.vite/')
+  ) {
+    return;
+  }
 
+  const isHtml = request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html');
+  if (isHtml) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        return fetch(event.request).then((response) => {
+      fetch(request)
+        .then((response) => {
           if (response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
-        }).catch(() => cached);
-      })
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
 
-  // HTML: network-first with cache fallback
-  if (event.request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(
-      fetch(event.request).then((response) => {
+  if (!STATIC_EXTENSIONS.test(url.pathname)) return;
+
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
         if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      }).catch(() => caches.match(event.request))
-    );
-    return;
-  }
+      });
+    })
+  );
 });
 
 // Push notification handler
