@@ -243,9 +243,18 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         if (b.y < -10 || b.y > H + 10 || b.x < -10 || b.x > W + 10) { s.bullets.splice(i, 1); continue; }
 
         if (b.isEnemy) {
-          if (s.invincible <= 0 && s.shieldActive <= 0 &&
+          if (s.invincible <= 0 &&
             b.x > s.player.x && b.x < s.player.x + PLAYER_W &&
             b.y > s.player.y && b.y < s.player.y + PLAYER_H) {
+            if (s.shieldActive > 0) {
+              // Shield absorbs one hit then breaks
+              s.shieldActive = 0;
+              s.invincible = 30;
+              spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 12, ['#00ffff', '#88ffff', '#ffffff']);
+              soundsRef.current.playHit();
+              s.bullets.splice(i, 1);
+              continue;
+            }
             s.lives--;
             s.invincible = 90;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
@@ -333,14 +342,22 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         }
 
         // Collision with player
-        if (s.invincible <= 0 && s.shieldActive <= 0 &&
+        if (s.invincible <= 0 &&
           s.player.x + PLAYER_W > e.x && s.player.x < e.x + e.w &&
           s.player.y + PLAYER_H > e.y && s.player.y < e.y + e.h) {
-          s.lives--;
-          s.invincible = 90;
-          spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
-          soundsRef.current.playHit();
-          if (s.lives <= 0) { endGame(s, false); return; }
+          if (s.shieldActive > 0) {
+            // Shield absorbs one hit then breaks
+            s.shieldActive = 0;
+            s.invincible = 30;
+            spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 12, ['#00ffff', '#88ffff', '#ffffff']);
+            soundsRef.current.playHit();
+          } else {
+            s.lives--;
+            s.invincible = 90;
+            spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
+            soundsRef.current.playHit();
+            if (s.lives <= 0) { endGame(s, false); return; }
+          }
         }
 
         // Off-screen respawn (non-boss)
