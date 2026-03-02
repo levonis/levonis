@@ -1386,18 +1386,14 @@ const Admin = () => {
 
         // Insert new options if any
         const shouldRoundOpts = formData.get('round_up_price') === 'true';
-        const { data: rateData } = await supabase.from('shipping_settings').select('setting_value').eq('setting_key', 'usd_to_iqd_rate').maybeSingle();
-        const optRoundRate = rateData ? Number(rateData.setting_value) : 1300;
         const roundUpTo250Opt = (v: number) => Math.ceil(v / 250) * 250;
         const optionsToInsert = productOptions
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => {
             let adj = opt.price_adjustment;
-            // Round price_adjustment: convert to IQD, round, convert back to USD
+            // Round price_adjustment (already in IQD) to nearest 250
             if (shouldRoundOpts && adj && adj !== 0) {
-              const adjIqd = Math.round(adj * optRoundRate);
-              const roundedIqd = roundUpTo250Opt(adjIqd);
-              adj = roundedIqd / optRoundRate;
+              adj = roundUpTo250Opt(adj);
             }
             return {
               product_id: productId,
