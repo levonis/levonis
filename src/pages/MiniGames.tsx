@@ -6,6 +6,7 @@ import PixelBackground from "@/components/games/PixelBackground";
 import PixelLoadingScreen from "@/components/games/PixelLoadingScreen";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
+import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource } from "@/components/games/GamesData";
 
 const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
@@ -112,6 +113,8 @@ export default function MiniGames() {
           ))}
         </div>
       </div>
+
+      <PixelMusicRadio />
     </div>
   );
 }
