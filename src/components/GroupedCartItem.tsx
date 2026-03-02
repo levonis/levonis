@@ -67,6 +67,11 @@ const GroupedCartItem = ({
       itemPrice += shippingAdjustment;
     }
     
+    // Round to nearest 250 if enabled
+    if ((product as any)?.round_up_price === true) {
+      itemPrice = Math.ceil(itemPrice / 250) * 250;
+    }
+    
     return itemPrice;
   };
 

@@ -111,6 +111,11 @@ export default function CartRequestDialog({
           itemPrice += Math.round(Number(item.product_options.price_adjustment) * usdToIqd);
         }
 
+        // Round to nearest 250 if enabled
+        if ((item.products as any)?.round_up_price === true) {
+          itemPrice = Math.ceil(itemPrice / 250) * 250;
+        }
+
         return {
           product_id: item.product_id,
           name_ar: item.products?.name_ar,

@@ -466,13 +466,16 @@ const ProductDetail = () => {
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
   }
-  const finalPrice = basePrice + optionAdjustment + shippingAdjustment;
+  const rawFinalPrice = basePrice + optionAdjustment + shippingAdjustment;
+  const shouldRoundUp = (product as any).round_up_price === true;
+  const finalPrice = shouldRoundUp ? Math.ceil(rawFinalPrice / 250) * 250 : rawFinalPrice;
 
   let finalOriginalPrice: number | null = null;
   if (product.original_price != null) {
     const productOriginal = Number(product.original_price);
     const colorDelta = selectedColorData?.price != null ? (Number(selectedColorData.price) - Number(product.price)) : 0;
-    finalOriginalPrice = productOriginal + colorDelta + optionAdjustment;
+    const rawOriginal = productOriginal + colorDelta + optionAdjustment;
+    finalOriginalPrice = shouldRoundUp ? Math.ceil(rawOriginal / 250) * 250 : rawOriginal;
   }
   const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
   const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;

@@ -213,6 +213,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             sea_price,
             air_price,
             original_price,
+            round_up_price,
             image_url,
             images,
             slug,
@@ -609,6 +610,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
         const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
         itemPrice += shippingAdjustment;
+      }
+
+      // Round to nearest 250 if enabled
+      if ((item.products as any)?.round_up_price === true) {
+        itemPrice = Math.ceil(itemPrice / 250) * 250;
       }
 
       return sum + (itemPrice * item.quantity);
