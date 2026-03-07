@@ -435,7 +435,10 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             soundsRef.current.playShoot();
           }
         }
-        if (s.missileCount <= 0) s.missileDoubleTap = false;
+        if (s.missileCount <= 0) {
+          s.missileDoubleTap = false;
+          s.missileBaseActive = false; // Single-use: deactivate after all missiles fired
+        }
 
         // Update missiles — steer towards highest HP enemy
         for (let i = s.missiles.length - 1; i >= 0; i--) {
