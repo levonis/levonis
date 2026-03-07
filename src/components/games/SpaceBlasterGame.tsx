@@ -408,14 +408,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
 
       // ── Missile system ──
       if (s.missileBaseActive) {
-        // Reload missiles
-        if (s.missileCount < MAX_MISSILES) {
-          s.missileReloadTimer += dt;
-          if (s.missileReloadTimer >= MISSILE_RELOAD_RATE) {
-            s.missileReloadTimer = 0;
-            s.missileCount++;
-          }
-        }
+        // No reload — missiles are single-use (fire all 6 then base deactivates)
 
         // Animation-driven missile firing: each 2-frame pair in the base triggers a launch
         const shouldFireMissile = updateMissileBaseAnim(s.missileDoubleTap && s.missileCount > 0 && s.enemies.length > 0);
@@ -442,7 +435,10 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             soundsRef.current.playShoot();
           }
         }
-        if (s.missileCount <= 0) s.missileDoubleTap = false;
+        if (s.missileCount <= 0) {
+          s.missileDoubleTap = false;
+          s.missileBaseActive = false; // Single-use: deactivate after all missiles fired
+        }
 
         // Update missiles — steer towards highest HP enemy
         for (let i = s.missiles.length - 1; i >= 0; i--) {
@@ -518,13 +514,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               s.shieldActive = 900;
               break;
             case 'missile':
-              if (s.missileBaseActive) {
-                s.missileCount = Math.min(s.missileCount + 2, MAX_MISSILES);
-              } else {
-                // Grant temporary missile base if not purchased
-                s.missileBaseActive = true;
-                s.missileCount = 3;
-              }
+              // Always grant a fresh missile base with 6 missiles (single-use)
+              s.missileBaseActive = true;
+              s.missileCount = MAX_MISSILES;
               break;
           }
           spawnParticles(pu.x, pu.y, 10, ['#ffffff', '#ffcc00', '#00ffff']);
