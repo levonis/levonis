@@ -408,14 +408,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
 
       // ── Missile system ──
       if (s.missileBaseActive) {
-        // Reload missiles
-        if (s.missileCount < MAX_MISSILES) {
-          s.missileReloadTimer += dt;
-          if (s.missileReloadTimer >= MISSILE_RELOAD_RATE) {
-            s.missileReloadTimer = 0;
-            s.missileCount++;
-          }
-        }
+        // No reload — missiles are single-use (fire all 6 then base deactivates)
 
         // Animation-driven missile firing: each 2-frame pair in the base triggers a launch
         const shouldFireMissile = updateMissileBaseAnim(s.missileDoubleTap && s.missileCount > 0 && s.enemies.length > 0);
