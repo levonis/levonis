@@ -514,13 +514,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               s.shieldActive = 900;
               break;
             case 'missile':
-              if (s.missileBaseActive) {
-                s.missileCount = Math.min(s.missileCount + 2, MAX_MISSILES);
-              } else {
-                // Grant temporary missile base if not purchased
-                s.missileBaseActive = true;
-                s.missileCount = 3;
-              }
+              // Always grant a fresh missile base with 6 missiles (single-use)
+              s.missileBaseActive = true;
+              s.missileCount = MAX_MISSILES;
               break;
           }
           spawnParticles(pu.x, pu.y, 10, ['#ffffff', '#ffcc00', '#00ffff']);
