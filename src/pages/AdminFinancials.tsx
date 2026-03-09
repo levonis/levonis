@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,74 +12,43 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { 
-  DollarSign, 
-  TrendingUp, 
-  Truck, 
-  CreditCard, 
-  ArrowDownRight,
-  Package,
-  Check,
-  X,
-  Plus,
-  Eye,
-  Trash2,
-  BarChart3
+  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading } from '@/components/admin/AdminLayout';
 
-interface EditingCell {
-  orderId: string;
-  field: string;
-  value: number;
-}
+interface EditingCell { orderId: string; field: string; value: number; }
 
 interface OrderWithDetails {
-  id: string;
-  order_number: string;
-  created_at: string;
-  total_amount: number;
-  customer_paid_amount: number | null;
-  admin_paid_amount: number | null;
-  admin_product_cost: number | null;
-  admin_shipping_cost: number | null;
-  admin_other_costs: number | null;
-  tax_amount: number | null;
-  remaining_amount: number | null;
-  status: string;
-  financial_notes: string | null;
-  user_id: string;
-  profile?: {
-    username: string;
-    full_name: string | null;
-  };
-  order_items?: {
-    id: string;
-    product_name: string;
-    product_name_ar: string;
-    quantity: number;
-    unit_price: number;
-    total_price: number;
-  }[];
+  id: string; order_number: string; created_at: string; total_amount: number;
+  customer_paid_amount: number | null; admin_paid_amount: number | null;
+  admin_product_cost: number | null; admin_shipping_cost: number | null;
+  admin_other_costs: number | null; tax_amount: number | null;
+  remaining_amount: number | null; status: string; financial_notes: string | null;
+  user_id: string; order_type?: string;
+  profile?: { username: string; full_name: string | null; };
+  order_items?: { id: string; product_name: string; product_name_ar: string; quantity: number; unit_price: number; total_price: number; cost_price?: number; product_id?: string; products?: any; }[];
 }
 
 interface ManualOrderForm {
-  customer_name: string;
-  product_names: string;
-  total_amount: number;
-  customer_paid_amount: number;
-  admin_paid_amount: number;
-  admin_product_cost: number;
-  tax_amount: number;
-  financial_notes: string;
+  customer_name: string; product_names: string; total_amount: number;
+  customer_paid_amount: number; admin_paid_amount: number; admin_product_cost: number;
+  tax_amount: number; financial_notes: string;
 }
 
-const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const PAGE_SIZE = 50;
+
+// Calculate net profit for a single order (only delivered, exclude shipping)
+const calcOrderProfit = (order: OrderWithDetails): number => {
+  if (order.status !== 'delivered') return 0;
+  return (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_other_costs || 0);
+};
 
 const AdminFinancials = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -92,80 +61,48 @@ const AdminFinancials = () => {
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isChartOpen, setIsChartOpen] = useState(false);
+  const [mainTab, setMainTab] = useState('all');
+  const [subTab, setSubTab] = useState('general');
+  const [currentPage, setCurrentPage] = useState(1);
   const [manualOrderForm, setManualOrderForm] = useState<ManualOrderForm>({
-    customer_name: '',
-    product_names: '',
-    total_amount: 0,
-    customer_paid_amount: 0,
-    admin_paid_amount: 0,
-    admin_product_cost: 0,
-    tax_amount: 0,
-    financial_notes: '',
+    customer_name: '', product_names: '', total_amount: 0, customer_paid_amount: 0,
+    admin_paid_amount: 0, admin_product_cost: 0, tax_amount: 0, financial_notes: '',
   });
 
-  // Quick filter date helpers
   const applyQuickFilter = (filter: string) => {
     const now = new Date();
     let fromDate = '';
     let toDate = format(now, 'yyyy-MM-dd');
-    
     switch (filter) {
-      case 'last_week':
-        fromDate = format(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
-        break;
-      case 'last_month':
-        fromDate = format(new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()), 'yyyy-MM-dd');
-        break;
-      case 'last_3_months':
-        fromDate = format(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()), 'yyyy-MM-dd');
-        break;
-      case 'last_6_months':
-        fromDate = format(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()), 'yyyy-MM-dd');
-        break;
-      case 'last_year':
-        fromDate = format(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()), 'yyyy-MM-dd');
-        break;
-      case 'this_month':
-        fromDate = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
-        break;
-      case 'this_year':
-        fromDate = format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd');
-        break;
-      default:
-        fromDate = '';
-        toDate = '';
+      case 'last_week': fromDate = format(new Date(now.getTime() - 7*24*60*60*1000), 'yyyy-MM-dd'); break;
+      case 'last_month': fromDate = format(new Date(now.getFullYear(), now.getMonth()-1, now.getDate()), 'yyyy-MM-dd'); break;
+      case 'last_3_months': fromDate = format(new Date(now.getFullYear(), now.getMonth()-3, now.getDate()), 'yyyy-MM-dd'); break;
+      case 'last_6_months': fromDate = format(new Date(now.getFullYear(), now.getMonth()-6, now.getDate()), 'yyyy-MM-dd'); break;
+      case 'last_year': fromDate = format(new Date(now.getFullYear()-1, now.getMonth(), now.getDate()), 'yyyy-MM-dd'); break;
+      case 'this_month': fromDate = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd'); break;
+      case 'this_year': fromDate = format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd'); break;
+      default: fromDate = ''; toDate = '';
     }
-    
-    setQuickFilter(filter);
-    setDateFrom(fromDate);
-    setDateTo(toDate);
+    setQuickFilter(filter); setDateFrom(fromDate); setDateTo(toDate);
   };
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-financials', dateFrom, dateTo],
     queryFn: async () => {
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id,
-            products!order_items_product_id_fkey(id, name_ar, cost_price, category_id,
-              categories!products_category_id_fkey(id, name_ar, main_section_id,
-                main_sections!categories_main_section_id_fkey(id, name_ar)
-              )
+      let query = supabase.from('orders').select(`
+        *, order_type,
+        profile:profiles!orders_user_id_fkey_profiles(username, full_name),
+        order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id,
+          products!order_items_product_id_fkey(id, name_ar, cost_price, category_id,
+            categories!products_category_id_fkey(id, name_ar, main_section_id,
+              main_sections!categories_main_section_id_fkey(id, name_ar)
             )
           )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (dateFrom) {
-        query = query.gte('created_at', dateFrom);
-      }
-      if (dateTo) {
-        query = query.lte('created_at', dateTo + 'T23:59:59');
-      }
-
+        )
+      `).order('created_at', { ascending: false });
+      if (dateFrom) query = query.gte('created_at', dateFrom);
+      if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
       const { data, error } = await query;
       if (error) throw error;
       return (data || []) as OrderWithDetails[];
@@ -175,319 +112,215 @@ const AdminFinancials = () => {
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
-      const { error } = await supabase
-        .from('orders')
-        .update({ [field]: value })
-        .eq('id', orderId);
+      const { error } = await supabase.from('orders').update({ [field]: value }).eq('id', orderId);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
-      toast.success('تم تحديث البيانات');
-      setEditingCell(null);
-    },
-    onError: () => {
-      toast.error('حدث خطأ أثناء التحديث');
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-financials'] }); toast.success('تم تحديث البيانات'); setEditingCell(null); },
+    onError: () => { toast.error('حدث خطأ أثناء التحديث'); },
   });
 
   const deleteOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', orderId);
+      const { error: itemsError } = await supabase.from('order_items').delete().eq('order_id', orderId);
       if (itemsError) throw itemsError;
-
-      const { error } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderId);
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
-      toast.success('تم حذف الطلب بنجاح');
-    },
-    onError: (error) => {
-      console.error('Error deleting order:', error);
-      toast.error('حدث خطأ أثناء حذف الطلب');
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-financials'] }); toast.success('تم حذف الطلب بنجاح'); },
+    onError: () => { toast.error('حدث خطأ أثناء حذف الطلب'); },
   });
 
   const addManualOrderMutation = useMutation({
     mutationFn: async (form: ManualOrderForm) => {
       const orderNumber = `MAN-${Date.now()}`;
-      
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          order_number: orderNumber,
-          user_id: user?.id || '',
-          total_amount: form.total_amount,
-          customer_paid_amount: form.customer_paid_amount,
-          admin_paid_amount: form.admin_paid_amount,
-          admin_product_cost: form.admin_product_cost,
-          admin_shipping_cost: 0,
-          admin_other_costs: 0,
-          tax_amount: form.tax_amount,
-          financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
-          remaining_amount: form.total_amount - form.customer_paid_amount,
-          status: 'delivered',
-          shipping_address: 'طلب يدوي',
-          phone_number: '-',
-          governorate: '-',
-        })
-        .select()
-        .single();
-
+      const { data: order, error: orderError } = await supabase.from('orders').insert({
+        order_number: orderNumber, user_id: user?.id || '', total_amount: form.total_amount,
+        customer_paid_amount: form.customer_paid_amount, admin_paid_amount: form.admin_paid_amount,
+        admin_product_cost: form.admin_product_cost, admin_shipping_cost: 0, admin_other_costs: 0,
+        tax_amount: form.tax_amount, financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
+        remaining_amount: form.total_amount - form.customer_paid_amount, status: 'delivered',
+        shipping_address: 'طلب يدوي', phone_number: '-', governorate: '-',
+      }).select().single();
       if (orderError) throw orderError;
-
       if (form.product_names.trim() && order) {
         const productNames = form.product_names.split('\n').filter(n => n.trim());
         const orderItems = productNames.map(name => ({
-          order_id: order.id,
-          product_name: name.trim(),
-          product_name_ar: name.trim(),
-          quantity: 1,
-          unit_price: form.total_amount / productNames.length,
+          order_id: order.id, product_name: name.trim(), product_name_ar: name.trim(),
+          quantity: 1, unit_price: form.total_amount / productNames.length,
           total_price: form.total_amount / productNames.length,
         }));
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
         if (itemsError) throw itemsError;
       }
-
       return order;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
-      toast.success('تم إضافة الطلب بنجاح');
-      setIsAddDialogOpen(false);
-      setManualOrderForm({
-        customer_name: '',
-        product_names: '',
-        total_amount: 0,
-        customer_paid_amount: 0,
-        admin_paid_amount: 0,
-        admin_product_cost: 0,
-        tax_amount: 0,
-        financial_notes: '',
-      });
+      toast.success('تم إضافة الطلب بنجاح'); setIsAddDialogOpen(false);
+      setManualOrderForm({ customer_name: '', product_names: '', total_amount: 0, customer_paid_amount: 0, admin_paid_amount: 0, admin_product_cost: 0, tax_amount: 0, financial_notes: '' });
     },
-    onError: (error) => {
-      console.error('Error adding manual order:', error);
-      toast.error('حدث خطأ أثناء إضافة الطلب');
-    },
+    onError: () => { toast.error('حدث خطأ أثناء إضافة الطلب'); },
   });
 
-  const handleCellClick = (orderId: string, field: string, currentValue: number) => {
-    setEditingCell({ orderId, field, value: currentValue });
-  };
+  // Filtering
+  const filteredOrders = useMemo(() => {
+    return (orders || []).filter(order => {
+      if (statusFilter === 'delivered') return order.status === 'delivered';
+      if (statusFilter === 'cancelled') return order.status === 'cancelled';
+      if (statusFilter === 'in_progress') return order.status !== 'delivered' && order.status !== 'cancelled';
+      return true;
+    });
+  }, [orders, statusFilter]);
 
-  const handleSaveEdit = () => {
-    if (editingCell) {
-      updateOrderMutation.mutate({
-        orderId: editingCell.orderId,
-        field: editingCell.field,
-        value: editingCell.value,
+  // Orders filtered by main tab (sale type)
+  const tabFilteredOrders = useMemo(() => {
+    if (mainTab === 'direct') return filteredOrders.filter(o => (o as any).order_type === 'direct');
+    if (mainTab === 'preorder') return filteredOrders.filter(o => (o as any).order_type === 'preorder');
+    return filteredOrders;
+  }, [filteredOrders, mainTab]);
+
+  // Global totals (all delivered orders, shipping excluded)
+  const globalProfit = useMemo(() => {
+    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o), 0);
+  }, [orders]);
+
+  // Totals for current filtered view
+  const totals = useMemo(() => {
+    return filteredOrders.reduce((acc, order) => {
+      const profit = calcOrderProfit(order);
+      return {
+        totalRevenue: acc.totalRevenue + (order.total_amount || 0),
+        totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
+        totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
+        totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
+        totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
+        totalProfit: acc.totalProfit + profit,
+        orderCount: acc.orderCount + 1,
+        deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
+      };
+    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalShippingCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+  }, [filteredOrders]);
+
+  // Monthly chart data (delivered only, shipping excluded)
+  const monthlyChartData = useMemo(() => {
+    const delivered = (orders || []).filter(o => o.status === 'delivered');
+    const map: Record<string, { month: string; revenue: number; cost: number; profit: number }> = {};
+    delivered.forEach(o => {
+      const m = format(new Date(o.created_at), 'yyyy-MM');
+      if (!map[m]) map[m] = { month: m, revenue: 0, cost: 0, profit: 0 };
+      map[m].revenue += (o.total_amount || 0);
+      map[m].cost += (o.admin_product_cost || 0) + (o.admin_other_costs || 0);
+      map[m].profit += calcOrderProfit(o);
+    });
+    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).map(d => ({
+      ...d, month: format(new Date(d.month + '-01'), 'MMM yyyy', { locale: ar }),
+    }));
+  }, [orders]);
+
+  // Section/product aggregation helpers
+  const aggregateBySection = (ordersList: OrderWithDetails[]) => {
+    const map: Record<string, { name: string; revenue: number; cost: number; count: number }> = {};
+    ordersList.filter(o => o.status === 'delivered').forEach(order => {
+      order.order_items?.forEach((item: any) => {
+        const section = item.products?.categories?.main_sections;
+        const name = section?.name_ar || 'غير مصنف';
+        const id = section?.id || 'unknown';
+        if (!map[id]) map[id] = { name, revenue: 0, cost: 0, count: 0 };
+        map[id].revenue += item.total_price || 0;
+        map[id].cost += item.cost_price ? item.cost_price * item.quantity : 0;
+        map[id].count += 1;
       });
-    }
+    });
+    return Object.entries(map).sort((a, b) => b[1].revenue - a[1].revenue);
   };
 
-  const handleCancelEdit = () => {
-    setEditingCell(null);
+  const aggregateByProduct = (ordersList: OrderWithDetails[]) => {
+    const map: Record<string, { name: string; revenue: number; cost: number; qty: number }> = {};
+    ordersList.filter(o => o.status === 'delivered').forEach(order => {
+      order.order_items?.forEach((item: any) => {
+        const name = item.product_name_ar || item.product_name || 'غير محدد';
+        const id = item.product_id || name;
+        if (!map[id]) map[id] = { name, revenue: 0, cost: 0, qty: 0 };
+        map[id].revenue += item.total_price || 0;
+        map[id].cost += item.cost_price ? item.cost_price * item.quantity : 0;
+        map[id].qty += item.quantity;
+      });
+    });
+    return Object.entries(map).sort((a, b) => b[1].revenue - a[1].revenue);
   };
 
-  const isManualOrder = (orderNumber: string): boolean => {
-    return orderNumber.startsWith('MAN-');
-  };
+  // Pagination for orders table
+  const totalPages = Math.ceil(tabFilteredOrders.length / PAGE_SIZE);
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return tabFilteredOrders.slice(start, start + PAGE_SIZE);
+  }, [tabFilteredOrders, currentPage]);
+
+  // Reset page when filters change
+  useMemo(() => { setCurrentPage(1); }, [mainTab, statusFilter, dateFrom, dateTo]);
 
   const getProductNames = (order: OrderWithDetails): string => {
-    if (!order.order_items || order.order_items.length === 0) {
-      return '-';
-    }
+    if (!order.order_items || order.order_items.length === 0) return '-';
     return order.order_items.map(item => item.product_name_ar || item.product_name).join('، ');
   };
-
-  const getUsername = (order: OrderWithDetails): string => {
-    if (order.profile) {
-      return order.profile.full_name || order.profile.username;
-    }
-    return '-';
-  };
+  const getUsername = (order: OrderWithDetails): string => order.profile ? (order.profile.full_name || order.profile.username) : '-';
+  const isManualOrder = (n: string) => n.startsWith('MAN-');
 
   const renderEditableCell = (orderId: string, field: string, value: number, colorClass: string) => {
     const isEditing = editingCell?.orderId === orderId && editingCell?.field === field;
-
     if (isEditing) {
       return (
         <div className="flex items-center gap-1">
-          <Input
-            type="number"
-            step="0.01"
-            value={editingCell.value}
+          <Input type="number" step="0.01" value={editingCell.value}
             onChange={(e) => setEditingCell({ ...editingCell, value: parseFloat(e.target.value) || 0 })}
-            className="w-24 h-7 text-xs"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveEdit();
-              if (e.key === 'Escape') handleCancelEdit();
-            }}
+            className="w-24 h-7 text-xs" autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') { updateOrderMutation.mutate({ orderId: editingCell.orderId, field: editingCell.field, value: editingCell.value }); } if (e.key === 'Escape') setEditingCell(null); }}
           />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={handleSaveEdit}
-            disabled={updateOrderMutation.isPending}
-          >
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateOrderMutation.mutate({ orderId: editingCell.orderId, field: editingCell.field, value: editingCell.value })} disabled={updateOrderMutation.isPending}>
             <Check className="h-3 w-3 text-green-600" />
           </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={handleCancelEdit}
-          >
-            <X className="h-3 w-3 text-red-600" />
-          </Button>
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingCell(null)}><X className="h-3 w-3 text-red-600" /></Button>
         </div>
       );
     }
-
     return (
-      <span
-        className={`${colorClass} cursor-pointer hover:underline hover:opacity-80 transition-opacity`}
-        onClick={() => handleCellClick(orderId, field, value)}
-        title="اضغط للتعديل"
-      >
+      <span className={`${colorClass} cursor-pointer hover:underline hover:opacity-80 transition-opacity`}
+        onClick={() => setEditingCell({ orderId, field, value })} title="اضغط للتعديل">
         {formatPrice(value)}
       </span>
     );
   };
 
-  if (authLoading) {
-    return (
-      <AdminLayout title="التقارير المالية" icon={<BarChart3 className="h-5 w-5" />}>
-        <AdminLoading />
-      </AdminLayout>
-    );
-  }
+  if (authLoading) return <AdminLayout title="التقارير المالية" icon={<BarChart3 className="h-5 w-5" />}><AdminLoading /></AdminLayout>;
+  if (!isAdmin) { navigate('/'); return null; }
 
-  if (!isAdmin) {
-    navigate('/');
-    return null;
-  }
-
-  // Filter orders by status
-  const filteredOrders = orders?.filter(order => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'delivered') return order.status === 'delivered';
-    if (statusFilter === 'cancelled') return order.status === 'cancelled';
-    if (statusFilter === 'in_progress') return order.status !== 'delivered' && order.status !== 'cancelled';
-    return true;
-  }) || [];
-
-  // Calculate totals from filtered orders
-  const totals = filteredOrders.reduce((acc, order) => {
-    const isDelivered = order.status === 'delivered';
-    // Profit only counts for delivered orders, excluding shipping costs
-    const netProfit = isDelivered 
-      ? (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0)
-      : 0;
-    
-    return {
-      totalRevenue: acc.totalRevenue + (order.total_amount || 0),
-      totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
-      totalAdminPaid: acc.totalAdminPaid + (order.admin_paid_amount || 0),
-      totalRemaining: acc.totalRemaining + (order.remaining_amount || 0),
-      totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
-      totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
-      totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
-      totalTax: acc.totalTax + (order.tax_amount || 0),
-      totalProfit: acc.totalProfit + netProfit,
-      orderCount: acc.orderCount + 1,
-      deliveredCount: acc.deliveredCount + (isDelivered ? 1 : 0),
-    };
-  }, {
-    totalRevenue: 0,
-    totalCustomerPaid: 0,
-    totalAdminPaid: 0,
-    totalRemaining: 0,
-    totalProductCost: 0,
-    totalShippingCost: 0,
-    totalOtherCosts: 0,
-    totalTax: 0,
-    totalProfit: 0,
-    orderCount: 0,
-    deliveredCount: 0,
-  });
-
-  const calculatedProfit = totals.totalProfit;
+  // Tab totals for display
+  const tabTotals = tabFilteredOrders.filter(o => o.status === 'delivered').reduce((acc, o) => ({
+    revenue: acc.revenue + (o.total_amount || 0),
+    cost: acc.cost + (o.admin_product_cost || 0) + (o.admin_other_costs || 0),
+    profit: acc.profit + calcOrderProfit(o),
+    count: acc.count + 1,
+  }), { revenue: 0, cost: 0, profit: 0, count: 0 });
 
   return (
     <AdminLayout
-      title="التقارير المالية"
-      icon={<BarChart3 className="h-5 w-5" />}
-      description="تتبع الإيرادات والمصاريف والأرباح"
-      maxWidth="full"
+      title="التقارير المالية" icon={<BarChart3 className="h-5 w-5" />}
+      description="تتبع الإيرادات والمصاريف والأرباح" maxWidth="full"
       actions={
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="admin-btn-primary gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">إضافة طلب يدوي</span>
-            </Button>
+            <Button className="admin-btn-primary gap-2"><Plus className="h-4 w-4" /><span className="hidden sm:inline">إضافة طلب يدوي</span></Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>إضافة طلب يدوي</DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>إضافة طلب يدوي</DialogTitle></DialogHeader>
             <div className="admin-form space-y-4">
-              <div className="admin-form-group">
-                <Label>اسم العميل</Label>
-                <Input
-                  value={manualOrderForm.customer_name}
-                  onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })}
-                  placeholder="اسم العميل"
-                />
-              </div>
-              <div className="admin-form-group">
-                <Label>المنتجات (سطر لكل منتج)</Label>
-                <Textarea
-                  value={manualOrderForm.product_names}
-                  onChange={(e) => setManualOrderForm({ ...manualOrderForm, product_names: e.target.value })}
-                  placeholder="منتج 1&#10;منتج 2"
-                  rows={3}
-                />
-              </div>
+              <div className="admin-form-group"><Label>اسم العميل</Label><Input value={manualOrderForm.customer_name} onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })} placeholder="اسم العميل" /></div>
+              <div className="admin-form-group"><Label>المنتجات (سطر لكل منتج)</Label><Textarea value={manualOrderForm.product_names} onChange={(e) => setManualOrderForm({ ...manualOrderForm, product_names: e.target.value })} placeholder="منتج 1&#10;منتج 2" rows={3} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="admin-form-group">
-                  <Label>المبلغ الإجمالي</Label>
-                  <Input
-                    type="number"
-                    value={manualOrderForm.total_amount}
-                    onChange={(e) => setManualOrderForm({ ...manualOrderForm, total_amount: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="admin-form-group">
-                  <Label>دفع الزبون</Label>
-                  <Input
-                    type="number"
-                    value={manualOrderForm.customer_paid_amount}
-                    onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_paid_amount: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
+                <div className="admin-form-group"><Label>المبلغ الإجمالي</Label><Input type="number" value={manualOrderForm.total_amount} onChange={(e) => setManualOrderForm({ ...manualOrderForm, total_amount: parseFloat(e.target.value) || 0 })} /></div>
+                <div className="admin-form-group"><Label>دفع الزبون</Label><Input type="number" value={manualOrderForm.customer_paid_amount} onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_paid_amount: parseFloat(e.target.value) || 0 })} /></div>
               </div>
-              <Button 
-                onClick={() => addManualOrderMutation.mutate(manualOrderForm)}
-                disabled={addManualOrderMutation.isPending}
-                className="w-full"
-              >
+              <Button onClick={() => addManualOrderMutation.mutate(manualOrderForm)} disabled={addManualOrderMutation.isPending} className="w-full">
                 {addManualOrderMutation.isPending ? 'جاري الإضافة...' : 'إضافة الطلب'}
               </Button>
             </div>
@@ -495,472 +328,277 @@ const AdminFinancials = () => {
         </Dialog>
       }
     >
-      {/* Stats */}
-      <AdminStatsGrid>
-        <AdminStatCard
-          icon={<DollarSign className="h-5 w-5" />}
-          value={formatPrice(totals.totalRevenue)}
-          label="إجمالي الإيرادات"
-          colorClass="text-green-600"
-          bgClass="bg-green-500/10"
-        />
-        <AdminStatCard
-          icon={<CreditCard className="h-5 w-5" />}
-          value={formatPrice(totals.totalCustomerPaid)}
-          label="المدفوع من الزبائن"
-          colorClass="text-blue-600"
-          bgClass="bg-blue-500/10"
-        />
-        <AdminStatCard
-          icon={<Package className="h-5 w-5" />}
-          value={formatPrice(totals.totalProductCost)}
-          label="إجمالي تكلفة المنتجات"
-          colorClass="text-red-600"
-          bgClass="bg-red-500/10"
-        />
-        <AdminStatCard
-          icon={<TrendingUp className="h-5 w-5" />}
-          value={formatPrice(calculatedProfit)}
-          label="صافي الربح"
-          colorClass="text-primary"
-          bgClass="bg-primary/10"
-        />
-      </AdminStatsGrid>
-
-      {/* Date Filter */}
-      <AdminSection className="mt-6">
-        <div className="flex flex-col gap-4">
-          {/* Quick Filters */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={quickFilter === '' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => { setQuickFilter(''); setDateFrom(''); setDateTo(''); }}
-            >
-              الكل
-            </Button>
-            <Button
-              variant={quickFilter === 'this_month' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => applyQuickFilter('this_month')}
-            >
-              هذا الشهر
-            </Button>
-            <Button
-              variant={quickFilter === 'last_month' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => applyQuickFilter('last_month')}
-            >
-              آخر شهر
-            </Button>
-            <Button
-              variant={quickFilter === 'last_3_months' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => applyQuickFilter('last_3_months')}
-            >
-              آخر 3 أشهر
-            </Button>
-            <Button
-              variant={quickFilter === 'last_6_months' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => applyQuickFilter('last_6_months')}
-            >
-              آخر 6 أشهر
-            </Button>
-            <Button
-              variant={quickFilter === 'last_year' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => applyQuickFilter('last_year')}
-            >
-              آخر سنة
-            </Button>
-            <Button
-              variant={quickFilter === 'this_year' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => applyQuickFilter('this_year')}
-            >
-              هذه السنة
-            </Button>
+      {/* ===== 1. Global Profit Bar ===== */}
+      <div className="rounded-xl border border-primary/30 bg-gradient-to-l from-primary/15 via-primary/10 to-transparent p-4 sm:p-5 mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">صافي الربح العام (الطلبات المسلّمة فقط)</p>
+              <p className={`text-2xl sm:text-3xl font-black ${globalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                {formatPrice(globalProfit)}
+              </p>
+            </div>
           </div>
-          
-          {/* Custom Date Range */}
+          <Button variant="outline" className="gap-2" onClick={() => setIsChartOpen(true)}>
+            <BarChart3 className="h-4 w-4" />
+            عرض الرسم البياني
+          </Button>
+        </div>
+      </div>
+
+      {/* ===== 2. Chart Dialog ===== */}
+      <Dialog open={isChartOpen} onOpenChange={setIsChartOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>الإيرادات والتكاليف والأرباح الشهرية</DialogTitle></DialogHeader>
+          <div className="h-[350px] mt-4">
+            {monthlyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                  <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                  <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))' }} />
+                  <Legend />
+                  <Bar dataKey="revenue" name="الإيرادات" fill="#10b981" radius={[4,4,0,0]} />
+                  <Bar dataKey="cost" name="التكاليف" fill="#ef4444" radius={[4,4,0,0]} />
+                  <Bar dataKey="profit" name="الأرباح" fill="#3b82f6" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">لا توجد بيانات</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== 3. Filters ===== */}
+      <AdminSection>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
+            {[['', 'الكل'], ['this_month', 'هذا الشهر'], ['last_month', 'آخر شهر'], ['last_3_months', 'آخر 3 أشهر'], ['last_6_months', 'آخر 6 أشهر'], ['this_year', 'هذه السنة']].map(([val, label]) => (
+              <Button key={val} variant={quickFilter === val ? 'default' : 'outline'} size="sm"
+                onClick={() => { if (val === '') { setQuickFilter(''); setDateFrom(''); setDateTo(''); } else applyQuickFilter(val); }}>
+                {label}
+              </Button>
+            ))}
+          </div>
           <div className="flex flex-wrap gap-4 items-end">
-            <div className="admin-form-group">
-              <Label>من تاريخ</Label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => { setDateFrom(e.target.value); setQuickFilter(''); }}
-                className="w-40"
-              />
-            </div>
-            <div className="admin-form-group">
-              <Label>إلى تاريخ</Label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => { setDateTo(e.target.value); setQuickFilter(''); }}
-                className="w-40"
-              />
-            </div>
-            
-            {/* Status Filter */}
+            <div className="admin-form-group"><Label>من تاريخ</Label><Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setQuickFilter(''); }} className="w-40" /></div>
+            <div className="admin-form-group"><Label>إلى تاريخ</Label><Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setQuickFilter(''); }} className="w-40" /></div>
             <div className="admin-form-group">
               <Label>حالة الطلب</Label>
-              <div className="flex gap-2">
-                <Button
-                  variant={statusFilter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('all')}
-                >
-                  الكل ({orders?.length || 0})
-                </Button>
-                <Button
-                  variant={statusFilter === 'delivered' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('delivered')}
-                  className="text-green-600"
-                >
-                  مكتمل ({orders?.filter(o => o.status === 'delivered').length || 0})
-                </Button>
-                <Button
-                  variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('in_progress')}
-                >
-                  قيد التنفيذ ({orders?.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length || 0})
-                </Button>
-                <Button
-                  variant={statusFilter === 'cancelled' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('cancelled')}
-                  className="text-red-600"
-                >
-                  ملغي ({orders?.filter(o => o.status === 'cancelled').length || 0})
-                </Button>
+              <div className="flex gap-2 flex-wrap">
+                {[['all', 'الكل'], ['delivered', 'مكتمل'], ['in_progress', 'قيد التنفيذ'], ['cancelled', 'ملغي']].map(([val, label]) => (
+                  <Button key={val} variant={statusFilter === val ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(val)}>{label}</Button>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </AdminSection>
 
-      {/* Orders Table */}
-      <AdminSection title={`الطلبات (${filteredOrders.length})`} className="mt-6">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        ) : (
-          <div className="rounded-lg border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">رقم الطلب</TableHead>
-                  <TableHead className="text-right">المستخدم</TableHead>
-                  <TableHead className="text-right">المنتجات</TableHead>
-                  <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-                  <TableHead className="text-right">تكلفة المنتجات</TableHead>
-                  <TableHead className="text-right">صافي الربح</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-center">التاريخ</TableHead>
-                  <TableHead className="text-center">إجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.map((order) => {
-                  const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0);
-                  const deliveredDate = order.status === 'delivered' && (order as any).delivered_at 
-                    ? format(new Date((order as any).delivered_at), 'dd/MM/yyyy', { locale: ar })
-                    : null;
-                  
-                  return (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{getUsername(order)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>
-                        {getProductNames(order)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-500')}
-                      </TableCell>
-                      <TableCell className={netProfit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                        {formatPrice(netProfit)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
-                          {order.status === 'delivered' ? 'مكتمل' : order.status === 'cancelled' ? 'ملغي' : 'قيد التنفيذ'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-sm text-muted-foreground">
-                        <div className="flex flex-col">
-                          <span>{format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}</span>
-                          {deliveredDate && (
-                            <span className="text-green-600 text-xs">تسليم: {deliveredDate}</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => setSelectedOrder(order)}
-                            title="عرض التفاصيل"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {isManualOrder(order.order_number) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  title="حذف"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>حذف الطلب</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deleteOrderMutation.mutate(order.id)}
-                                  >
-                                    حذف
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </AdminSection>
+      {/* ===== 4. Stats Cards ===== */}
+      <div className="mt-6"><AdminStatsGrid>
+        <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
+        <AdminStatCard icon={<CreditCard className="h-5 w-5" />} value={formatPrice(totals.totalCustomerPaid)} label="المدفوع من الزبائن" colorClass="text-blue-600" bgClass="bg-blue-500/10" />
+        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
+        <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`صافي الربح (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
+      </AdminStatsGrid></div>
 
-      {/* Profit Breakdown Section */}
-      <AdminSection title="تحليل الأرباح التفصيلي" className="mt-6">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="general">ربح عام</TabsTrigger>
-            <TabsTrigger value="by-section">حسب القسم الرئيسي</TabsTrigger>
-            <TabsTrigger value="by-category">حسب القسم الفرعي</TabsTrigger>
-            <TabsTrigger value="by-product">حسب المنتج</TabsTrigger>
+      {/* ===== 5. Main Tabs: Sale Type ===== */}
+      <AdminSection title="تحليل الأرباح" className="mt-6">
+        <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v); setSubTab('general'); setCurrentPage(1); }} className="w-full">
+          <TabsList className="mb-4 w-full sm:w-auto">
+            <TabsTrigger value="all">ربح عام</TabsTrigger>
+            <TabsTrigger value="direct">بيع مباشر</TabsTrigger>
+            <TabsTrigger value="preorder">بيع مسبق</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general">
-            <div className="rounded-lg border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">المصدر</TableHead>
-                    <TableHead className="text-right">الإيرادات</TableHead>
-                    <TableHead className="text-right">التكلفة</TableHead>
-                    <TableHead className="text-right">صافي الربح</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(() => {
-                    const directOrders = filteredOrders.filter((o: any) => (o as any).order_type === 'direct');
-                    const preorderOrders = filteredOrders.filter((o: any) => (o as any).order_type !== 'direct');
-                    const directRevenue = directOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
-                    const directCost = directOrders.reduce((s, o) => s + (o.admin_product_cost || 0), 0);
-                    const preorderRevenue = preorderOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
-                    const preorderCost = preorderOrders.reduce((s, o) => s + (o.admin_product_cost || 0), 0);
-                    return (
-                      <>
+          {['all', 'direct', 'preorder'].map(tab => (
+            <TabsContent key={tab} value={tab}>
+              {/* Summary bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">عدد المسلّم</p><p className="text-lg font-bold">{tabTotals.count}</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الإيرادات</p><p className="text-lg font-bold text-green-600">{formatPrice(tabTotals.revenue)}</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">التكاليف</p><p className="text-lg font-bold text-red-500">{formatPrice(tabTotals.cost)}</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">صافي الربح</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
+              </div>
+
+              {/* Sub tabs */}
+              <Tabs value={subTab} onValueChange={setSubTab}>
+                <TabsList className="mb-3">
+                  <TabsTrigger value="general">عام</TabsTrigger>
+                  <TabsTrigger value="by-section">حسب القسم الرئيسي</TabsTrigger>
+                  <TabsTrigger value="by-product">حسب المنتج</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="general">
+                  {/* Orders table with pagination */}
+                  <div className="rounded-lg border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell className="font-bold">بيع مباشر</TableCell>
-                          <TableCell className="text-green-600">{formatPrice(directRevenue)}</TableCell>
-                          <TableCell className="text-red-500">{formatPrice(directCost)}</TableCell>
-                          <TableCell className={directRevenue - directCost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(directRevenue - directCost)}</TableCell>
+                          <TableHead className="text-right">رقم الطلب</TableHead>
+                          <TableHead className="text-right">المستخدم</TableHead>
+                          <TableHead className="text-right">المنتجات</TableHead>
+                          <TableHead className="text-right">المبلغ</TableHead>
+                          <TableHead className="text-right">تكلفة المنتجات</TableHead>
+                          <TableHead className="text-right">صافي الربح</TableHead>
+                          <TableHead className="text-right">الحالة</TableHead>
+                          <TableHead className="text-center">التاريخ</TableHead>
+                          <TableHead className="text-center">إجراءات</TableHead>
                         </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {isLoading ? (
+                          <TableRow><TableCell colSpan={9} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
+                        ) : paginatedOrders.length === 0 ? (
+                          <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
+                        ) : paginatedOrders.map(order => {
+                          const profit = calcOrderProfit(order);
+                          return (
+                            <TableRow key={order.id}>
+                              <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
+                              <TableCell><span className="font-medium">{getUsername(order)}</span></TableCell>
+                              <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-500')}</TableCell>
+                              <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
+                                {order.status === 'delivered' ? formatPrice(profit) : '-'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
+                                  {order.status === 'delivered' ? 'مكتمل' : order.status === 'cancelled' ? 'ملغي' : 'قيد التنفيذ'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center text-sm text-muted-foreground">
+                                {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSelectedOrder(order)} title="عرض التفاصيل"><Eye className="h-4 w-4" /></Button>
+                                  {isManualOrder(order.order_number) && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" title="حذف"><Trash2 className="h-4 w-4" /></Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>حذف الطلب</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد؟ لا يمكن التراجع.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteOrderMutation.mutate(order.id)}>حذف</AlertDialogAction></AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-3 mt-4">
+                      <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>
+                        <ChevronRight className="h-4 w-4" /> السابق
+                      </Button>
+                      <span className="text-sm text-muted-foreground">صفحة {currentPage} من {totalPages}</span>
+                      <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                        التالي <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="by-section">
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell className="font-bold">حجز مسبق</TableCell>
-                          <TableCell className="text-green-600">{formatPrice(preorderRevenue)}</TableCell>
-                          <TableCell className="text-red-500">{formatPrice(preorderCost)}</TableCell>
-                          <TableCell className={preorderRevenue - preorderCost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(preorderRevenue - preorderCost)}</TableCell>
+                          <TableHead className="text-right">القسم الرئيسي</TableHead>
+                          <TableHead className="text-right">عدد المنتجات</TableHead>
+                          <TableHead className="text-right">الإيرادات</TableHead>
+                          <TableHead className="text-right">التكلفة</TableHead>
+                          <TableHead className="text-right">صافي الربح</TableHead>
                         </TableRow>
-                        <TableRow className="bg-muted/50">
-                          <TableCell className="font-black">الإجمالي</TableCell>
-                          <TableCell className="text-green-600 font-bold">{formatPrice(totals.totalRevenue)}</TableCell>
-                          <TableCell className="text-red-500 font-bold">{formatPrice(totals.totalProductCost)}</TableCell>
-                          <TableCell className={calculatedProfit >= 0 ? 'text-green-600 font-black' : 'text-red-600 font-black'}>{formatPrice(calculatedProfit)}</TableCell>
+                      </TableHeader>
+                      <TableBody>
+                        {aggregateBySection(tabFilteredOrders).map(([id, data]) => (
+                          <TableRow key={id}>
+                            <TableCell className="font-bold">{data.name}</TableCell>
+                            <TableCell>{data.count}</TableCell>
+                            <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
+                            <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
+                            <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {aggregateBySection(tabFilteredOrders).length === 0 && (
+                          <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">لا توجد بيانات</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="by-product">
+                  <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-right">المنتج</TableHead>
+                          <TableHead className="text-right">الكمية</TableHead>
+                          <TableHead className="text-right">الإيرادات</TableHead>
+                          <TableHead className="text-right">التكلفة</TableHead>
+                          <TableHead className="text-right">صافي الربح</TableHead>
                         </TableRow>
-                      </>
-                    );
-                  })()}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="by-section">
-            <div className="rounded-lg border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">القسم الرئيسي</TableHead>
-                    <TableHead className="text-right">عدد الطلبات</TableHead>
-                    <TableHead className="text-right">الإيرادات</TableHead>
-                    <TableHead className="text-right">التكلفة</TableHead>
-                    <TableHead className="text-right">صافي الربح</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(() => {
-                    const sectionMap: Record<string, { name: string; revenue: number; cost: number; count: number }> = {};
-                    filteredOrders.forEach((order: any) => {
-                      order.order_items?.forEach((item: any) => {
-                        const section = (item as any).products?.categories?.main_sections;
-                        const sectionName = section?.name_ar || 'غير مصنف';
-                        const sectionId = section?.id || 'unknown';
-                        if (!sectionMap[sectionId]) sectionMap[sectionId] = { name: sectionName, revenue: 0, cost: 0, count: 0 };
-                        sectionMap[sectionId].revenue += item.total_price || 0;
-                        sectionMap[sectionId].cost += (item as any).cost_price ? (item as any).cost_price * item.quantity : 0;
-                        sectionMap[sectionId].count += 1;
-                      });
-                    });
-                    return Object.entries(sectionMap).sort((a, b) => b[1].revenue - a[1].revenue).map(([id, data]) => (
-                      <TableRow key={id}>
-                        <TableCell className="font-bold">{data.name}</TableCell>
-                        <TableCell>{data.count}</TableCell>
-                        <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
-                        <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
-                        <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
-                      </TableRow>
-                    ));
-                  })()}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="by-category">
-            <div className="rounded-lg border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">القسم الفرعي</TableHead>
-                    <TableHead className="text-right">عدد المنتجات</TableHead>
-                    <TableHead className="text-right">الإيرادات</TableHead>
-                    <TableHead className="text-right">التكلفة</TableHead>
-                    <TableHead className="text-right">صافي الربح</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(() => {
-                    const catMap: Record<string, { name: string; revenue: number; cost: number; count: number }> = {};
-                    filteredOrders.forEach((order: any) => {
-                      order.order_items?.forEach((item: any) => {
-                        const cat = (item as any).products?.categories;
-                        const catName = cat?.name_ar || 'غير مصنف';
-                        const catId = cat?.id || 'unknown';
-                        if (!catMap[catId]) catMap[catId] = { name: catName, revenue: 0, cost: 0, count: 0 };
-                        catMap[catId].revenue += item.total_price || 0;
-                        catMap[catId].cost += (item as any).cost_price ? (item as any).cost_price * item.quantity : 0;
-                        catMap[catId].count += 1;
-                      });
-                    });
-                    return Object.entries(catMap).sort((a, b) => b[1].revenue - a[1].revenue).map(([id, data]) => (
-                      <TableRow key={id}>
-                        <TableCell className="font-bold">{data.name}</TableCell>
-                        <TableCell>{data.count}</TableCell>
-                        <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
-                        <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
-                        <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
-                      </TableRow>
-                    ));
-                  })()}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="by-product">
-            <div className="rounded-lg border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">المنتج</TableHead>
-                    <TableHead className="text-right">الكمية المباعة</TableHead>
-                    <TableHead className="text-right">الإيرادات</TableHead>
-                    <TableHead className="text-right">التكلفة</TableHead>
-                    <TableHead className="text-right">صافي الربح</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(() => {
-                    const prodMap: Record<string, { name: string; revenue: number; cost: number; qty: number }> = {};
-                    filteredOrders.forEach((order: any) => {
-                      order.order_items?.forEach((item: any) => {
-                        const prodName = item.product_name_ar || item.product_name || 'غير محدد';
-                        const prodId = (item as any).product_id || prodName;
-                        if (!prodMap[prodId]) prodMap[prodId] = { name: prodName, revenue: 0, cost: 0, qty: 0 };
-                        prodMap[prodId].revenue += item.total_price || 0;
-                        prodMap[prodId].cost += (item as any).cost_price ? (item as any).cost_price * item.quantity : 0;
-                        prodMap[prodId].qty += item.quantity;
-                      });
-                    });
-                    return Object.entries(prodMap).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 50).map(([id, data]) => (
-                      <TableRow key={id}>
-                        <TableCell className="font-medium max-w-[200px] truncate">{data.name}</TableCell>
-                        <TableCell>{data.qty}</TableCell>
-                        <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
-                        <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
-                        <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
-                      </TableRow>
-                    ));
-                  })()}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+                      </TableHeader>
+                      <TableBody>
+                        {aggregateByProduct(tabFilteredOrders).slice(0, 50).map(([id, data]) => (
+                          <TableRow key={id}>
+                            <TableCell className="font-medium max-w-[200px] truncate">{data.name}</TableCell>
+                            <TableCell>{data.qty}</TableCell>
+                            <TableCell className="text-green-600">{formatPrice(data.revenue)}</TableCell>
+                            <TableCell className="text-red-500">{formatPrice(data.cost)}</TableCell>
+                            <TableCell className={data.revenue - data.cost >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{formatPrice(data.revenue - data.cost)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {aggregateByProduct(tabFilteredOrders).length === 0 && (
+                          <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">لا توجد بيانات</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </TabsContent>
+          ))}
         </Tabs>
       </AdminSection>
 
-      {/* Order Details Dialog */}
+      {/* ===== 6. Shipping Cost (Neutral Display) ===== */}
+      <div className="mt-6 rounded-xl border border-border/50 bg-muted/30 p-4 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+          <Truck className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">إجمالي تكلفة التوصيل <span className="text-xs">(لا تدخل في حسابات الأرباح أو التكاليف)</span></p>
+          <p className="text-xl font-bold text-muted-foreground">{formatPrice(totals.totalShippingCost)}</p>
+        </div>
+      </div>
+
+      {/* ===== 7. Order Details Dialog ===== */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل الطلب {selectedOrder?.order_number}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>تفاصيل الطلب {selectedOrder?.order_number}</DialogTitle></DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">المستخدم</Label>
-                  <p className="font-medium">{getUsername(selectedOrder)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">الحالة</Label>
-                  <Badge variant={selectedOrder.status === 'delivered' ? 'default' : 'secondary'}>
-                    {selectedOrder.status}
-                  </Badge>
-                </div>
+                <div><Label className="text-muted-foreground">المستخدم</Label><p className="font-medium">{getUsername(selectedOrder)}</p></div>
+                <div><Label className="text-muted-foreground">الحالة</Label><Badge variant={selectedOrder.status === 'delivered' ? 'default' : 'secondary'}>{selectedOrder.status === 'delivered' ? 'مكتمل' : selectedOrder.status === 'cancelled' ? 'ملغي' : 'قيد التنفيذ'}</Badge></div>
               </div>
-              
               <div>
                 <Label className="text-muted-foreground">المنتجات</Label>
                 <div className="mt-2 space-y-2">
@@ -972,25 +610,12 @@ const AdminFinancials = () => {
                   ))}
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div>
-                  <Label className="text-muted-foreground">المبلغ الإجمالي</Label>
-                  <p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">صافي الربح</Label>
-                  <p className={`font-bold ${((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatPrice((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0))}
-                  </p>
-                </div>
+                <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
+                <div><Label className="text-muted-foreground">صافي الربح</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
               </div>
-
               {selectedOrder.financial_notes && (
-                <div className="pt-4 border-t">
-                  <Label className="text-muted-foreground">ملاحظات مالية</Label>
-                  <p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p>
-                </div>
+                <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
               )}
             </div>
           )}
