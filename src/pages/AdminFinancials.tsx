@@ -44,12 +44,32 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate net profit for a single order (only delivered)
-// admin_product_cost already includes all costs (product + shipping + other) as entered by admin
-// So we only subtract admin_product_cost from total_amount
+// Calculate the real product cost for an order from order_items/products data
+const calcOrderCost = (order: OrderWithDetails): number => {
+  // If admin manually set admin_product_cost, use it
+  if (order.admin_product_cost && order.admin_product_cost > 0) {
+    return order.admin_product_cost;
+  }
+  // Otherwise calculate from order_items cost_price or products.cost_price
+  if (order.order_items && order.order_items.length > 0) {
+    return order.order_items.reduce((sum, item) => {
+      // First try item's own cost_price
+      let itemCost = item.cost_price || 0;
+      // If 0, try product's cost_price from joined data
+      if (itemCost === 0 && item.products?.cost_price) {
+        itemCost = item.products.cost_price;
+      }
+      return sum + (itemCost * (item.quantity || 1));
+    }, 0);
+  }
+  return 0;
+};
+
+// Calculate net profit for a single order (only delivered, shipping excluded)
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - (order.admin_product_cost || 0);
+  const cost = calcOrderCost(order);
+  return (order.total_amount || 0) - cost;
 };
 
 const AdminFinancials = () => {
@@ -189,11 +209,12 @@ const AdminFinancials = () => {
   // Totals for current filtered view
   const totals = useMemo(() => {
     return filteredOrders.reduce((acc, order) => {
+      const cost = calcOrderCost(order);
       const profit = calcOrderProfit(order);
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
         totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
-        totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
+        totalProductCost: acc.totalProductCost + cost,
         totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
         totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
         totalProfit: acc.totalProfit + profit,
