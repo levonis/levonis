@@ -209,11 +209,12 @@ const AdminFinancials = () => {
   // Totals for current filtered view
   const totals = useMemo(() => {
     return filteredOrders.reduce((acc, order) => {
+      const cost = calcOrderCost(order);
       const profit = calcOrderProfit(order);
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
         totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
-        totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
+        totalProductCost: acc.totalProductCost + cost,
         totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
         totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
         totalProfit: acc.totalProfit + profit,
