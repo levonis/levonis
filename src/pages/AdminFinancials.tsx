@@ -50,14 +50,15 @@ const calcOrderCost = (order: OrderWithDetails): number => {
   if (order.admin_product_cost && order.admin_product_cost > 0) {
     return order.admin_product_cost;
   }
-  // Otherwise calculate from order_items cost_price or products.cost_price
+  // Otherwise calculate from order_items cost_price or products cost fields
   if (order.order_items && order.order_items.length > 0) {
     return order.order_items.reduce((sum, item) => {
       // First try item's own cost_price
       let itemCost = item.cost_price || 0;
-      // If 0, try product's cost_price from joined data
-      if (itemCost === 0 && item.products?.cost_price) {
-        itemCost = item.products.cost_price;
+      // If 0, try product's cost fields (cost_price + shipping_cost_iqd + other_costs_iqd)
+      if (itemCost === 0 && item.products) {
+        const p = item.products;
+        itemCost = (p.cost_price || 0) + (p.shipping_cost_iqd || 0) + (p.other_costs_iqd || 0);
       }
       return sum + (itemCost * (item.quantity || 1));
     }, 0);
@@ -116,7 +117,7 @@ const AdminFinancials = () => {
         *, order_type,
         profile:profiles!orders_user_id_fkey_profiles(username, full_name),
         order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id,
-          products!order_items_product_id_fkey(id, name_ar, cost_price, category_id,
+          products!order_items_product_id_fkey(id, name_ar, cost_price, shipping_cost_iqd, other_costs_iqd, category_id,
             categories!products_category_id_fkey(id, name_ar, main_section_id,
               main_sections!categories_main_section_id_fkey(id, name_ar)
             )
