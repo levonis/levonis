@@ -406,7 +406,7 @@ const AdminFinancials = () => {
         <AdminStatCard icon={<CreditCard className="h-5 w-5" />} value={formatPrice(totals.totalCustomerPaid)} label="المدفوع من الزبائن" colorClass="text-blue-600" bgClass="bg-blue-500/10" />
         <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
         <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`صافي الربح (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
-      </AdminStatsGrid>
+      </AdminStatsGrid></div>
 
       {/* ===== 5. Main Tabs: Sale Type ===== */}
       <AdminSection title="تحليل الأرباح" className="mt-6">
