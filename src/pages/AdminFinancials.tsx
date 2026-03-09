@@ -401,7 +401,7 @@ const AdminFinancials = () => {
       </AdminSection>
 
       {/* ===== 4. Stats Cards ===== */}
-      <AdminStatsGrid className="mt-6">
+      <div className="mt-6"><AdminStatsGrid>
         <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
         <AdminStatCard icon={<CreditCard className="h-5 w-5" />} value={formatPrice(totals.totalCustomerPaid)} label="المدفوع من الزبائن" colorClass="text-blue-600" bgClass="bg-blue-500/10" />
         <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
