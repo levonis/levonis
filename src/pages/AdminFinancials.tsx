@@ -394,7 +394,11 @@ const AdminFinancials = () => {
 
   // Calculate totals from filtered orders
   const totals = filteredOrders.reduce((acc, order) => {
-    const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0);
+    const isDelivered = order.status === 'delivered';
+    // Profit only counts for delivered orders, excluding shipping costs
+    const netProfit = isDelivered 
+      ? (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0)
+      : 0;
     
     return {
       totalRevenue: acc.totalRevenue + (order.total_amount || 0),
@@ -402,10 +406,12 @@ const AdminFinancials = () => {
       totalAdminPaid: acc.totalAdminPaid + (order.admin_paid_amount || 0),
       totalRemaining: acc.totalRemaining + (order.remaining_amount || 0),
       totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
+      totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
+      totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
       totalTax: acc.totalTax + (order.tax_amount || 0),
       totalProfit: acc.totalProfit + netProfit,
       orderCount: acc.orderCount + 1,
-      deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
+      deliveredCount: acc.deliveredCount + (isDelivered ? 1 : 0),
     };
   }, {
     totalRevenue: 0,
@@ -413,13 +419,15 @@ const AdminFinancials = () => {
     totalAdminPaid: 0,
     totalRemaining: 0,
     totalProductCost: 0,
+    totalShippingCost: 0,
+    totalOtherCosts: 0,
     totalTax: 0,
     totalProfit: 0,
     orderCount: 0,
     deliveredCount: 0,
   });
 
-  const calculatedProfit = totals.totalRevenue - totals.totalProductCost;
+  const calculatedProfit = totals.totalProfit;
 
   return (
     <AdminLayout
