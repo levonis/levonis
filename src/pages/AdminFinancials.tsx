@@ -44,10 +44,12 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate net profit for a single order (only delivered, exclude shipping)
+// Calculate net profit for a single order (only delivered)
+// admin_product_cost already includes all costs (product + shipping + other) as entered by admin
+// So we only subtract admin_product_cost from total_amount
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_other_costs || 0);
+  return (order.total_amount || 0) - (order.admin_product_cost || 0);
 };
 
 const AdminFinancials = () => {
