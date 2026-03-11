@@ -437,7 +437,9 @@ const AdminProductBundles = () => {
   const confirmAddProduct = () => {
     if (!selectedProduct) return;
     const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
-    const directColors = colors.filter((c: any) => c?.available_for_direct_sale !== false);
+    const filteredColors = form.sale_type === 'direct'
+      ? colors.filter((c: any) => c?.available_for_direct_sale !== false)
+      : colors.filter((c: any) => c?.available_for_pre_order !== false);
     const options = pickerOptions || [];
 
     const newItems: BundleItem[] = [];
