@@ -459,6 +459,58 @@ export type Database = {
           },
         ]
       }
+      bundle_items: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          selected_color: string | null
+          selected_option_id: string | null
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity?: number
+          selected_color?: string | null
+          selected_option_id?: string | null
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          selected_color?: string | null
+          selected_option_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bundle_items_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "product_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundle_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bundle_items_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_exclusive_offers: {
         Row: {
           created_at: string
@@ -5190,6 +5242,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_bundles: {
+        Row: {
+          bundle_price: number
+          created_at: string
+          description_ar: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          original_price: number
+          title_ar: string
+          title_en: string | null
+          updated_at: string
+        }
+        Insert: {
+          bundle_price?: number
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          original_price?: number
+          title_ar: string
+          title_en?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bundle_price?: number
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          original_price?: number
+          title_ar?: string
+          title_en?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       product_card_discounts: {
         Row: {
