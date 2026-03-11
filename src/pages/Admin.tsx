@@ -1762,6 +1762,14 @@ const Admin = () => {
                 <FolderOpen className="h-7 w-7 md:h-8 md:w-8" />
                 <span className="text-xs font-semibold">قسم رئيسي</span>
               </Button>
+              
+              <Button
+                onClick={() => navigate(ADMIN_ROUTES.productBundles)}
+                className="admin-btn-primary gap-2 h-auto py-5 flex-col rounded-xl"
+              >
+                <Package className="h-7 w-7 md:h-8 md:w-8" />
+                <span className="text-xs font-semibold">بندل جديد</span>
+              </Button>
             </div>
           </div>
         </div>
