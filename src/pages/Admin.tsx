@@ -1722,7 +1722,7 @@ const Admin = () => {
             </div>
           </div>
           <div className="admin-card-content">
-            <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 md:gap-3">
               <Button
                 onClick={() => {
                   setActiveTab('products');
