@@ -13,7 +13,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-/** Check stock for a bundle item */
+/** Check stock for a bundle item (direct sale) */
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
   if (colors.length === 0) {
@@ -42,11 +42,18 @@ function getItemStock(product: any, colorName?: string, optionId?: string): numb
   return color.stock_quantity != null ? Math.max(0, Number(color.stock_quantity)) : 0;
 }
 
+const SALE_TYPE_LABELS: Record<string, string> = {
+  'direct': 'بيع مباشر',
+  'preorder-air': 'طلب مسبق (جوي)',
+  'preorder-sea': 'طلب مسبق (بحري)',
+};
+
 const ProductBundles = () => {
   const { user } = useAuth();
   const { addToCart, cartSaleType, items: cartItems } = useCart();
   const navigate = useNavigate();
   const [addingBundleId, setAddingBundleId] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<Record<string, number>>({});
 
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
@@ -69,12 +76,35 @@ const ProductBundles = () => {
 
       return data.map((bundle: any) => {
         const bundleItems = (items || []).filter((item: any) => item.bundle_id === bundle.id);
-        // Check if any item has insufficient stock
-        const isOutOfStock = bundleItems.some((item: any) => {
+        const saleType = bundle.sale_type || 'direct';
+        const isDirect = saleType === 'direct';
+
+        // Stock check only for direct sale
+        const isOutOfStock = isDirect && bundleItems.some((item: any) => {
           const stock = getItemStock(item.products, item.selected_color, item.selected_option_id);
           return stock < item.quantity;
         });
-        return { ...bundle, items: bundleItems, isOutOfStock };
+
+        // Collect all images: main image + color images from items
+        const allImages: string[] = [];
+        if (bundle.image_url) allImages.push(bundle.image_url);
+        // Add stored color images
+        const storedImages = Array.isArray(bundle.images) ? bundle.images : [];
+        for (const img of storedImages) {
+          if (img && !allImages.includes(img)) allImages.push(img);
+        }
+        // Also get color images from items
+        for (const item of bundleItems) {
+          const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
+          if (item.selected_color) {
+            const colorObj = colors.find((c: any) => (c.color || c.name) === item.selected_color);
+            if (colorObj?.image && !allImages.includes(colorObj.image)) {
+              allImages.push(colorObj.image);
+            }
+          }
+        }
+
+        return { ...bundle, items: bundleItems, isOutOfStock, allImages };
       });
     },
     staleTime: 60 * 1000,
@@ -84,10 +114,13 @@ const ProductBundles = () => {
     if (!user) { navigate('/auth'); return; }
     if (bundle.isOutOfStock) { toast.error('هذا العرض انتهى - المخزون غير كافٍ'); return; }
 
+    const bundleSaleType = bundle.sale_type === 'direct' ? 'direct' : 'preorder';
+
     setAddingBundleId(bundle.id);
     try {
-      if (cartItems.length > 0 && cartSaleType === 'preorder') {
-        toast.error('السلة تحتوي على طلبات مسبقة. يرجى إكمال الطلب الحالي أو تفريغ السلة');
+      // Check cart compatibility
+      if (cartItems.length > 0 && cartSaleType && cartSaleType !== bundleSaleType) {
+        toast.error('السلة تحتوي على نوع مختلف من الطلبات. يرجى إكمال الطلب الحالي أو تفريغ السلة');
         return;
       }
 
@@ -95,7 +128,14 @@ const ProductBundles = () => {
         const product = item.products;
         if (!product) continue;
         for (let i = 0; i < item.quantity; i++) {
-          const success = await addToCart(item.product_id, item.selected_option_id || undefined, item.selected_color || undefined, 1, undefined, 'direct');
+          const success = await addToCart(
+            item.product_id,
+            item.selected_option_id || undefined,
+            item.selected_color || undefined,
+            1,
+            undefined,
+            bundleSaleType
+          );
           if (!success) { toast.error(`فشل إضافة ${product.name_ar} للسلة`); return; }
         }
       }
@@ -106,6 +146,11 @@ const ProductBundles = () => {
     } finally {
       setAddingBundleId(null);
     }
+  };
+
+  const getActiveImage = (bundle: any) => {
+    const idx = selectedImageIndex[bundle.id] || 0;
+    return bundle.allImages?.[idx] || bundle.image_url;
   };
 
   return (
@@ -144,12 +189,17 @@ const ProductBundles = () => {
                 ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
                 : 0;
               const isAdding = addingBundleId === bundle.id;
+              const saleType = bundle.sale_type || 'direct';
+              const isDirect = saleType === 'direct';
+              const activeImage = getActiveImage(bundle);
+              const allImages = bundle.allImages || [];
 
               return (
                 <Card key={bundle.id} className={`overflow-hidden transition-all ${bundle.isOutOfStock ? 'opacity-70 border-destructive/30' : 'border-primary/10 hover:border-primary/30'}`}>
-                  {bundle.image_url && (
-                    <div className="relative h-40 bg-muted">
-                      <img src={bundle.image_url} alt={bundle.title_ar} className="w-full h-full object-cover" />
+                  {/* Main Image */}
+                  {activeImage && (
+                    <div className="relative h-48 bg-muted">
+                      <img src={activeImage} alt={bundle.title_ar} className="w-full h-full object-cover" />
                       {bundle.isOutOfStock ? (
                         <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-sm px-3 py-1">
                           انتهى العرض
@@ -159,6 +209,25 @@ const ProductBundles = () => {
                           خصم {discount}%
                         </Badge>
                       ) : null}
+                      {/* Sale type badge */}
+                      <Badge className="absolute top-3 right-3 bg-background/80 text-foreground text-xs backdrop-blur-sm">
+                        {SALE_TYPE_LABELS[saleType] || saleType}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* Image thumbnails */}
+                  {allImages.length > 1 && (
+                    <div className="flex gap-1.5 px-4 pt-3 overflow-x-auto">
+                      {allImages.map((img: string, i: number) => (
+                        <button
+                          key={i}
+                          onClick={() => setSelectedImageIndex(prev => ({ ...prev, [bundle.id]: i }))}
+                          className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-colors ${(selectedImageIndex[bundle.id] || 0) === i ? 'border-primary' : 'border-border'}`}
+                        >
+                          <img src={img} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
                     </div>
                   )}
 
@@ -166,10 +235,10 @@ const ProductBundles = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-bold text-foreground">{bundle.title_ar}</h2>
-                        {!bundle.image_url && bundle.isOutOfStock && (
+                        {!activeImage && bundle.isOutOfStock && (
                           <Badge className="bg-destructive text-destructive-foreground text-xs">انتهى العرض</Badge>
                         )}
-                        {!bundle.image_url && !bundle.isOutOfStock && discount > 0 && (
+                        {!activeImage && !bundle.isOutOfStock && discount > 0 && (
                           <Badge className="bg-destructive text-destructive-foreground text-xs">خصم {discount}%</Badge>
                         )}
                       </div>
@@ -178,17 +247,23 @@ const ProductBundles = () => {
                       )}
                     </div>
 
-                    {/* Stock status */}
-                    {!bundle.isOutOfStock && (
+                    {/* Stock status - only for direct */}
+                    {isDirect && !bundle.isOutOfStock && (
                       <div className="flex items-center gap-1.5 text-xs text-green-600">
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         العرض مستمر حتى نفاد الكمية
                       </div>
                     )}
-                    {bundle.isOutOfStock && (
+                    {isDirect && bundle.isOutOfStock && (
                       <div className="flex items-center gap-1.5 text-xs text-destructive">
                         <AlertTriangle className="h-3.5 w-3.5" />
                         انتهت الكمية المتاحة لهذا العرض
+                      </div>
+                    )}
+                    {!isDirect && (
+                      <div className="flex items-center gap-1.5 text-xs text-blue-600">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                        طلب مسبق - {saleType === 'preorder-air' ? 'شحن جوي' : 'شحن بحري'}
                       </div>
                     )}
 
@@ -199,21 +274,26 @@ const ProductBundles = () => {
                         محتويات الباقة
                       </p>
                       <div className="space-y-1.5">
-                        {bundle.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                            {(item.products?.image_url || item.products?.images?.[0]) && (
-                              <img src={item.products?.image_url || item.products?.images?.[0]} className="w-10 h-10 rounded object-cover shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{item.products?.name_ar || 'منتج'}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>الكمية: {item.quantity}</span>
-                                {item.selected_color && <span>• اللون: {item.selected_color}</span>}
+                        {bundle.items.map((item: any, idx: number) => {
+                          const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
+                          const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
+                          const itemImage = colorObj?.image || item.products?.image_url || item.products?.images?.[0];
+                          return (
+                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                              {itemImage && (
+                                <img src={itemImage} className="w-10 h-10 rounded object-cover shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{item.products?.name_ar || 'منتج'}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>الكمية: {item.quantity}</span>
+                                  {item.selected_color && <span>• {item.selected_color}</span>}
+                                </div>
                               </div>
+                              <Check className="h-4 w-4 text-primary shrink-0" />
                             </div>
-                            <Check className="h-4 w-4 text-primary shrink-0" />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 

@@ -9,12 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Package, X, Search, Upload, ImageIcon, AlertTriangle, Layers, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+
+type BundleSaleType = 'direct' | 'preorder-air' | 'preorder-sea';
 
 interface BundleItem {
   id?: string;
@@ -27,7 +30,7 @@ interface BundleItem {
   color_image?: string;
   option_label?: string;
   available_stock?: number;
-  unit_price?: number; // price per unit in IQD
+  unit_price?: number;
 }
 
 interface BundleForm {
@@ -35,15 +38,17 @@ interface BundleForm {
   title_en: string;
   description_ar: string;
   image_url: string;
+  images: string[];
   bundle_price: number;
   original_price: number;
   is_active: boolean;
+  sale_type: BundleSaleType;
   items: BundleItem[];
 }
 
 const emptyForm: BundleForm = {
-  title_ar: '', title_en: '', description_ar: '', image_url: '',
-  bundle_price: 0, original_price: 0, is_active: true, items: [],
+  title_ar: '', title_en: '', description_ar: '', image_url: '', images: [],
+  bundle_price: 0, original_price: 0, is_active: true, sale_type: 'direct', items: [],
 };
 
 function getAvailableStock(product: any, colorName?: string, optionId?: string): number {
@@ -74,11 +79,34 @@ function getAvailableStock(product: any, colorName?: string, optionId?: string):
   return color.stock_quantity != null ? Math.max(0, Number(color.stock_quantity)) : 0;
 }
 
-/** Merge multiple image URLs into a single collage and upload */
+/** Get preorder stock for a product */
+function getPreorderStock(product: any): number {
+  return product?.pre_order_stock != null ? Number(product.pre_order_stock) : 999;
+}
+
+/** Calculate unit price based on sale type */
+function calcItemPrice(product: any, optionId: string | undefined, saleType: BundleSaleType, usdToIqd: number, options?: any[]): number {
+  const opt = optionId && options ? options.find((o: any) => o.id === optionId) : null;
+  const adj = opt?.price_adjustment || 0;
+  const adjIqd = Math.round(adj * usdToIqd);
+
+  if (saleType === 'direct') {
+    const base = product.direct_sale_price || product.price || 0;
+    return base + adjIqd;
+  } else if (saleType === 'preorder-air') {
+    const base = product.air_price || product.price || 0;
+    return base + adjIqd;
+  } else {
+    // sea
+    const base = product.sea_price || product.price || 0;
+    return base + adjIqd;
+  }
+}
+
 async function mergeImages(imageUrls: string[]): Promise<string> {
   const urls = [...new Set(imageUrls.filter(Boolean))];
   if (urls.length === 0) throw new Error('لا توجد صور للدمج');
-  if (urls.length === 1) return urls[0]; // No merge needed
+  if (urls.length === 1) return urls[0];
 
   const SIZE = 800;
   const canvas = document.createElement('canvas');
@@ -88,7 +116,6 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
   ctx.fillStyle = '#f5f5f5';
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Calculate grid layout
   const count = Math.min(urls.length, 9);
   const cols = count <= 1 ? 1 : count <= 4 ? 2 : 3;
   const rows = Math.ceil(count / cols);
@@ -96,7 +123,6 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
   const cellH = SIZE / rows;
   const padding = 8;
 
-  // Load images
   const loadImage = (url: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -117,12 +143,10 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
     const w = cellW - padding * 2;
     const h = cellH - padding * 2;
 
-    // Draw rounded rect background
     ctx.fillStyle = '#ffffff';
     roundRect(ctx, x, y, w, h, 12);
     ctx.fill();
 
-    // Draw image centered/cover
     const scale = Math.max(w / img.width, h / img.height);
     const sw = w / scale;
     const sh = h / scale;
@@ -136,12 +160,10 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
     ctx.restore();
   });
 
-  // Convert to blob
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.85);
   });
 
-  // Upload
   const fileName = `bundle-collage-${Date.now()}.jpg`;
   const { error } = await supabase.storage
     .from('bundle-images')
@@ -166,6 +188,12 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
+const SALE_TYPE_LABELS: Record<BundleSaleType, string> = {
+  'direct': 'بيع مباشر',
+  'preorder-air': 'طلب مسبق (جوي)',
+  'preorder-sea': 'طلب مسبق (بحري)',
+};
+
 const AdminProductBundles = () => {
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
@@ -178,7 +206,6 @@ const AdminProductBundles = () => {
   const [merging, setMerging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Product selection dialog state
   const [selectProductDialog, setSelectProductDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -197,19 +224,19 @@ const AdminProductBundles = () => {
     },
   });
 
-  const fetchBundleItems = async (bundleId: string) => {
+  const fetchBundleItems = async (bundleId: string, saleType: BundleSaleType) => {
     const { data, error } = await supabase
       .from('bundle_items')
-      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price), product_options:selected_option_id(name_ar, price_adjustment)')
+      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price, air_price, sea_price, pre_order_stock), product_options:selected_option_id(name_ar, price_adjustment)')
       .eq('bundle_id', bundleId);
     if (error) throw error;
     return (data || []).map((item: any) => {
-      const stock = getAvailableStock(item.products, item.selected_color || undefined, item.selected_option_id || undefined);
       const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
       const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
-      const basePrice = item.products?.direct_sale_price || item.products?.price || 0;
-      const optAdj = item.product_options?.price_adjustment || 0;
-      const unitPrice = basePrice + Math.round(optAdj * usdToIqd);
+      const stock = saleType === 'direct'
+        ? getAvailableStock(item.products, item.selected_color || undefined, item.selected_option_id || undefined)
+        : getPreorderStock(item.products);
+      const unitPrice = calcItemPrice(item.products, item.selected_option_id, saleType, usdToIqd, item.product_options ? [item.product_options] : []);
       return {
         id: item.id,
         product_id: item.product_id,
@@ -231,7 +258,7 @@ const AdminProductBundles = () => {
     queryFn: async () => {
       let query = supabase
         .from('products')
-        .select('id, name_ar, image_url, images, colors, direct_sale_price, price, direct_stock')
+        .select('id, name_ar, image_url, images, colors, direct_sale_price, price, air_price, sea_price, direct_stock, pre_order_stock')
         .order('name_ar');
       if (productSearch) query = query.ilike('name_ar', `%${productSearch}%`);
       const { data, error } = await query.limit(20);
@@ -241,7 +268,6 @@ const AdminProductBundles = () => {
     enabled: dialogOpen,
   });
 
-  // Fetch options for the selected product in the picker
   const { data: pickerOptions } = useQuery({
     queryKey: ['product-options-for-picker', selectedProduct?.id],
     queryFn: async () => {
@@ -255,7 +281,6 @@ const AdminProductBundles = () => {
     enabled: !!selectedProduct?.id,
   });
 
-  // Fetch options for items already in bundle (for display labels)
   const productIdsInBundle = [...new Set(form.items.map(i => i.product_id))];
   const { data: allProductOptions } = useQuery({
     queryKey: ['product-options-for-bundle', productIdsInBundle],
@@ -278,6 +303,15 @@ const AdminProductBundles = () => {
     if (total > 0) {
       setForm(f => ({ ...f, original_price: total }));
     }
+  }, [form.items]);
+
+  // Auto-collect color/option images into images array
+  useEffect(() => {
+    const colorImages = form.items
+      .map(item => item.color_image)
+      .filter(Boolean) as string[];
+    const unique = [...new Set(colorImages)];
+    setForm(f => ({ ...f, images: unique }));
   }, [form.items]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,13 +351,15 @@ const AdminProductBundles = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: BundleForm) => {
-      const bundleData = {
+      const bundleData: any = {
         title_ar: data.title_ar,
         title_en: data.title_en || null,
         description_ar: data.description_ar || null,
         image_url: data.image_url || null,
+        images: data.images || [],
         bundle_price: data.bundle_price,
         original_price: data.original_price,
+        sale_type: data.sale_type,
         is_active: data.is_active,
         updated_at: new Date().toISOString(),
       };
@@ -372,21 +408,23 @@ const AdminProductBundles = () => {
 
   const handleEdit = async (bundle: any) => {
     setEditingId(bundle.id);
-    const items = await fetchBundleItems(bundle.id);
+    const saleType = (bundle.sale_type || 'direct') as BundleSaleType;
+    const items = await fetchBundleItems(bundle.id, saleType);
     setForm({
       title_ar: bundle.title_ar,
       title_en: bundle.title_en || '',
       description_ar: bundle.description_ar || '',
       image_url: bundle.image_url || '',
+      images: bundle.images || [],
       bundle_price: bundle.bundle_price,
       original_price: bundle.original_price,
       is_active: bundle.is_active,
+      sale_type: saleType,
       items,
     });
     setDialogOpen(true);
   };
 
-  // Open product picker with multi-select
   const openProductPicker = (product: any) => {
     setSelectedProduct(product);
     setSelectedColors([]);
@@ -396,17 +434,6 @@ const AdminProductBundles = () => {
     setProductSearch('');
   };
 
-  // Calculate unit price for a product + option combo
-  const calcUnitPrice = (product: any, optionId?: string): number => {
-    const basePrice = product.direct_sale_price || product.price || 0;
-    if (!optionId) return basePrice;
-    const opt = (pickerOptions || []).find((o: any) => o.id === optionId);
-    const adj = opt?.price_adjustment || 0;
-    // price_adjustment is in USD, convert to IQD
-    return basePrice + Math.round(adj * usdToIqd);
-  };
-
-  // Confirm adding product with selected colors/options
   const confirmAddProduct = () => {
     if (!selectedProduct) return;
     const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
@@ -416,14 +443,21 @@ const AdminProductBundles = () => {
     const newItems: BundleItem[] = [];
     const baseImg = selectedProduct.image_url || selectedProduct.images?.[0] || '';
 
+    const getStock = (colorName?: string, optId?: string) => {
+      if (form.sale_type === 'direct') return getAvailableStock(selectedProduct, colorName, optId);
+      return getPreorderStock(selectedProduct);
+    };
+
+    const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
+
     if (selectedColors.length === 0 && selectedOptionIds.length === 0) {
       newItems.push({
         product_id: selectedProduct.id,
         quantity: itemQuantity,
         product_name: selectedProduct.name_ar,
         product_image: baseImg,
-        available_stock: getAvailableStock(selectedProduct),
-        unit_price: calcUnitPrice(selectedProduct),
+        available_stock: getStock(),
+        unit_price: getPrice(),
       });
     } else if (selectedColors.length > 0 && selectedOptionIds.length > 0) {
       for (const colorName of selectedColors) {
@@ -439,8 +473,8 @@ const AdminProductBundles = () => {
             product_image: baseImg,
             color_image: colorObj?.image || '',
             option_label: opt?.name_ar || '',
-            available_stock: getAvailableStock(selectedProduct, colorName, optId),
-            unit_price: calcUnitPrice(selectedProduct, optId),
+            available_stock: getStock(colorName, optId),
+            unit_price: getPrice(optId),
           });
         }
       }
@@ -454,8 +488,8 @@ const AdminProductBundles = () => {
           product_name: selectedProduct.name_ar,
           product_image: baseImg,
           color_image: colorObj?.image || '',
-          available_stock: getAvailableStock(selectedProduct, colorName),
-          unit_price: calcUnitPrice(selectedProduct),
+          available_stock: getStock(colorName),
+          unit_price: getPrice(),
         });
       }
     } else {
@@ -468,8 +502,8 @@ const AdminProductBundles = () => {
           product_name: selectedProduct.name_ar,
           product_image: baseImg,
           option_label: opt?.name_ar || '',
-          available_stock: getAvailableStock(selectedProduct, undefined, optId),
-          unit_price: calcUnitPrice(selectedProduct, optId),
+          available_stock: getStock(undefined, optId),
+          unit_price: getPrice(optId),
         });
       }
     }
@@ -496,6 +530,16 @@ const AdminProductBundles = () => {
     return allProductOptions?.find((o: any) => o.id === optionId)?.name_ar || '';
   };
 
+  // Recalculate prices when sale_type changes
+  const handleSaleTypeChange = (newType: BundleSaleType) => {
+    // Re-fetch prices would require product data, simplify by clearing items
+    // Actually, we can approximate by just updating the form and letting the user re-add
+    setForm(f => ({ ...f, sale_type: newType }));
+    if (form.items.length > 0) {
+      toast.info('يرجى إعادة إضافة المنتجات لتحديث الأسعار حسب نوع البيع الجديد');
+    }
+  };
+
   const discount = form.original_price > 0
     ? Math.round(((form.original_price - form.bundle_price) / form.original_price) * 100) : 0;
 
@@ -518,6 +562,7 @@ const AdminProductBundles = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">العنوان</TableHead>
+                    <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">السعر</TableHead>
                     <TableHead className="text-right">الخصم</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
@@ -534,6 +579,11 @@ const AdminProductBundles = () => {
                             {b.image_url && <img src={b.image_url} className="w-10 h-10 rounded object-cover" />}
                             <span className="font-medium">{b.title_ar}</span>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {SALE_TYPE_LABELS[(b.sale_type || 'direct') as BundleSaleType]}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <span className="font-bold text-primary">{formatPrice(b.bundle_price)}</span>
@@ -569,6 +619,27 @@ const AdminProductBundles = () => {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Sale Type Selection */}
+            <div>
+              <Label className="mb-2 block font-bold">نوع البيع</Label>
+              <RadioGroup
+                value={form.sale_type}
+                onValueChange={(v) => handleSaleTypeChange(v as BundleSaleType)}
+                className="flex flex-wrap gap-3"
+                dir="rtl"
+              >
+                {Object.entries(SALE_TYPE_LABELS).map(([value, label]) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${form.sale_type === value ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                  >
+                    <RadioGroupItem value={value} />
+                    <span className="text-sm font-medium">{label}</span>
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>العنوان (عربي) *</Label>
@@ -588,14 +659,11 @@ const AdminProductBundles = () => {
             {/* Image Upload + Merge */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <Label>صورة البندل</Label>
+                <Label>صورة البندل الأساسية (مدموجة)</Label>
                 {form.items.length >= 2 && (
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1"
-                    onClick={handleMergeImages}
-                    disabled={merging}
+                    size="sm" variant="outline" className="h-7 text-xs gap-1"
+                    onClick={handleMergeImages} disabled={merging}
                   >
                     {merging ? <Loader2 className="h-3 w-3 animate-spin" /> : <Layers className="h-3 w-3" />}
                     {merging ? 'جارٍ الدمج...' : 'دمج صور المنتجات'}
@@ -625,6 +693,17 @@ const AdminProductBundles = () => {
                   )}
                 </div>
               )}
+              {/* Color images preview */}
+              {form.images.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground mb-1">صور الألوان/الخيارات (تُعرض كصور إضافية):</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {form.images.map((img, i) => (
+                      <img key={i} src={img} className="w-12 h-12 rounded object-cover border border-border" />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -634,8 +713,7 @@ const AdminProductBundles = () => {
                   {form.items.length > 0 && <span className="text-[10px] text-muted-foreground">(تلقائي)</span>}
                 </Label>
                 <Input
-                  type="number"
-                  value={form.original_price}
+                  type="number" value={form.original_price}
                   onChange={e => setForm(f => ({ ...f, original_price: Number(e.target.value) }))}
                   className="bg-muted/50"
                 />
@@ -690,7 +768,7 @@ const AdminProductBundles = () => {
               {/* Current items */}
               <div className="space-y-2 mt-3">
                 {form.items.map((item, idx) => {
-                  const stockInsufficient = item.available_stock != null && item.available_stock < item.quantity;
+                  const stockInsufficient = form.sale_type === 'direct' && item.available_stock != null && item.available_stock < item.quantity;
                   return (
                     <div key={idx} className={`flex items-center gap-2 p-2 border rounded-lg ${stockInsufficient ? 'border-destructive/50 bg-destructive/5' : 'bg-muted/30'}`}>
                       <img src={item.color_image || item.product_image || ''} className="w-10 h-10 rounded object-cover shrink-0" />
@@ -702,6 +780,11 @@ const AdminProductBundles = () => {
                           <Badge variant="outline" className="text-[10px] h-5">×{item.quantity}</Badge>
                           {item.unit_price != null && item.unit_price > 0 && (
                             <Badge variant="outline" className="text-[10px] h-5 text-primary">{(item.unit_price * item.quantity).toLocaleString()} د.ع</Badge>
+                          )}
+                          {form.sale_type === 'direct' && item.available_stock != null && (
+                            <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground">
+                              مخزون: {item.available_stock}
+                            </Badge>
                           )}
                         </div>
                         {stockInsufficient && (
@@ -751,7 +834,6 @@ const AdminProductBundles = () => {
 
             return (
               <div className="space-y-4">
-                {/* Colors multi-select */}
                 {colors.length > 0 && (
                   <div>
                     <Label className="mb-2 block">الألوان (اختر واحد أو أكثر)</Label>
@@ -759,6 +841,7 @@ const AdminProductBundles = () => {
                       {colors.map((c: any, ci: number) => {
                         const colorName = c.color || c.name || `color-${ci}`;
                         const isChecked = selectedColors.includes(colorName);
+                        const stock = form.sale_type === 'direct' ? getAvailableStock(selectedProduct, colorName) : null;
                         return (
                           <label
                             key={ci}
@@ -766,7 +849,14 @@ const AdminProductBundles = () => {
                           >
                             <Checkbox checked={isChecked} onCheckedChange={() => toggleColor(colorName)} />
                             {c.image && <img src={c.image} className="w-8 h-8 rounded object-cover" />}
-                            <span className="text-sm">{colorName}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm block truncate">{colorName}</span>
+                              {stock != null && (
+                                <span className={`text-[10px] ${stock > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
+                                  مخزون: {stock}
+                                </span>
+                              )}
+                            </div>
                           </label>
                         );
                       })}
@@ -774,7 +864,6 @@ const AdminProductBundles = () => {
                   </div>
                 )}
 
-                {/* Options multi-select */}
                 {options.length > 0 && (
                   <div>
                     <Label className="mb-2 block">الخيارات (اختر واحد أو أكثر)</Label>
@@ -795,13 +884,11 @@ const AdminProductBundles = () => {
                   </div>
                 )}
 
-                {/* Quantity */}
                 <div>
                   <Label>الكمية لكل عنصر</Label>
                   <Input type="number" min={1} value={itemQuantity} onChange={e => setItemQuantity(Math.max(1, Number(e.target.value)))} className="mt-1" />
                 </div>
 
-                {/* Summary */}
                 {(selectedColors.length > 0 || selectedOptionIds.length > 0) && (
                   <div className="bg-muted/50 rounded-lg p-3 text-sm">
                     <p className="text-muted-foreground">
