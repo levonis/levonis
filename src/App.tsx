@@ -116,11 +116,13 @@ const AdminGiveawaysCoupons = lazy(() => import("./pages/AdminGiveawaysCoupons")
 const AdminGameMusic = lazy(() => import("./pages/AdminGameMusic"));
 const AdminPriceMatch = lazy(() => import("./pages/AdminPriceMatch"));
 const AdminWishes = lazy(() => import("./pages/AdminWishes"));
+const AdminProductBundles = lazy(() => import("./pages/AdminProductBundles"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
+const ProductBundles = lazy(() => import("./pages/ProductBundles"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
