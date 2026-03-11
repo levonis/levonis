@@ -463,7 +463,7 @@ const AdminProductBundles = () => {
       });
     } else if (selectedColors.length > 0 && selectedOptionIds.length > 0) {
       for (const colorName of selectedColors) {
-        const colorObj = directColors.find((c: any) => (c.color || c.name) === colorName);
+        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
         for (const optId of selectedOptionIds) {
           const opt = options.find((o: any) => o.id === optId);
           newItems.push({
@@ -473,7 +473,7 @@ const AdminProductBundles = () => {
             quantity: itemQuantity,
             product_name: selectedProduct.name_ar,
             product_image: baseImg,
-            color_image: colorObj?.image || '',
+            color_image: colorObj?.image_url || colorObj?.image || '',
             option_label: opt?.name_ar || '',
             available_stock: getStock(colorName, optId),
             unit_price: getPrice(optId),
@@ -482,14 +482,14 @@ const AdminProductBundles = () => {
       }
     } else if (selectedColors.length > 0) {
       for (const colorName of selectedColors) {
-        const colorObj = directColors.find((c: any) => (c.color || c.name) === colorName);
+        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
         newItems.push({
           product_id: selectedProduct.id,
           selected_color: colorName,
           quantity: itemQuantity,
           product_name: selectedProduct.name_ar,
           product_image: baseImg,
-          color_image: colorObj?.image || '',
+          color_image: colorObj?.image_url || colorObj?.image || '',
           available_stock: getStock(colorName),
           unit_price: getPrice(),
         });
