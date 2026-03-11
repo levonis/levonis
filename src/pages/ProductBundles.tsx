@@ -25,7 +25,7 @@ function getItemStock(product: any, colorName?: string, optionId?: string): numb
       if (c?.available_for_direct_sale === false) continue;
       const stocks = c?.option_stocks;
       if (stocks && typeof stocks === 'object') {
-        total += Object.values(stocks).reduce((s: number, v: any) => s + Math.max(0, Number(v)), 0);
+        total += Object.values(stocks).reduce<number>((s, v) => s + Math.max(0, Number(v)), 0);
       } else if (c?.stock_quantity != null) {
         total += Math.max(0, Number(c.stock_quantity));
       }
