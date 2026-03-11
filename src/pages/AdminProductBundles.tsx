@@ -392,6 +392,16 @@ const AdminProductBundles = () => {
     setProductSearch('');
   };
 
+  // Calculate unit price for a product + option combo
+  const calcUnitPrice = (product: any, optionId?: string): number => {
+    const basePrice = product.direct_sale_price || product.price || 0;
+    if (!optionId) return basePrice;
+    const opt = (pickerOptions || []).find((o: any) => o.id === optionId);
+    const adj = opt?.price_adjustment || 0;
+    // price_adjustment is in USD, convert to IQD
+    return basePrice + Math.round(adj * usdToIqd);
+  };
+
   // Confirm adding product with selected colors/options
   const confirmAddProduct = () => {
     if (!selectedProduct) return;
@@ -400,18 +410,18 @@ const AdminProductBundles = () => {
     const options = pickerOptions || [];
 
     const newItems: BundleItem[] = [];
+    const baseImg = selectedProduct.image_url || selectedProduct.images?.[0] || '';
 
     if (selectedColors.length === 0 && selectedOptionIds.length === 0) {
-      // No color/option selected - add as-is
       newItems.push({
         product_id: selectedProduct.id,
         quantity: itemQuantity,
         product_name: selectedProduct.name_ar,
-        product_image: selectedProduct.image_url || selectedProduct.images?.[0] || '',
+        product_image: baseImg,
         available_stock: getAvailableStock(selectedProduct),
+        unit_price: calcUnitPrice(selectedProduct),
       });
     } else if (selectedColors.length > 0 && selectedOptionIds.length > 0) {
-      // Create a combo for each color × option
       for (const colorName of selectedColors) {
         const colorObj = directColors.find((c: any) => (c.color || c.name) === colorName);
         for (const optId of selectedOptionIds) {
@@ -422,10 +432,11 @@ const AdminProductBundles = () => {
             selected_option_id: optId,
             quantity: itemQuantity,
             product_name: selectedProduct.name_ar,
-            product_image: selectedProduct.image_url || selectedProduct.images?.[0] || '',
+            product_image: baseImg,
             color_image: colorObj?.image || '',
             option_label: opt?.name_ar || '',
             available_stock: getAvailableStock(selectedProduct, colorName, optId),
+            unit_price: calcUnitPrice(selectedProduct, optId),
           });
         }
       }
@@ -437,9 +448,10 @@ const AdminProductBundles = () => {
           selected_color: colorName,
           quantity: itemQuantity,
           product_name: selectedProduct.name_ar,
-          product_image: selectedProduct.image_url || selectedProduct.images?.[0] || '',
+          product_image: baseImg,
           color_image: colorObj?.image || '',
           available_stock: getAvailableStock(selectedProduct, colorName),
+          unit_price: calcUnitPrice(selectedProduct),
         });
       }
     } else {
@@ -450,9 +462,10 @@ const AdminProductBundles = () => {
           selected_option_id: optId,
           quantity: itemQuantity,
           product_name: selectedProduct.name_ar,
-          product_image: selectedProduct.image_url || selectedProduct.images?.[0] || '',
+          product_image: baseImg,
           option_label: opt?.name_ar || '',
           available_stock: getAvailableStock(selectedProduct, undefined, optId),
+          unit_price: calcUnitPrice(selectedProduct, optId),
         });
       }
     }
