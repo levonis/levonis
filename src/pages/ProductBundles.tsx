@@ -47,7 +47,7 @@ const SALE_TYPE_LABELS: Record<string, string> = {
 
 const ProductBundles = () => {
   const { user } = useAuth();
-  const { addToCart, cartSaleType, items: cartItems } = useCart();
+  const { addBundleToCart, cartSaleType, items: cartItems } = useCart();
   const navigate = useNavigate();
   const [addingBundleId, setAddingBundleId] = useState<string | null>(null);
   const [expandedBundleId, setExpandedBundleId] = useState<string | null>(null);
