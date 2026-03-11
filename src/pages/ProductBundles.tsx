@@ -4,14 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Package, ShoppingCart, Sparkles, ArrowRight, Check, AlertTriangle } from 'lucide-react';
+import { Loader2, Package, ShoppingCart, ArrowRight, AlertTriangle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 
 /** Check stock for a bundle item (direct sale) */
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
@@ -43,9 +40,9 @@ function getItemStock(product: any, colorName?: string, optionId?: string): numb
 }
 
 const SALE_TYPE_LABELS: Record<string, string> = {
-  'direct': 'بيع مباشر',
-  'preorder-air': 'طلب مسبق (جوي)',
-  'preorder-sea': 'طلب مسبق (بحري)',
+  'direct': 'مباشر',
+  'preorder-air': 'جوي',
+  'preorder-sea': 'بحري',
 };
 
 const ProductBundles = () => {
@@ -53,7 +50,6 @@ const ProductBundles = () => {
   const { addToCart, cartSaleType, items: cartItems } = useCart();
   const navigate = useNavigate();
   const [addingBundleId, setAddingBundleId] = useState<string | null>(null);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<Record<string, number>>({});
 
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
@@ -79,33 +75,12 @@ const ProductBundles = () => {
         const saleType = bundle.sale_type || 'direct';
         const isDirect = saleType === 'direct';
 
-        // Stock check only for direct sale
         const isOutOfStock = isDirect && bundleItems.some((item: any) => {
           const stock = getItemStock(item.products, item.selected_color, item.selected_option_id);
           return stock < item.quantity;
         });
 
-        // Collect all images: main image + color images from items
-        const allImages: string[] = [];
-        if (bundle.image_url) allImages.push(bundle.image_url);
-        // Add stored color images
-        const storedImages = Array.isArray(bundle.images) ? bundle.images : [];
-        for (const img of storedImages) {
-          if (img && !allImages.includes(img)) allImages.push(img);
-        }
-        // Also get color images from items
-        for (const item of bundleItems) {
-          const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
-          if (item.selected_color) {
-          const colorObj = colors.find((c: any) => (c.color || c.name) === item.selected_color);
-            const cImg = (colorObj as any)?.image_url || (colorObj as any)?.image;
-            if (cImg && !allImages.includes(cImg)) {
-              allImages.push(cImg);
-            }
-          }
-        }
-
-        return { ...bundle, items: bundleItems, isOutOfStock, allImages };
+        return { ...bundle, items: bundleItems, isOutOfStock };
       });
     },
     staleTime: 60 * 1000,
@@ -119,7 +94,6 @@ const ProductBundles = () => {
 
     setAddingBundleId(bundle.id);
     try {
-      // Check cart compatibility
       if (cartItems.length > 0 && cartSaleType && cartSaleType !== bundleSaleType) {
         toast.error('السلة تحتوي على نوع مختلف من الطلبات. يرجى إكمال الطلب الحالي أو تفريغ السلة');
         return;
@@ -149,23 +123,16 @@ const ProductBundles = () => {
     }
   };
 
-  const getActiveImage = (bundle: any) => {
-    const idx = selectedImageIndex[bundle.id] || 0;
-    return bundle.allImages?.[idx] || bundle.image_url;
-  };
-
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <Header />
-      <div className="container max-w-2xl mx-auto px-4 py-6 pb-24">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-foreground">باقات المنتجات</h1>
-            <p className="text-sm text-muted-foreground">اشترِ بالجملة ووفر أكثر</p>
-          </div>
+      <div className="container max-w-lg mx-auto px-3 pt-4 pb-24">
+        {/* Page title */}
+        <div className="flex items-center gap-2 mb-4">
+          <Link to="/" className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+            <ArrowRight className="h-4 w-4 text-foreground" />
+          </Link>
+          <Package className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-black text-foreground">باقات وعروض</h1>
         </div>
 
         {isLoading ? (
@@ -174,163 +141,108 @@ const ProductBundles = () => {
           </div>
         ) : !bundles?.length ? (
           <div className="text-center py-20 space-y-3">
-            <Package className="h-16 w-16 mx-auto text-muted-foreground/30" />
-            <p className="text-muted-foreground">لا توجد باقات متاحة حالياً</p>
-            <Link to="/">
-              <Button variant="outline" size="sm">
-                <ArrowRight className="h-4 w-4 ml-1" />
-                العودة للرئيسية
-              </Button>
-            </Link>
+            <Package className="h-12 w-12 mx-auto text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">لا توجد باقات متاحة حالياً</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2.5">
             {bundles.map((bundle: any) => {
               const discount = bundle.original_price > 0
                 ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
                 : 0;
               const isAdding = addingBundleId === bundle.id;
               const saleType = bundle.sale_type || 'direct';
-              const isDirect = saleType === 'direct';
-              const activeImage = getActiveImage(bundle);
-              const allImages = bundle.allImages || [];
+              const mainImage = bundle.image_url;
 
               return (
-                <Card key={bundle.id} className={`overflow-hidden transition-all ${bundle.isOutOfStock ? 'opacity-70 border-destructive/30' : 'border-primary/10 hover:border-primary/30'}`}>
-                  {/* Main Image */}
-                  {activeImage && (
-                    <div className="relative h-48 bg-muted">
-                      <img src={activeImage} alt={bundle.title_ar} className="w-full h-full object-cover" />
-                      {bundle.isOutOfStock ? (
-                        <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-sm px-3 py-1">
-                          انتهى العرض
-                        </Badge>
-                      ) : discount > 0 ? (
-                        <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-sm px-3 py-1">
-                          خصم {discount}%
-                        </Badge>
-                      ) : null}
-                      {/* Sale type badge */}
-                      <Badge className="absolute top-3 right-3 bg-background/80 text-foreground text-xs backdrop-blur-sm">
-                        {SALE_TYPE_LABELS[saleType] || saleType}
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Image thumbnails */}
-                  {allImages.length > 1 && (
-                    <div className="flex gap-1.5 px-4 pt-3 overflow-x-auto">
-                      {allImages.map((img: string, i: number) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedImageIndex(prev => ({ ...prev, [bundle.id]: i }))}
-                          className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-colors ${(selectedImageIndex[bundle.id] || 0) === i ? 'border-primary' : 'border-border'}`}
-                        >
-                          <img src={img} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <CardContent className="p-4 space-y-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-bold text-foreground">{bundle.title_ar}</h2>
-                        {!activeImage && bundle.isOutOfStock && (
-                          <Badge className="bg-destructive text-destructive-foreground text-xs">انتهى العرض</Badge>
-                        )}
-                        {!activeImage && !bundle.isOutOfStock && discount > 0 && (
-                          <Badge className="bg-destructive text-destructive-foreground text-xs">خصم {discount}%</Badge>
-                        )}
+                <div
+                  key={bundle.id}
+                  className={`rounded-xl border overflow-hidden bg-card transition-all ${bundle.isOutOfStock ? 'opacity-60 border-destructive/30' : 'border-border hover:border-primary/30'}`}
+                >
+                  {/* Image */}
+                  <div className="relative aspect-square bg-muted">
+                    {mainImage ? (
+                      <img src={mainImage} alt={bundle.title_ar} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground/20" />
                       </div>
-                      {bundle.description_ar && (
-                        <p className="text-sm text-muted-foreground mt-1">{bundle.description_ar}</p>
+                    )}
+                    {/* Badges */}
+                    {bundle.isOutOfStock ? (
+                      <Badge className="absolute top-1.5 left-1.5 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5">
+                        انتهى
+                      </Badge>
+                    ) : discount > 0 ? (
+                      <Badge className="absolute top-1.5 left-1.5 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5">
+                        -{discount}%
+                      </Badge>
+                    ) : null}
+                    <Badge className="absolute top-1.5 right-1.5 bg-background/80 text-foreground text-[9px] px-1 py-0.5 backdrop-blur-sm">
+                      {SALE_TYPE_LABELS[saleType] || saleType}
+                    </Badge>
+                    {/* Items count */}
+                    <div className="absolute bottom-1.5 right-1.5 bg-background/80 backdrop-blur-sm rounded-md px-1.5 py-0.5 text-[9px] font-bold text-foreground">
+                      {bundle.items.length} منتجات
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-2.5 space-y-1.5">
+                    <p className="text-xs font-bold leading-tight line-clamp-2">{bundle.title_ar}</p>
+
+                    {/* Items preview - small avatars */}
+                    <div className="flex items-center -space-x-1.5 rtl:space-x-reverse">
+                      {bundle.items.slice(0, 4).map((item: any, idx: number) => {
+                        const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
+                        const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
+                        const img = colorObj?.image_url || colorObj?.image || item.products?.image_url;
+                        return (
+                          <div key={idx} className="w-6 h-6 rounded-full border-2 border-card overflow-hidden bg-muted shrink-0">
+                            {img ? <img src={img} className="w-full h-full object-cover" /> : <Package className="w-3 h-3 m-auto text-muted-foreground/30" />}
+                          </div>
+                        );
+                      })}
+                      {bundle.items.length > 4 && (
+                        <div className="w-6 h-6 rounded-full border-2 border-card bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground">
+                          +{bundle.items.length - 4}
+                        </div>
                       )}
                     </div>
 
-                    {/* Stock status - only for direct */}
-                    {isDirect && !bundle.isOutOfStock && (
-                      <div className="flex items-center gap-1.5 text-xs text-primary">
-                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        العرض مستمر حتى نفاد الكمية
-                      </div>
-                    )}
-                    {isDirect && bundle.isOutOfStock && (
-                      <div className="flex items-center gap-1.5 text-xs text-destructive">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        انتهت الكمية المتاحة لهذا العرض
-                      </div>
-                    )}
-                    {!isDirect && (
-                      <div className="flex items-center gap-1.5 text-xs text-accent-foreground">
-                        <span className="w-2 h-2 rounded-full bg-accent-foreground/70 animate-pulse" />
-                        طلب مسبق - {saleType === 'preorder-air' ? 'شحن جوي' : 'شحن بحري'}
-                      </div>
+                    {/* Price */}
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
+                      <span className="text-[8px] text-muted-foreground">د.ع</span>
+                    </div>
+                    {bundle.original_price > 0 && (
+                      <span className="text-[10px] text-muted-foreground line-through block -mt-1">{formatPrice(bundle.original_price)}</span>
                     )}
 
-                    {/* Bundle Items */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-primary" />
-                        محتويات الباقة
-                      </p>
-                      <div className="space-y-1.5">
-                        {bundle.items.map((item: any, idx: number) => {
-                          const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
-                          const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
-                          const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
-                          return (
-                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                              {itemImage && (
-                                <img src={itemImage} className="w-10 h-10 rounded object-cover shrink-0" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{item.products?.name_ar || 'منتج'}</p>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>الكمية: {item.quantity}</span>
-                                  {item.selected_color && <span>• {item.selected_color}</span>}
-                                </div>
-                              </div>
-                              <Check className="h-4 w-4 text-primary shrink-0" />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Price & CTA */}
-                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                      <div>
-                        <span className="text-xl font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
-                        <span className="text-xs text-muted-foreground mr-1">د.ع</span>
-                        {bundle.original_price > 0 && (
-                          <span className="text-sm text-muted-foreground line-through mr-2">{formatPrice(bundle.original_price)}</span>
-                        )}
-                      </div>
-                      <Button
-                        onClick={() => handleAddBundleToCart(bundle)}
-                        disabled={isAdding || bundle.isOutOfStock}
-                        className="gap-2"
-                        variant={bundle.isOutOfStock ? "secondary" : "default"}
-                      >
-                        {isAdding ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : bundle.isOutOfStock ? (
-                          <AlertTriangle className="h-4 w-4" />
-                        ) : (
-                          <ShoppingCart className="h-4 w-4" />
-                        )}
-                        {isAdding ? 'جارٍ الإضافة...' : bundle.isOutOfStock ? 'انتهى العرض' : 'أضف للسلة'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    {/* CTA */}
+                    <Button
+                      onClick={() => handleAddBundleToCart(bundle)}
+                      disabled={isAdding || bundle.isOutOfStock}
+                      size="sm"
+                      variant={bundle.isOutOfStock ? "secondary" : "default"}
+                      className="w-full h-7 text-[11px] gap-1"
+                    >
+                      {isAdding ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : bundle.isOutOfStock ? (
+                        <AlertTriangle className="h-3 w-3" />
+                      ) : (
+                        <ShoppingCart className="h-3 w-3" />
+                      )}
+                      {isAdding ? 'جارٍ...' : bundle.isOutOfStock ? 'انتهى' : 'أضف للسلة'}
+                    </Button>
+                  </div>
+                </div>
               );
             })}
           </div>
         )}
       </div>
-      <Footer />
     </div>
   );
 };
