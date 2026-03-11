@@ -206,6 +206,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           id,
           product_id,
           custom_request_id,
+          bundle_id,
           quantity,
           product_option_id,
           selected_color,
@@ -248,6 +249,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             suggested_price,
             image_url,
             quantity
+          ),
+          product_bundles:bundle_id (
+            id,
+            title_ar,
+            bundle_price,
+            original_price,
+            image_url,
+            sale_type
           )
         `)
         .eq('user_id', user.id)
