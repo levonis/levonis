@@ -258,13 +258,22 @@ const AdminProductBundles = () => {
       if (productIdsInBundle.length === 0) return [];
       const { data, error } = await supabase
         .from('product_options')
-        .select('id, name_ar, product_id')
+        .select('id, name_ar, product_id, price_adjustment')
         .in('product_id', productIdsInBundle);
       if (error) throw error;
       return data;
     },
     enabled: productIdsInBundle.length > 0,
   });
+
+  // Auto-calculate original_price from items
+  useEffect(() => {
+    if (form.items.length === 0) return;
+    const total = form.items.reduce((sum, item) => sum + (item.unit_price || 0) * item.quantity, 0);
+    if (total > 0) {
+      setForm(f => ({ ...f, original_price: total }));
+    }
+  }, [form.items]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
