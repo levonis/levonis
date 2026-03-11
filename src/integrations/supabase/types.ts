@@ -5251,8 +5251,10 @@ export type Database = {
           display_order: number
           id: string
           image_url: string | null
+          images: string[] | null
           is_active: boolean
           original_price: number
+          sale_type: string
           title_ar: string
           title_en: string | null
           updated_at: string
@@ -5264,8 +5266,10 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean
           original_price?: number
+          sale_type?: string
           title_ar: string
           title_en?: string | null
           updated_at?: string
@@ -5277,8 +5281,10 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          images?: string[] | null
           is_active?: boolean
           original_price?: number
+          sale_type?: string
           title_ar?: string
           title_en?: string | null
           updated_at?: string
