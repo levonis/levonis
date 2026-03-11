@@ -207,10 +207,10 @@ const AdminProductBundles = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectProductDialog, setSelectProductDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
-  const [itemQuantity, setItemQuantity] = useState(1);
+   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+   const [itemQuantity, setItemQuantity] = useState(1);
 
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['admin-product-bundles'],
@@ -425,108 +425,133 @@ const AdminProductBundles = () => {
     setDialogOpen(true);
   };
 
-  const openProductPicker = (product: any) => {
-    setSelectedProduct(product);
-    setSelectedColors([]);
-    setSelectedOptionIds([]);
-    setItemQuantity(1);
-    setSelectProductDialog(true);
-    setProductSearch('');
-  };
+   const openProductPicker = (product: any) => {
+     setSelectedProduct(product);
+     setSelectedColors([]);
+     setSelectedOptionId(null);
+     setItemQuantity(1);
+     setSelectProductDialog(true);
+     setProductSearch('');
+   };
 
-  const confirmAddProduct = () => {
-    if (!selectedProduct) return;
-    const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
-    const filteredColors = form.sale_type === 'direct'
-      ? colors.filter((c: any) => c?.available_for_direct_sale !== false)
-      : colors.filter((c: any) => c?.available_for_pre_order !== false);
-    const options = pickerOptions || [];
+   const confirmAddProduct = () => {
+     if (!selectedProduct) return;
+     const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
+     const filteredColors = form.sale_type === 'direct'
+       ? colors.filter((c: any) => c?.available_for_direct_sale !== false)
+       : colors.filter((c: any) => c?.available_for_pre_order !== false);
+     const options = pickerOptions || [];
 
-    const newItems: BundleItem[] = [];
-    const baseImg = selectedProduct.image_url || selectedProduct.images?.[0] || '';
+     const newItems: BundleItem[] = [];
+     const baseImg = selectedProduct.image_url || selectedProduct.images?.[0] || '';
 
-    const getStock = (colorName?: string, optId?: string) => {
-      if (form.sale_type === 'direct') return getAvailableStock(selectedProduct, colorName, optId);
-      return getPreorderStock(selectedProduct);
-    };
+     const getStock = (colorName?: string, optName?: string) => {
+       if (form.sale_type === 'direct') {
+         if (colorName) {
+           const colorObj = colors.find((c: any) => (c.color || c.name) === colorName);
+           if (colorObj?.option_stocks && optName) {
+             return Math.max(0, Number(colorObj.option_stocks[optName] ?? 0));
+           }
+           return colorObj?.stock_quantity != null ? Math.max(0, Number(colorObj.stock_quantity)) : 0;
+         }
+         return getAvailableStock(selectedProduct);
+       }
+       return getPreorderStock(selectedProduct);
+     };
 
-    const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
+     const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
 
-    if (selectedColors.length === 0 && selectedOptionIds.length === 0) {
-      newItems.push({
-        product_id: selectedProduct.id,
-        quantity: itemQuantity,
-        product_name: selectedProduct.name_ar,
-        product_image: baseImg,
-        available_stock: getStock(),
-        unit_price: getPrice(),
-      });
-    } else if (selectedColors.length > 0 && selectedOptionIds.length > 0) {
-      for (const colorName of selectedColors) {
-        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-        for (const optId of selectedOptionIds) {
-          const opt = options.find((o: any) => o.id === optId);
-          newItems.push({
-            product_id: selectedProduct.id,
-            selected_color: colorName,
-            selected_option_id: optId,
-            quantity: itemQuantity,
-            product_name: selectedProduct.name_ar,
-            product_image: baseImg,
-            color_image: colorObj?.image_url || colorObj?.image || '',
-            option_label: opt?.name_ar || '',
-            available_stock: getStock(colorName, optId),
-            unit_price: getPrice(optId),
-          });
-        }
-      }
-    } else if (selectedColors.length > 0) {
-      for (const colorName of selectedColors) {
-        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-        newItems.push({
-          product_id: selectedProduct.id,
-          selected_color: colorName,
-          quantity: itemQuantity,
-          product_name: selectedProduct.name_ar,
-          product_image: baseImg,
-          color_image: colorObj?.image_url || colorObj?.image || '',
-          available_stock: getStock(colorName),
-          unit_price: getPrice(),
-        });
-      }
-    } else {
-      for (const optId of selectedOptionIds) {
-        const opt = options.find((o: any) => o.id === optId);
-        newItems.push({
-          product_id: selectedProduct.id,
-          selected_option_id: optId,
-          quantity: itemQuantity,
-          product_name: selectedProduct.name_ar,
-          product_image: baseImg,
-          option_label: opt?.name_ar || '',
-          available_stock: getStock(undefined, optId),
-          unit_price: getPrice(optId),
-        });
-      }
-    }
+     const selectedOpt = selectedOptionId ? options.find((o: any) => o.id === selectedOptionId) : null;
+     const selectedOptName = selectedOpt?.name_ar || '';
 
-    setForm(prev => ({ ...prev, items: [...prev.items, ...newItems] }));
-    setSelectProductDialog(false);
-    setSelectedProduct(null);
-    toast.success(`تم إضافة ${newItems.length} عنصر للبندل`);
-  };
+     if (selectedColors.length === 0 && !selectedOptionId) {
+       const stock = getStock();
+       const qty = Math.min(itemQuantity, stock);
+       if (form.sale_type === 'direct' && stock <= 0) {
+         toast.error('المخزون غير متوفر'); return;
+       }
+       newItems.push({
+         product_id: selectedProduct.id,
+         quantity: qty,
+         product_name: selectedProduct.name_ar,
+         product_image: baseImg,
+         available_stock: stock,
+         unit_price: getPrice(),
+       });
+     } else if (selectedColors.length > 0 && selectedOptionId) {
+       for (const colorName of selectedColors) {
+         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+         const stock = getStock(colorName, selectedOptName);
+         if (form.sale_type === 'direct' && stock <= 0) continue;
+         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+         newItems.push({
+           product_id: selectedProduct.id,
+           selected_color: colorName,
+           selected_option_id: selectedOptionId,
+           quantity: qty,
+           product_name: selectedProduct.name_ar,
+           product_image: baseImg,
+           color_image: colorObj?.image_url || colorObj?.image || '',
+           option_label: selectedOptName,
+           available_stock: stock,
+           unit_price: getPrice(selectedOptionId),
+         });
+       }
+       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+     } else if (selectedColors.length > 0) {
+       for (const colorName of selectedColors) {
+         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+         const stock = getStock(colorName);
+         if (form.sale_type === 'direct' && stock <= 0) continue;
+         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+         newItems.push({
+           product_id: selectedProduct.id,
+           selected_color: colorName,
+           quantity: qty,
+           product_name: selectedProduct.name_ar,
+           product_image: baseImg,
+           color_image: colorObj?.image_url || colorObj?.image || '',
+           available_stock: stock,
+           unit_price: getPrice(),
+         });
+       }
+       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+     } else if (selectedOptionId) {
+       const stock = getStock(undefined, selectedOptName);
+       if (form.sale_type === 'direct' && stock <= 0) {
+         toast.error('المخزون غير متوفر'); return;
+       }
+       const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+       newItems.push({
+         product_id: selectedProduct.id,
+         selected_option_id: selectedOptionId,
+         quantity: qty,
+         product_name: selectedProduct.name_ar,
+         product_image: baseImg,
+         option_label: selectedOptName,
+         available_stock: stock,
+         unit_price: getPrice(selectedOptionId),
+       });
+     }
+
+     setForm(prev => ({ ...prev, items: [...prev.items, ...newItems] }));
+     setSelectProductDialog(false);
+     setSelectedProduct(null);
+     toast.success(`تم إضافة ${newItems.length} عنصر للبندل`);
+   };
 
   const removeItemFromBundle = (index: number) => {
     setForm(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   };
 
-  const toggleColor = (colorName: string) => {
-    setSelectedColors(prev => prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]);
-  };
+   const toggleColor = (colorName: string) => {
+     setSelectedColors(prev => prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]);
+   };
 
-  const toggleOption = (optId: string) => {
-    setSelectedOptionIds(prev => prev.includes(optId) ? prev.filter(o => o !== optId) : [...prev, optId]);
-  };
+   const selectOption = (optId: string) => {
+     setSelectedOptionId(prev => prev === optId ? null : optId);
+     setSelectedColors([]); // reset colors when option changes
+   };
 
   const getOptionLabel = (optionId: string) => {
     return allProductOptions?.find((o: any) => o.id === optionId)?.name_ar || '';
@@ -843,19 +868,20 @@ const AdminProductBundles = () => {
                   <Badge variant="outline">{SALE_TYPE_LABELS[form.sale_type]}</Badge>
                 </div>
 
-                {/* Step 1: Options */}
+                {/* Step 1: Options (single select) */}
                 {options.length > 0 && (
                   <div>
-                    <Label className="mb-2 block">١. الخيارات (اختر واحد أو أكثر)</Label>
+                    <Label className="mb-2 block">١. الخيار (اختر واحد)</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {options.map((o: any) => {
-                        const isChecked = selectedOptionIds.includes(o.id);
+                        const isSelected = selectedOptionId === o.id;
                         return (
                           <label
                             key={o.id}
-                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                            onClick={() => selectOption(o.id)}
                           >
-                            <Checkbox checked={isChecked} onCheckedChange={() => toggleOption(o.id)} />
+                            <RadioGroupItem value={o.id} checked={isSelected} className="pointer-events-none" />
                             <span className="text-sm">{o.name_ar}</span>
                             {o.price_adjustment > 0 && (
                               <span className="text-[10px] text-muted-foreground">+${o.price_adjustment}</span>
@@ -867,40 +893,70 @@ const AdminProductBundles = () => {
                   </div>
                 )}
 
-                {/* Step 2: Colors */}
-                {colors.length > 0 && (
-                  <div>
-                    <Label className="mb-2 block">{options.length > 0 ? '٢' : '١'}. الألوان (اختر واحد أو أكثر)</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {colors.map((c: any, ci: number) => {
-                        const colorName = c.color || c.name || `color-${ci}`;
-                        const isChecked = selectedColors.includes(colorName);
-                        const colorImg = c.image_url || c.image;
-                        const stock = form.sale_type === 'direct' ? getAvailableStock(selectedProduct, colorName) : null;
-                        return (
-                          <label
-                            key={ci}
-                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
-                          >
-                            <Checkbox checked={isChecked} onCheckedChange={() => toggleColor(colorName)} />
-                            {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
-                            {!colorImg && c.hex_code && (
-                              <span className="w-6 h-6 rounded-full border border-border shrink-0" style={{ backgroundColor: c.hex_code }} />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm block truncate">{c.name_ar || colorName}</span>
-                              {stock != null && (
-                                <span className={`text-[10px] ${stock > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
-                                  مخزون: {stock}
-                                </span>
+                {/* Step 2: Colors - shown after option selected, filtered by linked_options */}
+                {(() => {
+                  const selectedOpt = selectedOptionId ? options.find((o: any) => o.id === selectedOptionId) : null;
+                  const selectedOptName = selectedOpt?.name_ar || '';
+                  // Filter colors that have this option in linked_options (if linked_options exists)
+                  const availableColors = selectedOptName
+                    ? colors.filter((c: any) => {
+                        if (!c.linked_options || !Array.isArray(c.linked_options)) return true;
+                        return c.linked_options.includes(selectedOptName);
+                      })
+                    : colors;
+                  
+                  // Only show colors section if we have options selected OR no options exist
+                  const shouldShow = availableColors.length > 0 && (selectedOptionId || options.length === 0);
+                  
+                  if (!shouldShow) return null;
+                  
+                  return (
+                    <div>
+                      <Label className="mb-2 block">{options.length > 0 ? '٢' : '١'}. الألوان (اختر واحد أو أكثر)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableColors.map((c: any, ci: number) => {
+                          const colorName = c.color || c.name || `color-${ci}`;
+                          const isChecked = selectedColors.includes(colorName);
+                          const colorImg = c.image_url || c.image;
+                          // Show stock for the specific color+option combo
+                          let stock: number | null = null;
+                          if (form.sale_type === 'direct') {
+                            if (c.option_stocks && selectedOptName) {
+                              stock = Math.max(0, Number(c.option_stocks[selectedOptName] ?? 0));
+                            } else {
+                              stock = getAvailableStock(selectedProduct, colorName);
+                            }
+                          }
+                          const outOfStock = form.sale_type === 'direct' && stock != null && stock <= 0;
+                          return (
+                            <label
+                              key={ci}
+                              className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${outOfStock ? 'opacity-50 cursor-not-allowed' : ''} ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                            >
+                              <Checkbox 
+                                checked={isChecked} 
+                                onCheckedChange={() => !outOfStock && toggleColor(colorName)}
+                                disabled={outOfStock}
+                              />
+                              {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
+                              {!colorImg && c.hex_code && (
+                                <span className="w-6 h-6 rounded-full border border-border shrink-0" style={{ backgroundColor: c.hex_code }} />
                               )}
-                            </div>
-                          </label>
-                        );
-                      })}
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm block truncate">{c.name_ar || colorName}</span>
+                                {stock != null && (
+                                  <span className={`text-[10px] ${stock > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
+                                    مخزون: {stock}
+                                  </span>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Step 3: Quantity */}
                 <div>
@@ -908,11 +964,11 @@ const AdminProductBundles = () => {
                   <Input type="number" min={1} value={itemQuantity} onChange={e => setItemQuantity(Math.max(1, Number(e.target.value)))} className="mt-1" />
                 </div>
 
-                {(selectedColors.length > 0 || selectedOptionIds.length > 0) && (
+                {(selectedColors.length > 0 || selectedOptionId) && (
                   <div className="bg-muted/50 rounded-lg p-3 text-sm">
                     <p className="text-muted-foreground">
                       سيتم إضافة <strong className="text-foreground">
-                        {Math.max(1, selectedColors.length) * Math.max(1, selectedOptionIds.length)}
+                        {Math.max(1, selectedColors.length)}
                       </strong> عنصر للبندل
                     </p>
                   </div>
