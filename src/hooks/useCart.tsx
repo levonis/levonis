@@ -8,6 +8,7 @@ export interface CartItem {
   id: string;
   product_id: string | null;
   custom_request_id: string | null;
+  bundle_id?: string | null;
   quantity: number;
   product_option_id?: string | null;
   selected_color?: string | null;
@@ -50,6 +51,14 @@ export interface CartItem {
     image_url: string | null;
     quantity: number;
   };
+  product_bundles?: {
+    id: string;
+    title_ar: string;
+    bundle_price: number;
+    original_price: number;
+    image_url: string | null;
+    sale_type: string | null;
+  };
 }
 
 export interface PendingCartRequest {
@@ -68,6 +77,7 @@ interface CartContextType {
   pendingCartRequest: PendingCartRequest | null;
   addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder') => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -196,6 +206,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           id,
           product_id,
           custom_request_id,
+          bundle_id,
           quantity,
           product_option_id,
           selected_color,
@@ -238,6 +249,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             suggested_price,
             image_url,
             quantity
+          ),
+          product_bundles:bundle_id (
+            id,
+            title_ar,
+            bundle_price,
+            original_price,
+            image_url,
+            sale_type
           )
         `)
         .eq('user_id', user.id)
@@ -554,6 +573,54 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addBundleToCart = async (bundleId: string, saleType: 'direct' | 'preorder'): Promise<boolean> => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return false;
+    }
+
+    try {
+      // Check for sale type conflict
+      const existingProductItems = items.filter(i => i.product_id || i.bundle_id);
+      if (existingProductItems.length > 0) {
+        const currentCartSaleType = existingProductItems[0]?.sale_type || 'preorder';
+        if (currentCartSaleType !== saleType) {
+          throw new Error('SALE_TYPE_CONFLICT');
+        }
+      }
+
+      // Check if this bundle already exists in the cart
+      const existingBundle = items.find(item => item.bundle_id === bundleId);
+      if (existingBundle) {
+        await updateQuantity(existingBundle.id, existingBundle.quantity + 1);
+        return true;
+      }
+
+      const { error } = await supabase
+        .from('cart_items')
+        .insert([{
+          user_id: user.id,
+          bundle_id: bundleId,
+          product_id: null,
+          quantity: 1,
+          sale_type: saleType,
+        }]);
+
+      if (error) {
+        console.error('Bundle insert error:', error);
+        throw error;
+      }
+
+      await fetchCart();
+      return true;
+    } catch (error: any) {
+      if (error?.message === 'SALE_TYPE_CONFLICT') throw error;
+      console.error('Error adding bundle to cart:', error);
+      toast.error('حدث خطأ في إضافة الباقة');
+      return false;
+    }
+  };
+
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
@@ -620,6 +687,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
+    } else if ((item as any).product_bundles) {
+      return sum + (Number((item as any).product_bundles.bundle_price) * item.quantity);
     }
     return sum;
   }, 0);
@@ -632,7 +701,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Determine the current cart's sale type
   const cartSaleType = items.length > 0 
-    ? (items.find(i => i.product_id)?.sale_type || 'preorder')
+    ? (items.find(i => i.product_id || i.bundle_id)?.sale_type || 'preorder')
     : null;
 
   return (
@@ -646,6 +715,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         cartSaleType,
         addToCart,
         forceAddToCart,
+        addBundleToCart,
         addCustomRequestToCart,
         updateQuantity,
         removeFromCart,

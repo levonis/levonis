@@ -566,6 +566,7 @@ export type Database = {
       }
       cart_items: {
         Row: {
+          bundle_id: string | null
           color_image_url: string | null
           created_at: string | null
           custom_request_id: string | null
@@ -582,6 +583,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bundle_id?: string | null
           color_image_url?: string | null
           created_at?: string | null
           custom_request_id?: string | null
@@ -598,6 +600,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bundle_id?: string | null
           color_image_url?: string | null
           created_at?: string | null
           custom_request_id?: string | null
@@ -614,6 +617,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "product_bundles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cart_items_custom_request_id_fkey"
             columns: ["custom_request_id"]
