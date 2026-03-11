@@ -167,6 +167,8 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 const AdminProductBundles = () => {
   const queryClient = useQueryClient();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BundleForm>(emptyForm);
