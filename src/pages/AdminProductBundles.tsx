@@ -77,7 +77,7 @@ function getAvailableStock(product: any, colorName?: string, optionId?: string):
     if (optionId && stocks[optionId] != null) {
       return Math.max(0, Number(stocks[optionId]));
     }
-    return Object.values(stocks).reduce((s: number, v: any) => s + Math.max(0, Number(v)), 0);
+    return Object.values(stocks).reduce<number>((s, v) => s + Math.max(0, Number(v)), 0);
   }
 
   return color.stock_quantity != null ? Math.max(0, Number(color.stock_quantity)) : 0;
