@@ -1216,6 +1216,12 @@ const Cart = () => {
                     acc.push({ type: 'single', items: [item] });
                     return acc;
                   }
+
+                  // Bundle items are rendered as single items
+                  if (item.bundle_id) {
+                    acc.push({ type: 'bundle', items: [item] });
+                    return acc;
+                  }
                   
                   // Create a key for grouping (product + option + color)
                   const key = `${item.product_id || ''}_${item.product_option_id || ''}_${(item as any).selected_color || ''}`;
