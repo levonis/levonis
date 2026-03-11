@@ -625,8 +625,21 @@ const AdminProductBundles = () => {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label>السعر الأصلي (د.ع)</Label>
-                <Input type="number" value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: Number(e.target.value) }))} />
+                <Label className="flex items-center gap-1">
+                  السعر الأصلي (د.ع)
+                  {form.items.length > 0 && <span className="text-[10px] text-muted-foreground">(تلقائي)</span>}
+                </Label>
+                <Input
+                  type="number"
+                  value={form.original_price}
+                  onChange={e => setForm(f => ({ ...f, original_price: Number(e.target.value) }))}
+                  className="bg-muted/50"
+                />
+                {form.items.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    محسوب: {form.items.reduce((s, i) => s + (i.unit_price || 0) * i.quantity, 0).toLocaleString()} د.ع
+                  </p>
+                )}
               </div>
               <div>
                 <Label>سعر البندل (د.ع)</Label>
