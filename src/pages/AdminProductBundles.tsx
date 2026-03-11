@@ -207,10 +207,10 @@ const AdminProductBundles = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectProductDialog, setSelectProductDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
-  const [itemQuantity, setItemQuantity] = useState(1);
+   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+   const [itemQuantity, setItemQuantity] = useState(1);
 
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['admin-product-bundles'],
