@@ -544,13 +544,14 @@ const AdminProductBundles = () => {
     setForm(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
   };
 
-  const toggleColor = (colorName: string) => {
-    setSelectedColors(prev => prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]);
-  };
+   const toggleColor = (colorName: string) => {
+     setSelectedColors(prev => prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]);
+   };
 
-  const toggleOption = (optId: string) => {
-    setSelectedOptionIds(prev => prev.includes(optId) ? prev.filter(o => o !== optId) : [...prev, optId]);
-  };
+   const selectOption = (optId: string) => {
+     setSelectedOptionId(prev => prev === optId ? null : optId);
+     setSelectedColors([]); // reset colors when option changes
+   };
 
   const getOptionLabel = (optionId: string) => {
     return allProductOptions?.find((o: any) => o.id === optionId)?.name_ar || '';
