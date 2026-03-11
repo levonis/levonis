@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Package, ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/utils';
 
@@ -25,7 +25,6 @@ const BundlesSection = () => {
 
   return (
     <section className="container mx-auto px-3 py-2">
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -37,7 +36,6 @@ const BundlesSection = () => {
         </Link>
       </div>
 
-      {/* Cards */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {bundles.map((bundle) => {
           const discount = bundle.original_price > 0
@@ -48,21 +46,10 @@ const BundlesSection = () => {
             <Link
               key={bundle.id}
               to="/bundles"
-              className="shrink-0 w-[120px] rounded-xl overflow-hidden group relative"
-              style={{
-                background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%)',
-                border: '1px solid hsl(var(--border) / 0.4)',
-                boxShadow: '0 4px 16px -4px hsl(var(--primary) / 0.08), 0 1px 3px hsl(var(--border) / 0.15), inset 0 1px 0 hsl(var(--card) / 0.6)',
-                backdropFilter: 'blur(12px)',
-              }}
+              className="shrink-0 w-[120px] rounded-xl overflow-hidden group relative border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/40 transition-all duration-300"
             >
-              {/* Glass shine overlay */}
-              <div
-                className="absolute inset-0 z-10 pointer-events-none rounded-xl opacity-40 group-hover:opacity-60 transition-opacity"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--card) / 0.5) 0%, transparent 50%, hsl(var(--primary) / 0.03) 100%)',
-                }}
-              />
+              {/* Glass shine */}
+              <div className="absolute inset-0 z-10 pointer-events-none rounded-xl opacity-20 group-hover:opacity-30 transition-opacity bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
 
               {/* Image */}
               {bundle.image_url ? (
@@ -72,20 +59,16 @@ const BundlesSection = () => {
                     alt={bundle.title_ar}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  {/* Gradient fade */}
-                  <div
-                    className="absolute inset-x-0 bottom-0 h-6"
-                    style={{ background: 'linear-gradient(to top, hsl(var(--card)), transparent)' }}
-                  />
+                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
                   {discount > 0 && (
-                    <Badge className="absolute top-1 left-1 bg-destructive/90 text-destructive-foreground text-[8px] px-1 py-0 leading-4 backdrop-blur-sm">
+                    <Badge className="absolute top-1 left-1 bg-destructive/90 text-destructive-foreground text-[8px] px-1 py-0 leading-4">
                       -{discount}%
                     </Badge>
                   )}
                 </div>
               ) : (
-                <div className="h-[80px] flex items-center justify-center bg-muted/30">
-                  <Package className="h-6 w-6 text-muted-foreground/20" />
+                <div className="h-[80px] flex items-center justify-center bg-muted/20">
+                  <Sparkles className="h-5 w-5 text-muted-foreground/20" />
                 </div>
               )}
 
@@ -97,7 +80,7 @@ const BundlesSection = () => {
                   <span className="text-[7px] text-muted-foreground">د.ع</span>
                 </div>
                 {bundle.original_price > 0 && (
-                  <span className="text-[8px] text-muted-foreground/70 line-through block leading-none">
+                  <span className="text-[8px] text-muted-foreground/60 line-through block leading-none">
                     {formatPrice(bundle.original_price)}
                   </span>
                 )}
