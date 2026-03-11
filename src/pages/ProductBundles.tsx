@@ -250,8 +250,8 @@ const ProductBundles = () => {
 
                     {/* Stock status - only for direct */}
                     {isDirect && !bundle.isOutOfStock && (
-                      <div className="flex items-center gap-1.5 text-xs text-green-600">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <div className="flex items-center gap-1.5 text-xs text-primary">
+                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                         العرض مستمر حتى نفاد الكمية
                       </div>
                     )}
@@ -262,8 +262,8 @@ const ProductBundles = () => {
                       </div>
                     )}
                     {!isDirect && (
-                      <div className="flex items-center gap-1.5 text-xs text-blue-600">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                      <div className="flex items-center gap-1.5 text-xs text-accent-foreground">
+                        <span className="w-2 h-2 rounded-full bg-accent-foreground/70 animate-pulse" />
                         طلب مسبق - {saleType === 'preorder-air' ? 'شحن جوي' : 'شحن بحري'}
                       </div>
                     )}
