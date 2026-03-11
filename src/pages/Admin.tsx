@@ -1665,6 +1665,7 @@ const Admin = () => {
                 { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إعلانات متحركة', path: ADMIN_ROUTES.announcements },
                 { icon: Ticket, title: 'الكوبونات', desc: 'خصومات', path: ADMIN_ROUTES.coupons },
                 { icon: Package, title: 'الطلبات', desc: 'تتبع وإدارة', path: ADMIN_ROUTES.orders },
+                { icon: Package, title: 'البندلات', desc: 'باقات منتجات', path: ADMIN_ROUTES.productBundles },
                 { icon: FileText, title: 'طلبات مخصصة', desc: 'مراجعة', action: () => setActiveTab('custom-requests'), badge: pendingRequestsCount },
                 { icon: Zap, title: 'الافتراضية', desc: 'قيم افتراضية', path: ADMIN_ROUTES.defaultSettings },
                 { icon: Coins, title: 'النقاط', desc: 'مكافآت', path: ADMIN_ROUTES.pointsSettings },
@@ -1685,7 +1686,6 @@ const Admin = () => {
                 { icon: Music, title: 'موسيقى', desc: 'ألعاب', path: ADMIN_ROUTES.gameMusic },
                 { icon: BadgeDollarSign, title: 'مطابقة أسعار', desc: 'طلبات', path: ADMIN_ROUTES.priceMatch },
                 { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
-                { icon: Package, title: 'البندلات', desc: 'باقات منتجات', path: ADMIN_ROUTES.productBundles },
               ].map((item, idx) => (
                 <button
                   key={idx}
@@ -1722,7 +1722,7 @@ const Admin = () => {
             </div>
           </div>
           <div className="admin-card-content">
-            <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 md:gap-3">
               <Button
                 onClick={() => {
                   setActiveTab('products');
@@ -1761,6 +1761,14 @@ const Admin = () => {
               >
                 <FolderOpen className="h-7 w-7 md:h-8 md:w-8" />
                 <span className="text-xs font-semibold">قسم رئيسي</span>
+              </Button>
+              
+              <Button
+                onClick={() => navigate(ADMIN_ROUTES.productBundles)}
+                className="admin-btn-primary gap-2 h-auto py-5 flex-col rounded-xl"
+              >
+                <Package className="h-7 w-7 md:h-8 md:w-8" />
+                <span className="text-xs font-semibold">بندل جديد</span>
               </Button>
             </div>
           </div>
