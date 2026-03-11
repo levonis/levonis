@@ -97,9 +97,10 @@ const ProductBundles = () => {
         for (const item of bundleItems) {
           const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
           if (item.selected_color) {
-            const colorObj = colors.find((c: any) => (c.color || c.name) === item.selected_color);
-            if (colorObj?.image && !allImages.includes(colorObj.image)) {
-              allImages.push(colorObj.image);
+          const colorObj = colors.find((c: any) => (c.color || c.name) === item.selected_color);
+            const cImg = (colorObj as any)?.image;
+            if (cImg && !allImages.includes(cImg)) {
+              allImages.push(cImg);
             }
           }
         }
