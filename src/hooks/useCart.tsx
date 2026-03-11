@@ -701,7 +701,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Determine the current cart's sale type
   const cartSaleType = items.length > 0 
-    ? (items.find(i => i.product_id)?.sale_type || 'preorder')
+    ? (items.find(i => i.product_id || i.bundle_id)?.sale_type || 'preorder')
     : null;
 
   return (
