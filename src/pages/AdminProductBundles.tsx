@@ -200,13 +200,16 @@ const AdminProductBundles = () => {
   const fetchBundleItems = async (bundleId: string) => {
     const { data, error } = await supabase
       .from('bundle_items')
-      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock), product_options:selected_option_id(name_ar)')
+      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price), product_options:selected_option_id(name_ar, price_adjustment)')
       .eq('bundle_id', bundleId);
     if (error) throw error;
     return (data || []).map((item: any) => {
       const stock = getAvailableStock(item.products, item.selected_color || undefined, item.selected_option_id || undefined);
       const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
       const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
+      const basePrice = item.products?.direct_sale_price || item.products?.price || 0;
+      const optAdj = item.product_options?.price_adjustment || 0;
+      const unitPrice = basePrice + Math.round(optAdj * usdToIqd);
       return {
         id: item.id,
         product_id: item.product_id,
@@ -218,6 +221,7 @@ const AdminProductBundles = () => {
         color_image: colorObj?.image || '',
         option_label: item.product_options?.name_ar || '',
         available_stock: stock,
+        unit_price: unitPrice,
       };
     });
   };
