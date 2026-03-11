@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-import { Package, ArrowLeft } from 'lucide-react';
+import { Package, ArrowLeft, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/utils';
 
@@ -24,21 +24,21 @@ const BundlesSection = () => {
   if (!bundles || bundles.length === 0) return null;
 
   return (
-    <section className="container mx-auto px-4 py-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
-            <Package className="h-4 w-4 text-primary" />
-          </div>
-          <h2 className="text-base font-black text-foreground">باقات وعروض</h2>
+    <section className="container mx-auto px-3 py-2">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <h2 className="text-sm font-black text-foreground">باقات وعروض</h2>
         </div>
-        <Link to="/bundles" className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-          عرض الكل
-          <ArrowLeft className="h-3 w-3" />
+        <Link to="/bundles" className="flex items-center gap-0.5 text-[10px] text-primary font-medium">
+          الكل
+          <ArrowLeft className="h-2.5 w-2.5" />
         </Link>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      {/* Cards */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {bundles.map((bundle) => {
           const discount = bundle.original_price > 0
             ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
@@ -48,30 +48,58 @@ const BundlesSection = () => {
             <Link
               key={bundle.id}
               to="/bundles"
-              className="shrink-0 w-40 rounded-xl border border-border bg-card overflow-hidden hover:border-primary/30 transition-colors group"
+              className="shrink-0 w-[120px] rounded-xl overflow-hidden group relative"
+              style={{
+                background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%)',
+                border: '1px solid hsl(var(--border) / 0.4)',
+                boxShadow: '0 4px 16px -4px hsl(var(--primary) / 0.08), 0 1px 3px hsl(var(--border) / 0.15), inset 0 1px 0 hsl(var(--card) / 0.6)',
+                backdropFilter: 'blur(12px)',
+              }}
             >
+              {/* Glass shine overlay */}
+              <div
+                className="absolute inset-0 z-10 pointer-events-none rounded-xl opacity-40 group-hover:opacity-60 transition-opacity"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(var(--card) / 0.5) 0%, transparent 50%, hsl(var(--primary) / 0.03) 100%)',
+                }}
+              />
+
+              {/* Image */}
               {bundle.image_url ? (
-                <div className="relative h-28 bg-muted">
-                  <img src={bundle.image_url} alt={bundle.title_ar} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                <div className="relative h-[80px] overflow-hidden">
+                  <img
+                    src={bundle.image_url}
+                    alt={bundle.title_ar}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  {/* Gradient fade */}
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-6"
+                    style={{ background: 'linear-gradient(to top, hsl(var(--card)), transparent)' }}
+                  />
                   {discount > 0 && (
-                    <Badge className="absolute top-1.5 left-1.5 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5">
-                      خصم {discount}%
+                    <Badge className="absolute top-1 left-1 bg-destructive/90 text-destructive-foreground text-[8px] px-1 py-0 leading-4 backdrop-blur-sm">
+                      -{discount}%
                     </Badge>
                   )}
                 </div>
               ) : (
-                <div className="h-28 bg-muted flex items-center justify-center">
-                  <Package className="h-8 w-8 text-muted-foreground/30" />
+                <div className="h-[80px] flex items-center justify-center bg-muted/30">
+                  <Package className="h-6 w-6 text-muted-foreground/20" />
                 </div>
               )}
-              <div className="p-2">
-                <p className="text-xs font-bold truncate">{bundle.title_ar}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-sm font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
-                  <span className="text-[9px] text-muted-foreground">د.ع</span>
+
+              {/* Info */}
+              <div className="relative z-20 px-2 pt-1 pb-2 space-y-0.5">
+                <p className="text-[10px] font-bold leading-tight line-clamp-1 text-foreground">{bundle.title_ar}</p>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-xs font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
+                  <span className="text-[7px] text-muted-foreground">د.ع</span>
                 </div>
                 {bundle.original_price > 0 && (
-                  <span className="text-[10px] text-muted-foreground line-through">{formatPrice(bundle.original_price)}</span>
+                  <span className="text-[8px] text-muted-foreground/70 line-through block leading-none">
+                    {formatPrice(bundle.original_price)}
+                  </span>
                 )}
               </div>
             </Link>
