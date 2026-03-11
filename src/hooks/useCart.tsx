@@ -77,6 +77,7 @@ interface CartContextType {
   pendingCartRequest: PendingCartRequest | null;
   addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
+  addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder') => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
