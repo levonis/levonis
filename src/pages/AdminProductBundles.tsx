@@ -245,7 +245,7 @@ const AdminProductBundles = () => {
         quantity: item.quantity,
         product_name: item.products?.name_ar || '',
         product_image: item.products?.image_url || item.products?.images?.[0] || '',
-        color_image: colorObj?.image || '',
+        color_image: colorObj?.image_url || colorObj?.image || '',
         option_label: item.product_options?.name_ar || '',
         available_stock: stock,
         unit_price: unitPrice,
