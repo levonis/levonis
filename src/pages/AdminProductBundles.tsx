@@ -166,22 +166,17 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
     roundRect(ctx, x, y, cellW, cellH, 12);
     ctx.fill();
 
-    // Draw image cover-fit
-    const imgRatio = img.width / img.height;
-    const cellRatio = cellW / cellH;
-    let sx = 0, sy = 0, sw = img.width, sh = img.height;
-    if (imgRatio > cellRatio) {
-      sw = img.height * cellRatio;
-      sx = (img.width - sw) / 2;
-    } else {
-      sh = img.width / cellRatio;
-      sy = (img.height - sh) / 2;
-    }
+    // Draw image CONTAIN-fit (show full image, no cropping)
+    const scale = Math.min(cellW / img.width, cellH / img.height) * 0.85; // 85% to add inner padding
+    const drawW = img.width * scale;
+    const drawH = img.height * scale;
+    const drawX = x + (cellW - drawW) / 2;
+    const drawY = y + (cellH - drawH) / 2;
 
     ctx.save();
     roundRect(ctx, x, y, cellW, cellH, 12);
     ctx.clip();
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, cellW, cellH);
+    ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
     ctx.restore();
   });
 
