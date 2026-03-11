@@ -906,7 +906,9 @@ const AdminProductBundles = () => {
                             className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
                             onClick={() => selectOption(o.id)}
                           >
-                            <RadioGroupItem value={o.id} checked={isSelected} className="pointer-events-none" />
+                            <span className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary' : 'border-muted-foreground/40'}`}>
+                              {isSelected && <span className="w-2 h-2 rounded-full bg-primary" />}
+                            </span>
                             <span className="text-sm">{o.name_ar}</span>
                             {o.price_adjustment > 0 && (
                               <span className="text-[10px] text-muted-foreground">+${o.price_adjustment}</span>
