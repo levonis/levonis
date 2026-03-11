@@ -98,7 +98,7 @@ const ProductBundles = () => {
           const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
           if (item.selected_color) {
           const colorObj = colors.find((c: any) => (c.color || c.name) === item.selected_color);
-            const cImg = (colorObj as any)?.image;
+            const cImg = (colorObj as any)?.image_url || (colorObj as any)?.image;
             if (cImg && !allImages.includes(cImg)) {
               allImages.push(cImg);
             }
