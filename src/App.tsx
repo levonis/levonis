@@ -153,6 +153,7 @@ function AppContent() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/bundles" element={<ProductBundles />} />
             <Route path="/user-info" element={<UserInfo />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
