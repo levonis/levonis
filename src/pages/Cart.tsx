@@ -1241,6 +1241,67 @@ const Cart = () => {
                 }, [] as { type: string; key?: string; items: CartItem[] }[]);
 
                 return groupedItems.map((group, groupIndex) => {
+                  // Bundle item rendering
+                  if (group.type === 'bundle') {
+                    const item = group.items[0];
+                    const bundle = (item as any).product_bundles;
+                    if (!bundle) return null;
+                    const bundlePrice = Number(bundle.bundle_price);
+                    const isRemoving = removingItemIds.has(item.id);
+                    const handleAnimatedRemove = () => {
+                      setRemovingItemIds(prev => new Set(prev).add(item.id));
+                      setTimeout(() => {
+                        handleRemoveFromCart(item.id);
+                        setRemovingItemIds(prev => { const next = new Set(prev); next.delete(item.id); return next; });
+                      }, 300);
+                    };
+                    return (
+                      <div key={item.id} className={`rounded-xl p-2.5 sm:p-4 border border-primary/20 bg-primary/5 transition-all duration-300 ${isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : ''}`}>
+                        <div className="flex gap-2.5 sm:gap-4">
+                          {bundle.image_url && (
+                            <Link to="/bundles" className="flex-shrink-0">
+                              <img src={bundle.image_url} alt={bundle.title_ar} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-primary/30" />
+                            </Link>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="min-w-0 flex-1">
+                                <Link to="/bundles" className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors line-clamp-1 block">
+                                  {bundle.title_ar}
+                                </Link>
+                                <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 mt-0.5">
+                                  <Package className="h-2.5 w-2.5" /> باقة
+                                </span>
+                              </div>
+                              <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="text-sm sm:text-base font-black text-primary">
+                                <AnimatedPrice value={bundlePrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
+                              </span>
+                              <div className="flex items-center gap-1 bg-muted/30 rounded-lg border border-border/40">
+                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
+                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}>
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            {item.quantity > 1 && (
+                              <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
+                                المجموع: <AnimatedPrice value={bundlePrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   // If it's a single item (custom request or single shipping option)
                   if (group.type === 'single' || group.items.length === 1) {
                     const item = group.items[0];
