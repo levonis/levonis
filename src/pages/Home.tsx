@@ -9,6 +9,7 @@ import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import StoriesBar from '@/components/stories/StoriesBar';
+import BundlesSection from '@/components/BundlesSection';
 import ReelsBar from '@/components/reels/ReelsBar';
 import { useLanguage } from '@/lib/i18n';
 
