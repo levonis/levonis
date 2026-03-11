@@ -425,14 +425,14 @@ const AdminProductBundles = () => {
     setDialogOpen(true);
   };
 
-  const openProductPicker = (product: any) => {
-    setSelectedProduct(product);
-    setSelectedColors([]);
-    setSelectedOptionIds([]);
-    setItemQuantity(1);
-    setSelectProductDialog(true);
-    setProductSearch('');
-  };
+   const openProductPicker = (product: any) => {
+     setSelectedProduct(product);
+     setSelectedColors([]);
+     setSelectedOptionId(null);
+     setItemQuantity(1);
+     setSelectProductDialog(true);
+     setProductSearch('');
+   };
 
   const confirmAddProduct = () => {
     if (!selectedProduct) return;
