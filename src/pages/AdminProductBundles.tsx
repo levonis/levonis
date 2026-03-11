@@ -700,6 +700,9 @@ const AdminProductBundles = () => {
                           {item.selected_color && <Badge variant="outline" className="text-[10px] h-5">{item.selected_color}</Badge>}
                           {item.selected_option_id && <Badge variant="outline" className="text-[10px] h-5">{item.option_label || getOptionLabel(item.selected_option_id)}</Badge>}
                           <Badge variant="outline" className="text-[10px] h-5">×{item.quantity}</Badge>
+                          {item.unit_price != null && item.unit_price > 0 && (
+                            <Badge variant="outline" className="text-[10px] h-5 text-primary">{(item.unit_price * item.quantity).toLocaleString()} د.ع</Badge>
+                          )}
                         </div>
                         {stockInsufficient && (
                           <p className="text-[10px] text-destructive flex items-center gap-0.5 mt-0.5">
