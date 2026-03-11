@@ -687,6 +687,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
+    } else if ((item as any).product_bundles) {
+      return sum + (Number((item as any).product_bundles.bundle_price) * item.quantity);
     }
     return sum;
   }, 0);
