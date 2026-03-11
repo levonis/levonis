@@ -116,11 +116,13 @@ const AdminGiveawaysCoupons = lazy(() => import("./pages/AdminGiveawaysCoupons")
 const AdminGameMusic = lazy(() => import("./pages/AdminGameMusic"));
 const AdminPriceMatch = lazy(() => import("./pages/AdminPriceMatch"));
 const AdminWishes = lazy(() => import("./pages/AdminWishes"));
+const AdminProductBundles = lazy(() => import("./pages/AdminProductBundles"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
+const ProductBundles = lazy(() => import("./pages/ProductBundles"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
@@ -151,6 +153,7 @@ function AppContent() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/bundles" element={<ProductBundles />} />
             <Route path="/user-info" element={<UserInfo />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
@@ -202,6 +205,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/game-music`} element={<AdminRoute><AdminGameMusic /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/wishes`} element={<AdminRoute><AdminWishes /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/price-match`} element={<AdminRoute><AdminPriceMatch /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/product-bundles`} element={<AdminRoute><AdminProductBundles /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
