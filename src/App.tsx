@@ -204,6 +204,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/game-music`} element={<AdminRoute><AdminGameMusic /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/wishes`} element={<AdminRoute><AdminWishes /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/price-match`} element={<AdminRoute><AdminPriceMatch /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/product-bundles`} element={<AdminRoute><AdminProductBundles /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
