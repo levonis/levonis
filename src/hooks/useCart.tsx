@@ -8,6 +8,7 @@ export interface CartItem {
   id: string;
   product_id: string | null;
   custom_request_id: string | null;
+  bundle_id?: string | null;
   quantity: number;
   product_option_id?: string | null;
   selected_color?: string | null;
@@ -49,6 +50,14 @@ export interface CartItem {
     suggested_price: number;
     image_url: string | null;
     quantity: number;
+  };
+  product_bundles?: {
+    id: string;
+    title_ar: string;
+    bundle_price: number;
+    original_price: number;
+    image_url: string | null;
+    sale_type: string | null;
   };
 }
 
