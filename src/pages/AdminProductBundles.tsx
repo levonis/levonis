@@ -868,19 +868,20 @@ const AdminProductBundles = () => {
                   <Badge variant="outline">{SALE_TYPE_LABELS[form.sale_type]}</Badge>
                 </div>
 
-                {/* Step 1: Options */}
+                {/* Step 1: Options (single select) */}
                 {options.length > 0 && (
                   <div>
-                    <Label className="mb-2 block">١. الخيارات (اختر واحد أو أكثر)</Label>
+                    <Label className="mb-2 block">١. الخيار (اختر واحد)</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {options.map((o: any) => {
-                        const isChecked = selectedOptionIds.includes(o.id);
+                        const isSelected = selectedOptionId === o.id;
                         return (
                           <label
                             key={o.id}
-                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                            onClick={() => selectOption(o.id)}
                           >
-                            <Checkbox checked={isChecked} onCheckedChange={() => toggleOption(o.id)} />
+                            <RadioGroupItem value={o.id} checked={isSelected} className="pointer-events-none" />
                             <span className="text-sm">{o.name_ar}</span>
                             {o.price_adjustment > 0 && (
                               <span className="text-[10px] text-muted-foreground">+${o.price_adjustment}</span>
@@ -892,40 +893,70 @@ const AdminProductBundles = () => {
                   </div>
                 )}
 
-                {/* Step 2: Colors */}
-                {colors.length > 0 && (
-                  <div>
-                    <Label className="mb-2 block">{options.length > 0 ? '٢' : '١'}. الألوان (اختر واحد أو أكثر)</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {colors.map((c: any, ci: number) => {
-                        const colorName = c.color || c.name || `color-${ci}`;
-                        const isChecked = selectedColors.includes(colorName);
-                        const colorImg = c.image_url || c.image;
-                        const stock = form.sale_type === 'direct' ? getAvailableStock(selectedProduct, colorName) : null;
-                        return (
-                          <label
-                            key={ci}
-                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
-                          >
-                            <Checkbox checked={isChecked} onCheckedChange={() => toggleColor(colorName)} />
-                            {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
-                            {!colorImg && c.hex_code && (
-                              <span className="w-6 h-6 rounded-full border border-border shrink-0" style={{ backgroundColor: c.hex_code }} />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm block truncate">{c.name_ar || colorName}</span>
-                              {stock != null && (
-                                <span className={`text-[10px] ${stock > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
-                                  مخزون: {stock}
-                                </span>
+                {/* Step 2: Colors - shown after option selected, filtered by linked_options */}
+                {(() => {
+                  const selectedOpt = selectedOptionId ? options.find((o: any) => o.id === selectedOptionId) : null;
+                  const selectedOptName = selectedOpt?.name_ar || '';
+                  // Filter colors that have this option in linked_options (if linked_options exists)
+                  const availableColors = selectedOptName
+                    ? colors.filter((c: any) => {
+                        if (!c.linked_options || !Array.isArray(c.linked_options)) return true;
+                        return c.linked_options.includes(selectedOptName);
+                      })
+                    : colors;
+                  
+                  // Only show colors section if we have options selected OR no options exist
+                  const shouldShow = availableColors.length > 0 && (selectedOptionId || options.length === 0);
+                  
+                  if (!shouldShow) return null;
+                  
+                  return (
+                    <div>
+                      <Label className="mb-2 block">{options.length > 0 ? '٢' : '١'}. الألوان (اختر واحد أو أكثر)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableColors.map((c: any, ci: number) => {
+                          const colorName = c.color || c.name || `color-${ci}`;
+                          const isChecked = selectedColors.includes(colorName);
+                          const colorImg = c.image_url || c.image;
+                          // Show stock for the specific color+option combo
+                          let stock: number | null = null;
+                          if (form.sale_type === 'direct') {
+                            if (c.option_stocks && selectedOptName) {
+                              stock = Math.max(0, Number(c.option_stocks[selectedOptName] ?? 0));
+                            } else {
+                              stock = getAvailableStock(selectedProduct, colorName);
+                            }
+                          }
+                          const outOfStock = form.sale_type === 'direct' && stock != null && stock <= 0;
+                          return (
+                            <label
+                              key={ci}
+                              className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${outOfStock ? 'opacity-50 cursor-not-allowed' : ''} ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                            >
+                              <Checkbox 
+                                checked={isChecked} 
+                                onCheckedChange={() => !outOfStock && toggleColor(colorName)}
+                                disabled={outOfStock}
+                              />
+                              {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
+                              {!colorImg && c.hex_code && (
+                                <span className="w-6 h-6 rounded-full border border-border shrink-0" style={{ backgroundColor: c.hex_code }} />
                               )}
-                            </div>
-                          </label>
-                        );
-                      })}
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm block truncate">{c.name_ar || colorName}</span>
+                                {stock != null && (
+                                  <span className={`text-[10px] ${stock > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
+                                    مخزون: {stock}
+                                  </span>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Step 3: Quantity */}
                 <div>
@@ -933,11 +964,11 @@ const AdminProductBundles = () => {
                   <Input type="number" min={1} value={itemQuantity} onChange={e => setItemQuantity(Math.max(1, Number(e.target.value)))} className="mt-1" />
                 </div>
 
-                {(selectedColors.length > 0 || selectedOptionIds.length > 0) && (
+                {(selectedColors.length > 0 || selectedOptionId) && (
                   <div className="bg-muted/50 rounded-lg p-3 text-sm">
                     <p className="text-muted-foreground">
                       سيتم إضافة <strong className="text-foreground">
-                        {Math.max(1, selectedColors.length) * Math.max(1, selectedOptionIds.length)}
+                        {Math.max(1, selectedColors.length)}
                       </strong> عنصر للبندل
                     </p>
                   </div>
