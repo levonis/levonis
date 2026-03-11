@@ -242,7 +242,7 @@ const AdminProductBundles = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_options')
-        .select('id, name_ar')
+        .select('id, name_ar, price_adjustment')
         .eq('product_id', selectedProduct!.id);
       if (error) throw error;
       return data || [];
