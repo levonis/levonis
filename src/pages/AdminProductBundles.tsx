@@ -434,87 +434,111 @@ const AdminProductBundles = () => {
      setProductSearch('');
    };
 
-  const confirmAddProduct = () => {
-    if (!selectedProduct) return;
-    const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
-    const filteredColors = form.sale_type === 'direct'
-      ? colors.filter((c: any) => c?.available_for_direct_sale !== false)
-      : colors.filter((c: any) => c?.available_for_pre_order !== false);
-    const options = pickerOptions || [];
+   const confirmAddProduct = () => {
+     if (!selectedProduct) return;
+     const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
+     const filteredColors = form.sale_type === 'direct'
+       ? colors.filter((c: any) => c?.available_for_direct_sale !== false)
+       : colors.filter((c: any) => c?.available_for_pre_order !== false);
+     const options = pickerOptions || [];
 
-    const newItems: BundleItem[] = [];
-    const baseImg = selectedProduct.image_url || selectedProduct.images?.[0] || '';
+     const newItems: BundleItem[] = [];
+     const baseImg = selectedProduct.image_url || selectedProduct.images?.[0] || '';
 
-    const getStock = (colorName?: string, optId?: string) => {
-      if (form.sale_type === 'direct') return getAvailableStock(selectedProduct, colorName, optId);
-      return getPreorderStock(selectedProduct);
-    };
+     const getStock = (colorName?: string, optName?: string) => {
+       if (form.sale_type === 'direct') {
+         if (colorName) {
+           const colorObj = colors.find((c: any) => (c.color || c.name) === colorName);
+           if (colorObj?.option_stocks && optName) {
+             return Math.max(0, Number(colorObj.option_stocks[optName] ?? 0));
+           }
+           return colorObj?.stock_quantity != null ? Math.max(0, Number(colorObj.stock_quantity)) : 0;
+         }
+         return getAvailableStock(selectedProduct);
+       }
+       return getPreorderStock(selectedProduct);
+     };
 
-    const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
+     const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
 
-    if (selectedColors.length === 0 && selectedOptionIds.length === 0) {
-      newItems.push({
-        product_id: selectedProduct.id,
-        quantity: itemQuantity,
-        product_name: selectedProduct.name_ar,
-        product_image: baseImg,
-        available_stock: getStock(),
-        unit_price: getPrice(),
-      });
-    } else if (selectedColors.length > 0 && selectedOptionIds.length > 0) {
-      for (const colorName of selectedColors) {
-        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-        for (const optId of selectedOptionIds) {
-          const opt = options.find((o: any) => o.id === optId);
-          newItems.push({
-            product_id: selectedProduct.id,
-            selected_color: colorName,
-            selected_option_id: optId,
-            quantity: itemQuantity,
-            product_name: selectedProduct.name_ar,
-            product_image: baseImg,
-            color_image: colorObj?.image_url || colorObj?.image || '',
-            option_label: opt?.name_ar || '',
-            available_stock: getStock(colorName, optId),
-            unit_price: getPrice(optId),
-          });
-        }
-      }
-    } else if (selectedColors.length > 0) {
-      for (const colorName of selectedColors) {
-        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-        newItems.push({
-          product_id: selectedProduct.id,
-          selected_color: colorName,
-          quantity: itemQuantity,
-          product_name: selectedProduct.name_ar,
-          product_image: baseImg,
-          color_image: colorObj?.image_url || colorObj?.image || '',
-          available_stock: getStock(colorName),
-          unit_price: getPrice(),
-        });
-      }
-    } else {
-      for (const optId of selectedOptionIds) {
-        const opt = options.find((o: any) => o.id === optId);
-        newItems.push({
-          product_id: selectedProduct.id,
-          selected_option_id: optId,
-          quantity: itemQuantity,
-          product_name: selectedProduct.name_ar,
-          product_image: baseImg,
-          option_label: opt?.name_ar || '',
-          available_stock: getStock(undefined, optId),
-          unit_price: getPrice(optId),
-        });
-      }
-    }
+     const selectedOpt = selectedOptionId ? options.find((o: any) => o.id === selectedOptionId) : null;
+     const selectedOptName = selectedOpt?.name_ar || '';
 
-    setForm(prev => ({ ...prev, items: [...prev.items, ...newItems] }));
-    setSelectProductDialog(false);
-    setSelectedProduct(null);
-    toast.success(`تم إضافة ${newItems.length} عنصر للبندل`);
-  };
+     if (selectedColors.length === 0 && !selectedOptionId) {
+       const stock = getStock();
+       const qty = Math.min(itemQuantity, stock);
+       if (form.sale_type === 'direct' && stock <= 0) {
+         toast.error('المخزون غير متوفر'); return;
+       }
+       newItems.push({
+         product_id: selectedProduct.id,
+         quantity: qty,
+         product_name: selectedProduct.name_ar,
+         product_image: baseImg,
+         available_stock: stock,
+         unit_price: getPrice(),
+       });
+     } else if (selectedColors.length > 0 && selectedOptionId) {
+       for (const colorName of selectedColors) {
+         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+         const stock = getStock(colorName, selectedOptName);
+         if (form.sale_type === 'direct' && stock <= 0) continue;
+         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+         newItems.push({
+           product_id: selectedProduct.id,
+           selected_color: colorName,
+           selected_option_id: selectedOptionId,
+           quantity: qty,
+           product_name: selectedProduct.name_ar,
+           product_image: baseImg,
+           color_image: colorObj?.image_url || colorObj?.image || '',
+           option_label: selectedOptName,
+           available_stock: stock,
+           unit_price: getPrice(selectedOptionId),
+         });
+       }
+       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+     } else if (selectedColors.length > 0) {
+       for (const colorName of selectedColors) {
+         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+         const stock = getStock(colorName);
+         if (form.sale_type === 'direct' && stock <= 0) continue;
+         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+         newItems.push({
+           product_id: selectedProduct.id,
+           selected_color: colorName,
+           quantity: qty,
+           product_name: selectedProduct.name_ar,
+           product_image: baseImg,
+           color_image: colorObj?.image_url || colorObj?.image || '',
+           available_stock: stock,
+           unit_price: getPrice(),
+         });
+       }
+       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+     } else if (selectedOptionId) {
+       const stock = getStock(undefined, selectedOptName);
+       if (form.sale_type === 'direct' && stock <= 0) {
+         toast.error('المخزون غير متوفر'); return;
+       }
+       const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+       newItems.push({
+         product_id: selectedProduct.id,
+         selected_option_id: selectedOptionId,
+         quantity: qty,
+         product_name: selectedProduct.name_ar,
+         product_image: baseImg,
+         option_label: selectedOptName,
+         available_stock: stock,
+         unit_price: getPrice(selectedOptionId),
+       });
+     }
+
+     setForm(prev => ({ ...prev, items: [...prev.items, ...newItems] }));
+     setSelectProductDialog(false);
+     setSelectedProduct(null);
+     toast.success(`تم إضافة ${newItems.length} عنصر للبندل`);
+   };
 
   const removeItemFromBundle = (index: number) => {
     setForm(prev => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }));
