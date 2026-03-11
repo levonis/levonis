@@ -117,24 +117,13 @@ const ProductBundles = () => {
         return;
       }
 
-      for (const item of bundle.items) {
-        const product = item.products;
-        if (!product) continue;
-        // Pass full quantity in one call to avoid duplicate key issues
-        const success = await addToCart(
-          item.product_id,
-          item.selected_option_id || undefined,
-          item.selected_color || undefined,
-          item.quantity,
-          undefined,
-          bundleSaleType
-        );
-        if (!success) { toast.error(`فشل إضافة ${product.name_ar} للسلة`); return; }
+      const success = await addBundleToCart(bundle.id, bundleSaleType as 'direct' | 'preorder');
+      if (success) {
+        toast.success('تم إضافة الباقة للسلة بنجاح! 🎉');
       }
-      toast.success('تم إضافة البندل للسلة بنجاح! 🎉');
     } catch (error) {
       console.error('Error adding bundle to cart:', error);
-      toast.error('حدث خطأ في إضافة البندل');
+      toast.error('حدث خطأ في إضافة الباقة');
     } finally {
       setAddingBundleId(null);
     }
