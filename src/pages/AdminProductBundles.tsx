@@ -117,51 +117,76 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
   ctx.fillRect(0, 0, SIZE, SIZE);
 
   const count = Math.min(urls.length, 9);
-  const cols = count <= 1 ? 1 : count <= 4 ? 2 : 3;
-  const rows = Math.ceil(count / cols);
-  const cellW = SIZE / cols;
-  const cellH = SIZE / rows;
-  const padding = 8;
+
+  // Better grid: for 2 images use 1 col x 2 rows (stacked) or 2 cols x 1 row side-by-side
+  // Use a balanced grid approach
+  let cols: number, rows: number;
+  if (count === 1) { cols = 1; rows = 1; }
+  else if (count === 2) { cols = 2; rows = 1; }
+  else if (count <= 4) { cols = 2; rows = 2; }
+  else if (count <= 6) { cols = 3; rows = 2; }
+  else { cols = 3; rows = 3; }
+
+  const padding = 10;
+  const gap = 8;
+  const totalGapX = gap * (cols - 1);
+  const totalGapY = gap * (rows - 1);
+  const cellW = (SIZE - padding * 2 - totalGapX) / cols;
+  const cellH = (SIZE - padding * 2 - totalGapY) / rows;
 
   const loadImage = (url: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = () => {
+      // Retry without crossOrigin as fallback
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = () => reject(new Error('Failed to load'));
+      img2.src = url;
+    };
     img.src = url;
   });
 
-  const images = await Promise.allSettled(urls.slice(0, 9).map(loadImage));
+  const results = await Promise.allSettled(urls.slice(0, count).map(loadImage));
+  const loadedImages = results
+    .map((r, i) => r.status === 'fulfilled' ? { img: r.value, index: i } : null)
+    .filter(Boolean) as { img: HTMLImageElement; index: number }[];
 
-  images.forEach((result, i) => {
-    if (result.status !== 'fulfilled') return;
-    const img = result.value;
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = col * cellW + padding;
-    const y = row * cellH + padding;
-    const w = cellW - padding * 2;
-    const h = cellH - padding * 2;
+  if (loadedImages.length === 0) throw new Error('فشل تحميل جميع الصور');
 
+  loadedImages.forEach(({ img, index }) => {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const x = padding + col * (cellW + gap);
+    const y = padding + row * (cellH + gap);
+
+    // White background with rounded corners
     ctx.fillStyle = '#ffffff';
-    roundRect(ctx, x, y, w, h, 12);
+    roundRect(ctx, x, y, cellW, cellH, 12);
     ctx.fill();
 
-    const scale = Math.max(w / img.width, h / img.height);
-    const sw = w / scale;
-    const sh = h / scale;
-    const sx = (img.width - sw) / 2;
-    const sy = (img.height - sh) / 2;
+    // Draw image cover-fit
+    const imgRatio = img.width / img.height;
+    const cellRatio = cellW / cellH;
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+    if (imgRatio > cellRatio) {
+      sw = img.height * cellRatio;
+      sx = (img.width - sw) / 2;
+    } else {
+      sh = img.width / cellRatio;
+      sy = (img.height - sh) / 2;
+    }
 
     ctx.save();
-    roundRect(ctx, x, y, w, h, 12);
+    roundRect(ctx, x, y, cellW, cellH, 12);
     ctx.clip();
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, cellW, cellH);
     ctx.restore();
   });
 
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.85);
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.9);
   });
 
   const fileName = `bundle-collage-${Date.now()}.jpg`;
