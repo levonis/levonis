@@ -9,6 +9,7 @@ import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import StoriesBar from '@/components/stories/StoriesBar';
+import BundlesSection from '@/components/BundlesSection';
 import ReelsBar from '@/components/reels/ReelsBar';
 import { useLanguage } from '@/lib/i18n';
 
@@ -180,6 +181,8 @@ const Home = () => {
         <section className="container mx-auto px-0">
           <StoriesBar />
         </section>
+
+        <BundlesSection />
 
         <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout' }}>
           <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
