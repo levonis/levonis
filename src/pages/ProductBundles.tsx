@@ -278,7 +278,7 @@ const ProductBundles = () => {
                         {bundle.items.map((item: any, idx: number) => {
                           const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
                           const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
-                          const itemImage = colorObj?.image || item.products?.image_url || item.products?.images?.[0];
+                          const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
                           return (
                             <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
                               {itemImage && (
