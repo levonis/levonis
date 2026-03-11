@@ -245,7 +245,7 @@ const AdminProductBundles = () => {
         quantity: item.quantity,
         product_name: item.products?.name_ar || '',
         product_image: item.products?.image_url || item.products?.images?.[0] || '',
-        color_image: colorObj?.image || '',
+        color_image: colorObj?.image_url || colorObj?.image || '',
         option_label: item.product_options?.name_ar || '',
         available_stock: stock,
         unit_price: unitPrice,
@@ -437,7 +437,9 @@ const AdminProductBundles = () => {
   const confirmAddProduct = () => {
     if (!selectedProduct) return;
     const colors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
-    const directColors = colors.filter((c: any) => c?.available_for_direct_sale !== false);
+    const filteredColors = form.sale_type === 'direct'
+      ? colors.filter((c: any) => c?.available_for_direct_sale !== false)
+      : colors.filter((c: any) => c?.available_for_pre_order !== false);
     const options = pickerOptions || [];
 
     const newItems: BundleItem[] = [];
@@ -461,7 +463,7 @@ const AdminProductBundles = () => {
       });
     } else if (selectedColors.length > 0 && selectedOptionIds.length > 0) {
       for (const colorName of selectedColors) {
-        const colorObj = directColors.find((c: any) => (c.color || c.name) === colorName);
+        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
         for (const optId of selectedOptionIds) {
           const opt = options.find((o: any) => o.id === optId);
           newItems.push({
@@ -471,7 +473,7 @@ const AdminProductBundles = () => {
             quantity: itemQuantity,
             product_name: selectedProduct.name_ar,
             product_image: baseImg,
-            color_image: colorObj?.image || '',
+            color_image: colorObj?.image_url || colorObj?.image || '',
             option_label: opt?.name_ar || '',
             available_stock: getStock(colorName, optId),
             unit_price: getPrice(optId),
@@ -480,14 +482,14 @@ const AdminProductBundles = () => {
       }
     } else if (selectedColors.length > 0) {
       for (const colorName of selectedColors) {
-        const colorObj = directColors.find((c: any) => (c.color || c.name) === colorName);
+        const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
         newItems.push({
           product_id: selectedProduct.id,
           selected_color: colorName,
           quantity: itemQuantity,
           product_name: selectedProduct.name_ar,
           product_image: baseImg,
-          color_image: colorObj?.image || '',
+          color_image: colorObj?.image_url || colorObj?.image || '',
           available_stock: getStock(colorName),
           unit_price: getPrice(),
         });
@@ -828,19 +830,52 @@ const AdminProductBundles = () => {
           </DialogHeader>
 
           {selectedProduct && (() => {
-            const colors = (Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [])
-              .filter((c: any) => c?.available_for_direct_sale !== false);
+            const allColors = Array.isArray(selectedProduct.colors) ? selectedProduct.colors : [];
+            const colors = form.sale_type === 'direct'
+              ? allColors.filter((c: any) => c?.available_for_direct_sale !== false)
+              : allColors.filter((c: any) => c?.available_for_pre_order !== false);
             const options = pickerOptions || [];
 
             return (
               <div className="space-y-4">
+                {/* Sale type reminder */}
+                <div className="bg-muted/50 rounded-lg p-2 text-sm text-center">
+                  <Badge variant="outline">{SALE_TYPE_LABELS[form.sale_type]}</Badge>
+                </div>
+
+                {/* Step 1: Options */}
+                {options.length > 0 && (
+                  <div>
+                    <Label className="mb-2 block">١. الخيارات (اختر واحد أو أكثر)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {options.map((o: any) => {
+                        const isChecked = selectedOptionIds.includes(o.id);
+                        return (
+                          <label
+                            key={o.id}
+                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+                          >
+                            <Checkbox checked={isChecked} onCheckedChange={() => toggleOption(o.id)} />
+                            <span className="text-sm">{o.name_ar}</span>
+                            {o.price_adjustment > 0 && (
+                              <span className="text-[10px] text-muted-foreground">+${o.price_adjustment}</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Colors */}
                 {colors.length > 0 && (
                   <div>
-                    <Label className="mb-2 block">الألوان (اختر واحد أو أكثر)</Label>
+                    <Label className="mb-2 block">{options.length > 0 ? '٢' : '١'}. الألوان (اختر واحد أو أكثر)</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {colors.map((c: any, ci: number) => {
                         const colorName = c.color || c.name || `color-${ci}`;
                         const isChecked = selectedColors.includes(colorName);
+                        const colorImg = c.image_url || c.image;
                         const stock = form.sale_type === 'direct' ? getAvailableStock(selectedProduct, colorName) : null;
                         return (
                           <label
@@ -848,9 +883,12 @@ const AdminProductBundles = () => {
                             className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
                           >
                             <Checkbox checked={isChecked} onCheckedChange={() => toggleColor(colorName)} />
-                            {c.image && <img src={c.image} className="w-8 h-8 rounded object-cover" />}
+                            {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
+                            {!colorImg && c.hex_code && (
+                              <span className="w-6 h-6 rounded-full border border-border shrink-0" style={{ backgroundColor: c.hex_code }} />
+                            )}
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm block truncate">{colorName}</span>
+                              <span className="text-sm block truncate">{c.name_ar || colorName}</span>
                               {stock != null && (
                                 <span className={`text-[10px] ${stock > 0 ? 'text-muted-foreground' : 'text-destructive'}`}>
                                   مخزون: {stock}
@@ -864,26 +902,7 @@ const AdminProductBundles = () => {
                   </div>
                 )}
 
-                {options.length > 0 && (
-                  <div>
-                    <Label className="mb-2 block">الخيارات (اختر واحد أو أكثر)</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {options.map((o: any) => {
-                        const isChecked = selectedOptionIds.includes(o.id);
-                        return (
-                          <label
-                            key={o.id}
-                            className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isChecked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
-                          >
-                            <Checkbox checked={isChecked} onCheckedChange={() => toggleOption(o.id)} />
-                            <span className="text-sm">{o.name_ar}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
+                {/* Step 3: Quantity */}
                 <div>
                   <Label>الكمية لكل عنصر</Label>
                   <Input type="number" min={1} value={itemQuantity} onChange={e => setItemQuantity(Math.max(1, Number(e.target.value)))} className="mt-1" />
