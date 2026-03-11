@@ -26,6 +26,7 @@ interface BundleItem {
   color_image?: string;
   option_label?: string;
   available_stock?: number;
+  unit_price?: number; // price per unit in IQD
 }
 
 interface BundleForm {
