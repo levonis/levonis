@@ -1665,6 +1665,7 @@ const Admin = () => {
                 { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إعلانات متحركة', path: ADMIN_ROUTES.announcements },
                 { icon: Ticket, title: 'الكوبونات', desc: 'خصومات', path: ADMIN_ROUTES.coupons },
                 { icon: Package, title: 'الطلبات', desc: 'تتبع وإدارة', path: ADMIN_ROUTES.orders },
+                { icon: Package, title: 'البندلات', desc: 'باقات منتجات', path: ADMIN_ROUTES.productBundles },
                 { icon: FileText, title: 'طلبات مخصصة', desc: 'مراجعة', action: () => setActiveTab('custom-requests'), badge: pendingRequestsCount },
                 { icon: Zap, title: 'الافتراضية', desc: 'قيم افتراضية', path: ADMIN_ROUTES.defaultSettings },
                 { icon: Coins, title: 'النقاط', desc: 'مكافآت', path: ADMIN_ROUTES.pointsSettings },
