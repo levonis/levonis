@@ -573,6 +573,54 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addBundleToCart = async (bundleId: string, saleType: 'direct' | 'preorder'): Promise<boolean> => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return false;
+    }
+
+    try {
+      // Check for sale type conflict
+      const existingProductItems = items.filter(i => i.product_id || i.bundle_id);
+      if (existingProductItems.length > 0) {
+        const currentCartSaleType = existingProductItems[0]?.sale_type || 'preorder';
+        if (currentCartSaleType !== saleType) {
+          throw new Error('SALE_TYPE_CONFLICT');
+        }
+      }
+
+      // Check if this bundle already exists in the cart
+      const existingBundle = items.find(item => item.bundle_id === bundleId);
+      if (existingBundle) {
+        await updateQuantity(existingBundle.id, existingBundle.quantity + 1);
+        return true;
+      }
+
+      const { error } = await supabase
+        .from('cart_items')
+        .insert([{
+          user_id: user.id,
+          bundle_id: bundleId,
+          product_id: null,
+          quantity: 1,
+          sale_type: saleType,
+        }]);
+
+      if (error) {
+        console.error('Bundle insert error:', error);
+        throw error;
+      }
+
+      await fetchCart();
+      return true;
+    } catch (error: any) {
+      if (error?.message === 'SALE_TYPE_CONFLICT') throw error;
+      console.error('Error adding bundle to cart:', error);
+      toast.error('حدث خطأ في إضافة الباقة');
+      return false;
+    }
+  };
+
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
