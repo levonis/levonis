@@ -101,7 +101,53 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch all user addresses for direct sale
+  // Fetch max quantities for bundle items in cart
+  const bundleIds = items.filter(i => i.bundle_id).map(i => i.bundle_id!);
+  const { data: bundleMaxQtyMap } = useQuery({
+    queryKey: ['bundle-max-qty', bundleIds.join(',')],
+    queryFn: async () => {
+      if (bundleIds.length === 0) return {} as Record<string, number>;
+      const { data: bundleItems } = await supabase
+        .from('bundle_items')
+        .select('bundle_id, quantity, selected_color, selected_option_id, products:product_id(colors, direct_stock)')
+        .in('bundle_id', bundleIds);
+      if (!bundleItems) return {} as Record<string, number>;
+
+      const map: Record<string, number> = {};
+      for (const bid of bundleIds) {
+        const bItems = bundleItems.filter((bi: any) => bi.bundle_id === bid);
+        let maxQty = Infinity;
+        for (const bi of bItems) {
+          const product = (bi as any).products;
+          const colors = Array.isArray(product?.colors) ? product.colors : [];
+          let stock = 0;
+          if (colors.length === 0) {
+            stock = product?.direct_stock != null ? Number(product.direct_stock) : 0;
+          } else {
+            const colorName = (bi as any).selected_color;
+            const optId = (bi as any).selected_option_id;
+            const color = colorName ? colors.find((c: any) => (c.color || c.name) === colorName) : null;
+            if (color) {
+              const stocks = color.option_stocks;
+              if (stocks && typeof stocks === 'object') {
+                if (optId && stocks[optId] != null) stock = Math.max(0, Number(stocks[optId]));
+                else stock = Object.values(stocks).reduce<number>((s: number, v: any) => s + Math.max(0, Number(v)), 0);
+              } else if (color.stock_quantity != null) {
+                stock = Math.max(0, Number(color.stock_quantity));
+              }
+            }
+          }
+          const perBundle = (bi as any).quantity || 1;
+          maxQty = Math.min(maxQty, Math.floor(stock / perBundle));
+        }
+        map[bid] = maxQty === Infinity ? 0 : maxQty;
+      }
+      return map;
+    },
+    enabled: bundleIds.length > 0,
+    staleTime: 30_000,
+  });
+
   const { data: userAddresses } = useQuery({
     queryKey: ['user-addresses', user?.id],
     queryFn: async () => {
@@ -1248,6 +1294,9 @@ const Cart = () => {
                     if (!bundle) return null;
                     const bundlePrice = Number(bundle.bundle_price);
                     const isRemoving = removingItemIds.has(item.id);
+                    const bundleMaxQty = item.bundle_id && bundleMaxQtyMap ? (bundleMaxQtyMap[item.bundle_id] ?? 99) : 99;
+                    const isDirect = (item as any).sale_type === 'direct';
+                    const effectiveMax = isDirect ? bundleMaxQty : 99;
                     const handleAnimatedRemove = () => {
                       setRemovingItemIds(prev => new Set(prev).add(item.id));
                       setTimeout(() => {
@@ -1286,11 +1335,16 @@ const Cart = () => {
                                   <Minus className="h-3 w-3" />
                                 </Button>
                                 <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
-                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}>
+                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= effectiveMax}>
                                   <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
+                            {isDirect && effectiveMax < 99 && (
+                              <div className="text-[9px] text-muted-foreground mt-0.5">
+                                الحد الأقصى: <span className="font-bold text-foreground">{effectiveMax}</span> باقة
+                              </div>
+                            )}
                             {item.quantity > 1 && (
                               <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
                                 المجموع: <AnimatedPrice value={bundlePrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
