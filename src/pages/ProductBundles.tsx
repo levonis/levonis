@@ -255,10 +255,10 @@ const ProductBundles = () => {
                     </div>
 
                     {/* Status */}
-                    {isDirect && !bundle.isOutOfStock && (
+                    {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
                       <div className="flex items-center gap-1 text-[10px] text-primary">
                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        متاح حتى نفاد الكمية
+                        متوفر: {maxQty} باقة
                       </div>
                     )}
                     {isDirect && bundle.isOutOfStock && (
