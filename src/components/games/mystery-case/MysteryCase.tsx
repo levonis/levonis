@@ -19,6 +19,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   const { playClick, playSuccess, playVictory } = useGameSounds();
 
   const [spinning, setSpinning] = useState(false);
+  const [isRequestingSpinResult, setIsRequestingSpinResult] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [winResult, setWinResult] = useState<any>(null);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
@@ -118,7 +119,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
       navigate("/auth");
       return;
     }
-    if (spinning) return;
+    if (spinning || isRequestingSpinResult) return;
     if (ticketCount < ticketsNeeded) {
       toast.error(`تحتاج ${ticketsNeeded} تذكرة للف`);
       return;
@@ -129,7 +130,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     }
 
     playClick();
-    setSpinning(true);
+    setIsRequestingSpinResult(true);
     setShowReward(false);
     setWinResult(null);
 
@@ -138,27 +139,38 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
 
       if (error || !data?.success) {
         toast.error(data?.error || "حدث خطأ");
-        setSpinning(false);
         return;
       }
 
-      // Find winner index in the reel items
+      // Server result first, then start animation.
       const idx = reelItems.findIndex((item) => item.id === data.reward.id);
       setWinnerIndex(idx >= 0 ? idx : 0);
       setWinResult(data.reward);
 
-      // Play spin sound
       if (settings?.spin_sound_enabled !== false) {
         playSpinSound();
       }
 
-      // Refetch tickets immediately
       refetchTickets();
+      setSpinning(true);
     } catch (err) {
       toast.error("فشل الاتصال بالخادم");
-      setSpinning(false);
+    } finally {
+      setIsRequestingSpinResult(false);
     }
-  }, [user, spinning, ticketCount, ticketsNeeded, reelItems, settings]);
+  }, [
+    user,
+    spinning,
+    isRequestingSpinResult,
+    ticketCount,
+    ticketsNeeded,
+    reelItems,
+    settings,
+    navigate,
+    playClick,
+    playSpinSound,
+    refetchTickets,
+  ]);
 
   const handleSpinComplete = useCallback(() => {
     setSpinning(false);
@@ -245,11 +257,16 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
         <div className="text-center mb-6">
           <Button
             onClick={handleSpin}
-            disabled={spinning || ticketCount < ticketsNeeded || reelItems.length < 2}
+            disabled={spinning || isRequestingSpinResult || ticketCount < ticketsNeeded || reelItems.length < 2}
             className="font-mono text-sm px-8 py-3 pixel-btn-active"
             size="lg"
           >
-            {spinning ? (
+            {isRequestingSpinResult ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                جاري تحديد الجائزة...
+              </>
+            ) : spinning ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
                 جاري اللف...
@@ -260,7 +277,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
               </>
             )}
           </Button>
-          {ticketCount < ticketsNeeded && !spinning && (
+          {ticketCount < ticketsNeeded && !spinning && !isRequestingSpinResult && (
             <p className="text-xs text-destructive font-mono mt-2">
               تحتاج {ticketsNeeded - ticketCount} تذكرة إضافية
             </p>
