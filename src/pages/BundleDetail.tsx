@@ -296,11 +296,11 @@ const BundleDetail = () => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
               const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
               const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
-              const productId = item.products?.id || item.product_id;
+              const productSlug = item.products?.slug || item.products?.id || item.product_id;
               return (
                 <Link
                   key={idx}
-                  to={`/product/${productId}`}
+                  to={`/product/${productSlug}`}
                   className="shrink-0 w-[100px] rounded-xl overflow-hidden border border-border/30 bg-card hover:border-primary/40 transition-all group"
                 >
                   {itemImage && (
