@@ -181,7 +181,7 @@ export default function AdminProductOffers() {
     setFormData({
       title_ar: '', description_ar: '', images: [], price: '', cost_price: '',
       gift_tickets: '1', points_reward: '0', stock_quantity: '', status: 'active',
-      options: [], colors: [],
+      options: [], colors: [], show_in_cart: false,
     });
     setEditingOffer(null);
   };
