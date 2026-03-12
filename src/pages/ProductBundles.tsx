@@ -315,13 +315,46 @@ const ProductBundles = () => {
                       )}
                     </AnimatePresence>
 
+                    {/* Quantity & Stock info */}
+                    {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">
+                          الحد الأقصى: <span className="font-bold text-foreground">{maxQty}</span> باقة
+                        </span>
+                        <div className="flex items-center gap-0 border border-border/40 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => setBundleQuantities(prev => ({ ...prev, [bundle.id]: Math.max(1, currentQty - 1) }))}
+                            disabled={currentQty <= 1}
+                            className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30 transition-colors"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="h-7 w-8 flex items-center justify-center text-xs font-bold text-foreground border-x border-border/40 bg-muted/20">
+                            {currentQty}
+                          </span>
+                          <button
+                            onClick={() => setBundleQuantities(prev => ({ ...prev, [bundle.id]: Math.min(maxQty, currentQty + 1) }))}
+                            disabled={currentQty >= maxQty}
+                            className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30 transition-colors"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Price & CTA */}
                     <div className="flex items-center justify-between pt-1.5 border-t border-border/20">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
-                        <span className="text-[9px] text-muted-foreground">د.ع</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price * currentQty)}</span>
+                          <span className="text-[9px] text-muted-foreground">د.ع</span>
+                        </div>
+                        {currentQty > 1 && (
+                          <span className="text-[9px] text-muted-foreground">{formatPrice(bundle.bundle_price)} × {currentQty}</span>
+                        )}
                         {bundle.original_price > 0 && (
-                          <span className="text-[10px] text-muted-foreground/60 line-through mr-1">{formatPrice(bundle.original_price)}</span>
+                          <span className="text-[10px] text-muted-foreground/60 line-through">{formatPrice(bundle.original_price * currentQty)}</span>
                         )}
                       </div>
                       <Button
