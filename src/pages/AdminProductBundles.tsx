@@ -113,33 +113,18 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
   canvas.width = SIZE;
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d')!;
-  ctx.fillStyle = '#f5f5f5';
+
+  // Pure white square background
+  ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, SIZE, SIZE);
 
   const count = Math.min(urls.length, 9);
-
-  // Better grid: for 2 images use 1 col x 2 rows (stacked) or 2 cols x 1 row side-by-side
-  // Use a balanced grid approach
-  let cols: number, rows: number;
-  if (count === 1) { cols = 1; rows = 1; }
-  else if (count === 2) { cols = 2; rows = 1; }
-  else if (count <= 4) { cols = 2; rows = 2; }
-  else if (count <= 6) { cols = 3; rows = 2; }
-  else { cols = 3; rows = 3; }
-
-  const padding = 10;
-  const gap = 8;
-  const totalGapX = gap * (cols - 1);
-  const totalGapY = gap * (rows - 1);
-  const cellW = (SIZE - padding * 2 - totalGapX) / cols;
-  const cellH = (SIZE - padding * 2 - totalGapY) / rows;
 
   const loadImage = (url: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => {
-      // Retry without crossOrigin as fallback
       const img2 = new Image();
       img2.onload = () => resolve(img2);
       img2.onerror = () => reject(new Error('Failed to load'));
@@ -155,33 +140,121 @@ async function mergeImages(imageUrls: string[]): Promise<string> {
 
   if (loadedImages.length === 0) throw new Error('فشل تحميل جميع الصور');
 
-  loadedImages.forEach(({ img, index }) => {
-    const col = index % cols;
-    const row = Math.floor(index / cols);
-    const x = padding + col * (cellW + gap);
-    const y = padding + row * (cellH + gap);
+  const actualCount = loadedImages.length;
 
-    // White background with rounded corners
-    ctx.fillStyle = '#ffffff';
-    roundRect(ctx, x, y, cellW, cellH, 12);
-    ctx.fill();
+  // Layout configurations for professional look
+  if (actualCount === 2) {
+    // Two images side by side with generous padding
+    const outerPad = 40;
+    const innerGap = 24;
+    const cellW = (SIZE - outerPad * 2 - innerGap) / 2;
+    const cellH = SIZE - outerPad * 2;
 
-    // Draw image CONTAIN-fit (show full image, no cropping)
-    const scale = Math.min(cellW / img.width, cellH / img.height) * 0.85; // 85% to add inner padding
-    const drawW = img.width * scale;
-    const drawH = img.height * scale;
-    const drawX = x + (cellW - drawW) / 2;
-    const drawY = y + (cellH - drawH) / 2;
+    loadedImages.forEach(({ img }, i) => {
+      const x = outerPad + i * (cellW + innerGap);
+      const y = outerPad;
 
-    ctx.save();
-    roundRect(ctx, x, y, cellW, cellH, 12);
-    ctx.clip();
-    ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
-    ctx.restore();
-  });
+      // Subtle rounded card background
+      ctx.fillStyle = '#f8f8f8';
+      roundRect(ctx, x, y, cellW, cellH, 16);
+      ctx.fill();
+
+      // Contain-fit with inner padding (80%)
+      const innerPad = 0.80;
+      const scale = Math.min((cellW * innerPad) / img.width, (cellH * innerPad) / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const drawX = x + (cellW - drawW) / 2;
+      const drawY = y + (cellH - drawH) / 2;
+
+      ctx.save();
+      roundRect(ctx, x, y, cellW, cellH, 16);
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
+      ctx.restore();
+    });
+  } else if (actualCount === 3) {
+    // 1 large on left, 2 stacked on right
+    const outerPad = 36;
+    const gap = 20;
+    const leftW = (SIZE - outerPad * 2 - gap) * 0.55;
+    const rightW = SIZE - outerPad * 2 - gap - leftW;
+    const fullH = SIZE - outerPad * 2;
+    const halfH = (fullH - gap) / 2;
+
+    // Left large image
+    const positions = [
+      { x: outerPad, y: outerPad, w: leftW, h: fullH },
+      { x: outerPad + leftW + gap, y: outerPad, w: rightW, h: halfH },
+      { x: outerPad + leftW + gap, y: outerPad + halfH + gap, w: rightW, h: halfH },
+    ];
+
+    loadedImages.forEach(({ img }, i) => {
+      const { x, y, w, h } = positions[i];
+      ctx.fillStyle = '#f8f8f8';
+      roundRect(ctx, x, y, w, h, 16);
+      ctx.fill();
+
+      const innerPad = 0.78;
+      const scale = Math.min((w * innerPad) / img.width, (h * innerPad) / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const drawX = x + (w - drawW) / 2;
+      const drawY = y + (h - drawH) / 2;
+
+      ctx.save();
+      roundRect(ctx, x, y, w, h, 16);
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
+      ctx.restore();
+    });
+  } else {
+    // Grid layout for 4+
+    let cols: number, rows: number;
+    if (actualCount <= 4) { cols = 2; rows = 2; }
+    else if (actualCount <= 6) { cols = 3; rows = 2; }
+    else { cols = 3; rows = 3; }
+
+    const outerPad = 32;
+    const gap = 16;
+    const totalGapX = gap * (cols - 1);
+    const totalGapY = gap * (rows - 1);
+    const cellW = (SIZE - outerPad * 2 - totalGapX) / cols;
+    const cellH = (SIZE - outerPad * 2 - totalGapY) / rows;
+
+    loadedImages.forEach(({ img, index }) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const x = outerPad + col * (cellW + gap);
+      const y = outerPad + row * (cellH + gap);
+
+      ctx.fillStyle = '#f8f8f8';
+      roundRect(ctx, x, y, cellW, cellH, 14);
+      ctx.fill();
+
+      const innerPad = 0.80;
+      const scale = Math.min((cellW * innerPad) / img.width, (cellH * innerPad) / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const drawX = x + (cellW - drawW) / 2;
+      const drawY = y + (cellH - drawH) / 2;
+
+      ctx.save();
+      roundRect(ctx, x, y, cellW, cellH, 14);
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, img.width, img.height, drawX, drawY, drawW, drawH);
+      ctx.restore();
+    });
+  }
+
+  // Subtle outer border
+  ctx.strokeStyle = '#e5e5e5';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 1, 1, SIZE - 2, SIZE - 2, 20);
+  ctx.stroke();
 
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.9);
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.92);
   });
 
   const fileName = `bundle-collage-${Date.now()}.jpg`;
