@@ -1294,6 +1294,9 @@ const Cart = () => {
                     if (!bundle) return null;
                     const bundlePrice = Number(bundle.bundle_price);
                     const isRemoving = removingItemIds.has(item.id);
+                    const bundleMaxQty = item.bundle_id && bundleMaxQtyMap ? (bundleMaxQtyMap[item.bundle_id] ?? 99) : 99;
+                    const isDirect = (item as any).sale_type === 'direct';
+                    const effectiveMax = isDirect ? bundleMaxQty : 99;
                     const handleAnimatedRemove = () => {
                       setRemovingItemIds(prev => new Set(prev).add(item.id));
                       setTimeout(() => {
@@ -1332,11 +1335,16 @@ const Cart = () => {
                                   <Minus className="h-3 w-3" />
                                 </Button>
                                 <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
-                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}>
+                                <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} disabled={item.quantity >= effectiveMax}>
                                   <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
+                            {isDirect && effectiveMax < 99 && (
+                              <div className="text-[9px] text-muted-foreground mt-0.5">
+                                الحد الأقصى: <span className="font-bold text-foreground">{effectiveMax}</span> باقة
+                              </div>
+                            )}
                             {item.quantity > 1 && (
                               <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
                                 المجموع: <AnimatedPrice value={bundlePrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
