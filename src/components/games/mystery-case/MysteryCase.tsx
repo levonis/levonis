@@ -84,12 +84,14 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   const ticketCount = ticketData?.ticket_count || 0;
   const ticketsNeeded = settings?.tickets_per_spin || 4;
 
+  // All active rewards for visual display (including 0% drop_chance)
   const reelItems: ReelItem[] = useMemo(() =>
     rewards.map((r: any) => ({
       id: r.id,
       name_ar: r.name_ar,
       image_url: r.image_url,
       rarity: r.rarity,
+      drop_chance: r.drop_chance,
     })),
     [rewards]
   );
