@@ -77,7 +77,7 @@ interface CartContextType {
   pendingCartRequest: PendingCartRequest | null;
   addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
   forceAddToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }, saleType?: 'direct' | 'preorder') => Promise<boolean>;
-  addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder') => Promise<boolean>;
+  addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder', quantity?: number) => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -573,7 +573,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addBundleToCart = async (bundleId: string, saleType: 'direct' | 'preorder'): Promise<boolean> => {
+  const addBundleToCart = async (bundleId: string, saleType: 'direct' | 'preorder', quantity: number = 1): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return false;
@@ -592,7 +592,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Check if this bundle already exists in the cart
       const existingBundle = items.find(item => item.bundle_id === bundleId);
       if (existingBundle) {
-        await updateQuantity(existingBundle.id, existingBundle.quantity + 1);
+        await updateQuantity(existingBundle.id, existingBundle.quantity + quantity);
         return true;
       }
 
@@ -601,7 +601,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .insert([{
           user_id: user.id,
           bundle_id: bundleId,
-          quantity: 1,
+          quantity: quantity,
           sale_type: saleType,
         }]);
 

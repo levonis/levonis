@@ -5,11 +5,25 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Package, ShoppingCart, ArrowRight, AlertTriangle, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Loader2, Package, ShoppingCart, ArrowRight, AlertTriangle, Check, ChevronDown, ChevronUp, Sparkles, Plus, Minus } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function getBundleMaxQuantity(bundleItems: any[], isDirect: boolean): number {
+  if (!isDirect) return 99; // preorder has no stock limit
+  if (!bundleItems || bundleItems.length === 0) return 0;
+  
+  let maxQty = Infinity;
+  for (const item of bundleItems) {
+    const stock = getItemStock(item.products, item.selected_color, item.selected_option_id);
+    const perBundle = item.quantity || 1;
+    const possible = Math.floor(stock / perBundle);
+    maxQty = Math.min(maxQty, possible);
+  }
+  return maxQty === Infinity ? 0 : maxQty;
+}
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
@@ -52,6 +66,7 @@ const ProductBundles = () => {
   const [addingBundleId, setAddingBundleId] = useState<string | null>(null);
   const [expandedBundleId, setExpandedBundleId] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<Record<string, number>>({});
+  const [bundleQuantities, setBundleQuantities] = useState<Record<string, number>>({});
 
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
@@ -98,7 +113,8 @@ const ProductBundles = () => {
           }
         }
 
-        return { ...bundle, items: bundleItems, isOutOfStock, allImages };
+        const maxQuantity = getBundleMaxQuantity(bundleItems, isDirect);
+        return { ...bundle, items: bundleItems, isOutOfStock, allImages, maxQuantity };
       });
     },
     staleTime: 60 * 1000,
@@ -109,6 +125,7 @@ const ProductBundles = () => {
     if (bundle.isOutOfStock) { toast.error('هذا العرض انتهى - المخزون غير كافٍ'); return; }
 
     const bundleSaleType = bundle.sale_type === 'direct' ? 'direct' : 'preorder';
+    const qty = bundleQuantities[bundle.id] || 1;
 
     setAddingBundleId(bundle.id);
     try {
@@ -117,9 +134,10 @@ const ProductBundles = () => {
         return;
       }
 
-      const success = await addBundleToCart(bundle.id, bundleSaleType as 'direct' | 'preorder');
+      const success = await addBundleToCart(bundle.id, bundleSaleType as 'direct' | 'preorder', qty);
       if (success) {
         toast.success('تم إضافة الباقة للسلة بنجاح! 🎉');
+        setBundleQuantities(prev => ({ ...prev, [bundle.id]: 1 }));
       }
     } catch (error) {
       console.error('Error adding bundle to cart:', error);
@@ -167,7 +185,8 @@ const ProductBundles = () => {
               const activeImage = getActiveImage(bundle);
               const allImages = bundle.allImages || [];
               const isExpanded = expandedBundleId === bundle.id;
-
+              const maxQty = bundle.maxQuantity || 0;
+              const currentQty = bundleQuantities[bundle.id] || 1;
               return (
                 <motion.div
                   key={bundle.id}
@@ -296,13 +315,46 @@ const ProductBundles = () => {
                       )}
                     </AnimatePresence>
 
+                    {/* Quantity & Stock info */}
+                    {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">
+                          الحد الأقصى: <span className="font-bold text-foreground">{maxQty}</span> باقة
+                        </span>
+                        <div className="flex items-center gap-0 border border-border/40 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => setBundleQuantities(prev => ({ ...prev, [bundle.id]: Math.max(1, currentQty - 1) }))}
+                            disabled={currentQty <= 1}
+                            className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30 transition-colors"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="h-7 w-8 flex items-center justify-center text-xs font-bold text-foreground border-x border-border/40 bg-muted/20">
+                            {currentQty}
+                          </span>
+                          <button
+                            onClick={() => setBundleQuantities(prev => ({ ...prev, [bundle.id]: Math.min(maxQty, currentQty + 1) }))}
+                            disabled={currentQty >= maxQty}
+                            className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30 transition-colors"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Price & CTA */}
                     <div className="flex items-center justify-between pt-1.5 border-t border-border/20">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
-                        <span className="text-[9px] text-muted-foreground">د.ع</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price * currentQty)}</span>
+                          <span className="text-[9px] text-muted-foreground">د.ع</span>
+                        </div>
+                        {currentQty > 1 && (
+                          <span className="text-[9px] text-muted-foreground">{formatPrice(bundle.bundle_price)} × {currentQty}</span>
+                        )}
                         {bundle.original_price > 0 && (
-                          <span className="text-[10px] text-muted-foreground/60 line-through mr-1">{formatPrice(bundle.original_price)}</span>
+                          <span className="text-[10px] text-muted-foreground/60 line-through">{formatPrice(bundle.original_price * currentQty)}</span>
                         )}
                       </div>
                       <Button
