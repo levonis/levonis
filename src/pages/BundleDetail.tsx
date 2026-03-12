@@ -67,7 +67,7 @@ const BundleDetail = () => {
 
       const { data: items, error: itemsError } = await supabase
         .from('bundle_items')
-        .select('*, products:product_id(id, name_ar, image_url, images, direct_sale_price, price, colors, direct_stock)')
+        .select('*, products:product_id(id, slug, name_ar, image_url, images, direct_sale_price, price, colors, direct_stock)')
         .eq('bundle_id', id!);
       if (itemsError) throw itemsError;
 
