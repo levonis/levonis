@@ -119,7 +119,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
       navigate("/auth");
       return;
     }
-    if (spinning) return;
+    if (spinning || isRequestingSpinResult) return;
     if (ticketCount < ticketsNeeded) {
       toast.error(`تحتاج ${ticketsNeeded} تذكرة للف`);
       return;
@@ -130,7 +130,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     }
 
     playClick();
-    setSpinning(true);
+    setIsRequestingSpinResult(true);
     setShowReward(false);
     setWinResult(null);
 
@@ -139,27 +139,38 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
 
       if (error || !data?.success) {
         toast.error(data?.error || "حدث خطأ");
-        setSpinning(false);
         return;
       }
 
-      // Find winner index in the reel items
+      // Server result first, then start animation.
       const idx = reelItems.findIndex((item) => item.id === data.reward.id);
       setWinnerIndex(idx >= 0 ? idx : 0);
       setWinResult(data.reward);
 
-      // Play spin sound
       if (settings?.spin_sound_enabled !== false) {
         playSpinSound();
       }
 
-      // Refetch tickets immediately
       refetchTickets();
+      setSpinning(true);
     } catch (err) {
       toast.error("فشل الاتصال بالخادم");
-      setSpinning(false);
+    } finally {
+      setIsRequestingSpinResult(false);
     }
-  }, [user, spinning, ticketCount, ticketsNeeded, reelItems, settings]);
+  }, [
+    user,
+    spinning,
+    isRequestingSpinResult,
+    ticketCount,
+    ticketsNeeded,
+    reelItems,
+    settings,
+    navigate,
+    playClick,
+    playSpinSound,
+    refetchTickets,
+  ]);
 
   const handleSpinComplete = useCallback(() => {
     setSpinning(false);
