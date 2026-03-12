@@ -576,7 +576,12 @@ export default function AdminProductOffers() {
                       <ShoppingBag className="h-3 w-3" />
                       {offer.total_sold || 0}
                     </span>
-                    <span>{format(new Date(offer.created_at), 'dd/MM', { locale: ar })}</span>
+                    <div className="flex items-center gap-1.5">
+                      {(offer as any).show_in_cart && (
+                        <span className="bg-primary/10 text-primary px-1 py-0.5 rounded text-[8px] font-bold">سلة</span>
+                      )}
+                      <span>{format(new Date(offer.created_at), 'dd/MM', { locale: ar })}</span>
+                    </div>
                   </div>
                 </div>
               </div>
