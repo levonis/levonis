@@ -596,18 +596,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return true;
       }
 
+      const insertPayload = {
+        user_id: user.id,
+        bundle_id: bundleId,
+        quantity: 1,
+        sale_type: saleType,
+      };
+      console.log('Bundle insert payload:', JSON.stringify(insertPayload));
+
       const { error } = await supabase
         .from('cart_items')
-        .insert([{
-          user_id: user.id,
-          bundle_id: bundleId,
-          product_id: null,
-          quantity: 1,
-          sale_type: saleType,
-        }]);
+        .insert([insertPayload]);
 
       if (error) {
-        console.error('Bundle insert error:', error);
+        console.error('Bundle insert error:', JSON.stringify(error));
         throw error;
       }
 
