@@ -83,12 +83,15 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   const ticketCount = ticketData?.ticket_count || 0;
   const ticketsNeeded = settings?.tickets_per_spin || 4;
 
-  const reelItems: ReelItem[] = rewards.map((r: any) => ({
-    id: r.id,
-    name_ar: r.name_ar,
-    image_url: r.image_url,
-    rarity: r.rarity,
-  }));
+  const reelItems: ReelItem[] = useMemo(() =>
+    rewards.map((r: any) => ({
+      id: r.id,
+      name_ar: r.name_ar,
+      image_url: r.image_url,
+      rarity: r.rarity,
+    })),
+    [rewards]
+  );
 
   // Play spin sound effect
   const playSpinSound = useCallback(() => {
