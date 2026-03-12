@@ -67,7 +67,7 @@ const BundleDetail = () => {
 
       const { data: items, error: itemsError } = await supabase
         .from('bundle_items')
-        .select('*, products:product_id(id, name_ar, image_url, images, direct_sale_price, price, colors, direct_stock)')
+        .select('*, products:product_id(id, slug, name_ar, image_url, images, direct_sale_price, price, colors, direct_stock)')
         .eq('bundle_id', id!);
       if (itemsError) throw itemsError;
 
@@ -260,14 +260,18 @@ const BundleDetail = () => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
               const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
               const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
+              const productSlug = item.products?.slug || item.products?.id || item.product_id;
               return (
-                <motion.div
+                <Link
+                  to={`/product/${productSlug}`}
                   key={idx}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/20"
                 >
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/20 hover:border-primary/30 transition-colors"
+                  >
                   {itemImage && (
                     <img src={itemImage} className="w-14 h-14 rounded-lg object-cover shrink-0" />
                   )}
@@ -280,6 +284,7 @@ const BundleDetail = () => {
                   </div>
                   <ChevronLeft className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                 </motion.div>
+                </Link>
               );
             })}
           </div>
@@ -296,11 +301,11 @@ const BundleDetail = () => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
               const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
               const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
-              const productId = item.products?.id || item.product_id;
+              const productSlug = item.products?.slug || item.products?.id || item.product_id;
               return (
                 <Link
                   key={idx}
-                  to={`/product/${productId}`}
+                  to={`/product/${productSlug}`}
                   className="shrink-0 w-[100px] rounded-xl overflow-hidden border border-border/30 bg-card hover:border-primary/40 transition-all group"
                 >
                   {itemImage && (
