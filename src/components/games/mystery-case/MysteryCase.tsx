@@ -257,11 +257,16 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
         <div className="text-center mb-6">
           <Button
             onClick={handleSpin}
-            disabled={spinning || ticketCount < ticketsNeeded || reelItems.length < 2}
+            disabled={spinning || isRequestingSpinResult || ticketCount < ticketsNeeded || reelItems.length < 2}
             className="font-mono text-sm px-8 py-3 pixel-btn-active"
             size="lg"
           >
-            {spinning ? (
+            {isRequestingSpinResult ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                جاري تحديد الجائزة...
+              </>
+            ) : spinning ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
                 جاري اللف...
