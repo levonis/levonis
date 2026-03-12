@@ -200,6 +200,7 @@ export default function AdminProductOffers() {
       status: offer.status,
       options: (offer.options as ProductOption[]) || [],
       colors: (offer.colors as ProductColor[]) || [],
+      show_in_cart: offer.show_in_cart || false,
     });
     setIsDialogOpen(true);
   };
