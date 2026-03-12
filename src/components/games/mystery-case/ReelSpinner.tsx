@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type PointerEvent as ReactPointerEvent } from "react";
 
 export interface ReelItem {
   id: string;
