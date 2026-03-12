@@ -12,7 +12,7 @@ import { useGameSounds } from "@/components/games/useGameSounds";
 import ReelSpinner, { type ReelItem } from "./ReelSpinner";
 import RewardPopup from "./RewardPopup";
 
-export default function MysteryCase({ onBack }: { onBack: () => void }) {
+function MysteryCase({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
