@@ -52,6 +52,9 @@ export default function MiniGames() {
             {activeGame === 'space_blaster' && (
               <SpaceBlasterGame onBack={() => setActiveGame(null)} />
             )}
+            {activeGame === 'mystery_case' && (
+              <MysteryCase onBack={() => setActiveGame(null)} />
+            )}
           </Suspense>
         </div>
         <PixelMusicRadio />
