@@ -382,6 +382,7 @@ const BundleDetail = () => {
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
