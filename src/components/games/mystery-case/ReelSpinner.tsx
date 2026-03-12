@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, useMotionValue } from "framer-motion";
 
 export interface ReelItem {
   id: string;
@@ -16,188 +16,216 @@ interface Props {
   animationDuration?: number;
 }
 
-const ITEM_WIDTH = 120;
-const GAP = 8;
-const CELL = ITEM_WIDTH + GAP;
-const REPEAT_COUNT = 20;
-const WIN_POSITION = REPEAT_COUNT * 3 + 5; // place winner deep in the strip
+const ITEM_W = 100;
+const GAP = 12;
+const CELL = ITEM_W + GAP;
+const STRIP_REPEATS = 40;
+const WIN_POS = STRIP_REPEATS - 8;
+const IDLE_SPEED = 0.4; // px per frame
 
 const RARITY_WEIGHTS: Record<string, number> = {
-  common: 10,
-  rare: 5,
-  epic: 3,
-  legendary: 1,
-  mythic: 1,
+  common: 10, rare: 5, epic: 3, legendary: 1, mythic: 1,
 };
-
 const RARITY_COLORS: Record<string, string> = {
-  common: "#9ca3af",
-  rare: "#3b82f6",
-  epic: "#a855f7",
-  legendary: "#f59e0b",
-  mythic: "#ef4444",
+  common: "#9ca3af", rare: "#3b82f6", epic: "#a855f7",
+  legendary: "#f59e0b", mythic: "#ef4444",
 };
-
 const RARITY_GLOW: Record<string, string> = {
-  common: "0 0 8px #9ca3af44",
-  rare: "0 0 12px #3b82f688",
-  epic: "0 0 16px #a855f788",
-  legendary: "0 0 20px #f59e0b88, 0 0 40px #f59e0b44",
-  mythic: "0 0 24px #ef444488, 0 0 48px #ef444444",
+  common: "0 0 6px #9ca3af33",
+  rare: "0 0 10px #3b82f666",
+  epic: "0 0 14px #a855f766",
+  legendary: "0 0 18px #f59e0b77, 0 0 36px #f59e0b33",
+  mythic: "0 0 22px #ef444477, 0 0 44px #ef444433",
 };
 
-/** Build a weighted-shuffled pool from items */
-function buildShuffledPool(items: ReelItem[]): ReelItem[] {
-  if (items.length === 0) return [];
-
-  const pool: ReelItem[] = [];
-  items.forEach((item) => {
-    const weight = RARITY_WEIGHTS[item.rarity] || RARITY_WEIGHTS.common;
-    for (let i = 0; i < weight; i++) {
-      pool.push(item);
-    }
-  });
-
-  // Fisher-Yates shuffle
-  for (let i = pool.length - 1; i > 0; i--) {
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return pool;
+  return a;
 }
 
-/** Build long reel strip with shuffled distribution */
-function buildReelStrip(items: ReelItem[], winnerItem: ReelItem | null): ReelItem[] {
+function buildPool(items: ReelItem[]): ReelItem[] {
+  const pool: ReelItem[] = [];
+  items.forEach((item) => {
+    const w = RARITY_WEIGHTS[item.rarity] || 5;
+    for (let i = 0; i < w; i++) pool.push(item);
+  });
+  return shuffle(pool);
+}
+
+function buildStrip(items: ReelItem[], winner: ReelItem | null): ReelItem[] {
   if (items.length === 0) return [];
-
-  const pool = buildShuffledPool(items);
-  if (pool.length === 0) return [];
-
-  const totalItems = Math.max(pool.length * REPEAT_COUNT, 80);
+  const pool = buildPool(items);
   const strip: ReelItem[] = [];
+  const total = Math.max(pool.length * 3, STRIP_REPEATS);
+  for (let i = 0; i < total; i++) strip.push(pool[i % pool.length]);
 
-  for (let i = 0; i < totalItems; i++) {
-    strip.push(pool[i % pool.length]);
-  }
-
-  // Inject rare/epic items periodically for visual excitement
-  const rareItems = items.filter((it) => it.rarity === "rare" || it.rarity === "epic" || it.rarity === "legendary");
-  if (rareItems.length > 0) {
-    for (let i = 7; i < strip.length; i += Math.floor(6 + Math.random() * 5)) {
-      strip[i] = rareItems[Math.floor(Math.random() * rareItems.length)];
+  // sprinkle rare items for visual bait
+  const rares = items.filter((it) => ["rare", "epic", "legendary"].includes(it.rarity));
+  if (rares.length > 0) {
+    for (let i = 6; i < strip.length; i += 5 + Math.floor(Math.random() * 5)) {
+      strip[i] = rares[Math.floor(Math.random() * rares.length)];
     }
   }
 
-  // Place winner at the designated stop position
-  if (winnerItem && WIN_POSITION < strip.length) {
-    strip[WIN_POSITION] = winnerItem;
+  if (winner && WIN_POS < strip.length) {
+    strip[WIN_POS] = winner;
   }
-
   return strip;
 }
 
-export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComplete, animationDuration = 5000 }: Props) {
-  const controls = useAnimation();
+export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComplete, animationDuration = 4000 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const hasSpunRef = useRef(false);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
+  const idleXRef = useRef(0);
+  const isSpinningRef = useRef(false);
+  const controls = useAnimation();
 
-  const winnerItem = winnerIndex !== null && items[winnerIndex] ? items[winnerIndex] : null;
+  const winner = winnerIndex !== null && items[winnerIndex] ? items[winnerIndex] : null;
 
-  // Build reel strip — only rebuild when items change or a new spin starts
-  const reelStrip = useMemo(() => {
-    return buildReelStrip(items, winnerItem);
-  }, [items, winnerIndex, spinning]);
+  // Build strip once for idle, rebuild on spin
+  const [strip, setStrip] = useState<ReelItem[]>([]);
 
-  // Trigger spin animation
+  // Initial strip build
   useEffect(() => {
-    if (!spinning || reelStrip.length === 0) return;
-    if (hasSpunRef.current) return; // prevent double-trigger
-    hasSpunRef.current = true;
-
-    const containerW = containerRef.current?.offsetWidth || 320;
-    const centerOffset = containerW / 2 - ITEM_WIDTH / 2;
-    const targetX = -(WIN_POSITION * CELL - centerOffset);
-
-    // Start from 0, animate to target
-    controls.set({ x: 0 });
-    controls.start({
-      x: targetX,
-      transition: {
-        duration: animationDuration / 1000,
-        ease: [0.12, 0.8, 0.2, 1], // fast start, smooth slow stop
-      },
-    }).then(() => {
-      onSpinComplete();
-    });
-  }, [spinning, reelStrip.length]);
-
-  // Reset spin lock when spinning ends
-  useEffect(() => {
-    if (!spinning) {
-      hasSpunRef.current = false;
+    if (items.length > 0 && strip.length === 0) {
+      setStrip(buildStrip(items, null));
     }
+  }, [items]);
+
+  // === IDLE ANIMATION ===
+  useEffect(() => {
+    if (items.length === 0 || spinning) return;
+
+    const poolWidth = strip.length * CELL;
+    if (poolWidth === 0) return;
+
+    const animate = () => {
+      idleXRef.current -= IDLE_SPEED;
+      // loop back seamlessly
+      if (Math.abs(idleXRef.current) > poolWidth / 2) {
+        idleXRef.current = 0;
+      }
+      if (stripRef.current) {
+        stripRef.current.style.transform = `translate3d(${idleXRef.current}px, 0, 0)`;
+      }
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    // Reset framer-motion control so it doesn't fight idle
+    controls.stop();
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [items, spinning, strip.length]);
+
+  // === SPIN ===
+  useEffect(() => {
+    if (!spinning || items.length === 0) return;
+    if (isSpinningRef.current) return;
+    isSpinningRef.current = true;
+
+    // Stop idle
+    cancelAnimationFrame(rafRef.current);
+
+    // Build fresh strip with winner placed
+    const newStrip = buildStrip(items, winner);
+    setStrip(newStrip);
+
+    // Need a frame for DOM to update
+    requestAnimationFrame(() => {
+      const containerW = containerRef.current?.offsetWidth || 320;
+      const centerOffset = containerW / 2 - ITEM_W / 2;
+      const targetX = -(WIN_POS * CELL - centerOffset);
+
+      // Reset position and animate
+      if (stripRef.current) {
+        stripRef.current.style.transform = `translate3d(0, 0, 0)`;
+      }
+      controls.set({ x: 0 });
+      controls.start({
+        x: targetX,
+        transition: {
+          duration: animationDuration / 1000,
+          ease: [0.08, 0.75, 0.15, 1],
+        },
+      }).then(() => {
+        isSpinningRef.current = false;
+        idleXRef.current = 0;
+        onSpinComplete();
+      });
+    });
   }, [spinning]);
 
-  if (reelStrip.length === 0) {
+  // When framer-motion controls are active, let it drive the strip
+  // When idle, the RAF drives it. We need both to coexist.
+  // Solution: idle writes to stripRef.current.style directly, spin uses motion.
+
+  if (strip.length === 0 && items.length === 0) {
     return (
-      <div className="h-36 flex items-center justify-center text-muted-foreground font-mono text-xs">
+      <div className="h-28 flex items-center justify-center text-muted-foreground font-mono text-xs">
         لا توجد جوائز حالياً
       </div>
     );
   }
 
   return (
-    <div className="relative w-full overflow-hidden" ref={containerRef}>
-      {/* Center pointer */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 w-0.5 h-full bg-primary" />
+    <div className="relative w-full overflow-hidden" ref={containerRef} style={{ height: ITEM_W + 32 }}>
+      {/* Center pointer line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 w-0.5 h-full bg-primary opacity-80" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 -mt-1">
-        <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-t-[10px] border-l-transparent border-r-transparent border-t-primary" />
+        <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-primary" />
       </div>
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 -mb-1">
-        <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[10px] border-l-transparent border-r-transparent border-b-primary" />
+        <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-primary" />
       </div>
 
-      {/* Gradient edges */}
-      <div className="absolute inset-y-0 left-0 w-12 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-12 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+      {/* Edge fades */}
+      <div className="absolute inset-y-0 left-0 w-16 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-16 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
 
-      {/* Reel strip — NEVER cleared */}
-      <div className="py-3">
+      {/* Reel — always rendered, never cleared */}
+      <div className="absolute inset-0 flex items-center">
         <motion.div
+          ref={stripRef}
           className="flex"
           animate={controls}
-          style={{ willChange: "transform", gap: GAP }}
+          style={{
+            gap: GAP,
+            willChange: "transform",
+          }}
         >
-          {reelStrip.map((item, i) => {
+          {strip.map((item, i) => {
             const color = RARITY_COLORS[item.rarity] || RARITY_COLORS.common;
             const glow = RARITY_GLOW[item.rarity] || RARITY_GLOW.common;
             return (
               <div
-                key={`${item.id}-${i}`}
-                className="shrink-0 flex flex-col items-center justify-center rounded-lg border-2 p-2"
+                key={`r-${i}`}
+                className="shrink-0 flex flex-col items-center justify-center rounded-lg border-2 p-1.5"
                 style={{
-                  width: ITEM_WIDTH,
-                  height: ITEM_WIDTH + 20,
+                  width: ITEM_W,
+                  height: ITEM_W,
                   borderColor: color,
                   boxShadow: glow,
-                  background: `linear-gradient(180deg, ${color}11, ${color}22)`,
+                  background: `linear-gradient(180deg, ${color}0a, ${color}18)`,
                 }}
               >
                 {item.image_url ? (
                   <img
                     src={item.image_url}
                     alt={item.name_ar}
-                    className="w-14 h-14 object-contain mb-1"
+                    className="w-11 h-11 object-contain mb-1"
                     style={{ imageRendering: "pixelated" }}
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-14 h-14 rounded bg-muted/30 flex items-center justify-center mb-1 text-2xl">🎁</div>
+                  <div className="w-11 h-11 rounded bg-muted/20 flex items-center justify-center mb-1 text-lg">🎁</div>
                 )}
-                <span
-                  className="text-[10px] font-mono text-center leading-tight line-clamp-2"
-                  style={{ color }}
-                >
+                <span className="text-[9px] font-mono text-center leading-tight line-clamp-2" style={{ color }}>
                   {item.name_ar}
                 </span>
               </div>
