@@ -51,7 +51,7 @@ export const ADMIN_ROUTES = {
   stories: `${ADMIN_BASE_PATH}/stories`,
   deliveredOrders: `${ADMIN_BASE_PATH}/delivered-orders`,
   giveawaysCoupons: `${ADMIN_BASE_PATH}/giveaways-coupons`,
-  gameMusic: `${ADMIN_BASE_PATH}/game-music`,
+  gamesSettings: `${ADMIN_BASE_PATH}/games-settings`,
   priceMatch: `${ADMIN_BASE_PATH}/price-match`,
   wishes: `${ADMIN_BASE_PATH}/wishes`,
   productBundles: `${ADMIN_BASE_PATH}/product-bundles`,

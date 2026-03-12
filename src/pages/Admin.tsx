@@ -1683,7 +1683,7 @@ const Admin = () => {
                 { icon: Sparkles, title: 'مجتمع ليفو', desc: 'تجار وعملاء', path: ADMIN_ROUTES.levoCommunity },
                 { icon: Users, title: 'المستخدمين', desc: 'إدارة', path: ADMIN_ROUTES.users },
                 { icon: ImageIcon, title: 'ستوريات', desc: 'فيديوهات', path: ADMIN_ROUTES.stories },
-                { icon: Music, title: 'موسيقى', desc: 'ألعاب', path: ADMIN_ROUTES.gameMusic },
+                { icon: Music, title: 'الألعاب', desc: 'إعدادات', path: ADMIN_ROUTES.gamesSettings },
                 { icon: BadgeDollarSign, title: 'مطابقة أسعار', desc: 'طلبات', path: ADMIN_ROUTES.priceMatch },
                 { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
               ].map((item, idx) => (
