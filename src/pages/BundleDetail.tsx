@@ -260,14 +260,18 @@ const BundleDetail = () => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
               const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
               const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
+              const productSlug = item.products?.slug || item.products?.id || item.product_id;
               return (
-                <motion.div
+                <Link
+                  to={`/product/${productSlug}`}
                   key={idx}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/20"
                 >
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border/20 hover:border-primary/30 transition-colors"
+                  >
                   {itemImage && (
                     <img src={itemImage} className="w-14 h-14 rounded-lg object-cover shrink-0" />
                   )}
