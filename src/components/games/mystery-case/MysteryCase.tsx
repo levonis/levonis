@@ -324,3 +324,5 @@ const RARITY_LABELS: Record<string, string> = {
   epic: "أسطوري",
   legendary: "خرافي",
 };
+
+export default MysteryCase;
