@@ -381,7 +381,7 @@ export default function ReelSpinner({
   );
 
   const onPointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
+    (e: ReactPointerEvent<HTMLDivElement>) => {
       if (!dragRef.current.active || modeRef.current !== "drag") return;
 
       const now = performance.now();
