@@ -19,6 +19,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   const { playClick, playSuccess, playVictory } = useGameSounds();
 
   const [spinning, setSpinning] = useState(false);
+  const [isRequestingSpinResult, setIsRequestingSpinResult] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [winResult, setWinResult] = useState<any>(null);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
