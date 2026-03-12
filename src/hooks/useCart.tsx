@@ -601,7 +601,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .insert([{
           user_id: user.id,
           bundle_id: bundleId,
-          quantity: 1,
+          quantity: quantity,
           sale_type: saleType,
         }]);
 
