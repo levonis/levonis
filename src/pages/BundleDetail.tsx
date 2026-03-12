@@ -325,59 +325,61 @@ const BundleDetail = () => {
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border/30" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <div className="container max-w-lg mx-auto px-3 py-3 flex items-center gap-3">
-          {/* Quantity selector */}
-          {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
-            <div className="flex items-center border border-border/40 rounded-lg overflow-hidden shrink-0">
-              <button
-                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                className="h-9 w-9 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="h-9 w-10 flex items-center justify-center text-sm font-bold text-foreground border-x border-border/40 bg-muted/20">
-                {quantity}
-              </span>
-              <button
-                onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
-                disabled={quantity >= maxQty}
-                className="h-9 w-9 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Price */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-1">
-              <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price * quantity)}</span>
-              <span className="text-[9px] text-muted-foreground">د.ع</span>
-            </div>
-            {quantity > 1 && (
-              <span className="text-[9px] text-muted-foreground">{formatPrice(bundle.bundle_price)} × {quantity}</span>
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[60] px-2 pb-1">
+        <div className="mx-auto max-w-lg rounded-2xl border border-border/40 bg-card/95 backdrop-blur-md shadow-lg">
+          <div className="px-3 py-3 flex items-center gap-3">
+            {/* Quantity selector */}
+            {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
+              <div className="flex items-center border border-border/40 rounded-lg overflow-hidden shrink-0">
+                <button
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  className="h-9 w-9 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="h-9 w-10 flex items-center justify-center text-sm font-bold text-foreground border-x border-border/40 bg-muted/20">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
+                  disabled={quantity >= maxQty}
+                  className="h-9 w-9 flex items-center justify-center text-muted-foreground hover:bg-muted/50 disabled:opacity-30"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
+
+            {/* Price */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-1">
+                <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price * quantity)}</span>
+                <span className="text-[9px] text-muted-foreground">د.ع</span>
+              </div>
+              {quantity > 1 && (
+                <span className="text-[9px] text-muted-foreground">{formatPrice(bundle.bundle_price)} × {quantity}</span>
+              )}
+            </div>
+
+            {/* Add to cart */}
+            <Button
+              onClick={handleAddToCart}
+              disabled={isAdding || bundle.isOutOfStock}
+              size="sm"
+              variant={bundle.isOutOfStock ? "secondary" : "default"}
+              className="h-10 text-xs gap-2 px-5"
+            >
+              {isAdding ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : bundle.isOutOfStock ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <ShoppingCart className="h-4 w-4" />
+              )}
+              {isAdding ? 'جارٍ...' : bundle.isOutOfStock ? 'انتهى' : 'أضف للسلة'}
+            </Button>
           </div>
-
-          {/* Add to cart */}
-          <Button
-            onClick={handleAddToCart}
-            disabled={isAdding || bundle.isOutOfStock}
-            size="sm"
-            variant={bundle.isOutOfStock ? "secondary" : "default"}
-            className="h-10 text-xs gap-2 px-5"
-          >
-            {isAdding ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : bundle.isOutOfStock ? (
-              <AlertTriangle className="h-4 w-4" />
-            ) : (
-              <ShoppingCart className="h-4 w-4" />
-            )}
-            {isAdding ? 'جارٍ...' : bundle.isOutOfStock ? 'انتهى' : 'أضف للسلة'}
-          </Button>
         </div>
       </div>
     </div>
