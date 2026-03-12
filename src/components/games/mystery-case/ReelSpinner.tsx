@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, useAnimation } from "framer-motion";
 
 export interface ReelItem {
@@ -17,7 +17,19 @@ interface Props {
 }
 
 const ITEM_WIDTH = 120;
-const VISIBLE_COUNT = 40; // items in the reel strip
+const GAP = 8;
+const CELL = ITEM_WIDTH + GAP;
+const REPEAT_COUNT = 20;
+const WIN_POSITION = REPEAT_COUNT * 3 + 5; // place winner deep in the strip
+
+const RARITY_WEIGHTS: Record<string, number> = {
+  common: 10,
+  rare: 5,
+  epic: 3,
+  legendary: 1,
+  mythic: 1,
+};
+
 const RARITY_COLORS: Record<string, string> = {
   common: "#9ca3af",
   rare: "#3b82f6",
@@ -34,47 +46,105 @@ const RARITY_GLOW: Record<string, string> = {
   mythic: "0 0 24px #ef444488, 0 0 48px #ef444444",
 };
 
+/** Build a weighted-shuffled pool from items */
+function buildShuffledPool(items: ReelItem[]): ReelItem[] {
+  if (items.length === 0) return [];
+
+  const pool: ReelItem[] = [];
+  items.forEach((item) => {
+    const weight = RARITY_WEIGHTS[item.rarity] || RARITY_WEIGHTS.common;
+    for (let i = 0; i < weight; i++) {
+      pool.push(item);
+    }
+  });
+
+  // Fisher-Yates shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
+
+/** Build long reel strip with shuffled distribution */
+function buildReelStrip(items: ReelItem[], winnerItem: ReelItem | null): ReelItem[] {
+  if (items.length === 0) return [];
+
+  const pool = buildShuffledPool(items);
+  if (pool.length === 0) return [];
+
+  const totalItems = Math.max(pool.length * REPEAT_COUNT, 80);
+  const strip: ReelItem[] = [];
+
+  for (let i = 0; i < totalItems; i++) {
+    strip.push(pool[i % pool.length]);
+  }
+
+  // Inject rare/epic items periodically for visual excitement
+  const rareItems = items.filter((it) => it.rarity === "rare" || it.rarity === "epic" || it.rarity === "legendary");
+  if (rareItems.length > 0) {
+    for (let i = 7; i < strip.length; i += Math.floor(6 + Math.random() * 5)) {
+      strip[i] = rareItems[Math.floor(Math.random() * rareItems.length)];
+    }
+  }
+
+  // Place winner at the designated stop position
+  if (winnerItem && WIN_POSITION < strip.length) {
+    strip[WIN_POSITION] = winnerItem;
+  }
+
+  return strip;
+}
+
 export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComplete, animationDuration = 5000 }: Props) {
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [reelItems, setReelItems] = useState<ReelItem[]>([]);
-  const [finalX, setFinalX] = useState(0);
+  const hasSpunRef = useRef(false);
 
-  // Build reel strip with items repeating, winner placed at a specific position
-  useEffect(() => {
-    if (items.length === 0) return;
-    const strip: ReelItem[] = [];
-    for (let i = 0; i < VISIBLE_COUNT; i++) {
-      strip.push(items[i % items.length]);
-    }
-    // Place the winner near the end
-    if (winnerIndex !== null && items[winnerIndex]) {
-      const winPos = VISIBLE_COUNT - 6; // stop position
-      strip[winPos] = items[winnerIndex];
-      setFinalX(winPos);
-    }
-    setReelItems(strip);
-  }, [items, winnerIndex]);
+  const winnerItem = winnerIndex !== null && items[winnerIndex] ? items[winnerIndex] : null;
+
+  // Build reel strip — only rebuild when items change or a new spin starts
+  const reelStrip = useMemo(() => {
+    return buildReelStrip(items, winnerItem);
+  }, [items, winnerIndex, spinning]);
 
   // Trigger spin animation
   useEffect(() => {
-    if (!spinning || reelItems.length === 0) return;
+    if (!spinning || reelStrip.length === 0) return;
+    if (hasSpunRef.current) return; // prevent double-trigger
+    hasSpunRef.current = true;
 
     const containerW = containerRef.current?.offsetWidth || 320;
     const centerOffset = containerW / 2 - ITEM_WIDTH / 2;
-    const targetX = -(finalX * ITEM_WIDTH - centerOffset);
+    const targetX = -(WIN_POSITION * CELL - centerOffset);
 
+    // Start from 0, animate to target
     controls.set({ x: 0 });
     controls.start({
       x: targetX,
       transition: {
         duration: animationDuration / 1000,
-        ease: [0.15, 0.85, 0.25, 1], // custom ease - fast start, slow stop
+        ease: [0.12, 0.8, 0.2, 1], // fast start, smooth slow stop
       },
     }).then(() => {
       onSpinComplete();
     });
-  }, [spinning, reelItems, finalX, animationDuration]);
+  }, [spinning, reelStrip.length]);
+
+  // Reset spin lock when spinning ends
+  useEffect(() => {
+    if (!spinning) {
+      hasSpunRef.current = false;
+    }
+  }, [spinning]);
+
+  if (reelStrip.length === 0) {
+    return (
+      <div className="h-36 flex items-center justify-center text-muted-foreground font-mono text-xs">
+        لا توجد جوائز حالياً
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full overflow-hidden" ref={containerRef}>
@@ -91,14 +161,14 @@ export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComple
       <div className="absolute inset-y-0 left-0 w-12 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
       <div className="absolute inset-y-0 right-0 w-12 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
 
-      {/* Reel strip */}
+      {/* Reel strip — NEVER cleared */}
       <div className="py-3">
         <motion.div
-          className="flex gap-2"
+          className="flex"
           animate={controls}
-          style={{ willChange: "transform" }}
+          style={{ willChange: "transform", gap: GAP }}
         >
-          {reelItems.map((item, i) => {
+          {reelStrip.map((item, i) => {
             const color = RARITY_COLORS[item.rarity] || RARITY_COLORS.common;
             const glow = RARITY_GLOW[item.rarity] || RARITY_GLOW.common;
             return (
@@ -111,7 +181,6 @@ export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComple
                   borderColor: color,
                   boxShadow: glow,
                   background: `linear-gradient(180deg, ${color}11, ${color}22)`,
-                  imageRendering: "pixelated",
                 }}
               >
                 {item.image_url ? (
