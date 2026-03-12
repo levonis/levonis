@@ -78,18 +78,20 @@ export default function CartUpsellOffers() {
 
       // Award tickets
       if (offer.gift_tickets > 0) {
-        await supabase.rpc('add_tickets_balance', {
+        await supabase.rpc('add_user_tickets', {
           p_user_id: user.id,
           p_amount: offer.gift_tickets,
+          p_source: 'cart_upsell_offer',
         });
       }
 
       // Award points
       if (offer.points_reward && offer.points_reward > 0) {
-        await supabase.rpc('add_points_balance', {
+        await supabase.rpc('admin_adjust_points', {
           p_user_id: user.id,
           p_amount: offer.points_reward,
-        });
+          p_reason: 'مكافأة شراء عرض إضافي',
+        } as any);
       }
 
       // Decrement stock
