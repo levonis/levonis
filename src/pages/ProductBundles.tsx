@@ -66,6 +66,7 @@ const ProductBundles = () => {
   const [addingBundleId, setAddingBundleId] = useState<string | null>(null);
   const [expandedBundleId, setExpandedBundleId] = useState<string | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<Record<string, number>>({});
+  const [bundleQuantities, setBundleQuantities] = useState<Record<string, number>>({});
 
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
