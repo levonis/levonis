@@ -701,6 +701,21 @@ export default function AdminProductOffers() {
                 </Select>
               </div>
 
+              {/* Show in Cart Toggle */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                <input
+                  type="checkbox"
+                  id="show-in-cart"
+                  checked={formData.show_in_cart}
+                  onChange={(e) => setFormData({ ...formData, show_in_cart: e.target.checked })}
+                  className="h-4 w-4 rounded border-border accent-primary"
+                />
+                <Label htmlFor="show-in-cart" className="text-xs font-medium cursor-pointer flex-1">
+                  <div className="font-bold">عرض في السلة</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">إظهار هذا العرض كاقتراح إضافي في صفحة السلة</div>
+                </Label>
+              </div>
+
               {/* Images */}
               <div className="space-y-2">
                 <Label className="text-xs font-medium">الصور</Label>
