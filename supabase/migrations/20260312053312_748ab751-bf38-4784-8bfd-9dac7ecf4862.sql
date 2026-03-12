@@ -1,0 +1,1 @@
+ALTER TABLE public.product_offers ADD COLUMN show_in_cart boolean NOT NULL DEFAULT false;

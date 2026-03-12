@@ -5414,6 +5414,7 @@ export type Database = {
           options: Json | null
           points_reward: number | null
           price: number
+          show_in_cart: boolean
           status: string
           stock_quantity: number | null
           title: string
@@ -5435,6 +5436,7 @@ export type Database = {
           options?: Json | null
           points_reward?: number | null
           price?: number
+          show_in_cart?: boolean
           status?: string
           stock_quantity?: number | null
           title: string
@@ -5456,6 +5458,7 @@ export type Database = {
           options?: Json | null
           points_reward?: number | null
           price?: number
+          show_in_cart?: boolean
           status?: string
           stock_quantity?: number | null
           title?: string
