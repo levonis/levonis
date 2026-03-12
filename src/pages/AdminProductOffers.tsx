@@ -101,6 +101,7 @@ export default function AdminProductOffers() {
     status: 'active' as 'draft' | 'active' | 'inactive',
     options: [] as ProductOption[],
     colors: [] as ProductColor[],
+    show_in_cart: false,
   });
 
   // Fetch product offers
