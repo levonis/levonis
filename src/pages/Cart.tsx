@@ -1562,6 +1562,9 @@ const Cart = () => {
                 });
               })()}
 
+              {/* Cart Upsell Offers */}
+              <CartUpsellOffers />
+
               {/* Cart Actions */}
               <div className="flex gap-2">
                 <Button

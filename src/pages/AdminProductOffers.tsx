@@ -60,6 +60,7 @@ interface ProductOffer {
   created_at: string;
   options: ProductOption[] | null;
   colors: ProductColor[] | null;
+  show_in_cart: boolean;
 }
 
 interface OfferPurchase {
