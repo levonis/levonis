@@ -34,7 +34,7 @@ interface Props {
 export default function RewardPopup({ open, onClose, reward }: Props) {
   if (!reward) return null;
   const color = RARITY_COLORS[reward.rarity] || RARITY_COLORS.common;
-  const isLegendary = reward.rarity === "legendary" || reward.rarity === "epic";
+  const isLegendary = reward.rarity === "legendary" || reward.rarity === "epic" || reward.rarity === "mythic";
 
   return (
     <AnimatePresence>

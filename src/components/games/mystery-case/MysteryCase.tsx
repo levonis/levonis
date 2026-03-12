@@ -162,7 +162,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     if (winResult) {
       setTimeout(() => {
         setShowReward(true);
-        if (winResult.rarity === "legendary" || winResult.rarity === "epic") {
+        if (winResult.rarity === "legendary" || winResult.rarity === "epic" || winResult.rarity === "mythic") {
           playVictory();
         } else {
           playSuccess();
