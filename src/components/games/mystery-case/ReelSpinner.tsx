@@ -23,6 +23,7 @@ const RARITY_COLORS: Record<string, string> = {
   rare: "#3b82f6",
   epic: "#a855f7",
   legendary: "#f59e0b",
+  mythic: "#ef4444",
 };
 
 const RARITY_GLOW: Record<string, string> = {
@@ -30,6 +31,7 @@ const RARITY_GLOW: Record<string, string> = {
   rare: "0 0 12px #3b82f688",
   epic: "0 0 16px #a855f788",
   legendary: "0 0 20px #f59e0b88, 0 0 40px #f59e0b44",
+  mythic: "0 0 24px #ef444488, 0 0 48px #ef444444",
 };
 
 export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComplete, animationDuration = 5000 }: Props) {

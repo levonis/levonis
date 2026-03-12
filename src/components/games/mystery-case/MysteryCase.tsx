@@ -162,7 +162,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     if (winResult) {
       setTimeout(() => {
         setShowReward(true);
-        if (winResult.rarity === "legendary" || winResult.rarity === "epic") {
+        if (winResult.rarity === "legendary" || winResult.rarity === "epic" || winResult.rarity === "mythic") {
           playVictory();
         } else {
           playSuccess();
@@ -316,6 +316,7 @@ const RARITY_COLORS: Record<string, string> = {
   rare: "#3b82f6",
   epic: "#a855f7",
   legendary: "#f59e0b",
+  mythic: "#ef4444",
 };
 
 const RARITY_LABELS: Record<string, string> = {
@@ -323,6 +324,7 @@ const RARITY_LABELS: Record<string, string> = {
   rare: "نادر",
   epic: "أسطوري",
   legendary: "خرافي",
+  mythic: "أسطورة",
 };
 
 export default MysteryCase;
