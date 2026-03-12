@@ -120,6 +120,7 @@ const AdminProductBundles = lazy(() => import("./pages/AdminProductBundles"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
+const AdminMysteryCase = lazy(() => import("./pages/AdminMysteryCase"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
