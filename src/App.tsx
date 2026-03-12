@@ -123,6 +123,7 @@ const MiniGames = lazy(() => import("./pages/MiniGames"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
+const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
@@ -154,6 +155,7 @@ function AppContent() {
             <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/bundles" element={<ProductBundles />} />
+            <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/user-info" element={<UserInfo />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
