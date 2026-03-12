@@ -123,6 +123,7 @@ const MiniGames = lazy(() => import("./pages/MiniGames"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
+const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
