@@ -592,7 +592,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Check if this bundle already exists in the cart
       const existingBundle = items.find(item => item.bundle_id === bundleId);
       if (existingBundle) {
-        await updateQuantity(existingBundle.id, existingBundle.quantity + 1);
+        await updateQuantity(existingBundle.id, existingBundle.quantity + quantity);
         return true;
       }
 
