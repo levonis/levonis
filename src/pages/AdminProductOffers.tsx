@@ -60,6 +60,7 @@ interface ProductOffer {
   created_at: string;
   options: ProductOption[] | null;
   colors: ProductColor[] | null;
+  show_in_cart: boolean;
 }
 
 interface OfferPurchase {
@@ -100,6 +101,7 @@ export default function AdminProductOffers() {
     status: 'active' as 'draft' | 'active' | 'inactive',
     options: [] as ProductOption[],
     colors: [] as ProductColor[],
+    show_in_cart: false,
   });
 
   // Fetch product offers
@@ -179,7 +181,7 @@ export default function AdminProductOffers() {
     setFormData({
       title_ar: '', description_ar: '', images: [], price: '', cost_price: '',
       gift_tickets: '1', points_reward: '0', stock_quantity: '', status: 'active',
-      options: [], colors: [],
+      options: [], colors: [], show_in_cart: false,
     });
     setEditingOffer(null);
   };
@@ -198,6 +200,7 @@ export default function AdminProductOffers() {
       status: offer.status,
       options: (offer.options as ProductOption[]) || [],
       colors: (offer.colors as ProductColor[]) || [],
+      show_in_cart: offer.show_in_cart || false,
     });
     setIsDialogOpen(true);
   };
@@ -244,8 +247,9 @@ export default function AdminProductOffers() {
         status: data.status,
         options: JSON.parse(JSON.stringify(data.options)),
         colors: JSON.parse(JSON.stringify(data.colors)),
+        show_in_cart: data.show_in_cart,
       };
-      const { data: result, error } = await supabase.from('product_offers').insert([payload]).select().single();
+      const { data: result, error } = await (supabase as any).from('product_offers').insert([payload]).select().single();
       if (error) throw error;
       return result;
     },
@@ -273,8 +277,9 @@ export default function AdminProductOffers() {
         status: data.status,
         options: JSON.parse(JSON.stringify(data.options)),
         colors: JSON.parse(JSON.stringify(data.colors)),
+        show_in_cart: data.show_in_cart,
       };
-      const { error } = await supabase.from('product_offers').update(payload).eq('id', id);
+      const { error } = await (supabase as any).from('product_offers').update(payload).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -571,7 +576,12 @@ export default function AdminProductOffers() {
                       <ShoppingBag className="h-3 w-3" />
                       {offer.total_sold || 0}
                     </span>
-                    <span>{format(new Date(offer.created_at), 'dd/MM', { locale: ar })}</span>
+                    <div className="flex items-center gap-1.5">
+                      {(offer as any).show_in_cart && (
+                        <span className="bg-primary/10 text-primary px-1 py-0.5 rounded text-[8px] font-bold">سلة</span>
+                      )}
+                      <span>{format(new Date(offer.created_at), 'dd/MM', { locale: ar })}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -694,6 +704,21 @@ export default function AdminProductOffers() {
                     <SelectItem value="inactive">متوقف</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Show in Cart Toggle */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                <input
+                  type="checkbox"
+                  id="show-in-cart"
+                  checked={formData.show_in_cart}
+                  onChange={(e) => setFormData({ ...formData, show_in_cart: e.target.checked })}
+                  className="h-4 w-4 rounded border-border accent-primary"
+                />
+                <Label htmlFor="show-in-cart" className="text-xs font-medium cursor-pointer flex-1">
+                  <div className="font-bold">عرض في السلة</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">إظهار هذا العرض كاقتراح إضافي في صفحة السلة</div>
+                </Label>
               </div>
 
               {/* Images */}
