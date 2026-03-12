@@ -247,8 +247,9 @@ export default function AdminProductOffers() {
         status: data.status,
         options: JSON.parse(JSON.stringify(data.options)),
         colors: JSON.parse(JSON.stringify(data.colors)),
+        show_in_cart: data.show_in_cart,
       };
-      const { data: result, error } = await supabase.from('product_offers').insert([payload]).select().single();
+      const { data: result, error } = await (supabase as any).from('product_offers').insert([payload]).select().single();
       if (error) throw error;
       return result;
     },
