@@ -5,11 +5,25 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Package, ShoppingCart, ArrowRight, AlertTriangle, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Loader2, Package, ShoppingCart, ArrowRight, AlertTriangle, Check, ChevronDown, ChevronUp, Sparkles, Plus, Minus } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function getBundleMaxQuantity(bundleItems: any[], isDirect: boolean): number {
+  if (!isDirect) return 99; // preorder has no stock limit
+  if (!bundleItems || bundleItems.length === 0) return 0;
+  
+  let maxQty = Infinity;
+  for (const item of bundleItems) {
+    const stock = getItemStock(item.products, item.selected_color, item.selected_option_id);
+    const perBundle = item.quantity || 1;
+    const possible = Math.floor(stock / perBundle);
+    maxQty = Math.min(maxQty, possible);
+  }
+  return maxQty === Infinity ? 0 : maxQty;
+}
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
