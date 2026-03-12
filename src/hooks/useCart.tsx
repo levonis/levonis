@@ -573,7 +573,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addBundleToCart = async (bundleId: string, saleType: 'direct' | 'preorder'): Promise<boolean> => {
+  const addBundleToCart = async (bundleId: string, saleType: 'direct' | 'preorder', quantity: number = 1): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return false;
