@@ -125,6 +125,7 @@ const ProductBundles = () => {
     if (bundle.isOutOfStock) { toast.error('هذا العرض انتهى - المخزون غير كافٍ'); return; }
 
     const bundleSaleType = bundle.sale_type === 'direct' ? 'direct' : 'preorder';
+    const qty = bundleQuantities[bundle.id] || 1;
 
     setAddingBundleId(bundle.id);
     try {
@@ -133,9 +134,10 @@ const ProductBundles = () => {
         return;
       }
 
-      const success = await addBundleToCart(bundle.id, bundleSaleType as 'direct' | 'preorder');
+      const success = await addBundleToCart(bundle.id, bundleSaleType as 'direct' | 'preorder', qty);
       if (success) {
         toast.success('تم إضافة الباقة للسلة بنجاح! 🎉');
+        setBundleQuantities(prev => ({ ...prev, [bundle.id]: 1 }));
       }
     } catch (error) {
       console.error('Error adding bundle to cart:', error);
