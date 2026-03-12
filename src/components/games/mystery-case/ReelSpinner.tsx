@@ -364,7 +364,7 @@ export default function ReelSpinner({
   }, [stopRaf]);
 
   const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
+    (e: ReactPointerEvent<HTMLDivElement>) => {
       if (spinning || segmentWidthRef.current <= 0) return;
 
       modeRef.current = "drag";
