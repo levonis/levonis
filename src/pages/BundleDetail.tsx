@@ -284,6 +284,7 @@ const BundleDetail = () => {
                   </div>
                   <ChevronLeft className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                 </motion.div>
+                </Link>
               );
             })}
           </div>
