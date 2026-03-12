@@ -4146,6 +4146,148 @@ export type Database = {
           },
         ]
       }
+      mystery_case_rewards: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          display_only: boolean
+          display_order: number | null
+          drop_chance: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name_ar: string
+          product_id: string | null
+          rarity: string
+          reward_type: string
+          ticket_reward_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          display_only?: boolean
+          display_order?: number | null
+          drop_chance?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name_ar: string
+          product_id?: string | null
+          rarity?: string
+          reward_type?: string
+          ticket_reward_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          display_only?: boolean
+          display_order?: number | null
+          drop_chance?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name_ar?: string
+          product_id?: string | null
+          rarity?: string
+          reward_type?: string
+          ticket_reward_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mystery_case_rewards_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mystery_case_settings: {
+        Row: {
+          animation_duration_ms: number
+          created_at: string
+          daily_free_spin: boolean
+          game_enabled: boolean
+          id: string
+          pixel_theme: boolean
+          reel_speed: number
+          spin_cooldown_seconds: number
+          spin_sound_enabled: boolean
+          tickets_per_spin: number
+          updated_at: string
+        }
+        Insert: {
+          animation_duration_ms?: number
+          created_at?: string
+          daily_free_spin?: boolean
+          game_enabled?: boolean
+          id?: string
+          pixel_theme?: boolean
+          reel_speed?: number
+          spin_cooldown_seconds?: number
+          spin_sound_enabled?: boolean
+          tickets_per_spin?: number
+          updated_at?: string
+        }
+        Update: {
+          animation_duration_ms?: number
+          created_at?: string
+          daily_free_spin?: boolean
+          game_enabled?: boolean
+          id?: string
+          pixel_theme?: boolean
+          reel_speed?: number
+          spin_cooldown_seconds?: number
+          spin_sound_enabled?: boolean
+          tickets_per_spin?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mystery_case_spins: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          id: string
+          is_claimed: boolean
+          reward_id: string | null
+          reward_snapshot: Json
+          tickets_spent: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          is_claimed?: boolean
+          reward_id?: string | null
+          reward_snapshot?: Json
+          tickets_spent?: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          is_claimed?: boolean
+          reward_id?: string | null
+          reward_snapshot?: Json
+          tickets_spent?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mystery_case_spins_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "mystery_case_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           background_color: string | null
