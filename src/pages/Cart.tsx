@@ -101,7 +101,53 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch all user addresses for direct sale
+  // Fetch max quantities for bundle items in cart
+  const bundleIds = items.filter(i => i.bundle_id).map(i => i.bundle_id!);
+  const { data: bundleMaxQtyMap } = useQuery({
+    queryKey: ['bundle-max-qty', bundleIds.join(',')],
+    queryFn: async () => {
+      if (bundleIds.length === 0) return {} as Record<string, number>;
+      const { data: bundleItems } = await supabase
+        .from('bundle_items')
+        .select('bundle_id, quantity, selected_color, selected_option_id, products:product_id(colors, direct_stock)')
+        .in('bundle_id', bundleIds);
+      if (!bundleItems) return {} as Record<string, number>;
+
+      const map: Record<string, number> = {};
+      for (const bid of bundleIds) {
+        const bItems = bundleItems.filter((bi: any) => bi.bundle_id === bid);
+        let maxQty = Infinity;
+        for (const bi of bItems) {
+          const product = (bi as any).products;
+          const colors = Array.isArray(product?.colors) ? product.colors : [];
+          let stock = 0;
+          if (colors.length === 0) {
+            stock = product?.direct_stock != null ? Number(product.direct_stock) : 0;
+          } else {
+            const colorName = (bi as any).selected_color;
+            const optId = (bi as any).selected_option_id;
+            const color = colorName ? colors.find((c: any) => (c.color || c.name) === colorName) : null;
+            if (color) {
+              const stocks = color.option_stocks;
+              if (stocks && typeof stocks === 'object') {
+                if (optId && stocks[optId] != null) stock = Math.max(0, Number(stocks[optId]));
+                else stock = Object.values(stocks).reduce<number>((s: number, v: any) => s + Math.max(0, Number(v)), 0);
+              } else if (color.stock_quantity != null) {
+                stock = Math.max(0, Number(color.stock_quantity));
+              }
+            }
+          }
+          const perBundle = (bi as any).quantity || 1;
+          maxQty = Math.min(maxQty, Math.floor(stock / perBundle));
+        }
+        map[bid] = maxQty === Infinity ? 0 : maxQty;
+      }
+      return map;
+    },
+    enabled: bundleIds.length > 0,
+    staleTime: 30_000,
+  });
+
   const { data: userAddresses } = useQuery({
     queryKey: ['user-addresses', user?.id],
     queryFn: async () => {
