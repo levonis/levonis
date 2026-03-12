@@ -185,7 +185,8 @@ const ProductBundles = () => {
               const activeImage = getActiveImage(bundle);
               const allImages = bundle.allImages || [];
               const isExpanded = expandedBundleId === bundle.id;
-
+              const maxQty = bundle.maxQuantity || 0;
+              const currentQty = bundleQuantities[bundle.id] || 1;
               return (
                 <motion.div
                   key={bundle.id}
