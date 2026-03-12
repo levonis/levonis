@@ -10,6 +10,7 @@ import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource } from "@/components/games/GamesData";
 
 const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
+const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCase"));
 
 const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
