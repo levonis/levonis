@@ -277,7 +277,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
               </>
             )}
           </Button>
-          {ticketCount < ticketsNeeded && !spinning && (
+          {ticketCount < ticketsNeeded && !spinning && !isRequestingSpinResult && (
             <p className="text-xs text-destructive font-mono mt-2">
               تحتاج {ticketsNeeded - ticketCount} تذكرة إضافية
             </p>
