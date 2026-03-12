@@ -325,7 +325,8 @@ const BundleDetail = () => {
       </div>
 
       {/* Fixed Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border/30" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[60] px-2 pb-1">
+        <div className="mx-auto max-w-lg rounded-2xl border border-border/40 bg-card/95 backdrop-blur-md shadow-lg">
         <div className="container max-w-lg mx-auto px-3 py-3 flex items-center gap-3">
           {/* Quantity selector */}
           {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
