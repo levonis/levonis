@@ -1,4 +1,11 @@
-import { useEffect, useRef, useMemo, useCallback, type PointerEvent as RPointer } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 export interface ReelItem {
   id: string;
@@ -16,19 +23,22 @@ interface Props {
   animationDuration?: number;
 }
 
-/* ─── constants ─── */
 const ITEM_W = 100;
 const ITEM_H = 100;
 const GAP = 16;
 const CELL = ITEM_W + GAP;
-const BASE_COUNT = 24;          // items per segment
-const COPIES = 5;               // segments rendered
-const IDLE_SPEED = 0.035;       // px/ms
-const FRICTION = 0.93;
-const WIN_SLOT = 10;            // index inside middle segment where winner lands
+
+const SEGMENT_SIZE = 96; // 80-120 target
+const SEGMENT_COPIES = 5;
+const IDLE_SPEED_PX_MS = 0.03;
+const INERTIA_FRICTION = 0.94;
 
 const RARITY_WEIGHTS: Record<string, number> = {
-  common: 10, rare: 6, epic: 3, legendary: 2, mythic: 1,
+  common: 12,
+  rare: 7,
+  epic: 4,
+  legendary: 2,
+  mythic: 1,
 };
 
 const RARITY_COLORS: Record<string, string> = {
@@ -40,278 +50,367 @@ const RARITY_COLORS: Record<string, string> = {
 };
 
 const RARITY_GLOW: Record<string, string> = {
-  common: "0 0 6px hsl(215 14% 60%/0.25)",
-  rare: "0 0 10px hsl(217 91% 60%/0.35)",
-  epic: "0 0 14px hsl(271 91% 65%/0.38)",
-  legendary: "0 0 18px hsl(38 92% 50%/0.42)",
-  mythic: "0 0 22px hsl(0 84% 60%/0.45)",
+  common: "0 0 6px hsl(215 14% 60% / 0.25)",
+  rare: "0 0 10px hsl(217 91% 60% / 0.35)",
+  epic: "0 0 14px hsl(271 91% 65% / 0.38)",
+  legendary: "0 0 18px hsl(38 92% 50% / 0.42)",
+  mythic: "0 0 22px hsl(0 84% 60% / 0.45)",
 };
 
-/* ─── helpers ─── */
-function shuffle<T>(a: T[]): T[] {
-  const b = [...a];
-  for (let i = b.length - 1; i > 0; i--) {
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [b[i], b[j]] = [b[j], b[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return b;
+  return a;
 }
 
-/** Build a single segment of BASE_COUNT items from all visual items */
-function buildSegment(items: ReelItem[]): ReelItem[] {
-  if (items.length === 0) return [];
-  const pool: ReelItem[] = [];
-  items.forEach(it => {
-    const w = RARITY_WEIGHTS[it.rarity] ?? 4;
-    for (let k = 0; k < w; k++) pool.push(it);
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function buildBaseStrip(items: ReelItem[], winner: ReelItem | null): { strip: ReelItem[]; stopIndex: number } {
+  if (items.length === 0) return { strip: [], stopIndex: 0 };
+
+  // Include all active rewards visually (including 0% drop chance)
+  const guaranteed = shuffle(items);
+  const weighted: ReelItem[] = [];
+
+  items.forEach((item) => {
+    const weight = RARITY_WEIGHTS[item.rarity] ?? 4;
+    for (let i = 0; i < weight; i++) weighted.push(item);
   });
-  const seg: ReelItem[] = [];
-  while (seg.length < BASE_COUNT) {
-    const shuffled = shuffle(pool);
-    for (const it of shuffled) {
-      seg.push(it);
-      if (seg.length >= BASE_COUNT) break;
+
+  const pool = shuffle([...guaranteed, ...weighted]);
+  const strip: ReelItem[] = [];
+
+  while (strip.length < SEGMENT_SIZE) {
+    for (const item of pool) {
+      strip.push(item);
+      if (strip.length >= SEGMENT_SIZE) break;
     }
   }
-  return seg;
+
+  // Visual bait: keep higher rarity visible more frequently in strip
+  const bait = items.filter((it) => ["rare", "epic", "legendary", "mythic"].includes(it.rarity));
+  if (bait.length > 0) {
+    for (let i = 7; i < strip.length; ) {
+      strip[i] = bait[Math.floor(Math.random() * bait.length)];
+      i += 7 + Math.floor(Math.random() * 5);
+    }
+  }
+
+  const stopIndex = Math.max(10, strip.length - 14);
+  if (winner && stopIndex < strip.length) {
+    strip[stopIndex] = winner;
+  }
+
+  return { strip, stopIndex };
 }
 
-export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComplete, animationDuration = 4000 }: Props) {
+export default function ReelSpinner({
+  items,
+  winnerIndex,
+  spinning,
+  onSpinComplete,
+  animationDuration = 4000,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef(0);
-  const vxRef = useRef(0);          // virtualX position
-  const modeRef = useRef<"idle" | "drag" | "inertia" | "spin">("idle");
-  const velRef = useRef(0);
-  const dragRef = useRef({ active: false, lastX: 0, lastT: 0 });
-  const segWidthRef = useRef(0);    // width of one segment in px
-  const spinDoneRef = useRef(false);
+  const rafRef = useRef<number>(0);
+
+  const rawXRef = useRef(0);
+  const velocityRef = useRef(0);
+  const segmentWidthRef = useRef(0);
+  const stopIndexRef = useRef(0);
+  const initializedRef = useRef(false);
+
+  const modeRef = useRef<"none" | "idle" | "drag" | "inertia" | "spin">("none");
+  const dragRef = useRef({ active: false, lastX: 0, lastTime: 0 });
+
+  const [baseStrip, setBaseStrip] = useState<ReelItem[]>([]);
 
   const winner = winnerIndex !== null && items[winnerIndex] ? items[winnerIndex] : null;
 
-  /* ─── Build the full rendered strip (COPIES segments) ─── */
-  const strip = useMemo(() => {
-    if (items.length === 0) return [];
-    const seg = buildSegment(items);
-    const full: ReelItem[] = [];
-    for (let c = 0; c < COPIES; c++) full.push(...seg);
-    return full;
-  }, [items]);
+  const renderStrip = useMemo(() => {
+    if (baseStrip.length === 0) return [] as ReelItem[];
+    const repeated: ReelItem[] = [];
+    for (let i = 0; i < SEGMENT_COPIES; i++) repeated.push(...baseStrip);
+    return repeated;
+  }, [baseStrip]);
 
-  /* ─── Segment width ─── */
-  useEffect(() => {
-    const sw = BASE_COUNT * CELL;
-    segWidthRef.current = sw;
-    // Start at middle segment
-    if (vxRef.current === 0) {
-      vxRef.current = -(sw * 2); // start at segment index 2 (middle of 5)
+  const stopRaf = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
     }
-  }, [strip]);
-
-  /* ─── Apply transform + wrap ─── */
-  const apply = useCallback(() => {
-    const node = stripRef.current;
-    const sw = segWidthRef.current;
-    if (!node || sw <= 0) return;
-
-    // Wrap: keep vx within segments 1-3 (out of 0-4) so we never see edges
-    while (vxRef.current > -(sw * 1)) vxRef.current -= sw;
-    while (vxRef.current < -(sw * 3)) vxRef.current += sw;
-
-    node.style.transform = `translate3d(${vxRef.current}px, 0, 0)`;
   }, []);
 
-  /* ─── Idle loop ─── */
+  const normalizeDisplayX = useCallback((rawX: number) => {
+    const sw = segmentWidthRef.current;
+    if (sw <= 0) return rawX;
+
+    // Keep display in the center window (segments 2-3) so edges are never visible.
+    const min = -(sw * 3);
+    const max = -(sw * 2);
+
+    let x = rawX;
+    while (x < min) x += sw;
+    while (x >= max) x -= sw;
+
+    return x;
+  }, []);
+
+  const applyTransform = useCallback(() => {
+    const node = stripRef.current;
+    if (!node) return;
+
+    const displayX = normalizeDisplayX(rawXRef.current);
+    node.style.transform = `translate3d(${displayX}px, 0, 0)`;
+  }, [normalizeDisplayX]);
+
   const startIdle = useCallback(() => {
+    if (spinning || segmentWidthRef.current <= 0 || baseStrip.length === 0) return;
+
     modeRef.current = "idle";
-    cancelAnimationFrame(rafRef.current);
-    let prev = performance.now();
+    stopRaf();
+
+    let last = performance.now();
+
     const tick = (now: number) => {
       if (modeRef.current !== "idle") return;
-      const dt = now - prev;
-      prev = now;
-      vxRef.current -= IDLE_SPEED * dt; // scroll left
-      apply();
+      const dt = now - last;
+      last = now;
+
+      rawXRef.current -= IDLE_SPEED_PX_MS * dt;
+      applyTransform();
+
       rafRef.current = requestAnimationFrame(tick);
     };
-    rafRef.current = requestAnimationFrame(tick);
-  }, [apply]);
 
-  /* ─── Inertia after drag ─── */
+    rafRef.current = requestAnimationFrame(tick);
+  }, [applyTransform, baseStrip.length, spinning, stopRaf]);
+
   const startInertia = useCallback(() => {
     modeRef.current = "inertia";
-    cancelAnimationFrame(rafRef.current);
-    let v = velRef.current * 16;
-    let prev = performance.now();
+    stopRaf();
+
+    let velocity = velocityRef.current * 16;
+    let last = performance.now();
+
     const tick = (now: number) => {
       if (modeRef.current !== "inertia") return;
-      const dtScale = (now - prev) / 16.67;
-      prev = now;
-      vxRef.current += v * dtScale;
-      apply();
-      v *= FRICTION;
-      if (Math.abs(v) < 0.15) {
+
+      const dtScale = (now - last) / 16.67;
+      last = now;
+
+      rawXRef.current += velocity * dtScale;
+      applyTransform();
+
+      velocity *= INERTIA_FRICTION;
+      if (Math.abs(velocity) < 0.1) {
+        velocityRef.current = 0;
+        modeRef.current = "none";
         startIdle();
         return;
       }
+
       rafRef.current = requestAnimationFrame(tick);
     };
-    rafRef.current = requestAnimationFrame(tick);
-  }, [apply, startIdle]);
 
-  /* ─── Start idle on mount (non-spinning) ─── */
+    rafRef.current = requestAnimationFrame(tick);
+  }, [applyTransform, startIdle, stopRaf]);
+
+  const startSpin = useCallback(
+    (targetRawX: number, durationMs: number) => {
+      modeRef.current = "spin";
+      stopRaf();
+
+      const phase1 = 500;
+      const phase2 = 2000;
+      const phase3 = Math.max(1000, durationMs - (phase1 + phase2));
+
+      const startX = rawXRef.current;
+      const totalDistance = Math.max(1, Math.abs(targetRawX - startX));
+
+      const t1 = phase1 / 1000;
+      const t2 = phase2 / 1000;
+      const t3 = phase3 / 1000;
+      const vmax = totalDistance / (0.5 * t1 + t2 + 0.5 * t3);
+
+      let elapsed = 0;
+      let last = performance.now();
+
+      const tick = (now: number) => {
+        if (modeRef.current !== "spin") return;
+
+        const dtMs = now - last;
+        last = now;
+        elapsed += dtMs;
+
+        let speed = 0;
+        if (elapsed <= phase1) {
+          speed = vmax * (elapsed / phase1);
+        } else if (elapsed <= phase1 + phase2) {
+          speed = vmax;
+        } else {
+          const p = clamp((elapsed - phase1 - phase2) / phase3, 0, 1);
+          speed = vmax * (1 - p * p * p);
+        }
+
+        rawXRef.current -= speed * (dtMs / 1000);
+
+        const reachedTarget = rawXRef.current <= targetRawX || elapsed >= phase1 + phase2 + phase3;
+        if (reachedTarget) {
+          rawXRef.current = targetRawX;
+          applyTransform();
+          modeRef.current = "none";
+          onSpinComplete();
+          return;
+        }
+
+        applyTransform();
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
+    },
+    [applyTransform, onSpinComplete, stopRaf]
+  );
+
+  // Build non-spin strip from visual items (includes 0% rewards)
   useEffect(() => {
-    if (strip.length === 0 || spinning) return;
-    if (modeRef.current === "spin") return;
+    if (items.length === 0 || spinning) return;
+
+    const { strip, stopIndex } = buildBaseStrip(items, null);
+    stopIndexRef.current = stopIndex;
+    setBaseStrip(strip);
+  }, [items, spinning]);
+
+  // Update sizing and initial centered position
+  useEffect(() => {
+    if (baseStrip.length === 0) return;
+
+    const sw = baseStrip.length * CELL;
+    segmentWidthRef.current = sw;
+
+    if (!initializedRef.current) {
+      rawXRef.current = -(sw * 2.4); // start around middle segment
+      initializedRef.current = true;
+    }
+
+    requestAnimationFrame(applyTransform);
+  }, [applyTransform, baseStrip]);
+
+  // Idle animation when not spinning
+  useEffect(() => {
+    if (spinning || baseStrip.length === 0) return;
+    if (modeRef.current === "drag" || modeRef.current === "spin" || modeRef.current === "inertia") return;
+
     startIdle();
+
     return () => {
       if (modeRef.current === "idle") {
-        cancelAnimationFrame(rafRef.current);
+        stopRaf();
+        modeRef.current = "none";
       }
     };
-  }, [strip.length, spinning, startIdle]);
+  }, [baseStrip.length, spinning, startIdle, stopRaf]);
 
-  /* ─── SPIN ─── */
+  // Spin flow
   useEffect(() => {
-    if (!spinning || !winner || strip.length === 0) return;
-    spinDoneRef.current = false;
+    if (!spinning || !winner || items.length === 0) return;
 
-    cancelAnimationFrame(rafRef.current);
+    stopRaf();
     modeRef.current = "spin";
 
-    // Insert winner at WIN_SLOT of segment index 2 (middle)
-    const winGlobalIdx = 2 * BASE_COUNT + WIN_SLOT;
-    if (winGlobalIdx < strip.length) {
-      strip[winGlobalIdx] = winner;
-    }
+    const { strip, stopIndex } = buildBaseStrip(items, winner);
+    stopIndexRef.current = stopIndex;
+    setBaseStrip(strip);
 
-    // Force re-render the DOM item
-    const node = stripRef.current;
-    if (node) {
-      const child = node.children[winGlobalIdx] as HTMLElement | undefined;
-      if (child) {
-        // Just ensure it's updated – React handles it via key, but we placed it directly
-      }
-    }
+    requestAnimationFrame(() => {
+      const sw = strip.length * CELL;
+      if (sw <= 0) return;
 
-    const containerW = containerRef.current?.offsetWidth || 320;
-    const centerOffset = containerW / 2 - ITEM_W / 2;
-    const targetX = -(winGlobalIdx * CELL) + centerOffset;
-
-    // We need to go left (negative direction) for a certain travel distance
-    // Ensure we travel at least 2 full segments for visual effect
-    const sw = segWidthRef.current;
-    const currentX = vxRef.current;
-    let travelTarget = targetX;
-
-    // Make sure we travel far enough (at least 2 * sw in negative direction from current)
-    while (travelTarget > currentX - sw * 2) {
-      travelTarget -= sw;
-    }
-
-    // Animation phases
-    const dur = Math.max(3500, Math.min(animationDuration, 5000));
-    const p1 = 500;
-    const p2 = dur * 0.45;
-    const p3 = dur - p1 - p2;
-    const totalDist = Math.abs(travelTarget - currentX);
-    const t1 = p1 / 1000;
-    const t2 = p2 / 1000;
-    const t3 = p3 / 1000;
-    const vmax = totalDist / (0.5 * t1 + t2 + 0.5 * t3);
-
-    const startX = currentX;
-    let elapsed = 0;
-    let prev = performance.now();
-
-    const tick = (now: number) => {
-      if (modeRef.current !== "spin" || spinDoneRef.current) return;
-      const dtMs = now - prev;
-      prev = now;
-      elapsed += dtMs;
-
-      let speed: number;
-      if (elapsed <= p1) {
-        speed = vmax * (elapsed / p1);
-      } else if (elapsed <= p1 + p2) {
-        speed = vmax;
-      } else {
-        const p = Math.min(1, (elapsed - p1 - p2) / p3);
-        // Ease-out cubic for smooth deceleration
-        speed = vmax * (1 - p * p * p);
+      segmentWidthRef.current = sw;
+      if (!initializedRef.current) {
+        rawXRef.current = -(sw * 2.4);
+        initializedRef.current = true;
       }
 
-      vxRef.current -= speed * (dtMs / 1000);
+      const containerWidth = containerRef.current?.offsetWidth || 320;
+      const centerOffset = containerWidth / 2 - ITEM_W / 2;
 
-      // Check if reached target
-      if (vxRef.current <= travelTarget || elapsed >= dur) {
-        vxRef.current = targetX; // Snap to exact position (unwrapped)
-        // Don't wrap here - we want exact alignment
-        if (stripRef.current) {
-          stripRef.current.style.transform = `translate3d(${targetX}px, 0, 0)`;
-        }
-        modeRef.current = "idle";
-        spinDoneRef.current = true;
-        onSpinComplete();
-        return;
+      // Winner slot in center copy (copy index 2)
+      const winnerGlobalIndex = strip.length * 2 + stopIndexRef.current;
+      const targetDisplayX = -(winnerGlobalIndex * CELL - centerOffset);
+
+      // Choose equivalent rawX that guarantees long travel
+      const minTravel = sw * 2.2;
+      let targetRawX = targetDisplayX;
+      while (targetRawX > rawXRef.current - minTravel) {
+        targetRawX -= sw;
       }
 
-      // During spin, don't wrap - let it travel the full distance
-      if (stripRef.current) {
-        stripRef.current.style.transform = `translate3d(${vxRef.current}px, 0, 0)`;
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
+      const duration = clamp(animationDuration, 3500, 5000);
+      startSpin(targetRawX, duration);
+    });
+  }, [animationDuration, items, spinning, startSpin, stopRaf, winner]);
 
-    rafRef.current = requestAnimationFrame(tick);
-  }, [spinning, winner]);
-
-  /* ─── Reset vx after spin completes so idle wrap works again ─── */
   useEffect(() => {
-    if (!spinning && spinDoneRef.current) {
-      // Normalize vx back into wrappable range
-      const sw = segWidthRef.current;
-      if (sw > 0) {
-        while (vxRef.current > -(sw * 1)) vxRef.current -= sw;
-        while (vxRef.current < -(sw * 3)) vxRef.current += sw;
-      }
-      spinDoneRef.current = false;
-    }
-  }, [spinning]);
+    return () => stopRaf();
+  }, [stopRaf]);
 
-  /* ─── Cleanup ─── */
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+  const onPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (spinning || segmentWidthRef.current <= 0) return;
 
-  /* ─── Drag handlers ─── */
-  const onDown = useCallback((e: RPointer<HTMLDivElement>) => {
-    if (spinning) return;
-    modeRef.current = "drag";
-    cancelAnimationFrame(rafRef.current);
-    dragRef.current = { active: true, lastX: e.clientX, lastT: performance.now() };
-    velRef.current = 0;
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  }, [spinning]);
+      modeRef.current = "drag";
+      stopRaf();
 
-  const onMove = useCallback((e: RPointer<HTMLDivElement>) => {
-    if (!dragRef.current.active || modeRef.current !== "drag") return;
-    const now = performance.now();
-    const dx = e.clientX - dragRef.current.lastX;
-    const dt = Math.max(1, now - dragRef.current.lastT);
-    dragRef.current.lastX = e.clientX;
-    dragRef.current.lastT = now;
-    vxRef.current += dx;
-    velRef.current = dx / dt;
-    apply();
-  }, [apply]);
+      dragRef.current.active = true;
+      dragRef.current.lastX = e.clientX;
+      dragRef.current.lastTime = performance.now();
+      velocityRef.current = 0;
 
-  const onUp = useCallback(() => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [spinning, stopRaf]
+  );
+
+  const onPointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!dragRef.current.active || modeRef.current !== "drag") return;
+
+      const now = performance.now();
+      const deltaX = e.clientX - dragRef.current.lastX;
+      const dt = Math.max(1, now - dragRef.current.lastTime);
+
+      dragRef.current.lastX = e.clientX;
+      dragRef.current.lastTime = now;
+
+      // drag left -> reel right, drag right -> reel left
+      rawXRef.current += deltaX;
+      velocityRef.current = deltaX / dt;
+
+      applyTransform();
+    },
+    [applyTransform]
+  );
+
+  const endDrag = useCallback(() => {
     if (!dragRef.current.active) return;
+
     dragRef.current.active = false;
-    if (Math.abs(velRef.current) > 0.01) {
+
+    if (Math.abs(velocityRef.current) > 0.01) {
       startInertia();
-    } else {
-      startIdle();
+      return;
     }
+
+    modeRef.current = "none";
+    startIdle();
   }, [startIdle, startInertia]);
 
   if (items.length === 0) {
@@ -325,14 +424,15 @@ export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComple
   return (
     <div
       ref={containerRef}
+      dir="ltr"
       className="relative w-full overflow-hidden touch-none select-none"
       style={{ height: ITEM_H + 32 }}
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
-      onPointerCancel={onUp}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
     >
-      {/* Pointer */}
+      {/* Center pointer */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 w-0.5 h-full bg-primary opacity-80" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 -mt-1">
         <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-primary" />
@@ -341,25 +441,35 @@ export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComple
         <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-primary" />
       </div>
 
-      {/* Edge fades */}
+      {/* Edge fade */}
       <div className="absolute inset-y-0 left-0 w-16 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
       <div className="absolute inset-y-0 right-0 w-16 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
 
-      {/* Strip – always mounted, only moved via translate3d */}
+      {/* Reel (always mounted) */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
         <div
           ref={stripRef}
           className="flex"
-          style={{ gap: GAP, willChange: "transform", transform: "translate3d(0,0,0)" }}
+          style={{
+            gap: GAP,
+            willChange: "transform",
+            transform: "translate3d(0, 0, 0)",
+          }}
         >
-          {strip.map((item, i) => {
+          {renderStrip.map((item, i) => {
             const color = RARITY_COLORS[item.rarity] || RARITY_COLORS.common;
             const glow = RARITY_GLOW[item.rarity] || RARITY_GLOW.common;
+
             return (
               <div
-                key={`r-${i}`}
+                key={`reel-item-${i}-${item.id}`}
                 className="shrink-0 flex flex-col items-center justify-center rounded-lg border-2 p-1.5 bg-card/60 backdrop-blur-[1px]"
-                style={{ width: ITEM_W, height: ITEM_H, borderColor: color, boxShadow: glow }}
+                style={{
+                  width: ITEM_W,
+                  height: ITEM_H,
+                  borderColor: color,
+                  boxShadow: glow,
+                }}
               >
                 {item.image_url ? (
                   <img
@@ -373,7 +483,7 @@ export default function ReelSpinner({ items, winnerIndex, spinning, onSpinComple
                 ) : (
                   <div className="w-11 h-11 rounded bg-muted/30 flex items-center justify-center mb-1 text-lg">🎁</div>
                 )}
-                <span className="text-[9px] font-mono text-center leading-tight line-clamp-2" style={{ color }}>
+                <span className="text-[9px] font-mono text-center leading-tight line-clamp-2" style={{ color }} dir="rtl">
                   {item.name_ar}
                 </span>
               </div>
