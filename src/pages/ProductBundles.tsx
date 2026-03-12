@@ -113,7 +113,8 @@ const ProductBundles = () => {
           }
         }
 
-        return { ...bundle, items: bundleItems, isOutOfStock, allImages };
+        const maxQuantity = getBundleMaxQuantity(bundleItems, isDirect);
+        return { ...bundle, items: bundleItems, isOutOfStock, allImages, maxQuantity };
       });
     },
     staleTime: 60 * 1000,
