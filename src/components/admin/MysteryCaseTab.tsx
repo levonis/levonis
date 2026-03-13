@@ -693,9 +693,26 @@ export default function MysteryCaseTab() {
                 <div className="space-y-3">
                   {/* Product Search (for product type) */}
                   {effectiveType === "product" && (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-medium">المنتج</label>
-                      <ProductSearch selectedId={rf.product_id} onSelect={handleProductSelect} />
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium">المنتج</label>
+                        <ProductSearch selectedId={rf.product_id} onSelect={handleProductSelect} />
+                      </div>
+                      {rf.product_id && (
+                        <ProductVariantSelector
+                          productId={rf.product_id}
+                          selectedColor={rf.selected_color}
+                          selectedOptionId={rf.product_option_id}
+                          onColorChange={(color) => setRf({ ...rf, selected_color: color })}
+                          onOptionChange={(optionId, optionName, optionImage) => {
+                            setRf({
+                              ...rf,
+                              product_option_id: optionId,
+                              image_url: optionImage || rf.image_url,
+                            });
+                          }}
+                        />
+                      )}
                     </div>
                   )}
 
