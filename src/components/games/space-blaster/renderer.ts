@@ -24,7 +24,7 @@ engineNormalImg.src = engineNormalSrc;
 const engineSuperImg = new Image();
 engineSuperImg.src = engineSuperSrc;
 const ENGINE_FRAMES = 4;
-const ENGINE_ANIM_SPEED = 6; // ticks per frame
+const ENGINE_ANIM_SPEED = 6;
 
 // ── Load shield sprite sheet (10 frames, horizontal strip) ──
 const shieldAnimImg = new Image();
@@ -43,15 +43,11 @@ const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; e
 };
 
 const PLAYER_COLOR = '#00e5ff';
-const PLAYER_DARK = '#0088aa';
-
-// Old pixel ship removed — sprite images are used exclusively now
 
 function drawDrone(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
   const c = ENEMY_COLORS.drone;
   ctx.save();
   ctx.shadowColor = c.glow; ctx.shadowBlur = 6;
-  // Hex body
   const cx = e.x + e.w / 2, cy = e.y + e.h / 2, r = e.w / 2;
   ctx.fillStyle = c.dark;
   ctx.beginPath();
@@ -61,13 +57,10 @@ function drawDrone(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
     i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
   }
   ctx.closePath(); ctx.fill();
-  // Core
   ctx.fillStyle = c.main;
   ctx.fillRect(cx - 3, cy - 3, 6, 6);
-  // Blinking eye
   ctx.fillStyle = c.eye;
   ctx.fillRect(cx - 1, cy - 1, 2 + (Math.sin(t * 0.2) > 0.5 ? 1 : 0), 2);
-  // Wing antennas
   const wingY = Math.sin(t * 0.15) * 2;
   ctx.fillStyle = c.dark;
   ctx.fillRect(e.x - 2, cy - 1 + wingY, 3, 2);
@@ -80,25 +73,21 @@ function drawFighter(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
   ctx.save();
   ctx.shadowColor = c.glow; ctx.shadowBlur = 8;
   const cx = e.x + e.w / 2;
-  // Triangle body
   ctx.fillStyle = c.dark;
   ctx.beginPath();
   ctx.moveTo(cx, e.y);
   ctx.lineTo(e.x, e.y + e.h);
   ctx.lineTo(e.x + e.w, e.y + e.h);
   ctx.closePath(); ctx.fill();
-  // Inner armor
   ctx.fillStyle = c.main;
   ctx.beginPath();
   ctx.moveTo(cx, e.y + 4);
   ctx.lineTo(e.x + 4, e.y + e.h - 2);
   ctx.lineTo(e.x + e.w - 4, e.y + e.h - 2);
   ctx.closePath(); ctx.fill();
-  // Side guns
   ctx.fillStyle = '#ffcc00';
   ctx.fillRect(e.x - 1, e.y + e.h - 6, 3, 6);
   ctx.fillRect(e.x + e.w - 2, e.y + e.h - 6, 3, 6);
-  // Engine glow
   ctx.fillStyle = c.glow;
   ctx.globalAlpha = 0.5 + Math.sin(t * 0.3) * 0.3;
   ctx.fillRect(cx - 2, e.y + 2, 4, 3);
@@ -110,22 +99,17 @@ function drawTank(ctx: CanvasRenderingContext2D, e: Enemy, _t: number) {
   const c = ENEMY_COLORS.tank;
   ctx.save();
   ctx.shadowColor = c.glow; ctx.shadowBlur = 8;
-  // Heavy body
   ctx.fillStyle = c.dark;
   ctx.fillRect(e.x, e.y, e.w, e.h);
   ctx.fillStyle = c.main;
   ctx.fillRect(e.x + 2, e.y + 2, e.w - 4, e.h - 4);
-  // Armor plates
   ctx.fillStyle = c.dark;
   ctx.fillRect(e.x + 4, e.y + 4, e.w - 8, 3);
   ctx.fillRect(e.x + 4, e.y + e.h - 7, e.w - 8, 3);
-  // Cannon
   ctx.fillStyle = '#88ccff';
   ctx.fillRect(e.x + e.w / 2 - 2, e.y + e.h - 2, 4, 6);
-  // Eye
   ctx.fillStyle = c.eye;
   ctx.fillRect(e.x + e.w / 2 - 2, e.y + e.h / 2 - 2, 4, 4);
-  // HP bar
   const ratio = e.hp / e.maxHp;
   ctx.fillStyle = '#222';
   ctx.fillRect(e.x, e.y - 5, e.w, 3);
@@ -139,7 +123,6 @@ function drawSpeeder(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
   ctx.save();
   ctx.shadowColor = c.glow; ctx.shadowBlur = 6;
   const cx = e.x + e.w / 2;
-  // Slim diamond
   ctx.fillStyle = c.main;
   ctx.beginPath();
   ctx.moveTo(cx, e.y);
@@ -147,12 +130,10 @@ function drawSpeeder(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
   ctx.lineTo(cx, e.y + e.h);
   ctx.lineTo(e.x, e.y + e.h / 2);
   ctx.closePath(); ctx.fill();
-  // Trail
   ctx.fillStyle = c.glow;
   ctx.globalAlpha = 0.3;
   ctx.fillRect(cx - 1, e.y - 4 - Math.random() * 3, 2, 4);
   ctx.globalAlpha = 1;
-  // Eye
   ctx.fillStyle = c.eye;
   ctx.fillRect(cx - 1, e.y + e.h / 2 - 1, 2, 2);
   ctx.restore();
@@ -162,17 +143,14 @@ function drawBomber(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
   const c = ENEMY_COLORS.bomber;
   ctx.save();
   ctx.shadowColor = c.glow; ctx.shadowBlur = 8;
-  // Wide body
   ctx.fillStyle = c.dark;
   ctx.fillRect(e.x, e.y + 4, e.w, e.h - 4);
   ctx.fillStyle = c.main;
   ctx.fillRect(e.x + 2, e.y + 2, e.w - 4, e.h - 4);
-  // Bomb bay (pulsing)
   ctx.fillStyle = '#ff00ff';
   ctx.globalAlpha = 0.5 + Math.sin(t * 0.2) * 0.4;
   ctx.fillRect(e.x + e.w / 2 - 3, e.y + e.h - 4, 6, 4);
   ctx.globalAlpha = 1;
-  // Side engines
   ctx.fillStyle = '#ff88ff';
   ctx.fillRect(e.x - 2, e.y + 6, 3, 4);
   ctx.fillRect(e.x + e.w - 1, e.y + 6, 3, 4);
@@ -189,32 +167,26 @@ function drawBoss(ctx: CanvasRenderingContext2D, e: Enemy, t: number, planetId: 
   const c = colors[(planetId - 1) % colors.length];
   ctx.save();
   ctx.shadowColor = c.main; ctx.shadowBlur = 15;
-  // Outer hull
   ctx.fillStyle = c.dark;
   ctx.fillRect(e.x, e.y + 8, e.w, e.h - 8);
   ctx.fillRect(e.x + 8, e.y, e.w - 16, e.h);
-  // Inner hull
   ctx.fillStyle = c.main;
   ctx.fillRect(e.x + 4, e.y + 12, e.w - 8, e.h - 16);
   ctx.fillRect(e.x + 12, e.y + 4, e.w - 24, e.h - 8);
-  // Pulsing cores
   ctx.fillStyle = c.core;
   ctx.globalAlpha = 0.6 + Math.sin(t * 0.1) * 0.4;
   ctx.fillRect(e.x + 10, e.y + 14, 5, 5);
   ctx.fillRect(e.x + e.w - 15, e.y + 14, 5, 5);
   ctx.fillRect(e.x + e.w / 2 - 3, e.y + 24, 6, 6);
   ctx.globalAlpha = 1;
-  // Rotating eye
   const eyeX = e.x + e.w / 2 + Math.sin(t * 0.05) * 6;
   ctx.fillStyle = '#ff0000';
   ctx.fillRect(eyeX - 3, e.y + 8, 6, 4);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(eyeX - 1, e.y + 9, 2, 2);
-  // Cannons
   ctx.fillStyle = '#ffcc00';
   ctx.fillRect(e.x + 4, e.y + e.h - 2, 4, 6);
   ctx.fillRect(e.x + e.w - 8, e.y + e.h - 2, 4, 6);
-  // HP bar
   const ratio = e.hp / e.maxHp;
   ctx.fillStyle = '#111';
   ctx.fillRect(e.x, e.y - 7, e.w, 4);
@@ -235,10 +207,9 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, t: number, pl
   }
 }
 
-export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number, shieldActive: number, lives: number = 3, maxLives: number = 3) {
+export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, inv: number, t: number, shieldActive: number, lives: number = 5, maxLives: number = 5) {
   if (inv > 0 && Math.floor(inv / 4) % 2 === 0) return;
   ctx.save();
-  // Pick damage stage
   let dmgIndex = 0;
   const ratio = lives / maxLives;
   if (ratio <= 0.25) dmgIndex = 3;
@@ -250,7 +221,6 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
   const drawX = x - 4;
   const drawY = y - 4;
 
-  // ── Engine animation (frame-based, exits from ship bottom) ──
   const isSupercharge = shieldActive > 0;
   const spriteSheet = isSupercharge ? engineSuperImg : engineNormalImg;
   if (spriteSheet.complete && spriteSheet.naturalWidth > 0) {
@@ -268,7 +238,6 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
     );
   }
 
-  // ── Ship sprite ──
   const img = shipImages[Math.min(dmgIndex, shipImages.length - 1)];
   if (img.complete && img.naturalWidth > 0) {
     ctx.shadowColor = PLAYER_COLOR;
@@ -277,7 +246,6 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
   }
   ctx.restore();
 
-  // ── Shield animation (frame-based sprite sheet) ──
   if (shieldActive > 0) {
     ctx.save();
     if (shieldAnimImg.complete && shieldAnimImg.naturalWidth > 0) {
@@ -301,15 +269,12 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, x: number, y: number, 
 
 export function drawBackground(ctx: CanvasRenderingContext2D, s: GameState) {
   const planet = getPlanetForWave(s.wave);
-  // Background
   ctx.fillStyle = planet.bg;
   ctx.fillRect(0, 0, W, H);
-  // Nebula effect
   ctx.fillStyle = planet.nebulaColor;
   ctx.globalAlpha = 0.3;
   ctx.fillRect(0, H * 0.3, W, H * 0.4);
   ctx.globalAlpha = 1;
-  // Stars
   for (const star of s.stars) {
     ctx.globalAlpha = star.brightness;
     ctx.fillStyle = star.size > 1 ? planet.starColor2 : planet.starColor1;
@@ -320,10 +285,17 @@ export function drawBackground(ctx: CanvasRenderingContext2D, s: GameState) {
 
 export function drawBullets(ctx: CanvasRenderingContext2D, s: GameState) {
   for (const b of s.bullets) {
-    ctx.fillStyle = b.isEnemy ? '#ff6644' : '#ffff00';
-    ctx.shadowColor = b.isEnemy ? '#ff6644' : '#ffff00';
-    ctx.shadowBlur = 4;
-    ctx.fillRect(Math.floor(b.x), Math.floor(b.y), BULLET_W, BULLET_H);
+    if (b.isLaser) {
+      ctx.fillStyle = '#00ff88';
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 6;
+      ctx.fillRect(Math.floor(b.x), Math.floor(b.y), 2, 12);
+    } else {
+      ctx.fillStyle = b.isEnemy ? '#ff6644' : '#ffff00';
+      ctx.shadowColor = b.isEnemy ? '#ff6644' : '#ffff00';
+      ctx.shadowBlur = 4;
+      ctx.fillRect(Math.floor(b.x), Math.floor(b.y), BULLET_W, BULLET_H);
+    }
   }
   ctx.shadowBlur = 0;
 }
@@ -337,37 +309,48 @@ export function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle
   ctx.globalAlpha = 1;
 }
 
+// Helper to get upgrade stage description
+function getUpgradeInfo(level: number): { shootBullets: number; laserLevel: number; rockets: number; helpers: number } {
+  if (level <= 0) return { shootBullets: 1, laserLevel: 0, rockets: 0, helpers: 0 };
+  if (level <= 2) return { shootBullets: 1 + level, laserLevel: 0, rockets: 0, helpers: 0 };
+  if (level <= 7) return { shootBullets: 3, laserLevel: level - 2, rockets: 0, helpers: 0 };
+  if (level <= 13) return { shootBullets: 3, laserLevel: 5, rockets: level - 7, helpers: 0 };
+  return { shootBullets: 3, laserLevel: 5, rockets: 6, helpers: Math.min(level - 13, 2) };
+}
+
 export function drawHUD(ctx: CanvasRenderingContext2D, s: GameState) {
   const planet = getPlanetForWave(s.wave);
   ctx.fillStyle = '#00e5ff';
   ctx.font = 'bold 12px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText(`♥ ${s.lives}`, 8, 18);
+  // Hearts display
+  let hearts = '';
+  for (let i = 0; i < s.maxLives; i++) hearts += i < s.lives ? '♥' : '♡';
+  ctx.fillText(hearts, 8, 18);
   ctx.textAlign = 'center';
   ctx.fillText(`${planet.nameAr} | W${s.wave}/${MAX_WAVES}`, W / 2, 18);
   ctx.textAlign = 'right';
   ctx.fillText(`★ ${s.score}`, W - 8, 18);
-  // Shield info
+
+  // Shield timer
   ctx.textAlign = 'left';
   if (s.shieldActive > 0) {
     ctx.fillStyle = '#00ffff';
     ctx.fillText(`🛡 ${Math.ceil(s.shieldActive / 60)}s`, 8, 34);
-    if (s.shieldInventory > 0) {
-      ctx.fillStyle = '#aaaaaa';
-      ctx.fillText(`+${s.shieldInventory}`, 70, 34);
-    }
-  } else if (s.shieldInventory > 0) {
-    ctx.fillStyle = '#aaaaaa';
-    ctx.fillText(`🛡 ×${s.shieldInventory}`, 8, 34);
   }
-  // Fire rate boost indicator
-  if (s.fireRateBoost > 0) {
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffcc00';
-    ctx.fillText(`⚡×${s.fireRateBoost}`, W / 2, 34);
-  }
-  // Missile info
-  if (s.missileBaseActive) {
+
+  // Upgrade level indicator
+  const info = getUpgradeInfo(s.upgradeLevel);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffcc00';
+  let upgradeText = `🔫×${info.shootBullets}`;
+  if (info.laserLevel > 0) upgradeText += ` ⚡L${info.laserLevel}`;
+  if (info.rockets > 0) upgradeText += ` 🚀${info.rockets}`;
+  if (info.helpers > 0) upgradeText += ` ✈${info.helpers}`;
+  ctx.fillText(upgradeText, W / 2, 34);
+
+  // Missile count
+  if (s.missileCount > 0) {
     ctx.textAlign = 'right';
     ctx.fillStyle = '#ff8800';
     ctx.fillText(`🚀 ${s.missileCount}/${MAX_MISSILES}`, W - 8, 34);
@@ -381,15 +364,11 @@ export function drawPowerUps(ctx: CanvasRenderingContext2D, powerUps: PowerUp[],
     ctx.globalAlpha = pulse;
     const size = 14;
     const cx = p.x, cy = p.y;
-    // Glow
     let color = '#ffcc00';
-    let icon = '⚡';
-    if (p.type === 'missile') { color = '#ff8800'; icon = '🚀'; }
-    else if (p.type === 'shield') { color = '#00ffff'; icon = '🛡'; }
-    else { color = '#ffcc00'; icon = '⚡'; }
+    let icon = '⬆';
+    if (p.type === 'shield') { color = '#00ffff'; icon = '🛡'; }
     ctx.shadowColor = color;
     ctx.shadowBlur = 8;
-    // Background diamond
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(cx, cy - size / 2);
@@ -398,7 +377,6 @@ export function drawPowerUps(ctx: CanvasRenderingContext2D, powerUps: PowerUp[],
     ctx.lineTo(cx - size / 2, cy);
     ctx.closePath();
     ctx.fill();
-    // Icon
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#ffffff';
@@ -406,6 +384,36 @@ export function drawPowerUps(ctx: CanvasRenderingContext2D, powerUps: PowerUp[],
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(icon, cx, cy);
+    ctx.restore();
+  }
+}
+
+export function drawHelperPlanes(ctx: CanvasRenderingContext2D, s: GameState) {
+  for (const hp of s.helperPlanes) {
+    ctx.save();
+    ctx.shadowColor = '#00ccff';
+    ctx.shadowBlur = 4;
+    // Small triangle ship
+    const cx = hp.x, cy = hp.y;
+    ctx.fillStyle = '#0088cc';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 6);
+    ctx.lineTo(cx - 5, cy + 4);
+    ctx.lineTo(cx + 5, cy + 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#00ccff';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 4);
+    ctx.lineTo(cx - 3, cy + 2);
+    ctx.lineTo(cx + 3, cy + 2);
+    ctx.closePath();
+    ctx.fill();
+    // Engine glow
+    ctx.fillStyle = '#00ffff';
+    ctx.globalAlpha = 0.5 + Math.sin(s.gameTime * 0.3) * 0.3;
+    ctx.fillRect(cx - 1, cy + 4, 2, 3);
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 }
@@ -443,11 +451,10 @@ export function drawWaveTransition(ctx: CanvasRenderingContext2D, s: GameState) 
 // ── Missile sprite ──
 const missileImg = new Image();
 missileImg.src = missileSrc;
-const MISSILE_SPRITE_FRAMES = 3; // 3 frames in horizontal strip
+const MISSILE_SPRITE_FRAMES = 3;
 const MISSILE_ANIM_SPEED = 6;
 
 // ── Missile base sprite ──
-// Layout: first 2 frames = base idle, then every 2 frames = one missile launch
 const missileBaseImg = new Image();
 missileBaseImg.src = missileBaseSrc;
 let missileBaseFrameW = 0;
@@ -461,20 +468,17 @@ function calcMissileBaseFrames() {
   }
 }
 missileBaseImg.onload = calcMissileBaseFrames;
-// Handle already-cached image (onload won't fire if already complete)
 if (missileBaseImg.complete && missileBaseImg.naturalWidth > 0) {
   calcMissileBaseFrames();
 }
 const MISSILE_BASE_ANIM_SPEED = 6;
 
-// Track launch animation state
 let missileBaseLaunchFrame = 0;
 let missileBaseLaunchTimer = 0;
 let missileBaseWasFiring = false;
-let missileBasePairIndex = -1; // which launch pair we're on (-1 = base frames)
+let missileBasePairIndex = -1;
 const MISSILE_LAUNCH_PAIRS = () => Math.max(0, Math.floor((missileBaseTotalFrames - 2) / 2));
 
-// Returns true on the exact frame a new missile should be fired (entering a new 2-frame pair)
 export function updateMissileBaseAnim(isFiring: boolean): boolean {
   if (isFiring && !missileBaseWasFiring) {
     missileBaseLaunchFrame = 0;
@@ -496,10 +500,9 @@ export function updateMissileBaseAnim(isFiring: boolean): boolean {
       const newPair = Math.floor(launchIdx / 2);
       if (newPair !== missileBasePairIndex && newPair < launchPairs) {
         missileBasePairIndex = newPair;
-        shouldFire = true; // fire a missile at start of each pair
+        shouldFire = true;
       }
       if (launchIdx >= launchPairs * 2) {
-        // Animation complete, reset
         missileBaseLaunchFrame = 0;
         missileBasePairIndex = -1;
       }
@@ -539,15 +542,13 @@ export function drawMissiles(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.globalAlpha = 0.6;
     ctx.fillRect(-1, 4, 2, 3 + Math.random() * 3);
     ctx.globalAlpha = 1;
-
     ctx.restore();
   }
 }
 
 export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
-  if (!s.missileBaseActive) return;
+  if (s.missileCount <= 0) return;
   if (!missileBaseImg.complete || missileBaseImg.naturalWidth <= 0) return;
-  // Lazy-init frame dimensions (handles cached images where onload already fired)
   if (missileBaseTotalFrames < 2) calcMissileBaseFrames();
   if (missileBaseTotalFrames < 2) return;
 
@@ -561,16 +562,13 @@ export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
   if (isFiring) {
     let frameIndex: number;
     const launchPairs = MISSILE_LAUNCH_PAIRS();
-
     if (missileBaseLaunchFrame < 2) {
       frameIndex = missileBaseLaunchFrame;
     } else {
       const launchIdx = missileBaseLaunchFrame - 2;
       frameIndex = launchIdx < launchPairs * 2 ? 2 + launchIdx : 0;
     }
-
     frameIndex = Math.min(frameIndex, missileBaseTotalFrames - 1);
-
     ctx.save();
     ctx.globalAlpha = 0.9;
     ctx.drawImage(
@@ -583,7 +581,6 @@ export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.restore();
   }
 
-  // Draw missile count indicators
   if (s.missileCount > 0) {
     for (let i = 0; i < MAX_MISSILES; i++) {
       const angle = (Math.PI * 2 / MAX_MISSILES) * i - Math.PI / 2 + s.gameTime * 0.02;
