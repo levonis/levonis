@@ -782,7 +782,19 @@ export default function MysteryCaseTab() {
                     </div>
                   )}
 
-                  {/* Active Toggle */}
+                  {/* Display Chance (shown to users) */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">نسبة العرض للمستخدم (اختياري)</label>
+                    <Input
+                      type="text"
+                      value={rf.display_chance}
+                      onChange={(e) => setRf({ ...rf, display_chance: e.target.value })}
+                      placeholder="مثال: 25% أو نادر"
+                      className="w-40"
+                    />
+                    <p className="text-[10px] text-muted-foreground">النسبة التي تظهر للمستخدمين (لا تؤثر على الاحتمال الحقيقي)</p>
+                  </div>
+
                   {effectiveType !== "display" && (
                     <div className="flex items-center gap-2">
                       <Switch checked={rf.is_active} onCheckedChange={(v) => setRf({ ...rf, is_active: v })} />
