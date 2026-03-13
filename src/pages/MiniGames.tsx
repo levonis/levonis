@@ -1,16 +1,18 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap } from "lucide-react";
+import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PixelBackground from "@/components/games/PixelBackground";
 import PixelLoadingScreen from "@/components/games/PixelLoadingScreen";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
 import PixelMusicRadio from "@/components/games/PixelMusicRadio";
+import GameBalanceBar from "@/components/games/GameBalanceBar";
 import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource } from "@/components/games/GamesData";
 
 const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
 const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCase"));
+const GameStore = lazy(() => import("@/components/games/GameStore"));
 
 const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
@@ -34,6 +36,7 @@ export default function MiniGames() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
   const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [showStore, setShowStore] = useState(false);
 
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
@@ -42,6 +45,20 @@ export default function MiniGames() {
   const handlePlay = (game: GameResource) => {
     setActiveGame(game.node_name);
   };
+
+  if (showStore) {
+    return (
+      <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
+        <PixelBackground />
+        <div className="relative z-10 max-w-2xl mx-auto">
+          <Suspense fallback={<div className="flex items-center justify-center h-screen text-primary font-mono">Loading...</div>}>
+            <GameStore onBack={() => setShowStore(false)} />
+          </Suspense>
+        </div>
+        <PixelMusicRadio />
+      </div>
+    );
+  }
 
   if (activeGame) {
     return (
@@ -82,6 +99,19 @@ export default function MiniGames() {
             <span className="text-primary font-bold text-xs font-mono tracking-wider">ARCADE</span>
           </div>
         </div>
+      </div>
+
+      {/* Balance Bar + Store Button */}
+      <div className="max-w-2xl mx-auto px-4 py-2 relative z-10 flex items-center justify-between">
+        <GameBalanceBar />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => { playClick(); setShowStore(true); }}
+          className="font-mono text-xs gap-1 pixel-frame"
+        >
+          <ShoppingBag className="h-3.5 w-3.5" /> المتجر
+        </Button>
       </div>
 
       {/* Filters */}

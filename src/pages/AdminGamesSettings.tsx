@@ -1,17 +1,19 @@
 import { useState, lazy, Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import { Gamepad2, Music, Gift, Swords } from "lucide-react";
+import { Gamepad2, Music, Gift, Swords, ShoppingBag } from "lucide-react";
 
 const GameMusicTab = lazy(() => import("@/components/admin/GameMusicTab"));
 const MysteryCaseTab = lazy(() => import("@/components/admin/MysteryCaseTab"));
 const SpaceBlasterTab = lazy(() => import("@/components/admin/SpaceBlasterTab"));
+const GameStoreTab = lazy(() => import("@/components/admin/GameStoreTab"));
 
-type TabId = "mystery-case" | "space-blaster" | "music";
+type TabId = "mystery-case" | "space-blaster" | "music" | "store";
 
 const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "mystery-case", label: "صندوق الغموض", icon: Gift },
   { id: "space-blaster", label: "حرب الفضاء", icon: Swords },
+  { id: "store", label: "متجر الألعاب", icon: ShoppingBag },
   { id: "music", label: "الموسيقى", icon: Music },
 ];
 
@@ -49,6 +51,7 @@ export default function AdminGamesSettings() {
       <Suspense fallback={<div className="py-12 text-center text-muted-foreground">جاري التحميل...</div>}>
         {activeTab === "mystery-case" && <MysteryCaseTab />}
         {activeTab === "space-blaster" && <SpaceBlasterTab />}
+        {activeTab === "store" && <GameStoreTab />}
         {activeTab === "music" && <GameMusicTab />}
       </Suspense>
     </AdminLayout>
