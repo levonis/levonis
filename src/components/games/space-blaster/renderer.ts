@@ -1,5 +1,7 @@
 import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES, PowerUp } from './types';
+import { drawProceduralEnemy, drawBoss as drawBossEnemy } from './enemyRenderer';
 import missileSrc from '@/assets/missile-sprite.png';
+import missileBaseSrc from '@/assets/missile-base-sprite.png';
 import missileBaseSrc from '@/assets/missile-base-sprite.png';
 import { getPlanetForWave, PLANETS } from './planets';
 import playerShipSrc from '@/assets/player-ship.png';
