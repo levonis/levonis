@@ -173,7 +173,7 @@ function ProductVariantSelector({
               return (
                 <button
                   key={i}
-                  onClick={() => onColorChange(isSelected ? "" : colorName)}
+                  onClick={() => onColorChange(isSelected ? "" : colorName, isSelected ? "" : (colorImage || ""))}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs transition-all ${
                     isSelected ? "border-primary bg-primary/10 font-bold" : "border-border/40 hover:border-border"
                   }`}
