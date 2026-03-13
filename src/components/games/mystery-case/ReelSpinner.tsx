@@ -105,6 +105,7 @@ export default function ReelSpinner({
   const segWidthRef = useRef(0);
   const initRef = useRef(false);
   const spinningRef = useRef(false);
+  const spinStartedRef = useRef(false);
 
   const [segment, setSegment] = useState<ReelItem[]>([]);
 
