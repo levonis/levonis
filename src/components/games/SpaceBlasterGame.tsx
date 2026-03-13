@@ -2,11 +2,11 @@
  * Space Blaster – 20 waves, 4 planets, shop, pro enemies
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { ArrowRight, RotateCcw, ShoppingCart } from "lucide-react";
+import { ArrowRight, RotateCcw, ShoppingCart, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
@@ -38,6 +38,39 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   soundsRef.current = { playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory };
   const { startMusic, stopMusic } = useSpaceMusic();
 
+  // Fetch game settings
+  const { data: gameSettings } = useQuery({
+    queryKey: ["space-blaster-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_blaster_settings")
+        .select("*")
+        .limit(1)
+        .single();
+      return data as any;
+    },
+  });
+
+  // Fetch user tickets for entry fee
+  const { data: ticketData, refetch: refetchTickets } = useQuery({
+    queryKey: ["user-tickets", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("user_tickets")
+        .select("ticket_count")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userTickets = ticketData?.ticket_count || 0;
+  const entryFee = gameSettings?.entry_fee_tickets || 0;
+  const settingsRef = useRef(gameSettings);
+  settingsRef.current = gameSettings;
+
   // Fetch user points for shop
   useEffect(() => {
     if (!user) return;
@@ -65,7 +98,29 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       brightness: 0.3 + Math.random() * 0.7,
     }));
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback(async () => {
+    // Deduct entry fee if required
+    if (entryFee > 0 && user) {
+      if (userTickets < entryFee) {
+        toast.error(`تحتاج ${entryFee} تذكرة للعب`);
+        return;
+      }
+      try {
+        const { data: result } = await supabase.rpc("deduct_user_tickets", {
+          p_user_id: user.id,
+          p_amount: entryFee,
+        });
+        if (!result) {
+          toast.error("فشل خصم التذاكر");
+          return;
+        }
+        refetchTickets();
+      } catch {
+        toast.error("خطأ في خصم التذاكر");
+        return;
+      }
+    }
+
     const { enemies, total } = spawnWaveEnemies(1, getPlanetForWave(1));
     const extraLives = shopLevels['extra_life'] || 0;
     stateRef.current = {
@@ -96,7 +151,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     setScreen('playing');
     lastTimeRef.current = 0;
     startMusic();
-  }, [shopLevels, startMusic]);
+  }, [shopLevels, startMusic, entryFee, user, userTickets, refetchTickets]);
 
   // Shop buy
   const buyItem = useCallback(async (itemId: string) => {
@@ -202,14 +257,23 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     const explosionColors = ['#ffff00', '#ff8800', '#ff3300', '#ff0000', '#ffffff', '#ff6600'];
 
     const endGame = (s: GameState, victory: boolean) => {
-      if (victory) s.score += 200;
       s.screen = 'gameover';
       setScreen('gameover');
       setFinalScore(s.score);
       setFinalWave(s.wave);
-      const pts = Math.floor(s.score / 10);
-      setPendingPoints(pts);
-      syncPoints(pts);
+
+      // Balanced point calculation using admin settings
+      const gs = settingsRef.current;
+      const pps = gs?.points_per_score ?? 0.1;
+      const maxPts = gs?.max_points_per_game ?? 100;
+      const victoryBonus = victory ? (gs?.victory_bonus_points ?? 20) : 0;
+      const waveBonus = (s.wave - 1) * (gs?.wave_bonus_points ?? 2);
+
+      const scorePoints = Math.floor(s.score * pps);
+      const totalPts = Math.min(scorePoints + waveBonus, maxPts) + victoryBonus;
+
+      setPendingPoints(totalPts);
+      syncPoints(totalPts);
       stopMusic();
       if (victory) soundsRef.current.playVictory();
     };
@@ -577,27 +641,51 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col items-center gap-4 w-full px-2 py-4" dir="ltr">
       {screen === 'start' && (
         <div className="flex flex-col items-center gap-4 text-center w-full max-w-xs">
-          <div className="pixel-frame p-5 space-y-3 w-full">
-            <div className="text-5xl mb-1">🚀</div>
-            <h2 className="text-2xl font-black font-mono text-primary" style={{ textShadow: '2px 2px 0 hsl(var(--accent) / 0.4)' }}>
-              SPACE BLASTER
-            </h2>
-            <p className="text-muted-foreground text-sm font-mono">حرب الفضاء</p>
-            <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
-              <p>🌍 4 كواكب | 20 موجة</p>
-              <p>🎮 أسهم/WASD + مسافة | لمس</p>
-              <p>⭐ أعداء متنوعون وبوسات عملاقة</p>
-              <p>❤️ {3 + (shopLevels['extra_life'] || 0)} حياة</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => { playClick(); startGame(); }} className="pixel-btn-active font-mono text-sm flex-1">
-                ▶ START
-              </Button>
-              <Button variant="outline" onClick={() => { playClick(); setScreen('shop'); }} className="font-mono text-sm gap-1">
-                <ShoppingCart className="h-3 w-3" /> متجر
+          {gameSettings?.game_enabled === false ? (
+            <div className="pixel-frame p-5 space-y-3 w-full">
+              <p className="text-muted-foreground font-mono">اللعبة غير متاحة حالياً</p>
+              <Button variant="ghost" onClick={onBack} className="font-mono text-xs">
+                <ArrowRight className="h-4 w-4 ml-1" /> رجوع
               </Button>
             </div>
-          </div>
+          ) : (
+            <div className="pixel-frame p-5 space-y-3 w-full">
+              <div className="text-5xl mb-1">🚀</div>
+              <h2 className="text-2xl font-black font-mono text-primary" style={{ textShadow: '2px 2px 0 hsl(var(--accent) / 0.4)' }}>
+                SPACE BLASTER
+              </h2>
+              <p className="text-muted-foreground text-sm font-mono">حرب الفضاء</p>
+              <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
+                <p>🌍 4 كواكب | 20 موجة</p>
+                <p>🎮 أسهم/WASD + مسافة | لمس</p>
+                <p>⭐ أعداء متنوعون وبوسات عملاقة</p>
+                <p>❤️ {3 + (shopLevels['extra_life'] || 0)} حياة</p>
+                {entryFee > 0 && (
+                  <p className="flex items-center justify-end gap-1">
+                    <Ticket className="h-3 w-3" /> رسوم الدخول: {entryFee} تذكرة
+                    <span className={userTickets >= entryFee ? "text-green-400" : "text-destructive"}>
+                      ({userTickets} متاح)
+                    </span>
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => { playClick(); startGame(); }}
+                  disabled={!user || (entryFee > 0 && userTickets < entryFee)}
+                  className="pixel-btn-active font-mono text-sm flex-1"
+                >
+                  {entryFee > 0 ? `▶ START (${entryFee} 🎫)` : '▶ START'}
+                </Button>
+                <Button variant="outline" onClick={() => { playClick(); setScreen('shop'); }} className="font-mono text-sm gap-1">
+                  <ShoppingCart className="h-3 w-3" /> متجر
+                </Button>
+              </div>
+              {!user && (
+                <p className="text-xs text-destructive font-mono">يجب تسجيل الدخول للعب</p>
+              )}
+            </div>
+          )}
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground font-mono text-xs">
             <ArrowRight className="h-4 w-4" /> رجوع
           </Button>

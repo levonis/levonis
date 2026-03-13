@@ -1,15 +1,17 @@
 import { useState, lazy, Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import { Gamepad2, Music, Gift } from "lucide-react";
+import { Gamepad2, Music, Gift, Swords } from "lucide-react";
 
 const GameMusicTab = lazy(() => import("@/components/admin/GameMusicTab"));
 const MysteryCaseTab = lazy(() => import("@/components/admin/MysteryCaseTab"));
+const SpaceBlasterTab = lazy(() => import("@/components/admin/SpaceBlasterTab"));
 
-type TabId = "mystery-case" | "music";
+type TabId = "mystery-case" | "space-blaster" | "music";
 
 const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "mystery-case", label: "صندوق الغموض", icon: Gift },
+  { id: "space-blaster", label: "حرب الفضاء", icon: Swords },
   { id: "music", label: "الموسيقى", icon: Music },
 ];
 
@@ -24,7 +26,6 @@ export default function AdminGamesSettings() {
       backTo={ADMIN_ROUTES.dashboard}
       maxWidth="4xl"
     >
-      {/* Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -47,6 +48,7 @@ export default function AdminGamesSettings() {
 
       <Suspense fallback={<div className="py-12 text-center text-muted-foreground">جاري التحميل...</div>}>
         {activeTab === "mystery-case" && <MysteryCaseTab />}
+        {activeTab === "space-blaster" && <SpaceBlasterTab />}
         {activeTab === "music" && <GameMusicTab />}
       </Suspense>
     </AdminLayout>

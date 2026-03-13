@@ -6741,6 +6741,42 @@ export type Database = {
         }
         Relationships: []
       }
+      space_blaster_settings: {
+        Row: {
+          created_at: string
+          entry_fee_tickets: number
+          game_enabled: boolean
+          id: string
+          max_points_per_game: number
+          points_per_score: number
+          updated_at: string
+          victory_bonus_points: number
+          wave_bonus_points: number
+        }
+        Insert: {
+          created_at?: string
+          entry_fee_tickets?: number
+          game_enabled?: boolean
+          id?: string
+          max_points_per_game?: number
+          points_per_score?: number
+          updated_at?: string
+          victory_bonus_points?: number
+          wave_bonus_points?: number
+        }
+        Update: {
+          created_at?: string
+          entry_fee_tickets?: number
+          game_enabled?: boolean
+          id?: string
+          max_points_per_game?: number
+          points_per_score?: number
+          updated_at?: string
+          victory_bonus_points?: number
+          wave_bonus_points?: number
+        }
+        Relationships: []
+      }
       stock_notifications: {
         Row: {
           created_at: string
