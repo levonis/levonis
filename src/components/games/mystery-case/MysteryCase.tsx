@@ -11,6 +11,7 @@ import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import ReelSpinner, { type ReelItem } from "./ReelSpinner";
 import MultiRewardPopup from "./MultiRewardPopup";
+import PrizeShowcase from "./PrizeShowcase";
 
 function MysteryCase({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
