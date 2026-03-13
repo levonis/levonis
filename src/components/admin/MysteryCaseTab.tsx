@@ -513,6 +513,7 @@ export default function MysteryCaseTab() {
         is_active: rf.is_active,
         selected_color: rf.reward_type === "product" ? (rf.selected_color || null) : null,
         product_option_id: rf.reward_type === "product" ? (rf.product_option_id || null) : null,
+        display_chance: rf.display_chance || null,
         updated_at: new Date().toISOString(),
       };
       if (editReward) {
