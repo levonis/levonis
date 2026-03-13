@@ -2,11 +2,11 @@
  * Space Blaster – 20 waves, 4 planets, shop, pro enemies
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { ArrowRight, RotateCcw, ShoppingCart } from "lucide-react";
+import { ArrowRight, RotateCcw, ShoppingCart, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
@@ -37,6 +37,39 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const soundsRef = useRef({ playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory });
   soundsRef.current = { playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory };
   const { startMusic, stopMusic } = useSpaceMusic();
+
+  // Fetch game settings
+  const { data: gameSettings } = useQuery({
+    queryKey: ["space-blaster-settings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("space_blaster_settings")
+        .select("*")
+        .limit(1)
+        .single();
+      return data as any;
+    },
+  });
+
+  // Fetch user tickets for entry fee
+  const { data: ticketData, refetch: refetchTickets } = useQuery({
+    queryKey: ["user-tickets", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("user_tickets")
+        .select("ticket_count")
+        .eq("user_id", user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const userTickets = ticketData?.ticket_count || 0;
+  const entryFee = gameSettings?.entry_fee_tickets || 0;
+  const settingsRef = useRef(gameSettings);
+  settingsRef.current = gameSettings;
 
   // Fetch user points for shop
   useEffect(() => {
