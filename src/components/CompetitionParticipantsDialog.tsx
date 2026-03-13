@@ -453,7 +453,7 @@ export default function CompetitionParticipantsDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0 !overflow-hidden" dir="rtl">
+      <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 !overflow-hidden !max-h-none" dir="rtl">
         <DialogHeader className="p-4 sm:p-6 pb-2 flex-shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
             <Users className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -461,7 +461,7 @@ export default function CompetitionParticipantsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-4 sm:p-6 pt-3 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-3 overscroll-contain" style={{ minHeight: 0, WebkitOverflowScrolling: 'touch' as any }}>
           {/* Stats */}
           <div className="flex flex-wrap gap-2 sm:gap-4 flex-shrink-0">
             <Badge variant="outline" className="text-xs sm:text-base px-2 sm:px-4 py-1 sm:py-2">
