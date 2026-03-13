@@ -508,7 +508,7 @@ export default function CompetitionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0" dir="rtl">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 !overflow-hidden" dir="rtl">
         <DialogHeader className="p-6 pb-0 shrink-0">
           <DialogTitle className="text-right text-xl">
             {editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}

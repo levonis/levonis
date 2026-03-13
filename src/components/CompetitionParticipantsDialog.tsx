@@ -453,7 +453,7 @@ export default function CompetitionParticipantsDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0" dir="rtl">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-0 !overflow-hidden" dir="rtl">
         <DialogHeader className="p-4 sm:p-6 pb-2 flex-shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
             <Users className="h-4 w-4 sm:h-5 sm:w-5" />
