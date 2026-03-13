@@ -76,6 +76,19 @@ export interface GameResource {
 
 export const GAME_NODES: GameResource[] = [
   {
+    node_name: "mystery_case",
+    title: "صندوق الغموض",
+    description: "ألف الشريط واربح جوائز عشوائية ومكافآت مذهلة!",
+    icon: "🎰",
+    status: GameStatus.LIVE,
+    category: GameCategory.LUCK,
+    reward: "جوائز متنوعة",
+    players: "1 لاعب",
+    difficulty: Difficulty.EASY,
+    popular: true,
+    is_new: true,
+  },
+  {
     node_name: "space_blaster",
     title: "حرب الفضاء",
     description: "قُد سفينتك الفضائية ودمّر موجات الأعداء في 10 مراحل مثيرة!",
@@ -114,19 +127,6 @@ export const GAME_NODES: GameResource[] = [
     difficulty: Difficulty.MEDIUM,
     popular: false,
     is_new: false,
-  },
-  {
-    node_name: "mystery_case",
-    title: "صندوق الغموض",
-    description: "ألف الشريط واربح جوائز عشوائية ومكافآت مذهلة!",
-    icon: "🎰",
-    status: GameStatus.LIVE,
-    category: GameCategory.LUCK,
-    reward: "جوائز متنوعة",
-    players: "1 لاعب",
-    difficulty: Difficulty.EASY,
-    popular: true,
-    is_new: true,
   },
   {
     node_name: "spin",
