@@ -125,7 +125,7 @@ function ProductVariantSelector({
   productId: string;
   selectedColor: string;
   selectedOptionId: string;
-  onColorChange: (color: string) => void;
+  onColorChange: (color: string, colorImage: string) => void;
   onOptionChange: (optionId: string, optionName: string, optionImage: string) => void;
 }) {
   const { data: product } = useQuery({
@@ -173,7 +173,7 @@ function ProductVariantSelector({
               return (
                 <button
                   key={i}
-                  onClick={() => onColorChange(isSelected ? "" : colorName)}
+                  onClick={() => onColorChange(isSelected ? "" : colorName, isSelected ? "" : (colorImage || ""))}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs transition-all ${
                     isSelected ? "border-primary bg-primary/10 font-bold" : "border-border/40 hover:border-border"
                   }`}
@@ -703,7 +703,7 @@ export default function MysteryCaseTab() {
                           productId={rf.product_id}
                           selectedColor={rf.selected_color}
                           selectedOptionId={rf.product_option_id}
-                          onColorChange={(color) => setRf({ ...rf, selected_color: color })}
+                          onColorChange={(color, colorImage) => setRf({ ...rf, selected_color: color, image_url: colorImage || rf.image_url })}
                           onOptionChange={(optionId, optionName, optionImage) => {
                             setRf({
                               ...rf,
