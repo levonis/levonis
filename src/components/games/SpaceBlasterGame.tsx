@@ -1,5 +1,5 @@
 /**
- * Space Blaster – 20 waves, 4 planets, progressive upgrades, no shop
+ * Space Blaster – 260 waves, 13 planets, 150+ enemies, progressive upgrades
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ArrowRight, Ticket } from "lucide-react";
@@ -10,9 +10,9 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
-import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane } from "./space-blaster/types";
+import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane, getEnemyTier } from "./space-blaster/types";
 import { getPlanetForWave } from "./space-blaster/planets";
-import { spawnWaveEnemies, getEnemyScore } from "./space-blaster/enemies";
+import { spawnWaveEnemies, getEnemyScore, getEnemyShootPattern } from "./space-blaster/enemies";
 import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, drawHelperPlanes, updateMissileBaseAnim } from "./space-blaster/renderer";
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
