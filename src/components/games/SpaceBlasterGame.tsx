@@ -98,7 +98,29 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       brightness: 0.3 + Math.random() * 0.7,
     }));
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback(async () => {
+    // Deduct entry fee if required
+    if (entryFee > 0 && user) {
+      if (userTickets < entryFee) {
+        toast.error(`تحتاج ${entryFee} تذكرة للعب`);
+        return;
+      }
+      try {
+        const { data: result } = await supabase.rpc("deduct_user_tickets", {
+          p_user_id: user.id,
+          p_amount: entryFee,
+        });
+        if (!result) {
+          toast.error("فشل خصم التذاكر");
+          return;
+        }
+        refetchTickets();
+      } catch {
+        toast.error("خطأ في خصم التذاكر");
+        return;
+      }
+    }
+
     const { enemies, total } = spawnWaveEnemies(1, getPlanetForWave(1));
     const extraLives = shopLevels['extra_life'] || 0;
     stateRef.current = {
@@ -129,7 +151,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     setScreen('playing');
     lastTimeRef.current = 0;
     startMusic();
-  }, [shopLevels, startMusic]);
+  }, [shopLevels, startMusic, entryFee, user, userTickets, refetchTickets]);
 
   // Shop buy
   const buyItem = useCallback(async (itemId: string) => {
