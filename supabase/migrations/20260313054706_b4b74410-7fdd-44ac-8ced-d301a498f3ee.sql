@@ -1,0 +1,1 @@
+ALTER TABLE public.mystery_case_rewards ADD COLUMN display_chance TEXT DEFAULT NULL;
