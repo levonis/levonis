@@ -451,11 +451,12 @@ export default function MysteryCaseTab() {
   const [rf, setRf] = useState({
     name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10,
     image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true,
+    selected_color: "", product_option_id: "",
   });
 
   const resetForm = () => {
     setEditReward(null);
-    setRf({ name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10, image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true });
+    setRf({ name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10, image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true, selected_color: "", product_option_id: "" });
     setShowForm(false);
   };
 
