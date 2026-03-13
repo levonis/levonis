@@ -653,7 +653,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               </h2>
               <p className="text-muted-foreground text-sm font-mono">حرب الفضاء</p>
               <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
-                <p>🌍 4 كواكب | 20 موجة</p>
+                <p>🌍 13 كوكب | 260 موجة</p>
                 <p>🎮 أسهم/WASD + مسافة | لمس</p>
                 <p>⭐ اجمع الترقيات لتقوية سفينتك</p>
                 <p>❤️ 5 حياة | 🛡 درع 10 ثواني</p>
