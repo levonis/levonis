@@ -125,7 +125,7 @@ function ProductVariantSelector({
   productId: string;
   selectedColor: string;
   selectedOptionId: string;
-  onColorChange: (color: string) => void;
+  onColorChange: (color: string, colorImage: string) => void;
   onOptionChange: (optionId: string, optionName: string, optionImage: string) => void;
 }) {
   const { data: product } = useQuery({
