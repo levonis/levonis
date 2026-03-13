@@ -2346,6 +2346,86 @@ export type Database = {
         }
         Relationships: []
       }
+      game_store_purchases: {
+        Row: {
+          created_at: string
+          id: string
+          points_spent: number
+          reward_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_spent: number
+          reward_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_spent?: number
+          reward_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_store_purchases_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "game_store_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_store_rewards: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          max_purchases: number | null
+          points_cost: number
+          reward_type: string
+          reward_value: number
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_purchases?: number | null
+          points_cost?: number
+          reward_type?: string
+          reward_value?: number
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_purchases?: number | null
+          points_cost?: number
+          reward_type?: string
+          reward_value?: number
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gig_applications: {
         Row: {
           cover_letter: string | null
