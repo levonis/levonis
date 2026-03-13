@@ -468,6 +468,7 @@ export default function MysteryCaseTab() {
       image_url: r.image_url || "", product_id: r.product_id || "", ticket_reward_amount: r.ticket_reward_amount || 0,
       display_only: r.display_only, is_active: r.is_active,
       selected_color: r.selected_color || "", product_option_id: r.product_option_id || "",
+      display_chance: r.display_chance || "",
     });
     setShowForm(true);
   };
