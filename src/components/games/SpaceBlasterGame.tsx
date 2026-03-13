@@ -257,14 +257,23 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     const explosionColors = ['#ffff00', '#ff8800', '#ff3300', '#ff0000', '#ffffff', '#ff6600'];
 
     const endGame = (s: GameState, victory: boolean) => {
-      if (victory) s.score += 200;
       s.screen = 'gameover';
       setScreen('gameover');
       setFinalScore(s.score);
       setFinalWave(s.wave);
-      const pts = Math.floor(s.score / 10);
-      setPendingPoints(pts);
-      syncPoints(pts);
+
+      // Balanced point calculation using admin settings
+      const gs = settingsRef.current;
+      const pps = gs?.points_per_score ?? 0.1;
+      const maxPts = gs?.max_points_per_game ?? 100;
+      const victoryBonus = victory ? (gs?.victory_bonus_points ?? 20) : 0;
+      const waveBonus = (s.wave - 1) * (gs?.wave_bonus_points ?? 2);
+
+      const scorePoints = Math.floor(s.score * pps);
+      const totalPts = Math.min(scorePoints + waveBonus, maxPts) + victoryBonus;
+
+      setPendingPoints(totalPts);
+      syncPoints(totalPts);
       stopMusic();
       if (victory) soundsRef.current.playVictory();
     };
