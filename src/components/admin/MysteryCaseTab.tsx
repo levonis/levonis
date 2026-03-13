@@ -114,6 +114,123 @@ function ImageUploader({ imageUrl, onImageChange }: { imageUrl: string; onImageC
   );
 }
 
+// ── Product Option/Color Selector ──────────────────────────────
+function ProductVariantSelector({
+  productId,
+  selectedColor,
+  selectedOptionId,
+  onColorChange,
+  onOptionChange,
+}: {
+  productId: string;
+  selectedColor: string;
+  selectedOptionId: string;
+  onColorChange: (color: string) => void;
+  onOptionChange: (optionId: string, optionName: string, optionImage: string) => void;
+}) {
+  const { data: product } = useQuery({
+    queryKey: ["admin-product-variants", productId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("colors")
+        .eq("id", productId)
+        .single();
+      return data;
+    },
+    enabled: !!productId,
+  });
+
+  const { data: options = [] } = useQuery({
+    queryKey: ["admin-product-options", productId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("product_options")
+        .select("id, name, name_ar, image_url, price_adjustment")
+        .eq("product_id", productId)
+        .order("name_ar");
+      return (data || []) as any[];
+    },
+    enabled: !!productId,
+  });
+
+  const colors = (product?.colors as any[] | null) || [];
+
+  if (colors.length === 0 && options.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {/* Colors */}
+      {colors.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium">اللون</label>
+          <div className="flex flex-wrap gap-2">
+            {colors.map((c: any, i: number) => {
+              const colorName = typeof c === "string" ? c : c.name || c.name_ar || "";
+              const colorHex = typeof c === "string" ? "" : c.hex || c.color || "";
+              const colorImage = typeof c === "string" ? "" : c.image_url || c.image || "";
+              const isSelected = selectedColor === colorName;
+              return (
+                <button
+                  key={i}
+                  onClick={() => onColorChange(isSelected ? "" : colorName)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs transition-all ${
+                    isSelected ? "border-primary bg-primary/10 font-bold" : "border-border/40 hover:border-border"
+                  }`}
+                >
+                  {colorHex && (
+                    <span
+                      className="w-4 h-4 rounded-full border border-border/50 shrink-0"
+                      style={{ backgroundColor: colorHex }}
+                    />
+                  )}
+                  {colorImage && !colorHex && (
+                    <img src={colorImage} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+                  )}
+                  <span>{colorName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Options */}
+      {options.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium">الخيار</label>
+          <div className="flex flex-wrap gap-2">
+            {options.map((opt: any) => {
+              const isSelected = selectedOptionId === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => onOptionChange(
+                    isSelected ? "" : opt.id,
+                    isSelected ? "" : (opt.name_ar || opt.name),
+                    isSelected ? "" : (opt.image_url || "")
+                  )}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs transition-all ${
+                    isSelected ? "border-primary bg-primary/10 font-bold" : "border-border/40 hover:border-border"
+                  }`}
+                >
+                  {opt.image_url && (
+                    <img src={opt.image_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" />
+                  )}
+                  <span>{opt.name_ar || opt.name}</span>
+                  {opt.price_adjustment ? (
+                    <span className="text-muted-foreground">({opt.price_adjustment > 0 ? "+" : ""}{opt.price_adjustment?.toLocaleString()})</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Product Search Component ───────────────────────────────────
 function ProductSearch({ selectedId, onSelect }: { selectedId: string; onSelect: (p: any) => void }) {
   const [query, setQuery] = useState("");
@@ -334,11 +451,12 @@ export default function MysteryCaseTab() {
   const [rf, setRf] = useState({
     name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10,
     image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true,
+    selected_color: "", product_option_id: "",
   });
 
   const resetForm = () => {
     setEditReward(null);
-    setRf({ name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10, image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true });
+    setRf({ name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10, image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true, selected_color: "", product_option_id: "" });
     setShowForm(false);
   };
 
@@ -349,6 +467,7 @@ export default function MysteryCaseTab() {
       name_ar: r.name_ar, reward_type: type, rarity: r.rarity, drop_chance: Number(r.drop_chance),
       image_url: r.image_url || "", product_id: r.product_id || "", ticket_reward_amount: r.ticket_reward_amount || 0,
       display_only: r.display_only, is_active: r.is_active,
+      selected_color: r.selected_color || "", product_option_id: r.product_option_id || "",
     });
     setShowForm(true);
   };
@@ -363,10 +482,10 @@ export default function MysteryCaseTab() {
 
   const handleProductSelect = (p: any) => {
     if (!p) {
-      setRf({ ...rf, product_id: "", name_ar: rf.name_ar, image_url: rf.image_url });
+      setRf({ ...rf, product_id: "", name_ar: rf.name_ar, image_url: rf.image_url, selected_color: "", product_option_id: "" });
       return;
     }
-    setRf({ ...rf, product_id: p.id, name_ar: p.name_ar || p.name, image_url: p.image_url || rf.image_url });
+    setRf({ ...rf, product_id: p.id, name_ar: p.name_ar || p.name, image_url: p.image_url || rf.image_url, selected_color: "", product_option_id: "" });
   };
 
   const effectiveType = rf.display_only ? "display" : rf.reward_type;
@@ -381,7 +500,7 @@ export default function MysteryCaseTab() {
       if (newTotal > 100 && !rf.display_only) {
         throw new Error("إجمالي الاحتمالات يتجاوز 100%");
       }
-      const payload = {
+      const payload: any = {
         name_ar: rf.name_ar,
         reward_type: rf.display_only ? "custom" : rf.reward_type,
         rarity: rf.rarity,
@@ -391,6 +510,8 @@ export default function MysteryCaseTab() {
         ticket_reward_amount: rf.reward_type === "tickets" ? rf.ticket_reward_amount : 0,
         display_only: rf.display_only,
         is_active: rf.is_active,
+        selected_color: rf.reward_type === "product" ? (rf.selected_color || null) : null,
+        product_option_id: rf.reward_type === "product" ? (rf.product_option_id || null) : null,
         updated_at: new Date().toISOString(),
       };
       if (editReward) {
@@ -572,9 +693,26 @@ export default function MysteryCaseTab() {
                 <div className="space-y-3">
                   {/* Product Search (for product type) */}
                   {effectiveType === "product" && (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-medium">المنتج</label>
-                      <ProductSearch selectedId={rf.product_id} onSelect={handleProductSelect} />
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium">المنتج</label>
+                        <ProductSearch selectedId={rf.product_id} onSelect={handleProductSelect} />
+                      </div>
+                      {rf.product_id && (
+                        <ProductVariantSelector
+                          productId={rf.product_id}
+                          selectedColor={rf.selected_color}
+                          selectedOptionId={rf.product_option_id}
+                          onColorChange={(color) => setRf({ ...rf, selected_color: color })}
+                          onOptionChange={(optionId, optionName, optionImage) => {
+                            setRf({
+                              ...rf,
+                              product_option_id: optionId,
+                              image_url: optionImage || rf.image_url,
+                            });
+                          }}
+                        />
+                      )}
                     </div>
                   )}
 

@@ -4158,8 +4158,10 @@ export type Database = {
           is_active: boolean
           name_ar: string
           product_id: string | null
+          product_option_id: string | null
           rarity: string
           reward_type: string
+          selected_color: string | null
           ticket_reward_amount: number | null
           updated_at: string
         }
@@ -4174,8 +4176,10 @@ export type Database = {
           is_active?: boolean
           name_ar: string
           product_id?: string | null
+          product_option_id?: string | null
           rarity?: string
           reward_type?: string
+          selected_color?: string | null
           ticket_reward_amount?: number | null
           updated_at?: string
         }
@@ -4190,8 +4194,10 @@ export type Database = {
           is_active?: boolean
           name_ar?: string
           product_id?: string | null
+          product_option_id?: string | null
           rarity?: string
           reward_type?: string
+          selected_color?: string | null
           ticket_reward_amount?: number | null
           updated_at?: string
         }
@@ -4201,6 +4207,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mystery_case_rewards_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
             referencedColumns: ["id"]
           },
         ]
