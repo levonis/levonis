@@ -46,7 +46,7 @@ export function spawnWaveEnemies(wave: number, planet: Planet): { enemies: Enemy
     };
   }
 
-  const localWave = wave - planet.waves[0]; // 0-4 within planet
+  const localWave = wave - planet.waves[0];
   const count = 4 + localWave * 2 + planet.id;
   const enemies: Enemy[] = [];
   const formKeys = Object.keys(FORMATIONS) as Array<keyof typeof FORMATIONS>;
@@ -75,13 +75,14 @@ export function spawnWaveEnemies(wave: number, planet: Planet): { enemies: Enemy
   return { enemies, total: count };
 }
 
+// Balanced scores — reduced for economy
 export function getEnemyScore(type: EnemyType): number {
   switch (type) {
-    case 'boss': return 100;
-    case 'tank': return 15;
-    case 'fighter': return 10;
-    case 'bomber': return 12;
-    case 'speeder': return 8;
-    default: return 5;
+    case 'boss': return 50;
+    case 'tank': return 8;
+    case 'fighter': return 5;
+    case 'bomber': return 6;
+    case 'speeder': return 4;
+    default: return 2; // drone
   }
 }

@@ -1,6 +1,6 @@
 export interface Vec2 { x: number; y: number }
 export interface Star { x: number; y: number; speed: number; size: number; brightness: number }
-export interface Bullet extends Vec2 { dy: number; dx?: number; isEnemy?: boolean }
+export interface Bullet extends Vec2 { dy: number; dx?: number; isEnemy?: boolean; isLaser?: boolean }
 export interface Particle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number }
 export interface Enemy {
   x: number; y: number; w: number; h: number;
@@ -20,7 +20,13 @@ export interface Missile {
   life: number;
 }
 
-export type PowerUpType = 'missile' | 'shield' | 'fire_rate';
+export interface HelperPlane {
+  x: number; y: number;
+  side: 'left' | 'right';
+  shootTimer: number;
+}
+
+export type PowerUpType = 'upgrade' | 'shield';
 export interface PowerUp {
   x: number; y: number;
   type: PowerUpType;
@@ -29,7 +35,7 @@ export interface PowerUp {
 }
 
 export type EnemyType = 'drone' | 'fighter' | 'tank' | 'speeder' | 'bomber' | 'boss';
-export type Screen = 'start' | 'shop' | 'playing' | 'planet-transition' | 'gameover';
+export type Screen = 'start' | 'playing' | 'gameover';
 
 export interface Planet {
   id: number;
@@ -40,23 +46,15 @@ export interface Planet {
   starColor2: string;
   nebulaColor: string;
   enemyTypes: EnemyType[];
-  waves: [number, number]; // start, end
+  waves: [number, number];
   bossWave: number;
-}
-
-export interface ShopItem {
-  id: string;
-  nameAr: string;
-  icon: string;
-  cost: number;
-  description: string;
-  maxLevel: number;
 }
 
 export interface GameState {
   screen: Screen;
   player: Vec2;
   lives: number;
+  maxLives: number;
   score: number;
   wave: number;
   planet: number;
@@ -66,6 +64,7 @@ export interface GameState {
   stars: Star[];
   missiles: Missile[];
   powerUps: PowerUp[];
+  helperPlanes: HelperPlane[];
   spawnTimer: number;
   enemiesLeftInWave: number;
   waveDelay: number;
@@ -77,20 +76,22 @@ export interface GameState {
   gameTime: number;
   autoShoot: boolean;
   screenFlash: number;
-  // Shop upgrades
-  fireRateLevel: number;
-  fireRateBoost: number; // 0-3 from pickups
-  fireRateDecayTimer: number; // frames since last pickup (decays after 7s = 420 frames)
-  doubleBullets: boolean;
-  shieldActive: number;
-  shieldInventory: number;
-  transitionTimer: number;
-  // Missile launcher
-  missileBaseActive: boolean;
+  // Progressive upgrade system
+  upgradeLevel: number; // 0-15 total upgrades collected
+  // Upgrade breakdown:
+  // 0: single shot
+  // 1: double shot
+  // 2: triple shot
+  // 3-7: laser levels 1-5
+  // 8-13: rockets (1-6 rockets loaded)
+  // 14-15: helper planes (1-2)
+  // Shield
+  shieldActive: number; // frames remaining (600 = 10sec)
+  // Missile system (from upgrade level 8-13)
   missileCount: number;
-  missileReloadTimer: number;
   missileFireTimer: number;
-  missileDoubleTap: boolean; // flag: double-tap triggers missile volley
+  missileDoubleTap: boolean;
+  transitionTimer: number;
 }
 
 export const W = 360;
@@ -101,5 +102,4 @@ export const BULLET_W = 3;
 export const BULLET_H = 8;
 export const MAX_WAVES = 20;
 export const MAX_MISSILES = 6;
-export const MISSILE_RELOAD_RATE = 90; // frames to reload one missile
-export const MISSILE_FIRE_RATE = 20; // frames between missile launches
+export const MISSILE_FIRE_RATE = 20;

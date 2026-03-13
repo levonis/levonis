@@ -1,8 +1,8 @@
 /**
- * Space Blaster – 20 waves, 4 planets, shop, pro enemies
+ * Space Blaster – 20 waves, 4 planets, progressive upgrades, no shop
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { ArrowRight, RotateCcw, ShoppingCart, Ticket } from "lucide-react";
+import { ArrowRight, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,13 +10,21 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
-import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_RELOAD_RATE, MISSILE_FIRE_RATE, PowerUp, PowerUpType } from "./space-blaster/types";
-import { getPlanetForWave, PLANETS } from "./space-blaster/planets";
+import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane } from "./space-blaster/types";
+import { getPlanetForWave } from "./space-blaster/planets";
 import { spawnWaveEnemies, getEnemyScore } from "./space-blaster/enemies";
-import { SHOP_ITEMS } from "./space-blaster/shop";
-import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, updateMissileBaseAnim } from "./space-blaster/renderer";
+import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, drawHelperPlanes, updateMissileBaseAnim } from "./space-blaster/renderer";
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
+
+// Get upgrade breakdown from level
+function getUpgradeInfo(level: number) {
+  if (level <= 0) return { shootBullets: 1, laserLevel: 0, rockets: 0, helpers: 0 };
+  if (level <= 2) return { shootBullets: 1 + level, laserLevel: 0, rockets: 0, helpers: 0 };
+  if (level <= 7) return { shootBullets: 3, laserLevel: level - 2, rockets: 0, helpers: 0 };
+  if (level <= 13) return { shootBullets: 3, laserLevel: 5, rockets: level - 7, helpers: 0 };
+  return { shootBullets: 3, laserLevel: 5, rockets: 6, helpers: Math.min(level - 13, 2) };
+}
 
 export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,8 +36,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const [finalScore, setFinalScore] = useState(0);
   const [finalWave, setFinalWave] = useState(0);
   const [pendingPoints, setPendingPoints] = useState(0);
-  const [shopLevels, setShopLevels] = useState<Record<string, number>>({});
-  const [userPoints, setUserPoints] = useState(0);
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -70,13 +76,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const entryFee = gameSettings?.entry_fee_tickets || 0;
   const settingsRef = useRef(gameSettings);
   settingsRef.current = gameSettings;
-
-  // Fetch user points for shop
-  useEffect(() => {
-    if (!user) return;
-    supabase.from('user_points').select('available_points').eq('user_id', user.id).single()
-      .then(({ data }) => { if (data) setUserPoints((data as any).available_points ?? 0); });
-  }, [user, screen]);
 
   const syncPoints = useCallback(async (points: number) => {
     if (!user || points === 0) return;
@@ -122,56 +121,31 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     }
 
     const { enemies, total } = spawnWaveEnemies(1, getPlanetForWave(1));
-    const extraLives = shopLevels['extra_life'] || 0;
     stateRef.current = {
       screen: 'playing',
       player: { x: W / 2 - PLAYER_W / 2, y: H - 60 },
-      lives: 3 + extraLives,
+      lives: 5,
+      maxLives: 5,
       score: 0, wave: 1, planet: 1,
       enemies, bullets: [], particles: [], stars: initStars(),
       missiles: [],
       powerUps: [],
+      helperPlanes: [],
       spawnTimer: 0, enemiesLeftInWave: total, waveDelay: 0,
       shootCooldown: 0, invincible: 120,
       touchX: null, touchY: null, keys: new Set(), gameTime: 0,
       autoShoot: false, screenFlash: 0,
-      fireRateLevel: shopLevels['fire_rate'] || 0,
-      fireRateBoost: 0,
-      fireRateDecayTimer: 0,
-      doubleBullets: (shopLevels['double_bullets'] || 0) > 0,
+      upgradeLevel: 0,
       shieldActive: 0,
-      shieldInventory: shopLevels['shield'] || 0,
-      transitionTimer: 0,
-      missileBaseActive: (shopLevels['missile_base'] || 0) > 0,
-      missileCount: (shopLevels['missile_base'] || 0) > 0 ? MAX_MISSILES : 0,
-      missileReloadTimer: 0,
+      missileCount: 0,
       missileFireTimer: 0,
       missileDoubleTap: false,
+      transitionTimer: 0,
     };
     setScreen('playing');
     lastTimeRef.current = 0;
     startMusic();
-  }, [shopLevels, startMusic, entryFee, user, userTickets, refetchTickets]);
-
-  // Shop buy
-  const buyItem = useCallback(async (itemId: string) => {
-    const item = SHOP_ITEMS.find(i => i.id === itemId);
-    if (!item) return;
-    const currentLevel = shopLevels[itemId] || 0;
-    if (currentLevel >= item.maxLevel) { toast.error('الحد الأقصى!'); return; }
-    if (userPoints < item.cost) { toast.error('نقاط غير كافية!'); return; }
-    try {
-      await supabase.rpc('admin_adjust_points', {
-        p_user_id: user!.id, p_amount: -item.cost,
-        p_reason: `Shop: ${item.nameAr}`
-      });
-      setShopLevels(prev => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-      setUserPoints(prev => prev - item.cost);
-      queryClient.invalidateQueries({ queryKey: ['user-points'] });
-      toast.success(`تم شراء ${item.nameAr}!`);
-      playClick();
-    } catch { toast.error('خطأ!'); }
-  }, [shopLevels, userPoints, user, queryClient, playClick]);
+  }, [startMusic, entryFee, user, userTickets, refetchTickets]);
 
   // Cleanup music on unmount
   useEffect(() => () => stopMusic(), [stopMusic]);
@@ -199,11 +173,10 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     };
     const onTouchStart = (e: TouchEvent) => {
       updateTouch(e);
-      // Double-tap detection: fires missiles (not shield anymore)
       const now = Date.now();
       if (now - lastTapTime < 300) {
         const s = stateRef.current;
-        if (s && s.missileBaseActive && s.missileCount > 0) {
+        if (s && s.missileCount > 0) {
           s.missileDoubleTap = true;
         }
       }
@@ -236,23 +209,16 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
 
     // Power-up drop chances based on enemy type
     const DROP_CHANCES: Record<string, number> = {
-      drone: 0.05, fighter: 0.08, tank: 0.12, speeder: 0.06, bomber: 0.15, boss: 0.6,
+      drone: 0.08, fighter: 0.12, tank: 0.18, speeder: 0.10, bomber: 0.20, boss: 0.8,
     };
     const spawnPowerUp = (x: number, y: number, enemyType: string) => {
       const s = stateRef.current;
       if (!s) return;
-      const chance = DROP_CHANCES[enemyType] || 0.05;
+      const chance = DROP_CHANCES[enemyType] || 0.08;
       if (Math.random() > chance) return;
-      // Weighted random type
-      const types: PowerUpType[] = ['fire_rate', 'shield', 'missile'];
-      const weights = [0.5, 0.3, 0.2]; // fire_rate most common, missile rarest
-      let r = Math.random(), cumulative = 0;
-      let type: PowerUpType = 'fire_rate';
-      for (let i = 0; i < types.length; i++) {
-        cumulative += weights[i];
-        if (r <= cumulative) { type = types[i]; break; }
-      }
-      s.powerUps.push({ x, y, type, vy: 1.2, life: 600 }); // lasts 10 seconds
+      // 70% upgrade, 30% shield
+      const type: PowerUpType = Math.random() < 0.7 ? 'upgrade' : 'shield';
+      s.powerUps.push({ x, y, type, vy: 1.2, life: 600 });
     };
     const explosionColors = ['#ffff00', '#ff8800', '#ff3300', '#ff0000', '#ffffff', '#ff6600'];
 
@@ -262,12 +228,11 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       setFinalScore(s.score);
       setFinalWave(s.wave);
 
-      // Balanced point calculation using admin settings
       const gs = settingsRef.current;
-      const pps = gs?.points_per_score ?? 0.1;
-      const maxPts = gs?.max_points_per_game ?? 100;
-      const victoryBonus = victory ? (gs?.victory_bonus_points ?? 20) : 0;
-      const waveBonus = (s.wave - 1) * (gs?.wave_bonus_points ?? 2);
+      const pps = gs?.points_per_score ?? 0.03;
+      const maxPts = gs?.max_points_per_game ?? 30;
+      const victoryBonus = victory ? (gs?.victory_bonus_points ?? 5) : 0;
+      const waveBonus = (s.wave - 1) * (gs?.wave_bonus_points ?? 0);
 
       const scorePoints = Math.floor(s.score * pps);
       const totalPts = Math.min(scorePoints + waveBonus, maxPts) + victoryBonus;
@@ -287,6 +252,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
 
       const planet = getPlanetForWave(s.wave);
       s.planet = planet.id;
+      const info = getUpgradeInfo(s.upgradeLevel);
 
       // ── Update ──
       const spd = 4 * dt;
@@ -299,27 +265,28 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       s.player.x = clamp(s.player.x, 0, W - PLAYER_W);
       s.player.y = clamp(s.player.y, 0, H - PLAYER_H);
 
-      // Shooting (fire rate combines shop level + boost from pickups)
+      // Shooting based on upgrade level
       s.shootCooldown -= dt;
-      const totalFireRate = s.fireRateLevel + s.fireRateBoost;
-      const fireRate = Math.max(3, 10 - totalFireRate * 2);
+      const fireRate = Math.max(4, 10 - info.laserLevel);
       if ((s.keys.has(' ') || s.keys.has('Space') || s.autoShoot) && s.shootCooldown <= 0) {
-        s.bullets.push({ x: s.player.x + PLAYER_W / 2 - BULLET_W / 2, y: s.player.y - BULLET_H, dy: -6 });
-        if (s.doubleBullets) {
+        const cx = s.player.x + PLAYER_W / 2;
+        // Main bullets
+        s.bullets.push({ x: cx - BULLET_W / 2, y: s.player.y - BULLET_H, dy: -6 });
+        if (info.shootBullets >= 2) {
           s.bullets.push({ x: s.player.x + 2, y: s.player.y - BULLET_H + 3, dy: -6 });
+        }
+        if (info.shootBullets >= 3) {
           s.bullets.push({ x: s.player.x + PLAYER_W - 4, y: s.player.y - BULLET_H + 3, dy: -6 });
+        }
+        // Laser behind gun (fires backward-ish green beams)
+        if (info.laserLevel > 0) {
+          for (let li = 0; li < info.laserLevel; li++) {
+            const spread = (li - (info.laserLevel - 1) / 2) * 8;
+            s.bullets.push({ x: cx + spread - 1, y: s.player.y - BULLET_H - 4, dy: -7, isLaser: true });
+          }
         }
         s.shootCooldown = fireRate;
         soundsRef.current.playShoot();
-      }
-
-      // Fire rate boost decay (7 seconds = 420 frames without pickup → lose 1 level)
-      if (s.fireRateBoost > 0) {
-        s.fireRateDecayTimer += dt;
-        if (s.fireRateDecayTimer >= 420) {
-          s.fireRateBoost--;
-          s.fireRateDecayTimer = 0;
-        }
       }
 
       if (s.invincible > 0) s.invincible -= dt;
@@ -335,6 +302,29 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       // Spawn delays
       for (const e of s.enemies) {
         if (e.spawnDelay > 0) e.spawnDelay -= dt;
+      }
+
+      // ── Helper planes update ──
+      // Sync helper plane count with upgrade
+      while (s.helperPlanes.length < info.helpers) {
+        const side = s.helperPlanes.length === 0 ? 'left' : 'right';
+        s.helperPlanes.push({ x: s.player.x, y: s.player.y, side, shootTimer: 0 });
+      }
+      while (s.helperPlanes.length > info.helpers) {
+        s.helperPlanes.pop();
+      }
+      // Move and shoot
+      for (const hp of s.helperPlanes) {
+        const offsetX = hp.side === 'left' ? -20 : PLAYER_W + 12;
+        const targetX = s.player.x + offsetX;
+        const targetY = s.player.y + 8;
+        hp.x += clamp(targetX - hp.x, -spd * 2, spd * 2);
+        hp.y += clamp(targetY - hp.y, -spd * 2, spd * 2);
+        hp.shootTimer -= dt;
+        if (hp.shootTimer <= 0) {
+          s.bullets.push({ x: hp.x, y: hp.y - 6, dy: -5 });
+          hp.shootTimer = 18; // slower fire rate than player
+        }
       }
 
       // Bullets
@@ -369,10 +359,12 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           for (let j = s.enemies.length - 1; j >= 0; j--) {
             const e = s.enemies[j];
             if (e.spawnDelay > 0) continue;
-            if (b.x + BULLET_W > e.x && b.x < e.x + e.w && b.y + BULLET_H > e.y && b.y < e.y + e.h) {
-              e.hp--;
+            const bw = b.isLaser ? 2 : BULLET_W;
+            const bh = b.isLaser ? 12 : BULLET_H;
+            if (b.x + bw > e.x && b.x < e.x + e.w && b.y + bh > e.y && b.y < e.y + e.h) {
+              e.hp -= b.isLaser ? 0.5 : 1;
               s.bullets.splice(i, 1);
-              spawnParticles(b.x, b.y, 8, ['#ffff00', '#ffffff', '#ff8800']);
+              spawnParticles(b.x, b.y, 8, b.isLaser ? ['#00ff88', '#ffffff'] : ['#ffff00', '#ffffff', '#ff8800']);
               if (e.hp <= 0) {
                 s.score += getEnemyScore(e.type);
                 s.enemiesLeftInWave--;
@@ -396,7 +388,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       // Enemies
       for (const e of s.enemies) {
         if (e.spawnDelay > 0) continue;
-        // Movement patterns
         if (e.type === 'boss') {
           e.y = clamp(e.y + e.speed * dt, 20, 80);
           e.x += Math.sin(s.gameTime * 0.03) * 1.5 * dt;
@@ -422,7 +413,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           e.x = clamp(e.x, 0, W - e.w);
         }
 
-        // Enemy shooting
         e.shootTimer -= dt;
         if (e.shootTimer <= 0 && e.y > 0) {
           const interval = e.type === 'boss' ? 20 : e.type === 'bomber' ? 35 : e.type === 'fighter' ? 50 : 80;
@@ -430,7 +420,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           if (e.type === 'boss') {
             s.bullets.push({ x: e.x + 8, y: e.y + e.h, dy: 3.5, isEnemy: true });
             s.bullets.push({ x: e.x + e.w - 10, y: e.y + e.h, dy: 3.5, isEnemy: true });
-            // Spread on later planets
             if (planet.id >= 3) {
               s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 3, dx: -1, isEnemy: true });
               s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 3, dx: 1, isEnemy: true });
@@ -449,7 +438,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           s.player.x + PLAYER_W > e.x && s.player.x < e.x + e.w &&
           s.player.y + PLAYER_H > e.y && s.player.y < e.y + e.h) {
           if (s.shieldActive > 0) {
-            // Shield absorbs one hit then breaks
             s.shieldActive = 0;
             s.invincible = 30;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 12, ['#00ffff', '#88ffff', '#ffffff']);
@@ -463,22 +451,17 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           }
         }
 
-        // Off-screen respawn (non-boss)
         if (e.y > H + 20 && e.type !== 'boss') {
           e.y = -(20 + Math.random() * 100);
           e.x = 20 + Math.random() * (W - 40);
         }
       }
 
-      // ── Missile system ──
-      if (s.missileBaseActive) {
-        // No reload — missiles are single-use (fire all 6 then base deactivates)
-
-        // Animation-driven missile firing: each 2-frame pair in the base triggers a launch
+      // ── Missile system (from upgrade level 8+) ──
+      if (s.missileCount > 0) {
         const shouldFireMissile = updateMissileBaseAnim(s.missileDoubleTap && s.missileCount > 0 && s.enemies.length > 0);
         if (shouldFireMissile && s.missileCount > 0 && s.enemies.length > 0) {
           const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
-          // Find enemy with highest HP
           let bestIdx = -1, bestHp = -1;
           for (let i = 0; i < s.enemies.length; i++) {
             const e = s.enemies[i];
@@ -501,10 +484,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         }
         if (s.missileCount <= 0) {
           s.missileDoubleTap = false;
-          s.missileBaseActive = false; // Single-use: deactivate after all missiles fired
         }
 
-        // Update missiles — steer towards highest HP enemy
+        // Update missiles
         for (let i = s.missiles.length - 1; i >= 0; i--) {
           const m = s.missiles[i];
           m.life -= dt;
@@ -564,23 +546,23 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         pu.y += pu.vy * dt;
         pu.life -= dt;
         if (pu.y > H + 20 || pu.life <= 0) { s.powerUps.splice(i, 1); continue; }
-        // Pickup detection
         const dx = pu.x - px, dy = pu.y - py;
         if (Math.abs(dx) < 18 && Math.abs(dy) < 18) {
           s.powerUps.splice(i, 1);
           switch (pu.type) {
-            case 'fire_rate':
-              if (s.fireRateBoost < 3) s.fireRateBoost++;
-              s.fireRateDecayTimer = 0; // reset decay timer
+            case 'upgrade':
+              if (s.upgradeLevel < 15) {
+                s.upgradeLevel++;
+                const newInfo = getUpgradeInfo(s.upgradeLevel);
+                // Grant rockets when entering rocket stage
+                if (newInfo.rockets > 0 && getUpgradeInfo(s.upgradeLevel - 1).rockets < newInfo.rockets) {
+                  s.missileCount = Math.min(s.missileCount + 1, MAX_MISSILES);
+                }
+              }
               break;
             case 'shield':
-              // Auto-activate shield for 15 seconds (900 frames), protects from 1 hit
-              s.shieldActive = 900;
-              break;
-            case 'missile':
-              // Always grant a fresh missile base with 6 missiles (single-use)
-              s.missileBaseActive = true;
-              s.missileCount = MAX_MISSILES;
+              // Shield 10 sec (600 frames). Collecting again refills to 10 sec.
+              s.shieldActive = 600;
               break;
           }
           spawnParticles(pu.x, pu.y, 10, ['#ffffff', '#ffcc00', '#00ffff']);
@@ -612,8 +594,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       // ── Draw ──
       drawBackground(ctx, s);
       for (const e of s.enemies) drawEnemy(ctx, e, s.gameTime, planet.id);
-      if (s.missileBaseActive) drawMissileBase(ctx, s);
-      drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive, s.lives, 3 + (shopLevels['extra_life'] || 0));
+      if (s.missileCount > 0) drawMissileBase(ctx, s);
+      drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive, s.lives, s.maxLives);
+      drawHelperPlanes(ctx, s);
       drawBullets(ctx, s);
       drawMissiles(ctx, s);
       drawPowerUps(ctx, s.powerUps, s.gameTime);
@@ -658,8 +641,8 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
                 <p>🌍 4 كواكب | 20 موجة</p>
                 <p>🎮 أسهم/WASD + مسافة | لمس</p>
-                <p>⭐ أعداء متنوعون وبوسات عملاقة</p>
-                <p>❤️ {3 + (shopLevels['extra_life'] || 0)} حياة</p>
+                <p>⭐ اجمع الترقيات لتقوية سفينتك</p>
+                <p>❤️ 5 حياة | 🛡 درع 10 ثواني</p>
                 {entryFee > 0 && (
                   <p className="flex items-center justify-end gap-1">
                     <Ticket className="h-3 w-3" /> رسوم الدخول: {entryFee} تذكرة
@@ -669,18 +652,13 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => { playClick(); startGame(); }}
-                  disabled={!user || (entryFee > 0 && userTickets < entryFee)}
-                  className="pixel-btn-active font-mono text-sm flex-1"
-                >
-                  {entryFee > 0 ? `▶ START (${entryFee} 🎫)` : '▶ START'}
-                </Button>
-                <Button variant="outline" onClick={() => { playClick(); setScreen('shop'); }} className="font-mono text-sm gap-1">
-                  <ShoppingCart className="h-3 w-3" /> متجر
-                </Button>
-              </div>
+              <Button
+                onClick={() => { playClick(); startGame(); }}
+                disabled={!user || (entryFee > 0 && userTickets < entryFee)}
+                className="pixel-btn-active font-mono text-sm w-full"
+              >
+                {entryFee > 0 ? `▶ START (${entryFee} 🎫)` : '▶ START'}
+              </Button>
               {!user && (
                 <p className="text-xs text-destructive font-mono">يجب تسجيل الدخول للعب</p>
               )}
@@ -689,42 +667,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground font-mono text-xs">
             <ArrowRight className="h-4 w-4" /> رجوع
           </Button>
-        </div>
-      )}
-
-      {screen === 'shop' && (
-        <div className="flex flex-col items-center gap-4 text-center w-full max-w-xs" dir="rtl">
-          <div className="pixel-frame p-5 space-y-4 w-full">
-            <h2 className="text-xl font-black font-mono text-primary">🛒 المتجر</h2>
-            <p className="text-xs text-muted-foreground font-mono">نقاطك: <span className="text-primary font-bold">{userPoints}</span></p>
-            <div className="space-y-2">
-              {SHOP_ITEMS.map(item => {
-                const level = shopLevels[item.id] || 0;
-                const maxed = level >= item.maxLevel;
-                return (
-                  <div key={item.id} className="pixel-frame p-3 flex items-center justify-between gap-2">
-                    <div className="text-right flex-1">
-                      <div className="font-mono text-sm font-bold">{item.icon} {item.nameAr}</div>
-                      <div className="text-xs text-muted-foreground">{item.description}</div>
-                      {item.id === 'shield' && <div className="text-xs text-primary">المخزون: {level}/{item.maxLevel}</div>}
-                      {item.maxLevel > 1 && item.id !== 'shield' && <div className="text-xs text-primary">المستوى: {level}/{item.maxLevel}</div>}
-                    </div>
-                    <Button
-                      size="sm"
-                      disabled={maxed || userPoints < item.cost || !user}
-                      onClick={() => buyItem(item.id)}
-                      className="font-mono text-xs pixel-btn-active"
-                    >
-                      {maxed ? '✓' : `${item.cost} ★`}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-            <Button variant="ghost" onClick={() => { playClick(); setScreen('start'); }} className="font-mono text-xs w-full">
-              ← رجوع
-            </Button>
-          </div>
         </div>
       )}
 
@@ -751,12 +693,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               <p className="text-muted-foreground">الكوكب: {getPlanetForWave(finalWave).nameAr}</p>
               {pendingPoints > 0 && <p className="text-green-400 font-bold">+{pendingPoints} نقطة مكافأة! 🎉</p>}
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => { playClick(); startGame(); }} className="pixel-btn-active font-mono text-xs flex-1 gap-1">
-                <RotateCcw className="h-3 w-3" /> إعادة
-              </Button>
-              <Button variant="ghost" onClick={onBack} className="font-mono text-xs flex-1">رجوع</Button>
-            </div>
+            <Button variant="ghost" onClick={onBack} className="font-mono text-xs w-full">رجوع</Button>
           </div>
         </div>
       )}
