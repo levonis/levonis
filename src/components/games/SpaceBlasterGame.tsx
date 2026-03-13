@@ -1,5 +1,5 @@
 /**
- * Space Blaster – 20 waves, 4 planets, progressive upgrades, no shop
+ * Space Blaster – 260 waves, 13 planets, 150+ enemies, progressive upgrades
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ArrowRight, Ticket } from "lucide-react";
@@ -10,9 +10,9 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
-import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane } from "./space-blaster/types";
+import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane, getEnemyTier } from "./space-blaster/types";
 import { getPlanetForWave } from "./space-blaster/planets";
-import { spawnWaveEnemies, getEnemyScore } from "./space-blaster/enemies";
+import { spawnWaveEnemies, getEnemyScore, getEnemyShootPattern } from "./space-blaster/enemies";
 import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, drawHelperPlanes, updateMissileBaseAnim } from "./space-blaster/renderer";
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
@@ -390,46 +390,60 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         if (e.spawnDelay > 0) continue;
         if (e.type === 'boss') {
           e.y = clamp(e.y + e.speed * dt, 20, 80);
-          e.x += Math.sin(s.gameTime * 0.03) * 1.5 * dt;
+          e.x += Math.sin(s.gameTime * 0.03) * (1.5 + e.tier * 0.2) * dt;
           e.x = clamp(e.x, 0, W - e.w);
         } else {
           e.movePhase += 0.02 * dt;
           switch (e.movePattern) {
             case 'wave':
-              e.y += e.speed * dt;
-              e.x += Math.sin(e.movePhase * 3) * 1.2 * dt;
-              break;
+              e.y += e.speed * dt; e.x += Math.sin(e.movePhase * 3) * 1.2 * dt; break;
             case 'zigzag':
-              e.y += e.speed * dt;
-              e.x += (Math.floor(e.movePhase) % 2 === 0 ? 1.5 : -1.5) * dt;
-              break;
+              e.y += e.speed * dt; e.x += (Math.floor(e.movePhase) % 2 === 0 ? 1.5 : -1.5) * dt; break;
             case 'circle':
-              e.y += e.speed * 0.5 * dt;
-              e.x += Math.cos(e.movePhase * 2) * 1.5 * dt;
+              e.y += e.speed * 0.5 * dt; e.x += Math.cos(e.movePhase * 2) * 1.5 * dt; break;
+            case 'spiral':
+              e.y += e.speed * 0.6 * dt; e.x += Math.sin(e.movePhase * 4) * 2 * dt; break;
+            case 'dash':
+              e.y += e.speed * (Math.sin(e.movePhase * 5) > 0.7 ? 3 : 0.5) * dt; break;
+            case 'orbit':
+              e.y += e.speed * 0.3 * dt;
+              e.x += Math.cos(e.movePhase * 2.5) * 2.5 * dt; break;
+            case 'teleport':
+              e.y += e.speed * dt;
+              if (Math.random() < 0.003) { e.x = 20 + Math.random() * (W - 40); }
               break;
+            case 'swarm':
+              e.y += e.speed * dt;
+              e.x += Math.sin(e.movePhase * 6 + e.y * 0.1) * 1.5 * dt; break;
             default:
               e.y += e.speed * dt;
           }
           e.x = clamp(e.x, 0, W - e.w);
         }
 
+        // Shooting — uses tier-based patterns
         e.shootTimer -= dt;
         if (e.shootTimer <= 0 && e.y > 0) {
-          const interval = e.type === 'boss' ? 20 : e.type === 'bomber' ? 35 : e.type === 'fighter' ? 50 : 80;
-          e.shootTimer = interval + Math.random() * 30;
+          const tier = e.tier;
+          const pattern = getEnemyShootPattern(e.type, tier, s.wave);
+          e.shootTimer = Math.max(15, (e.type === 'boss' ? 15 : 40) - tier * 2) + Math.random() * 20;
           if (e.type === 'boss') {
-            s.bullets.push({ x: e.x + 8, y: e.y + e.h, dy: 3.5, isEnemy: true });
-            s.bullets.push({ x: e.x + e.w - 10, y: e.y + e.h, dy: 3.5, isEnemy: true });
-            if (planet.id >= 3) {
-              s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 3, dx: -1, isEnemy: true });
-              s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 3, dx: 1, isEnemy: true });
+            // Boss fires spread based on tier
+            const bossN = Math.min(7, 2 + Math.floor(e.variant / 2));
+            for (let bi = 0; bi < bossN; bi++) {
+              const dx = (bi - (bossN - 1) / 2) * 0.6;
+              s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 3.5 + tier * 0.1, dx, isEnemy: true });
             }
-          } else if (e.type === 'bomber') {
-            s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 2, isEnemy: true });
-            s.bullets.push({ x: e.x + e.w / 2 - 4, y: e.y + e.h, dy: 2, dx: -0.5, isEnemy: true });
-            s.bullets.push({ x: e.x + e.w / 2 + 4, y: e.y + e.h, dy: 2, dx: 0.5, isEnemy: true });
           } else {
-            s.bullets.push({ x: e.x + e.w / 2, y: e.y + e.h, dy: 3, isEnemy: true });
+            for (let bi = 0; bi < pattern.bulletCount; bi++) {
+              s.bullets.push({
+                x: e.x + e.w / 2 + (bi - (pattern.bulletCount - 1) / 2) * 4,
+                y: e.y + e.h,
+                dy: pattern.bulletSpeed,
+                dx: pattern.bulletDx[bi] || 0,
+                isEnemy: true,
+              });
+            }
           }
         }
 
@@ -639,7 +653,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               </h2>
               <p className="text-muted-foreground text-sm font-mono">حرب الفضاء</p>
               <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
-                <p>🌍 4 كواكب | 20 موجة</p>
+                <p>🌍 13 كوكب | 260 موجة</p>
                 <p>🎮 أسهم/WASD + مسافة | لمس</p>
                 <p>⭐ اجمع الترقيات لتقوية سفينتك</p>
                 <p>❤️ 5 حياة | 🛡 درع 10 ثواني</p>

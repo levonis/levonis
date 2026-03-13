@@ -1,4 +1,5 @@
 import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES, PowerUp } from './types';
+import { drawProceduralEnemy, drawBoss as drawBossEnemy } from './enemyRenderer';
 import missileSrc from '@/assets/missile-sprite.png';
 import missileBaseSrc from '@/assets/missile-base-sprite.png';
 import { getPlanetForWave, PLANETS } from './planets';
@@ -32,178 +33,14 @@ shieldAnimImg.src = shieldAnimSrc;
 const SHIELD_FRAMES = 10;
 const SHIELD_ANIM_SPEED = 6;
 
-// ── Enemy Colors by type ──
-const ENEMY_COLORS: Record<string, { main: string; dark: string; glow: string; eye: string }> = {
-  drone:   { main: '#ff3d3d', dark: '#aa1111', glow: '#ff3d3d', eye: '#ff0000' },
-  fighter: { main: '#ff8800', dark: '#aa4400', glow: '#ff6600', eye: '#ffcc00' },
-  tank:    { main: '#44aaff', dark: '#225588', glow: '#44aaff', eye: '#00ffff' },
-  speeder: { main: '#00ff88', dark: '#008844', glow: '#00ff88', eye: '#88ffcc' },
-  bomber:  { main: '#ff44ff', dark: '#882288', glow: '#ff44ff', eye: '#ff88ff' },
-  boss:    { main: '#b040ff', dark: '#6a1fb0', glow: '#b040ff', eye: '#ff0000' },
-};
-
 const PLAYER_COLOR = '#00e5ff';
-
-function drawDrone(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
-  const c = ENEMY_COLORS.drone;
-  ctx.save();
-  ctx.shadowColor = c.glow; ctx.shadowBlur = 6;
-  const cx = e.x + e.w / 2, cy = e.y + e.h / 2, r = e.w / 2;
-  ctx.fillStyle = c.dark;
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const a = Math.PI / 3 * i - Math.PI / 6;
-    const px = cx + r * Math.cos(a), py = cy + r * Math.sin(a);
-    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-  }
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = c.main;
-  ctx.fillRect(cx - 3, cy - 3, 6, 6);
-  ctx.fillStyle = c.eye;
-  ctx.fillRect(cx - 1, cy - 1, 2 + (Math.sin(t * 0.2) > 0.5 ? 1 : 0), 2);
-  const wingY = Math.sin(t * 0.15) * 2;
-  ctx.fillStyle = c.dark;
-  ctx.fillRect(e.x - 2, cy - 1 + wingY, 3, 2);
-  ctx.fillRect(e.x + e.w - 1, cy - 1 - wingY, 3, 2);
-  ctx.restore();
-}
-
-function drawFighter(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
-  const c = ENEMY_COLORS.fighter;
-  ctx.save();
-  ctx.shadowColor = c.glow; ctx.shadowBlur = 8;
-  const cx = e.x + e.w / 2;
-  ctx.fillStyle = c.dark;
-  ctx.beginPath();
-  ctx.moveTo(cx, e.y);
-  ctx.lineTo(e.x, e.y + e.h);
-  ctx.lineTo(e.x + e.w, e.y + e.h);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = c.main;
-  ctx.beginPath();
-  ctx.moveTo(cx, e.y + 4);
-  ctx.lineTo(e.x + 4, e.y + e.h - 2);
-  ctx.lineTo(e.x + e.w - 4, e.y + e.h - 2);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#ffcc00';
-  ctx.fillRect(e.x - 1, e.y + e.h - 6, 3, 6);
-  ctx.fillRect(e.x + e.w - 2, e.y + e.h - 6, 3, 6);
-  ctx.fillStyle = c.glow;
-  ctx.globalAlpha = 0.5 + Math.sin(t * 0.3) * 0.3;
-  ctx.fillRect(cx - 2, e.y + 2, 4, 3);
-  ctx.globalAlpha = 1;
-  ctx.restore();
-}
-
-function drawTank(ctx: CanvasRenderingContext2D, e: Enemy, _t: number) {
-  const c = ENEMY_COLORS.tank;
-  ctx.save();
-  ctx.shadowColor = c.glow; ctx.shadowBlur = 8;
-  ctx.fillStyle = c.dark;
-  ctx.fillRect(e.x, e.y, e.w, e.h);
-  ctx.fillStyle = c.main;
-  ctx.fillRect(e.x + 2, e.y + 2, e.w - 4, e.h - 4);
-  ctx.fillStyle = c.dark;
-  ctx.fillRect(e.x + 4, e.y + 4, e.w - 8, 3);
-  ctx.fillRect(e.x + 4, e.y + e.h - 7, e.w - 8, 3);
-  ctx.fillStyle = '#88ccff';
-  ctx.fillRect(e.x + e.w / 2 - 2, e.y + e.h - 2, 4, 6);
-  ctx.fillStyle = c.eye;
-  ctx.fillRect(e.x + e.w / 2 - 2, e.y + e.h / 2 - 2, 4, 4);
-  const ratio = e.hp / e.maxHp;
-  ctx.fillStyle = '#222';
-  ctx.fillRect(e.x, e.y - 5, e.w, 3);
-  ctx.fillStyle = ratio > 0.5 ? '#00ff00' : ratio > 0.25 ? '#ffff00' : '#ff0000';
-  ctx.fillRect(e.x, e.y - 5, e.w * ratio, 3);
-  ctx.restore();
-}
-
-function drawSpeeder(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
-  const c = ENEMY_COLORS.speeder;
-  ctx.save();
-  ctx.shadowColor = c.glow; ctx.shadowBlur = 6;
-  const cx = e.x + e.w / 2;
-  ctx.fillStyle = c.main;
-  ctx.beginPath();
-  ctx.moveTo(cx, e.y);
-  ctx.lineTo(e.x + e.w, e.y + e.h / 2);
-  ctx.lineTo(cx, e.y + e.h);
-  ctx.lineTo(e.x, e.y + e.h / 2);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = c.glow;
-  ctx.globalAlpha = 0.3;
-  ctx.fillRect(cx - 1, e.y - 4 - Math.random() * 3, 2, 4);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = c.eye;
-  ctx.fillRect(cx - 1, e.y + e.h / 2 - 1, 2, 2);
-  ctx.restore();
-}
-
-function drawBomber(ctx: CanvasRenderingContext2D, e: Enemy, t: number) {
-  const c = ENEMY_COLORS.bomber;
-  ctx.save();
-  ctx.shadowColor = c.glow; ctx.shadowBlur = 8;
-  ctx.fillStyle = c.dark;
-  ctx.fillRect(e.x, e.y + 4, e.w, e.h - 4);
-  ctx.fillStyle = c.main;
-  ctx.fillRect(e.x + 2, e.y + 2, e.w - 4, e.h - 4);
-  ctx.fillStyle = '#ff00ff';
-  ctx.globalAlpha = 0.5 + Math.sin(t * 0.2) * 0.4;
-  ctx.fillRect(e.x + e.w / 2 - 3, e.y + e.h - 4, 6, 4);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = '#ff88ff';
-  ctx.fillRect(e.x - 2, e.y + 6, 3, 4);
-  ctx.fillRect(e.x + e.w - 1, e.y + 6, 3, 4);
-  ctx.restore();
-}
-
-function drawBoss(ctx: CanvasRenderingContext2D, e: Enemy, t: number, planetId: number) {
-  const colors = [
-    { main: '#4488ff', dark: '#224488', core: '#00ffff' },
-    { main: '#ff6600', dark: '#aa3300', core: '#ffcc00' },
-    { main: '#aa44ff', dark: '#662299', core: '#ff00ff' },
-    { main: '#ff2222', dark: '#880000', core: '#ffff00' },
-  ];
-  const c = colors[(planetId - 1) % colors.length];
-  ctx.save();
-  ctx.shadowColor = c.main; ctx.shadowBlur = 15;
-  ctx.fillStyle = c.dark;
-  ctx.fillRect(e.x, e.y + 8, e.w, e.h - 8);
-  ctx.fillRect(e.x + 8, e.y, e.w - 16, e.h);
-  ctx.fillStyle = c.main;
-  ctx.fillRect(e.x + 4, e.y + 12, e.w - 8, e.h - 16);
-  ctx.fillRect(e.x + 12, e.y + 4, e.w - 24, e.h - 8);
-  ctx.fillStyle = c.core;
-  ctx.globalAlpha = 0.6 + Math.sin(t * 0.1) * 0.4;
-  ctx.fillRect(e.x + 10, e.y + 14, 5, 5);
-  ctx.fillRect(e.x + e.w - 15, e.y + 14, 5, 5);
-  ctx.fillRect(e.x + e.w / 2 - 3, e.y + 24, 6, 6);
-  ctx.globalAlpha = 1;
-  const eyeX = e.x + e.w / 2 + Math.sin(t * 0.05) * 6;
-  ctx.fillStyle = '#ff0000';
-  ctx.fillRect(eyeX - 3, e.y + 8, 6, 4);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(eyeX - 1, e.y + 9, 2, 2);
-  ctx.fillStyle = '#ffcc00';
-  ctx.fillRect(e.x + 4, e.y + e.h - 2, 4, 6);
-  ctx.fillRect(e.x + e.w - 8, e.y + e.h - 2, 4, 6);
-  const ratio = e.hp / e.maxHp;
-  ctx.fillStyle = '#111';
-  ctx.fillRect(e.x, e.y - 7, e.w, 4);
-  ctx.fillStyle = ratio > 0.5 ? '#00ff00' : ratio > 0.25 ? '#ffff00' : '#ff0000';
-  ctx.fillRect(e.x, e.y - 7, e.w * ratio, 4);
-  ctx.restore();
-}
 
 export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, t: number, planetId: number) {
   if (e.spawnDelay > 0) return;
-  switch (e.type) {
-    case 'drone':   drawDrone(ctx, e, t); break;
-    case 'fighter': drawFighter(ctx, e, t); break;
-    case 'tank':    drawTank(ctx, e, t); break;
-    case 'speeder': drawSpeeder(ctx, e, t); break;
-    case 'bomber':  drawBomber(ctx, e, t); break;
-    case 'boss':    drawBoss(ctx, e, t, planetId); break;
+  if (e.type === 'boss') {
+    drawBossEnemy(ctx, e, t);
+  } else {
+    drawProceduralEnemy(ctx, e, t);
   }
 }
 
