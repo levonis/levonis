@@ -500,7 +500,7 @@ export default function MysteryCaseTab() {
       if (newTotal > 100 && !rf.display_only) {
         throw new Error("إجمالي الاحتمالات يتجاوز 100%");
       }
-      const payload = {
+      const payload: any = {
         name_ar: rf.name_ar,
         reward_type: rf.display_only ? "custom" : rf.reward_type,
         rarity: rf.rarity,
@@ -510,6 +510,8 @@ export default function MysteryCaseTab() {
         ticket_reward_amount: rf.reward_type === "tickets" ? rf.ticket_reward_amount : 0,
         display_only: rf.display_only,
         is_active: rf.is_active,
+        selected_color: rf.reward_type === "product" ? (rf.selected_color || null) : null,
+        product_option_id: rf.reward_type === "product" ? (rf.product_option_id || null) : null,
         updated_at: new Date().toISOString(),
       };
       if (editReward) {
