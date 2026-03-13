@@ -33,6 +33,8 @@ shieldAnimImg.src = shieldAnimSrc;
 const SHIELD_FRAMES = 10;
 const SHIELD_ANIM_SPEED = 6;
 
+const PLAYER_COLOR = '#00e5ff';
+
 export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, t: number, planetId: number) {
   if (e.spawnDelay > 0) return;
   if (e.type === 'boss') {
