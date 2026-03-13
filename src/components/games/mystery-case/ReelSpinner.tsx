@@ -287,7 +287,7 @@ export default function ReelSpinner({
       const dur = Math.max(3500, Math.min(animationDuration, 5500));
       runSpin(targetX, dur);
     });
-  }, [spinning, winnerIndex, items, animationDuration, segment, stopRaf, runSpin]);
+  }, [spinning, winnerIndex, items, animationDuration, segment, stopRaf, runSpin, wrap, applyPos]);
 
   // Cleanup
   useEffect(() => () => stopRaf(), [stopRaf]);
