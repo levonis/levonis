@@ -198,7 +198,12 @@ export default function ReelSpinner({
 
     const startX = offsetRef.current;
     const totalDist = startX - targetX; // positive number (moving left)
-    if (totalDist <= 0) { onSpinComplete(); return; }
+    if (totalDist <= 0) {
+      wrap();
+      applyPos();
+      onSpinComplete();
+      return;
+    }
 
     const startTime = performance.now();
 
@@ -213,11 +218,12 @@ export default function ReelSpinner({
       // Ease-out cubic: fast start, slow end
       const eased = 1 - Math.pow(1 - t, 3);
       offsetRef.current = startX - totalDist * eased;
-
+      wrap();
       applyPos();
 
       if (t >= 1) {
         offsetRef.current = targetX;
+        wrap();
         applyPos();
         modeRef.current = "idle";
         spinningRef.current = false;
@@ -229,7 +235,7 @@ export default function ReelSpinner({
     };
 
     rafRef.current = requestAnimationFrame(tick);
-  }, [applyPos, onSpinComplete, stopRaf]);
+  }, [applyPos, onSpinComplete, stopRaf, wrap]);
 
   // Start idle on mount / segment change (when not spinning)
   useEffect(() => {
