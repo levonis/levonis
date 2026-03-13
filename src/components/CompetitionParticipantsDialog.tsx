@@ -790,7 +790,7 @@ export default function CompetitionParticipantsDialog({
               </ScrollArea>
             </TabsContent>
           </Tabs>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
 
