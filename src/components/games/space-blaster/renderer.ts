@@ -2,7 +2,6 @@ import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, B
 import { drawProceduralEnemy, drawBoss as drawBossEnemy } from './enemyRenderer';
 import missileSrc from '@/assets/missile-sprite.png';
 import missileBaseSrc from '@/assets/missile-base-sprite.png';
-import missileBaseSrc from '@/assets/missile-base-sprite.png';
 import { getPlanetForWave, PLANETS } from './planets';
 import playerShipSrc from '@/assets/player-ship.png';
 import shipDmg1Src from '@/assets/ship-damage-1.png';
