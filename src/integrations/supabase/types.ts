@@ -4150,6 +4150,7 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          display_chance: string | null
           display_only: boolean
           display_order: number | null
           drop_chance: number
@@ -4168,6 +4169,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description_ar?: string | null
+          display_chance?: string | null
           display_only?: boolean
           display_order?: number | null
           drop_chance?: number
@@ -4186,6 +4188,7 @@ export type Database = {
         Update: {
           created_at?: string
           description_ar?: string | null
+          display_chance?: string | null
           display_only?: boolean
           display_order?: number | null
           drop_chance?: number

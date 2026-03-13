@@ -451,12 +451,12 @@ export default function MysteryCaseTab() {
   const [rf, setRf] = useState({
     name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10,
     image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true,
-    selected_color: "", product_option_id: "",
+    selected_color: "", product_option_id: "", display_chance: "",
   });
 
   const resetForm = () => {
     setEditReward(null);
-    setRf({ name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10, image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true, selected_color: "", product_option_id: "" });
+    setRf({ name_ar: "", reward_type: "custom", rarity: "common", drop_chance: 10, image_url: "", product_id: "", ticket_reward_amount: 0, display_only: false, is_active: true, selected_color: "", product_option_id: "", display_chance: "" });
     setShowForm(false);
   };
 
@@ -468,6 +468,7 @@ export default function MysteryCaseTab() {
       image_url: r.image_url || "", product_id: r.product_id || "", ticket_reward_amount: r.ticket_reward_amount || 0,
       display_only: r.display_only, is_active: r.is_active,
       selected_color: r.selected_color || "", product_option_id: r.product_option_id || "",
+      display_chance: r.display_chance || "",
     });
     setShowForm(true);
   };
@@ -512,6 +513,7 @@ export default function MysteryCaseTab() {
         is_active: rf.is_active,
         selected_color: rf.reward_type === "product" ? (rf.selected_color || null) : null,
         product_option_id: rf.reward_type === "product" ? (rf.product_option_id || null) : null,
+        display_chance: rf.display_chance || null,
         updated_at: new Date().toISOString(),
       };
       if (editReward) {
@@ -780,7 +782,19 @@ export default function MysteryCaseTab() {
                     </div>
                   )}
 
-                  {/* Active Toggle */}
+                  {/* Display Chance (shown to users) */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium">نسبة العرض للمستخدم (اختياري)</label>
+                    <Input
+                      type="text"
+                      value={rf.display_chance}
+                      onChange={(e) => setRf({ ...rf, display_chance: e.target.value })}
+                      placeholder="مثال: 25% أو نادر"
+                      className="w-40"
+                    />
+                    <p className="text-[10px] text-muted-foreground">النسبة التي تظهر للمستخدمين (لا تؤثر على الاحتمال الحقيقي)</p>
+                  </div>
+
                   {effectiveType !== "display" && (
                     <div className="flex items-center gap-2">
                       <Switch checked={rf.is_active} onCheckedChange={(v) => setRf({ ...rf, is_active: v })} />

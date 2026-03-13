@@ -11,6 +11,7 @@ import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import ReelSpinner, { type ReelItem } from "./ReelSpinner";
 import MultiRewardPopup from "./MultiRewardPopup";
+import PrizeShowcase from "./PrizeShowcase";
 
 function MysteryCase({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
@@ -96,6 +97,17 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
       image_url: r.image_url,
       rarity: r.rarity,
       drop_chance: r.drop_chance,
+    })),
+    [rewards]
+  );
+
+  const prizeList = useMemo(() =>
+    rewards.map((r: any) => ({
+      id: r.id,
+      name_ar: r.name_ar,
+      image_url: r.image_url,
+      rarity: r.rarity,
+      display_chance: r.display_chance,
     })),
     [rewards]
   );
@@ -403,6 +415,9 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
             </p>
           )}
         </div>
+
+        {/* Prize Showcase */}
+        <PrizeShowcase prizes={prizeList} />
 
         {spinHistory.length > 0 && (
           <div className="mb-8">
