@@ -416,7 +416,10 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
           )}
         </div>
 
-        {spinHistory.length > 0 && (
+        {/* Prize Showcase */}
+        <PrizeShowcase prizes={prizeList} />
+
+
           <div className="mb-8">
             <h3 className="text-xs font-mono text-muted-foreground mb-3">📜 سجل اللفات الأخيرة</h3>
             <div className="space-y-2">
