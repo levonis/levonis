@@ -101,6 +101,17 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     [rewards]
   );
 
+  const prizeList = useMemo(() =>
+    rewards.map((r: any) => ({
+      id: r.id,
+      name_ar: r.name_ar,
+      image_url: r.image_url,
+      rarity: r.rarity,
+      display_chance: r.display_chance,
+    })),
+    [rewards]
+  );
+
   const playSpinSound = useCallback(() => {
     try {
       const ctx = new AudioContext();
