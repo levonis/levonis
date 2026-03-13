@@ -703,7 +703,7 @@ export default function MysteryCaseTab() {
                           productId={rf.product_id}
                           selectedColor={rf.selected_color}
                           selectedOptionId={rf.product_option_id}
-                          onColorChange={(color) => setRf({ ...rf, selected_color: color })}
+                          onColorChange={(color, colorImage) => setRf({ ...rf, selected_color: color, image_url: colorImage || rf.image_url })}
                           onOptionChange={(optionId, optionName, optionImage) => {
                             setRf({
                               ...rf,
