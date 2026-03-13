@@ -36,19 +36,21 @@ export default function GameStore({ onBack }: { onBack: () => void }) {
     },
   });
 
-  const { data: userPoints = 0 } = useQuery({
+  const { data: pointsData } = useQuery({
     queryKey: ["user-points-game", user?.id],
     queryFn: async () => {
-      if (!user) return 0;
+      if (!user) return null;
       const { data } = await supabase
         .from("user_points")
         .select("available_points")
         .eq("user_id", user.id)
         .single();
-      return data?.available_points ?? 0;
+      return data;
     },
     enabled: !!user,
   });
+
+  const userPoints = pointsData?.available_points ?? 0;
 
   const { data: purchases = [] } = useQuery({
     queryKey: ["game-store-purchases", user?.id],
