@@ -482,10 +482,10 @@ export default function MysteryCaseTab() {
 
   const handleProductSelect = (p: any) => {
     if (!p) {
-      setRf({ ...rf, product_id: "", name_ar: rf.name_ar, image_url: rf.image_url });
+      setRf({ ...rf, product_id: "", name_ar: rf.name_ar, image_url: rf.image_url, selected_color: "", product_option_id: "" });
       return;
     }
-    setRf({ ...rf, product_id: p.id, name_ar: p.name_ar || p.name, image_url: p.image_url || rf.image_url });
+    setRf({ ...rf, product_id: p.id, name_ar: p.name_ar || p.name, image_url: p.image_url || rf.image_url, selected_color: "", product_option_id: "" });
   };
 
   const effectiveType = rf.display_only ? "display" : rf.reward_type;
