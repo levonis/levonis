@@ -114,6 +114,123 @@ function ImageUploader({ imageUrl, onImageChange }: { imageUrl: string; onImageC
   );
 }
 
+// ── Product Option/Color Selector ──────────────────────────────
+function ProductVariantSelector({
+  productId,
+  selectedColor,
+  selectedOptionId,
+  onColorChange,
+  onOptionChange,
+}: {
+  productId: string;
+  selectedColor: string;
+  selectedOptionId: string;
+  onColorChange: (color: string) => void;
+  onOptionChange: (optionId: string, optionName: string, optionImage: string) => void;
+}) {
+  const { data: product } = useQuery({
+    queryKey: ["admin-product-variants", productId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("colors")
+        .eq("id", productId)
+        .single();
+      return data;
+    },
+    enabled: !!productId,
+  });
+
+  const { data: options = [] } = useQuery({
+    queryKey: ["admin-product-options", productId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("product_options")
+        .select("id, name, name_ar, image_url, price_adjustment")
+        .eq("product_id", productId)
+        .order("name_ar");
+      return (data || []) as any[];
+    },
+    enabled: !!productId,
+  });
+
+  const colors = (product?.colors as any[] | null) || [];
+
+  if (colors.length === 0 && options.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {/* Colors */}
+      {colors.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium">اللون</label>
+          <div className="flex flex-wrap gap-2">
+            {colors.map((c: any, i: number) => {
+              const colorName = typeof c === "string" ? c : c.name || c.name_ar || "";
+              const colorHex = typeof c === "string" ? "" : c.hex || c.color || "";
+              const colorImage = typeof c === "string" ? "" : c.image_url || c.image || "";
+              const isSelected = selectedColor === colorName;
+              return (
+                <button
+                  key={i}
+                  onClick={() => onColorChange(isSelected ? "" : colorName)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs transition-all ${
+                    isSelected ? "border-primary bg-primary/10 font-bold" : "border-border/40 hover:border-border"
+                  }`}
+                >
+                  {colorHex && (
+                    <span
+                      className="w-4 h-4 rounded-full border border-border/50 shrink-0"
+                      style={{ backgroundColor: colorHex }}
+                    />
+                  )}
+                  {colorImage && !colorHex && (
+                    <img src={colorImage} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+                  )}
+                  <span>{colorName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Options */}
+      {options.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium">الخيار</label>
+          <div className="flex flex-wrap gap-2">
+            {options.map((opt: any) => {
+              const isSelected = selectedOptionId === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => onOptionChange(
+                    isSelected ? "" : opt.id,
+                    isSelected ? "" : (opt.name_ar || opt.name),
+                    isSelected ? "" : (opt.image_url || "")
+                  )}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs transition-all ${
+                    isSelected ? "border-primary bg-primary/10 font-bold" : "border-border/40 hover:border-border"
+                  }`}
+                >
+                  {opt.image_url && (
+                    <img src={opt.image_url} alt="" className="w-5 h-5 rounded object-contain shrink-0" />
+                  )}
+                  <span>{opt.name_ar || opt.name}</span>
+                  {opt.price_adjustment ? (
+                    <span className="text-muted-foreground">({opt.price_adjustment > 0 ? "+" : ""}{opt.price_adjustment?.toLocaleString()})</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Product Search Component ───────────────────────────────────
 function ProductSearch({ selectedId, onSelect }: { selectedId: string; onSelect: (p: any) => void }) {
   const [query, setQuery] = useState("");
