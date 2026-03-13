@@ -641,27 +641,51 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col items-center gap-4 w-full px-2 py-4" dir="ltr">
       {screen === 'start' && (
         <div className="flex flex-col items-center gap-4 text-center w-full max-w-xs">
-          <div className="pixel-frame p-5 space-y-3 w-full">
-            <div className="text-5xl mb-1">🚀</div>
-            <h2 className="text-2xl font-black font-mono text-primary" style={{ textShadow: '2px 2px 0 hsl(var(--accent) / 0.4)' }}>
-              SPACE BLASTER
-            </h2>
-            <p className="text-muted-foreground text-sm font-mono">حرب الفضاء</p>
-            <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
-              <p>🌍 4 كواكب | 20 موجة</p>
-              <p>🎮 أسهم/WASD + مسافة | لمس</p>
-              <p>⭐ أعداء متنوعون وبوسات عملاقة</p>
-              <p>❤️ {3 + (shopLevels['extra_life'] || 0)} حياة</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => { playClick(); startGame(); }} className="pixel-btn-active font-mono text-sm flex-1">
-                ▶ START
-              </Button>
-              <Button variant="outline" onClick={() => { playClick(); setScreen('shop'); }} className="font-mono text-sm gap-1">
-                <ShoppingCart className="h-3 w-3" /> متجر
+          {gameSettings?.game_enabled === false ? (
+            <div className="pixel-frame p-5 space-y-3 w-full">
+              <p className="text-muted-foreground font-mono">اللعبة غير متاحة حالياً</p>
+              <Button variant="ghost" onClick={onBack} className="font-mono text-xs">
+                <ArrowRight className="h-4 w-4 ml-1" /> رجوع
               </Button>
             </div>
-          </div>
+          ) : (
+            <div className="pixel-frame p-5 space-y-3 w-full">
+              <div className="text-5xl mb-1">🚀</div>
+              <h2 className="text-2xl font-black font-mono text-primary" style={{ textShadow: '2px 2px 0 hsl(var(--accent) / 0.4)' }}>
+                SPACE BLASTER
+              </h2>
+              <p className="text-muted-foreground text-sm font-mono">حرب الفضاء</p>
+              <div className="space-y-1 text-xs text-muted-foreground font-mono text-right" dir="rtl">
+                <p>🌍 4 كواكب | 20 موجة</p>
+                <p>🎮 أسهم/WASD + مسافة | لمس</p>
+                <p>⭐ أعداء متنوعون وبوسات عملاقة</p>
+                <p>❤️ {3 + (shopLevels['extra_life'] || 0)} حياة</p>
+                {entryFee > 0 && (
+                  <p className="flex items-center justify-end gap-1">
+                    <Ticket className="h-3 w-3" /> رسوم الدخول: {entryFee} تذكرة
+                    <span className={userTickets >= entryFee ? "text-green-400" : "text-destructive"}>
+                      ({userTickets} متاح)
+                    </span>
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => { playClick(); startGame(); }}
+                  disabled={!user || (entryFee > 0 && userTickets < entryFee)}
+                  className="pixel-btn-active font-mono text-sm flex-1"
+                >
+                  {entryFee > 0 ? `▶ START (${entryFee} 🎫)` : '▶ START'}
+                </Button>
+                <Button variant="outline" onClick={() => { playClick(); setScreen('shop'); }} className="font-mono text-sm gap-1">
+                  <ShoppingCart className="h-3 w-3" /> متجر
+                </Button>
+              </div>
+              {!user && (
+                <p className="text-xs text-destructive font-mono">يجب تسجيل الدخول للعب</p>
+              )}
+            </div>
+          )}
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground font-mono text-xs">
             <ArrowRight className="h-4 w-4" /> رجوع
           </Button>
