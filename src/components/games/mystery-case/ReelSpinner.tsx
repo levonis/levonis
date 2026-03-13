@@ -260,6 +260,8 @@ export default function ReelSpinner({
     spinStartedRef.current = true;
     spinningRef.current = true;
     stopRaf();
+    wrap();
+    applyPos();
     modeRef.current = "spin";
 
     let winSlot = segment.findIndex((it) => it.id === winner.id);
