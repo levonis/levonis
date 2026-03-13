@@ -240,32 +240,33 @@ export default function ReelSpinner({
 
   // === SPIN TRIGGER ===
   useEffect(() => {
-    if (!spinning || items.length === 0 || winnerIndex === null) return;
+    if (!spinning) {
+      spinStartedRef.current = false;
+      return;
+    }
+
+    if (spinStartedRef.current) return;
+    if (items.length === 0 || winnerIndex === null || segment.length === 0) return;
+
     const winner = items[winnerIndex];
     if (!winner) return;
 
+    spinStartedRef.current = true;
     spinningRef.current = true;
     stopRaf();
     modeRef.current = "spin";
 
-    // Inject winner into existing segment at a known slot far ahead
-    const winSlot = Math.floor(segment.length * 0.75); // ~75% into segment
-    const updatedSeg = [...segment];
-    if (winSlot < updatedSeg.length) {
-      updatedSeg[winSlot] = winner;
-    }
-    // Also inject at same slot in further copies by updating segment state
-    setSegment(updatedSeg);
+    let winSlot = segment.findIndex((it) => it.id === winner.id);
+    if (winSlot < 0) winSlot = Math.floor(segment.length * 0.75);
 
-    // Calculate target: winner is at copy 4's winSlot position
     requestAnimationFrame(() => {
-      const sw = updatedSeg.length * CELL;
+      const sw = segment.length * CELL;
       segWidthRef.current = sw;
       const containerW = containerRef.current?.offsetWidth || 320;
       const centerOff = containerW / 2 - ITEM_W / 2;
 
       // Target: copy index 4, at winSlot
-      const globalIdx = updatedSeg.length * 4 + winSlot;
+      const globalIdx = segment.length * 4 + winSlot;
       const targetDisplayX = -(globalIdx * CELL) + centerOff;
 
       // Ensure we travel at least 2 full segments worth
@@ -278,7 +279,7 @@ export default function ReelSpinner({
       const dur = Math.max(3500, Math.min(animationDuration, 5500));
       runSpin(targetX, dur);
     });
-  }, [spinning, winnerIndex, items, animationDuration, stopRaf, runSpin, segment]);
+  }, [spinning, winnerIndex, items, animationDuration, segment, stopRaf, runSpin]);
 
   // Cleanup
   useEffect(() => () => stopRaf(), [stopRaf]);
