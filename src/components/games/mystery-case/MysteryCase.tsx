@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,9 +25,12 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   const [currentSpinIdx, setCurrentSpinIdx] = useState(0);
   const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
   const [spinCount, setSpinCount] = useState(1);
-  const [skipped, setSkipped] = useState(false);
 
-  // Fetch settings
+  // Use refs for multi-spin flow to avoid stale closures
+  const allResultsRef = useRef<any[]>([]);
+  const currentSpinIdxRef = useRef(0);
+  const isMultiSpinActiveRef = useRef(false);
+
   const { data: settings } = useQuery({
     queryKey: ["mystery-case-settings"],
     queryFn: async () => {
@@ -40,7 +43,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     },
   });
 
-  // Fetch rewards (all for display)
   const { data: rewards = [] } = useQuery({
     queryKey: ["mystery-case-rewards"],
     queryFn: async () => {
@@ -53,7 +55,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     },
   });
 
-  // Fetch user tickets
   const { data: ticketData, refetch: refetchTickets } = useQuery({
     queryKey: ["user-tickets", user?.id],
     queryFn: async () => {
@@ -68,7 +69,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     enabled: !!user,
   });
 
-  // Fetch spin history
   const { data: spinHistory = [] } = useQuery({
     queryKey: ["mystery-case-history", user?.id],
     queryFn: async () => {
@@ -89,7 +89,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   const totalTicketsNeeded = ticketsPerSpin * spinCount;
   const maxAffordable = Math.min(10, Math.floor(ticketCount / ticketsPerSpin));
 
-  // All active rewards for visual display
   const reelItems: ReelItem[] = useMemo(() =>
     rewards.map((r: any) => ({
       id: r.id,
@@ -101,7 +100,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     [rewards]
   );
 
-  // Play spin sound effect
   const playSpinSound = useCallback(() => {
     try {
       const ctx = new AudioContext();
@@ -119,9 +117,11 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     } catch {}
   }, []);
 
-  const showResults = useCallback((results: any[]) => {
+  const finishAllSpins = useCallback(() => {
+    isMultiSpinActiveRef.current = false;
     setSpinning(false);
     setShowReward(true);
+    const results = allResultsRef.current;
     const hasLegendary = results.some(r =>
       r.reward?.rarity === "legendary" || r.reward?.rarity === "epic" || r.reward?.rarity === "mythic"
     );
@@ -151,7 +151,9 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     setShowReward(false);
     setAllResults([]);
     setCurrentSpinIdx(0);
-    setSkipped(false);
+    allResultsRef.current = [];
+    currentSpinIdxRef.current = 0;
+    isMultiSpinActiveRef.current = false;
 
     try {
       const { data, error } = await supabase.functions.invoke("mystery-case-spin", {
@@ -165,8 +167,9 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
 
       const results = data.results || [{ spin_id: data.spin_id, reward: data.reward }];
       setAllResults(results);
+      allResultsRef.current = results;
+      isMultiSpinActiveRef.current = results.length > 1;
 
-      // Start first spin animation
       const firstReward = results[0]?.reward;
       if (firstReward) {
         const idx = reelItems.findIndex((item) => item.id === firstReward.id);
@@ -190,53 +193,66 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
   ]);
 
   const handleSpinComplete = useCallback(() => {
-    if (allResults.length <= 1) {
-      // Single spin or last spin — show all results
-      showResults(allResults);
+    const results = allResultsRef.current;
+    const idx = currentSpinIdxRef.current;
+
+    if (results.length <= 1 || idx >= results.length - 1) {
+      finishAllSpins();
       return;
     }
 
-    const nextIdx = currentSpinIdx + 1;
-    if (nextIdx >= allResults.length) {
-      // All spins done
-      showResults(allResults);
-      return;
-    }
-
-    // Animate next spin
+    // Multi-spin: advance to next
+    const nextIdx = idx + 1;
+    currentSpinIdxRef.current = nextIdx;
     setCurrentSpinIdx(nextIdx);
-    const nextReward = allResults[nextIdx]?.reward;
+
+    const nextReward = results[nextIdx]?.reward;
     if (nextReward) {
-      const idx = reelItems.findIndex((item) => item.id === nextReward.id);
-      setWinnerIndex(idx >= 0 ? idx : 0);
+      const i = reelItems.findIndex((item) => item.id === nextReward.id);
+      setWinnerIndex(i >= 0 ? i : 0);
     }
 
     if (settings?.spin_sound_enabled !== false) {
       playSpinSound();
     }
 
-    // Small delay then trigger next spin
+    // Must toggle spinning off→on so ReelSpinner detects a new spin
+    setSpinning(false);
     setTimeout(() => {
-      setSpinning(true);
-    }, 300);
-  }, [allResults, currentSpinIdx, reelItems, showResults, settings, playSpinSound]);
+      if (isMultiSpinActiveRef.current) {
+        setSpinning(true);
+      }
+    }, 350);
+  }, [reelItems, finishAllSpins, settings, playSpinSound]);
 
   const handleSkip = useCallback(() => {
-    setSkipped(true);
+    isMultiSpinActiveRef.current = false;
     setSpinning(false);
-    showResults(allResults);
-  }, [allResults, showResults]);
+    // Small delay to let ReelSpinner stop cleanly
+    setTimeout(() => {
+      finishAllSpins();
+    }, 50);
+  }, [finishAllSpins]);
 
-  // Spin count controls
+  const handleCloseReward = useCallback(() => {
+    setShowReward(false);
+    setAllResults([]);
+    allResultsRef.current = [];
+    setCurrentSpinIdx(0);
+    currentSpinIdxRef.current = 0;
+  }, []);
+
   const incrementCount = () => setSpinCount(c => Math.min(10, Math.min(maxAffordable, c + 1)));
   const decrementCount = () => setSpinCount(c => Math.max(1, c - 1));
 
-  // Reset count if tickets change
   useEffect(() => {
     if (spinCount > maxAffordable && maxAffordable >= 1) {
       setSpinCount(maxAffordable);
     }
   }, [maxAffordable, spinCount]);
+
+  // Determine if skip button should show
+  const showSkipButton = spinning && allResultsRef.current.length > 1;
 
   if (!settings?.game_enabled) {
     return (
@@ -255,7 +271,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
     <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
       <PixelBackground />
 
-      {/* Header */}
       <div className="sticky top-0 z-20 pixel-header-bar">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button
@@ -276,9 +291,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      {/* Game Area */}
       <div className="relative z-10 max-w-2xl mx-auto px-4 pt-6">
-        {/* Title */}
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold font-mono text-primary mb-1">صندوق الغموض</h1>
           <p className="text-xs text-muted-foreground font-mono">
@@ -286,7 +299,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
           </p>
         </div>
 
-        {/* Reel */}
         <div className="pixel-frame rounded-xl p-1 mb-4" style={{ background: "hsl(var(--background))" }}>
           {reelItems.length > 0 ? (
             <ReelSpinner
@@ -303,8 +315,8 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
           )}
         </div>
 
-        {/* Skip button during animation */}
-        {spinning && allResults.length > 0 && (
+        {/* Skip button — only for multi-spin, only while spinning */}
+        {showSkipButton && (
           <div className="text-center mb-2">
             <Button
               onClick={handleSkip}
@@ -318,9 +330,7 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        {/* Spin Count Selector + Spin Button */}
         <div className="text-center mb-6">
-          {/* Count selector */}
           {!spinning && !isRequestingSpinResult && maxAffordable > 1 && (
             <div className="flex items-center justify-center gap-3 mb-3">
               <span className="text-xs font-mono text-muted-foreground">عدد اللفات:</span>
@@ -347,7 +357,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
             </div>
           )}
 
-          {/* Quick select buttons */}
           {!spinning && !isRequestingSpinResult && maxAffordable > 1 && (
             <div className="flex items-center justify-center gap-2 mb-3">
               {[1, 3, 5, 10].filter(n => n <= maxAffordable).map(n => (
@@ -395,7 +404,6 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
           )}
         </div>
 
-        {/* Spin History */}
         {spinHistory.length > 0 && (
           <div className="mb-8">
             <h3 className="text-xs font-mono text-muted-foreground mb-3">📜 سجل اللفات الأخيرة</h3>
@@ -430,10 +438,9 @@ function MysteryCase({ onBack }: { onBack: () => void }) {
         )}
       </div>
 
-      {/* Reward Popup */}
       <MultiRewardPopup
         open={showReward}
-        onClose={() => setShowReward(false)}
+        onClose={handleCloseReward}
         rewards={allResults.map(r => r.reward).filter(Boolean)}
       />
 

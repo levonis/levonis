@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Gift, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Confetti from "./Confetti";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const RARITY_COLORS: Record<string, string> = {
   common: "#9ca3af",
@@ -36,6 +36,11 @@ interface Props {
 
 export default function MultiRewardPopup({ open, onClose, rewards }: Props) {
   const [currentIdx, setCurrentIdx] = useState(0);
+
+  // Reset index when rewards change or popup opens
+  useEffect(() => {
+    if (open) setCurrentIdx(0);
+  }, [open, rewards]);
 
   if (!rewards || rewards.length === 0) return null;
 
@@ -78,14 +83,12 @@ export default function MultiRewardPopup({ open, onClose, rewards }: Props) {
               <X className="h-4 w-4" />
             </button>
 
-            {/* Counter */}
             {!isSingle && (
               <div className="absolute top-2 left-2 text-[10px] font-mono text-muted-foreground px-2 py-0.5 rounded bg-muted/30">
                 {currentIdx + 1} / {rewards.length}
               </div>
             )}
 
-            {/* Sparkle icon */}
             <motion.div
               className="mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center"
               style={{ background: `${color}22`, color }}
@@ -99,7 +102,6 @@ export default function MultiRewardPopup({ open, onClose, rewards }: Props) {
               {RARITY_LABELS[reward.rarity] || reward.rarity}
             </p>
 
-            {/* Image */}
             {reward.image_url ? (
               <img
                 src={reward.image_url}
@@ -123,7 +125,6 @@ export default function MultiRewardPopup({ open, onClose, rewards }: Props) {
 
             <p className="text-xs text-primary font-mono mt-3">🎉 مبروك!</p>
 
-            {/* Navigation for multi-spin */}
             {!isSingle ? (
               <div className="flex items-center gap-2 mt-4">
                 <Button
@@ -151,7 +152,6 @@ export default function MultiRewardPopup({ open, onClose, rewards }: Props) {
               </Button>
             )}
 
-            {/* Summary bar for multi-spin */}
             {!isSingle && (
               <div className="flex justify-center gap-1 mt-3">
                 {rewards.map((r, i) => (
