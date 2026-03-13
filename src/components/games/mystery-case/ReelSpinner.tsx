@@ -30,7 +30,7 @@ const CELL = ITEM_W + GAP;
 
 const SEGMENT_SIZE = 80;
 const COPIES = 7;
-const IDLE_SPEED = 0.03; // px per ms
+const IDLE_SPEED = 0.03;
 const FRICTION = 0.93;
 
 const RARITY_WEIGHTS: Record<string, number> = {
@@ -78,7 +78,6 @@ function buildSegment(items: ReelItem[]): ReelItem[] {
       if (seg.length >= SEGMENT_SIZE) break;
     }
   }
-  // Sprinkle rares as visual bait
   const bait = items.filter((it) => ["rare", "epic", "legendary", "mythic"].includes(it.rarity));
   if (bait.length > 0) {
     for (let i = 6; i < seg.length; ) {
@@ -99,24 +98,24 @@ export default function ReelSpinner({
   const containerRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
-  const offsetRef = useRef(0); // current pixel offset (always negative, moves left)
+  const offsetRef = useRef(0);
   const modeRef = useRef<"idle" | "drag" | "inertia" | "spin">("idle");
   const dragState = useRef({ active: false, lastX: 0, lastT: 0, vel: 0 });
   const segWidthRef = useRef(0);
   const initRef = useRef(false);
   const spinningRef = useRef(false);
   const spinStartedRef = useRef(false);
+  const onSpinCompleteRef = useRef(onSpinComplete);
+  onSpinCompleteRef.current = onSpinComplete;
 
   const [segment, setSegment] = useState<ReelItem[]>([]);
 
-  // Build segment once from items (not during spin)
   useEffect(() => {
     if (items.length === 0) return;
-    if (spinningRef.current) return; // don't rebuild during spin
+    if (spinningRef.current) return;
     setSegment(buildSegment(items));
   }, [items]);
 
-  // Full rendered strip = segment × COPIES
   const strip = useMemo(() => {
     if (segment.length === 0) return [] as ReelItem[];
     const arr: ReelItem[] = [];
@@ -126,11 +125,9 @@ export default function ReelSpinner({
 
   const segW = segment.length * CELL;
 
-  // Keep segWidthRef in sync
   useEffect(() => {
     segWidthRef.current = segW;
     if (!initRef.current && segW > 0) {
-      // Start in the middle
       offsetRef.current = -(segW * 3);
       initRef.current = true;
     }
@@ -140,11 +137,10 @@ export default function ReelSpinner({
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
   }, []);
 
-  // Wrap offset so we stay in the middle copies (never see edges)
+  // Wrap — ONLY for idle/drag/inertia, NEVER during spin
   const wrap = useCallback(() => {
     const sw = segWidthRef.current;
     if (sw <= 0) return;
-    // keep offset between -(sw*5) and -(sw*1) — plenty of room
     while (offsetRef.current > -(sw * 1)) offsetRef.current -= sw;
     while (offsetRef.current < -(sw * 5)) offsetRef.current += sw;
   }, []);
@@ -191,43 +187,37 @@ export default function ReelSpinner({
     rafRef.current = requestAnimationFrame(tick);
   }, [applyPos, startIdle, stopRaf, wrap]);
 
-  // === SPIN (the key fix: smooth deceleration to target) ===
+  // === SPIN — NO wrap during animation to prevent snapping ===
   const runSpin = useCallback((targetX: number, durMs: number) => {
     modeRef.current = "spin";
     stopRaf();
 
     const startX = offsetRef.current;
-    const totalDist = startX - targetX; // positive number (moving left)
+    const totalDist = startX - targetX;
     if (totalDist <= 0) {
-      wrap();
-      applyPos();
-      onSpinComplete();
+      spinningRef.current = false;
+      onSpinCompleteRef.current();
       return;
     }
 
     const startTime = performance.now();
 
-    // Easing: start fast, gradually slow down, stop exactly on target
-    // Using cubic ease-out: progress = 1 - (1-t)^3
     const tick = (now: number) => {
       if (modeRef.current !== "spin") return;
 
       const elapsed = now - startTime;
       const t = Math.min(elapsed / durMs, 1);
-
-      // Ease-out cubic: fast start, slow end
       const eased = 1 - Math.pow(1 - t, 3);
       offsetRef.current = startX - totalDist * eased;
-      wrap();
+      // NO wrap here — let it travel freely to target
       applyPos();
 
       if (t >= 1) {
         offsetRef.current = targetX;
-        wrap();
         applyPos();
         modeRef.current = "idle";
         spinningRef.current = false;
-        onSpinComplete();
+        onSpinCompleteRef.current();
         return;
       }
 
@@ -235,9 +225,9 @@ export default function ReelSpinner({
     };
 
     rafRef.current = requestAnimationFrame(tick);
-  }, [applyPos, onSpinComplete, stopRaf, wrap]);
+  }, [applyPos, stopRaf]);
 
-  // Start idle on mount / segment change (when not spinning)
+  // Start idle on mount / segment change
   useEffect(() => {
     if (segment.length === 0 || spinningRef.current) return;
     startIdle();
@@ -260,25 +250,30 @@ export default function ReelSpinner({
     spinStartedRef.current = true;
     spinningRef.current = true;
     stopRaf();
-    wrap();
-    applyPos();
     modeRef.current = "spin";
+
+    // Recenter offset before spin so strip has plenty of room
+    const sw = segment.length * CELL;
+    segWidthRef.current = sw;
+    if (sw > 0) {
+      while (offsetRef.current > -(sw * 1)) offsetRef.current -= sw;
+      while (offsetRef.current < -(sw * 4)) offsetRef.current += sw;
+    }
+    applyPos();
 
     let winSlot = segment.findIndex((it) => it.id === winner.id);
     if (winSlot < 0) winSlot = Math.floor(segment.length * 0.75);
 
     requestAnimationFrame(() => {
-      const sw = segment.length * CELL;
-      segWidthRef.current = sw;
       const containerW = containerRef.current?.offsetWidth || 320;
       const centerOff = containerW / 2 - ITEM_W / 2;
 
-      // Target: copy index 4, at winSlot
-      const globalIdx = segment.length * 4 + winSlot;
+      // Target: winner in copy 5 (further ahead)
+      const globalIdx = segment.length * 5 + winSlot;
       const targetDisplayX = -(globalIdx * CELL) + centerOff;
 
-      // Ensure we travel at least 2 full segments worth
-      const minTravel = sw * 2.5;
+      // Ensure we travel at least 2 full segments
+      const minTravel = sw * 2;
       let targetX = targetDisplayX;
       while (targetX > offsetRef.current - minTravel) {
         targetX -= sw;
@@ -287,7 +282,7 @@ export default function ReelSpinner({
       const dur = Math.max(3500, Math.min(animationDuration, 5500));
       runSpin(targetX, dur);
     });
-  }, [spinning, winnerIndex, items, animationDuration, segment, stopRaf, runSpin, wrap, applyPos]);
+  }, [spinning, winnerIndex, items, animationDuration, segment, stopRaf, runSpin, applyPos]);
 
   // Cleanup
   useEffect(() => () => stopRaf(), [stopRaf]);
@@ -341,7 +336,6 @@ export default function ReelSpinner({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {/* Center pointer */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 w-0.5 h-full bg-primary opacity-80" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 -mt-1">
         <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-primary" />
@@ -350,11 +344,9 @@ export default function ReelSpinner({
         <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-primary" />
       </div>
 
-      {/* Edge fade */}
       <div className="absolute inset-y-0 left-0 w-16 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
       <div className="absolute inset-y-0 right-0 w-16 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
 
-      {/* Strip */}
       <div className="absolute inset-0 flex items-center pointer-events-none">
         <div
           ref={stripRef}
