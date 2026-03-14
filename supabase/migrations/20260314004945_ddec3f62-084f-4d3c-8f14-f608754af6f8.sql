@@ -1,0 +1,1 @@
+ALTER TABLE public.cart_items ADD COLUMN offer_purchase_id uuid REFERENCES public.product_offer_purchases(id) ON DELETE CASCADE;

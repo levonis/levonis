@@ -571,6 +571,7 @@ export type Database = {
           created_at: string | null
           custom_request_id: string | null
           id: string
+          offer_purchase_id: string | null
           option_image_url: string | null
           product_id: string | null
           product_option_id: string | null
@@ -588,6 +589,7 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
+          offer_purchase_id?: string | null
           option_image_url?: string | null
           product_id?: string | null
           product_option_id?: string | null
@@ -605,6 +607,7 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
+          offer_purchase_id?: string | null
           option_image_url?: string | null
           product_id?: string | null
           product_option_id?: string | null
@@ -629,6 +632,13 @@ export type Database = {
             columns: ["custom_request_id"]
             isOneToOne: false
             referencedRelation: "custom_product_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_offer_purchase_id_fkey"
+            columns: ["offer_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "product_offer_purchases"
             referencedColumns: ["id"]
           },
           {

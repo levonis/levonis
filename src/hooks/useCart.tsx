@@ -9,6 +9,7 @@ export interface CartItem {
   product_id: string | null;
   custom_request_id: string | null;
   bundle_id?: string | null;
+  offer_purchase_id?: string | null;
   quantity: number;
   product_option_id?: string | null;
   selected_color?: string | null;
@@ -59,6 +60,19 @@ export interface CartItem {
     image_url: string | null;
     sale_type: string | null;
   };
+  offer_purchase?: {
+    id: string;
+    offer_id: string;
+    quantity: number;
+    product_offers: {
+      id: string;
+      title_ar: string;
+      image_url: string | null;
+      images: string[] | null;
+      price: number;
+      currency: string | null;
+    };
+  };
 }
 
 export interface PendingCartRequest {
@@ -80,6 +94,7 @@ interface CartContextType {
   addBundleToCart: (bundleId: string, saleType: 'direct' | 'preorder', quantity?: number) => Promise<boolean>;
   cartSaleType: string | null;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
+  addOfferPurchaseToCart: (offerPurchaseId: string) => Promise<boolean>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -207,6 +222,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           product_id,
           custom_request_id,
           bundle_id,
+          offer_purchase_id,
           quantity,
           product_option_id,
           selected_color,
@@ -257,6 +273,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             original_price,
             image_url,
             sale_type
+          ),
+          product_offer_purchases!cart_items_offer_purchase_id_fkey (
+            id,
+            offer_id,
+            quantity,
+            product_offers (
+              id,
+              title_ar,
+              image_url,
+              images,
+              price,
+              currency
+            )
           )
         `)
         .eq('user_id', user.id)
@@ -269,7 +298,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
-        setItems(data as CartItem[] || []);
+        // Map offer purchase data
+        const mappedData = (data || []).map((item: any) => ({
+          ...item,
+          offer_purchase: item.product_offer_purchases || null,
+        }));
+        setItems(mappedData as CartItem[]);
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -620,9 +654,46 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addOfferPurchaseToCart = async (offerPurchaseId: string): Promise<boolean> => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return false;
+    }
+
+    try {
+      // Check if already in cart
+      const existingItem = items.find(item => (item as any).offer_purchase_id === offerPurchaseId);
+      if (existingItem) {
+        toast.info('هذا المنتج موجود بالفعل في السلة');
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('cart_items')
+        .insert([{
+          user_id: user.id,
+          offer_purchase_id: offerPurchaseId,
+          quantity: 1,
+          sale_type: 'direct',
+        }]);
+
+      if (error) throw error;
+
+      await fetchCart();
+      toast.success('تمت إضافة المنتج إلى السلة');
+      return true;
+    } catch (error) {
+      console.error('Error adding offer purchase to cart:', error);
+      toast.error('حدث خطأ في إضافة المنتج للسلة');
+      return false;
+    }
+  };
+
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
+    // Offer purchase items are free (already paid)
+    if ((item as any).offer_purchase_id) return sum;
     if (item.products) {
       const isDirect = (item as any).sale_type === 'direct';
       let itemPrice = Number(item.products.price);
@@ -716,6 +787,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         forceAddToCart,
         addBundleToCart,
         addCustomRequestToCart,
+        addOfferPurchaseToCart,
         updateQuantity,
         removeFromCart,
         clearCart,

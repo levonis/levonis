@@ -742,6 +742,17 @@ const Cart = () => {
         });
       } catch (e) { console.error('Telegram error:', e); }
 
+      // Update offer purchase statuses to 'shipping_requested'
+      const offerPurchaseIds = items
+        .filter(item => (item as any).offer_purchase_id)
+        .map(item => (item as any).offer_purchase_id);
+      if (offerPurchaseIds.length > 0) {
+        await supabase
+          .from('product_offer_purchases')
+          .update({ purchase_status: 'shipping_requested', shipping_requested_at: new Date().toISOString() })
+          .in('id', offerPurchaseIds);
+      }
+
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
@@ -1173,6 +1184,17 @@ const Cart = () => {
           .eq('id', appliedCoupon.id);
       }
 
+      // Update offer purchase statuses to 'shipping_requested'
+      const offerPurchaseIds2 = items
+        .filter(item => (item as any).offer_purchase_id)
+        .map(item => (item as any).offer_purchase_id);
+      if (offerPurchaseIds2.length > 0) {
+        await supabase
+          .from('product_offer_purchases')
+          .update({ purchase_status: 'shipping_requested', shipping_requested_at: new Date().toISOString() })
+          .in('id', offerPurchaseIds2);
+      }
+
       // Clear cart after successful order
       await clearCart();
 
@@ -1258,6 +1280,12 @@ const Cart = () => {
               {(() => {
                 // Group items by product + option + color combination
                 const groupedItems = items.reduce((acc, item) => {
+                  // Offer purchase items (from storage) are rendered as single items
+                  if ((item as any).offer_purchase_id) {
+                    acc.push({ type: 'offer_purchase', items: [item] });
+                    return acc;
+                  }
+
                   // Custom requests are not grouped
                   if (item.custom_request_id) {
                     acc.push({ type: 'single', items: [item] });
@@ -1351,6 +1379,52 @@ const Cart = () => {
                                 المجموع: <AnimatedPrice value={bundlePrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
                               </div>
                             )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Offer purchase items (from storage - price = 0)
+                  if (group.type === 'offer_purchase') {
+                    const item = group.items[0];
+                    const offerData = (item as any).offer_purchase;
+                    const offerInfo = offerData?.product_offers;
+                    const isRemoving = removingItemIds.has(item.id);
+                    const handleAnimatedRemove = () => {
+                      setRemovingItemIds(prev => new Set(prev).add(item.id));
+                      setTimeout(() => {
+                        handleRemoveFromCart(item.id);
+                        setRemovingItemIds(prev => { const next = new Set(prev); next.delete(item.id); return next; });
+                      }, 300);
+                    };
+                    return (
+                      <div key={item.id} className={`rounded-xl p-2.5 sm:p-4 border border-amber-500/30 bg-amber-500/5 transition-all duration-300 ${isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : ''}`}>
+                        <div className="flex gap-2.5 sm:gap-4">
+                          {offerInfo?.image_url && (
+                            <div className="flex-shrink-0">
+                              <img src={offerInfo.image_url} alt={offerInfo?.title_ar || ''} className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-lg border border-amber-500/30" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="min-w-0 flex-1">
+                                <span className="font-bold text-xs sm:text-sm text-foreground line-clamp-1 block">
+                                  {offerInfo?.title_ar || 'منتج من المخزن'}
+                                </span>
+                                <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 mt-0.5">
+                                  <Package className="h-2.5 w-2.5" /> من المخزن
+                                </span>
+                              </div>
+                              <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="text-sm sm:text-base font-black text-emerald-600">
+                                مجاني <span className="text-[10px] font-normal text-muted-foreground">(مدفوع مسبقاً)</span>
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

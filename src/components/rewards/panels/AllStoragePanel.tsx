@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import {
   ChevronDown,
   Calendar,
   AlertCircle,
+  ShoppingCart,
 } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 import { format } from "date-fns";
@@ -104,6 +106,7 @@ interface StorageItem {
 
 export default function AllStoragePanel() {
   const { user } = useAuth();
+  const { addOfferPurchaseToCart } = useCart();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<StorageItem | null>(null);
   const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
@@ -448,18 +451,30 @@ export default function AllStoragePanel() {
             {/* Action Button */}
             {item.status === 'pending' && !showCheckbox && (
               <div className="flex items-center shrink-0">
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-8 text-xs px-3 rounded-lg"
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setShippingDialogOpen(true);
-                  }}
-                >
-                  <Truck className="h-3 w-3 ml-1" />
-                  شحن
-                </Button>
+                {item.source === 'offer' ? (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8 text-xs px-3 rounded-lg"
+                    onClick={() => addOfferPurchaseToCart(item.id)}
+                  >
+                    <ShoppingCart className="h-3 w-3 ml-1" />
+                    أضف للسلة
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8 text-xs px-3 rounded-lg"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setShippingDialogOpen(true);
+                    }}
+                  >
+                    <Truck className="h-3 w-3 ml-1" />
+                    شحن
+                  </Button>
+                )}
               </div>
             )}
           </div>
