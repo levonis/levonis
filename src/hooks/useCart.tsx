@@ -654,6 +654,41 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addOfferPurchaseToCart = async (offerPurchaseId: string): Promise<boolean> => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return false;
+    }
+
+    try {
+      // Check if already in cart
+      const existingItem = items.find(item => (item as any).offer_purchase_id === offerPurchaseId);
+      if (existingItem) {
+        toast.info('هذا المنتج موجود بالفعل في السلة');
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('cart_items')
+        .insert([{
+          user_id: user.id,
+          offer_purchase_id: offerPurchaseId,
+          quantity: 1,
+          sale_type: 'direct',
+        }]);
+
+      if (error) throw error;
+
+      await fetchCart();
+      toast.success('تمت إضافة المنتج إلى السلة');
+      return true;
+    } catch (error) {
+      console.error('Error adding offer purchase to cart:', error);
+      toast.error('حدث خطأ في إضافة المنتج للسلة');
+      return false;
+    }
+  };
+
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
