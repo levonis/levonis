@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus, Gift, Loader2, Trash2, Upload, X, Edit, Package, DollarSign, Ticket, 
@@ -592,7 +592,11 @@ export default function AdminProductOffers() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogContent
+          className="max-w-lg flex flex-col p-0"
+          dir="rtl"
+          style={{ overflow: 'hidden', maxHeight: 'none', height: '85vh' }}
+        >
           <DialogHeader className="p-4 pb-2 border-b">
             <DialogTitle className="flex items-center gap-2">
               <Gift className="h-5 w-5 text-primary" />
@@ -600,7 +604,10 @@ export default function AdminProductOffers() {
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 p-4">
+          <div
+            className="flex-1 overflow-y-auto px-4 overscroll-contain"
+            style={{ minHeight: 0, WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="space-y-4">
               {/* Basic Info */}
               <div className="space-y-2">
@@ -875,7 +882,7 @@ export default function AdminProductOffers() {
                 ))}
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="p-4 pt-2 border-t">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
