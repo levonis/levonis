@@ -1274,9 +1274,9 @@ const Cart = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6 w-full min-w-0">
             {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-4 w-full min-w-0">
               {(() => {
                 // Group items by product + option + color combination
                 const groupedItems = items.reduce((acc, item) => {
