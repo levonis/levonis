@@ -36,7 +36,6 @@ export default function SpaceBlasterTab() {
           game_enabled: s.game_enabled,
           entry_fee_tickets: s.entry_fee_tickets,
           points_per_score: s.points_per_score,
-          max_points_per_game: s.max_points_per_game,
           victory_bonus_points: s.victory_bonus_points,
           wave_bonus_points: s.wave_bonus_points,
           updated_at: new Date().toISOString(),
