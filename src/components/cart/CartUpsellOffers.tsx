@@ -1,9 +1,9 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Gift, Ticket, Coins, Loader2, Plus, ShoppingCart } from 'lucide-react';
+import { Gift, Ticket, Coins, Loader2, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +25,7 @@ export default function CartUpsellOffers() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: offers } = useQuery({
     queryKey: ['cart-upsell-offers'],
@@ -44,7 +45,6 @@ export default function CartUpsellOffers() {
     mutationFn: async (offer: CartUpsellOffer) => {
       if (!user) throw new Error('not_authenticated');
       
-      // Check wallet balance
       const { data: wallet } = await supabase
         .from('user_wallets')
         .select('balance')
@@ -56,14 +56,12 @@ export default function CartUpsellOffers() {
         throw new Error('insufficient_balance');
       }
 
-      // Deduct wallet
       const { error: deductError } = await supabase.rpc('deduct_wallet_balance', {
         p_user_id: user.id,
         p_amount: offer.price,
       });
       if (deductError) throw deductError;
 
-      // Create purchase record
       const { error: purchaseError } = await supabase
         .from('product_offer_purchases')
         .insert({
@@ -76,7 +74,6 @@ export default function CartUpsellOffers() {
         });
       if (purchaseError) throw purchaseError;
 
-      // Award tickets
       if (offer.gift_tickets > 0) {
         await supabase.rpc('add_user_tickets', {
           p_user_id: user.id,
@@ -85,7 +82,6 @@ export default function CartUpsellOffers() {
         });
       }
 
-      // Award points
       if (offer.points_reward && offer.points_reward > 0) {
         await supabase.rpc('admin_adjust_points', {
           p_user_id: user.id,
@@ -94,7 +90,6 @@ export default function CartUpsellOffers() {
         } as any);
       }
 
-      // Decrement stock
       if (offer.stock_quantity !== null) {
         await (supabase as any)
           .from('product_offers')
@@ -132,76 +127,87 @@ export default function CartUpsellOffers() {
 
   if (!offers || offers.length === 0) return null;
 
+  const offer = offers[currentIndex % offers.length];
+  const hasMultiple = offers.length > 1;
+
   return (
-    <div className="mt-4 mb-2">
-      <div className="flex items-center gap-2 mb-3">
-        <Gift className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-bold text-foreground">عروض إضافية</h3>
-        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
-          جديد
-        </Badge>
-      </div>
+    <div className="mt-3 mb-1">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 flex items-center gap-2.5" dir="rtl">
+        {/* Icon */}
+        <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <Gift className="h-4 w-4 text-primary" />
+        </div>
 
-      <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2">
-        {offers.map((offer) => (
-          <div
-            key={offer.id}
-            className="shrink-0 w-[200px] rounded-xl border border-border/40 bg-card overflow-hidden hover:border-primary/30 transition-all"
-          >
-            {/* Image */}
-            {offer.image_url && (
-              <div className="h-[100px] overflow-hidden bg-muted">
-                <img src={offer.image_url} alt={offer.title_ar} className="w-full h-full object-cover" />
-              </div>
+        {/* Offer image thumbnail */}
+        {offer.image_url && (
+          <img src={offer.image_url} alt="" className="shrink-0 w-10 h-10 rounded-md object-cover border border-border/30" />
+        )}
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-foreground truncate">{offer.title_ar}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-xs font-black text-primary">{formatPrice(offer.price)}</span>
+            <span className="text-[9px] text-muted-foreground">د.ع</span>
+            {offer.gift_tickets > 0 && (
+              <span className="text-[9px] text-purple-600 flex items-center gap-0.5">
+                <Ticket className="h-2.5 w-2.5" />+{offer.gift_tickets}
+              </span>
             )}
-
-            <div className="p-2.5 space-y-2">
-              <h4 className="text-xs font-bold text-foreground line-clamp-2 leading-tight">{offer.title_ar}</h4>
-              
-              {offer.description_ar && (
-                <p className="text-[10px] text-muted-foreground line-clamp-2">{offer.description_ar}</p>
-              )}
-
-              {/* Rewards badges */}
-              <div className="flex flex-wrap gap-1">
-                {offer.gift_tickets > 0 && (
-                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-purple-500/10 text-purple-600 border-purple-500/20 gap-0.5">
-                    <Ticket className="h-2.5 w-2.5" />
-                    {offer.gift_tickets} تذكرة
-                  </Badge>
-                )}
-                {offer.points_reward && offer.points_reward > 0 && (
-                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/20 gap-0.5">
-                    <Coins className="h-2.5 w-2.5" />
-                    {offer.points_reward} نقطة
-                  </Badge>
-                )}
-              </div>
-
-              {/* Price + Buy */}
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <span className="text-sm font-black text-primary">{formatPrice(offer.price)}</span>
-                  <span className="text-[9px] text-muted-foreground mr-0.5">د.ع</span>
-                </div>
-                <Button
-                  size="sm"
-                  className="h-7 text-[10px] gap-1 px-2.5"
-                  onClick={() => purchaseMutation.mutate(offer)}
-                  disabled={purchaseMutation.isPending}
-                >
-                  {purchaseMutation.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="h-3 w-3" />
-                  )}
-                  اشتري
-                </Button>
-              </div>
-            </div>
+            {offer.points_reward && offer.points_reward > 0 && (
+              <span className="text-[9px] text-amber-600 flex items-center gap-0.5">
+                <Coins className="h-2.5 w-2.5" />+{offer.points_reward}
+              </span>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Nav arrows */}
+        {hasMultiple && (
+          <div className="shrink-0 flex flex-col gap-0.5">
+            <button
+              onClick={() => setCurrentIndex((i) => (i + 1) % offers.length)}
+              className="p-0.5 rounded hover:bg-muted transition-colors"
+            >
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => setCurrentIndex((i) => (i - 1 + offers.length) % offers.length)}
+              className="p-0.5 rounded hover:bg-muted transition-colors"
+            >
+              <ChevronLeft className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </div>
+        )}
+
+        {/* Buy button */}
+        <Button
+          size="sm"
+          className="shrink-0 h-7 text-[10px] gap-1 px-2.5"
+          onClick={() => purchaseMutation.mutate(offer)}
+          disabled={purchaseMutation.isPending}
+        >
+          {purchaseMutation.isPending ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <ShoppingCart className="h-3 w-3" />
+          )}
+          اشتري
+        </Button>
       </div>
+
+      {/* Dots indicator */}
+      {hasMultiple && (
+        <div className="flex justify-center gap-1 mt-1.5">
+          {offers.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentIndex % offers.length ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
