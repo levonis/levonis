@@ -46,8 +46,7 @@ export default function OffersStoragePage() {
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       {/* Sticky Navigation Bar - Fixed below main header */}
       <div 
-        className="fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-sm"
-        style={{ top: `${headerOffset}px` }}
+        className="sticky top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-sm"
       >
         {/* Compact Navigation Bar */}
         <div className="flex items-center justify-between px-3 py-2.5">
