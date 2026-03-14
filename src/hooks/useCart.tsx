@@ -9,6 +9,7 @@ export interface CartItem {
   product_id: string | null;
   custom_request_id: string | null;
   bundle_id?: string | null;
+  offer_purchase_id?: string | null;
   quantity: number;
   product_option_id?: string | null;
   selected_color?: string | null;
@@ -58,6 +59,19 @@ export interface CartItem {
     original_price: number;
     image_url: string | null;
     sale_type: string | null;
+  };
+  offer_purchase?: {
+    id: string;
+    offer_id: string;
+    quantity: number;
+    product_offers: {
+      id: string;
+      title_ar: string;
+      image_url: string | null;
+      images: string[] | null;
+      price: number;
+      currency: string | null;
+    };
   };
 }
 
