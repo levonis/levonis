@@ -1233,8 +1233,8 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm" dir="rtl">
-      <main className="max-w-4xl mx-auto px-4 py-8 w-full">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm overflow-x-hidden" dir="rtl">
+      <main className="w-full max-w-4xl mx-auto px-4 py-8 overflow-x-hidden">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-black text-primary">{t('cart_title')}</h1>
