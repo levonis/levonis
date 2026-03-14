@@ -95,8 +95,8 @@ const GroupedCartItem = ({
   };
 
   return (
-    <div className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all">
-      <div className="flex gap-2.5 sm:gap-4">
+    <div className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all w-full max-w-full overflow-hidden">
+      <div className="flex gap-2.5 sm:gap-4 w-full min-w-0">
         {/* Product Image */}
         {displayImage && (
           <Link to={`/product/${product.slug}`} className="flex-shrink-0">
