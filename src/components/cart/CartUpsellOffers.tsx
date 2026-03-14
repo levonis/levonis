@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Gift, Ticket, Coins, Loader2, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Gift, Ticket, Coins, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 interface CartUpsellOffer {
@@ -22,9 +20,7 @@ interface CartUpsellOffer {
 }
 
 export default function CartUpsellOffers() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: offers } = useQuery({
@@ -38,90 +34,6 @@ export default function CartUpsellOffers() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []).filter((o: CartUpsellOffer) => o.stock_quantity === null || o.stock_quantity > 0) as CartUpsellOffer[];
-    },
-  });
-
-  const purchaseMutation = useMutation({
-    mutationFn: async (offer: CartUpsellOffer) => {
-      if (!user) throw new Error('not_authenticated');
-      
-      const { data: wallet } = await supabase
-        .from('user_wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      const balance = wallet?.balance || 0;
-      if (balance < offer.price) {
-        throw new Error('insufficient_balance');
-      }
-
-      const { error: deductError } = await supabase.rpc('deduct_wallet_balance', {
-        p_user_id: user.id,
-        p_amount: offer.price,
-      });
-      if (deductError) throw deductError;
-
-      const { error: purchaseError } = await supabase
-        .from('product_offer_purchases')
-        .insert({
-          user_id: user.id,
-          offer_id: offer.id,
-          quantity: 1,
-          unit_price: offer.price,
-          total_price: offer.price,
-          gift_tickets_awarded: offer.gift_tickets,
-        });
-      if (purchaseError) throw purchaseError;
-
-      if (offer.gift_tickets > 0) {
-        await supabase.rpc('add_user_tickets', {
-          p_user_id: user.id,
-          p_amount: offer.gift_tickets,
-          p_source: 'cart_upsell_offer',
-        });
-      }
-
-      if (offer.points_reward && offer.points_reward > 0) {
-        await supabase.rpc('admin_adjust_points', {
-          p_user_id: user.id,
-          p_amount: offer.points_reward,
-          p_reason: 'مكافأة شراء عرض إضافي',
-        } as any);
-      }
-
-      if (offer.stock_quantity !== null) {
-        await (supabase as any)
-          .from('product_offers')
-          .update({ 
-            stock_quantity: Math.max(0, offer.stock_quantity - 1),
-            total_sold: (offer as any).total_sold ? (offer as any).total_sold + 1 : 1
-          })
-          .eq('id', offer.id);
-      }
-
-      return offer;
-    },
-    onSuccess: (offer) => {
-      const rewards: string[] = [];
-      if (offer.gift_tickets > 0) rewards.push(`${offer.gift_tickets} تذكرة`);
-      if (offer.points_reward && offer.points_reward > 0) rewards.push(`${offer.points_reward} نقطة`);
-      toast.success(`تم شراء "${offer.title_ar}" بنجاح! 🎉${rewards.length > 0 ? ` +${rewards.join(' و')}` : ''}`);
-      queryClient.invalidateQueries({ queryKey: ['cart-upsell-offers'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['tickets-balance'] });
-      queryClient.invalidateQueries({ queryKey: ['points-balance'] });
-    },
-    onError: (error: any) => {
-      if (error.message === 'not_authenticated') {
-        navigate('/auth');
-        return;
-      }
-      if (error.message === 'insufficient_balance') {
-        toast.error('رصيد المحفظة غير كافٍ لشراء هذا العرض');
-        return;
-      }
-      toast.error('حدث خطأ أثناء الشراء');
     },
   });
 
@@ -180,19 +92,14 @@ export default function CartUpsellOffers() {
           </div>
         )}
 
-        {/* Add to cart button */}
+        {/* Navigate to offers page */}
         <Button
           size="sm"
           className="shrink-0 h-7 text-[9px] gap-0.5 px-2"
-          onClick={() => purchaseMutation.mutate(offer)}
-          disabled={purchaseMutation.isPending}
+          onClick={() => navigate('/offers')}
         >
-          {purchaseMutation.isPending ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <ShoppingCart className="h-3 w-3" />
-          )}
-          أضف للسلة
+          <ShoppingCart className="h-3 w-3" />
+          عرض التفاصيل
         </Button>
       </div>
 
