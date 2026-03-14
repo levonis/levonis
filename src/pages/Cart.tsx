@@ -1258,6 +1258,12 @@ const Cart = () => {
               {(() => {
                 // Group items by product + option + color combination
                 const groupedItems = items.reduce((acc, item) => {
+                  // Offer purchase items (from storage) are rendered as single items
+                  if ((item as any).offer_purchase_id) {
+                    acc.push({ type: 'offer_purchase', items: [item] });
+                    return acc;
+                  }
+
                   // Custom requests are not grouped
                   if (item.custom_request_id) {
                     acc.push({ type: 'single', items: [item] });
