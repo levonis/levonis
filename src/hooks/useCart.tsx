@@ -298,7 +298,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
-        setItems(data as CartItem[] || []);
+        // Map offer purchase data
+        const mappedData = (data || []).map((item: any) => ({
+          ...item,
+          offer_purchase: item.product_offer_purchases || null,
+        }));
+        setItems(mappedData as CartItem[]);
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
