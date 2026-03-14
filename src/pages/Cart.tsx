@@ -1334,7 +1334,7 @@ const Cart = () => {
                       }, 300);
                     };
                     return (
-                      <div key={item.id} className={`rounded-xl p-2.5 sm:p-4 border border-primary/20 bg-primary/5 transition-all duration-300 ${isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : ''}`}>
+                      <div key={item.id} className={`rounded-xl p-2.5 sm:p-4 border border-primary/20 bg-primary/5 transition-all duration-300 w-full max-w-full overflow-hidden ${isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : ''}`}>
                         <div className="flex gap-2.5 sm:gap-4">
                           {bundle.image_url && (
                             <Link to="/bundles" className="flex-shrink-0">
