@@ -930,7 +930,7 @@ export default function AdminProductOffersTab() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+          <DialogFooter className="gap-2 sm:gap-0 px-6 pb-6 pt-4 border-t">
             <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
               إلغاء
             </Button>
