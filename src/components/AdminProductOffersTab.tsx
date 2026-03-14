@@ -654,7 +654,7 @@ export default function AdminProductOffersTab() {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-lg h-[85vh] flex flex-col p-0 !overflow-hidden !max-h-none" dir="rtl">
           <DialogHeader>
             <DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle>
           </DialogHeader>
