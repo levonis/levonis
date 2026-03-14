@@ -118,19 +118,6 @@ export default function SpaceBlasterTab() {
           <p className="text-[10px] text-muted-foreground">مثال: 0.1 يعني كل 10 سكور = 1 نقطة</p>
         </div>
 
-        {/* Max Points per Game */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium">الحد الأقصى للنقاط في اللعبة</label>
-          <Input
-            type="number"
-            min={0}
-            max={1000}
-            value={s.max_points_per_game}
-            onChange={(e) => update("max_points_per_game", parseInt(e.target.value) || 0)}
-            className="w-32"
-          />
-        </div>
-
         {/* Victory Bonus */}
         <div className="space-y-1.5">
           <label className="text-xs font-medium flex items-center gap-1">
