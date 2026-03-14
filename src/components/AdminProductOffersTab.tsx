@@ -654,12 +654,12 @@ export default function AdminProductOffersTab() {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-lg h-[85vh] flex flex-col p-0 !overflow-hidden !max-h-none" dir="rtl">
-          <DialogHeader className="px-6 pt-6 pb-2">
+        <DialogContent className="max-w-lg flex flex-col p-0" dir="rtl" style={{ overflow: 'hidden', maxHeight: 'none', height: '85vh' }}>
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
             <DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 overscroll-contain" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto px-6 overscroll-contain" style={{ minHeight: 0, WebkitOverflowScrolling: 'touch' }}>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>اسم المنتج *</Label>
