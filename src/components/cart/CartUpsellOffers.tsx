@@ -131,31 +131,31 @@ export default function CartUpsellOffers() {
   const hasMultiple = offers.length > 1;
 
   return (
-    <div className="mt-3 mb-1">
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 flex items-center gap-2.5" dir="rtl">
+    <div className="mt-3 mb-1 w-full overflow-hidden">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-2 flex items-center gap-2 w-full" dir="rtl">
         {/* Icon */}
-        <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Gift className="h-4 w-4 text-primary" />
+        <div className="shrink-0 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+          <Gift className="h-3.5 w-3.5 text-primary" />
         </div>
 
         {/* Offer image thumbnail */}
         {offer.image_url && (
-          <img src={offer.image_url} alt="" className="shrink-0 w-10 h-10 rounded-md object-cover border border-border/30" />
+          <img src={offer.image_url} alt="" className="shrink-0 w-9 h-9 rounded-md object-cover border border-border/30" />
         )}
 
         {/* Info */}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-foreground truncate">{offer.title_ar}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-xs font-black text-primary">{formatPrice(offer.price)}</span>
-            <span className="text-[9px] text-muted-foreground">د.ع</span>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <p className="text-[11px] font-bold text-foreground truncate">{offer.title_ar}</p>
+          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+            <span className="text-[11px] font-black text-primary">{formatPrice(offer.price)}</span>
+            <span className="text-[8px] text-muted-foreground">د.ع</span>
             {offer.gift_tickets > 0 && (
-              <span className="text-[9px] text-purple-600 flex items-center gap-0.5">
+              <span className="text-[8px] text-purple-600 flex items-center gap-0.5">
                 <Ticket className="h-2.5 w-2.5" />+{offer.gift_tickets}
               </span>
             )}
             {offer.points_reward && offer.points_reward > 0 && (
-              <span className="text-[9px] text-amber-600 flex items-center gap-0.5">
+              <span className="text-[8px] text-amber-600 flex items-center gap-0.5">
                 <Coins className="h-2.5 w-2.5" />+{offer.points_reward}
               </span>
             )}
@@ -180,10 +180,10 @@ export default function CartUpsellOffers() {
           </div>
         )}
 
-        {/* Buy button */}
+        {/* Add to cart button */}
         <Button
           size="sm"
-          className="shrink-0 h-7 text-[10px] gap-1 px-2.5"
+          className="shrink-0 h-7 text-[9px] gap-0.5 px-2"
           onClick={() => purchaseMutation.mutate(offer)}
           disabled={purchaseMutation.isPending}
         >
@@ -192,7 +192,7 @@ export default function CartUpsellOffers() {
           ) : (
             <ShoppingCart className="h-3 w-3" />
           )}
-          اشتري
+          أضف للسلة
         </Button>
       </div>
 
