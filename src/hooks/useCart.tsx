@@ -692,6 +692,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
+    // Offer purchase items are free (already paid)
+    if ((item as any).offer_purchase_id) return sum;
     if (item.products) {
       const isDirect = (item as any).sale_type === 'direct';
       let itemPrice = Number(item.products.price);
