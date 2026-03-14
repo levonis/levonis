@@ -1499,7 +1499,7 @@ const Cart = () => {
                     return (
                       <div 
                         key={item.id}
-                        className={`rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all duration-300 ${
+                        className={`rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all duration-300 w-full max-w-full overflow-hidden ${
                           isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0'
                         }`}
                       >
