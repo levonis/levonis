@@ -36,7 +36,6 @@ export default function SpaceBlasterTab() {
           game_enabled: s.game_enabled,
           entry_fee_tickets: s.entry_fee_tickets,
           points_per_score: s.points_per_score,
-          max_points_per_game: s.max_points_per_game,
           victory_bonus_points: s.victory_bonus_points,
           wave_bonus_points: s.wave_bonus_points,
           updated_at: new Date().toISOString(),
@@ -119,19 +118,6 @@ export default function SpaceBlasterTab() {
           <p className="text-[10px] text-muted-foreground">مثال: 0.1 يعني كل 10 سكور = 1 نقطة</p>
         </div>
 
-        {/* Max Points per Game */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium">الحد الأقصى للنقاط في اللعبة</label>
-          <Input
-            type="number"
-            min={0}
-            max={1000}
-            value={s.max_points_per_game}
-            onChange={(e) => update("max_points_per_game", parseInt(e.target.value) || 0)}
-            className="w-32"
-          />
-        </div>
-
         {/* Victory Bonus */}
         <div className="space-y-1.5">
           <label className="text-xs font-medium flex items-center gap-1">
@@ -165,8 +151,8 @@ export default function SpaceBlasterTab() {
         {/* Preview */}
         <div className="bg-muted/30 rounded-lg p-3 text-xs font-mono space-y-1" dir="rtl">
           <p className="font-bold text-primary mb-1">📊 محاكاة:</p>
-          <p>سكور 500 = {Math.min(Math.floor(500 * s.points_per_score), s.max_points_per_game)} نقطة</p>
-          <p>سكور 1000 = {Math.min(Math.floor(1000 * s.points_per_score), s.max_points_per_game)} نقطة</p>
+          <p>سكور 500 = {Math.floor(500 * s.points_per_score)} نقطة</p>
+          <p>سكور 1000 = {Math.floor(1000 * s.points_per_score)} نقطة</p>
           <p>فوز كامل (20 موجة) = +{s.victory_bonus_points} + {20 * s.wave_bonus_points} = {s.victory_bonus_points + 20 * s.wave_bonus_points} نقطة إضافية</p>
           <p>رسوم الدخول: {s.entry_fee_tickets > 0 ? `${s.entry_fee_tickets} تذكرة` : "مجاني"}</p>
         </div>
