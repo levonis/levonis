@@ -106,6 +106,7 @@ interface StorageItem {
 
 export default function AllStoragePanel() {
   const { user } = useAuth();
+  const { addOfferPurchaseToCart } = useCart();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<StorageItem | null>(null);
   const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
