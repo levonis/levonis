@@ -604,7 +604,10 @@ export default function AdminProductOffers() {
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 p-4">
+          <div
+            className="flex-1 overflow-y-auto px-4 overscroll-contain"
+            style={{ minHeight: 0, WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="space-y-4">
               {/* Basic Info */}
               <div className="space-y-2">
@@ -879,7 +882,7 @@ export default function AdminProductOffers() {
                 ))}
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="p-4 pt-2 border-t">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
