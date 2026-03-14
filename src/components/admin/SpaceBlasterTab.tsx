@@ -151,8 +151,8 @@ export default function SpaceBlasterTab() {
         {/* Preview */}
         <div className="bg-muted/30 rounded-lg p-3 text-xs font-mono space-y-1" dir="rtl">
           <p className="font-bold text-primary mb-1">📊 محاكاة:</p>
-          <p>سكور 500 = {Math.min(Math.floor(500 * s.points_per_score), s.max_points_per_game)} نقطة</p>
-          <p>سكور 1000 = {Math.min(Math.floor(1000 * s.points_per_score), s.max_points_per_game)} نقطة</p>
+          <p>سكور 500 = {Math.floor(500 * s.points_per_score)} نقطة</p>
+          <p>سكور 1000 = {Math.floor(1000 * s.points_per_score)} نقطة</p>
           <p>فوز كامل (20 موجة) = +{s.victory_bonus_points} + {20 * s.wave_bonus_points} = {s.victory_bonus_points + 20 * s.wave_bonus_points} نقطة إضافية</p>
           <p>رسوم الدخول: {s.entry_fee_tickets > 0 ? `${s.entry_fee_tickets} تذكرة` : "مجاني"}</p>
         </div>

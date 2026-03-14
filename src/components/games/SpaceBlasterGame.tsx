@@ -230,12 +230,11 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
 
       const gs = settingsRef.current;
       const pps = gs?.points_per_score ?? 0.03;
-      const maxPts = gs?.max_points_per_game ?? 30;
       const victoryBonus = victory ? (gs?.victory_bonus_points ?? 5) : 0;
       const waveBonus = (s.wave - 1) * (gs?.wave_bonus_points ?? 0);
 
       const scorePoints = Math.floor(s.score * pps);
-      const totalPts = Math.min(scorePoints + waveBonus, maxPts) + victoryBonus;
+      const totalPts = scorePoints + waveBonus + victoryBonus;
 
       setPendingPoints(totalPts);
       syncPoints(totalPts);
