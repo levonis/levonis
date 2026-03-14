@@ -110,7 +110,7 @@ export default function OffersStoragePage() {
       </div>
 
       {/* Content - with padding for fixed header */}
-      <main className="flex-1 px-4 py-5" style={{ marginTop: `${headerOffset + 100}px` }}>
+      <main className="flex-1 px-4 py-5">
         <Suspense fallback={
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
