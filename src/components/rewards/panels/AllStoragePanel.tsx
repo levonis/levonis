@@ -31,6 +31,7 @@ import {
   ChevronDown,
   Calendar,
   AlertCircle,
+  ShoppingCart,
 } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 import { format } from "date-fns";
