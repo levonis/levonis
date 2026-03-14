@@ -742,6 +742,17 @@ const Cart = () => {
         });
       } catch (e) { console.error('Telegram error:', e); }
 
+      // Update offer purchase statuses to 'shipping_requested'
+      const offerPurchaseIds = items
+        .filter(item => (item as any).offer_purchase_id)
+        .map(item => (item as any).offer_purchase_id);
+      if (offerPurchaseIds.length > 0) {
+        await supabase
+          .from('product_offer_purchases')
+          .update({ purchase_status: 'shipping_requested', shipping_requested_at: new Date().toISOString() })
+          .in('id', offerPurchaseIds);
+      }
+
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
