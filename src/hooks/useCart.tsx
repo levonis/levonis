@@ -787,6 +787,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         forceAddToCart,
         addBundleToCart,
         addCustomRequestToCart,
+        addOfferPurchaseToCart,
         updateQuantity,
         removeFromCart,
         clearCart,
