@@ -592,7 +592,11 @@ export default function AdminProductOffers() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogContent
+          className="max-w-lg flex flex-col p-0"
+          dir="rtl"
+          style={{ overflow: 'hidden', maxHeight: 'none', height: '85vh' }}
+        >
           <DialogHeader className="p-4 pb-2 border-b">
             <DialogTitle className="flex items-center gap-2">
               <Gift className="h-5 w-5 text-primary" />
