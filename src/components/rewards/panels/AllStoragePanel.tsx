@@ -451,18 +451,30 @@ export default function AllStoragePanel() {
             {/* Action Button */}
             {item.status === 'pending' && !showCheckbox && (
               <div className="flex items-center shrink-0">
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-8 text-xs px-3 rounded-lg"
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setShippingDialogOpen(true);
-                  }}
-                >
-                  <Truck className="h-3 w-3 ml-1" />
-                  شحن
-                </Button>
+                {item.source === 'offer' ? (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8 text-xs px-3 rounded-lg"
+                    onClick={() => addOfferPurchaseToCart(item.id)}
+                  >
+                    <ShoppingCart className="h-3 w-3 ml-1" />
+                    أضف للسلة
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8 text-xs px-3 rounded-lg"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setShippingDialogOpen(true);
+                    }}
+                  >
+                    <Truck className="h-3 w-3 ml-1" />
+                    شحن
+                  </Button>
+                )}
               </div>
             )}
           </div>
