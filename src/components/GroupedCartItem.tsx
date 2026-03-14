@@ -95,8 +95,8 @@ const GroupedCartItem = ({
   };
 
   return (
-    <div className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all">
-      <div className="flex gap-2.5 sm:gap-4">
+    <div className="rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all w-full max-w-full overflow-hidden">
+      <div className="flex gap-2.5 sm:gap-4 w-full min-w-0">
         {/* Product Image */}
         {displayImage && (
           <Link to={`/product/${product.slug}`} className="flex-shrink-0">
@@ -147,7 +147,7 @@ const GroupedCartItem = ({
               return (
                 <div 
                   key={item.id} 
-                  className={`bg-card rounded-lg p-2 border border-border/30 transition-all duration-300 ${
+                  className={`bg-card rounded-lg p-2 border border-border/30 transition-all duration-300 max-w-full overflow-hidden ${
                     isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
                   }`}
                 >
