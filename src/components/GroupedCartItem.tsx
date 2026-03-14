@@ -147,7 +147,7 @@ const GroupedCartItem = ({
               return (
                 <div 
                   key={item.id} 
-                  className={`bg-card rounded-lg p-2 border border-border/30 transition-all duration-300 ${
+                  className={`bg-card rounded-lg p-2 border border-border/30 transition-all duration-300 max-w-full overflow-hidden ${
                     isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
                   }`}
                 >
