@@ -78,11 +78,23 @@ Deno.serve(async (req) => {
           (existingReviews || []).map((r) => `${r.user_id}:${r.product_id}`)
         );
 
-        // Create auto-reviews for unreviewed products
+        // Count actual delivered orders per user+product pair
+        const pairCountMap = new Map<string, number>();
         for (const pair of userProductPairs) {
           const key = `${pair.user_id}:${pair.product_id}`;
+          pairCountMap.set(key, (pairCountMap.get(key) || 0) + 1);
+        }
+
+        // Deduplicate pairs
+        const uniquePairs = Array.from(pairCountMap.entries()).map(([key, count]) => {
+          const [user_id, product_id] = key.split(':');
+          return { user_id, product_id, count };
+        });
+
+        for (const pair of uniquePairs) {
+          const key = `${pair.user_id}:${pair.product_id}`;
           if (reviewedSet.has(key)) {
-            // Already reviewed - increment reorder_count
+            // Already reviewed - SET reorder_count to actual order count (not increment)
             const { data: existingReview } = await supabase
               .from("reviews")
               .select("id, reorder_count")
@@ -92,10 +104,10 @@ Deno.serve(async (req) => {
               .limit(1)
               .maybeSingle();
 
-            if (existingReview) {
+            if (existingReview && (existingReview.reorder_count || 1) !== pair.count) {
               await supabase
                 .from("reviews")
-                .update({ reorder_count: (existingReview.reorder_count || 1) + 1 })
+                .update({ reorder_count: pair.count })
                 .eq("id", existingReview.id);
               totalAutoRated++;
             }
@@ -112,13 +124,13 @@ Deno.serve(async (req) => {
               comment: null,
               is_auto_rating: true,
               points_awarded: 0,
-              reorder_count: 1,
+              reorder_count: pair.count,
             });
 
           if (insertError) {
             console.error("Error creating auto product review:", insertError);
           } else {
-            reviewedSet.add(key); // Prevent duplicates in same batch
+            reviewedSet.add(key);
             totalAutoRated++;
           }
         }
