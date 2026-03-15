@@ -10,18 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
+interface ExistingRatingData {
+  id: string;
+  rating: number;
+  review_text: string | null;
+  image_urls?: string[];
+  video_url?: string | null;
+  is_auto_rating?: boolean;
+  purchase_count?: number;
+}
+
 interface MerchantRatingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   merchantId: string;
   requestId: string;
-  existingRating?: {
-    id: string;
-    rating: number;
-    review_text: string | null;
-    image_urls?: string[];
-    video_url?: string | null;
-  } | null;
+  existingRating?: ExistingRatingData | null;
+  existingMerchantRating?: ExistingRatingData | null;
 }
 
 export default function MerchantRatingDialog({
@@ -30,6 +35,7 @@ export default function MerchantRatingDialog({
   merchantId,
   requestId,
   existingRating,
+  existingMerchantRating,
 }: MerchantRatingDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -46,6 +52,9 @@ export default function MerchantRatingDialog({
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Determine if this is a repeat purchase for the same merchant
+  const isRepeatPurchase = !existingRating && !!existingMerchantRating;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -97,7 +106,6 @@ export default function MerchantRatingDialog({
         const url = await uploadFile(img, path);
         uploadedImageUrls.push(url);
       }
-      // Keep existing URLs that weren't removed + new uploads
       const existingKept = imagePreviewUrls.filter(u => u.startsWith("http") && !u.startsWith("blob:"));
       const allImageUrls = [...existingKept, ...uploadedImageUrls];
 
@@ -113,26 +121,74 @@ export default function MerchantRatingDialog({
       if (allImageUrls.length > 0) points = 50;
       if (finalVideoUrl) points = 250;
 
-      const payload = {
-        rating,
-        review_text: reviewText.trim() || null,
-        image_urls: allImageUrls,
-        video_url: finalVideoUrl,
-        points_awarded: points,
-      };
+      const hasContent = !!(reviewText.trim() || allImageUrls.length > 0 || finalVideoUrl);
 
       if (existingRating) {
+        // Updating own existing rating for this request
+        const payload = {
+          rating,
+          review_text: reviewText.trim() || null,
+          image_urls: allImageUrls,
+          video_url: finalVideoUrl,
+          points_awarded: points,
+          is_auto_rating: false,
+        };
         const { error } = await supabase
           .from("merchant_ratings")
           .update(payload)
           .eq("id", existingRating.id);
         if (error) throw error;
+      } else if (isRepeatPurchase && existingMerchantRating) {
+        // Repeat purchase for same merchant
+        const newCount = (existingMerchantRating.purchase_count || 1) + 1;
+
+        if (hasContent) {
+          // User wrote review text or added media → create additional rating
+          const { error } = await supabase.from("merchant_ratings").insert({
+            merchant_id: merchantId,
+            customer_id: user.id,
+            request_id: requestId,
+            rating,
+            review_text: reviewText.trim() || null,
+            image_urls: allImageUrls,
+            video_url: finalVideoUrl,
+            points_awarded: points,
+            is_auto_rating: false,
+            purchase_count: newCount,
+          });
+          if (error) throw error;
+
+          // Also update the original rating's purchase_count
+          await supabase
+            .from("merchant_ratings")
+            .update({ purchase_count: newCount })
+            .eq("id", existingMerchantRating.id);
+        } else {
+          // No content, just stars → increment purchase_count on existing rating
+          const { error } = await supabase
+            .from("merchant_ratings")
+            .update({ 
+              purchase_count: newCount,
+              // If previous was auto-rated and user now gives stars, update rating
+              rating: rating,
+              is_auto_rating: false,
+            })
+            .eq("id", existingMerchantRating.id);
+          if (error) throw error;
+        }
       } else {
+        // Brand new first rating
         const { error } = await supabase.from("merchant_ratings").insert({
           merchant_id: merchantId,
           customer_id: user.id,
           request_id: requestId,
-          ...payload,
+          rating,
+          review_text: reviewText.trim() || null,
+          image_urls: allImageUrls,
+          video_url: finalVideoUrl,
+          points_awarded: points,
+          is_auto_rating: false,
+          purchase_count: 1,
         });
         if (error) throw error;
       }
@@ -140,8 +196,10 @@ export default function MerchantRatingDialog({
     onSuccess: () => {
       setUploading(false);
       queryClient.invalidateQueries({ queryKey: ["merchant-ratings"] });
+      queryClient.invalidateQueries({ queryKey: ["merchant-ratings-infinite"] });
       queryClient.invalidateQueries({ queryKey: ["merchant-rating-stats"] });
       queryClient.invalidateQueries({ queryKey: ["customer-rating"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-merchant-rating"] });
       toast({ title: "تم التقييم", description: "شكراً لتقييمك! تم نشره تلقائياً." });
       onOpenChange(false);
     },
@@ -158,10 +216,20 @@ export default function MerchantRatingDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{existingRating ? "تعديل التقييم" : "تقييم التاجر"}</DialogTitle>
+          <DialogTitle>
+            {existingRating ? "تعديل التقييم" : isRepeatPurchase ? "تقييم إضافي" : "تقييم التاجر"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Repeat purchase notice */}
+          {isRepeatPurchase && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs text-foreground/80">
+              <p className="font-semibold text-primary mb-1">🔄 شراء متكرر</p>
+              <p>لديك تقييم سابق لهذا التاجر. إذا أضفت تعليقاً أو صوراً سيظهر كتقييم إضافي، وإلا سيتم تحديث عدد مرات الشراء فقط.</p>
+            </div>
+          )}
+
           {/* Star Rating */}
           <div>
             <Label>التقييم بالنجوم *</Label>
@@ -198,7 +266,7 @@ export default function MerchantRatingDialog({
               rows={3}
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="شاركنا تجربتك مع هذا التاجر..."
+              placeholder={isRepeatPurchase ? "أضف تعليقاً لإنشاء تقييم إضافي..." : "شاركنا تجربتك مع هذا التاجر..."}
               className="mt-1"
             />
           </div>
