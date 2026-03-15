@@ -528,6 +528,11 @@ function RatingCard({
                🛒 تم الشراء {rating.purchase_count} من المرات
              </Badge>
            )}
+           {rating.is_auto_rating && (
+             <Badge variant="outline" className="text-[9px] mt-1 text-muted-foreground">
+               تقييم تلقائي
+             </Badge>
+           )}
            {rating.is_hidden && (
              <Badge variant="destructive" className="text-[10px] mt-1">مخفي</Badge>
            )}
