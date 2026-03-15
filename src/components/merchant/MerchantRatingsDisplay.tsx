@@ -75,7 +75,7 @@ export default function MerchantRatingsDisplay({ merchantId, isAdmin = false }: 
     queryFn: async () => {
       const { data: ratingsData, error } = await supabase
         .from("merchant_ratings")
-        .select("id, rating, review_text, image_urls, video_url, created_at, customer_id, is_hidden")
+        .select("id, rating, review_text, image_urls, video_url, created_at, customer_id, is_hidden, is_auto_rating, purchase_count")
         .eq("merchant_id", merchantId)
         .order("created_at", { ascending: false })
         .limit(20);

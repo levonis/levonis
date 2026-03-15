@@ -3851,10 +3851,12 @@ export type Database = {
           customer_id: string
           id: string
           image_urls: string[] | null
+          is_auto_rating: boolean
           is_hidden: boolean | null
           is_published: boolean | null
           merchant_id: string
           points_awarded: number | null
+          purchase_count: number
           rating: number
           request_id: string
           review_text: string | null
@@ -3866,10 +3868,12 @@ export type Database = {
           customer_id: string
           id?: string
           image_urls?: string[] | null
+          is_auto_rating?: boolean
           is_hidden?: boolean | null
           is_published?: boolean | null
           merchant_id: string
           points_awarded?: number | null
+          purchase_count?: number
           rating: number
           request_id: string
           review_text?: string | null
@@ -3881,10 +3885,12 @@ export type Database = {
           customer_id?: string
           id?: string
           image_urls?: string[] | null
+          is_auto_rating?: boolean
           is_hidden?: boolean | null
           is_published?: boolean | null
           merchant_id?: string
           points_awarded?: number | null
+          purchase_count?: number
           rating?: number
           request_id?: string
           review_text?: string | null

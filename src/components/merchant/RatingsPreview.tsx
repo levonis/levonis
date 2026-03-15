@@ -32,6 +32,8 @@ interface Rating {
   customer_avatar: string | null;
   reply?: RatingReply | null;
   is_hidden?: boolean;
+  is_auto_rating?: boolean;
+  purchase_count?: number;
 }
 
 interface RatingComment {
@@ -126,7 +128,7 @@ export default function RatingsPreview({ merchantId }: RatingsPreviewProps) {
   const fetchRatingsPage = async ({ pageParam = 0 }: { pageParam?: number }) => {
     let query = supabase
       .from("merchant_ratings")
-      .select("id, rating, review_text, image_urls, video_url, created_at, customer_id, is_hidden")
+      .select("id, rating, review_text, image_urls, video_url, created_at, customer_id, is_hidden, is_auto_rating, purchase_count")
       .eq("merchant_id", merchantId);
 
     if (filterStars) {
@@ -186,7 +188,13 @@ export default function RatingsPreview({ merchantId }: RatingsPreviewProps) {
   });
 
   const allRatings = ratingsPages?.pages.flatMap((p) => p.ratings) || [];
-  const visibleRatings = isAdmin ? allRatings : allRatings.filter(r => !r.is_hidden);
+  // Sort: manual ratings first, auto-ratings last
+  const sortedRatings = [...allRatings].sort((a, b) => {
+    if (a.is_auto_rating && !b.is_auto_rating) return 1;
+    if (!a.is_auto_rating && b.is_auto_rating) return -1;
+    return 0;
+  });
+  const visibleRatings = isAdmin ? sortedRatings : sortedRatings.filter(r => !r.is_hidden);
 
   // Fetch comments for visible ratings
   const visibleRatingIds = visibleRatings.map(r => r.id);
@@ -512,12 +520,22 @@ function RatingCard({
               )}
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {new Date(rating.created_at).toLocaleDateString("ar-IQ")}
-          </p>
-          {rating.is_hidden && (
-            <Badge variant="destructive" className="text-[10px] mt-1">مخفي</Badge>
-          )}
+           <p className="text-[10px] text-muted-foreground mt-0.5">
+             {new Date(rating.created_at).toLocaleDateString("ar-IQ")}
+           </p>
+           {rating.purchase_count && rating.purchase_count > 1 && (
+             <Badge variant="secondary" className="text-[9px] mt-1 gap-0.5">
+               🛒 تم الشراء {rating.purchase_count} من المرات
+             </Badge>
+           )}
+           {rating.is_auto_rating && (
+             <Badge variant="outline" className="text-[9px] mt-1 text-muted-foreground">
+               تقييم تلقائي
+             </Badge>
+           )}
+           {rating.is_hidden && (
+             <Badge variant="destructive" className="text-[10px] mt-1">مخفي</Badge>
+           )}
           {rating.review_text && (
             <p className="text-xs text-foreground/80 mt-1.5 whitespace-pre-wrap leading-relaxed">
               {rating.review_text}
