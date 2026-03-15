@@ -389,7 +389,7 @@ export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
   if (missileBaseTotalFrames < 2) calcMissileBaseFrames();
   if (missileBaseTotalFrames < 2) return;
 
-  const isFiring = s.missileDoubleTap;
+  const isFiring = s.missileCount > 0 && s.enemies.length > 0;
   const cx = s.player.x + PLAYER_W / 2;
   const cy = s.player.y + PLAYER_H / 2;
   const baseRadius = PLAYER_W + 6;

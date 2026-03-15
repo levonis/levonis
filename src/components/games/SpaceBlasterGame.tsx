@@ -651,6 +651,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive, s.lives, s.maxLives);
       drawHelperPlanes(ctx, s);
       drawBullets(ctx, s);
+      drawLaserBeams(ctx, s);
       drawMissiles(ctx, s);
       drawPowerUps(ctx, s.powerUps, s.gameTime);
       drawParticles(ctx, s.particles);
