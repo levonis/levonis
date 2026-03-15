@@ -50,21 +50,40 @@
      },
    });
  
-   // Fetch existing rating
-   const { data: existingRating } = useQuery({
-     queryKey: ["customer-rating", requestId, user?.id],
-     enabled: !!user?.id,
-     queryFn: async () => {
-        const { data, error } = await supabase
-          .from("merchant_ratings")
-          .select("id, rating, review_text, merchant_id, image_urls, video_url")
-          .eq("customer_id", user!.id)
-          .eq("request_id", requestId)
-         .maybeSingle();
-       if (error) throw error;
-       return data;
-     },
-   });
+  // Fetch existing rating for this specific request
+  const { data: existingRating } = useQuery({
+    queryKey: ["customer-rating", requestId, user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+       const { data, error } = await supabase
+         .from("merchant_ratings")
+         .select("id, rating, review_text, merchant_id, image_urls, video_url, is_auto_rating, purchase_count")
+         .eq("customer_id", user!.id)
+         .eq("request_id", requestId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch existing rating for same merchant (for repeat purchase detection)
+  const { data: existingMerchantRating } = useQuery({
+    queryKey: ["customer-merchant-rating", merchantData, user?.id],
+    enabled: !!user?.id && !!merchantData && !existingRating,
+    queryFn: async () => {
+      if (!merchantData) return null;
+      const { data, error } = await supabase
+        .from("merchant_ratings")
+        .select("id, rating, review_text, merchant_id, image_urls, video_url, is_auto_rating, purchase_count")
+        .eq("customer_id", user!.id)
+        .eq("merchant_id", merchantData)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
  
    const merchantId = useMemo(() => {
      return existingRating?.merchant_id || merchantData || null;
