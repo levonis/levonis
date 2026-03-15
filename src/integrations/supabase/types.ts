@@ -6514,6 +6514,7 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
+          is_auto_rating: boolean | null
           media_files: string[] | null
           points_awarded: number | null
           product_id: string
@@ -6528,6 +6529,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          is_auto_rating?: boolean | null
           media_files?: string[] | null
           points_awarded?: number | null
           product_id: string
@@ -6542,6 +6544,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          is_auto_rating?: boolean | null
           media_files?: string[] | null
           points_awarded?: number | null
           product_id?: string
