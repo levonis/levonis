@@ -159,7 +159,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let lastTapTime = 0;
 
     const onKeyDown = (e: KeyboardEvent) => { stateRef.current?.keys.add(e.key); };
     const onKeyUp = (e: KeyboardEvent) => { stateRef.current?.keys.delete(e.key); };
