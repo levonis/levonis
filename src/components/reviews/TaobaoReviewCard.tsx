@@ -33,6 +33,7 @@ interface ReviewData {
   user_id: string;
   product_id?: string;
   reorder_count?: number;
+  is_auto_rating?: boolean;
   additional_comments?: any;
   profiles?: {
     full_name: string | null;
