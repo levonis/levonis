@@ -507,34 +507,38 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         }
       }
 
-      // ── Missile system (from upgrade level 8+) ──
-      if (s.missileCount > 0) {
-        const shouldFireMissile = updateMissileBaseAnim(s.missileDoubleTap && s.missileCount > 0 && s.enemies.length > 0);
-        if (shouldFireMissile && s.missileCount > 0 && s.enemies.length > 0) {
-          const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
-          let bestIdx = -1, bestHp = -1;
-          for (let i = 0; i < s.enemies.length; i++) {
-            const e = s.enemies[i];
-            if (e.spawnDelay > 0) continue;
-            if (e.hp > bestHp) { bestHp = e.hp; bestIdx = i; }
-          }
-          if (bestIdx >= 0) {
-            const e = s.enemies[bestIdx];
-            const dx = (e.x + e.w / 2) - px, dy = (e.y + e.h / 2) - py;
-            s.missiles.push({
-              x: px, y: py,
-              targetId: bestIdx,
-              speed: 4,
-              angle: Math.atan2(dy, dx),
-              life: 180,
-            });
-            s.missileCount--;
-            soundsRef.current.playShoot();
+      // ── Missile system (auto-fire when available) ──
+      if (s.missileCount > 0 && s.enemies.length > 0) {
+        s.missileFireTimer -= dt;
+        if (s.missileFireTimer <= 0) {
+          const shouldFireMissile = updateMissileBaseAnim(true);
+          if (shouldFireMissile) {
+            const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
+            let bestIdx = -1, bestHp = -1;
+            for (let i = 0; i < s.enemies.length; i++) {
+              const e = s.enemies[i];
+              if (e.spawnDelay > 0) continue;
+              if (e.hp > bestHp) { bestHp = e.hp; bestIdx = i; }
+            }
+            if (bestIdx >= 0) {
+              const e = s.enemies[bestIdx];
+              const dx = (e.x + e.w / 2) - px, dy = (e.y + e.h / 2) - py;
+              s.missiles.push({
+                x: px, y: py,
+                targetId: bestIdx,
+                speed: 4,
+                angle: Math.atan2(dy, dx),
+                life: 180,
+              });
+              s.missileCount--;
+              s.missileFireTimer = MISSILE_FIRE_RATE;
+              soundsRef.current.playShoot();
+            }
           }
         }
-        if (s.missileCount <= 0) {
-          s.missileDoubleTap = false;
-        }
+      } else {
+        updateMissileBaseAnim(false);
+      }
 
         // Update missiles
         for (let i = s.missiles.length - 1; i >= 0; i--) {
