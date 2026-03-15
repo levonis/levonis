@@ -37,7 +37,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const [finalWave, setFinalWave] = useState(0);
   const [pendingPoints, setPendingPoints] = useState(0);
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const isAdminRef = useRef(isAdmin);
+  isAdminRef.current = isAdmin;
   const queryClient = useQueryClient();
   const { playClick, playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory } = useGameSounds();
   const soundsRef = useRef({ playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory });
