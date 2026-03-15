@@ -128,7 +128,7 @@ export default function RatingsPreview({ merchantId }: RatingsPreviewProps) {
   const fetchRatingsPage = async ({ pageParam = 0 }: { pageParam?: number }) => {
     let query = supabase
       .from("merchant_ratings")
-      .select("id, rating, review_text, image_urls, video_url, created_at, customer_id, is_hidden")
+      .select("id, rating, review_text, image_urls, video_url, created_at, customer_id, is_hidden, is_auto_rating, purchase_count")
       .eq("merchant_id", merchantId);
 
     if (filterStars) {
