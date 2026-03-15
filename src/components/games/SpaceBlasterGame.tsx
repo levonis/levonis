@@ -495,11 +495,11 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 12, ['#00ffff', '#88ffff', '#ffffff']);
             soundsRef.current.playHit();
           } else {
-            s.lives--;
+            if (!isAdminRef.current) s.lives--;
             s.invincible = 90;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
             soundsRef.current.playHit();
-            if (s.lives <= 0) { endGame(s, false); return; }
+            if (!isAdminRef.current && s.lives <= 0) { endGame(s, false); return; }
           }
         }
 
