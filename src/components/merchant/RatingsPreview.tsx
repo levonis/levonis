@@ -188,7 +188,13 @@ export default function RatingsPreview({ merchantId }: RatingsPreviewProps) {
   });
 
   const allRatings = ratingsPages?.pages.flatMap((p) => p.ratings) || [];
-  const visibleRatings = isAdmin ? allRatings : allRatings.filter(r => !r.is_hidden);
+  // Sort: manual ratings first, auto-ratings last
+  const sortedRatings = [...allRatings].sort((a, b) => {
+    if (a.is_auto_rating && !b.is_auto_rating) return 1;
+    if (!a.is_auto_rating && b.is_auto_rating) return -1;
+    return 0;
+  });
+  const visibleRatings = isAdmin ? sortedRatings : sortedRatings.filter(r => !r.is_hidden);
 
   // Fetch comments for visible ratings
   const visibleRatingIds = visibleRatings.map(r => r.id);
