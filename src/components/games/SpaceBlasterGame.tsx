@@ -37,7 +37,9 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
   const [finalWave, setFinalWave] = useState(0);
   const [pendingPoints, setPendingPoints] = useState(0);
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const isAdminRef = useRef(isAdmin);
+  isAdminRef.current = isAdmin;
   const queryClient = useQueryClient();
   const { playClick, playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory } = useGameSounds();
   const soundsRef = useRef({ playShoot, playExplosion, playBossExplosion, playHit, playWave, playVictory });
@@ -383,12 +385,12 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               s.bullets.splice(i, 1);
               continue;
             }
-            s.lives--;
+            if (!isAdminRef.current) s.lives--;
             s.invincible = 90;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
             soundsRef.current.playHit();
             s.bullets.splice(i, 1);
-            if (s.lives <= 0) { endGame(s, false); return; }
+            if (!isAdminRef.current && s.lives <= 0) { endGame(s, false); return; }
             continue;
           }
         } else {
@@ -493,11 +495,11 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 12, ['#00ffff', '#88ffff', '#ffffff']);
             soundsRef.current.playHit();
           } else {
-            s.lives--;
+            if (!isAdminRef.current) s.lives--;
             s.invincible = 90;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
             soundsRef.current.playHit();
-            if (s.lives <= 0) { endGame(s, false); return; }
+            if (!isAdminRef.current && s.lives <= 0) { endGame(s, false); return; }
           }
         }
 
