@@ -131,6 +131,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       missiles: [],
       powerUps: [],
       helperPlanes: [],
+      laserBeams: [],
       spawnTimer: 0, enemiesLeftInWave: total, waveDelay: 0,
       shootCooldown: 0, invincible: 120,
       touchX: null, touchY: null, keys: new Set(), gameTime: 0,
@@ -139,7 +140,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       shieldActive: 0,
       missileCount: 0,
       missileFireTimer: 0,
-      missileDoubleTap: false,
+      missileAutoFire: false,
       transitionTimer: 0,
     };
     setScreen('playing');
