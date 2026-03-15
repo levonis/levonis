@@ -79,10 +79,16 @@ Deno.serve(async (req) => {
         );
 
         // Count actual delivered orders per user+product pair
-        const pairCountMap = new Map<string, number>();
+        // Count DISTINCT orders per user+product (not individual order_items)
+        const pairOrdersMap = new Map<string, Set<string>>();
         for (const pair of userProductPairs) {
           const key = `${pair.user_id}:${pair.product_id}`;
-          pairCountMap.set(key, (pairCountMap.get(key) || 0) + 1);
+          if (!pairOrdersMap.has(key)) pairOrdersMap.set(key, new Set());
+          pairOrdersMap.get(key)!.add(pair.order_id);
+        }
+        const pairCountMap = new Map<string, number>();
+        for (const [key, orderSet] of pairOrdersMap) {
+          pairCountMap.set(key, orderSet.size);
         }
 
         // Deduplicate pairs
