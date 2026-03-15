@@ -174,14 +174,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     };
     const onTouchStart = (e: TouchEvent) => {
       updateTouch(e);
-      const now = Date.now();
-      if (now - lastTapTime < 300) {
-        const s = stateRef.current;
-        if (s && s.missileCount > 0) {
-          s.missileDoubleTap = true;
-        }
-      }
-      lastTapTime = now;
     };
     const onTouchEnd = () => {
       if (stateRef.current) { stateRef.current.touchX = null; stateRef.current.touchY = null; stateRef.current.autoShoot = false; }
