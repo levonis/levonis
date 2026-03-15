@@ -520,12 +520,22 @@ function RatingCard({
               )}
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {new Date(rating.created_at).toLocaleDateString("ar-IQ")}
-          </p>
-          {rating.is_hidden && (
-            <Badge variant="destructive" className="text-[10px] mt-1">مخفي</Badge>
-          )}
+           <p className="text-[10px] text-muted-foreground mt-0.5">
+             {new Date(rating.created_at).toLocaleDateString("ar-IQ")}
+           </p>
+           {rating.purchase_count && rating.purchase_count > 1 && (
+             <Badge variant="secondary" className="text-[9px] mt-1 gap-0.5">
+               🛒 تم الشراء {rating.purchase_count} من المرات
+             </Badge>
+           )}
+           {rating.is_auto_rating && (
+             <Badge variant="outline" className="text-[9px] mt-1 text-muted-foreground">
+               تقييم تلقائي
+             </Badge>
+           )}
+           {rating.is_hidden && (
+             <Badge variant="destructive" className="text-[10px] mt-1">مخفي</Badge>
+           )}
           {rating.review_text && (
             <p className="text-xs text-foreground/80 mt-1.5 whitespace-pre-wrap leading-relaxed">
               {rating.review_text}
