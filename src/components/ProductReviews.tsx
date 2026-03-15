@@ -205,18 +205,25 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         list = list.filter((r) => r.rating <= 2);
         break;
     }
+    // Always prioritize manual reviews over auto-ratings
+    const manualFirst = (a: any, b: any) => {
+      const aAuto = a.is_auto_rating ? 1 : 0;
+      const bAuto = b.is_auto_rating ? 1 : 0;
+      return aAuto - bAuto;
+    };
+
     switch (sortBy) {
       case 'recent':
-        list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        list.sort((a, b) => manualFirst(a, b) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case 'highest':
-        list.sort((a, b) => b.rating - a.rating);
+        list.sort((a, b) => manualFirst(a, b) || b.rating - a.rating);
         break;
       case 'lowest':
-        list.sort((a, b) => a.rating - b.rating);
+        list.sort((a, b) => manualFirst(a, b) || a.rating - b.rating);
         break;
       case 'media':
-        list.sort((a, b) => ((b.media_files?.length || 0) + (b.video_url ? 1 : 0)) - ((a.media_files?.length || 0) + (a.video_url ? 1 : 0)));
+        list.sort((a, b) => manualFirst(a, b) || ((b.media_files?.length || 0) + (b.video_url ? 1 : 0)) - ((a.media_files?.length || 0) + (a.video_url ? 1 : 0)));
         break;
     }
     return list;
