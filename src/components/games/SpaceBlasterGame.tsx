@@ -540,55 +540,54 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         updateMissileBaseAnim(false);
       }
 
-        // Update missiles
-        for (let i = s.missiles.length - 1; i >= 0; i--) {
-          const m = s.missiles[i];
-          m.life -= dt;
-          if (m.life <= 0) { s.missiles.splice(i, 1); continue; }
-          let tx = m.x + Math.cos(m.angle) * 100, ty = m.y + Math.sin(m.angle) * 100;
-          if (s.enemies.length > 0) {
-            let best = -1, bestHp = -1;
-            for (let j = 0; j < s.enemies.length; j++) {
-              const e = s.enemies[j];
-              if (e.spawnDelay > 0) continue;
-              if (e.hp > bestHp) { bestHp = e.hp; best = j; }
-            }
-            if (best >= 0) {
-              tx = s.enemies[best].x + s.enemies[best].w / 2;
-              ty = s.enemies[best].y + s.enemies[best].h / 2;
-            }
-          }
-          const desired = Math.atan2(ty - m.y, tx - m.x);
-          let diff = desired - m.angle;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          m.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.12 * dt);
-          m.x += Math.cos(m.angle) * m.speed * dt;
-          m.y += Math.sin(m.angle) * m.speed * dt;
-          if (m.x < -20 || m.x > W + 20 || m.y < -20 || m.y > H + 20) { s.missiles.splice(i, 1); continue; }
-          for (let j = s.enemies.length - 1; j >= 0; j--) {
+      // Update missiles (always, regardless of missileCount)
+      for (let i = s.missiles.length - 1; i >= 0; i--) {
+        const m = s.missiles[i];
+        m.life -= dt;
+        if (m.life <= 0) { s.missiles.splice(i, 1); continue; }
+        let tx = m.x + Math.cos(m.angle) * 100, ty = m.y + Math.sin(m.angle) * 100;
+        if (s.enemies.length > 0) {
+          let best = -1, bestHp = -1;
+          for (let j = 0; j < s.enemies.length; j++) {
             const e = s.enemies[j];
             if (e.spawnDelay > 0) continue;
-            if (m.x > e.x && m.x < e.x + e.w && m.y > e.y && m.y < e.y + e.h) {
-              e.hp -= 2;
-              s.missiles.splice(i, 1);
-              spawnParticles(m.x, m.y, 12, ['#ff8800', '#ffcc00', '#ff3300']);
-              if (e.hp <= 0) {
-                s.score += getEnemyScore(e.type);
-                s.enemiesLeftInWave--;
-                const pCount = e.type === 'boss' ? 50 : 20;
-                spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
-                spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
-                if (e.type === 'boss') {
-                  s.screenFlash = 20;
-                  soundsRef.current.playBossExplosion();
-                } else {
-                  soundsRef.current.playExplosion();
-                }
-                s.enemies.splice(j, 1);
+            if (e.hp > bestHp) { bestHp = e.hp; best = j; }
+          }
+          if (best >= 0) {
+            tx = s.enemies[best].x + s.enemies[best].w / 2;
+            ty = s.enemies[best].y + s.enemies[best].h / 2;
+          }
+        }
+        const desired = Math.atan2(ty - m.y, tx - m.x);
+        let diff = desired - m.angle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        m.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.12 * dt);
+        m.x += Math.cos(m.angle) * m.speed * dt;
+        m.y += Math.sin(m.angle) * m.speed * dt;
+        if (m.x < -20 || m.x > W + 20 || m.y < -20 || m.y > H + 20) { s.missiles.splice(i, 1); continue; }
+        for (let j = s.enemies.length - 1; j >= 0; j--) {
+          const e = s.enemies[j];
+          if (e.spawnDelay > 0) continue;
+          if (m.x > e.x && m.x < e.x + e.w && m.y > e.y && m.y < e.y + e.h) {
+            e.hp -= 2;
+            s.missiles.splice(i, 1);
+            spawnParticles(m.x, m.y, 12, ['#ff8800', '#ffcc00', '#ff3300']);
+            if (e.hp <= 0) {
+              s.score += getEnemyScore(e.type);
+              s.enemiesLeftInWave--;
+              const pCount = e.type === 'boss' ? 50 : 20;
+              spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
+              spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
+              if (e.type === 'boss') {
+                s.screenFlash = 20;
+                soundsRef.current.playBossExplosion();
+              } else {
+                soundsRef.current.playExplosion();
               }
-              break;
+              s.enemies.splice(j, 1);
             }
+            break;
           }
         }
       }
