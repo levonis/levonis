@@ -32,6 +32,8 @@ interface Rating {
   customer_avatar: string | null;
   reply?: RatingReply | null;
   is_hidden?: boolean;
+  is_auto_rating?: boolean;
+  purchase_count?: number;
 }
 
 interface RatingComment {
