@@ -385,12 +385,12 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               s.bullets.splice(i, 1);
               continue;
             }
-            s.lives--;
+            if (!isAdminRef.current) s.lives--;
             s.invincible = 90;
             spawnParticles(s.player.x + PLAYER_W / 2, s.player.y + PLAYER_H / 2, 20, explosionColors);
             soundsRef.current.playHit();
             s.bullets.splice(i, 1);
-            if (s.lives <= 0) { endGame(s, false); return; }
+            if (!isAdminRef.current && s.lives <= 0) { endGame(s, false); return; }
             continue;
           }
         } else {
