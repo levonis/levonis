@@ -120,6 +120,46 @@ export function drawBackground(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.globalAlpha = 1;
 }
 
+export function drawLaserBeams(ctx: CanvasRenderingContext2D, s: GameState) {
+  if (!s.laserBeams || s.laserBeams.length === 0) return;
+  const shipY = s.player.y;
+  const t = s.gameTime;
+  for (const beam of s.laserBeams) {
+    if (!beam.active) continue;
+    ctx.save();
+    const beamWidth = beam.width;
+    const startY = shipY - 4;
+    const endY = beam.endY;
+
+    // Outer glow
+    const grad = ctx.createLinearGradient(beam.x, endY, beam.x, startY);
+    grad.addColorStop(0, 'rgba(0, 255, 136, 0.9)');
+    grad.addColorStop(0.5, 'rgba(0, 255, 200, 0.7)');
+    grad.addColorStop(1, 'rgba(0, 255, 136, 0.3)');
+
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur = 12 + Math.sin(t * 0.3) * 4;
+    ctx.fillStyle = grad;
+    const wobble = Math.sin(t * 0.5) * 0.5;
+    ctx.fillRect(Math.floor(beam.x - beamWidth / 2 + wobble), Math.floor(endY), Math.ceil(beamWidth), Math.ceil(startY - endY));
+
+    // Inner bright core
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillRect(Math.floor(beam.x - 0.5 + wobble), Math.floor(endY), 1, Math.ceil(startY - endY));
+
+    // Impact flash at hit point
+    if (beam.hitEnemyIdx >= 0) {
+      ctx.beginPath();
+      ctx.arc(beam.x, endY, 4 + Math.sin(t * 0.4) * 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 255, 136, 0.6)';
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+}
+
 export function drawBullets(ctx: CanvasRenderingContext2D, s: GameState) {
   for (const b of s.bullets) {
     if (b.isLaser) {
