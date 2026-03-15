@@ -10,10 +10,10 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
-import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane, getEnemyTier } from "./space-blaster/types";
+import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane, LaserBeam, getEnemyTier } from "./space-blaster/types";
 import { getPlanetForWave } from "./space-blaster/planets";
 import { spawnWaveEnemies, getEnemyScore, getEnemyShootPattern } from "./space-blaster/enemies";
-import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, drawHelperPlanes, updateMissileBaseAnim } from "./space-blaster/renderer";
+import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, drawHelperPlanes, updateMissileBaseAnim, drawLaserBeams } from "./space-blaster/renderer";
 
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 
@@ -131,6 +131,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       missiles: [],
       powerUps: [],
       helperPlanes: [],
+      laserBeams: [],
       spawnTimer: 0, enemiesLeftInWave: total, waveDelay: 0,
       shootCooldown: 0, invincible: 120,
       touchX: null, touchY: null, keys: new Set(), gameTime: 0,
@@ -139,7 +140,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       shieldActive: 0,
       missileCount: 0,
       missileFireTimer: 0,
-      missileDoubleTap: false,
+      missileAutoFire: false,
       transitionTimer: 0,
     };
     setScreen('playing');
@@ -158,7 +159,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let lastTapTime = 0;
 
     const onKeyDown = (e: KeyboardEvent) => { stateRef.current?.keys.add(e.key); };
     const onKeyUp = (e: KeyboardEvent) => { stateRef.current?.keys.delete(e.key); };
@@ -173,14 +173,6 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
     };
     const onTouchStart = (e: TouchEvent) => {
       updateTouch(e);
-      const now = Date.now();
-      if (now - lastTapTime < 300) {
-        const s = stateRef.current;
-        if (s && s.missileCount > 0) {
-          s.missileDoubleTap = true;
-        }
-      }
-      lastTapTime = now;
     };
     const onTouchEnd = () => {
       if (stateRef.current) { stateRef.current.touchX = null; stateRef.current.touchY = null; stateRef.current.autoShoot = false; }
@@ -267,7 +259,8 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       // Shooting based on upgrade level
       s.shootCooldown -= dt;
       const fireRate = Math.max(4, 10 - info.laserLevel);
-      if ((s.keys.has(' ') || s.keys.has('Space') || s.autoShoot) && s.shootCooldown <= 0) {
+      const isShooting = s.keys.has(' ') || s.keys.has('Space') || s.autoShoot;
+      if (isShooting && s.shootCooldown <= 0) {
         const cx = s.player.x + PLAYER_W / 2;
         // Main bullets
         s.bullets.push({ x: cx - BULLET_W / 2, y: s.player.y - BULLET_H, dy: -6 });
@@ -277,15 +270,59 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         if (info.shootBullets >= 3) {
           s.bullets.push({ x: s.player.x + PLAYER_W - 4, y: s.player.y - BULLET_H + 3, dy: -6 });
         }
-        // Laser behind gun (fires backward-ish green beams)
-        if (info.laserLevel > 0) {
-          for (let li = 0; li < info.laserLevel; li++) {
-            const spread = (li - (info.laserLevel - 1) / 2) * 8;
-            s.bullets.push({ x: cx + spread - 1, y: s.player.y - BULLET_H - 4, dy: -7, isLaser: true });
-          }
-        }
         s.shootCooldown = fireRate;
         soundsRef.current.playShoot();
+      }
+
+      // ── Laser beam system (continuous beams, not bullets) ──
+      s.laserBeams = [];
+      if (info.laserLevel > 0 && isShooting) {
+        const cx = s.player.x + PLAYER_W / 2;
+        for (let li = 0; li < info.laserLevel; li++) {
+          const spread = (li - (info.laserLevel - 1) / 2) * 10;
+          const beamX = cx + spread;
+          let endY = 0; // beam goes to top by default
+          let hitIdx = -1;
+          // Check collision with enemies (find closest)
+          let closestY = -1;
+          for (let ei = 0; ei < s.enemies.length; ei++) {
+            const e = s.enemies[ei];
+            if (e.spawnDelay > 0) continue;
+            if (beamX > e.x && beamX < e.x + e.w && e.y + e.h > 0 && e.y < s.player.y) {
+              const ey = e.y + e.h;
+              if (hitIdx === -1 || ey > closestY) {
+                closestY = ey;
+                hitIdx = ei;
+                endY = e.y + e.h / 2;
+              }
+            }
+          }
+          // Apply continuous damage to hit enemy
+          if (hitIdx >= 0) {
+            const e = s.enemies[hitIdx];
+            const laserDps = 0.08 * (1 + info.laserLevel * 0.3); // damage per frame
+            e.hp -= laserDps * dt;
+            // Spark particles every few frames
+            if (Math.random() < 0.3) {
+              spawnParticles(beamX, endY, 2, ['#00ff88', '#88ffff', '#ffffff']);
+            }
+            if (e.hp <= 0) {
+              s.score += getEnemyScore(e.type);
+              s.enemiesLeftInWave--;
+              const pCount = e.type === 'boss' ? 50 : 20;
+              spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
+              spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
+              if (e.type === 'boss') {
+                s.screenFlash = 20;
+                soundsRef.current.playBossExplosion();
+              } else {
+                soundsRef.current.playExplosion();
+              }
+              s.enemies.splice(hitIdx, 1);
+            }
+          }
+          s.laserBeams.push({ x: beamX, endY: hitIdx >= 0 ? endY : 0, width: 2 + info.laserLevel * 0.5, hitEnemyIdx: hitIdx, active: true });
+        }
       }
 
       if (s.invincible > 0) s.invincible -= dt;
@@ -470,84 +507,87 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
         }
       }
 
-      // ── Missile system (from upgrade level 8+) ──
-      if (s.missileCount > 0) {
-        const shouldFireMissile = updateMissileBaseAnim(s.missileDoubleTap && s.missileCount > 0 && s.enemies.length > 0);
-        if (shouldFireMissile && s.missileCount > 0 && s.enemies.length > 0) {
-          const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
-          let bestIdx = -1, bestHp = -1;
-          for (let i = 0; i < s.enemies.length; i++) {
-            const e = s.enemies[i];
-            if (e.spawnDelay > 0) continue;
-            if (e.hp > bestHp) { bestHp = e.hp; bestIdx = i; }
-          }
-          if (bestIdx >= 0) {
-            const e = s.enemies[bestIdx];
-            const dx = (e.x + e.w / 2) - px, dy = (e.y + e.h / 2) - py;
-            s.missiles.push({
-              x: px, y: py,
-              targetId: bestIdx,
-              speed: 4,
-              angle: Math.atan2(dy, dx),
-              life: 180,
-            });
-            s.missileCount--;
-            soundsRef.current.playShoot();
-          }
-        }
-        if (s.missileCount <= 0) {
-          s.missileDoubleTap = false;
-        }
-
-        // Update missiles
-        for (let i = s.missiles.length - 1; i >= 0; i--) {
-          const m = s.missiles[i];
-          m.life -= dt;
-          if (m.life <= 0) { s.missiles.splice(i, 1); continue; }
-          let tx = m.x + Math.cos(m.angle) * 100, ty = m.y + Math.sin(m.angle) * 100;
-          if (s.enemies.length > 0) {
-            let best = -1, bestHp = -1;
-            for (let j = 0; j < s.enemies.length; j++) {
-              const e = s.enemies[j];
+      // ── Missile system (auto-fire when available) ──
+      if (s.missileCount > 0 && s.enemies.length > 0) {
+        s.missileFireTimer -= dt;
+        if (s.missileFireTimer <= 0) {
+          const shouldFireMissile = updateMissileBaseAnim(true);
+          if (shouldFireMissile) {
+            const px = s.player.x + PLAYER_W / 2, py = s.player.y + PLAYER_H / 2;
+            let bestIdx = -1, bestHp = -1;
+            for (let i = 0; i < s.enemies.length; i++) {
+              const e = s.enemies[i];
               if (e.spawnDelay > 0) continue;
-              if (e.hp > bestHp) { bestHp = e.hp; best = j; }
+              if (e.hp > bestHp) { bestHp = e.hp; bestIdx = i; }
             }
-            if (best >= 0) {
-              tx = s.enemies[best].x + s.enemies[best].w / 2;
-              ty = s.enemies[best].y + s.enemies[best].h / 2;
+            if (bestIdx >= 0) {
+              const e = s.enemies[bestIdx];
+              const dx = (e.x + e.w / 2) - px, dy = (e.y + e.h / 2) - py;
+              s.missiles.push({
+                x: px, y: py,
+                targetId: bestIdx,
+                speed: 4,
+                angle: Math.atan2(dy, dx),
+                life: 180,
+              });
+              s.missileCount--;
+              s.missileFireTimer = MISSILE_FIRE_RATE;
+              soundsRef.current.playShoot();
             }
           }
-          const desired = Math.atan2(ty - m.y, tx - m.x);
-          let diff = desired - m.angle;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          m.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.12 * dt);
-          m.x += Math.cos(m.angle) * m.speed * dt;
-          m.y += Math.sin(m.angle) * m.speed * dt;
-          if (m.x < -20 || m.x > W + 20 || m.y < -20 || m.y > H + 20) { s.missiles.splice(i, 1); continue; }
-          for (let j = s.enemies.length - 1; j >= 0; j--) {
+        }
+      } else {
+        updateMissileBaseAnim(false);
+      }
+
+      // Update missiles (always, regardless of missileCount)
+      for (let i = s.missiles.length - 1; i >= 0; i--) {
+        const m = s.missiles[i];
+        m.life -= dt;
+        if (m.life <= 0) { s.missiles.splice(i, 1); continue; }
+        let tx = m.x + Math.cos(m.angle) * 100, ty = m.y + Math.sin(m.angle) * 100;
+        if (s.enemies.length > 0) {
+          let best = -1, bestHp = -1;
+          for (let j = 0; j < s.enemies.length; j++) {
             const e = s.enemies[j];
             if (e.spawnDelay > 0) continue;
-            if (m.x > e.x && m.x < e.x + e.w && m.y > e.y && m.y < e.y + e.h) {
-              e.hp -= 2;
-              s.missiles.splice(i, 1);
-              spawnParticles(m.x, m.y, 12, ['#ff8800', '#ffcc00', '#ff3300']);
-              if (e.hp <= 0) {
-                s.score += getEnemyScore(e.type);
-                s.enemiesLeftInWave--;
-                const pCount = e.type === 'boss' ? 50 : 20;
-                spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
-                spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
-                if (e.type === 'boss') {
-                  s.screenFlash = 20;
-                  soundsRef.current.playBossExplosion();
-                } else {
-                  soundsRef.current.playExplosion();
-                }
-                s.enemies.splice(j, 1);
+            if (e.hp > bestHp) { bestHp = e.hp; best = j; }
+          }
+          if (best >= 0) {
+            tx = s.enemies[best].x + s.enemies[best].w / 2;
+            ty = s.enemies[best].y + s.enemies[best].h / 2;
+          }
+        }
+        const desired = Math.atan2(ty - m.y, tx - m.x);
+        let diff = desired - m.angle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        m.angle += Math.sign(diff) * Math.min(Math.abs(diff), 0.12 * dt);
+        m.x += Math.cos(m.angle) * m.speed * dt;
+        m.y += Math.sin(m.angle) * m.speed * dt;
+        if (m.x < -20 || m.x > W + 20 || m.y < -20 || m.y > H + 20) { s.missiles.splice(i, 1); continue; }
+        for (let j = s.enemies.length - 1; j >= 0; j--) {
+          const e = s.enemies[j];
+          if (e.spawnDelay > 0) continue;
+          if (m.x > e.x && m.x < e.x + e.w && m.y > e.y && m.y < e.y + e.h) {
+            e.hp -= 2;
+            s.missiles.splice(i, 1);
+            spawnParticles(m.x, m.y, 12, ['#ff8800', '#ffcc00', '#ff3300']);
+            if (e.hp <= 0) {
+              s.score += getEnemyScore(e.type);
+              s.enemiesLeftInWave--;
+              const pCount = e.type === 'boss' ? 50 : 20;
+              spawnParticles(e.x + e.w / 2, e.y + e.h / 2, pCount, explosionColors);
+              spawnPowerUp(e.x + e.w / 2, e.y + e.h / 2, e.type);
+              if (e.type === 'boss') {
+                s.screenFlash = 20;
+                soundsRef.current.playBossExplosion();
+              } else {
+                soundsRef.current.playExplosion();
               }
-              break;
+              s.enemies.splice(j, 1);
             }
+            break;
           }
         }
       }
@@ -611,6 +651,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       drawPlayer(ctx, Math.floor(s.player.x), Math.floor(s.player.y), s.invincible, s.gameTime, s.shieldActive, s.lives, s.maxLives);
       drawHelperPlanes(ctx, s);
       drawBullets(ctx, s);
+      drawLaserBeams(ctx, s);
       drawMissiles(ctx, s);
       drawPowerUps(ctx, s.powerUps, s.gameTime);
       drawParticles(ctx, s.particles);

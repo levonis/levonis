@@ -86,6 +86,14 @@ export interface Planet {
   bossWave: number;
 }
 
+export interface LaserBeam {
+  x: number;
+  endY: number;
+  width: number;
+  hitEnemyIdx: number;  // index of enemy being hit, or -1
+  active: boolean;
+}
+
 export interface GameState {
   screen: Screen;
   player: Vec2;
@@ -101,6 +109,7 @@ export interface GameState {
   missiles: Missile[];
   powerUps: PowerUp[];
   helperPlanes: HelperPlane[];
+  laserBeams: LaserBeam[];
   spawnTimer: number;
   enemiesLeftInWave: number;
   waveDelay: number;
@@ -116,7 +125,7 @@ export interface GameState {
   shieldActive: number;
   missileCount: number;
   missileFireTimer: number;
-  missileDoubleTap: boolean;
+  missileAutoFire: boolean;
   transitionTimer: number;
 }
 

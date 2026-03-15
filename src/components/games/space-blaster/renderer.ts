@@ -1,4 +1,4 @@
-import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES, PowerUp } from './types';
+import { Enemy, GameState, Particle, Star, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, MAX_MISSILES, PowerUp, LaserBeam } from './types';
 import { drawProceduralEnemy, drawBoss as drawBossEnemy } from './enemyRenderer';
 import missileSrc from '@/assets/missile-sprite.png';
 import missileBaseSrc from '@/assets/missile-base-sprite.png';
@@ -118,6 +118,46 @@ export function drawBackground(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.fillRect(Math.floor(star.x), Math.floor(star.y), star.size, star.size);
   }
   ctx.globalAlpha = 1;
+}
+
+export function drawLaserBeams(ctx: CanvasRenderingContext2D, s: GameState) {
+  if (!s.laserBeams || s.laserBeams.length === 0) return;
+  const shipY = s.player.y;
+  const t = s.gameTime;
+  for (const beam of s.laserBeams) {
+    if (!beam.active) continue;
+    ctx.save();
+    const beamWidth = beam.width;
+    const startY = shipY - 4;
+    const endY = beam.endY;
+
+    // Outer glow
+    const grad = ctx.createLinearGradient(beam.x, endY, beam.x, startY);
+    grad.addColorStop(0, 'rgba(0, 255, 136, 0.9)');
+    grad.addColorStop(0.5, 'rgba(0, 255, 200, 0.7)');
+    grad.addColorStop(1, 'rgba(0, 255, 136, 0.3)');
+
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur = 12 + Math.sin(t * 0.3) * 4;
+    ctx.fillStyle = grad;
+    const wobble = Math.sin(t * 0.5) * 0.5;
+    ctx.fillRect(Math.floor(beam.x - beamWidth / 2 + wobble), Math.floor(endY), Math.ceil(beamWidth), Math.ceil(startY - endY));
+
+    // Inner bright core
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillRect(Math.floor(beam.x - 0.5 + wobble), Math.floor(endY), 1, Math.ceil(startY - endY));
+
+    // Impact flash at hit point
+    if (beam.hitEnemyIdx >= 0) {
+      ctx.beginPath();
+      ctx.arc(beam.x, endY, 4 + Math.sin(t * 0.4) * 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 255, 136, 0.6)';
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
 }
 
 export function drawBullets(ctx: CanvasRenderingContext2D, s: GameState) {
@@ -389,7 +429,7 @@ export function drawMissileBase(ctx: CanvasRenderingContext2D, s: GameState) {
   if (missileBaseTotalFrames < 2) calcMissileBaseFrames();
   if (missileBaseTotalFrames < 2) return;
 
-  const isFiring = s.missileDoubleTap;
+  const isFiring = s.missileCount > 0 && s.enemies.length > 0;
   const cx = s.player.x + PLAYER_W / 2;
   const cy = s.player.y + PLAYER_H / 2;
   const baseRadius = PLAYER_W + 6;
