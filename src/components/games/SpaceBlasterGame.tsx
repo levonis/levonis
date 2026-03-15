@@ -10,7 +10,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useGameSounds } from "./useGameSounds";
 import { useSpaceMusic } from "./space-blaster/useSpaceMusic";
-import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane, getEnemyTier } from "./space-blaster/types";
+import { GameState, Screen, W, H, PLAYER_W, PLAYER_H, BULLET_W, BULLET_H, MAX_WAVES, Particle, Missile, MAX_MISSILES, MISSILE_FIRE_RATE, PowerUp, PowerUpType, HelperPlane, LaserBeam, getEnemyTier } from "./space-blaster/types";
 import { getPlanetForWave } from "./space-blaster/planets";
 import { spawnWaveEnemies, getEnemyScore, getEnemyShootPattern } from "./space-blaster/enemies";
 import { drawEnemy, drawPlayer, drawBackground, drawBullets, drawParticles, drawHUD, drawScreenFlash, drawWaveTransition, drawMissiles, drawMissileBase, drawPowerUps, drawHelperPlanes, updateMissileBaseAnim } from "./space-blaster/renderer";
