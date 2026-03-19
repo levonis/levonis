@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import TicketPromotionsManager from "@/components/admin/TicketPromotionsManager";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -358,6 +359,11 @@ export default function AdminProductOffers() {
       description="إدارة عروض المنتجات والمبيعات"
       maxWidth="7xl"
     >
+      {/* Ticket Promotions Manager */}
+      <div className="mb-6">
+        <TicketPromotionsManager />
+      </div>
+
       {/* Stats Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
         <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-xl p-3 border border-emerald-500/20">

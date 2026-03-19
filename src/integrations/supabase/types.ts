@@ -7224,6 +7224,42 @@ export type Database = {
           },
         ]
       }
+      ticket_promotions: {
+        Row: {
+          bonus_tickets: number
+          created_at: string
+          description_ar: string | null
+          ends_at: string
+          id: string
+          is_active: boolean
+          starts_at: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_tickets?: number
+          created_at?: string
+          description_ar?: string | null
+          ends_at: string
+          id?: string
+          is_active?: boolean
+          starts_at?: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_tickets?: number
+          created_at?: string
+          description_ar?: string | null
+          ends_at?: string
+          id?: string
+          is_active?: boolean
+          starts_at?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_addresses: {
         Row: {
           additional_notes: string | null
