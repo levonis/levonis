@@ -401,10 +401,10 @@ const AdminProductBundles = () => {
     enabled: productIdsInBundle.length > 0,
   });
 
-  // Auto-calculate original_price from items
+  // Auto-calculate original_price from items using original (non-discounted) prices
   useEffect(() => {
     if (form.items.length === 0) return;
-    const total = form.items.reduce((sum, item) => sum + (item.unit_price || 0) * item.quantity, 0);
+    const total = form.items.reduce((sum, item) => sum + (item.original_unit_price || item.unit_price || 0) * item.quantity, 0);
     if (total > 0) {
       setForm(f => ({ ...f, original_price: total }));
     }
