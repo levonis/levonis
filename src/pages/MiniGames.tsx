@@ -22,10 +22,12 @@ export default function MiniGames() {
   const { isAdmin, loading: authLoading } = useAuth();
   const { playClick } = useGameSounds();
 
-  // Temporarily block non-admin users
-  if (!authLoading && !isAdmin) {
-    return <Navigate to="/rewards" replace />;
-  }
+  const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
+  const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [showStore, setShowStore] = useState(false);
+
+  const handleLoadComplete = useCallback(() => setLoading(false), []);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -40,12 +42,10 @@ export default function MiniGames() {
     };
   }, []);
 
-  const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
-  const [activeGame, setActiveGame] = useState<string | null>(null);
-  const [showStore, setShowStore] = useState(false);
-
-  const handleLoadComplete = useCallback(() => setLoading(false), []);
+  // Temporarily block non-admin users
+  if (!authLoading && !isAdmin) {
+    return <Navigate to="/rewards" replace />;
+  }
 
   const filteredGames = filterGameNodes(GAME_NODES, activeFilter);
 
