@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Gamepad2, Lock, Sparkles, Trophy, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const PREVIEW_GAMES = [
   { id: 'rps', title: 'حجرة ورقة مقص', icon: '✊', reward: '+10', live: false },
