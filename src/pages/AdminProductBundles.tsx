@@ -330,7 +330,7 @@ const AdminProductBundles = () => {
   const fetchBundleItems = async (bundleId: string, saleType: BundleSaleType) => {
     const { data, error } = await supabase
       .from('bundle_items')
-      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price, air_price, sea_price, pre_order_stock), product_options:selected_option_id(name_ar, price_adjustment)')
+      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price, original_price, air_price, sea_price, pre_order_stock), product_options:selected_option_id(name_ar, price_adjustment)')
       .eq('bundle_id', bundleId);
     if (error) throw error;
     return (data || []).map((item: any) => {
