@@ -31,6 +31,7 @@ interface BundleItem {
   option_label?: string;
   available_stock?: number;
   unit_price?: number;
+  original_unit_price?: number;
 }
 
 interface BundleForm {
