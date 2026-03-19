@@ -576,67 +576,71 @@ const AdminProductBundles = () => {
          toast.error('المخزون غير متوفر'); return;
        }
        newItems.push({
-         product_id: selectedProduct.id,
-         quantity: qty,
-         product_name: selectedProduct.name_ar,
-         product_image: baseImg,
-         available_stock: stock,
-         unit_price: getPrice(),
-       });
+          product_id: selectedProduct.id,
+          quantity: qty,
+          product_name: selectedProduct.name_ar,
+          product_image: baseImg,
+          available_stock: stock,
+          unit_price: getPrice(),
+          original_unit_price: getOrigPrice(),
+        });
      } else if (selectedColors.length > 0 && selectedOptionId) {
-       for (const colorName of selectedColors) {
-         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-         const stock = getStock(colorName, selectedOptName);
-         if (form.sale_type === 'direct' && stock <= 0) continue;
-         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
-         newItems.push({
-           product_id: selectedProduct.id,
-           selected_color: colorName,
-           selected_option_id: selectedOptionId,
-           quantity: qty,
-           product_name: selectedProduct.name_ar,
-           product_image: baseImg,
-           color_image: colorObj?.image_url || colorObj?.image || '',
-           option_label: selectedOptName,
-           available_stock: stock,
-           unit_price: getPrice(selectedOptionId),
-         });
-       }
-       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+        for (const colorName of selectedColors) {
+          const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+          const stock = getStock(colorName, selectedOptName);
+          if (form.sale_type === 'direct' && stock <= 0) continue;
+          const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+          newItems.push({
+            product_id: selectedProduct.id,
+            selected_color: colorName,
+            selected_option_id: selectedOptionId,
+            quantity: qty,
+            product_name: selectedProduct.name_ar,
+            product_image: baseImg,
+            color_image: colorObj?.image_url || colorObj?.image || '',
+            option_label: selectedOptName,
+            available_stock: stock,
+            unit_price: getPrice(selectedOptionId),
+            original_unit_price: getOrigPrice(selectedOptionId),
+          });
+        }
+        if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
      } else if (selectedColors.length > 0) {
-       for (const colorName of selectedColors) {
-         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-         const stock = getStock(colorName);
-         if (form.sale_type === 'direct' && stock <= 0) continue;
-         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
-         newItems.push({
-           product_id: selectedProduct.id,
-           selected_color: colorName,
-           quantity: qty,
-           product_name: selectedProduct.name_ar,
-           product_image: baseImg,
-           color_image: colorObj?.image_url || colorObj?.image || '',
-           available_stock: stock,
-           unit_price: getPrice(),
-         });
-       }
-       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+        for (const colorName of selectedColors) {
+          const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+          const stock = getStock(colorName);
+          if (form.sale_type === 'direct' && stock <= 0) continue;
+          const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+          newItems.push({
+            product_id: selectedProduct.id,
+            selected_color: colorName,
+            quantity: qty,
+            product_name: selectedProduct.name_ar,
+            product_image: baseImg,
+            color_image: colorObj?.image_url || colorObj?.image || '',
+            available_stock: stock,
+            unit_price: getPrice(),
+            original_unit_price: getOrigPrice(),
+          });
+        }
+        if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
      } else if (selectedOptionId) {
-       const stock = getStock(undefined, selectedOptName);
-       if (form.sale_type === 'direct' && stock <= 0) {
-         toast.error('المخزون غير متوفر'); return;
-       }
-       const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
-       newItems.push({
-         product_id: selectedProduct.id,
-         selected_option_id: selectedOptionId,
-         quantity: qty,
-         product_name: selectedProduct.name_ar,
-         product_image: baseImg,
-         option_label: selectedOptName,
-         available_stock: stock,
-         unit_price: getPrice(selectedOptionId),
-       });
+        const stock = getStock(undefined, selectedOptName);
+        if (form.sale_type === 'direct' && stock <= 0) {
+          toast.error('المخزون غير متوفر'); return;
+        }
+        const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+        newItems.push({
+          product_id: selectedProduct.id,
+          selected_option_id: selectedOptionId,
+          quantity: qty,
+          product_name: selectedProduct.name_ar,
+          product_image: baseImg,
+          option_label: selectedOptName,
+          available_stock: stock,
+          unit_price: getPrice(selectedOptionId),
+          original_unit_price: getOrigPrice(selectedOptionId),
+        });
      }
 
      setForm(prev => ({ ...prev, items: [...prev.items, ...newItems] }));
