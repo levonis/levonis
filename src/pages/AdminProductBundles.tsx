@@ -340,6 +340,7 @@ const AdminProductBundles = () => {
         ? getAvailableStock(item.products, item.selected_color || undefined, item.selected_option_id || undefined)
         : getPreorderStock(item.products);
       const unitPrice = calcItemPrice(item.products, item.selected_option_id, saleType, usdToIqd, item.product_options ? [item.product_options] : []);
+      const origPrice = calcOriginalPrice(item.products, item.selected_option_id, usdToIqd, item.product_options ? [item.product_options] : []);
       return {
         id: item.id,
         product_id: item.product_id,
@@ -352,6 +353,7 @@ const AdminProductBundles = () => {
         option_label: item.product_options?.name_ar || '',
         available_stock: stock,
         unit_price: unitPrice,
+        original_unit_price: origPrice,
       };
     });
   };
