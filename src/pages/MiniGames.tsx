@@ -19,7 +19,13 @@ const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
 export default function MiniGames() {
   const navigate = useNavigate();
+  const { isAdmin, loading: authLoading } = useAuth();
   const { playClick } = useGameSounds();
+
+  // Temporarily block non-admin users
+  if (!authLoading && !isAdmin) {
+    return <Navigate to="/rewards" replace />;
+  }
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
