@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PixelBackground from "@/components/games/PixelBackground";
@@ -18,7 +19,15 @@ const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
 export default function MiniGames() {
   const navigate = useNavigate();
+  const { isAdmin, loading: authLoading } = useAuth();
   const { playClick } = useGameSounds();
+
+  const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
+  const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [showStore, setShowStore] = useState(false);
+
+  const handleLoadComplete = useCallback(() => setLoading(false), []);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -33,12 +42,10 @@ export default function MiniGames() {
     };
   }, []);
 
-  const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
-  const [activeGame, setActiveGame] = useState<string | null>(null);
-  const [showStore, setShowStore] = useState(false);
-
-  const handleLoadComplete = useCallback(() => setLoading(false), []);
+  // Temporarily block non-admin users
+  if (!authLoading && !isAdmin) {
+    return <Navigate to="/rewards" replace />;
+  }
 
   const filteredGames = filterGameNodes(GAME_NODES, activeFilter);
 
