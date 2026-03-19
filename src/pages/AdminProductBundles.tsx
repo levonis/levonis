@@ -363,7 +363,7 @@ const AdminProductBundles = () => {
     queryFn: async () => {
       let query = supabase
         .from('products')
-        .select('id, name_ar, image_url, images, colors, direct_sale_price, price, air_price, sea_price, direct_stock, pre_order_stock')
+        .select('id, name_ar, image_url, images, colors, direct_sale_price, price, original_price, air_price, sea_price, direct_stock, pre_order_stock')
         .order('name_ar');
       if (productSearch) query = query.ilike('name_ar', `%${productSearch}%`);
       const { data, error } = await query.limit(20);
