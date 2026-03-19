@@ -138,6 +138,10 @@ export default function ProductOffersPage() {
     enabled: !!user,
   });
 
+  const countdown = useCountdown(activePromotion?.ends_at);
+  const hasPromo = activePromotion && !countdown.expired;
+  const getTotalTickets = (offer: ProductOffer) => offer.gift_tickets + (hasPromo ? activePromotion!.bonus_tickets : 0);
+
   const purchaseMutation = useMutation({
     mutationFn: async (offerId: string) => {
       const { data, error } = await supabase.rpc('purchase_product_offer', { p_offer_id: offerId, p_quantity: 1 });
@@ -149,10 +153,11 @@ export default function ProductOffersPage() {
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['product-offers-active'] });
-        toast.success(`🎁 تم شراء ${data.product_name} وحصلت على ${data.gift_tickets} تذكرة هدية!`);
+        const bonusMsg = data.bonus_tickets > 0 ? ` (منها ${data.bonus_tickets} إضافية بمناسبة ${data.promo_title || 'العرض'})` : '';
+        toast.success(`🎁 تم شراء ${data.product_name} وحصلت على ${data.gift_tickets} تذكرة!${bonusMsg}`);
         try {
           await supabase.functions.invoke('send-telegram-notification', {
-            body: { message: `🛍️ <b>شراء منتج</b>\n📦 ${data.product_name}\n💰 ${data.total_cost?.toLocaleString() || 0} دينار\n🎁 ${data.gift_tickets} تذكرة` },
+            body: { message: `🛍️ <b>شراء منتج</b>\n📦 ${data.product_name}\n💰 ${data.total_cost?.toLocaleString() || 0} دينار\n🎁 ${data.gift_tickets} تذكرة${data.bonus_tickets > 0 ? ` (${data.bonus_tickets} إضافية)` : ''}` },
           });
         } catch (e) { console.error(e); }
         setShowPurchaseDialog(false);
@@ -184,6 +189,43 @@ export default function ProductOffersPage() {
     setImageIndices(prev => ({ ...prev, [offerId]: newIndex }));
   };
 
+  const TicketBadge = ({ offer }: { offer: ProductOffer }) => {
+    const total = getTotalTickets(offer);
+    if (!hasPromo) {
+      return <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة</Badge>;
+    }
+    return (
+      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+        <Badge className="bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{total} تذكرة</Badge>
+        <Badge className="bg-amber-500 text-white gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse"><Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية</Badge>
+      </div>
+    );
+  };
+
+  const TicketInfoBar = ({ offer }: { offer: ProductOffer }) => {
+    const total = getTotalTickets(offer);
+    if (!hasPromo) {
+      return (
+        <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
+          <p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-1.5">
+        <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
+          <p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
+        </div>
+        <div className="text-center py-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center gap-1">
+          <PartyPopper className="h-3 w-3 text-amber-500" />
+          <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+            +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
@@ -207,6 +249,40 @@ export default function ProductOffersPage() {
           </div>
         </div>
       </div>
+
+      {/* Promotion Banner */}
+      {hasPromo && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-primary/10 to-amber-500/15 border-b border-amber-500/20">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2">
+                <PartyPopper className="h-5 w-5 text-amber-500 animate-bounce" />
+                <span className="font-black text-sm text-foreground">{activePromotion!.title_ar}</span>
+                <PartyPopper className="h-5 w-5 text-amber-500 animate-bounce" />
+              </div>
+              {activePromotion!.description_ar && (
+                <p className="text-xs text-muted-foreground text-center">{activePromotion!.description_ar}</p>
+              )}
+              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-bold text-primary">+{activePromotion!.bonus_tickets} تذكرة إضافية مع كل شراء!</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>ينتهي خلال:</span>
+                <div className="flex items-center gap-1 font-mono font-bold text-foreground">
+                  {countdown.days > 0 && <span className="bg-card border rounded px-1.5 py-0.5">{countdown.days}ي</span>}
+                  <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.hours).padStart(2, '0')}</span>
+                  <span>:</span>
+                  <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.minutes).padStart(2, '0')}</span>
+                  <span>:</span>
+                  <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.seconds).padStart(2, '0')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="flex items-center justify-center gap-3 mb-6">
@@ -239,8 +315,8 @@ export default function ProductOffersPage() {
                     ) : (
                       <div className="w-full h-full bg-secondary flex items-center justify-center"><Package className="h-12 w-12 text-muted-foreground" /></div>
                     )}
-                    <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة هدية</Badge>
-                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-red-600 text-white">نفذت الكمية</Badge>}
+                    <TicketBadge offer={offer} />
+                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">نفذت الكمية</Badge>}
                     {hasMultipleImages && (
                       <>
                         <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
@@ -290,7 +366,7 @@ export default function ProductOffersPage() {
                         {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
                       </Button>
                     </div>
-                    <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20"><p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p></div>
+                    <TicketInfoBar offer={offer} />
                     {offer.stock_quantity !== null && !isOutOfStock && (
                       <p className="text-xs text-center text-amber-600 font-medium bg-amber-500/10 py-1 rounded">
                         📦 متبقي: {offer.stock_quantity} فقط
@@ -322,6 +398,7 @@ export default function ProductOffersPage() {
               const availableOptions = options.filter(o => o.in_stock && (o.stock_quantity === null || o.stock_quantity > 0));
               const canAfford = !user || !wallet || wallet.balance >= detailOffer.price;
               const isOutOfStock = detailOffer.stock_quantity !== null && detailOffer.stock_quantity <= 0;
+              const detailTotal = getTotalTickets(detailOffer);
 
               return (
                 <>
@@ -333,7 +410,7 @@ export default function ProductOffersPage() {
                       <div className="w-full h-full flex items-center justify-center"><Package className="h-16 w-16 text-muted-foreground" /></div>
                     )}
                     <Button variant="ghost" size="icon" className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white h-8 w-8" onClick={() => setShowDetailDialog(false)}><X className="h-4 w-4" /></Button>
-                    <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{detailOffer.gift_tickets} تذكرة هدية</Badge>
+                    <TicketBadge offer={detailOffer} />
                     {hasMultipleImages && (
                       <>
                         <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/40 hover:bg-black/60 text-white" onClick={() => setDetailImageIndex((detailImageIndex - 1 + images.length) % images.length)}><ChevronLeft className="h-5 w-5" /></Button>
@@ -431,10 +508,20 @@ export default function ProductOffersPage() {
                     )}
 
                     {/* Gift Tickets Info */}
-                    <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                      <p className="text-sm text-green-700 dark:text-green-400 font-medium text-center">
-                        🎁 مع كل شراء تحصل على {detailOffer.gift_tickets} تذكرة مجاناً للمشاركة في السحوبات!
-                      </p>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                        <p className="text-sm text-green-700 dark:text-green-400 font-medium text-center">
+                          🎁 مع كل شراء تحصل على {detailTotal} تذكرة مجاناً للمشاركة في السحوبات!
+                        </p>
+                      </div>
+                      {hasPromo && (
+                        <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center gap-2">
+                          <PartyPopper className="h-4 w-4 text-amber-500" />
+                          <p className="text-xs text-amber-700 dark:text-amber-400 font-bold">
+                            +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Purchase Button */}
@@ -468,7 +555,13 @@ export default function ProductOffersPage() {
                   <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOffer.title_ar}</span>؟</p>
                   <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
                     <div className="flex justify-between"><span>السعر:</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
-                    <div className="flex justify-between text-green-600"><span>تذاكر هدية:</span><span className="font-bold">🎁 {selectedOffer.gift_tickets} تذكرة</span></div>
+                    <div className="flex justify-between text-green-600"><span>تذاكر هدية:</span><span className="font-bold">🎁 {getTotalTickets(selectedOffer)} تذكرة</span></div>
+                    {hasPromo && (
+                      <div className="flex justify-between text-amber-600 text-xs">
+                        <span>منها إضافية ({activePromotion!.title_ar}):</span>
+                        <span className="font-bold">+{activePromotion!.bonus_tickets} تذكرة</span>
+                      </div>
+                    )}
                   </div>
                   {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ (رصيدك: {wallet.balance.toLocaleString()} دينار)</p>}
                 </>
