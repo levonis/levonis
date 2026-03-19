@@ -104,12 +104,12 @@ function calcItemPrice(product: any, optionId: string | undefined, saleType: Bun
   }
 }
 
-/** Calculate original (non-discounted) price — always uses product.price */
+/** Calculate original (non-discounted) price — uses product.original_price */
 function calcOriginalPrice(product: any, optionId: string | undefined, usdToIqd: number, options?: any[]): number {
   const opt = optionId && options ? options.find((o: any) => o.id === optionId) : null;
   const adj = opt?.price_adjustment || 0;
   const adjIqd = Math.round(adj * usdToIqd);
-  const base = product.price || 0;
+  const base = product.original_price || product.price || 0;
   return base + adjIqd;
 }
 
