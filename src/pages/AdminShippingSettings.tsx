@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers } from "lucide-react";
+import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippingCalculator";
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
 import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
 import { cn } from "@/lib/utils";
@@ -379,6 +380,119 @@ export default function AdminShippingSettings() {
     }
   }, [shippingSettings]);
 
+  const recalculateProductPrices = async (newSettings: Record<string, number>) => {
+    const shippingSettingsObj: ShippingSettings = {
+      sea_cbm_price: newSettings.sea_cbm_price ?? 350000,
+      sea_padding_cm: newSettings.sea_padding_cm ?? 5,
+      air_usa_kg_price: newSettings.air_usa_kg_price ?? 30000,
+      air_usa_weight_buffer_percent: newSettings.air_usa_weight_buffer_percent ?? 20,
+      air_china_volumetric_price: newSettings.air_china_volumetric_price ?? 15000,
+      air_china_volumetric_divider: newSettings.air_china_volumetric_divider ?? 5000,
+      air_china_weight_safety_margin: newSettings.air_china_weight_safety_margin ?? 20,
+      commission_fee: newSettings.commission_fee ?? 1000,
+      local_delivery_baghdad: newSettings.local_delivery_baghdad ?? 6000,
+      local_delivery_provinces: newSettings.local_delivery_provinces ?? 5000,
+      usd_to_iqd_rate: newSettings.usd_to_iqd_rate ?? 1410,
+    };
+    const rate = shippingSettingsObj.usd_to_iqd_rate;
+    const roundUpTo250 = (v: number) => Math.ceil(v / 250) * 250;
+
+    // Fetch all products that have price_usd
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('id, price_usd, original_price_usd, length_cm, width_cm, height_cm, weight_kg, shipping_type, has_pre_order, has_in_stock, commission_sea_iqd, commission_air_iqd, commission_direct_iqd, other_costs_iqd, round_up_price, colors')
+      .not('price_usd', 'is', null)
+      .gt('price_usd', 0);
+    
+    if (error || !products?.length) return 0;
+
+    let updated = 0;
+    for (const p of products) {
+      const priceUsd = p.price_usd!;
+      const priceIqd = Math.round(priceUsd * rate);
+      const commissionSeaIqd = p.commission_sea_iqd || 0;
+      const commissionAirIqd = p.commission_air_iqd || 0;
+      const commissionDirectIqd = p.commission_direct_iqd || 0;
+      const otherCostsIqd = p.other_costs_iqd || 0;
+      const shippingType = p.shipping_type || 'sea';
+      const hasPreOrder = p.has_pre_order ?? false;
+      const hasInStock = p.has_in_stock ?? false;
+      const shouldRoundUp = p.round_up_price ?? false;
+
+      const dims = (p.length_cm || p.width_cm || p.height_cm)
+        ? { length: p.length_cm || 0, width: p.width_cm || 0, height: p.height_cm || 0 } : null;
+
+      const prices: number[] = [];
+      const updates: Record<string, any> = {};
+
+      if (hasPreOrder) {
+        if (shippingType === 'sea' || shippingType === 'both') {
+          const seaCalc = calculateShippingCost('china', 'sea', dims, null, shippingSettingsObj);
+          updates.sea_price = priceIqd + seaCalc.shippingCost + commissionSeaIqd;
+          updates.shipping_cost_iqd = seaCalc.shippingCost;
+        }
+        if (shippingType === 'air' || shippingType === 'both') {
+          const weightKg = p.weight_kg || 0;
+          const airCalc = calculateShippingCost('china', 'air', dims, weightKg > 0 ? weightKg : null, shippingSettingsObj);
+          updates.air_price = priceIqd + airCalc.shippingCost + commissionAirIqd;
+          if (!updates.shipping_cost_iqd) updates.shipping_cost_iqd = airCalc.shippingCost;
+        }
+      }
+
+      if (hasInStock) {
+        updates.direct_sale_price = priceIqd + otherCostsIqd + commissionDirectIqd;
+      }
+
+      if (shouldRoundUp) {
+        if (updates.sea_price) updates.sea_price = roundUpTo250(updates.sea_price);
+        if (updates.air_price) updates.air_price = roundUpTo250(updates.air_price);
+        if (updates.direct_sale_price) updates.direct_sale_price = roundUpTo250(updates.direct_sale_price);
+      }
+
+      // Collect prices
+      if (updates.sea_price) prices.push(updates.sea_price);
+      if (updates.air_price) prices.push(updates.air_price);
+      if (updates.direct_sale_price) prices.push(updates.direct_sale_price);
+
+      if (prices.length > 0) {
+        updates.price = Math.min(...prices);
+      }
+
+      // Pre-order shipping options
+      if (shippingType === 'both' && updates.sea_price && updates.air_price) {
+        const basePreOrderPrice = Math.min(updates.sea_price, updates.air_price);
+        updates.pre_order_shipping_options = [
+          { name_ar: 'شحن بحري', price_adjustment: updates.sea_price - basePreOrderPrice },
+          { name_ar: 'شحن جوي', price_adjustment: updates.air_price - basePreOrderPrice },
+        ];
+      }
+
+      // Recalculate original_price
+      const origUsd = p.original_price_usd;
+      if (origUsd && origUsd > 0) {
+        const origPriceIqd = Math.round(origUsd * rate);
+        if (hasInStock) {
+          updates.original_price = origPriceIqd + otherCostsIqd + commissionDirectIqd;
+        } else if (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) {
+          const seaCalc2 = calculateShippingCost('china', 'sea', dims, null, shippingSettingsObj);
+          updates.original_price = origPriceIqd + seaCalc2.shippingCost + commissionSeaIqd;
+        } else if (hasPreOrder && shippingType === 'air') {
+          const airCalc2 = calculateShippingCost('china', 'air', dims, (p.weight_kg || 0) > 0 ? p.weight_kg : null, shippingSettingsObj);
+          updates.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqd;
+        }
+        if (shouldRoundUp && updates.original_price) {
+          updates.original_price = roundUpTo250(updates.original_price);
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { error: updateError } = await supabase.from('products').update(updates).eq('id', p.id);
+        if (!updateError) updated++;
+      }
+    }
+    return updated;
+  };
+
   const saveSettings = useMutation({
     mutationFn: async () => {
       setIsSaving(true);
@@ -387,11 +501,15 @@ export default function AdminShippingSettings() {
         const { error } = await supabase.from("shipping_settings").update({ setting_value: update.setting_value }).eq("setting_key", update.setting_key);
         if (error) throw error;
       }
+      // Recalculate all product prices with new settings
+      const updatedCount = await recalculateProductPrices(settings);
+      return updatedCount;
     },
-    onSuccess: () => {
+    onSuccess: (updatedCount) => {
       queryClient.invalidateQueries({ queryKey: ["shipping-settings-admin"] });
       queryClient.invalidateQueries({ queryKey: ["shipping-settings"] });
-      toast.success("تم حفظ إعدادات الشحن بنجاح");
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      toast.success(`تم حفظ الإعدادات وتحديث أسعار ${updatedCount} منتج`);
       setIsSaving(false);
     },
     onError: (error: any) => {
