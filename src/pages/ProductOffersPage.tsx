@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy, X } from "lucide-react";
+import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy, X, Clock, Sparkles, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 
@@ -42,6 +42,36 @@ interface ProductOffer {
   colors: ProductColor[] | null;
 }
 
+interface TicketPromotion {
+  id: string;
+  title_ar: string;
+  description_ar: string | null;
+  bonus_tickets: number;
+  ends_at: string;
+}
+
+function useCountdown(endDate: string | undefined) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+  useEffect(() => {
+    if (!endDate) return;
+    const update = () => {
+      const diff = new Date(endDate).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true }); return; }
+      setTimeLeft({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+        expired: false,
+      });
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [endDate]);
+  return timeLeft;
+}
+
 export default function ProductOffersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -66,6 +96,24 @@ export default function ProductOffersPage() {
       if (error) throw error;
       return data as unknown as ProductOffer[];
     },
+  });
+
+  const { data: activePromotion } = useQuery({
+    queryKey: ['active-ticket-promotion'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ticket_promotions')
+        .select('*')
+        .eq('is_active', true)
+        .gte('ends_at', new Date().toISOString())
+        .lte('starts_at', new Date().toISOString())
+        .order('bonus_tickets', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as TicketPromotion | null;
+    },
+    refetchInterval: 60000,
   });
 
   const { data: wallet } = useQuery({
