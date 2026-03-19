@@ -31,6 +31,7 @@ interface BundleItem {
   option_label?: string;
   available_stock?: number;
   unit_price?: number;
+  original_unit_price?: number;
 }
 
 interface BundleForm {
@@ -101,6 +102,15 @@ function calcItemPrice(product: any, optionId: string | undefined, saleType: Bun
     const base = product.sea_price || product.price || 0;
     return base + adjIqd;
   }
+}
+
+/** Calculate original (non-discounted) price — uses product.original_price */
+function calcOriginalPrice(product: any, optionId: string | undefined, usdToIqd: number, options?: any[]): number {
+  const opt = optionId && options ? options.find((o: any) => o.id === optionId) : null;
+  const adj = opt?.price_adjustment || 0;
+  const adjIqd = Math.round(adj * usdToIqd);
+  const base = product.original_price || product.price || 0;
+  return base + adjIqd;
 }
 
 async function mergeImages(imageUrls: string[]): Promise<string> {
@@ -320,7 +330,7 @@ const AdminProductBundles = () => {
   const fetchBundleItems = async (bundleId: string, saleType: BundleSaleType) => {
     const { data, error } = await supabase
       .from('bundle_items')
-      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price, air_price, sea_price, pre_order_stock), product_options:selected_option_id(name_ar, price_adjustment)')
+      .select('*, products:product_id(name_ar, image_url, images, colors, direct_stock, direct_sale_price, price, original_price, air_price, sea_price, pre_order_stock), product_options:selected_option_id(name_ar, price_adjustment)')
       .eq('bundle_id', bundleId);
     if (error) throw error;
     return (data || []).map((item: any) => {
@@ -330,6 +340,7 @@ const AdminProductBundles = () => {
         ? getAvailableStock(item.products, item.selected_color || undefined, item.selected_option_id || undefined)
         : getPreorderStock(item.products);
       const unitPrice = calcItemPrice(item.products, item.selected_option_id, saleType, usdToIqd, item.product_options ? [item.product_options] : []);
+      const origPrice = calcOriginalPrice(item.products, item.selected_option_id, usdToIqd, item.product_options ? [item.product_options] : []);
       return {
         id: item.id,
         product_id: item.product_id,
@@ -342,6 +353,7 @@ const AdminProductBundles = () => {
         option_label: item.product_options?.name_ar || '',
         available_stock: stock,
         unit_price: unitPrice,
+        original_unit_price: origPrice,
       };
     });
   };
@@ -351,7 +363,7 @@ const AdminProductBundles = () => {
     queryFn: async () => {
       let query = supabase
         .from('products')
-        .select('id, name_ar, image_url, images, colors, direct_sale_price, price, air_price, sea_price, direct_stock, pre_order_stock')
+        .select('id, name_ar, image_url, images, colors, direct_sale_price, price, original_price, air_price, sea_price, direct_stock, pre_order_stock')
         .order('name_ar');
       if (productSearch) query = query.ilike('name_ar', `%${productSearch}%`);
       const { data, error } = await query.limit(20);
@@ -389,10 +401,10 @@ const AdminProductBundles = () => {
     enabled: productIdsInBundle.length > 0,
   });
 
-  // Auto-calculate original_price from items
+  // Auto-calculate original_price from items using original (non-discounted) prices
   useEffect(() => {
     if (form.items.length === 0) return;
-    const total = form.items.reduce((sum, item) => sum + (item.unit_price || 0) * item.quantity, 0);
+    const total = form.items.reduce((sum, item) => sum + (item.original_unit_price || item.unit_price || 0) * item.quantity, 0);
     if (total > 0) {
       setForm(f => ({ ...f, original_price: total }));
     }
@@ -552,8 +564,8 @@ const AdminProductBundles = () => {
        return getPreorderStock(selectedProduct);
      };
 
-     const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
-
+      const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
+      const getOrigPrice = (optId?: string) => calcOriginalPrice(selectedProduct, optId, usdToIqd, options);
      const selectedOpt = selectedOptionId ? options.find((o: any) => o.id === selectedOptionId) : null;
      const selectedOptName = selectedOpt?.name_ar || '';
 
@@ -564,67 +576,71 @@ const AdminProductBundles = () => {
          toast.error('المخزون غير متوفر'); return;
        }
        newItems.push({
-         product_id: selectedProduct.id,
-         quantity: qty,
-         product_name: selectedProduct.name_ar,
-         product_image: baseImg,
-         available_stock: stock,
-         unit_price: getPrice(),
-       });
+          product_id: selectedProduct.id,
+          quantity: qty,
+          product_name: selectedProduct.name_ar,
+          product_image: baseImg,
+          available_stock: stock,
+          unit_price: getPrice(),
+          original_unit_price: getOrigPrice(),
+        });
      } else if (selectedColors.length > 0 && selectedOptionId) {
-       for (const colorName of selectedColors) {
-         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-         const stock = getStock(colorName, selectedOptName);
-         if (form.sale_type === 'direct' && stock <= 0) continue;
-         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
-         newItems.push({
-           product_id: selectedProduct.id,
-           selected_color: colorName,
-           selected_option_id: selectedOptionId,
-           quantity: qty,
-           product_name: selectedProduct.name_ar,
-           product_image: baseImg,
-           color_image: colorObj?.image_url || colorObj?.image || '',
-           option_label: selectedOptName,
-           available_stock: stock,
-           unit_price: getPrice(selectedOptionId),
-         });
-       }
-       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+        for (const colorName of selectedColors) {
+          const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+          const stock = getStock(colorName, selectedOptName);
+          if (form.sale_type === 'direct' && stock <= 0) continue;
+          const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+          newItems.push({
+            product_id: selectedProduct.id,
+            selected_color: colorName,
+            selected_option_id: selectedOptionId,
+            quantity: qty,
+            product_name: selectedProduct.name_ar,
+            product_image: baseImg,
+            color_image: colorObj?.image_url || colorObj?.image || '',
+            option_label: selectedOptName,
+            available_stock: stock,
+            unit_price: getPrice(selectedOptionId),
+            original_unit_price: getOrigPrice(selectedOptionId),
+          });
+        }
+        if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
      } else if (selectedColors.length > 0) {
-       for (const colorName of selectedColors) {
-         const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
-         const stock = getStock(colorName);
-         if (form.sale_type === 'direct' && stock <= 0) continue;
-         const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
-         newItems.push({
-           product_id: selectedProduct.id,
-           selected_color: colorName,
-           quantity: qty,
-           product_name: selectedProduct.name_ar,
-           product_image: baseImg,
-           color_image: colorObj?.image_url || colorObj?.image || '',
-           available_stock: stock,
-           unit_price: getPrice(),
-         });
-       }
-       if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
+        for (const colorName of selectedColors) {
+          const colorObj = filteredColors.find((c: any) => (c.color || c.name) === colorName);
+          const stock = getStock(colorName);
+          if (form.sale_type === 'direct' && stock <= 0) continue;
+          const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+          newItems.push({
+            product_id: selectedProduct.id,
+            selected_color: colorName,
+            quantity: qty,
+            product_name: selectedProduct.name_ar,
+            product_image: baseImg,
+            color_image: colorObj?.image_url || colorObj?.image || '',
+            available_stock: stock,
+            unit_price: getPrice(),
+            original_unit_price: getOrigPrice(),
+          });
+        }
+        if (newItems.length === 0) { toast.error('لا يوجد مخزون متوفر للألوان المختارة'); return; }
      } else if (selectedOptionId) {
-       const stock = getStock(undefined, selectedOptName);
-       if (form.sale_type === 'direct' && stock <= 0) {
-         toast.error('المخزون غير متوفر'); return;
-       }
-       const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
-       newItems.push({
-         product_id: selectedProduct.id,
-         selected_option_id: selectedOptionId,
-         quantity: qty,
-         product_name: selectedProduct.name_ar,
-         product_image: baseImg,
-         option_label: selectedOptName,
-         available_stock: stock,
-         unit_price: getPrice(selectedOptionId),
-       });
+        const stock = getStock(undefined, selectedOptName);
+        if (form.sale_type === 'direct' && stock <= 0) {
+          toast.error('المخزون غير متوفر'); return;
+        }
+        const qty = form.sale_type === 'direct' ? Math.min(itemQuantity, stock) : itemQuantity;
+        newItems.push({
+          product_id: selectedProduct.id,
+          selected_option_id: selectedOptionId,
+          quantity: qty,
+          product_name: selectedProduct.name_ar,
+          product_image: baseImg,
+          option_label: selectedOptName,
+          available_stock: stock,
+          unit_price: getPrice(selectedOptionId),
+          original_unit_price: getOrigPrice(selectedOptionId),
+        });
      }
 
      setForm(prev => ({ ...prev, items: [...prev.items, ...newItems] }));
