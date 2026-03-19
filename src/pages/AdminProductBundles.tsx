@@ -564,8 +564,8 @@ const AdminProductBundles = () => {
        return getPreorderStock(selectedProduct);
      };
 
-     const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
-
+      const getPrice = (optId?: string) => calcItemPrice(selectedProduct, optId, form.sale_type, usdToIqd, options);
+      const getOrigPrice = (optId?: string) => calcOriginalPrice(selectedProduct, optId, usdToIqd, options);
      const selectedOpt = selectedOptionId ? options.find((o: any) => o.id === selectedOptionId) : null;
      const selectedOptName = selectedOpt?.name_ar || '';
 
