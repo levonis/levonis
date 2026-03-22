@@ -80,6 +80,9 @@ export default function MiniGames() {
             {activeGame === 'mystery_case' && (
               <MysteryCase onBack={() => setActiveGame(null)} />
             )}
+            {activeGame === 'stack_tower' && (
+              <StackGame onBack={() => setActiveGame(null)} />
+            )}
           </Suspense>
         </div>
         <PixelMusicRadio />

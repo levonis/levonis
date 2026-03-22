@@ -53,6 +53,7 @@ export default function AdminGamesSettings() {
       <Suspense fallback={<div className="py-12 text-center text-muted-foreground">جاري التحميل...</div>}>
         {activeTab === "mystery-case" && <MysteryCaseTab />}
         {activeTab === "space-blaster" && <SpaceBlasterTab />}
+        {activeTab === "stack-tower" && <StackGameTab />}
         {activeTab === "store" && <GameStoreTab />}
         {activeTab === "music" && <GameMusicTab />}
       </Suspense>
