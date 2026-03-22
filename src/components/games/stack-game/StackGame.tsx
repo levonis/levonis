@@ -69,8 +69,9 @@ export default function StackGame({ onBack }: Props) {
       setPerfectCount(0);
       setMaxCombo(0);
       setGameState("playing");
-    } catch {
-      setError("حدث خطأ في بدء اللعبة");
+    } catch (e: any) {
+      console.error("Stack game start error:", e);
+      setError("حدث خطأ في بدء اللعبة: " + (e?.message || ""));
     } finally {
       setStarting(false);
     }
