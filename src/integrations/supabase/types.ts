@@ -6876,6 +6876,87 @@ export type Database = {
         }
         Relationships: []
       }
+      stack_game_sessions: {
+        Row: {
+          ended_at: string | null
+          id: string
+          max_combo: number
+          perfect_count: number
+          points_awarded: number | null
+          score: number
+          session_token: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          max_combo?: number
+          perfect_count?: number
+          points_awarded?: number | null
+          score?: number
+          session_token: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          max_combo?: number
+          perfect_count?: number
+          points_awarded?: number | null
+          score?: number
+          session_token?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stack_game_settings: {
+        Row: {
+          combo_bonus_multiplier: number
+          created_at: string
+          entry_fee_tickets: number
+          game_enabled: boolean
+          id: string
+          max_daily_plays: number | null
+          perfect_bonus_points: number
+          points_per_block: number
+          total_plays: number
+          total_points_distributed: number
+          updated_at: string
+        }
+        Insert: {
+          combo_bonus_multiplier?: number
+          created_at?: string
+          entry_fee_tickets?: number
+          game_enabled?: boolean
+          id?: string
+          max_daily_plays?: number | null
+          perfect_bonus_points?: number
+          points_per_block?: number
+          total_plays?: number
+          total_points_distributed?: number
+          updated_at?: string
+        }
+        Update: {
+          combo_bonus_multiplier?: number
+          created_at?: string
+          entry_fee_tickets?: number
+          game_enabled?: boolean
+          id?: string
+          max_daily_plays?: number | null
+          perfect_bonus_points?: number
+          points_per_block?: number
+          total_plays?: number
+          total_points_distributed?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_notifications: {
         Row: {
           created_at: string
@@ -8419,6 +8500,15 @@ export type Database = {
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
+      end_stack_game: {
+        Args: {
+          p_max_combo: number
+          p_perfect_count: number
+          p_score: number
+          p_session_token: string
+        }
+        Returns: Json
+      }
       enter_collect_letters_competition:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
@@ -8617,6 +8707,7 @@ export type Database = {
         Returns: undefined
       }
       set_wallet_pin: { Args: { pin_code: string }; Returns: undefined }
+      start_stack_game: { Args: never; Returns: Json }
       toggle_reel_interaction: {
         Args: { p_reel_id: string; p_type: string; p_user_id: string }
         Returns: boolean

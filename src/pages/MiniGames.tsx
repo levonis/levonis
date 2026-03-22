@@ -13,6 +13,7 @@ import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource }
 
 const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
 const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCase"));
+const StackGame = lazy(() => import("@/components/games/stack-game/StackGame"));
 const GameStore = lazy(() => import("@/components/games/GameStore"));
 
 const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
@@ -78,6 +79,9 @@ export default function MiniGames() {
             )}
             {activeGame === 'mystery_case' && (
               <MysteryCase onBack={() => setActiveGame(null)} />
+            )}
+            {activeGame === 'stack_tower' && (
+              <StackGame onBack={() => setActiveGame(null)} />
             )}
           </Suspense>
         </div>
