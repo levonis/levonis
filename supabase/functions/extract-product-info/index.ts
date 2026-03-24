@@ -819,7 +819,9 @@ ${pageContent.substring(0, 100000)}
           if (ai.colors && Array.isArray(ai.colors)) {
             for (const c of ai.colors) {
               if (c.name && isValidColorName(c.name)) {
-                const colorLower = c.name.toLowerCase();
+                const cleanedName = cleanColorName(c.name);
+                const cleanedNameAr = c.name_ar ? cleanColorName(c.name_ar) : '';
+                const colorLower = cleanedName.toLowerCase();
                 const info = Object.entries(COLOR_MAP).find(([k]) => colorLower.includes(k));
                 
                 let colorImageUrl = null;
@@ -829,8 +831,8 @@ ${pageContent.substring(0, 100000)}
                 }
                 
                 productInfo.colors.push({
-                  name: c.name,
-                  name_ar: info ? info[1].ar : c.name_ar || c.name,
+                  name: cleanedName,
+                  name_ar: info ? info[1].ar : cleanedNameAr || cleanedName,
                   hex_code: info ? info[1].hex : c.hex_code || '#808080',
                   image_url: colorImageUrl,
                   in_stock: true,

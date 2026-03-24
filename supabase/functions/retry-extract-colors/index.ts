@@ -191,6 +191,13 @@ IMPORTANT:
 - Check all data attributes, swatch elements, variant selectors
 - DO NOT summarize or skip any colors
 
+⚠️ CRITICAL - Clean color names:
+- Do NOT include product codes, SKU numbers, or item numbers in color names!
+- WRONG: "Matte Ivory White (11100)" — the number 11100 is a product code, NOT part of the color name
+- CORRECT: "Matte Ivory White"
+- Remove any numbers in parentheses like (11100), (#PLA-001) from color names
+- Color names should contain ONLY the actual color description
+
 Return ONLY colors in this JSON format:
 {
   "colors": [
