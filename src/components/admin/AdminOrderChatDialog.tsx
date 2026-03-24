@@ -133,16 +133,6 @@ export default function AdminOrderChatDialog({
     enabled: open && !!userId,
   });
 
-  // Find the matching address for this order
-  const matchedAddress = useMemo(() => {
-    if (!userAddresses?.length || !displayOrder?.shipping_address) return null;
-    // Try to match by checking if the shipping_address contains the address parts
-    return userAddresses.find(addr => {
-      const addrText = `${addr.governorate} - ${addr.area}`;
-      return displayOrder.shipping_address?.includes(addrText);
-    }) || userAddresses[0]; // fallback to first/default address
-  }, [userAddresses, displayOrder?.shipping_address]);
-
   const displayOrder = useMemo(() => {
     if (!order && !initialOrderData) return null;
 
@@ -155,6 +145,15 @@ export default function AdminOrderChatDialog({
       order_items: fetchedItems.length > 0 ? fetchedItems : initialItems,
     };
   }, [order, initialOrderData]);
+
+  // Find the matching address for this order
+  const matchedAddress = useMemo(() => {
+    if (!userAddresses?.length || !displayOrder?.shipping_address) return null;
+    return userAddresses.find(addr => {
+      const addrText = `${addr.governorate} - ${addr.area}`;
+      return displayOrder.shipping_address?.includes(addrText);
+    }) || userAddresses[0];
+  }, [userAddresses, displayOrder?.shipping_address]);
 
   useEffect(() => {
     if (open && userId) getOrCreateConversation();
