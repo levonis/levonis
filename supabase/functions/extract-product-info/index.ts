@@ -223,6 +223,21 @@ function getFeatureIcon(text: string): string {
   return 'Check';
 }
 
+// Clean color name by removing product/SKU codes like (11100), #11100, etc.
+function cleanColorName(name: string): string {
+  if (!name) return name;
+  let cleaned = name.trim();
+  // Remove parenthesized numbers/codes like (11100), (PLA-123), (#11100)
+  cleaned = cleaned.replace(/\s*\([\s#]*\d{3,}[A-Za-z]?\s*\)/g, '');
+  // Remove standalone trailing codes like " - 11100" or " #11100"
+  cleaned = cleaned.replace(/\s*[-–]\s*#?\d{4,}\s*$/g, '');
+  // Remove trailing hash codes like " #11100"
+  cleaned = cleaned.replace(/\s+#\d{4,}\s*$/g, '');
+  // Remove leading/trailing whitespace and dashes
+  cleaned = cleaned.replace(/^[\s-]+|[\s-]+$/g, '');
+  return cleaned || name.trim();
+}
+
 // Validate color name
 function isValidColorName(name: string): boolean {
   if (!name || typeof name !== 'string') return false;
