@@ -241,79 +241,84 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="governorate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>المحافظة</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Reset area when governorate changes
-                      form.setValue('area', '');
-                    }}
-                    value={field.value}
-                  >
+            {/* المحافظة + المنطقة */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="governorate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المحافظة</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue('area', '');
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر المحافظة" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background">
+                        {governorates.map((gov) => (
+                          <SelectItem key={gov} value={gov}>
+                            {gov}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="area"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المنطقة</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر المحافظة" />
-                      </SelectTrigger>
+                      <Input placeholder="اسم المنطقة" {...field} />
                     </FormControl>
-                    <SelectContent className="bg-background">
-                      {governorates.map((gov) => (
-                        <SelectItem key={gov} value={gov}>
-                          {gov}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="area"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>المنطقة</FormLabel>
-                  <FormControl>
-                    <Input placeholder="اسم المنطقة" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* الحي + أقرب نقطة دالة */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="neighborhood"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الحي (اختياري)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="اسم الحي" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="neighborhood"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>الحي (اختياري)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="اسم الحي" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="nearest_landmark"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>أقرب نقطة دالة</FormLabel>
-                  <FormControl>
-                    <Input placeholder="قرب مول المنصور" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="nearest_landmark"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>أقرب نقطة دالة</FormLabel>
+                    <FormControl>
+                      <Input placeholder="قرب مول المنصور" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
