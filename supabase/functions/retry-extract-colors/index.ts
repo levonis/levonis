@@ -191,13 +191,6 @@ IMPORTANT:
 - Check all data attributes, swatch elements, variant selectors
 - DO NOT summarize or skip any colors
 
-⚠️ CRITICAL - Clean color names:
-- Do NOT include product codes, SKU numbers, or item numbers in color names!
-- WRONG: "Matte Ivory White (11100)" — the number 11100 is a product code, NOT part of the color name
-- CORRECT: "Matte Ivory White"
-- Remove any numbers in parentheses like (11100), (#PLA-001) from color names
-- Color names should contain ONLY the actual color description
-
 Return ONLY colors in this JSON format:
 {
   "colors": [
@@ -253,21 +246,7 @@ Return ONLY colors in this JSON format:
     }
 
     const extractedData = JSON.parse(jsonMatch[0]);
-    // Clean color names by removing product codes
-    const cleanName = (name: string): string => {
-      if (!name) return name;
-      let cleaned = name.trim();
-      cleaned = cleaned.replace(/\s*\([\s#]*\d{3,}[A-Za-z]?\s*\)/g, '');
-      cleaned = cleaned.replace(/\s*[-–]\s*#?\d{4,}\s*$/g, '');
-      cleaned = cleaned.replace(/\s+#\d{4,}\s*$/g, '');
-      cleaned = cleaned.replace(/^[\s-]+|[\s-]+$/g, '');
-      return cleaned || name.trim();
-    };
-    const newColors = (extractedData.colors || []).map((c: any) => ({
-      ...c,
-      name: cleanName(c.name || ''),
-      name_ar: cleanName(c.name_ar || ''),
-    }));
+    const newColors = extractedData.colors || [];
 
     console.log('Extracted colors:', newColors.length);
 
