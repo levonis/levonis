@@ -518,22 +518,20 @@ export default function AdminOrderChatDialog({
                         </Button>
                       </div>
                     )}
-                    {/* Governorate */}
-                    {(matchedAddress?.governorate || displayOrder.governorate) && (
+                    {/* Governorate + Area combined */}
+                    {(matchedAddress?.governorate || displayOrder.governorate || matchedAddress?.area) && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground text-xs">🏙️</span>
-                        <span className="flex-1 text-xs"><span className="text-muted-foreground">المحافظة:</span> {matchedAddress?.governorate || displayOrder.governorate}</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress?.governorate || displayOrder.governorate || ''); toast.success('تم نسخ المحافظة'); }}>
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                    {/* Area */}
-                    {matchedAddress?.area && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground text-xs">📍</span>
-                        <span className="flex-1 text-xs"><span className="text-muted-foreground">المنطقة:</span> {matchedAddress.area}</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.area); toast.success('تم نسخ المنطقة'); }}>
+                        <span className="flex-1 text-xs">
+                          {(matchedAddress?.governorate || displayOrder.governorate) && <><span className="text-muted-foreground">المحافظة:</span> {matchedAddress?.governorate || displayOrder.governorate}</>}
+                          {(matchedAddress?.governorate || displayOrder.governorate) && matchedAddress?.area && ' - '}
+                          {matchedAddress?.area && <><span className="text-muted-foreground">المنطقة:</span> {matchedAddress.area}</>}
+                        </span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { 
+                          const text = [matchedAddress?.governorate || displayOrder.governorate, matchedAddress?.area].filter(Boolean).join(' - ');
+                          navigator.clipboard.writeText(text); 
+                          toast.success('تم نسخ المحافظة والمنطقة'); 
+                        }}>
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
