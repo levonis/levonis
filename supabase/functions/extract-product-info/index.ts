@@ -223,6 +223,21 @@ function getFeatureIcon(text: string): string {
   return 'Check';
 }
 
+// Clean color name by removing product/SKU codes like (11100), #11100, etc.
+function cleanColorName(name: string): string {
+  if (!name) return name;
+  let cleaned = name.trim();
+  // Remove parenthesized numbers/codes like (11100), (PLA-123), (#11100)
+  cleaned = cleaned.replace(/\s*\([\s#]*\d{3,}[A-Za-z]?\s*\)/g, '');
+  // Remove standalone trailing codes like " - 11100" or " #11100"
+  cleaned = cleaned.replace(/\s*[-–]\s*#?\d{4,}\s*$/g, '');
+  // Remove trailing hash codes like " #11100"
+  cleaned = cleaned.replace(/\s+#\d{4,}\s*$/g, '');
+  // Remove leading/trailing whitespace and dashes
+  cleaned = cleaned.replace(/^[\s-]+|[\s-]+$/g, '');
+  return cleaned || name.trim();
+}
+
 // Validate color name
 function isValidColorName(name: string): boolean {
   if (!name || typeof name !== 'string') return false;
@@ -681,6 +696,13 @@ ${pageContent.substring(0, 100000)}
 
 مطلوب: استخرج كل الألوان المتاحة في المنتج - حتى لو كانت 50 أو 100 لون!
 
+⚠️ تنظيف أسماء الألوان (مهم جداً):
+- لا تُضِف أرقام المنتج أو أكواد SKU إلى اسم اللون!
+- مثال خطأ: "Matte Ivory White (11100)" ← خطأ! الرقم 11100 هو كود المنتج وليس جزء من اسم اللون
+- مثال صحيح: "Matte Ivory White" ← صحيح!
+- احذف أي أرقام/أكواد بين أقواس مثل (11100) أو (#PLA-001) من أسماء الألوان
+- اسم اللون يجب أن يحتوي فقط على اسم اللون الفعلي بدون أكواد
+
 أماكن البحث عن الألوان:
 1. في JSON: ابحث عن "skuProps", "skuList", "colorProperties", "props", "sku"
 2. في HTML: ابحث عن العناصر التي تحتوي على class="sku-item" أو data-value
@@ -797,7 +819,9 @@ ${pageContent.substring(0, 100000)}
           if (ai.colors && Array.isArray(ai.colors)) {
             for (const c of ai.colors) {
               if (c.name && isValidColorName(c.name)) {
-                const colorLower = c.name.toLowerCase();
+                const cleanedName = cleanColorName(c.name);
+                const cleanedNameAr = c.name_ar ? cleanColorName(c.name_ar) : '';
+                const colorLower = cleanedName.toLowerCase();
                 const info = Object.entries(COLOR_MAP).find(([k]) => colorLower.includes(k));
                 
                 let colorImageUrl = null;
@@ -807,8 +831,8 @@ ${pageContent.substring(0, 100000)}
                 }
                 
                 productInfo.colors.push({
-                  name: c.name,
-                  name_ar: info ? info[1].ar : c.name_ar || c.name,
+                  name: cleanedName,
+                  name_ar: info ? info[1].ar : cleanedNameAr || cleanedName,
                   hex_code: info ? info[1].hex : c.hex_code || '#808080',
                   image_url: colorImageUrl,
                   in_stock: true,
