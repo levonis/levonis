@@ -253,7 +253,21 @@ Return ONLY colors in this JSON format:
     }
 
     const extractedData = JSON.parse(jsonMatch[0]);
-    const newColors = extractedData.colors || [];
+    // Clean color names by removing product codes
+    const cleanName = (name: string): string => {
+      if (!name) return name;
+      let cleaned = name.trim();
+      cleaned = cleaned.replace(/\s*\([\s#]*\d{3,}[A-Za-z]?\s*\)/g, '');
+      cleaned = cleaned.replace(/\s*[-–]\s*#?\d{4,}\s*$/g, '');
+      cleaned = cleaned.replace(/\s+#\d{4,}\s*$/g, '');
+      cleaned = cleaned.replace(/^[\s-]+|[\s-]+$/g, '');
+      return cleaned || name.trim();
+    };
+    const newColors = (extractedData.colors || []).map((c: any) => ({
+      ...c,
+      name: cleanName(c.name || ''),
+      name_ar: cleanName(c.name_ar || ''),
+    }));
 
     console.log('Extracted colors:', newColors.length);
 
