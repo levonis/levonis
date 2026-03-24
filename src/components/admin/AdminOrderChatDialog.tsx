@@ -501,26 +501,84 @@ export default function AdminOrderChatDialog({
 
                   {/* Customer Info with copy */}
                   <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5 text-sm">
-                    <div className="flex items-center gap-2">
+                    {/* Full Name */}
+                    <div className="flex items-center gap-1">
                       <span className="text-muted-foreground">👤</span>
-                      <span className="font-medium flex-1">{customerName}</span>
+                      <span className="font-medium flex-1 text-xs">{matchedAddress?.full_name || customerName}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress?.full_name || customerName); toast.success('تم نسخ الاسم'); }}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
-                    {displayOrder.phone_number && (
+                    {/* Phone */}
+                    {(matchedAddress?.phone_number || displayOrder.phone_number) && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">📞</span>
-                        <span className="flex-1 text-xs" dir="ltr">{displayOrder.phone_number}</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(displayOrder.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
+                        <span className="flex-1 text-xs" dir="ltr">{matchedAddress?.phone_number || displayOrder.phone_number}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress?.phone_number || displayOrder.phone_number || ''); toast.success('تم نسخ الرقم'); }}>
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
                     )}
-                    <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground">📍</span>
-                      <span className="flex-1 text-xs">{displayOrder.shipping_address || displayOrder.governorate || '-'}</span>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(displayOrder.shipping_address || displayOrder.governorate || ''); toast.success('تم نسخ العنوان'); }}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {/* Governorate */}
+                    {(matchedAddress?.governorate || displayOrder.governorate) && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">🏙️</span>
+                        <span className="flex-1 text-xs"><span className="text-muted-foreground">المحافظة:</span> {matchedAddress?.governorate || displayOrder.governorate}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress?.governorate || displayOrder.governorate || ''); toast.success('تم نسخ المحافظة'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {/* Area */}
+                    {matchedAddress?.area && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">📍</span>
+                        <span className="flex-1 text-xs"><span className="text-muted-foreground">المنطقة:</span> {matchedAddress.area}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.area); toast.success('تم نسخ المنطقة'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {/* Neighborhood */}
+                    {matchedAddress?.neighborhood && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">🏘️</span>
+                        <span className="flex-1 text-xs"><span className="text-muted-foreground">الحي:</span> {matchedAddress.neighborhood}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.neighborhood || ''); toast.success('تم نسخ الحي'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {/* Nearest Landmark */}
+                    {matchedAddress?.nearest_landmark && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">🔖</span>
+                        <span className="flex-1 text-xs"><span className="text-muted-foreground">أقرب نقطة دالة:</span> {matchedAddress.nearest_landmark}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.nearest_landmark || ''); toast.success('تم نسخ أقرب نقطة دالة'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {/* Additional Notes */}
+                    {matchedAddress?.additional_notes && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs">📝</span>
+                        <span className="flex-1 text-xs"><span className="text-muted-foreground">ملاحظات:</span> {matchedAddress.additional_notes}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.additional_notes || ''); toast.success('تم نسخ الملاحظات'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    {/* Fallback: show full shipping address if no matched address */}
+                    {!matchedAddress && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">📍</span>
+                        <span className="flex-1 text-xs">{displayOrder.shipping_address || displayOrder.governorate || '-'}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(displayOrder.shipping_address || displayOrder.governorate || ''); toast.success('تم نسخ العنوان'); }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                     {displayOrder.shipping_notes && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground">📝</span>
