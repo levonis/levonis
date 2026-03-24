@@ -538,22 +538,20 @@ export default function AdminOrderChatDialog({
                         </Button>
                       </div>
                     )}
-                    {/* Neighborhood */}
-                    {matchedAddress?.neighborhood && (
+                    {/* Neighborhood + Nearest Landmark combined */}
+                    {(matchedAddress?.neighborhood || matchedAddress?.nearest_landmark) && (
                       <div className="flex items-center gap-1">
                         <span className="text-muted-foreground text-xs">🏘️</span>
-                        <span className="flex-1 text-xs"><span className="text-muted-foreground">الحي:</span> {matchedAddress.neighborhood}</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.neighborhood || ''); toast.success('تم نسخ الحي'); }}>
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                    {/* Nearest Landmark */}
-                    {matchedAddress?.nearest_landmark && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground text-xs">🔖</span>
-                        <span className="flex-1 text-xs"><span className="text-muted-foreground">أقرب نقطة دالة:</span> {matchedAddress.nearest_landmark}</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(matchedAddress.nearest_landmark || ''); toast.success('تم نسخ أقرب نقطة دالة'); }}>
+                        <span className="flex-1 text-xs">
+                          {matchedAddress.neighborhood && <><span className="text-muted-foreground">الحي:</span> {matchedAddress.neighborhood}</>}
+                          {matchedAddress.neighborhood && matchedAddress.nearest_landmark && ' - '}
+                          {matchedAddress.nearest_landmark && <><span className="text-muted-foreground">أقرب نقطة دالة:</span> {matchedAddress.nearest_landmark}</>}
+                        </span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { 
+                          const text = [matchedAddress.neighborhood, matchedAddress.nearest_landmark].filter(Boolean).join(' - ');
+                          navigator.clipboard.writeText(text); 
+                          toast.success('تم نسخ الحي والنقطة الدالة'); 
+                        }}>
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
