@@ -148,12 +148,32 @@ export default function AdminOrderChatDialog({
 
   // Find the matching address for this order
   const matchedAddress = useMemo(() => {
-    if (!userAddresses?.length || !displayOrder?.shipping_address) return null;
-    return userAddresses.find(addr => {
-      const addrText = `${addr.governorate} - ${addr.area}`;
-      return displayOrder.shipping_address?.includes(addrText);
-    }) || userAddresses[0];
-  }, [userAddresses, displayOrder?.shipping_address]);
+    // Try to match from user_addresses table
+    if (userAddresses?.length && displayOrder?.shipping_address) {
+      const found = userAddresses.find(addr => {
+        const addrText = `${addr.governorate} - ${addr.area}`;
+        return displayOrder.shipping_address?.includes(addrText);
+      });
+      if (found) return found;
+    }
+    
+    // Fallback: parse shipping_address string "governorate - area - neighborhood - landmark - notes"
+    if (displayOrder?.shipping_address) {
+      const parts = displayOrder.shipping_address.split(' - ').map((p: string) => p.trim());
+      return {
+        full_name: null,
+        phone_number: null,
+        governorate: parts[0] || displayOrder.governorate || null,
+        area: parts[1] || null,
+        neighborhood: parts[2] || null,
+        nearest_landmark: parts[3] || null,
+        additional_notes: parts[4] || null,
+        is_default: false,
+      };
+    }
+    
+    return null;
+  }, [userAddresses, displayOrder?.shipping_address, displayOrder?.governorate]);
 
   useEffect(() => {
     if (open && userId) getOrCreateConversation();
