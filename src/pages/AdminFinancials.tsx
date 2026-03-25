@@ -471,6 +471,7 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المنتجات</TableHead>
                           <TableHead className="text-right">المبلغ</TableHead>
                           <TableHead className="text-right">تكلفة المنتجات</TableHead>
+                          <TableHead className="text-right">تكلفة التوصيل</TableHead>
                           <TableHead className="text-right">صافي الربح</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                           <TableHead className="text-center">التاريخ</TableHead>
