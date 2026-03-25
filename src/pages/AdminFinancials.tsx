@@ -219,8 +219,7 @@ const AdminFinancials = () => {
   const filteredOrders = useMemo(() => {
     return (orders || []).filter(order => {
       if (statusFilter === 'delivered') return order.status === 'delivered';
-      if (statusFilter === 'cancelled') return order.status === 'cancelled';
-      if (statusFilter === 'in_progress') return order.status !== 'delivered' && order.status !== 'cancelled';
+      if (statusFilter === 'in_progress') return order.status !== 'delivered';
       return true;
     });
   }, [orders, statusFilter]);
