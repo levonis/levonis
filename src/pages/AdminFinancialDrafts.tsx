@@ -174,8 +174,11 @@ export default function AdminFinancialDrafts() {
           <Button size="sm" onClick={() => saveDraft.mutate(activeDraft)} disabled={saveDraft.isPending}>
             <Save className="h-4 w-4 ml-1" /> حفظ
           </Button>
-          <Button size="sm" variant="secondary" onClick={addColumn}>
+          <Button size="sm" variant="secondary" onClick={() => addColumn('text')}>
             <Plus className="h-4 w-4 ml-1" /> إضافة عمود
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => addColumn('date')}>
+            <Calendar className="h-4 w-4 ml-1" /> إضافة عمود تاريخ
           </Button>
           <Button size="sm" variant="secondary" onClick={addRow}>
             <Plus className="h-4 w-4 ml-1" /> إضافة صف
