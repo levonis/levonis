@@ -44,12 +44,43 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate total costs for an order (shipping + other costs entered by admin)
-const calcOrderCost = (order: OrderWithDetails): number => {
-  return (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0);
+// Calculate delivery cost (admin_shipping_cost, or fallback to product shipping_cost_iqd)
+const calcDeliveryCost = (order: OrderWithDetails): number => {
+  if (order.admin_shipping_cost != null && order.admin_shipping_cost > 0) {
+    return order.admin_shipping_cost;
+  }
+  // Fallback: sum shipping_cost_iqd from each product in order_items
+  if (order.order_items && order.order_items.length > 0) {
+    return order.order_items.reduce((sum, item: any) => {
+      const shippingCost = item.products?.shipping_cost_iqd || 0;
+      return sum + (shippingCost * (item.quantity || 1));
+    }, 0);
+  }
+  return 0;
 };
 
-// Calculate profit (commission) = total_amount - all costs (delivered only)
+// Calculate product cost (admin_other_costs, or fallback to product cost_price + other_costs_iqd)
+const calcProductCost = (order: OrderWithDetails): number => {
+  if (order.admin_other_costs != null && order.admin_other_costs > 0) {
+    return order.admin_other_costs;
+  }
+  // Fallback: sum cost_price + other_costs_iqd from each product
+  if (order.order_items && order.order_items.length > 0) {
+    return order.order_items.reduce((sum, item: any) => {
+      const costPrice = item.cost_price || item.products?.cost_price || 0;
+      const otherCosts = item.products?.other_costs_iqd || 0;
+      return sum + ((costPrice + otherCosts) * (item.quantity || 1));
+    }, 0);
+  }
+  return 0;
+};
+
+// Total costs = delivery + product costs
+const calcOrderCost = (order: OrderWithDetails): number => {
+  return calcDeliveryCost(order) + calcProductCost(order);
+};
+
+// Profit (commission) = total_amount - all costs (delivered only)
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
   return (order.total_amount || 0) - calcOrderCost(order);
