@@ -402,7 +402,7 @@ export default function AdminDeliveredOrders() {
                 </div>
                 {selectedOrder.profit > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" /> الربح</span>
+                    <span className="text-sm text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" /> العمولة</span>
                     <span className="font-bold text-green-600">{selectedOrder.profit.toLocaleString()}</span>
                   </div>
                 )}
