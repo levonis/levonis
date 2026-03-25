@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
     }
 
 
+    const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const DEFAULT_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
     if (!TELEGRAM_BOT_TOKEN) {
