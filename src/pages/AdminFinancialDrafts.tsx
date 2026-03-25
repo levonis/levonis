@@ -346,28 +346,35 @@ export default function AdminFinancialDrafts() {
                               type="date"
                               value={row[col.id] || ''}
                               onChange={e => setCellVal(row.id, col.id, e.target.value)}
-                              className="w-full h-9 px-2.5 text-xs bg-transparent border-0 outline-none focus:bg-primary/5 transition-colors"
+                              className="w-full h-9 px-2.5 text-xs bg-transparent border-0 outline-none focus:bg-primary/5 transition-colors cursor-pointer"
+                              dir="ltr"
                             />
                           ) : col.type === 'number' ? (
                             editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
                                 value={cellValue}
-                                onChange={e => setCellValue(e.target.value)}
+                                onChange={e => {
+                                  const raw = e.target.value.replace(/[^0-9.]/g, '');
+                                  setCellValue(formatNumberInput(raw));
+                                }}
                                 className="w-full h-9 px-2.5 text-xs bg-primary/5 border-0 outline-none font-mono"
+                                dir="ltr"
                                 autoFocus
-                                onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
+                                onBlur={() => { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }}
                                 onKeyDown={e => {
-                                  if (e.key === 'Enter') { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }
+                                  if (e.key === 'Enter') { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }
                                   if (e.key === 'Escape') setEditingCell(null);
                                 }}
                               />
                             ) : (
                               <div
                                 className="px-2.5 py-2 min-h-[36px] cursor-text text-xs font-mono hover:bg-muted/30 transition-colors flex items-center"
-                                onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
+                                dir="ltr"
+                                onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] ? formatNumberInput(row[col.id]) : ''); }}
                               >
-                                {row[col.id] || <span className="text-muted-foreground/30">—</span>}
+                                {row[col.id] ? formatNumberInput(row[col.id]) : <span className="text-muted-foreground/30">—</span>}
                               </div>
                             )
                           ) : editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
@@ -401,6 +408,30 @@ export default function AdminFinancialDrafts() {
                   ))
                 )}
               </tbody>
+              {/* Totals row */}
+              {activeDraft.rows.length > 0 && activeDraft.columns.some(c => c.type === 'number') && (
+                <tfoot>
+                  <tr className="bg-muted/60 border-t-2 border-border/60 font-semibold">
+                    <td className="p-2.5 text-center text-xs text-muted-foreground">Σ</td>
+                    {activeDraft.columns.map(col => (
+                      <td key={col.id} className="px-2.5 py-2 text-xs border-r border-border/20 last:border-r-0">
+                        {col.type === 'number' ? (
+                          <span className="font-mono" dir="ltr">
+                            {formatNumberInput(String(
+                              activeDraft.rows.reduce((sum, row) => sum + (parseFloat(row[col.id] || '0') || 0), 0)
+                            ))}
+                          </span>
+                        ) : col.type === 'date' ? (
+                          <span className="text-muted-foreground/40">—</span>
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
+                    ))}
+                    <td></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           )}
         </div>
