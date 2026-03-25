@@ -90,9 +90,9 @@ const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderW
   return (orderProductCost * itemRevenue) / subtotal;
 };
 
-// Total costs = delivery + product costs
+// Total costs = |delivery| + product costs (negative delivery still counts as cost)
 const calcOrderCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
-  return calcDeliveryCost(order) + calcProductCost(order, usdToIqdRate);
+  return Math.abs(calcDeliveryCost(order)) + calcProductCost(order, usdToIqdRate);
 };
 
 // Profit (commission) = total_amount - all costs (delivered only)
