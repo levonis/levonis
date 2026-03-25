@@ -23,10 +23,12 @@ import LevelBadge from '@/components/LevelBadge';
 import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import AdminPagination from '@/components/admin/AdminPagination';
 import { usePagination } from '@/hooks/usePagination';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
 import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 import { sendAllNotifications } from '@/lib/notifications';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
 
 const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
@@ -71,6 +73,8 @@ const AdminOrders = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqdRate = shippingSettings?.usd_to_iqd_rate ?? 1500;
   const [activeTab, setActiveTab] = useState('orders');
   const [orderTab, setOrderTab] = useState<'preorder' | 'direct'>('preorder');
   const [preorderShippingTab, setPreorderShippingTab] = useState<'all' | 'sea' | 'air'>('all');
@@ -123,6 +127,32 @@ const AdminOrders = () => {
     if (status) setStatusFilter(status);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!editingOrder) return;
+
+    const manualProductCost = editingOrder.admin_product_cost || editingOrder.admin_other_costs || 0;
+    if (manualProductCost > 0) {
+      setAdminProductCost(manualProductCost);
+    } else {
+      setAdminProductCost(calcAutoOrderProductCost(editingOrder, usdToIqdRate));
+    }
+
+    const items = editingOrder.order_items || [];
+    const isDirectSale = editingOrder.order_type === 'direct' || items.every((item: any) => (
+      !item.custom_request_id &&
+      (!item.shipping_option_name_ar || item.shipping_option_name_ar.includes('متاح في المخزون'))
+    ));
+
+    if (isDirectSale && manualProductCost <= 0) {
+      const totalCommission = items.reduce((sum: number, item: any) => (
+        sum + ((item.products?.commission_direct_iqd || 0) * (item.quantity || 1))
+      ), 0);
+      setCommissionProfit(totalCommission);
+    } else {
+      setCommissionProfit(0);
+    }
+  }, [editingOrder, usdToIqdRate]);
+
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders', isAdmin],
     queryFn: async () => {
@@ -131,7 +161,7 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, products!order_items_product_id_fkey(cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd))
+          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd))
         `)
         .order('created_at', { ascending: false });
 
@@ -468,28 +498,8 @@ const AdminOrders = () => {
     const orderDeliveryFee = orderSubtotal > 0 ? Math.max(0, (order.total_amount || 0) - orderSubtotal + orderDiscount) : 0;
     setDeliveryFee(order.admin_shipping_cost || orderDeliveryFee);
     
-    // For direct sale: auto-calculate product cost from product cost only (exclude delivery)
-    if (isDirectSale && (!order.admin_product_cost || order.admin_product_cost === 0)) {
-      const items = order.order_items || [];
-      let totalCost = 0;
-      let totalCommission = 0;
-      for (const item of items) {
-        const product = item.products || {};
-        const itemCostPrice = item.cost_price || 0;
-        const itemOtherCosts = product.other_costs_iqd || 0;
-        const productCostPrice = product.cost_price || 0;
-        const itemProductCost = itemCostPrice || itemOtherCosts || productCostPrice;
-        totalCost += itemProductCost * (item.quantity || 1);
-        // Commission = profit per item for direct sale
-        const itemCommission = product.commission_direct_iqd || 0;
-        totalCommission += itemCommission * (item.quantity || 1);
-      }
-      setAdminProductCost(totalCost);
-      setCommissionProfit(totalCommission);
-    } else {
-      setAdminProductCost(order.admin_product_cost || 0);
-      setCommissionProfit(0);
-    }
+    setAdminProductCost(order.admin_product_cost || order.admin_other_costs || 0);
+    setCommissionProfit(0);
     
     setTaxAmount(order.tax_amount || 0);
     setSubtotalAmount(order.subtotal || 0);

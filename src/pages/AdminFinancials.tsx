@@ -18,6 +18,8 @@ import {
   DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
+import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -68,37 +70,19 @@ const calcDeliveryCost = (order: OrderWithDetails): number => {
   return 0;
 };
 
-const calcAutoProductCost = (order: OrderWithDetails): number => {
-  if (!order.order_items?.length) return 0;
-
-  return order.order_items.reduce((sum, item) => {
-    const quantity = item.quantity || 1;
-    const itemCost = typeof item.cost_price === 'number' && item.cost_price > 0 ? item.cost_price : 0;
-    const productOtherCost = typeof item.products?.other_costs_iqd === 'number' && item.products.other_costs_iqd > 0
-      ? item.products.other_costs_iqd
-      : 0;
-    const productCostPrice = typeof item.products?.cost_price === 'number' && item.products.cost_price > 0
-      ? item.products.cost_price
-      : 0;
-    const unitProductCost = itemCost || productOtherCost || productCostPrice;
-
-    return sum + (unitProductCost * quantity);
-  }, 0);
-};
-
 // Calculate product cost (admin_product_cost, then admin_other_costs, then auto-derived)
-const calcProductCost = (order: OrderWithDetails): number => {
+const calcProductCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
   if (order.admin_product_cost != null && order.admin_product_cost > 0) {
     return order.admin_product_cost;
   }
   if (order.admin_other_costs != null && order.admin_other_costs > 0) {
     return order.admin_other_costs;
   }
-  return calcAutoProductCost(order);
+  return calcAutoOrderProductCost(order, usdToIqdRate);
 };
 
-const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
-  const orderProductCost = calcProductCost(order);
+const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderWithDetails['order_items']>[number], usdToIqdRate: number): number => {
+  const orderProductCost = calcProductCost(order, usdToIqdRate);
   const subtotal = getOrderItemsSubtotal(order);
   const itemRevenue = calcItemRevenue(item);
 
@@ -107,20 +91,22 @@ const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderW
 };
 
 // Total costs = delivery + product costs
-const calcOrderCost = (order: OrderWithDetails): number => {
-  return calcDeliveryCost(order) + calcProductCost(order);
+const calcOrderCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
+  return calcDeliveryCost(order) + calcProductCost(order, usdToIqdRate);
 };
 
 // Profit (commission) = total_amount - all costs (delivered only)
-const calcOrderProfit = (order: OrderWithDetails): number => {
+const calcOrderProfit = (order: OrderWithDetails, usdToIqdRate: number): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - calcOrderCost(order);
+  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate);
 };
 
 const AdminFinancials = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqdRate = shippingSettings?.usd_to_iqd_rate ?? 1500;
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -160,8 +146,8 @@ const AdminFinancials = () => {
       let query = supabase.from('orders').select(`
         *, order_type,
         profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-        order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id,
-          products!order_items_product_id_fkey(id, name_ar, cost_price, shipping_cost_iqd, other_costs_iqd, category_id,
+        order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, shipping_option_name_ar, custom_request_id,
+          products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, category_id,
             categories!products_category_id_fkey(id, name_ar, main_section_id,
               main_sections!categories_main_section_id_fkey(id, name_ar)
             )
@@ -248,8 +234,8 @@ const AdminFinancials = () => {
 
   // Global totals (all delivered orders, shipping excluded)
   const globalProfit = useMemo(() => {
-    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o), 0);
-  }, [orders]);
+    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o, usdToIqdRate), 0);
+  }, [orders, usdToIqdRate]);
 
   // Totals for current filtered view
   const totals = useMemo(() => {
@@ -257,14 +243,14 @@ const AdminFinancials = () => {
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
         totalDeliveryCost: acc.totalDeliveryCost + calcDeliveryCost(order),
-        totalProductCost: acc.totalProductCost + calcProductCost(order),
-        totalCost: acc.totalCost + calcOrderCost(order),
-        totalProfit: acc.totalProfit + calcOrderProfit(order),
+          totalProductCost: acc.totalProductCost + calcProductCost(order, usdToIqdRate),
+          totalCost: acc.totalCost + calcOrderCost(order, usdToIqdRate),
+          totalProfit: acc.totalProfit + calcOrderProfit(order, usdToIqdRate),
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
     }, { totalRevenue: 0, totalDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
-  }, [filteredOrders]);
+  }, [filteredOrders, usdToIqdRate]);
 
   // Monthly chart data (delivered only, shipping excluded)
   const monthlyChartData = useMemo(() => {
@@ -274,13 +260,13 @@ const AdminFinancials = () => {
       const m = format(new Date(o.created_at), 'yyyy-MM');
       if (!map[m]) map[m] = { month: m, revenue: 0, cost: 0, profit: 0 };
       map[m].revenue += (o.total_amount || 0);
-      map[m].cost += calcOrderCost(o);
-      map[m].profit += calcOrderProfit(o);
+      map[m].cost += calcOrderCost(o, usdToIqdRate);
+      map[m].profit += calcOrderProfit(o, usdToIqdRate);
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).map(d => ({
       ...d, month: format(new Date(d.month + '-01'), 'MMM yyyy', { locale: ar }),
     }));
-  }, [orders]);
+  }, [orders, usdToIqdRate]);
 
   // Section/product aggregation helpers
   const aggregateBySection = (ordersList: OrderWithDetails[]) => {
@@ -292,7 +278,7 @@ const AdminFinancials = () => {
         const id = section?.id || 'unknown';
         if (!map[id]) map[id] = { name, revenue: 0, cost: 0, count: 0 };
           map[id].revenue += calcItemRevenue(item);
-          map[id].cost += calcAllocatedItemCost(order, item);
+          map[id].cost += calcAllocatedItemCost(order, item, usdToIqdRate);
         map[id].count += 1;
       });
     });
@@ -307,7 +293,7 @@ const AdminFinancials = () => {
         const id = item.product_id || name;
         if (!map[id]) map[id] = { name, revenue: 0, cost: 0, qty: 0 };
           map[id].revenue += calcItemRevenue(item);
-          map[id].cost += calcAllocatedItemCost(order, item);
+          map[id].cost += calcAllocatedItemCost(order, item, usdToIqdRate);
         map[id].qty += item.quantity;
       });
     });
@@ -362,8 +348,8 @@ const AdminFinancials = () => {
   // Tab totals for display
   const tabTotals = tabFilteredOrders.filter(o => o.status === 'delivered').reduce((acc, o) => ({
     revenue: acc.revenue + (o.total_amount || 0),
-    cost: acc.cost + calcOrderCost(o),
-    profit: acc.profit + calcOrderProfit(o),
+    cost: acc.cost + calcOrderCost(o, usdToIqdRate),
+    profit: acc.profit + calcOrderProfit(o, usdToIqdRate),
     count: acc.count + 1,
   }), { revenue: 0, cost: 0, profit: 0, count: 0 });
 
@@ -524,7 +510,7 @@ const AdminFinancials = () => {
                         ) : paginatedOrders.length === 0 ? (
                           <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
-                          const profit = calcOrderProfit(order);
+                          const profit = calcOrderProfit(order, usdToIqdRate);
                           return (
                             <TableRow key={order.id}>
                               <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
@@ -532,7 +518,7 @@ const AdminFinancials = () => {
                               <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
-                              <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order), 'text-red-500')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
@@ -691,8 +677,8 @@ const AdminFinancials = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
                 <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
                 <div><Label className="text-muted-foreground">تكلفة التوصيل</Label><p className="font-bold text-orange-600">{formatPrice(calcDeliveryCost(selectedOrder))}</p></div>
-                <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder))}</p></div>
-                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
+                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
