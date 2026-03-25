@@ -468,19 +468,18 @@ const AdminOrders = () => {
     const orderDeliveryFee = orderSubtotal > 0 ? Math.max(0, (order.total_amount || 0) - orderSubtotal + orderDiscount) : 0;
     setDeliveryFee(order.admin_shipping_cost || orderDeliveryFee);
     
-    // For direct sale: auto-calculate product cost from order_items cost_price (from products)
+    // For direct sale: auto-calculate product cost from product cost only (exclude delivery)
     if (isDirectSale && (!order.admin_product_cost || order.admin_product_cost === 0)) {
       const items = order.order_items || [];
       let totalCost = 0;
       let totalCommission = 0;
       for (const item of items) {
-        // Product cost = cost_price + other_costs_iqd + shipping_cost_iqd (from products table)
         const product = item.products || {};
-        const itemCostPrice = product.cost_price || item.cost_price || 0;
+        const itemCostPrice = item.cost_price || 0;
         const itemOtherCosts = product.other_costs_iqd || 0;
-        const itemShippingCost = product.shipping_cost_iqd || 0;
-        const itemTotalCost = itemCostPrice + itemOtherCosts + itemShippingCost;
-        totalCost += itemTotalCost * (item.quantity || 1);
+        const productCostPrice = product.cost_price || 0;
+        const itemProductCost = itemCostPrice || itemOtherCosts || productCostPrice;
+        totalCost += itemProductCost * (item.quantity || 1);
         // Commission = profit per item for direct sale
         const itemCommission = product.commission_direct_iqd || 0;
         totalCommission += itemCommission * (item.quantity || 1);
