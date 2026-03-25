@@ -44,34 +44,15 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate the real product cost for an order from order_items/products data
+// Calculate total costs for an order (shipping + other costs entered by admin)
 const calcOrderCost = (order: OrderWithDetails): number => {
-  // If admin manually set admin_product_cost, use it
-  if (order.admin_product_cost && order.admin_product_cost > 0) {
-    return order.admin_product_cost;
-  }
-  // Otherwise calculate from order_items cost_price or products cost fields
-  if (order.order_items && order.order_items.length > 0) {
-    return order.order_items.reduce((sum, item) => {
-      // First try item's own cost_price
-      let itemCost = item.cost_price || 0;
-      // If 0, try product's cost fields (cost_price + shipping_cost_iqd + other_costs_iqd)
-      if (itemCost === 0 && item.products) {
-        const p = item.products;
-        itemCost = (p.cost_price || 0) + (p.shipping_cost_iqd || 0) + (p.other_costs_iqd || 0);
-      }
-      return sum + (itemCost * (item.quantity || 1));
-    }, 0);
-  }
-  return 0;
+  return (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0);
 };
 
-// Calculate net profit for a single order (delivered only, shipping cost subtracted)
+// Calculate profit (commission) = total_amount - all costs (delivered only)
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
-  const cost = calcOrderCost(order);
-  const shippingCost = order.admin_shipping_cost || 0;
-  return (order.total_amount || 0) - cost - shippingCost;
+  return (order.total_amount || 0) - calcOrderCost(order);
 };
 
 const AdminFinancials = () => {
