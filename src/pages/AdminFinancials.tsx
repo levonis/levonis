@@ -657,9 +657,11 @@ const AdminFinancials = () => {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
                 <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
-                <div><Label className="text-muted-foreground">صافي الربح</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">تكلفة التوصيل</Label><p className="font-bold text-orange-600">{formatPrice(calcDeliveryCost(selectedOrder))}</p></div>
+                <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder))}</p></div>
+                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
