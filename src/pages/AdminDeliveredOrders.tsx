@@ -236,7 +236,7 @@ export default function AdminDeliveredOrders() {
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-emerald-600">{stats.totalProfit.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground">إجمالي الأرباح</div>
+              <div className="text-xs text-muted-foreground">إجمالي العمولات</div>
             </CardContent>
           </Card>
           <Card>
