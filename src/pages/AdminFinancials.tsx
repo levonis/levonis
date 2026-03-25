@@ -615,13 +615,24 @@ const AdminFinancials = () => {
       </AdminSection>
 
       {/* ===== 6. Total Costs Display ===== */}
-      <div className="mt-6 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-orange-500/15 flex items-center justify-center">
-          <Truck className="h-5 w-5 text-orange-600" />
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-orange-500/15 flex items-center justify-center">
+            <Truck className="h-5 w-5 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">إجمالي تكلفة التوصيل <span className="text-xs">(يمكن تعديلها يدوياً)</span></p>
+            <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalDeliveryCost)}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm text-muted-foreground">إجمالي التكاليف (شحن + أخرى) <span className="text-xs">(يمكن تعديلها يدوياً لكل طلب)</span></p>
-          <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalCost)}</p>
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-red-500/15 flex items-center justify-center">
+            <Package className="h-5 w-5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">إجمالي تكلفة المنتجات <span className="text-xs">(يمكن تعديلها يدوياً)</span></p>
+            <p className="text-xl font-bold text-red-600">{formatPrice(totals.totalProductCost)}</p>
+          </div>
         </div>
       </div>
 
