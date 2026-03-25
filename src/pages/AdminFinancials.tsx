@@ -44,12 +44,43 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate total costs for an order (shipping + other costs entered by admin)
-const calcOrderCost = (order: OrderWithDetails): number => {
-  return (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0);
+// Calculate delivery cost (admin_shipping_cost, or fallback to product shipping_cost_iqd)
+const calcDeliveryCost = (order: OrderWithDetails): number => {
+  if (order.admin_shipping_cost != null && order.admin_shipping_cost > 0) {
+    return order.admin_shipping_cost;
+  }
+  // Fallback: sum shipping_cost_iqd from each product in order_items
+  if (order.order_items && order.order_items.length > 0) {
+    return order.order_items.reduce((sum, item: any) => {
+      const shippingCost = item.products?.shipping_cost_iqd || 0;
+      return sum + (shippingCost * (item.quantity || 1));
+    }, 0);
+  }
+  return 0;
 };
 
-// Calculate profit (commission) = total_amount - all costs (delivered only)
+// Calculate product cost (admin_other_costs, or fallback to product cost_price + other_costs_iqd)
+const calcProductCost = (order: OrderWithDetails): number => {
+  if (order.admin_other_costs != null && order.admin_other_costs > 0) {
+    return order.admin_other_costs;
+  }
+  // Fallback: sum cost_price + other_costs_iqd from each product
+  if (order.order_items && order.order_items.length > 0) {
+    return order.order_items.reduce((sum, item: any) => {
+      const costPrice = item.cost_price || item.products?.cost_price || 0;
+      const otherCosts = item.products?.other_costs_iqd || 0;
+      return sum + ((costPrice + otherCosts) * (item.quantity || 1));
+    }, 0);
+  }
+  return 0;
+};
+
+// Total costs = delivery + product costs
+const calcOrderCost = (order: OrderWithDetails): number => {
+  return calcDeliveryCost(order) + calcProductCost(order);
+};
+
+// Profit (commission) = total_amount - all costs (delivered only)
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
   return (order.total_amount || 0) - calcOrderCost(order);
@@ -192,19 +223,16 @@ const AdminFinancials = () => {
   // Totals for current filtered view
   const totals = useMemo(() => {
     return filteredOrders.reduce((acc, order) => {
-      const cost = calcOrderCost(order);
-      const profit = calcOrderProfit(order);
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
-        totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
-        totalProductCost: acc.totalProductCost + cost,
-        totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
+        totalDeliveryCost: acc.totalDeliveryCost + calcDeliveryCost(order),
+        totalProductCost: acc.totalProductCost + calcProductCost(order),
         totalCost: acc.totalCost + calcOrderCost(order),
-        totalProfit: acc.totalProfit + profit,
+        totalProfit: acc.totalProfit + calcOrderProfit(order),
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
-    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+    }, { totalRevenue: 0, totalDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
   }, [filteredOrders]);
 
   // Monthly chart data (delivered only, shipping excluded)
@@ -409,7 +437,8 @@ const AdminFinancials = () => {
       {/* ===== 4. Stats Cards ===== */}
       <div className="mt-6"><AdminStatsGrid>
         <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
-        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalCost)} label="إجمالي التكاليف (شحن + أخرى)" colorClass="text-red-600" bgClass="bg-red-500/10" />
+        <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalDeliveryCost)} label="تكلفة التوصيل" colorClass="text-orange-600" bgClass="bg-orange-500/10" />
+        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
         <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`العمولة (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
       </AdminStatsGrid></div>
 
@@ -450,8 +479,8 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المستخدم</TableHead>
                           <TableHead className="text-right">المنتجات</TableHead>
                           <TableHead className="text-right">المبلغ</TableHead>
-                          <TableHead className="text-right">تكلفة الشحن</TableHead>
-                          <TableHead className="text-right">تكاليف أخرى</TableHead>
+                          <TableHead className="text-right">تكلفة التوصيل</TableHead>
+                          <TableHead className="text-right">تكلفة المنتج</TableHead>
                           <TableHead className="text-right">العمولة</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                           <TableHead className="text-center">التاريخ</TableHead>
@@ -471,8 +500,8 @@ const AdminFinancials = () => {
                               <TableCell><span className="font-medium">{getUsername(order)}</span></TableCell>
                               <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
-                              <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-orange-500')}</TableCell>
-                              <TableCell>{renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-red-500')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_other_costs', calcProductCost(order), 'text-red-500')}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
@@ -586,13 +615,24 @@ const AdminFinancials = () => {
       </AdminSection>
 
       {/* ===== 6. Total Costs Display ===== */}
-      <div className="mt-6 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-orange-500/15 flex items-center justify-center">
-          <Truck className="h-5 w-5 text-orange-600" />
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-orange-500/15 flex items-center justify-center">
+            <Truck className="h-5 w-5 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">إجمالي تكلفة التوصيل <span className="text-xs">(يمكن تعديلها يدوياً)</span></p>
+            <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalDeliveryCost)}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm text-muted-foreground">إجمالي التكاليف (شحن + أخرى) <span className="text-xs">(يمكن تعديلها يدوياً لكل طلب)</span></p>
-          <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalCost)}</p>
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-red-500/15 flex items-center justify-center">
+            <Package className="h-5 w-5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">إجمالي تكلفة المنتجات <span className="text-xs">(يمكن تعديلها يدوياً)</span></p>
+            <p className="text-xl font-bold text-red-600">{formatPrice(totals.totalProductCost)}</p>
+          </div>
         </div>
       </div>
 
@@ -617,9 +657,11 @@ const AdminFinancials = () => {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
                 <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
-                <div><Label className="text-muted-foreground">صافي الربح</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">تكلفة التوصيل</Label><p className="font-bold text-orange-600">{formatPrice(calcDeliveryCost(selectedOrder))}</p></div>
+                <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder))}</p></div>
+                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
