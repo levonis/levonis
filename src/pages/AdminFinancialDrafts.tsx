@@ -15,7 +15,7 @@ import AdminLayout, { AdminSection, AdminLoading } from '@/components/admin/Admi
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-interface DraftColumn { id: string; name: string; }
+interface DraftColumn { id: string; name: string; type?: 'text' | 'date'; }
 interface DraftRow { id: string; [key: string]: string; }
 interface Draft {
   id: string;
