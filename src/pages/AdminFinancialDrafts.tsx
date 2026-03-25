@@ -249,7 +249,14 @@ export default function AdminFinancialDrafts() {
                     <td className="p-2 text-center text-muted-foreground text-xs">{idx + 1}</td>
                     {activeDraft.columns.map(col => (
                       <td key={col.id} className="p-1">
-                        {editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
+                        {col.type === 'date' ? (
+                          <Input
+                            type="date"
+                            value={row[col.id] || ''}
+                            onChange={e => setCellVal(row.id, col.id, e.target.value)}
+                            className="h-7 text-xs"
+                          />
+                        ) : editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
                           <Input
                             value={cellValue}
                             onChange={e => setCellValue(e.target.value)}
