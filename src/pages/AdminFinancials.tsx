@@ -358,10 +358,14 @@ const AdminFinancials = () => {
       title="التقارير المالية" icon={<BarChart3 className="h-5 w-5" />}
       description="تتبع الإيرادات والمصاريف والأرباح" maxWidth="full"
       actions={
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="admin-btn-primary gap-2"><Plus className="h-4 w-4" /><span className="hidden sm:inline">إضافة طلب يدوي</span></Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => navigate(ADMIN_ROUTES.financialDrafts)}>
+            <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">المسودات</span>
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="admin-btn-primary gap-2"><Plus className="h-4 w-4" /><span className="hidden sm:inline">إضافة طلب يدوي</span></Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>إضافة طلب يدوي</DialogTitle></DialogHeader>
             <div className="admin-form space-y-4">

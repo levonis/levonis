@@ -262,7 +262,7 @@ export default function AdminFinancialDrafts() {
 
   // Drafts list view
   return (
-    <AdminLayout title="المسودات المالية" backPath={ADMIN_ROUTES.financials}>
+    <AdminLayout title="المسودات المالية" backTo={ADMIN_ROUTES.financials}>
       <div className="flex items-center gap-2 mb-6">
         <Input
           placeholder="اسم المسودة الجديدة..."
