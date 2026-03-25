@@ -328,6 +328,9 @@ export default function AdminDeliveredOrders() {
                             <TableCell className="text-center font-medium text-sm">
                               {order.total_price.toLocaleString()} {order.currency}
                             </TableCell>
+                            <TableCell className="text-center font-medium text-sm">
+                              {(order.total_price + order.profit).toLocaleString()} {order.currency}
+                            </TableCell>
                             <TableCell className="text-center">
                               {order.profit > 0 ? (
                                 <span className="text-green-600 font-medium">{order.profit.toLocaleString()}</span>
