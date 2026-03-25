@@ -204,7 +204,7 @@ const AdminFinancials = () => {
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
-    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalShippingCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
   }, [filteredOrders]);
 
   // Monthly chart data (delivered only, shipping excluded)
