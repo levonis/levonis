@@ -387,7 +387,7 @@ const AdminFinancials = () => {
               <TrendingUp className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">صافي العمولة (المبلغ - التكاليف)</p>
+              <p className="text-sm text-muted-foreground">صافي الربح (المبلغ - التكاليف)</p>
               <p className={`text-2xl sm:text-3xl font-black ${globalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatPrice(globalProfit)}
               </p>
@@ -456,7 +456,7 @@ const AdminFinancials = () => {
         <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
         <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalDeliveryCost)} label="تكلفة التوصيل" colorClass="text-orange-600" bgClass="bg-orange-500/10" />
         <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
-        <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`العمولة (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
+        <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`الربح (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
       </AdminStatsGrid></div>
 
       {/* ===== 5. Main Tabs: Sale Type ===== */}
@@ -475,7 +475,7 @@ const AdminFinancials = () => {
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">عدد المسلّم</p><p className="text-lg font-bold">{tabTotals.count}</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الإيرادات</p><p className="text-lg font-bold text-green-600">{formatPrice(tabTotals.revenue)}</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">التكاليف</p><p className="text-lg font-bold text-red-500">{formatPrice(tabTotals.cost)}</p></CardContent></Card>
-                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">العمولة</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الربح</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
               </div>
 
               {/* Sub tabs */}
@@ -498,7 +498,8 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المبلغ</TableHead>
                           <TableHead className="text-right">تكلفة التوصيل</TableHead>
                           <TableHead className="text-right">تكلفة المنتج</TableHead>
-                          <TableHead className="text-right">العمولة</TableHead>
+                          <TableHead className="text-right">المجموع الكلي</TableHead>
+                          <TableHead className="text-right">الربح</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                           <TableHead className="text-center">التاريخ</TableHead>
                           <TableHead className="text-center">إجراءات</TableHead>
@@ -506,9 +507,9 @@ const AdminFinancials = () => {
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
-                          <TableRow><TableCell colSpan={10} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
-                        ) : paginatedOrders.length === 0 ? (
-                          <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={11} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
+                         ) : paginatedOrders.length === 0 ? (
+                           <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
                           const profit = calcOrderProfit(order, usdToIqdRate);
                           return (
@@ -519,6 +520,7 @@ const AdminFinancials = () => {
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
+                              <TableCell className="font-medium">{formatPrice((calcDeliveryCost(order)) + calcProductCost(order, usdToIqdRate))}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
@@ -674,11 +676,12 @@ const AdminFinancials = () => {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 border-t">
                 <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
                 <div><Label className="text-muted-foreground">تكلفة التوصيل</Label><p className="font-bold text-orange-600">{formatPrice(calcDeliveryCost(selectedOrder))}</p></div>
                 <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
-                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">المجموع الكلي</Label><p className="font-bold">{formatPrice(calcDeliveryCost(selectedOrder) + calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
+                <div><Label className="text-muted-foreground">الربح</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
