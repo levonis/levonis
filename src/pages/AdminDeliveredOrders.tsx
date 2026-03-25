@@ -236,7 +236,7 @@ export default function AdminDeliveredOrders() {
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-emerald-600">{stats.totalProfit.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground">إجمالي الأرباح</div>
+              <div className="text-xs text-muted-foreground">إجمالي العمولات</div>
             </CardContent>
           </Card>
           <Card>
@@ -291,7 +291,8 @@ export default function AdminDeliveredOrders() {
                         <TableHead className="text-right">المنتج</TableHead>
                         <TableHead className="text-center">المصدر</TableHead>
                         <TableHead className="text-center">المبلغ</TableHead>
-                        <TableHead className="text-center">الربح</TableHead>
+                        <TableHead className="text-center">المجموع الكلي</TableHead>
+                        <TableHead className="text-center">العمولة</TableHead>
                         <TableHead className="text-center">التذاكر</TableHead>
                         <TableHead className="text-center">تاريخ التسليم</TableHead>
                         <TableHead className="text-center">تفاصيل</TableHead>
@@ -326,6 +327,9 @@ export default function AdminDeliveredOrders() {
                             </TableCell>
                             <TableCell className="text-center font-medium text-sm">
                               {order.total_price.toLocaleString()} {order.currency}
+                            </TableCell>
+                            <TableCell className="text-center font-medium text-sm">
+                              {(order.total_price + order.profit).toLocaleString()} {order.currency}
                             </TableCell>
                             <TableCell className="text-center">
                               {order.profit > 0 ? (
@@ -398,7 +402,7 @@ export default function AdminDeliveredOrders() {
                 </div>
                 {selectedOrder.profit > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" /> الربح</span>
+                    <span className="text-sm text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" /> العمولة</span>
                     <span className="font-bold text-green-600">{selectedOrder.profit.toLocaleString()}</span>
                   </div>
                 )}
