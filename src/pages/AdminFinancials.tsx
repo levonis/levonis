@@ -215,7 +215,7 @@ const AdminFinancials = () => {
       const m = format(new Date(o.created_at), 'yyyy-MM');
       if (!map[m]) map[m] = { month: m, revenue: 0, cost: 0, profit: 0 };
       map[m].revenue += (o.total_amount || 0);
-      map[m].cost += calcOrderCost(o) + (o.admin_other_costs || 0) + (o.admin_shipping_cost || 0);
+      map[m].cost += calcOrderCost(o);
       map[m].profit += calcOrderProfit(o);
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).map(d => ({
