@@ -199,7 +199,7 @@ const AdminFinancials = () => {
         totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
         totalProductCost: acc.totalProductCost + cost,
         totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
-        totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
+        totalCost: acc.totalCost + calcOrderCost(order),
         totalProfit: acc.totalProfit + profit,
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
