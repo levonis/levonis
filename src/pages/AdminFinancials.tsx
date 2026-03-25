@@ -342,7 +342,7 @@ const AdminFinancials = () => {
               <TrendingUp className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">صافي الربح العام (المبلغ - تكلفة المنتج - تكلفة التوصيل)</p>
+              <p className="text-sm text-muted-foreground">صافي العمولة (المبلغ - التكاليف)</p>
               <p className={`text-2xl sm:text-3xl font-black ${globalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatPrice(globalProfit)}
               </p>
