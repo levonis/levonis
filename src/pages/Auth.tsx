@@ -153,9 +153,15 @@ const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      // Handle edge function errors - extract message from data or error
+      if (error) {
+        // supabase.functions.invoke puts non-2xx body in data even when error is set
+        const errorMessage = data?.error || t('auth_unexpected_error');
+        toast.error(errorMessage);
+        return;
+      }
 
-      if (data.success) {
+      if (data?.success) {
         toast.success(t('auth_password_changed'));
         setShowNewPasswordForm(false);
         setShowResetPassword(false);
@@ -163,7 +169,7 @@ const Auth = () => {
         setNewPassword('');
         setConfirmNewPassword('');
       } else {
-        toast.error(data.error || t('auth_code_failed'));
+        toast.error(data?.error || t('auth_code_failed'));
       }
     } catch (error) {
       toast.error(t('auth_unexpected_error'));
