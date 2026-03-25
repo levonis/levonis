@@ -437,7 +437,8 @@ const AdminFinancials = () => {
       {/* ===== 4. Stats Cards ===== */}
       <div className="mt-6"><AdminStatsGrid>
         <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
-        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalCost)} label="إجمالي التكاليف (شحن + أخرى)" colorClass="text-red-600" bgClass="bg-red-500/10" />
+        <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalDeliveryCost)} label="تكلفة التوصيل" colorClass="text-orange-600" bgClass="bg-orange-500/10" />
+        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
         <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`العمولة (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
       </AdminStatsGrid></div>
 
