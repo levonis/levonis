@@ -66,11 +66,12 @@ const calcOrderCost = (order: OrderWithDetails): number => {
   return 0;
 };
 
-// Calculate net profit for a single order (only delivered, shipping excluded)
+// Calculate net profit for a single order (delivered only, shipping cost subtracted)
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
   const cost = calcOrderCost(order);
-  return (order.total_amount || 0) - cost;
+  const shippingCost = order.admin_shipping_cost || 0;
+  return (order.total_amount || 0) - cost - shippingCost;
 };
 
 const AdminFinancials = () => {
