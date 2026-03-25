@@ -429,7 +429,7 @@ const AdminFinancials = () => {
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">عدد المسلّم</p><p className="text-lg font-bold">{tabTotals.count}</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الإيرادات</p><p className="text-lg font-bold text-green-600">{formatPrice(tabTotals.revenue)}</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">التكاليف</p><p className="text-lg font-bold text-red-500">{formatPrice(tabTotals.cost)}</p></CardContent></Card>
-                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">صافي الربح</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">العمولة</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
               </div>
 
               {/* Sub tabs */}
