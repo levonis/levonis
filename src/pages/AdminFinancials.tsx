@@ -15,8 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { 
-  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight
+  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight, FileSpreadsheet
 } from 'lucide-react';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { formatPrice } from '@/lib/utils';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
