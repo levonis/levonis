@@ -151,7 +151,7 @@ export default function AdminFinancialDrafts() {
   // Draft editor view
   if (activeDraft) {
     return (
-      <AdminLayout title={activeDraft.title} backTo={ADMIN_ROUTES.financialDrafts}>
+      <AdminLayout title={activeDraft.title}>
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setActiveDraft(null)}>
             <ArrowRight className="h-4 w-4 ml-1" /> العودة للمسودات
