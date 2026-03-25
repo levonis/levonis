@@ -44,34 +44,15 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate the real product cost for an order from order_items/products data
+// Calculate total costs for an order (shipping + other costs entered by admin)
 const calcOrderCost = (order: OrderWithDetails): number => {
-  // If admin manually set admin_product_cost, use it
-  if (order.admin_product_cost && order.admin_product_cost > 0) {
-    return order.admin_product_cost;
-  }
-  // Otherwise calculate from order_items cost_price or products cost fields
-  if (order.order_items && order.order_items.length > 0) {
-    return order.order_items.reduce((sum, item) => {
-      // First try item's own cost_price
-      let itemCost = item.cost_price || 0;
-      // If 0, try product's cost fields (cost_price + shipping_cost_iqd + other_costs_iqd)
-      if (itemCost === 0 && item.products) {
-        const p = item.products;
-        itemCost = (p.cost_price || 0) + (p.shipping_cost_iqd || 0) + (p.other_costs_iqd || 0);
-      }
-      return sum + (itemCost * (item.quantity || 1));
-    }, 0);
-  }
-  return 0;
+  return (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0);
 };
 
-// Calculate net profit for a single order (delivered only, shipping cost subtracted)
+// Calculate profit (commission) = total_amount - all costs (delivered only)
 const calcOrderProfit = (order: OrderWithDetails): number => {
   if (order.status !== 'delivered') return 0;
-  const cost = calcOrderCost(order);
-  const shippingCost = order.admin_shipping_cost || 0;
-  return (order.total_amount || 0) - cost - shippingCost;
+  return (order.total_amount || 0) - calcOrderCost(order);
 };
 
 const AdminFinancials = () => {
@@ -218,12 +199,12 @@ const AdminFinancials = () => {
         totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
         totalProductCost: acc.totalProductCost + cost,
         totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
-        totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
+        totalCost: acc.totalCost + calcOrderCost(order),
         totalProfit: acc.totalProfit + profit,
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
-    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalShippingCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
   }, [filteredOrders]);
 
   // Monthly chart data (delivered only, shipping excluded)
@@ -234,7 +215,7 @@ const AdminFinancials = () => {
       const m = format(new Date(o.created_at), 'yyyy-MM');
       if (!map[m]) map[m] = { month: m, revenue: 0, cost: 0, profit: 0 };
       map[m].revenue += (o.total_amount || 0);
-      map[m].cost += calcOrderCost(o) + (o.admin_other_costs || 0) + (o.admin_shipping_cost || 0);
+      map[m].cost += calcOrderCost(o);
       map[m].profit += calcOrderProfit(o);
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).map(d => ({
@@ -322,7 +303,7 @@ const AdminFinancials = () => {
   // Tab totals for display
   const tabTotals = tabFilteredOrders.filter(o => o.status === 'delivered').reduce((acc, o) => ({
     revenue: acc.revenue + (o.total_amount || 0),
-    cost: acc.cost + calcOrderCost(o) + (o.admin_other_costs || 0) + (o.admin_shipping_cost || 0),
+    cost: acc.cost + calcOrderCost(o),
     profit: acc.profit + calcOrderProfit(o),
     count: acc.count + 1,
   }), { revenue: 0, cost: 0, profit: 0, count: 0 });
@@ -361,7 +342,7 @@ const AdminFinancials = () => {
               <TrendingUp className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">صافي الربح العام (المبلغ - تكلفة المنتج - تكلفة التوصيل)</p>
+              <p className="text-sm text-muted-foreground">صافي العمولة (المبلغ - التكاليف)</p>
               <p className={`text-2xl sm:text-3xl font-black ${globalProfit >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatPrice(globalProfit)}
               </p>
@@ -428,9 +409,8 @@ const AdminFinancials = () => {
       {/* ===== 4. Stats Cards ===== */}
       <div className="mt-6"><AdminStatsGrid>
         <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
-        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
-        <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalShippingCost)} label="تكلفة التوصيل" colorClass="text-orange-600" bgClass="bg-orange-500/10" />
-        <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`صافي الربح (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
+        <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalCost)} label="إجمالي التكاليف (شحن + أخرى)" colorClass="text-red-600" bgClass="bg-red-500/10" />
+        <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`العمولة (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
       </AdminStatsGrid></div>
 
       {/* ===== 5. Main Tabs: Sale Type ===== */}
@@ -449,7 +429,7 @@ const AdminFinancials = () => {
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">عدد المسلّم</p><p className="text-lg font-bold">{tabTotals.count}</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">الإيرادات</p><p className="text-lg font-bold text-green-600">{formatPrice(tabTotals.revenue)}</p></CardContent></Card>
                 <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">التكاليف</p><p className="text-lg font-bold text-red-500">{formatPrice(tabTotals.cost)}</p></CardContent></Card>
-                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">صافي الربح</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
+                <Card><CardContent className="p-3 text-center"><p className="text-xs text-muted-foreground">العمولة</p><p className={`text-lg font-bold ${tabTotals.profit >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatPrice(tabTotals.profit)}</p></CardContent></Card>
               </div>
 
               {/* Sub tabs */}
@@ -470,9 +450,9 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المستخدم</TableHead>
                           <TableHead className="text-right">المنتجات</TableHead>
                           <TableHead className="text-right">المبلغ</TableHead>
-                          <TableHead className="text-right">تكلفة المنتجات</TableHead>
-                          <TableHead className="text-right">تكلفة التوصيل</TableHead>
-                          <TableHead className="text-right">صافي الربح</TableHead>
+                          <TableHead className="text-right">تكلفة الشحن</TableHead>
+                          <TableHead className="text-right">تكاليف أخرى</TableHead>
+                          <TableHead className="text-right">العمولة</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                           <TableHead className="text-center">التاريخ</TableHead>
                           <TableHead className="text-center">إجراءات</TableHead>
@@ -491,8 +471,8 @@ const AdminFinancials = () => {
                               <TableCell><span className="font-medium">{getUsername(order)}</span></TableCell>
                               <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
-                              <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcOrderCost(order), 'text-red-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-orange-500')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-red-500')}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
@@ -605,14 +585,14 @@ const AdminFinancials = () => {
         </Tabs>
       </AdminSection>
 
-      {/* ===== 6. Shipping Cost Display ===== */}
+      {/* ===== 6. Total Costs Display ===== */}
       <div className="mt-6 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-center gap-3">
         <div className="h-10 w-10 rounded-lg bg-orange-500/15 flex items-center justify-center">
           <Truck className="h-5 w-5 text-orange-600" />
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">إجمالي تكلفة التوصيل <span className="text-xs">(تُخصم من الأرباح — يمكن تعديلها يدوياً لكل طلب)</span></p>
-          <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalShippingCost)}</p>
+          <p className="text-sm text-muted-foreground">إجمالي التكاليف (شحن + أخرى) <span className="text-xs">(يمكن تعديلها يدوياً لكل طلب)</span></p>
+          <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalCost)}</p>
         </div>
       </div>
 
