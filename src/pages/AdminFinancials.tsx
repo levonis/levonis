@@ -585,14 +585,14 @@ const AdminFinancials = () => {
         </Tabs>
       </AdminSection>
 
-      {/* ===== 6. Shipping Cost Display ===== */}
+      {/* ===== 6. Total Costs Display ===== */}
       <div className="mt-6 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4 flex items-center gap-3">
         <div className="h-10 w-10 rounded-lg bg-orange-500/15 flex items-center justify-center">
           <Truck className="h-5 w-5 text-orange-600" />
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">إجمالي تكلفة التوصيل <span className="text-xs">(تُخصم من الأرباح — يمكن تعديلها يدوياً لكل طلب)</span></p>
-          <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalShippingCost)}</p>
+          <p className="text-sm text-muted-foreground">إجمالي التكاليف (شحن + أخرى) <span className="text-xs">(يمكن تعديلها يدوياً لكل طلب)</span></p>
+          <p className="text-xl font-bold text-orange-600">{formatPrice(totals.totalCost)}</p>
         </div>
       </div>
 
