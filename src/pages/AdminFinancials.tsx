@@ -50,10 +50,6 @@ const calcItemRevenue = (item: NonNullable<OrderWithDetails['order_items']>[numb
   return (item.unit_price || 0) * (item.quantity || 1);
 };
 
-const calcItemCommission = (item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
-  return ((item.products?.commission_direct_iqd as number | null) || 0) * (item.quantity || 1);
-};
-
 const getOrderItemsSubtotal = (order: OrderWithDetails): number => {
   if (typeof order.subtotal === 'number' && order.subtotal > 0) return order.subtotal;
   if (!order.order_items?.length) return 0;
@@ -75,18 +71,18 @@ const calcDeliveryCost = (order: OrderWithDetails): number => {
 const calcAutoProductCost = (order: OrderWithDetails): number => {
   if (!order.order_items?.length) return 0;
 
-  const subtotal = order.order_items.reduce((sum, item) => sum + calcItemRevenue(item), 0);
-  const totalCommission = order.order_items.reduce((sum, item) => sum + calcItemCommission(item), 0);
-
-  if (subtotal > 0 && totalCommission > 0) {
-    return Math.max(0, subtotal - totalCommission);
-  }
-
   return order.order_items.reduce((sum, item) => {
     const quantity = item.quantity || 1;
-    const explicitCost = item.cost_price || item.products?.cost_price || 0;
-    const fallbackCost = item.products?.other_costs_iqd || 0;
-    return sum + ((explicitCost > 0 ? explicitCost : fallbackCost) * quantity);
+    const itemCost = typeof item.cost_price === 'number' && item.cost_price > 0 ? item.cost_price : 0;
+    const productOtherCost = typeof item.products?.other_costs_iqd === 'number' && item.products.other_costs_iqd > 0
+      ? item.products.other_costs_iqd
+      : 0;
+    const productCostPrice = typeof item.products?.cost_price === 'number' && item.products.cost_price > 0
+      ? item.products.cost_price
+      : 0;
+    const unitProductCost = itemCost || productOtherCost || productCostPrice;
+
+    return sum + (unitProductCost * quantity);
   }, 0);
 };
 
