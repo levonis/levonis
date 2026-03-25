@@ -27,6 +27,7 @@ interface EditingCell { orderId: string; field: string; value: number; }
 
 interface OrderWithDetails {
   id: string; order_number: string; created_at: string; total_amount: number;
+  subtotal?: number | null; discount_amount?: number | null;
   customer_paid_amount: number | null; admin_paid_amount: number | null;
   admin_product_cost: number | null; admin_shipping_cost: number | null;
   admin_other_costs: number | null; tax_amount: number | null;
@@ -44,35 +45,69 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
-// Calculate delivery cost (admin_shipping_cost, or fallback to product shipping_cost_iqd)
+const calcItemRevenue = (item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
+  if (typeof item.total_price === 'number' && item.total_price > 0) return item.total_price;
+  return (item.unit_price || 0) * (item.quantity || 1);
+};
+
+const calcItemCommission = (item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
+  return ((item.products?.commission_direct_iqd as number | null) || 0) * (item.quantity || 1);
+};
+
+const getOrderItemsSubtotal = (order: OrderWithDetails): number => {
+  if (typeof order.subtotal === 'number' && order.subtotal > 0) return order.subtotal;
+  if (!order.order_items?.length) return 0;
+  return order.order_items.reduce((sum, item) => sum + calcItemRevenue(item), 0);
+};
+
+// Calculate delivery cost (admin_shipping_cost, or fallback to order delivery fee)
 const calcDeliveryCost = (order: OrderWithDetails): number => {
   if (order.admin_shipping_cost != null && order.admin_shipping_cost > 0) {
     return order.admin_shipping_cost;
   }
-  // Fallback: sum shipping_cost_iqd from each product in order_items
-  if (order.order_items && order.order_items.length > 0) {
-    return order.order_items.reduce((sum, item: any) => {
-      const shippingCost = item.products?.shipping_cost_iqd || 0;
-      return sum + (shippingCost * (item.quantity || 1));
-    }, 0);
+  const subtotal = getOrderItemsSubtotal(order);
+  if (subtotal > 0) {
+    return Math.max(0, (order.total_amount || 0) - subtotal + (order.discount_amount || 0));
   }
   return 0;
 };
 
-// Calculate product cost (admin_other_costs, or fallback to product cost_price + other_costs_iqd)
+const calcAutoProductCost = (order: OrderWithDetails): number => {
+  if (!order.order_items?.length) return 0;
+
+  const subtotal = order.order_items.reduce((sum, item) => sum + calcItemRevenue(item), 0);
+  const totalCommission = order.order_items.reduce((sum, item) => sum + calcItemCommission(item), 0);
+
+  if (subtotal > 0 && totalCommission > 0) {
+    return Math.max(0, subtotal - totalCommission);
+  }
+
+  return order.order_items.reduce((sum, item) => {
+    const quantity = item.quantity || 1;
+    const explicitCost = item.cost_price || item.products?.cost_price || 0;
+    const fallbackCost = item.products?.other_costs_iqd || 0;
+    return sum + ((explicitCost > 0 ? explicitCost : fallbackCost) * quantity);
+  }, 0);
+};
+
+// Calculate product cost (admin_product_cost, then admin_other_costs, then auto-derived)
 const calcProductCost = (order: OrderWithDetails): number => {
+  if (order.admin_product_cost != null && order.admin_product_cost > 0) {
+    return order.admin_product_cost;
+  }
   if (order.admin_other_costs != null && order.admin_other_costs > 0) {
     return order.admin_other_costs;
   }
-  // Fallback: sum cost_price + other_costs_iqd from each product
-  if (order.order_items && order.order_items.length > 0) {
-    return order.order_items.reduce((sum, item: any) => {
-      const costPrice = item.cost_price || item.products?.cost_price || 0;
-      const otherCosts = item.products?.other_costs_iqd || 0;
-      return sum + ((costPrice + otherCosts) * (item.quantity || 1));
-    }, 0);
-  }
-  return 0;
+  return calcAutoProductCost(order);
+};
+
+const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
+  const orderProductCost = calcProductCost(order);
+  const subtotal = getOrderItemsSubtotal(order);
+  const itemRevenue = calcItemRevenue(item);
+
+  if (subtotal <= 0 || itemRevenue <= 0) return 0;
+  return (orderProductCost * itemRevenue) / subtotal;
 };
 
 // Total costs = delivery + product costs
@@ -260,8 +295,8 @@ const AdminFinancials = () => {
         const name = section?.name_ar || 'غير مصنف';
         const id = section?.id || 'unknown';
         if (!map[id]) map[id] = { name, revenue: 0, cost: 0, count: 0 };
-        map[id].revenue += item.total_price || 0;
-        map[id].cost += item.cost_price ? item.cost_price * item.quantity : 0;
+          map[id].revenue += calcItemRevenue(item);
+          map[id].cost += calcAllocatedItemCost(order, item);
         map[id].count += 1;
       });
     });
@@ -275,8 +310,8 @@ const AdminFinancials = () => {
         const name = item.product_name_ar || item.product_name || 'غير محدد';
         const id = item.product_id || name;
         if (!map[id]) map[id] = { name, revenue: 0, cost: 0, qty: 0 };
-        map[id].revenue += item.total_price || 0;
-        map[id].cost += item.cost_price ? item.cost_price * item.quantity : 0;
+          map[id].revenue += calcItemRevenue(item);
+          map[id].cost += calcAllocatedItemCost(order, item);
         map[id].qty += item.quantity;
       });
     });
@@ -501,7 +536,7 @@ const AdminFinancials = () => {
                               <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
-                              <TableCell>{renderEditableCell(order.id, 'admin_other_costs', calcProductCost(order), 'text-red-500')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order), 'text-red-500')}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
