@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Trash2, ArrowRight, Save, Pencil, X, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Save, Pencil, X, FileSpreadsheet, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import AdminLayout, { AdminSection, AdminLoading } from '@/components/admin/AdminLayout';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-interface DraftColumn { id: string; name: string; }
+interface DraftColumn { id: string; name: string; type?: 'text' | 'date'; }
 interface DraftRow { id: string; [key: string]: string; }
 interface Draft {
   id: string;
@@ -110,9 +110,16 @@ export default function AdminFinancialDrafts() {
     setActiveDraft(prev => prev ? updater(prev) : prev);
   }, []);
 
-  const addColumn = () => {
-    const name = `عمود ${(activeDraft?.columns.length || 0) + 1}`;
-    updateDraft(d => ({ ...d, columns: [...d.columns, { id: newColId(), name }] }));
+  const addColumn = (type: 'text' | 'date' = 'text') => {
+    const name = type === 'date' ? `تاريخ ${(activeDraft?.columns.length || 0) + 1}` : `عمود ${(activeDraft?.columns.length || 0) + 1}`;
+    updateDraft(d => ({ ...d, columns: [...d.columns, { id: newColId(), name, type }] }));
+  };
+
+  const toggleColumnType = (colId: string) => {
+    updateDraft(d => ({
+      ...d,
+      columns: d.columns.map(c => c.id === colId ? { ...c, type: c.type === 'date' ? 'text' : 'date' } : c),
+    }));
   };
 
   const renameColumn = (colId: string, name: string) => {
@@ -132,7 +139,15 @@ export default function AdminFinancialDrafts() {
   };
 
   const addRow = () => {
-    updateDraft(d => ({ ...d, rows: [...d.rows, { id: newRowId() }] }));
+    updateDraft(d => {
+      const newRow: DraftRow = { id: newRowId() };
+      d.columns.forEach(col => {
+        if (col.type === 'date') {
+          newRow[col.id] = new Date().toISOString().split('T')[0];
+        }
+      });
+      return { ...d, rows: [...d.rows, newRow] };
+    });
   };
 
   const deleteRow = (rowId: string) => {
@@ -159,8 +174,11 @@ export default function AdminFinancialDrafts() {
           <Button size="sm" onClick={() => saveDraft.mutate(activeDraft)} disabled={saveDraft.isPending}>
             <Save className="h-4 w-4 ml-1" /> حفظ
           </Button>
-          <Button size="sm" variant="secondary" onClick={addColumn}>
+          <Button size="sm" variant="secondary" onClick={() => addColumn('text')}>
             <Plus className="h-4 w-4 ml-1" /> إضافة عمود
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => addColumn('date')}>
+            <Calendar className="h-4 w-4 ml-1" /> إضافة عمود تاريخ
           </Button>
           <Button size="sm" variant="secondary" onClick={addRow}>
             <Plus className="h-4 w-4 ml-1" /> إضافة صف
@@ -196,6 +214,14 @@ export default function AdminFinancialDrafts() {
                           {col.name}
                         </span>
                         <div className="flex gap-0.5">
+                          <Button
+                            size="icon" variant="ghost"
+                            className={`h-5 w-5 ${col.type === 'date' ? 'text-primary' : 'text-muted-foreground'}`}
+                            onClick={() => toggleColumnType(col.id)}
+                            title={col.type === 'date' ? 'تحويل لنص' : 'تحويل لتاريخ'}
+                          >
+                            <Calendar className="h-3 w-3" />
+                          </Button>
                           <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { setEditingColId(col.id); setEditingColName(col.name); }}>
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -223,7 +249,14 @@ export default function AdminFinancialDrafts() {
                     <td className="p-2 text-center text-muted-foreground text-xs">{idx + 1}</td>
                     {activeDraft.columns.map(col => (
                       <td key={col.id} className="p-1">
-                        {editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
+                        {col.type === 'date' ? (
+                          <Input
+                            type="date"
+                            value={row[col.id] || ''}
+                            onChange={e => setCellVal(row.id, col.id, e.target.value)}
+                            className="h-7 text-xs"
+                          />
+                        ) : editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
                           <Input
                             value={cellValue}
                             onChange={e => setCellValue(e.target.value)}
