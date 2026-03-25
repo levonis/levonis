@@ -153,7 +153,7 @@ const AdminFinancials = () => {
             )
           )
         )
-      `).order('created_at', { ascending: false });
+      `).neq('status', 'cancelled').order('created_at', { ascending: false });
       if (dateFrom) query = query.gte('created_at', dateFrom);
       if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
       const { data, error } = await query;
@@ -219,8 +219,7 @@ const AdminFinancials = () => {
   const filteredOrders = useMemo(() => {
     return (orders || []).filter(order => {
       if (statusFilter === 'delivered') return order.status === 'delivered';
-      if (statusFilter === 'cancelled') return order.status === 'cancelled';
-      if (statusFilter === 'in_progress') return order.status !== 'delivered' && order.status !== 'cancelled';
+      if (statusFilter === 'in_progress') return order.status !== 'delivered';
       return true;
     });
   }, [orders, statusFilter]);
@@ -442,7 +441,7 @@ const AdminFinancials = () => {
             <div className="admin-form-group">
               <Label>حالة الطلب</Label>
               <div className="flex gap-2 flex-wrap">
-                {[['all', 'الكل'], ['delivered', 'مكتمل'], ['in_progress', 'قيد التنفيذ'], ['cancelled', 'ملغي']].map(([val, label]) => (
+                {[['all', 'الكل'], ['delivered', 'مكتمل'], ['in_progress', 'قيد التنفيذ']].map(([val, label]) => (
                   <Button key={val} variant={statusFilter === val ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(val)}>{label}</Button>
                 ))}
               </div>
