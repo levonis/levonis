@@ -110,9 +110,16 @@ export default function AdminFinancialDrafts() {
     setActiveDraft(prev => prev ? updater(prev) : prev);
   }, []);
 
-  const addColumn = () => {
-    const name = `عمود ${(activeDraft?.columns.length || 0) + 1}`;
-    updateDraft(d => ({ ...d, columns: [...d.columns, { id: newColId(), name }] }));
+  const addColumn = (type: 'text' | 'date' = 'text') => {
+    const name = type === 'date' ? `تاريخ ${(activeDraft?.columns.length || 0) + 1}` : `عمود ${(activeDraft?.columns.length || 0) + 1}`;
+    updateDraft(d => ({ ...d, columns: [...d.columns, { id: newColId(), name, type }] }));
+  };
+
+  const toggleColumnType = (colId: string) => {
+    updateDraft(d => ({
+      ...d,
+      columns: d.columns.map(c => c.id === colId ? { ...c, type: c.type === 'date' ? 'text' : 'date' } : c),
+    }));
   };
 
   const renameColumn = (colId: string, name: string) => {
