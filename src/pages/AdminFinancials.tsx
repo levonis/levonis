@@ -223,19 +223,16 @@ const AdminFinancials = () => {
   // Totals for current filtered view
   const totals = useMemo(() => {
     return filteredOrders.reduce((acc, order) => {
-      const cost = calcOrderCost(order);
-      const profit = calcOrderProfit(order);
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
-        totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
-        totalProductCost: acc.totalProductCost + cost,
-        totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
+        totalDeliveryCost: acc.totalDeliveryCost + calcDeliveryCost(order),
+        totalProductCost: acc.totalProductCost + calcProductCost(order),
         totalCost: acc.totalCost + calcOrderCost(order),
-        totalProfit: acc.totalProfit + profit,
+        totalProfit: acc.totalProfit + calcOrderProfit(order),
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
-    }, { totalRevenue: 0, totalCustomerPaid: 0, totalProductCost: 0, totalOtherCosts: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+    }, { totalRevenue: 0, totalDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
   }, [filteredOrders]);
 
   // Monthly chart data (delivered only, shipping excluded)
