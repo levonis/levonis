@@ -450,9 +450,9 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المستخدم</TableHead>
                           <TableHead className="text-right">المنتجات</TableHead>
                           <TableHead className="text-right">المبلغ</TableHead>
-                          <TableHead className="text-right">تكلفة المنتجات</TableHead>
-                          <TableHead className="text-right">تكلفة التوصيل</TableHead>
-                          <TableHead className="text-right">صافي الربح</TableHead>
+                          <TableHead className="text-right">تكلفة الشحن</TableHead>
+                          <TableHead className="text-right">تكاليف أخرى</TableHead>
+                          <TableHead className="text-right">العمولة</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                           <TableHead className="text-center">التاريخ</TableHead>
                           <TableHead className="text-center">إجراءات</TableHead>
@@ -471,8 +471,8 @@ const AdminFinancials = () => {
                               <TableCell><span className="font-medium">{getUsername(order)}</span></TableCell>
                               <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
-                              <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcOrderCost(order), 'text-red-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-orange-500')}</TableCell>
+                              <TableCell>{renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-red-500')}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
