@@ -520,6 +520,7 @@ const AdminFinancials = () => {
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
+                              <TableCell className="font-medium">{formatPrice((calcDeliveryCost(order)) + calcProductCost(order, usdToIqdRate))}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
                                 {order.status === 'delivered' ? formatPrice(profit) : '-'}
                               </TableCell>
