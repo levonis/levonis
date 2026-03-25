@@ -510,7 +510,7 @@ const AdminFinancials = () => {
                         ) : paginatedOrders.length === 0 ? (
                           <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
-                          const profit = calcOrderProfit(order);
+                          const profit = calcOrderProfit(order, usdToIqdRate);
                           return (
                             <TableRow key={order.id}>
                               <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
@@ -678,7 +678,7 @@ const AdminFinancials = () => {
                 <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
                 <div><Label className="text-muted-foreground">تكلفة التوصيل</Label><p className="font-bold text-orange-600">{formatPrice(calcDeliveryCost(selectedOrder))}</p></div>
                 <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
-                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
