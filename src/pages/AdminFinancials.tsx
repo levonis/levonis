@@ -153,7 +153,7 @@ const AdminFinancials = () => {
             )
           )
         )
-      `).order('created_at', { ascending: false });
+      `).neq('status', 'cancelled').order('created_at', { ascending: false });
       if (dateFrom) query = query.gte('created_at', dateFrom);
       if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
       const { data, error } = await query;
