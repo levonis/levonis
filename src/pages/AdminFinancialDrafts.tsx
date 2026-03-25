@@ -214,6 +214,14 @@ export default function AdminFinancialDrafts() {
                           {col.name}
                         </span>
                         <div className="flex gap-0.5">
+                          <Button
+                            size="icon" variant="ghost"
+                            className={`h-5 w-5 ${col.type === 'date' ? 'text-primary' : 'text-muted-foreground'}`}
+                            onClick={() => toggleColumnType(col.id)}
+                            title={col.type === 'date' ? 'تحويل لنص' : 'تحويل لتاريخ'}
+                          >
+                            <Calendar className="h-3 w-3" />
+                          </Button>
                           <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { setEditingColId(col.id); setEditingColName(col.name); }}>
                             <Pencil className="h-3 w-3" />
                           </Button>
