@@ -139,7 +139,15 @@ export default function AdminFinancialDrafts() {
   };
 
   const addRow = () => {
-    updateDraft(d => ({ ...d, rows: [...d.rows, { id: newRowId() }] }));
+    updateDraft(d => {
+      const newRow: DraftRow = { id: newRowId() };
+      d.columns.forEach(col => {
+        if (col.type === 'date') {
+          newRow[col.id] = new Date().toISOString().split('T')[0];
+        }
+      });
+      return { ...d, rows: [...d.rows, newRow] };
+    });
   };
 
   const deleteRow = (rowId: string) => {
