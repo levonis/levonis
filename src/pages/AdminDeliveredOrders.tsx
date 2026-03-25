@@ -291,7 +291,8 @@ export default function AdminDeliveredOrders() {
                         <TableHead className="text-right">المنتج</TableHead>
                         <TableHead className="text-center">المصدر</TableHead>
                         <TableHead className="text-center">المبلغ</TableHead>
-                        <TableHead className="text-center">الربح</TableHead>
+                        <TableHead className="text-center">المجموع الكلي</TableHead>
+                        <TableHead className="text-center">العمولة</TableHead>
                         <TableHead className="text-center">التذاكر</TableHead>
                         <TableHead className="text-center">تاريخ التسليم</TableHead>
                         <TableHead className="text-center">تفاصيل</TableHead>
