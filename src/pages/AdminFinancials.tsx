@@ -441,7 +441,7 @@ const AdminFinancials = () => {
             <div className="admin-form-group">
               <Label>حالة الطلب</Label>
               <div className="flex gap-2 flex-wrap">
-                {[['all', 'الكل'], ['delivered', 'مكتمل'], ['in_progress', 'قيد التنفيذ'], ['cancelled', 'ملغي']].map(([val, label]) => (
+                {[['all', 'الكل'], ['delivered', 'مكتمل'], ['in_progress', 'قيد التنفيذ']].map(([val, label]) => (
                   <Button key={val} variant={statusFilter === val ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(val)}>{label}</Button>
                 ))}
               </div>
