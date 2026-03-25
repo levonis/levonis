@@ -322,7 +322,7 @@ const AdminFinancials = () => {
   // Tab totals for display
   const tabTotals = tabFilteredOrders.filter(o => o.status === 'delivered').reduce((acc, o) => ({
     revenue: acc.revenue + (o.total_amount || 0),
-    cost: acc.cost + (o.admin_product_cost || 0) + (o.admin_other_costs || 0),
+    cost: acc.cost + calcOrderCost(o) + (o.admin_other_costs || 0) + (o.admin_shipping_cost || 0),
     profit: acc.profit + calcOrderProfit(o),
     count: acc.count + 1,
   }), { revenue: 0, cost: 0, profit: 0, count: 0 });
