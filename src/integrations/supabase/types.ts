@@ -2326,6 +2326,36 @@ export type Database = {
           },
         ]
       }
+      financial_drafts: {
+        Row: {
+          columns: Json
+          created_at: string
+          created_by: string
+          id: string
+          rows: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          columns?: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          rows?: Json
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          columns?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          rows?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_music_stations: {
         Row: {
           created_at: string
