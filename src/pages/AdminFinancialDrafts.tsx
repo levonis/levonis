@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, ArrowRight, Pencil, X, FileSpreadsheet, Calendar, Type, Hash, Check, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { formatNumberInput, parseFormattedNumber } from '@/lib/utils';
 import AdminLayout, { AdminSection, AdminLoading } from '@/components/admin/AdminLayout';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
