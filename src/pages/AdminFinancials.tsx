@@ -65,7 +65,7 @@ const calcDeliveryCost = (order: OrderWithDetails): number => {
   }
   const subtotal = getOrderItemsSubtotal(order);
   if (subtotal > 0) {
-    return Math.max(0, (order.total_amount || 0) - subtotal + (order.discount_amount || 0));
+    return (order.total_amount || 0) - subtotal + (order.discount_amount || 0);
   }
   return 0;
 };
