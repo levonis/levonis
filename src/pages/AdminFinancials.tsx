@@ -381,6 +381,7 @@ const AdminFinancials = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       }
     >
       {/* ===== 1. Global Profit Bar ===== */}
