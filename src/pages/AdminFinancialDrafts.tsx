@@ -466,7 +466,7 @@ export default function AdminFinancialDrafts() {
                         ))}
                         {/* Row Subtotal */}
                         {hasSubtotal && (
-                          <td className="px-3 py-2.5 border-r border-white/5 text-xs font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
+                          <td className="px-3 py-2.5 border-r border-white/5 text-sm font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
                             {rowSub > 0 ? formatNumberInput(String(rowSub)) : <span className="text-muted-foreground/25">0</span>}
                           </td>
                         )}
