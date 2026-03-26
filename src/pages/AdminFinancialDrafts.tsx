@@ -417,7 +417,7 @@ export default function AdminFinancialDrafts() {
                                     const raw = e.target.value.replace(/[^0-9.]/g, '');
                                     setCellValue(formatNumberInput(raw));
                                   }}
-                                  className={`w-full h-10 px-3 text-xs border-0 outline-none font-mono ${
+                                  className={`w-full h-10 px-3 text-sm border-0 outline-none font-mono ${
                                     col.type === 'quantity' ? 'bg-purple-500/5' : 'bg-emerald-500/5'
                                   }`}
                                   dir="ltr"
