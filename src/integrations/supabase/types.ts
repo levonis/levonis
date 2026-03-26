@@ -2603,6 +2603,53 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_movements: {
+        Row: {
+          color_name: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          movement_type: string
+          note: string | null
+          option_name: string | null
+          product_id: string
+          quantity: number
+          stock_field: string | null
+        }
+        Insert: {
+          color_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          movement_type: string
+          note?: string | null
+          option_name?: string | null
+          product_id: string
+          quantity: number
+          stock_field?: string | null
+        }
+        Update: {
+          color_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          movement_type?: string
+          note?: string | null
+          option_name?: string | null
+          product_id?: string
+          quantity?: number
+          stock_field?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_templates: {
         Row: {
           created_at: string | null
