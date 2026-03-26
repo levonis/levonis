@@ -71,12 +71,8 @@ const NotificationSettings = () => {
 
   useEffect(() => {
     if (profile) {
-      if (profile.telegram_chat_id) setTelegramChatId(profile.telegram_chat_id);
       if (profile.site_notifications) {
         setSitePrefs({ ...DEFAULT_PREFS, ...(profile.site_notifications as unknown as NotificationPrefs) });
-      }
-      if (profile.telegram_notifications) {
-        setTelegramPrefs({ ...DEFAULT_PREFS, ...(profile.telegram_notifications as unknown as NotificationPrefs) });
       }
     }
   }, [profile]);
