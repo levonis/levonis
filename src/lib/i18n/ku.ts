@@ -88,7 +88,7 @@ export const ku: TranslationKeys = {
   auth_resend_after: 'دووبارە ناردن دوای {seconds}چ',
   auth_back_to_login: 'گەڕانەوە بۆ چوونە ژوورەوە',
   auth_invalid_email: 'ئیمەیل هەڵەیە',
-  auth_password_min: 'وشەی نهێنی دەبێت لانیکەم ٦ پیت بێت',
+  auth_password_min: 'وشەی نهێنی دەبێت لانیکەم ٨ پیت بێت',
   auth_wrong_credentials: 'ئیمەیل یان وشەی نهێنی هەڵەیە',
   auth_login_success: 'بە سەرکەوتوویی چوویتە ژوورەوە',
   auth_unexpected_error: 'هەڵەیەکی چاوەڕوان نەکراو ڕویدا',

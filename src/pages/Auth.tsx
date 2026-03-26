@@ -58,6 +58,10 @@ const extractFunctionErrorMessage = async (error: unknown): Promise<string | nul
   return null;
 };
 
+const isStrongPassword = (password: string) => {
+  return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
+};
+
 const Auth = () => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
@@ -180,8 +184,8 @@ const Auth = () => {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (newPassword.length < 6) {
-      toast.error(t('auth_password_min'));
+    if (!isStrongPassword(newPassword)) {
+      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف كبير وحرف صغير ورقم');
       return;
     }
 
