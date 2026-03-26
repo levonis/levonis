@@ -392,7 +392,7 @@ export default function AdminFinancialDrafts() {
                     const rowSub = hasSubtotal ? calcRowSubtotal(row, activeDraft.columns) : 0;
                     return (
                       <tr key={row.id} className="border-b border-white/5 hover:bg-primary/[0.03] transition-colors group/row">
-                        <td className="p-3 text-center text-muted-foreground/50 text-xs font-mono select-none">{idx + 1}</td>
+                        <td className="p-3 text-center text-muted-foreground/50 text-sm font-mono select-none">{idx + 1}</td>
                         {activeDraft.columns.map(col => (
                           <td key={col.id} className="p-0 border-r border-white/5 last:border-r-0">
                             {/* DATE */}
