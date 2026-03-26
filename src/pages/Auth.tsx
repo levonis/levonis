@@ -12,6 +12,56 @@ import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
 import { useLanguage } from '@/lib/i18n';
 
+const extractFunctionErrorMessage = async (error: unknown): Promise<string | null> => {
+  if (!error || typeof error !== 'object') return null;
+
+  const functionError = error as {
+    message?: string;
+    context?: {
+      clone?: () => { json?: () => Promise<any>; text?: () => Promise<string> };
+    };
+  };
+
+  const responseClone = functionError.context?.clone?.();
+
+  if (responseClone?.json) {
+    try {
+      const body = await responseClone.json();
+      if (typeof body?.error === 'string' && body.error.trim()) return body.error;
+      if (typeof body?.message === 'string' && body.message.trim()) return body.message;
+    } catch {
+      // Ignore JSON parsing errors and fall back to text/message parsing
+    }
+  }
+
+  if (responseClone?.text) {
+    try {
+      const text = await responseClone.text();
+      if (!text) return null;
+
+      try {
+        const parsed = JSON.parse(text);
+        if (typeof parsed?.error === 'string' && parsed.error.trim()) return parsed.error;
+        if (typeof parsed?.message === 'string' && parsed.message.trim()) return parsed.message;
+      } catch {
+        if (text.trim()) return text.trim();
+      }
+    } catch {
+      // Ignore text parsing errors and fall back to generic message
+    }
+  }
+
+  if (functionError.message && !functionError.message.includes('non-2xx')) {
+    return functionError.message;
+  }
+
+  return null;
+};
+
+const isStrongPassword = (password: string) => {
+  return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
+};
+
 const Auth = () => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
@@ -134,8 +184,8 @@ const Auth = () => {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (newPassword.length < 6) {
-      toast.error(t('auth_password_min'));
+    if (!isStrongPassword(newPassword)) {
+      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف كبير وحرف صغير ورقم');
       return;
     }
 
@@ -155,8 +205,7 @@ const Auth = () => {
 
       // Handle edge function errors - extract message from data or error
       if (error) {
-        // supabase.functions.invoke puts non-2xx body in data even when error is set
-        const errorMessage = data?.error || t('auth_unexpected_error');
+        const errorMessage = (await extractFunctionErrorMessage(error)) || data?.error || t('auth_unexpected_error');
         toast.error(errorMessage);
         return;
       }
@@ -172,7 +221,8 @@ const Auth = () => {
         toast.error(data?.error || t('auth_code_failed'));
       }
     } catch (error) {
-      toast.error(t('auth_unexpected_error'));
+      const errorMessage = await extractFunctionErrorMessage(error);
+      toast.error(errorMessage || t('auth_unexpected_error'));
     } finally {
       setLoading(false);
     }

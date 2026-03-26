@@ -30,8 +30,11 @@ const validatePassword = (password: string): { valid: boolean; error?: string } 
   if (!password || typeof password !== 'string') {
     return { valid: false, error: "كلمة المرور مطلوبة" };
   }
-  if (password.length < 6) {
-    return { valid: false, error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" };
+  if (password.length < 8) {
+    return { valid: false, error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" };
+  }
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
+    return { valid: false, error: "كلمة المرور يجب أن تحتوي على حرف كبير وحرف صغير ورقم واحد على الأقل" };
   }
   if (password.length > 128) {
     return { valid: false, error: "كلمة المرور طويلة جداً" };
@@ -165,9 +168,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (updateError) {
       console.error("Error updating password:", updateError);
+
+      const isWeakPassword = updateError.code === "weak_password" || updateError.status === 422;
+      const weakPasswordMessage = updateError.code === "weak_password" && updateError.message
+        ? "كلمة المرور ضعيفة جداً أو مستخدمة سابقاً في تسريبات، اختر كلمة مرور أقوى وغير شائعة."
+        : "كلمة المرور غير مقبولة، اختر كلمة مرور أقوى تحتوي على أحرف كبيرة وصغيرة وأرقام.";
+
       return new Response(
-        JSON.stringify({ success: false, error: "فشل في تحديث كلمة المرور" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: isWeakPassword ? weakPasswordMessage : "فشل في تحديث كلمة المرور" }),
+        { status: isWeakPassword ? 422 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

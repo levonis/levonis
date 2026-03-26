@@ -88,7 +88,7 @@ export const ar: TranslationKeys = {
   auth_resend_after: 'إعادة الإرسال بعد {seconds}ث',
   auth_back_to_login: 'العودة للدخول',
   auth_invalid_email: 'بريد إلكتروني غير صحيح',
-  auth_password_min: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+  auth_password_min: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
   auth_wrong_credentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
   auth_login_success: 'تم تسجيل الدخول بنجاح',
   auth_unexpected_error: 'حدث خطأ غير متوقع',

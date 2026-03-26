@@ -88,7 +88,7 @@ export const en: TranslationKeys = {
   auth_resend_after: 'Resend after {seconds}s',
   auth_back_to_login: 'Back to sign in',
   auth_invalid_email: 'Invalid email address',
-  auth_password_min: 'Password must be at least 6 characters',
+  auth_password_min: 'Password must be at least 8 characters',
   auth_wrong_credentials: 'Incorrect email or password',
   auth_login_success: 'Signed in successfully',
   auth_unexpected_error: 'An unexpected error occurred',
