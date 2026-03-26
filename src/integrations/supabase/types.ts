@@ -2359,7 +2359,9 @@ export type Database = {
       future_shipments: {
         Row: {
           created_at: string
+          draft_id: string | null
           id: string
+          items: Json | null
           merged_at: string | null
           note: string | null
           product_id: string
@@ -2370,7 +2372,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          draft_id?: string | null
           id?: string
+          items?: Json | null
           merged_at?: string | null
           note?: string | null
           product_id: string
@@ -2381,7 +2385,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          draft_id?: string | null
           id?: string
+          items?: Json | null
           merged_at?: string | null
           note?: string | null
           product_id?: string
@@ -2391,6 +2397,13 @@ export type Database = {
           unit_cost?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "future_shipments_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_drafts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "future_shipments_product_id_fkey"
             columns: ["product_id"]
@@ -6272,6 +6285,42 @@ export type Database = {
           priority_level?: number | null
           updated_at?: string | null
           waiting_period_days?: number | null
+        }
+        Relationships: []
+      }
+      purchase_drafts: {
+        Row: {
+          converted_at: string | null
+          created_at: string | null
+          id: string
+          items: Json | null
+          notes: string | null
+          status: string | null
+          title: string | null
+          total_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          status?: string | null
+          title?: string | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          status?: string | null
+          title?: string | null
+          total_value?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
