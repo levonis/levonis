@@ -304,7 +304,7 @@ export default function AdminFinancialDrafts() {
               <p className="text-sm font-medium">ابدأ بإضافة أعمدة من الزر أعلاه</p>
             </div>
           ) : (
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-base border-collapse">
               {/* Column Headers */}
               <thead>
                 <tr className="bg-gradient-to-b from-muted/60 to-muted/30 border-b border-white/10">
