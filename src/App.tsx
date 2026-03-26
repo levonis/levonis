@@ -162,6 +162,7 @@ function AppContent() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/notification-settings" element={<NotificationSettings />} />
+            <Route path="/telegram-settings" element={<TelegramSettings />} />
             <Route path="/my-requests" element={<MyCustomRequests />} />
             <Route path="/addresses" element={<UserAddresses />} />
             <Route path="/my-orders" element={<RequireAuth><MyOrders /></RequireAuth>} />
