@@ -97,29 +97,6 @@ const NotificationSettings = () => {
     updatePrefs('site_notifications', updated);
   };
 
-  const toggleTelegramPref = (key: keyof NotificationPrefs) => {
-    const updated = { ...telegramPrefs, [key]: !telegramPrefs[key] };
-    setTelegramPrefs(updated);
-    updatePrefs('telegram_notifications', updated);
-  };
-
-  const saveTelegramChatId = async () => {
-    if (!user?.id) return;
-    setSavingTelegram(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ telegram_chat_id: telegramChatId || null })
-        .eq('id', user.id);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['profile-notifications'] });
-      toast.success(telegramChatId ? t('notif_telegram_saved') : t('notif_telegram_removed'));
-    } catch {
-      toast.error(t('notif_telegram_save_error'));
-    } finally {
-      setSavingTelegram(false);
-    }
-  };
 
   if (authLoading || isLoading) {
     return (
