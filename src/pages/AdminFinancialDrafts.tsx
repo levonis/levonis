@@ -430,7 +430,7 @@ export default function AdminFinancialDrafts() {
                                 />
                               ) : (
                                 <div
-                                  className={`px-3 py-2.5 min-h-[40px] cursor-text text-xs font-mono hover:bg-muted/20 transition-colors flex items-center ${
+                                  className={`px-3 py-2.5 min-h-[40px] cursor-text text-sm font-mono hover:bg-muted/20 transition-colors flex items-center ${
                                     col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
                                   }`}
                                   dir="ltr"
