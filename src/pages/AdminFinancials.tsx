@@ -359,6 +359,9 @@ const AdminFinancials = () => {
       description="تتبع الإيرادات والمصاريف والأرباح" maxWidth="full"
       actions={
         <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => navigate(ADMIN_ROUTES.inventory)}>
+            <Package className="h-4 w-4" /><span className="hidden sm:inline">المخزون</span>
+          </Button>
           <Button variant="outline" className="gap-2" onClick={() => navigate(ADMIN_ROUTES.financialDrafts)}>
             <FileSpreadsheet className="h-4 w-4" /><span className="hidden sm:inline">المسودات</span>
           </Button>
