@@ -41,6 +41,7 @@ const UserInfo = lazy(() => import("./pages/UserInfo"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const MyCustomRequests = lazy(() => import("./pages/MyCustomRequests"));
 const UserAddresses = lazy(() => import("./pages/UserAddresses"));
 const Auth = lazy(() => import("./pages/Auth"));
