@@ -9,6 +9,7 @@ import OrdersCenter from "@/components/profile/OrdersCenter";
 import QuickServicesGrid from "@/components/profile/QuickServicesGrid";
 import CouponsStrip from "@/components/profile/CouponsStrip";
 import RecentOrders from "@/components/profile/RecentOrders";
+import NotificationPromptBanner from "@/components/profile/NotificationPromptBanner";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -39,6 +40,8 @@ export default function Profile() {
             cardFrame={cardFrame ? { frame_url: cardFrame.frame_url, frame_animation: cardFrame.frame_animation, card_color: cardFrame.card_color } : null}
           />
         )}
+
+        {user?.id && <NotificationPromptBanner />}
 
         {user?.id && <OrdersCenter userId={user.id} />}
 

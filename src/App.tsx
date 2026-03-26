@@ -41,6 +41,7 @@ const UserInfo = lazy(() => import("./pages/UserInfo"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const TelegramSettings = lazy(() => import("./pages/TelegramSettings"));
 const MyCustomRequests = lazy(() => import("./pages/MyCustomRequests"));
 const UserAddresses = lazy(() => import("./pages/UserAddresses"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -161,6 +162,7 @@ function AppContent() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/notification-settings" element={<NotificationSettings />} />
+            <Route path="/telegram-settings" element={<TelegramSettings />} />
             <Route path="/my-requests" element={<MyCustomRequests />} />
             <Route path="/addresses" element={<UserAddresses />} />
             <Route path="/my-orders" element={<RequireAuth><MyOrders /></RequireAuth>} />
