@@ -455,7 +455,7 @@ export default function AdminFinancialDrafts() {
                                 />
                               ) : (
                                 <div
-                                  className="px-3 py-2.5 min-h-[40px] cursor-text text-xs hover:bg-muted/20 transition-colors flex items-center"
+                                  className="px-3 py-2.5 min-h-[40px] cursor-text text-sm hover:bg-muted/20 transition-colors flex items-center"
                                   onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
                                 >
                                   {row[col.id] || <span className="text-muted-foreground/25">—</span>}
