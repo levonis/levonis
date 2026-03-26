@@ -209,9 +209,7 @@ export default function AdminInventory() {
   // Total revenue = sum of orders total_amount - shipping_cost
   const totalRevenue = useMemo(() => {
     return orders.reduce((sum, o) => {
-      const total = Number(o.total_amount) || 0;
-      const shipping = Number(o.shipping_cost) || 0;
-      return sum + (total - shipping);
+      return sum + (Number(o.subtotal) || 0);
     }, 0);
   }, [orders]);
 
