@@ -484,30 +484,30 @@ export default function AdminFinancialDrafts() {
               {/* Grand Totals Footer */}
               {activeDraft.rows.length > 0 && activeDraft.columns.some(c => c.type === 'number' || c.type === 'quantity') && (
                 <tfoot>
-                  <tr className="bg-gradient-to-b from-muted/50 to-muted/30 border-t-2 border-primary/10">
-                    <td className="p-3 text-center">
-                      <span className="flex items-center justify-center w-6 h-6 mx-auto rounded-lg bg-primary/10 text-primary text-xs font-bold">Σ</span>
-                    </td>
-                    {activeDraft.columns.map(col => (
-                      <td key={col.id} className="px-3 py-3 text-xs border-r border-white/5 last:border-r-0">
-                        {(col.type === 'number' || col.type === 'quantity') ? (
-                          <span className={`font-mono font-bold ${
-                            col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
-                          }`} dir="ltr">
-                            {formatNumberInput(String(colGrandTotals[col.id] || 0))}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/30">—</span>
-                        )}
-                      </td>
-                    ))}
-                    {hasSubtotal && (
-                      <td className="px-3 py-3 text-xs font-mono font-bold text-orange-600 dark:text-orange-400 bg-orange-500/[0.06]" dir="ltr">
-                        {formatNumberInput(String(grandSubtotal))}
-                      </td>
-                    )}
-                    <td></td>
-                  </tr>
+                  <tr className="bg-gradient-to-b from-foreground/10 to-foreground/[0.06] dark:from-foreground/15 dark:to-foreground/10 border-t-2 border-primary/20">
+                     <td className="p-3 text-center">
+                       <span className="flex items-center justify-center w-7 h-7 mx-auto rounded-lg bg-primary/20 text-primary text-sm font-bold">Σ</span>
+                     </td>
+                     {activeDraft.columns.map(col => (
+                       <td key={col.id} className="px-3 py-3.5 text-sm border-r border-white/5 last:border-r-0">
+                         {(col.type === 'number' || col.type === 'quantity') ? (
+                           <span className={`font-mono font-bold text-base ${
+                             col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
+                           }`} dir="ltr">
+                             {formatNumberInput(String(colGrandTotals[col.id] || 0))}
+                           </span>
+                         ) : (
+                           <span className="text-muted-foreground/30">—</span>
+                         )}
+                       </td>
+                     ))}
+                     {hasSubtotal && (
+                       <td className="px-3 py-3.5 font-mono font-bold text-base text-orange-600 dark:text-orange-400 bg-orange-500/[0.08]" dir="ltr">
+                         {formatNumberInput(String(grandSubtotal))}
+                       </td>
+                     )}
+                     <td></td>
+                   </tr>
                 </tfoot>
               )}
             </table>
