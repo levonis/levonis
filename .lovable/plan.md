@@ -1,93 +1,118 @@
 
 
-# نظام إدارة المخزون - Inventory Management System
+# تحديث نظام المخزون - مسودات الشراء وسير عمل الشحنات
 
 ## ملخص
-إنشاء نظام متكامل لإدارة المخزون بتصميم Glassmorphism 3D احترافي، يُضاف كصفحة جديدة يمكن الوصول إليها من زر في صفحة `/financials`.
-
----
-
-## الهيكل العام
-
-النظام يعتمد على بيانات جدول `products` الموجود فعلاً (direct_stock, pre_order_stock, colors/option_stocks, cost_price, price, category_id, etc.) بدون إنشاء جداول جديدة للمنتجات. سيتم إنشاء جدول واحد جديد لتتبع حركات المخزون.
+تحويل نظام المخزون الحالي من نموذج "شحنة مباشرة" إلى سير عمل كامل: **مسودات شراء → شحنات معلقة → استلام ودمج في المخزون**، مع دعم الألوان/الخيارات في المسودات، وتصميم Glassmorphism ثلاثي الأبعاد مع sidebar عائم.
 
 ---
 
 ## قاعدة البيانات
 
-### جدول جديد: `inventory_movements`
+### جدول جديد: `purchase_drafts`
 ```sql
-CREATE TABLE inventory_movements (
+CREATE TABLE purchase_drafts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
-  movement_type TEXT NOT NULL, -- 'inbound' | 'outbound'
-  quantity INTEGER NOT NULL,
-  color_name TEXT,
-  option_name TEXT,
-  stock_field TEXT DEFAULT 'direct_stock', -- 'direct_stock' | 'pre_order_stock'
-  note TEXT,
-  created_by UUID REFERENCES auth.users(id),
+  title TEXT,
+  status TEXT DEFAULT 'draft', -- 'draft' | 'converted'
+  items JSONB DEFAULT '[]',
+  -- items: [{product_id, product_name, color, option, quantity, unit_cost, line_total}]
+  total_value NUMERIC DEFAULT 0,
+  converted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
-مع سياسات RLS للمسؤولين فقط.
+
+### تعديل `future_shipments`
+إضافة عمود `draft_id` (اختياري) لربط الشحنة بالمسودة المصدرية، وعمود `items JSONB` لتخزين تفاصيل الألوان/الخيارات.
+
+```sql
+ALTER TABLE future_shipments 
+  ADD COLUMN draft_id UUID REFERENCES purchase_drafts(id),
+  ADD COLUMN items JSONB DEFAULT '[]';
+```
 
 ---
 
 ## الملفات
 
-### 1. `src/pages/AdminInventory.tsx` (جديد)
-الصفحة الرئيسية تحتوي على 4 أقسام بتبويبات:
+### 1. إعادة كتابة `src/pages/AdminInventory.tsx` بالكامل
 
-**أ. لوحة المعلومات (Dashboard)**
-- 4 بطاقات إحصائية: إجمالي المنتجات، منتجات منخفضة المخزون (≤5)، إجمالي قيمة المخزون، حركات اليوم
-- مخطط بياني (Recharts BarChart) لمستويات المخزون حسب الفئة
-- قائمة تنبيهات المخزون المنخفض
+**الهيكل الجديد:** بدلاً من Tabs، يستخدم sidebar عائم (بدون shadcn Sidebar - مبني يدوياً بتصميم glass) مع 4 أقسام:
 
-**ب. إدارة المنتجات (Product Grid)**
-- جدول يعرض: الصورة، الاسم، الفئة، السعر، المخزون المباشر، مخزون الطلب المسبق، الحالة
-- بحث فوري وفلترة حسب الفئة والحالة (في المخزون/نفذ/منخفض)
-- تعديل المخزون مباشرة من الجدول (inline editing)
+#### أ. Dashboard (لوحة التحكم)
+- نفس البطاقات الإحصائية الحالية + بطاقة "المسودات النشطة"
+- المخططات البيانية الحالية تبقى كما هي
 
-**ج. حركات المخزون (Stock Movements)**
-- نموذج لإضافة حركة واردة (Inbound) أو صادرة (Outbound)
-- اختيار المنتج → اللون → الخيار → الكمية → ملاحظة
-- تحديث المخزون تلقائياً في جدول products
-- سجل الحركات مع فلترة بالتاريخ والنوع
+#### ب. Drafts (مسودات الشراء) - **جديد بالكامل**
+- زر "مسودة جديدة" يفتح نموذج إنشاء
+- كل مسودة تحتوي على:
+  - عنوان المسودة
+  - جدول عناصر ديناميكي: اختيار منتج → لون (اختياري) → خيار (اختياري) → تكلفة الوحدة → الكمية → المجموع التلقائي
+  - الألوان والخيارات تُجلب من بيانات المنتج (colors JSONB) عند اختياره
+  - Grand Total يتحدث تلقائياً
+  - زر **"تحويل لشحنة معلقة"** → ينشئ سجل في `future_shipments` بالعناصر ويغير حالة المسودة إلى `converted`
 
-**د. التقارير والتحليلات (Analytics)**
-- تقييم المخزون الإجمالي (الكمية × سعر التكلفة)
-- اتجاهات شهرية للحركات
-- أكثر المنتجات حركة
+#### ج. Shipments (الشحنات المستقبلية) - **تحديث**
+- نفس القائمة الحالية مع عرض تفاصيل العناصر (ألوان/خيارات)
+- زر **"تم الاستلام"** (بدلاً من "إضافة للمخزون"):
+  1. يضيف الكمية الإجمالية إلى `products.direct_stock`
+  2. يضيف التكلفة إلى إجمالي تكلفة المخزون (عبر inventory_movements)
+  3. يحسب متوسط تكلفة الوحدة الجديد = التكلفة الكلية / الكمية الكلية
+  4. يغير حالة الشحنة إلى `merged`
 
-### 2. `src/config/adminConfig.ts` (تعديل)
-إضافة route: `inventory: \`${ADMIN_BASE_PATH}/inventory\``
-
-### 3. `src/App.tsx` (تعديل)
-إضافة lazy import و Route للصفحة الجديدة
-
-### 4. `src/pages/AdminFinancials.tsx` (تعديل)
-إضافة زر "إدارة المخزون" بجانب أزرار المسودات
+#### د. Live Inventory (المخزون المباشر)
+- نفس جدول المنتجات الحالي مع التعديل المباشر
 
 ---
 
-## التصميم (Glassmorphism 3D)
+## التصميم البصري
 
-- خلفية: تدرجات mesh gradient بألوان داكنة (navy/charcoal)
-- البطاقات: `backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl`
-- تأثيرات 3D: `transform perspective-1000 hover:rotate-y-1` على البطاقات
-- ألوان نيون: Cyan للأزرار الرئيسية، Emerald للمخزون المتوفر، Purple للتنبيهات، Red للنفاذ
-- شريط بحث عائم بتأثير زجاجي
-- انتقالات سلسة وتأثيرات hover على جميع العناصر التفاعلية
-- تصميم متجاوب بالكامل (responsive)
+### Floating Sidebar
+- عمود جانبي ثابت (w-16 مطوي / w-56 مفتوح) بتصميم glass
+- `backdrop-blur-2xl bg-white/[0.03] border-l border-white/10`
+- أيقونات مع labels تظهر عند التوسيع
+- تأثير hover بنيون على العنصر النشط
+
+### Framer Motion (إن كان متوفراً في المشروع)
+- `AnimatePresence` للتبديل بين الأقسام
+- تأثيرات scale/opacity على البطاقات
+- إن لم يكن متوفراً: استخدام CSS transitions بدلاً منه
+
+### ألوان نيون
+- Teal (`hsl(175 100% 45%)`) للأزرار الرئيسية
+- Purple (`hsl(270 100% 65%)`) للمسودات
+- Blue (`hsl(210 100% 60%)`) للشحنات
+- Emerald للمتوفر، Red للنفاذ
 
 ---
 
-## التفاصيل التقنية
+## منطق الأعمال
 
-- React + TypeScript + Tailwind CSS + Lucide React icons
-- Recharts للمخططات البيانية (موجود في المشروع)
-- React Query للبيانات مع التحديث التلقائي
-- تحديث المخزون عبر Supabase mutations مع toast notifications
-- RTL layout مع نصوص عربية
+### تحويل مسودة → شحنة
+```
+Draft (items[]) → future_shipments (status: pending, items: draft.items, total_cost: sum)
+Draft.status → 'converted'
+```
+
+### استلام شحنة → تحديث المخزون
+```
+product.direct_stock += shipment.quantity
+log inventory_movement (inbound)
+shipment.status → 'merged'
+Average Unit Cost = Σ(all costs) / Σ(all stock)
+```
+
+### الإيرادات
+```
+Revenue = Σ orders.subtotal (where order_type in ['direct','auto'] and status != 'cancelled')
+// يستثني رسوم التوصيل
+```
+
+---
+
+## الخطوات
+1. إنشاء migration: جدول `purchase_drafts` + تعديل `future_shipments`
+2. إعادة كتابة `AdminInventory.tsx` بالكامل مع sidebar + 4 أقسام
+3. تحديث types.ts تلقائياً بعد migration
 
