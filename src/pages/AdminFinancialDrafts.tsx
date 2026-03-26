@@ -445,7 +445,7 @@ export default function AdminFinancialDrafts() {
                                 <input
                                   value={cellValue}
                                   onChange={e => setCellValue(e.target.value)}
-                                  className="w-full h-10 px-3 text-xs bg-blue-500/5 border-0 outline-none"
+                                  className="w-full h-10 px-3 text-sm bg-blue-500/5 border-0 outline-none"
                                   autoFocus
                                   onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
                                   onKeyDown={e => {
