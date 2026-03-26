@@ -371,7 +371,7 @@ export default function AdminFinancialDrafts() {
                         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-orange-500/15 text-orange-600 text-[10px]">
                           <Sigma className="h-3 w-3" />
                         </span>
-                        <span className="font-semibold text-xs">المجموع</span>
+                        <span className="font-semibold text-sm">المجموع</span>
                       </div>
                     </th>
                   )}
