@@ -538,17 +538,15 @@ const AdminFinancials = () => {
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setSelectedOrder(order)} title="عرض التفاصيل"><Eye className="h-4 w-4" /></Button>
-                                  {isManualOrder(order.order_number) && (
-                                    <AlertDialog>
+                                  <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" title="حذف"><Trash2 className="h-4 w-4" /></Button>
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>حذف الطلب</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد؟ لا يمكن التراجع.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogHeader><AlertDialogTitle>حذف الطلب</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من حذف الطلب {order.order_number}؟ لا يمكن التراجع.</AlertDialogDescription></AlertDialogHeader>
                                         <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteOrderMutation.mutate(order.id)}>حذف</AlertDialogAction></AlertDialogFooter>
                                       </AlertDialogContent>
                                     </AlertDialog>
-                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
