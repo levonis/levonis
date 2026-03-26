@@ -227,71 +227,22 @@ const NotificationSettings = () => {
           </GlassCard>
         </motion.div>
 
-        {/* Telegram Card */}
+        {/* Telegram Link */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
-          <GlassCard glow className="p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-[#0088cc]/30 to-[#0088cc]/10 backdrop-blur-sm flex items-center justify-center border border-[#0088cc]/20 shadow-lg shadow-[#0088cc]/10">
-                <Send className="h-5 w-5 text-[#0088cc]" />
+          <button onClick={() => navigate('/telegram-settings')} className="w-full">
+            <GlassCard glow className="p-4 flex items-center justify-between hover:border-[#0088cc]/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-[#0088cc]/30 to-[#0088cc]/10 backdrop-blur-sm flex items-center justify-center border border-[#0088cc]/20 shadow-lg shadow-[#0088cc]/10">
+                  <Send className="h-5 w-5 text-[#0088cc]" />
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-foreground">ربط حساب تليجرام</p>
+                  <p className="text-xs text-muted-foreground">إعداد وإدارة إشعارات تليجرام</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-black text-foreground">{t('notif_telegram_title')}</h3>
-                <p className="text-xs text-muted-foreground">{t('notif_telegram_desc')}</p>
-              </div>
-            </div>
-
-            <div className="rounded-xl bg-background/40 border border-border/20 p-4 mb-4 space-y-3">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t('notif_telegram_get_id')}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 rounded-xl border-[#0088cc]/30 hover:bg-[#0088cc]/10 text-foreground font-bold"
-                asChild
-              >
-                <a href="https://t.me/Updatelevobot?start=getid" target="_blank" rel="noopener noreferrer">
-                  <Send className="h-4 w-4 text-[#0088cc]" />
-                  {t('notif_telegram_open_bot')}
-                </a>
-              </Button>
-              <p className="text-[11px] text-muted-foreground text-center">{t('notif_telegram_paste')}</p>
-            </div>
-
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="telegram_chat_id" className="text-xs font-bold">{t('notif_telegram_id_label')}</Label>
-                <Input
-                  id="telegram_chat_id"
-                  value={telegramChatId}
-                  onChange={(e) => setTelegramChatId(e.target.value)}
-                  placeholder="123456789"
-                  dir="ltr"
-                  className="font-mono rounded-xl bg-background/50 border-border/30 h-10"
-                />
-              </div>
-              <Button
-                onClick={saveTelegramChatId}
-                disabled={savingTelegram}
-                size="sm"
-                className="rounded-xl h-10 px-5 font-bold"
-              >
-                {savingTelegram && <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />}
-                {profile?.telegram_chat_id ? t('common_update') : t('common_save')}
-              </Button>
-            </div>
-            {profile?.telegram_chat_id && (
-              <p className="text-xs text-emerald-400 flex items-center gap-1.5 mt-2 font-bold">
-                <CheckCircle className="h-3.5 w-3.5" />
-                {t('notif_telegram_active')}
-              </p>
-            )}
-
-            {/* Telegram notification preferences */}
-            {profile?.telegram_chat_id && (
-              <NotifCheckboxList prefs={telegramPrefs} onToggle={toggleTelegramPref} />
-            )}
-          </GlassCard>
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            </GlassCard>
+          </button>
         </motion.div>
       </main>
     </div>
