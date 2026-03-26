@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Trash2, ArrowRight, Pencil, X, FileSpreadsheet, Calendar, Type, Hash, Check, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Pencil, X, FileSpreadsheet, Calendar, Type, Hash, Check, MoreVertical, Layers, Sigma } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatNumberInput, parseFormattedNumber } from '@/lib/utils';
@@ -17,7 +17,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 
-interface DraftColumn { id: string; name: string; type?: 'text' | 'date' | 'number'; }
+type ColType = 'text' | 'date' | 'number' | 'quantity';
+
+interface DraftColumn { id: string; name: string; type?: ColType; }
 interface DraftRow { id: string; [key: string]: string; }
 interface Draft {
   id: string;
@@ -31,6 +33,25 @@ interface Draft {
 let colCounter = 0;
 const newColId = () => `col_${++colCounter}_${Date.now()}`;
 const newRowId = () => `row_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+// Calculate row subtotal: quantity columns × number columns
+function calcRowSubtotal(row: DraftRow, columns: DraftColumn[]): number {
+  const qtyCols = columns.filter(c => c.type === 'quantity');
+  const numCols = columns.filter(c => c.type === 'number');
+  
+  if (qtyCols.length === 0 || numCols.length === 0) return 0;
+  
+  // Sum all (qty × price) combinations per row
+  let total = 0;
+  for (const qCol of qtyCols) {
+    const qty = parseFloat(row[qCol.id] || '0') || 0;
+    for (const nCol of numCols) {
+      const price = parseFloat(row[nCol.id] || '0') || 0;
+      total += qty * price;
+    }
+  }
+  return total;
+}
 
 export default function AdminFinancialDrafts() {
   const { user } = useAuth();
@@ -111,18 +132,15 @@ export default function AdminFinancialDrafts() {
     },
   });
 
-  // Auto-save logic
   useEffect(() => {
     if (!activeDraft) return;
     const snapshot = JSON.stringify({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows });
     if (snapshot === lastSavedRef.current) return;
-
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
       lastSavedRef.current = snapshot;
       saveDraft.mutate(activeDraft);
     }, 1200);
-
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [activeDraft]);
 
@@ -130,8 +148,14 @@ export default function AdminFinancialDrafts() {
     setActiveDraft(prev => prev ? updater(prev) : prev);
   }, []);
 
-  const addColumn = (type: 'text' | 'date' | 'number' = 'text') => {
-    const labels = { text: 'عمود', date: 'تاريخ', number: 'رقم' };
+  // Check if we should show subtotal column
+  const hasSubtotal = useMemo(() => {
+    if (!activeDraft) return false;
+    return activeDraft.columns.some(c => c.type === 'quantity') && activeDraft.columns.some(c => c.type === 'number');
+  }, [activeDraft?.columns]);
+
+  const addColumn = (type: ColType = 'text') => {
+    const labels: Record<ColType, string> = { text: 'عمود', date: 'تاريخ', number: 'مبلغ', quantity: 'عدد' };
     const name = `${labels[type]} ${(activeDraft?.columns.length || 0) + 1}`;
     const colId = newColId();
     updateDraft(d => {
@@ -143,10 +167,7 @@ export default function AdminFinancialDrafts() {
   };
 
   const renameColumn = (colId: string, name: string) => {
-    updateDraft(d => ({
-      ...d,
-      columns: d.columns.map(c => c.id === colId ? { ...c, name } : c),
-    }));
+    updateDraft(d => ({ ...d, columns: d.columns.map(c => c.id === colId ? { ...c, name } : c) }));
     setEditingColId(null);
   };
 
@@ -158,20 +179,15 @@ export default function AdminFinancialDrafts() {
     }));
   };
 
-  const changeColumnType = (colId: string, type: 'text' | 'date' | 'number') => {
-    updateDraft(d => ({
-      ...d,
-      columns: d.columns.map(c => c.id === colId ? { ...c, type } : c),
-    }));
+  const changeColumnType = (colId: string, type: ColType) => {
+    updateDraft(d => ({ ...d, columns: d.columns.map(c => c.id === colId ? { ...c, type } : c) }));
   };
 
   const addRow = () => {
     updateDraft(d => {
       const newRow: DraftRow = { id: newRowId() };
       d.columns.forEach(col => {
-        if (col.type === 'date') {
-          newRow[col.id] = new Date().toISOString().split('T')[0];
-        }
+        if (col.type === 'date') newRow[col.id] = new Date().toISOString().split('T')[0];
       });
       return { ...d, rows: [...d.rows, newRow] };
     });
@@ -182,36 +198,46 @@ export default function AdminFinancialDrafts() {
   };
 
   const setCellVal = (rowId: string, colId: string, value: string) => {
-    updateDraft(d => ({
-      ...d,
-      rows: d.rows.map(r => r.id === rowId ? { ...r, [colId]: value } : r),
-    }));
+    updateDraft(d => ({ ...d, rows: d.rows.map(r => r.id === rowId ? { ...r, [colId]: value } : r) }));
   };
 
   const colTypeIcon = (type?: string) => {
     if (type === 'date') return <Calendar className="h-3 w-3" />;
     if (type === 'number') return <Hash className="h-3 w-3" />;
+    if (type === 'quantity') return <Layers className="h-3 w-3" />;
     return <Type className="h-3 w-3" />;
   };
 
   const colTypeBadge = (type?: string) => {
     if (type === 'date') return 'تاريخ';
-    if (type === 'number') return 'رقم';
+    if (type === 'number') return 'مبلغ / رقم';
+    if (type === 'quantity') return 'عدد';
     return 'نص';
   };
 
+  const allColTypes: ColType[] = ['text', 'date', 'number', 'quantity'];
+
   if (isLoading) return <AdminLoading />;
 
-  // Draft editor view
+  // ─── DRAFT EDITOR ───
   if (activeDraft) {
+    // Column grand totals
+    const colGrandTotals: Record<string, number> = {};
+    activeDraft.columns.forEach(col => {
+      if (col.type === 'number' || col.type === 'quantity') {
+        colGrandTotals[col.id] = activeDraft.rows.reduce((sum, row) => sum + (parseFloat(row[col.id] || '0') || 0), 0);
+      }
+    });
+    const grandSubtotal = activeDraft.rows.reduce((sum, row) => sum + calcRowSubtotal(row, activeDraft.columns), 0);
+
     return (
       <AdminLayout title="">
-        {/* Header bar */}
-        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/50">
-          <Button variant="ghost" size="sm" onClick={() => { setActiveDraft(null); }} className="gap-1 text-muted-foreground hover:text-foreground">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/30">
+          <Button variant="ghost" size="sm" onClick={() => setActiveDraft(null)} className="gap-1 text-muted-foreground hover:text-foreground">
             <ArrowRight className="h-4 w-4" /> العودة
           </Button>
-          <div className="h-5 w-px bg-border/50" />
+          <div className="h-5 w-px bg-border/40" />
           {editingTitle ? (
             <Input
               value={draftTitle}
@@ -234,67 +260,80 @@ export default function AdminFinancialDrafts() {
             </h2>
           )}
           <div className="mr-auto" />
-          <span className="text-xs text-muted-foreground">
-            {saveDraft.isPending ? 'جارٍ الحفظ...' : 'محفوظ تلقائياً'}
+          <span className="text-xs text-muted-foreground px-2.5 py-1 rounded-full bg-muted/50">
+            {saveDraft.isPending ? '⏳ جارٍ الحفظ...' : '✓ محفوظ'}
           </span>
 
           {/* Add Column Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+              <Button size="sm" className="gap-1.5 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0">
                 <Plus className="h-3.5 w-3.5" /> عمود
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="backdrop-blur-xl bg-card/90 border-border/30">
               <DropdownMenuLabel>نوع العمود</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => addColumn('text')} className="gap-2">
-                <Type className="h-4 w-4" /> نص
+                <Type className="h-4 w-4 text-blue-500" /> نص
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => addColumn('date')} className="gap-2">
-                <Calendar className="h-4 w-4" /> تاريخ
+                <Calendar className="h-4 w-4 text-amber-500" /> تاريخ
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => addColumn('number')} className="gap-2">
-                <Hash className="h-4 w-4" /> رقم
+                <Hash className="h-4 w-4 text-emerald-500" /> مبلغ / رقم
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addColumn('quantity')} className="gap-2">
+                <Layers className="h-4 w-4 text-purple-500" /> عدد
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button size="sm" variant="outline" onClick={addRow} className="gap-1.5 text-xs">
+          <Button size="sm" onClick={addRow} className="gap-1.5 text-xs bg-primary/10 text-primary hover:bg-primary/20 border-0">
             <Plus className="h-3.5 w-3.5" /> صف
           </Button>
         </div>
 
-        {/* Spreadsheet */}
-        <div className="overflow-auto rounded-xl border border-border/60 bg-card shadow-sm">
+        {/* Spreadsheet - Glassy 3D */}
+        <div className="overflow-auto rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl bg-card/60">
           {activeDraft.columns.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-              <FileSpreadsheet className="h-10 w-10 opacity-30" />
-              <p className="text-sm">ابدأ بإضافة أعمدة من الزر أعلاه</p>
+            <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-lg">
+                <FileSpreadsheet className="h-8 w-8 text-primary/60" />
+              </div>
+              <p className="text-sm font-medium">ابدأ بإضافة أعمدة من الزر أعلاه</p>
             </div>
           ) : (
             <table className="w-full text-sm border-collapse">
+              {/* Column Headers */}
               <thead>
-                <tr className="bg-muted/40 border-b border-border/50">
-                  <th className="p-2.5 text-center w-12 text-muted-foreground text-xs font-medium">#</th>
+                <tr className="bg-gradient-to-b from-muted/60 to-muted/30 border-b border-white/10">
+                  <th className="p-3 text-center w-12 text-muted-foreground text-xs font-semibold">#</th>
                   {activeDraft.columns.map(col => (
-                    <th key={col.id} className="p-0 min-w-[160px] border-r border-border/30 last:border-r-0">
+                    <th key={col.id} className="p-0 min-w-[150px] border-r border-white/5 last:border-r-0">
                       {editingColId === col.id ? (
                         <div className="flex items-center gap-1 p-1.5">
                           <Input
                             value={editingColName}
                             onChange={e => setEditingColName(e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs bg-background/60 backdrop-blur"
                             autoFocus
                             onKeyDown={e => { if (e.key === 'Enter') renameColumn(col.id, editingColName); if (e.key === 'Escape') setEditingColId(null); }}
                             onBlur={() => renameColumn(col.id, editingColName)}
                           />
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between px-2.5 py-2 group">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground/70">{colTypeIcon(col.type)}</span>
-                            <span className="font-medium text-xs">{col.name}</span>
+                        <div className="flex items-center justify-between px-3 py-2.5 group">
+                          <div className="flex items-center gap-2">
+                            <span className={`flex items-center justify-center w-5 h-5 rounded-md text-[10px] ${
+                              col.type === 'date' ? 'bg-amber-500/15 text-amber-600' :
+                              col.type === 'number' ? 'bg-emerald-500/15 text-emerald-600' :
+                              col.type === 'quantity' ? 'bg-purple-500/15 text-purple-600' :
+                              'bg-blue-500/15 text-blue-600'
+                            }`}>
+                              {colTypeIcon(col.type)}
+                            </span>
+                            <span className="font-semibold text-xs">{col.name}</span>
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -302,13 +341,13 @@ export default function AdminFinancialDrafts() {
                                 <MoreVertical className="h-3 w-3" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="min-w-[140px]">
+                            <DropdownMenuContent align="end" className="min-w-[140px] backdrop-blur-xl bg-card/90 border-border/30">
                               <DropdownMenuItem onClick={() => { setEditingColId(col.id); setEditingColName(col.name); }} className="gap-2 text-xs">
                                 <Pencil className="h-3 w-3" /> إعادة تسمية
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuLabel className="text-xs">تغيير النوع</DropdownMenuLabel>
-                              {(['text', 'date', 'number'] as const).map(t => (
+                              {allColTypes.map(t => (
                                 <DropdownMenuItem key={t} onClick={() => changeColumnType(col.id, t)} className="gap-2 text-xs">
                                   {colTypeIcon(t)}
                                   {colTypeBadge(t)}
@@ -325,109 +364,148 @@ export default function AdminFinancialDrafts() {
                       )}
                     </th>
                   ))}
+                  {/* Subtotal header */}
+                  {hasSubtotal && (
+                    <th className="px-3 py-2.5 min-w-[130px] border-r border-white/5">
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-orange-500/15 text-orange-600 text-[10px]">
+                          <Sigma className="h-3 w-3" />
+                        </span>
+                        <span className="font-semibold text-xs">المجموع</span>
+                      </div>
+                    </th>
+                  )}
                   <th className="p-2 w-10"></th>
                 </tr>
               </thead>
+
+              {/* Rows */}
               <tbody>
                 {activeDraft.rows.length === 0 ? (
                   <tr>
-                    <td colSpan={activeDraft.columns.length + 2} className="p-10 text-center text-muted-foreground text-xs">
+                    <td colSpan={activeDraft.columns.length + (hasSubtotal ? 3 : 2)} className="p-12 text-center text-muted-foreground text-xs">
                       لا توجد صفوف — اضغط "صف" للبدء
                     </td>
                   </tr>
                 ) : (
-                  activeDraft.rows.map((row, idx) => (
-                    <tr key={row.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors group/row">
-                      <td className="p-2.5 text-center text-muted-foreground/60 text-xs font-mono">{idx + 1}</td>
-                      {activeDraft.columns.map(col => (
-                        <td key={col.id} className="p-0 border-r border-border/20 last:border-r-0">
-                          {col.type === 'date' ? (
-                            <input
-                              type="date"
-                              value={row[col.id] || ''}
-                              onChange={e => setCellVal(row.id, col.id, e.target.value)}
-                              className="w-full h-9 px-2.5 text-xs bg-transparent border-0 outline-none focus:bg-primary/5 transition-colors cursor-pointer"
-                              dir="ltr"
-                            />
-                          ) : col.type === 'number' ? (
-                            editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={cellValue}
-                                onChange={e => {
-                                  const raw = e.target.value.replace(/[^0-9.]/g, '');
-                                  setCellValue(formatNumberInput(raw));
-                                }}
-                                className="w-full h-9 px-2.5 text-xs bg-primary/5 border-0 outline-none font-mono"
-                                dir="ltr"
-                                autoFocus
-                                onBlur={() => { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }
-                                  if (e.key === 'Escape') setEditingCell(null);
-                                }}
-                              />
-                            ) : (
-                              <div
-                                className="px-2.5 py-2 min-h-[36px] cursor-text text-xs font-mono hover:bg-muted/30 transition-colors flex items-center"
-                                dir="ltr"
-                                onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] ? formatNumberInput(row[col.id]) : ''); }}
-                              >
-                                {row[col.id] ? formatNumberInput(row[col.id]) : <span className="text-muted-foreground/30">—</span>}
+                  activeDraft.rows.map((row, idx) => {
+                    const rowSub = hasSubtotal ? calcRowSubtotal(row, activeDraft.columns) : 0;
+                    return (
+                      <tr key={row.id} className="border-b border-white/5 hover:bg-primary/[0.03] transition-colors group/row">
+                        <td className="p-3 text-center text-muted-foreground/50 text-xs font-mono select-none">{idx + 1}</td>
+                        {activeDraft.columns.map(col => (
+                          <td key={col.id} className="p-0 border-r border-white/5 last:border-r-0">
+                            {/* DATE */}
+                            {col.type === 'date' ? (
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  value={row[col.id] || ''}
+                                  onChange={e => setCellVal(row.id, col.id, e.target.value)}
+                                  className="w-full h-10 px-3 text-xs bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
+                                  dir="ltr"
+                                />
                               </div>
-                            )
-                          ) : editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
-                            <input
-                              value={cellValue}
-                              onChange={e => setCellValue(e.target.value)}
-                              className="w-full h-9 px-2.5 text-xs bg-primary/5 border-0 outline-none"
-                              autoFocus
-                              onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }
-                                if (e.key === 'Escape') setEditingCell(null);
-                              }}
-                            />
-                          ) : (
-                            <div
-                              className="px-2.5 py-2 min-h-[36px] cursor-text text-xs hover:bg-muted/30 transition-colors flex items-center"
-                              onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
-                            >
-                              {row[col.id] || <span className="text-muted-foreground/30">—</span>}
-                            </div>
-                          )}
+                            ) : (col.type === 'number' || col.type === 'quantity') ? (
+                              /* NUMBER / QUANTITY */
+                              editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={cellValue}
+                                  onChange={e => {
+                                    const raw = e.target.value.replace(/[^0-9.]/g, '');
+                                    setCellValue(formatNumberInput(raw));
+                                  }}
+                                  className={`w-full h-10 px-3 text-xs border-0 outline-none font-mono ${
+                                    col.type === 'quantity' ? 'bg-purple-500/5' : 'bg-emerald-500/5'
+                                  }`}
+                                  dir="ltr"
+                                  autoFocus
+                                  onBlur={() => { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  className={`px-3 py-2.5 min-h-[40px] cursor-text text-xs font-mono hover:bg-muted/20 transition-colors flex items-center ${
+                                    col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
+                                  }`}
+                                  dir="ltr"
+                                  onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] ? formatNumberInput(row[col.id]) : ''); }}
+                                >
+                                  {row[col.id] ? formatNumberInput(row[col.id]) : <span className="text-muted-foreground/25">0</span>}
+                                </div>
+                              )
+                            ) : (
+                              /* TEXT */
+                              editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
+                                <input
+                                  value={cellValue}
+                                  onChange={e => setCellValue(e.target.value)}
+                                  className="w-full h-10 px-3 text-xs bg-blue-500/5 border-0 outline-none"
+                                  autoFocus
+                                  onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }
+                                    if (e.key === 'Escape') setEditingCell(null);
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  className="px-3 py-2.5 min-h-[40px] cursor-text text-xs hover:bg-muted/20 transition-colors flex items-center"
+                                  onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
+                                >
+                                  {row[col.id] || <span className="text-muted-foreground/25">—</span>}
+                                </div>
+                              )
+                            )}
+                          </td>
+                        ))}
+                        {/* Row Subtotal */}
+                        {hasSubtotal && (
+                          <td className="px-3 py-2.5 border-r border-white/5 text-xs font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
+                            {rowSub > 0 ? formatNumberInput(String(rowSub)) : <span className="text-muted-foreground/25">0</span>}
+                          </td>
+                        )}
+                        <td className="p-1">
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/50 hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={() => deleteRow(row.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </td>
-                      ))}
-                      <td className="p-1">
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/60 hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={() => deleteRow(row.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
-              {/* Totals row */}
-              {activeDraft.rows.length > 0 && activeDraft.columns.some(c => c.type === 'number') && (
+
+              {/* Grand Totals Footer */}
+              {activeDraft.rows.length > 0 && activeDraft.columns.some(c => c.type === 'number' || c.type === 'quantity') && (
                 <tfoot>
-                  <tr className="bg-muted/60 border-t-2 border-border/60 font-semibold">
-                    <td className="p-2.5 text-center text-xs text-muted-foreground">Σ</td>
+                  <tr className="bg-gradient-to-b from-muted/50 to-muted/30 border-t-2 border-primary/10">
+                    <td className="p-3 text-center">
+                      <span className="flex items-center justify-center w-6 h-6 mx-auto rounded-lg bg-primary/10 text-primary text-xs font-bold">Σ</span>
+                    </td>
                     {activeDraft.columns.map(col => (
-                      <td key={col.id} className="px-2.5 py-2 text-xs border-r border-border/20 last:border-r-0">
-                        {col.type === 'number' ? (
-                          <span className="font-mono" dir="ltr">
-                            {formatNumberInput(String(
-                              activeDraft.rows.reduce((sum, row) => sum + (parseFloat(row[col.id] || '0') || 0), 0)
-                            ))}
+                      <td key={col.id} className="px-3 py-3 text-xs border-r border-white/5 last:border-r-0">
+                        {(col.type === 'number' || col.type === 'quantity') ? (
+                          <span className={`font-mono font-bold ${
+                            col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
+                          }`} dir="ltr">
+                            {formatNumberInput(String(colGrandTotals[col.id] || 0))}
                           </span>
-                        ) : col.type === 'date' ? (
-                          <span className="text-muted-foreground/40">—</span>
                         ) : (
-                          <span className="text-muted-foreground/40">—</span>
+                          <span className="text-muted-foreground/30">—</span>
                         )}
                       </td>
                     ))}
+                    {hasSubtotal && (
+                      <td className="px-3 py-3 text-xs font-mono font-bold text-orange-600 dark:text-orange-400 bg-orange-500/[0.06]" dir="ltr">
+                        {formatNumberInput(String(grandSubtotal))}
+                      </td>
+                    )}
                     <td></td>
                   </tr>
                 </tfoot>
@@ -436,9 +514,9 @@ export default function AdminFinancialDrafts() {
           )}
         </div>
 
-        {/* Quick add row at bottom */}
+        {/* Quick add row */}
         {activeDraft.columns.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={addRow} className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground border border-dashed border-border/40 hover:border-border">
+          <Button variant="ghost" size="sm" onClick={addRow} className="mt-3 w-full text-xs text-muted-foreground hover:text-primary border border-dashed border-border/30 hover:border-primary/30 rounded-xl transition-all">
             <Plus className="h-3.5 w-3.5 ml-1" /> إضافة صف جديد
           </Button>
         )}
@@ -446,7 +524,7 @@ export default function AdminFinancialDrafts() {
     );
   }
 
-  // Drafts list view
+  // ─── DRAFTS LIST ───
   return (
     <AdminLayout title="المسودات المالية" backTo={ADMIN_ROUTES.financials}>
       <div className="flex items-center gap-2 mb-6">
@@ -454,41 +532,48 @@ export default function AdminFinancialDrafts() {
           placeholder="اسم المسودة الجديدة..."
           value={newTitle}
           onChange={e => setNewTitle(e.target.value)}
-          className="max-w-xs"
+          className="max-w-xs backdrop-blur bg-card/60"
           onKeyDown={e => { if (e.key === 'Enter' && newTitle.trim()) createDraft.mutate(newTitle.trim()); }}
         />
         <Button
           onClick={() => newTitle.trim() && createDraft.mutate(newTitle.trim())}
           disabled={!newTitle.trim() || createDraft.isPending}
+          className="gap-1.5"
         >
-          <Plus className="h-4 w-4 ml-1" /> إنشاء مسودة
+          <Plus className="h-4 w-4" /> إنشاء مسودة
         </Button>
       </div>
 
       {drafts.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <FileSpreadsheet className="h-12 w-12 mx-auto mb-3 opacity-40" />
-          <p>لا توجد مسودات بعد</p>
+        <div className="text-center py-20 text-muted-foreground">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-lg">
+            <FileSpreadsheet className="h-8 w-8 text-primary/50" />
+          </div>
+          <p className="font-medium">لا توجد مسودات بعد</p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {drafts.map(draft => (
-            <Card key={draft.id} className="cursor-pointer hover:shadow-md transition-all hover:border-primary/30" onClick={() => { setActiveDraft(draft); setDraftTitle(draft.title); }}>
-              <CardContent className="p-4">
+            <Card
+              key={draft.id}
+              className="cursor-pointer group hover:shadow-xl transition-all duration-300 border-white/10 backdrop-blur-xl bg-card/60 hover:bg-card/80 hover:border-primary/20 rounded-2xl overflow-hidden"
+              onClick={() => { setActiveDraft(draft); setDraftTitle(draft.title); }}
+            >
+              <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold text-sm mb-1">{draft.title}</h3>
+                    <h3 className="font-bold text-sm mb-2 group-hover:text-primary transition-colors">{draft.title}</h3>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{draft.columns.length} أعمدة</Badge>
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{draft.rows.length} صفوف</Badge>
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border-0">{draft.columns.length} أعمدة</Badge>
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border-0">{draft.rows.length} صفوف</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground mt-2.5">
                       {format(new Date(draft.updated_at), 'dd MMM yyyy', { locale: ar })}
                     </p>
                   </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive/60 hover:text-destructive" onClick={e => e.stopPropagation()}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
