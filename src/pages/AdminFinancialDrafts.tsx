@@ -333,7 +333,7 @@ export default function AdminFinancialDrafts() {
                             }`}>
                               {colTypeIcon(col.type)}
                             </span>
-                            <span className="font-semibold text-xs">{col.name}</span>
+                            <span className="font-semibold text-sm">{col.name}</span>
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
