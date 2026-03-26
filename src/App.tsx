@@ -119,6 +119,7 @@ const AdminPriceMatch = lazy(() => import("./pages/AdminPriceMatch"));
 const AdminWishes = lazy(() => import("./pages/AdminWishes"));
 const AdminProductBundles = lazy(() => import("./pages/AdminProductBundles"));
 const AdminFinancialDrafts = lazy(() => import("./pages/AdminFinancialDrafts"));
+const AdminInventory = lazy(() => import("./pages/AdminInventory"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
