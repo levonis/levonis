@@ -11,6 +11,33 @@ import { z } from 'zod';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
 import { useLanguage } from '@/lib/i18n';
+import { Check, X } from 'lucide-react';
+
+const PasswordRequirements = ({ password }: { password: string }) => {
+  const requirements = [
+    { label: '8 أحرف على الأقل', met: password.length >= 8 },
+    { label: 'حرف كبير (A-Z)', met: /[A-Z]/.test(password) },
+    { label: 'حرف صغير (a-z)', met: /[a-z]/.test(password) },
+    { label: 'رقم واحد على الأقل (0-9)', met: /\d/.test(password) },
+  ];
+
+  if (!password) return null;
+
+  return (
+    <div className="space-y-1.5 pt-1">
+      {requirements.map((req) => (
+        <div key={req.label} className="flex items-center gap-2 text-xs">
+          {req.met ? (
+            <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+          ) : (
+            <X className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+          )}
+          <span className={req.met ? 'text-emerald-500' : 'text-muted-foreground'}>{req.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const extractFunctionErrorMessage = async (error: unknown): Promise<string | null> => {
   if (!error || typeof error !== 'object') return null;
@@ -289,6 +316,8 @@ const Auth = () => {
                   </div>
                 </div>
 
+                <PasswordRequirements password={newPassword} />
+
                 <div className="space-y-2">
                   <Label htmlFor="confirm-new-password" className="text-sm font-medium">{t('auth_confirm_password')}</Label>
                   <div className="relative">
@@ -316,7 +345,7 @@ const Auth = () => {
                 <Button 
                   type="submit"
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
-                  disabled={loading}
+                  disabled={loading || !isStrongPassword(newPassword) || newPassword !== confirmNewPassword}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
                   {t('auth_confirm_change')}
