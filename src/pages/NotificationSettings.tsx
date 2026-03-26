@@ -60,7 +60,7 @@ const NotificationSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('telegram_chat_id, telegram_notifications, site_notifications')
+        .select('site_notifications')
         .eq('id', user?.id)
         .single();
       if (error) throw error;
