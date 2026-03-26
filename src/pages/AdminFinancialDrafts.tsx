@@ -402,7 +402,7 @@ export default function AdminFinancialDrafts() {
                                   type="date"
                                   value={row[col.id] || ''}
                                   onChange={e => setCellVal(row.id, col.id, e.target.value)}
-                                  className="w-full h-10 px-3 text-xs bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
+                                  className="w-full h-10 px-3 text-sm bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
                                   dir="ltr"
                                 />
                               </div>
