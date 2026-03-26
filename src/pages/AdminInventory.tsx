@@ -95,7 +95,7 @@ export default function AdminInventory() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, total_amount, shipping_cost, status, order_type')
+        .select('id, subtotal, total_amount, status, order_type')
         .in('order_type', ['direct', 'auto'])
         .not('status', 'eq', 'cancelled');
       if (error) throw error;
