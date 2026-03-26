@@ -2356,6 +2356,50 @@ export type Database = {
         }
         Relationships: []
       }
+      future_shipments: {
+        Row: {
+          created_at: string
+          id: string
+          merged_at: string | null
+          note: string | null
+          product_id: string
+          quantity: number
+          status: string
+          total_cost: number
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          merged_at?: string | null
+          note?: string | null
+          product_id: string
+          quantity: number
+          status?: string
+          total_cost?: number
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          merged_at?: string | null
+          note?: string | null
+          product_id?: string
+          quantity?: number
+          status?: string
+          total_cost?: number
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "future_shipments_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_music_stations: {
         Row: {
           created_at: string
