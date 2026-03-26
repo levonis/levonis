@@ -130,11 +130,11 @@ const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
-const SuspenseLoader = () => (
-  <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-background">
+const SuspenseLoader = () =>
+<div className="fixed inset-0 z-[9998] flex items-center justify-center bg-background">
     <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-  </div>
-);
+  </div>;
+
 
 function AppContent() {
   useDailyLogin();
@@ -144,7 +144,7 @@ function AppContent() {
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const hideChrome = isGamesPage || isReelsPage;
-  
+
   return (
     <>
       {!isReelsPage && <AnnouncementBar />}
@@ -213,7 +213,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/price-match`} element={<AdminRoute><AdminPriceMatch /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/product-bundles`} element={<AdminRoute><AdminProductBundles /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/financial-drafts`} element={<AdminRoute><AdminFinancialDrafts /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/inventory`} element={<AdminRoute><AdminInventory /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/inventory`} element={<AdminRoute><AdminInventory /></AdminRoute>} className="bg-emerald-950" />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
@@ -271,8 +271,8 @@ function AppContent() {
       {/* Bottom/Side Navigation Bar */}
       {!hideChrome && <AppNavBar />}
       {!hideChrome && <div className="h-16 md:hidden" />}
-      {!hideChrome && (
-        <>
+      {!hideChrome &&
+      <>
           {/* Levo Help Bot - floating assistant (above chat button) */}
           <Suspense fallback={null}>
             <LevoHelpBot />
@@ -282,9 +282,9 @@ function AppContent() {
             <InstallPrompt />
           </Suspense>
         </>
-      )}
-    </>
-  );
+      }
+    </>);
+
 }
 
 export default function App() {
@@ -296,9 +296,9 @@ export default function App() {
         gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
         retry: 1,
         refetchOnWindowFocus: false, // Prevent refetch on tab switch
-        refetchOnReconnect: false,
-      },
-    },
+        refetchOnReconnect: false
+      }
+    }
   }));
 
   return (
@@ -316,6 +316,6 @@ export default function App() {
           </LanguageProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
-  );
+    </QueryClientProvider>);
+
 }
