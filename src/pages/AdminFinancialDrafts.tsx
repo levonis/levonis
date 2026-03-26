@@ -304,11 +304,11 @@ export default function AdminFinancialDrafts() {
               <p className="text-sm font-medium">ابدأ بإضافة أعمدة من الزر أعلاه</p>
             </div>
           ) : (
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-base border-collapse">
               {/* Column Headers */}
               <thead>
                 <tr className="bg-gradient-to-b from-muted/60 to-muted/30 border-b border-white/10">
-                  <th className="p-3 text-center w-12 text-muted-foreground text-xs font-semibold">#</th>
+                  <th className="p-3 text-center w-12 text-muted-foreground text-sm font-semibold">#</th>
                   {activeDraft.columns.map(col => (
                     <th key={col.id} className="p-0 min-w-[150px] border-r border-white/5 last:border-r-0">
                       {editingColId === col.id ? (
@@ -333,7 +333,7 @@ export default function AdminFinancialDrafts() {
                             }`}>
                               {colTypeIcon(col.type)}
                             </span>
-                            <span className="font-semibold text-xs">{col.name}</span>
+                            <span className="font-semibold text-sm">{col.name}</span>
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -371,7 +371,7 @@ export default function AdminFinancialDrafts() {
                         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-orange-500/15 text-orange-600 text-[10px]">
                           <Sigma className="h-3 w-3" />
                         </span>
-                        <span className="font-semibold text-xs">المجموع</span>
+                        <span className="font-semibold text-sm">المجموع</span>
                       </div>
                     </th>
                   )}
@@ -392,7 +392,7 @@ export default function AdminFinancialDrafts() {
                     const rowSub = hasSubtotal ? calcRowSubtotal(row, activeDraft.columns) : 0;
                     return (
                       <tr key={row.id} className="border-b border-white/5 hover:bg-primary/[0.03] transition-colors group/row">
-                        <td className="p-3 text-center text-muted-foreground/50 text-xs font-mono select-none">{idx + 1}</td>
+                        <td className="p-3 text-center text-muted-foreground/50 text-sm font-mono select-none">{idx + 1}</td>
                         {activeDraft.columns.map(col => (
                           <td key={col.id} className="p-0 border-r border-white/5 last:border-r-0">
                             {/* DATE */}
@@ -402,7 +402,7 @@ export default function AdminFinancialDrafts() {
                                   type="date"
                                   value={row[col.id] || ''}
                                   onChange={e => setCellVal(row.id, col.id, e.target.value)}
-                                  className="w-full h-10 px-3 text-xs bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
+                                  className="w-full h-10 px-3 text-sm bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
                                   dir="ltr"
                                 />
                               </div>
@@ -417,7 +417,7 @@ export default function AdminFinancialDrafts() {
                                     const raw = e.target.value.replace(/[^0-9.]/g, '');
                                     setCellValue(formatNumberInput(raw));
                                   }}
-                                  className={`w-full h-10 px-3 text-xs border-0 outline-none font-mono ${
+                                  className={`w-full h-10 px-3 text-sm border-0 outline-none font-mono ${
                                     col.type === 'quantity' ? 'bg-purple-500/5' : 'bg-emerald-500/5'
                                   }`}
                                   dir="ltr"
@@ -430,7 +430,7 @@ export default function AdminFinancialDrafts() {
                                 />
                               ) : (
                                 <div
-                                  className={`px-3 py-2.5 min-h-[40px] cursor-text text-xs font-mono hover:bg-muted/20 transition-colors flex items-center ${
+                                  className={`px-3 py-2.5 min-h-[40px] cursor-text text-sm font-mono hover:bg-muted/20 transition-colors flex items-center ${
                                     col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
                                   }`}
                                   dir="ltr"
@@ -445,7 +445,7 @@ export default function AdminFinancialDrafts() {
                                 <input
                                   value={cellValue}
                                   onChange={e => setCellValue(e.target.value)}
-                                  className="w-full h-10 px-3 text-xs bg-blue-500/5 border-0 outline-none"
+                                  className="w-full h-10 px-3 text-sm bg-blue-500/5 border-0 outline-none"
                                   autoFocus
                                   onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
                                   onKeyDown={e => {
@@ -455,7 +455,7 @@ export default function AdminFinancialDrafts() {
                                 />
                               ) : (
                                 <div
-                                  className="px-3 py-2.5 min-h-[40px] cursor-text text-xs hover:bg-muted/20 transition-colors flex items-center"
+                                  className="px-3 py-2.5 min-h-[40px] cursor-text text-sm hover:bg-muted/20 transition-colors flex items-center"
                                   onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
                                 >
                                   {row[col.id] || <span className="text-muted-foreground/25">—</span>}
@@ -466,7 +466,7 @@ export default function AdminFinancialDrafts() {
                         ))}
                         {/* Row Subtotal */}
                         {hasSubtotal && (
-                          <td className="px-3 py-2.5 border-r border-white/5 text-xs font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
+                          <td className="px-3 py-2.5 border-r border-white/5 text-sm font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
                             {rowSub > 0 ? formatNumberInput(String(rowSub)) : <span className="text-muted-foreground/25">0</span>}
                           </td>
                         )}
@@ -484,30 +484,30 @@ export default function AdminFinancialDrafts() {
               {/* Grand Totals Footer */}
               {activeDraft.rows.length > 0 && activeDraft.columns.some(c => c.type === 'number' || c.type === 'quantity') && (
                 <tfoot>
-                  <tr className="bg-gradient-to-b from-muted/50 to-muted/30 border-t-2 border-primary/10">
-                    <td className="p-3 text-center">
-                      <span className="flex items-center justify-center w-6 h-6 mx-auto rounded-lg bg-primary/10 text-primary text-xs font-bold">Σ</span>
-                    </td>
-                    {activeDraft.columns.map(col => (
-                      <td key={col.id} className="px-3 py-3 text-xs border-r border-white/5 last:border-r-0">
-                        {(col.type === 'number' || col.type === 'quantity') ? (
-                          <span className={`font-mono font-bold ${
-                            col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
-                          }`} dir="ltr">
-                            {formatNumberInput(String(colGrandTotals[col.id] || 0))}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/30">—</span>
-                        )}
-                      </td>
-                    ))}
-                    {hasSubtotal && (
-                      <td className="px-3 py-3 text-xs font-mono font-bold text-orange-600 dark:text-orange-400 bg-orange-500/[0.06]" dir="ltr">
-                        {formatNumberInput(String(grandSubtotal))}
-                      </td>
-                    )}
-                    <td></td>
-                  </tr>
+                  <tr className="bg-gradient-to-b from-foreground/10 to-foreground/[0.06] dark:from-foreground/15 dark:to-foreground/10 border-t-2 border-primary/20">
+                     <td className="p-3 text-center">
+                       <span className="flex items-center justify-center w-7 h-7 mx-auto rounded-lg bg-primary/20 text-primary text-sm font-bold">Σ</span>
+                     </td>
+                     {activeDraft.columns.map(col => (
+                       <td key={col.id} className="px-3 py-3.5 text-sm border-r border-white/5 last:border-r-0">
+                         {(col.type === 'number' || col.type === 'quantity') ? (
+                           <span className={`font-mono font-bold text-base ${
+                             col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
+                           }`} dir="ltr">
+                             {formatNumberInput(String(colGrandTotals[col.id] || 0))}
+                           </span>
+                         ) : (
+                           <span className="text-muted-foreground/30">—</span>
+                         )}
+                       </td>
+                     ))}
+                     {hasSubtotal && (
+                       <td className="px-3 py-3.5 font-mono font-bold text-base text-orange-600 dark:text-orange-400 bg-orange-500/[0.08]" dir="ltr">
+                         {formatNumberInput(String(grandSubtotal))}
+                       </td>
+                     )}
+                     <td></td>
+                   </tr>
                 </tfoot>
               )}
             </table>
