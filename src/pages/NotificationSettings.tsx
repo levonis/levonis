@@ -49,10 +49,7 @@ const NotificationSettings = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [telegramChatId, setTelegramChatId] = useState('');
-  const [savingTelegram, setSavingTelegram] = useState(false);
   const [sitePrefs, setSitePrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
-  const [telegramPrefs, setTelegramPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/auth');
