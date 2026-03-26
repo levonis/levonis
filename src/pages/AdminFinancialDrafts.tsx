@@ -308,7 +308,7 @@ export default function AdminFinancialDrafts() {
               {/* Column Headers */}
               <thead>
                 <tr className="bg-gradient-to-b from-muted/60 to-muted/30 border-b border-white/10">
-                  <th className="p-3 text-center w-12 text-muted-foreground text-xs font-semibold">#</th>
+                  <th className="p-3 text-center w-12 text-muted-foreground text-sm font-semibold">#</th>
                   {activeDraft.columns.map(col => (
                     <th key={col.id} className="p-0 min-w-[150px] border-r border-white/5 last:border-r-0">
                       {editingColId === col.id ? (
