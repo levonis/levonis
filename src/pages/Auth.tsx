@@ -28,11 +28,11 @@ const PasswordRequirements = ({ password }: { password: string }) => {
       {requirements.map((req) => (
         <div key={req.label} className="flex items-center gap-2 text-xs">
           {req.met ? (
-            <Check className="h-3.5 w-3.5 text-green-500 shrink-0" />
+            <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
           ) : (
             <X className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
           )}
-          <span className={req.met ? 'text-green-500' : 'text-muted-foreground'}>{req.label}</span>
+          <span className={req.met ? 'text-emerald-500' : 'text-muted-foreground'}>{req.label}</span>
         </div>
       ))}
     </div>
