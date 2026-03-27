@@ -738,7 +738,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Add option price adjustment
       const itemOption = (item as any).product_options;
       if (itemOption?.price_adjustment) {
-        itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+        itemPrice += Math.round(Number(itemOption.price_adjustment));
       }
 
       // Add pre-order shipping adjustment (if chosen)

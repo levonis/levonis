@@ -53,7 +53,7 @@ const Cart = () => {
       else price = Number(colorData.price);
     }
     if ((item as any).product_options?.price_adjustment) {
-      price += Math.round(Number((item as any).product_options.price_adjustment) * usdToIqd);
+      price += Math.round(Number((item as any).product_options.price_adjustment));
     }
     if ((item.products as any)?.round_up_price === true) price = Math.ceil(price / 250) * 250;
     return price;
