@@ -265,6 +265,8 @@ function AppContent() {
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/printer-protection" element={<Navigate to="/rewards" replace />} />
             <Route path="/my-printers" element={<Navigate to="/rewards" replace />} />
+            <Route path="/activate-printer" element={<ActivatePrinter />} />
+            <Route path="/warranty-dashboard/:printerId" element={<RequireAuth><WarrantyDashboard /></RequireAuth>} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
