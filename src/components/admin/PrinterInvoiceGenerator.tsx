@@ -246,6 +246,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
         tax: taxAmount,
+        taxRate: taxRate,
         delivery: deliveryFee,
         total: sub + taxAmount + deliveryFee,
         invoiceNo: format(now, 'yyyyMMdd-HHmm'),
