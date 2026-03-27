@@ -55,6 +55,7 @@ interface BuyerOption {
   printerSerial: string;
   printerModel: string;
   orderNumber?: string;
+  orderId?: string;
   totalPrice?: number;
   orderItemId?: string;
   paymentMethod?: string;
