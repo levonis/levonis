@@ -670,7 +670,6 @@ const AdminPrinterProtection = () => {
                       <SelectItem value="active">نشط</SelectItem>
                       <SelectItem value="paused">متوقف</SelectItem>
                       <SelectItem value="expired">منتهي</SelectItem>
-                      <SelectItem value="cancelled">ملغي</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
