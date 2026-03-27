@@ -1290,6 +1290,27 @@ const AdminPrinterProtection = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>أقسام الخصم (مفصولة بفاصلة)</Label>
+                  <Input
+                    defaultValue={selectedPlan.parts_discount_categories?.join('، ') || ''}
+                    onChange={(e) => setSelectedPlan({
+                      ...selectedPlan,
+                      parts_discount_categories: e.target.value.split(/[,،]/).map(s => s.trim()).filter(Boolean),
+                    })}
+                    placeholder="مثال: صيانة بامبولاب، قطع غيار"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>خدمة استبدال عند الكسر والتلف</Label>
+                  <Switch
+                    checked={selectedPlan.has_replacement_printer}
+                    onCheckedChange={(checked) => setSelectedPlan({
+                      ...selectedPlan,
+                      has_replacement_printer: checked,
+                    })}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>نص الشارة (مثل: الأكثر شعبية)</Label>
                   <Input
                     defaultValue={selectedPlan.badge_text || ''}
@@ -1319,6 +1340,8 @@ const AdminPrinterProtection = () => {
                       priority_level: selectedPlan.priority_level,
                       is_active: selectedPlan.is_active,
                       has_preventive_maintenance: selectedPlan.has_preventive_maintenance,
+                      has_replacement_printer: selectedPlan.has_replacement_printer,
+                      parts_discount_categories: selectedPlan.parts_discount_categories,
                       badge_text: selectedPlan.badge_text,
                     });
                   }
@@ -1472,6 +1495,21 @@ const AdminPrinterProtection = () => {
                     onChange={(e) => setNewPlan({ ...newPlan, parts_discount_percentage: Number(e.target.value) })}
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>أقسام الخصم (مفصولة بفاصلة)</Label>
+                <Input
+                  value={newPlan.parts_discount_categories?.join('، ') || ''}
+                  onChange={(e) => setNewPlan({ ...newPlan, parts_discount_categories: e.target.value.split(/[,،]/).map(s => s.trim()).filter(Boolean) })}
+                  placeholder="مثال: صيانة بامبولاب، قطع غيار"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>خدمة استبدال عند الكسر والتلف</Label>
+                <Switch
+                  checked={newPlan.has_replacement_printer || false}
+                  onCheckedChange={(checked) => setNewPlan({ ...newPlan, has_replacement_printer: checked })}
+                />
               </div>
             </div>
             <DialogFooter>
