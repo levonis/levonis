@@ -291,7 +291,7 @@ const AdminOrders = () => {
       
       // Auto-create invoice when order is confirmed
       if (values.status === 'confirmed' && previousStatus !== 'confirmed') {
-        await createAutoInvoice(id);
+        try { await createAutoInvoice(id); } catch (e) { console.error('Auto invoice error:', e); }
       }
 
       // Send notification when status changes
