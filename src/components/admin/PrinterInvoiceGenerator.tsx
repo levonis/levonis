@@ -38,7 +38,6 @@ interface InvoiceData {
   invoiceNo: string;
   date: Date;
   paymentMethod: string;
-  productImage?: string;
 }
 
 interface Props {
@@ -69,7 +68,6 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
-  const [productImage, setProductImage] = useState<string | null>(null);
 
   // Fetch buyers from store_printers AND completed orders for printer category
   const { data: buyers, isLoading: buyersLoading } = useQuery({
@@ -488,29 +486,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   onChange={(e) => setManualFields(prev => ({ ...prev, delivery: e.target.value }))}
                 />
               </div>
-              <div className="md:col-span-2">
-                <Label>صورة المنتج (اختياري)</Label>
-                <div className="flex items-center gap-3 mt-1">
-                  {productImage && (
-                    <img src={productImage} alt="product" className="w-16 h-16 object-contain rounded border" />
-                  )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => setProductImage(ev.target?.result as string);
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                  {productImage && (
-                    <Button variant="ghost" size="sm" onClick={() => setProductImage(null)}>إزالة</Button>
-                  )}
-                </div>
-              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleGeneratePreview} disabled={!manualFields.subtotal && invoiceData.subtotal === 0}>
@@ -546,7 +521,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
             </div>
             <div className="p-4 overflow-auto bg-white">
               <div ref={invoiceRef}>
-                <InvoiceTemplate data={{ ...invoiceData, productImage: productImage || undefined }} logoSrc={logoImg} />
+                <InvoiceTemplate data={invoiceData} logoSrc={logoImg} />
               </div>
             </div>
           </>
@@ -657,7 +632,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             {data.date.getFullYear()}
           </div>
 
-          {/* Product / Logo image */}
+          {/* Logo image */}
           <div style={{
             width: '140px',
             height: '140px',
@@ -669,9 +644,9 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: data.productImage ? '#fff' : '#e8f5e9',
+            background: '#e8f5e9',
           }}>
-            <img src={data.productImage || logoSrc} alt="Product" style={{ width: data.productImage ? '130px' : '100px', height: data.productImage ? '130px' : '100px', objectFit: 'contain' }} />
+            <img src={logoSrc} alt="LEVONIS" style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
           </div>
 
           {/* Customer info */}
