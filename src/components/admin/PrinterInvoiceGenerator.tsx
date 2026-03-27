@@ -182,7 +182,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           fullName: prof?.full_name || addr?.full_name || '',
           username: prof?.username || '',
           phone: prof?.phone_number || addr?.phone_number || '',
-          address: addr ? `${addr.governorate || ''} - ${addr.area || ''}${addr.neighborhood ? ' ' + addr.neighborhood : ''}` : '',
+address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_landmark].filter(Boolean).join(' - ') : '',
           printerSerial: p.serial_number,
           printerModel: p.model_name_ar || p.model_name || '',
         });
