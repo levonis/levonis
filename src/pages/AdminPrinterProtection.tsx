@@ -983,6 +983,16 @@ const AdminPrinterProtection = () => {
             </Card>
           </TabsContent>
 
+          {/* Maintenance Tickets Tab */}
+          <TabsContent value="maintenance" className="space-y-4">
+            <AdminMaintenanceTab />
+          </TabsContent>
+
+          {/* Engineer Ratings Tab */}
+          <TabsContent value="ratings" className="space-y-4">
+            <AdminRatingsTab />
+          </TabsContent>
+
           {/* Logs Tab */}
           <TabsContent value="logs" className="space-y-4">
             <Card>
