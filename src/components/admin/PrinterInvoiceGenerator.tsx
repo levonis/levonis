@@ -208,12 +208,24 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
     setSelectedUserId(buyer.userId);
     setLoading(true);
     try {
-      let subtotal = 0;
-      if (printer.order_item_id) {
+      let subtotal = buyer.totalPrice || 0;
+      
+      // Fallback: check printer's order_item_id
+      if (!subtotal && printer.order_item_id) {
         const { data: orderItem } = await supabase
           .from('order_items')
           .select('total_price')
           .eq('id', printer.order_item_id)
+          .single();
+        if (orderItem) subtotal = orderItem.total_price || 0;
+      }
+      
+      // Fallback: check buyer's orderItemId
+      if (!subtotal && buyer.orderItemId) {
+        const { data: orderItem } = await supabase
+          .from('order_items')
+          .select('total_price')
+          .eq('id', buyer.orderItemId)
           .single();
         if (orderItem) subtotal = orderItem.total_price || 0;
       }
@@ -227,7 +239,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         customerName: buyer.fullName,
         phone: buyer.phone,
         address: buyer.address,
-        printerModel: printer.model_name || printer.model_name_ar,
+        printerModel: buyer.printerModel || printer.model_name || printer.model_name_ar,
         serialNumber: printer.serial_number,
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
