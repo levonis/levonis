@@ -411,7 +411,15 @@ export default function StackGameTab() {
 
           <div className="flex items-center justify-between bg-muted/20 rounded-lg p-4">
             <span className="text-sm font-medium text-foreground">تفعيل اللعبة</span>
-            <Switch checked={s.game_enabled} onCheckedChange={(v) => update("game_enabled", v)} />
+            <Switch checked={s.game_enabled} onCheckedChange={async (v) => {
+              update("game_enabled", v);
+              if (settings?.id) {
+                const { error } = await supabase.from("stack_game_settings").update({ game_enabled: v, updated_at: new Date().toISOString() }).eq("id", settings.id);
+                if (error) { toast.error("فشل تحديث حالة اللعبة"); return; }
+                toast.success(v ? "تم تفعيل اللعبة" : "تم تعطيل اللعبة");
+                queryClient.invalidateQueries({ queryKey: ["admin-stack-game-settings"] });
+              }
+            }} />
           </div>
 
           <div className="space-y-4">
