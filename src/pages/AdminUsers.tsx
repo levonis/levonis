@@ -212,7 +212,7 @@ export default function AdminUsers() {
           stats[order.user_id] = { user_id: order.user_id, total_orders: 0, total_spent: 0, order_numbers: [] };
         }
         stats[order.user_id].total_orders++;
-        stats[order.user_id].total_spent += order.total || 0;
+        stats[order.user_id].total_spent += order.total_amount || 0;
         if (order.order_number) {
           stats[order.user_id].order_numbers.push(order.order_number.toLowerCase());
         }
