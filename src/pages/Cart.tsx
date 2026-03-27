@@ -1149,7 +1149,7 @@ const Cart = () => {
         }
         
         if (itemOption?.price_adjustment) {
-          itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+          itemPrice += Math.round(Number(itemOption.price_adjustment));
         }
 
         // Add pre-order shipping adjustment (if chosen)
