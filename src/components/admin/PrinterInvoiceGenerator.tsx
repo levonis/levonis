@@ -446,6 +446,21 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 />
               </div>
               <div>
+                <Label>طريقة الدفع</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={invoiceData.paymentMethod}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, paymentMethod: e.target.value })}
+                >
+                  <option value="نقداً">نقداً (عند الاستلام)</option>
+                  <option value="مقدماً">مقدماً (دفع كامل)</option>
+                  <option value="ربع المبلغ مقدماً">ربع المبلغ مقدماً</option>
+                  <option value="نصف المبلغ مقدماً">نصف المبلغ مقدماً</option>
+                  <option value="تحويل بنكي">تحويل بنكي</option>
+                  <option value="محفظة إلكترونية">محفظة إلكترونية</option>
+                </select>
+              </div>
+              <div>
                 <Label>المبلغ الفرعي (Sub-total) - د.ع</Label>
                 <Input
                   type="number"
