@@ -2274,7 +2274,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         .from('cart_requests')
                         .update({
                           adjusted_total: price,
-                          admin_notes: notesEl?.value || null,
+                          admin_notes: notesVal || null,
                           status: 'adjusted',
                           updated_at: new Date().toISOString(),
                         })
