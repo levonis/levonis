@@ -327,7 +327,8 @@ const Cart = () => {
   const discount = calculateDiscount();
   
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
-  const subtotalAfterDiscount = total - discount;
+  const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
+  const subtotalAfterDiscount = total - discount - protectionDiscountAmount;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
