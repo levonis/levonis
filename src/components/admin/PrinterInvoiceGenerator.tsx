@@ -241,7 +241,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      const deliveryFee = parseFloat(manualFields.delivery) || 12000;
+      const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
       const taxPercent = parseFloat(manualFields.taxPercent) || 3;
       const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
@@ -295,7 +295,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
   const handleGeneratePreview = () => {
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
-    const deliveryFee = parseFloat(manualFields.delivery) || 12000;
+    const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
     const taxPercent = parseFloat(manualFields.taxPercent) || 3;
     const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
@@ -503,6 +503,17 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
               <Button onClick={handlePrint} variant="outline" size="sm">
                 <PrinterIcon className="w-4 h-4 ml-2" />
                 طباعة
+              </Button>
+              <Button onClick={() => {
+                if (!invoiceRef.current) return;
+                import('react-to-pdf').then(({ default: generatePDF }) => {
+                  generatePDF(() => invoiceRef.current!, {
+                    filename: `invoice-${invoiceData.invoiceNo}.pdf`,
+                    page: { margin: 0, format: 'A4' },
+                  });
+                });
+              }} size="sm">
+                حفظ PDF
               </Button>
               <Button onClick={() => setStep('config')} variant="ghost" size="sm">
                 تعديل البيانات
