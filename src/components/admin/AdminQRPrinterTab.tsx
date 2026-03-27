@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import PrinterInvoiceGenerator from './PrinterInvoiceGenerator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
-import { Loader2, Plus, QrCode, Printer, Download, Eye, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, Plus, QrCode, Printer, Download, Eye, CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 const AdminQRPrinterTab = () => {
@@ -21,6 +22,7 @@ const AdminQRPrinterTab = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [viewQRDialogOpen, setViewQRDialogOpen] = useState(false);
   const [selectedPrinter, setSelectedPrinter] = useState<any>(null);
+  const [invoicePrinter, setInvoicePrinter] = useState<any>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const [newPrinter, setNewPrinter] = useState({
@@ -197,6 +199,9 @@ const AdminQRPrinterTab = () => {
                       <Button variant="ghost" size="icon" onClick={() => downloadQR(printer)}>
                         <Download className="w-4 h-4" />
                       </Button>
+                      <Button variant="ghost" size="icon" title="توليد فاتورة" onClick={() => setInvoicePrinter(printer)}>
+                        <FileText className="w-4 h-4" />
+                      </Button>
                     </div>
                     {/* Hidden QR for download */}
                     <div className="hidden">
@@ -320,6 +325,13 @@ const AdminQRPrinterTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Generator */}
+      <PrinterInvoiceGenerator
+        printer={invoicePrinter}
+        open={!!invoicePrinter}
+        onClose={() => setInvoicePrinter(null)}
+      />
     </Card>
   );
 };
