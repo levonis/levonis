@@ -27,6 +27,7 @@ import {
   ArrowUp, Sparkles
 } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
+import PrinterActivationPanel from "./panels/PrinterActivationPanel";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ar } from "date-fns/locale";
