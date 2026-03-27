@@ -180,6 +180,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           printerSerial: '',
           printerModel: ob.productNameAr || ob.productName,
           orderNumber: ob.orderNumber,
+          orderId: ob.orderId,
           totalPrice: ob.totalPrice,
           orderItemId: ob.orderItemId,
           paymentMethod: ob.paymentMethod,
