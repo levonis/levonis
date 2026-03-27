@@ -373,7 +373,9 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
                           {buyer.address && <span>{buyer.address}</span>}
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          🖨 {buyer.printerModel} — <span className="font-mono">{buyer.printerSerial}</span>
+                          🖨 {buyer.printerModel}
+                          {buyer.printerSerial && <span> — <span className="font-mono">{buyer.printerSerial}</span></span>}
+                          {buyer.orderNumber && <span className="mr-2">📦 طلب #{buyer.orderNumber}</span>}
                         </div>
                       </div>
                       {selectedUserId === buyer.userId && (
