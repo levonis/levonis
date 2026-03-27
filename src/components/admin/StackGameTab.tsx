@@ -1,20 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2 } from "lucide-react";
 
-function ProductPicker({ value, onChange }: { value: string | null; onChange: (id: string | null, name?: string, image?: string) => void }) {
+interface ProductPickerValue {
+  product_id: string | null;
+  selected_color: string | null;
+  selected_option_id: string | null;
+}
+
+function ProductPicker({ 
+  value, 
+  onChange 
+}: { 
+  value: ProductPickerValue; 
+  onChange: (val: ProductPickerValue, productName?: string, productImage?: string) => void;
+}) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock").order("created_at", { ascending: false }).limit(20);
+      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
@@ -23,31 +36,111 @@ function ProductPicker({ value, onChange }: { value: string | null; onChange: (i
   });
 
   const { data: selected } = useQuery({
-    queryKey: ["admin-product-selected", value],
+    queryKey: ["admin-product-selected", value.product_id],
     queryFn: async () => {
-      if (!value) return null;
-      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock").eq("id", value).single();
+      if (!value.product_id) return null;
+      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
-    enabled: !!value,
+    enabled: !!value.product_id,
   });
 
-  if (!open) {
+  const { data: options = [] } = useQuery({
+    queryKey: ["admin-product-options", value.product_id],
+    queryFn: async () => {
+      if (!value.product_id) return [];
+      const { data } = await supabase.from("product_options").select("id, name_ar, image_url, stock_quantity").eq("product_id", value.product_id);
+      return (data || []) as any[];
+    },
+    enabled: !!value.product_id,
+  });
+
+  const colors: any[] = selected?.colors ? (Array.isArray(selected.colors) ? selected.colors : []) : [];
+  const hasColors = colors.length > 0;
+  const hasOptions = options.length > 0;
+
+  if (!open && !value.product_id) {
     return (
-      <div className="flex items-center gap-2">
-        {value && selected ? (
-          <div className="flex items-center gap-2 flex-1 bg-muted/30 rounded-md p-2 text-xs">
-            {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
-            <div className="flex-1 min-w-0">
-              <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
-              <div className="text-muted-foreground">مخزون: {selected.direct_stock ?? 0}</div>
-            </div>
-            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => { onChange(null); }}>إزالة</Button>
+      <Button variant="outline" size="sm" className="text-xs gap-1 w-full" onClick={() => setOpen(true)}>
+        <Package className="h-3.5 w-3.5" /> اختر منتج
+      </Button>
+    );
+  }
+
+  if (!open && value.product_id && selected) {
+    const selectedColor = colors.find((c: any) => (c.name || c.name_ar) === value.selected_color);
+    const selectedOption = options.find((o: any) => o.id === value.selected_option_id);
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 bg-muted/30 rounded-md p-2 text-xs">
+          {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
+          <div className="flex-1 min-w-0">
+            <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
+            <div className="text-muted-foreground">مخزون: {selected.direct_stock ?? 0}</div>
           </div>
-        ) : (
-          <Button variant="outline" size="sm" className="text-xs gap-1 w-full" onClick={() => setOpen(true)}>
-            <Package className="h-3.5 w-3.5" /> اختر منتج
-          </Button>
+          <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => onChange({ product_id: null, selected_color: null, selected_option_id: null })}>إزالة</Button>
+        </div>
+
+        {/* Color selector */}
+        {hasColors && (
+          <div className="bg-muted/10 rounded-md p-2 space-y-1">
+            <label className="text-[10px] text-muted-foreground flex items-center gap-1"><Palette className="h-3 w-3" /> اللون</label>
+            <Select 
+              value={value.selected_color || "__none__"} 
+              onValueChange={v => onChange({ ...value, selected_color: v === "__none__" ? null : v })}
+            >
+              <SelectTrigger className="h-7 text-xs">
+                <SelectValue placeholder="بدون تحديد لون" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">بدون تحديد</SelectItem>
+                {colors.map((c: any, i: number) => {
+                  const colorName = c.name_ar || c.name || `لون ${i+1}`;
+                  return (
+                    <SelectItem key={i} value={c.name || c.name_ar || `color_${i}`}>
+                      <div className="flex items-center gap-2">
+                        {c.hex_code && <span className="w-3 h-3 rounded-full border border-border" style={{ background: c.hex_code }} />}
+                        {colorName}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            {selectedColor && (
+              <div className="flex items-center gap-1 text-[10px] text-primary">
+                {selectedColor.hex_code && <span className="w-2.5 h-2.5 rounded-full" style={{ background: selectedColor.hex_code }} />}
+                {selectedColor.name_ar || selectedColor.name}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Option selector */}
+        {hasOptions && (
+          <div className="bg-muted/10 rounded-md p-2 space-y-1">
+            <label className="text-[10px] text-muted-foreground flex items-center gap-1"><Settings2 className="h-3 w-3" /> الخيار</label>
+            <Select 
+              value={value.selected_option_id || "__none__"} 
+              onValueChange={v => onChange({ ...value, selected_option_id: v === "__none__" ? null : v })}
+            >
+              <SelectTrigger className="h-7 text-xs">
+                <SelectValue placeholder="بدون تحديد خيار" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">بدون تحديد</SelectItem>
+                {options.map((o: any) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name_ar} {o.stock_quantity != null ? `(${o.stock_quantity})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedOption && (
+              <div className="text-[10px] text-primary">{selectedOption.name_ar}</div>
+            )}
+          </div>
         )}
       </div>
     );
@@ -71,7 +164,7 @@ function ProductPicker({ value, onChange }: { value: string | null; onChange: (i
           <button
             key={p.id}
             onClick={() => {
-              onChange(p.id, p.name_ar, p.image_url);
+              onChange({ product_id: p.id, selected_color: null, selected_option_id: null }, p.name_ar, p.image_url);
               setOpen(false);
               setSearch("");
             }}
@@ -86,6 +179,17 @@ function ProductPicker({ value, onChange }: { value: string | null; onChange: (i
         ))}
         {products.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">لا توجد نتائج</p>}
       </div>
+    </div>
+  );
+}
+
+function PrizeVariantDisplay({ productId, color, optionId }: { productId?: string | null; color?: string | null; optionId?: string | null }) {
+  if (!productId || (!color && !optionId)) return null;
+  return (
+    <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-0.5">
+      {color && <span className="flex items-center gap-0.5"><Palette className="h-2.5 w-2.5" /> {color}</span>}
+      {color && optionId && <span>•</span>}
+      {optionId && <span className="flex items-center gap-0.5"><Settings2 className="h-2.5 w-2.5" /> خيار محدد</span>}
     </div>
   );
 }
@@ -136,8 +240,14 @@ export default function StackGameTab() {
   const [form, setForm] = useState<any>(null);
   const s = form ?? settings;
   const [subTab, setSubTab] = useState<"settings" | "milestones" | "leaderboard" | "winners">("settings");
-  const [newMilestone, setNewMilestone] = useState({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null as string | null });
-  const [newLbPrize, setNewLbPrize] = useState({ position: 1, prize_name_ar: "", product_id: null as string | null });
+  const [newMilestone, setNewMilestone] = useState({ 
+    target_score: 100, prize_name_ar: "", stock: 10, 
+    product_id: null as string | null, selected_color: null as string | null, selected_option_id: null as string | null 
+  });
+  const [newLbPrize, setNewLbPrize] = useState({ 
+    position: 1, prize_name_ar: "", 
+    product_id: null as string | null, selected_color: null as string | null, selected_option_id: null as string | null 
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -172,13 +282,15 @@ export default function StackGameTab() {
         prize_name_ar: newMilestone.prize_name_ar || "منتج",
         stock: newMilestone.stock,
         product_id: newMilestone.product_id,
+        selected_color: newMilestone.selected_color,
+        selected_option_id: newMilestone.selected_option_id,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تمت إضافة الجائزة");
       queryClient.invalidateQueries({ queryKey: ["admin-stack-milestones"] });
-      setNewMilestone({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null });
+      setNewMilestone({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null, selected_color: null, selected_option_id: null });
     },
     onError: (e: any) => toast.error(e.message || "فشل الإضافة"),
   });
@@ -209,13 +321,15 @@ export default function StackGameTab() {
         position: newLbPrize.position,
         prize_name_ar: newLbPrize.prize_name_ar || "منتج",
         product_id: newLbPrize.product_id,
+        selected_color: newLbPrize.selected_color,
+        selected_option_id: newLbPrize.selected_option_id,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تمت الإضافة");
       queryClient.invalidateQueries({ queryKey: ["admin-stack-leaderboard-prizes"] });
-      setNewLbPrize({ position: 1, prize_name_ar: "", product_id: null });
+      setNewLbPrize({ position: 1, prize_name_ar: "", product_id: null, selected_color: null, selected_option_id: null });
     },
     onError: (e: any) => toast.error(e.message || "فشل الإضافة (قد يكون المركز مكرر)"),
   });
@@ -333,7 +447,7 @@ export default function StackGameTab() {
       {/* Milestones Tab */}
       {subTab === "milestones" && (
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">أول مستخدم يصل للنقاط المطلوبة يربح الجائزة (منتج من المتجر). يتم سحب المخزون تلقائياً عند الفوز.</p>
+          <p className="text-xs text-muted-foreground">أول مستخدم يصل للنقاط المطلوبة يربح الجائزة (منتج من المتجر مع اللون والخيار). يتم سحب المخزون تلقائياً عند الفوز.</p>
 
           <div className="bg-muted/20 rounded-lg p-4 space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-1"><Plus className="h-4 w-4" /> إضافة جائزة نقاط</h4>
@@ -348,10 +462,16 @@ export default function StackGameTab() {
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground">المنتج (الجائزة)</label>
+              <label className="text-[10px] text-muted-foreground">المنتج (الجائزة) + اللون والخيار</label>
               <ProductPicker
-                value={newMilestone.product_id}
-                onChange={(id, name) => setNewMilestone(p => ({ ...p, product_id: id, prize_name_ar: name || p.prize_name_ar }))}
+                value={{ product_id: newMilestone.product_id, selected_color: newMilestone.selected_color, selected_option_id: newMilestone.selected_option_id }}
+                onChange={(val, name) => setNewMilestone(p => ({ 
+                  ...p, 
+                  product_id: val.product_id, 
+                  selected_color: val.selected_color, 
+                  selected_option_id: val.selected_option_id,
+                  prize_name_ar: name || p.prize_name_ar 
+                }))}
               />
             </div>
             {!newMilestone.product_id && (
@@ -382,6 +502,7 @@ export default function StackGameTab() {
                       🎯 {m.target_score} نقطة • 📦 {m.claimed_count}/{m.stock} مُطالَب
                       {m.product_id && " • مرتبط بمنتج (سحب مخزون تلقائي)"}
                     </div>
+                    <PrizeVariantDisplay productId={m.product_id} color={m.selected_color} optionId={m.selected_option_id} />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Switch checked={m.is_active} onCheckedChange={v => toggleMilestone.mutate({ id: m.id, active: v })} />
@@ -399,7 +520,7 @@ export default function StackGameTab() {
       {/* Leaderboard Tab */}
       {subTab === "leaderboard" && (
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">حدد جوائز (منتجات) لأعلى المراكز. عند التتويج يتم سحب المخزون تلقائياً وتصفير النقاط.</p>
+          <p className="text-xs text-muted-foreground">حدد جوائز (منتجات مع اللون والخيار) لأعلى المراكز. عند التتويج يتم سحب المخزون تلقائياً وتصفير النقاط.</p>
 
           <div className="bg-muted/20 rounded-lg p-4 space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-1"><Plus className="h-4 w-4" /> جائزة مركز</h4>
@@ -408,10 +529,16 @@ export default function StackGameTab() {
               <Input type="number" min={1} max={10} value={newLbPrize.position} onChange={e => setNewLbPrize(p => ({ ...p, position: parseInt(e.target.value) || 1 }))} />
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground">المنتج (الجائزة)</label>
+              <label className="text-[10px] text-muted-foreground">المنتج (الجائزة) + اللون والخيار</label>
               <ProductPicker
-                value={newLbPrize.product_id}
-                onChange={(id, name) => setNewLbPrize(p => ({ ...p, product_id: id, prize_name_ar: name || p.prize_name_ar }))}
+                value={{ product_id: newLbPrize.product_id, selected_color: newLbPrize.selected_color, selected_option_id: newLbPrize.selected_option_id }}
+                onChange={(val, name) => setNewLbPrize(p => ({ 
+                  ...p, 
+                  product_id: val.product_id, 
+                  selected_color: val.selected_color, 
+                  selected_option_id: val.selected_option_id,
+                  prize_name_ar: name || p.prize_name_ar 
+                }))}
               />
             </div>
             {!newLbPrize.product_id && (
@@ -435,6 +562,7 @@ export default function StackGameTab() {
                     <div>
                       <span className="text-sm font-medium text-foreground">المركز {p.position}: {p.prize_name_ar}</span>
                       {p.product_id && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" /> مرتبط بمنتج</div>}
+                      <PrizeVariantDisplay productId={p.product_id} color={p.selected_color} optionId={p.selected_option_id} />
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteLbPrize.mutate(p.id)}>
@@ -507,6 +635,7 @@ export default function StackGameTab() {
                       {w.season && ` • الموسم ${w.season}`}
                       • {new Date(w.awarded_at).toLocaleDateString('ar-IQ')}
                     </div>
+                    <PrizeVariantDisplay productId={w.product_id} color={w.selected_color} optionId={w.selected_option_id} />
                   </div>
                   <div className="text-[10px] text-muted-foreground font-mono">{w.user_id?.slice(0, 8)}...</div>
                 </div>

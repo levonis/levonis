@@ -7373,6 +7373,8 @@ export type Database = {
           prize_image_url: string | null
           prize_name_ar: string
           product_id: string | null
+          selected_color: string | null
+          selected_option_id: string | null
         }
         Insert: {
           created_at?: string
@@ -7383,6 +7385,8 @@ export type Database = {
           prize_image_url?: string | null
           prize_name_ar?: string
           product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
         }
         Update: {
           created_at?: string
@@ -7393,6 +7397,8 @@ export type Database = {
           prize_image_url?: string | null
           prize_name_ar?: string
           product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
         }
         Relationships: [
           {
@@ -7456,6 +7462,8 @@ export type Database = {
           prize_image_url: string | null
           prize_name_ar: string
           product_id: string | null
+          selected_color: string | null
+          selected_option_id: string | null
           stock: number
           target_score: number
           updated_at: string
@@ -7469,6 +7477,8 @@ export type Database = {
           prize_image_url?: string | null
           prize_name_ar?: string
           product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
           stock?: number
           target_score?: number
           updated_at?: string
@@ -7482,6 +7492,8 @@ export type Database = {
           prize_image_url?: string | null
           prize_name_ar?: string
           product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
           stock?: number
           target_score?: number
           updated_at?: string
@@ -7587,6 +7599,8 @@ export type Database = {
           product_id: string | null
           score: number | null
           season: number | null
+          selected_color: string | null
+          selected_option_id: string | null
           user_id: string
         }
         Insert: {
@@ -7598,6 +7612,8 @@ export type Database = {
           product_id?: string | null
           score?: number | null
           season?: number | null
+          selected_color?: string | null
+          selected_option_id?: string | null
           user_id: string
         }
         Update: {
@@ -7609,6 +7625,8 @@ export type Database = {
           product_id?: string | null
           score?: number | null
           season?: number | null
+          selected_color?: string | null
+          selected_option_id?: string | null
           user_id?: string
         }
         Relationships: [
