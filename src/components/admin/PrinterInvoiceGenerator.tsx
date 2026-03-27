@@ -291,6 +291,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       ...invoiceData,
       subtotal: sub,
       tax: taxAmount,
+      taxPercent: taxPercent,
       delivery: deliveryFee,
       total: sub + taxAmount + deliveryFee,
     });
