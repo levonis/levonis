@@ -127,6 +127,8 @@ const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
 const BundleDetail = lazy(() => import("./pages/BundleDetail"));
+const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
+const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
@@ -263,6 +265,8 @@ function AppContent() {
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/printer-protection" element={<Navigate to="/rewards" replace />} />
             <Route path="/my-printers" element={<Navigate to="/rewards" replace />} />
+            <Route path="/activate-printer" element={<ActivatePrinter />} />
+            <Route path="/warranty-dashboard/:printerId" element={<RequireAuth><WarrantyDashboard /></RequireAuth>} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

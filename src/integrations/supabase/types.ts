@@ -7353,8 +7353,10 @@ export type Database = {
       }
       store_printers: {
         Row: {
+          activation_date: string | null
           buyer_user_id: string | null
           created_at: string | null
+          expiry_date: string | null
           id: string
           image_url: string | null
           is_registered: boolean | null
@@ -7362,13 +7364,18 @@ export type Database = {
           model_name_ar: string
           order_id: string | null
           order_item_id: string | null
+          qr_code_data: string | null
           serial_number: string
           sold_at: string | null
+          status: string
           updated_at: string | null
+          warranty_months: number | null
         }
         Insert: {
+          activation_date?: string | null
           buyer_user_id?: string | null
           created_at?: string | null
+          expiry_date?: string | null
           id?: string
           image_url?: string | null
           is_registered?: boolean | null
@@ -7376,13 +7383,18 @@ export type Database = {
           model_name_ar: string
           order_id?: string | null
           order_item_id?: string | null
+          qr_code_data?: string | null
           serial_number: string
           sold_at?: string | null
+          status?: string
           updated_at?: string | null
+          warranty_months?: number | null
         }
         Update: {
+          activation_date?: string | null
           buyer_user_id?: string | null
           created_at?: string | null
+          expiry_date?: string | null
           id?: string
           image_url?: string | null
           is_registered?: boolean | null
@@ -7390,9 +7402,12 @@ export type Database = {
           model_name_ar?: string
           order_id?: string | null
           order_item_id?: string | null
+          qr_code_data?: string | null
           serial_number?: string
           sold_at?: string | null
+          status?: string
           updated_at?: string | null
+          warranty_months?: number | null
         }
         Relationships: [
           {
