@@ -38,6 +38,7 @@ interface InvoiceData {
   invoiceNo: string;
   date: Date;
   paymentMethod: string;
+  productImage?: string;
 }
 
 interface Props {
