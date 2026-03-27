@@ -68,6 +68,7 @@ export default function AdminUserChat({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [orderCardSent, setOrderCardSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
