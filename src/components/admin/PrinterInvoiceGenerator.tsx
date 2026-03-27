@@ -241,7 +241,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      const deliveryFee = parseFloat(manualFields.delivery) || 12000;
+      const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
       const taxPercent = parseFloat(manualFields.taxPercent) || 3;
       const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
