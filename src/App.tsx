@@ -264,10 +264,10 @@ function AppContent() {
             <Route path="/my-points" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
-            <Route path="/printer-protection" element={<Navigate to="/rewards" replace />} />
-            <Route path="/my-printers" element={<Navigate to="/rewards" replace />} />
-            <Route path="/activate-printer" element={<ActivatePrinter />} />
-            <Route path="/warranty-dashboard/:printerId" element={<RequireAuth><WarrantyDashboard /></RequireAuth>} />
+            <Route path="/printer-protection" element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
+            <Route path="/my-printers" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
+            <Route path="/activate-printer" element={<Navigate to="/rewards?tab=insurance&sub=activate" replace />} />
+            <Route path="/warranty-dashboard/:printerId" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
