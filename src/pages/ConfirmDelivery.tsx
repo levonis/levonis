@@ -177,65 +177,34 @@ const ConfirmDelivery = () => {
           .maybeSingle();
 
         if (existingReview) {
-          // Update existing review
+          // Update existing review - status pending for admin approval
           await supabase.from('reviews').update({
             rating: data.rating,
             comment: data.comment.trim() || null,
             media_files: uploadedUrls.length > 0 ? uploadedUrls : null,
             is_auto_rating: false,
-            points_awarded: pointsForThisReview,
+            status: 'pending',
           }).eq('id', existingReview.id);
         } else {
-          // Insert new review
+          // Insert new review - status pending for admin approval
           const { error: reviewError } = await supabase.from('reviews').insert({
             user_id: user.id,
             product_id: item.product_id,
             rating: data.rating,
             comment: data.comment.trim() || null,
             media_files: uploadedUrls.length > 0 ? uploadedUrls : null,
-            points_awarded: pointsForThisReview,
+            status: 'pending',
           });
           if (reviewError) throw reviewError;
         }
 
-        // Award points
-        await supabase.from('points_transactions').insert({
-          user_id: user.id,
-          points: pointsForThisReview,
-          type: 'earned',
-          source: hasMedia ? 'verified_review' : 'review',
-          description: hasMedia
-            ? `تقييم مع وسائط: ${item.product_name_ar || item.product_name}`
-            : `تقييم: ${item.product_name_ar || item.product_name}`,
-          related_id: item.product_id,
-        });
-
+        const pointsForThisReview = reviewPoints + (hasMedia ? mediaBonus : 0);
         totalPointsEarned += pointsForThisReview;
       }
 
-      // Update user points
-      if (totalPointsEarned > 0) {
-        const { data: currentPoints } = await supabase
-          .from('user_points').select('*').eq('user_id', user.id).maybeSingle();
-
-        if (currentPoints) {
-          await supabase.from('user_points').update({
-            total_points: (currentPoints.total_points || 0) + totalPointsEarned,
-            available_points: (currentPoints.available_points || 0) + totalPointsEarned,
-          }).eq('user_id', user.id);
-        } else {
-          await supabase.from('user_points').insert({
-            user_id: user.id,
-            total_points: totalPointsEarned,
-            available_points: totalPointsEarned,
-          });
-        }
-      }
-
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
-      queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['reviewable-orders'] });
-      toast.success(`تم إرسال التقييمات وربحت ${totalPointsEarned} نقطة! 🎉`);
+      toast.success(`تم إرسال التقييمات بنجاح! سيتم مراجعتها ومنح الجوائز بعد الموافقة 🎉`);
       setStep('done');
     } catch (error: any) {
       console.error('Error submitting reviews:', error);
