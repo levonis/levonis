@@ -323,7 +323,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setInvoiceData(null);
       setSelectedUserId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000', tax: '' });
+      setManualFields({ subtotal: '', delivery: '12000', taxPercent: '3' });
     }
   }, [open]);
 
