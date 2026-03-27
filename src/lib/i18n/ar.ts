@@ -346,6 +346,7 @@ export const ar: TranslationKeys = {
   rewards_sub_my_printers: 'طابعاتي',
   rewards_sub_plans: 'الباقات',
   rewards_sub_maintenance: 'الصيانة',
+  rewards_sub_activate: 'تفعيل طابعة',
   rewards_quick_daily_tasks: 'المهام اليومية',
   rewards_quick_competitions: 'المسابقات',
   rewards_quick_points_store: 'متجر النقاط',

@@ -346,6 +346,7 @@ export const en: TranslationKeys = {
   rewards_sub_my_printers: 'My Printers',
   rewards_sub_plans: 'Plans',
   rewards_sub_maintenance: 'Maintenance',
+  rewards_sub_activate: 'Activate Printer',
   rewards_quick_daily_tasks: 'Daily Tasks',
   rewards_quick_competitions: 'Competitions',
   rewards_quick_points_store: 'Points Store',

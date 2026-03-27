@@ -346,6 +346,7 @@ export type TranslationKeys = {
   rewards_sub_my_printers: string;
   rewards_sub_plans: string;
   rewards_sub_maintenance: string;
+  rewards_sub_activate: string;
   rewards_quick_daily_tasks: string;
   rewards_quick_competitions: string;
   rewards_quick_points_store: string;
