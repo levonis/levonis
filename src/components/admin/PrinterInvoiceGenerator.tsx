@@ -232,7 +232,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-      const taxAmount = manualFields.tax !== '' ? parseFloat(manualFields.tax) || 0 : Math.round(sub * 0.03);
+      const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+      const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
 
       setInvoiceData({
