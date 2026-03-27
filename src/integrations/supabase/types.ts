@@ -2231,6 +2231,47 @@ export type Database = {
         }
         Relationships: []
       }
+      engineer_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          engineer_id: string | null
+          engineer_name: string
+          id: string
+          rating: number
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          engineer_id?: string | null
+          engineer_name: string
+          id?: string
+          rating: number
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          engineer_id?: string | null
+          engineer_name?: string
+          id?: string
+          rating?: number
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engineer_ratings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "maintenance_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escrow_transactions: {
         Row: {
           amount: number
@@ -2322,6 +2363,44 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      filament_discount_usage: {
+        Row: {
+          discount_amount: number | null
+          id: string
+          product_id: string | null
+          subscription_id: string | null
+          used_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          discount_amount?: number | null
+          id?: string
+          product_id?: string | null
+          subscription_id?: string | null
+          used_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          discount_amount?: number | null
+          id?: string
+          product_id?: string | null
+          subscription_id?: string | null
+          used_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "filament_discount_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -3228,6 +3307,75 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      maintenance_tickets: {
+        Row: {
+          assigned_engineer_id: string | null
+          assigned_engineer_name: string | null
+          closed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          priority: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string
+          subscription_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          user_printer_id: string | null
+        }
+        Insert: {
+          assigned_engineer_id?: string | null
+          assigned_engineer_name?: string | null
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          subscription_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          user_printer_id?: string | null
+        }
+        Update: {
+          assigned_engineer_id?: string | null
+          assigned_engineer_name?: string | null
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          subscription_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          user_printer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_tickets_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tickets_user_printer_id_fkey"
+            columns: ["user_printer_id"]
+            isOneToOne: false
+            referencedRelation: "user_printers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketplace_telegram_context: {
         Row: {
@@ -6213,6 +6361,8 @@ export type Database = {
           description_en: string | null
           display_order: number | null
           features: Json | null
+          filament_discount_percentage: number | null
+          filament_weekly_limit: number | null
           has_preventive_maintenance: boolean | null
           has_replacement_printer: boolean | null
           icon_name: string | null
@@ -6231,6 +6381,7 @@ export type Database = {
           priority_level: number | null
           updated_at: string | null
           waiting_period_days: number | null
+          warranty_duration_months: number | null
         }
         Insert: {
           annual_coverage_cap?: number | null
@@ -6240,6 +6391,8 @@ export type Database = {
           description_en?: string | null
           display_order?: number | null
           features?: Json | null
+          filament_discount_percentage?: number | null
+          filament_weekly_limit?: number | null
           has_preventive_maintenance?: boolean | null
           has_replacement_printer?: boolean | null
           icon_name?: string | null
@@ -6258,6 +6411,7 @@ export type Database = {
           priority_level?: number | null
           updated_at?: string | null
           waiting_period_days?: number | null
+          warranty_duration_months?: number | null
         }
         Update: {
           annual_coverage_cap?: number | null
@@ -6267,6 +6421,8 @@ export type Database = {
           description_en?: string | null
           display_order?: number | null
           features?: Json | null
+          filament_discount_percentage?: number | null
+          filament_weekly_limit?: number | null
           has_preventive_maintenance?: boolean | null
           has_replacement_printer?: boolean | null
           icon_name?: string | null
@@ -6285,6 +6441,7 @@ export type Database = {
           priority_level?: number | null
           updated_at?: string | null
           waiting_period_days?: number | null
+          warranty_duration_months?: number | null
         }
         Relationships: []
       }
