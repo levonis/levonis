@@ -246,6 +246,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
         tax: taxAmount,
+        taxPercent: taxPercent,
         delivery: deliveryFee,
         total: sub + taxAmount + deliveryFee,
         invoiceNo: format(now, 'yyyyMMdd-HHmm'),
