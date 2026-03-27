@@ -45,6 +45,10 @@ interface ProtectionPlan {
   badge_text: string | null;
   annual_coverage_cap: number | null;
   parts_discount_categories: string[] | null;
+  parts_discount_type: string;
+  parts_discount_value: number;
+  parts_discount_limit_type: string;
+  parts_discount_limit_count: number;
   display_order: number;
 }
 
