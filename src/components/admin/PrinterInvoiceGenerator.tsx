@@ -90,11 +90,11 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       if (printer.order_item_id) {
         const { data: orderItem } = await supabase
           .from('order_items')
-          .select('price, quantity')
+          .select('total_price, quantity')
           .eq('id', printer.order_item_id)
           .single();
         if (orderItem) {
-          subtotal = (orderItem.price || 0) * (orderItem.quantity || 1);
+          subtotal = orderItem.total_price || 0;
         }
       }
 
