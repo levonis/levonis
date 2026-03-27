@@ -815,6 +815,34 @@ const ProductDetail = () => {
                     <span className="text-sm line-through text-muted-foreground/50">{formatPrice(finalOriginalPrice)}</span>
                   )}
                 </div>
+                {/* Protection Plan Discount Badge */}
+                {protectionDiscount && protectionDiscount.discountValue > 0 && (
+                  <div className="mt-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2">
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                      <Tag className="h-3.5 w-3.5" />
+                      <span className="text-xs font-bold">
+                        خصم خاص لمشتركي الحماية ({protectionDiscount.planNameAr})
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                        {formatPrice(calculateProtectionDiscountedPrice(finalPrice, protectionDiscount))}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{currency}</span>
+                      <span className="text-xs line-through text-muted-foreground/50">{formatPrice(finalPrice)}</span>
+                      {protectionDiscount.discountType === 'fixed'
+                        ? <Badge variant="secondary" className="text-[10px]">-{formatPrice(protectionDiscount.discountValue)}</Badge>
+                        : <Badge variant="secondary" className="text-[10px]">-{protectionDiscount.discountValue}%</Badge>
+                      }
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {protectionDiscount.canUse
+                        ? `متبقي ${protectionDiscount.limitCount - protectionDiscount.usedCount} استخدام ${protectionDiscount.limitType === 'weekly' ? 'هذا الأسبوع' : 'هذا الشهر'}`
+                        : `تم استهلاك الحد ${protectionDiscount.limitType === 'weekly' ? 'الأسبوعي' : 'الشهري'}`
+                      }
+                    </p>
+                  </div>
+                )}
                 {hasStockInfo && (
                   <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
                     <BoxIcon className="h-3 w-3" />
