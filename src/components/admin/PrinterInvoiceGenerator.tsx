@@ -683,7 +683,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', borderTop: '2px solid #1a1a1a', paddingTop: '15px', fontSize: '13px' }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '2px', marginBottom: '4px' }}>PAYMENT DETAILS</div>
-          <div>CASH</div>
+          <div>{data.paymentMethod || 'CASH'}</div>
         </div>
         <div>
           <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '2px', marginBottom: '4px' }}>MOBILE</div>
