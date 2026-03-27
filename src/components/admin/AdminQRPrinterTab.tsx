@@ -22,6 +22,7 @@ const AdminQRPrinterTab = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [viewQRDialogOpen, setViewQRDialogOpen] = useState(false);
   const [selectedPrinter, setSelectedPrinter] = useState<any>(null);
+  const [invoicePrinter, setInvoicePrinter] = useState<any>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const [newPrinter, setNewPrinter] = useState({
