@@ -1143,8 +1143,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           }
                           return true;
                         } else {
-                          // Regular user: exclude support conversations (shown pinned)
+                          // Regular user: exclude support and maintenance conversations (shown pinned)
                           if (c.buyer_id === SUPPORT_USER_ID || c.seller_id === SUPPORT_USER_ID) return false;
+                          if (c.buyer_id === MAINTENANCE_SUPPORT_ID || c.seller_id === MAINTENANCE_SUPPORT_ID) return false;
                           // Apply search filter for regular users too
                           if (adminSearchTerm.trim()) {
                             const otherUserId = c.buyer_id === user?.id ? c.seller_id : c.buyer_id;
