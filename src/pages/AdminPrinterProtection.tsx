@@ -174,7 +174,7 @@ const AdminPrinterProtection = () => {
     enabled: isAdmin,
   });
 
-  // Fetch all subscriptions
+  // Fetch all subscriptions (hide cancelled)
   const { data: subscriptions, isLoading: subscriptionsLoading } = useQuery({
     queryKey: ['admin-subscriptions', statusFilter, searchTerm],
     queryFn: async () => {
@@ -187,10 +187,11 @@ const AdminPrinterProtection = () => {
           ),
           protection_plans (id, name_ar, plan_type)
         `)
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter as 'active' | 'paused' | 'expired' | 'cancelled');
+      if (statusFilter !== 'all' && statusFilter !== 'cancelled') {
+        query = query.eq('status', statusFilter as 'active' | 'paused' | 'expired');
       }
 
       const { data, error } = await query;
