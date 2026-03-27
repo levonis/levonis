@@ -28,6 +28,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
 import OptimizedImage from './OptimizedImage';
+import OrderTrackingCard from './chat/messages/OrderTrackingCard';
 
 interface Message {
   id: string;
