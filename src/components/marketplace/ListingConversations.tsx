@@ -2261,9 +2261,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <Button
                     className="flex-1 gap-1"
                     onClick={async () => {
-                      const priceEl = document.getElementById('admin-cart-price') as HTMLInputElement;
-                      const notesEl = document.getElementById('admin-cart-notes') as HTMLInputElement;
-                      const price = parseFloat(priceEl?.value || '0');
+                      const priceVal = adminCartRequest._editPrice ?? (adminCartRequest.adjusted_total || adminCartRequest.original_total);
+                      const notesVal = adminCartRequest._editNotes ?? (() => {
+                        try { return JSON.parse(adminCartRequest.admin_notes || '{}').notes || adminCartRequest.admin_notes || ''; } catch { return adminCartRequest.admin_notes || ''; }
+                      })();
+                      const price = parseFloat(String(priceVal) || '0');
                       if (isNaN(price) || price <= 0) {
                         toast.error('أدخل سعراً صحيحاً');
                         return;
