@@ -108,7 +108,7 @@ function calcItemPrice(product: any, optionId: string | undefined, saleType: Bun
 function calcOriginalPrice(product: any, optionId: string | undefined, usdToIqd: number, options?: any[]): number {
   const opt = optionId && options ? options.find((o: any) => o.id === optionId) : null;
   const adj = opt?.price_adjustment || 0;
-  const adjIqd = Math.round(adj * usdToIqd);
+  const adjIqd = Math.round(adj);
   const base = product.original_price || product.price || 0;
   return base + adjIqd;
 }
