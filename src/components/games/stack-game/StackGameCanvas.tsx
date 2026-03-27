@@ -10,13 +10,12 @@ export default function StackGameCanvas({ onGameOver }: Props) {
   return (
     <Canvas
       shadows
-      camera={{ position: [4, 8, 4], fov: 50 }}
+      camera={{ position: [3.5, 7, 3.5], fov: 45 }}
       style={{ width: "100%", height: "100%", touchAction: "none" }}
-      gl={{ antialias: true, alpha: false }}
+      gl={{ antialias: true, alpha: false, toneMapping: 3 }}
+      dpr={[1, 1.5]}
     >
-      <color attach="background" args={["#1a1a2e"]} />
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 10, 5]} intensity={1} castShadow shadow-mapSize={1024} />
+      <color attach="background" args={["#0f0a1e"]} />
       <Suspense fallback={null}>
         <StackScene onGameOver={onGameOver} />
       </Suspense>
