@@ -22,8 +22,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import AdminMaintenanceTab from '@/components/admin/AdminMaintenanceTab';
-import AdminRatingsTab from '@/components/admin/AdminRatingsTab';
 import AdminQRPrinterTab from '@/components/admin/AdminQRPrinterTab';
 
 interface ProtectionPlan {
@@ -174,7 +172,7 @@ const AdminPrinterProtection = () => {
     enabled: isAdmin,
   });
 
-  // Fetch all subscriptions
+  // Fetch all subscriptions (hide cancelled)
   const { data: subscriptions, isLoading: subscriptionsLoading } = useQuery({
     queryKey: ['admin-subscriptions', statusFilter, searchTerm],
     queryFn: async () => {
@@ -187,10 +185,11 @@ const AdminPrinterProtection = () => {
           ),
           protection_plans (id, name_ar, plan_type)
         `)
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter as 'active' | 'paused' | 'expired' | 'cancelled');
+      if (statusFilter !== 'all' && statusFilter !== 'cancelled') {
+        query = query.eq('status', statusFilter as 'active' | 'paused' | 'expired');
       }
 
       const { data, error } = await query;
@@ -252,15 +251,26 @@ const AdminPrinterProtection = () => {
     enabled: isAdmin,
   });
 
-  // Fetch delivered orders needing serial numbers
+  // Fetch delivered orders needing serial numbers - ONLY printer category
+  const PRINTER_CATEGORY_ID = '3cd72a43-3af6-4adb-83e4-a482b4feca25';
   const { data: deliveredItems, isLoading: deliveredLoading } = useQuery({
     queryKey: ['admin-delivered-printer-items'],
     queryFn: async () => {
+      // First get product IDs in printer category
+      const { data: printerProducts } = await supabase
+        .from('products')
+        .select('id')
+        .eq('category_id', PRINTER_CATEGORY_ID);
+      
+      const printerProductIds = printerProducts?.map(p => p.id) || [];
+      if (printerProductIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from('order_items')
         .select(`
           id,
           order_id,
+          product_id,
           product_name,
           product_name_ar,
           serial_number,
@@ -274,6 +284,7 @@ const AdminPrinterProtection = () => {
         `)
         .eq('orders.status', 'delivered')
         .is('serial_number', null)
+        .in('product_id', printerProductIds)
         .order('orders(delivered_at)', { ascending: false });
 
       if (error) throw error;
@@ -607,7 +618,7 @@ const AdminPrinterProtection = () => {
         </div>
 
         <Tabs defaultValue="qr-printers" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="qr-printers">إنشاء + QR</TabsTrigger>
             <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
             <TabsTrigger value="plans">الباقات</TabsTrigger>
@@ -617,9 +628,7 @@ const AdminPrinterProtection = () => {
                 <Badge className="mr-2 bg-amber-500 text-white text-xs px-1.5">{pendingRequests}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="delivered">الطلبات الموصلة</TabsTrigger>
-            <TabsTrigger value="maintenance">طلبات الصيانة</TabsTrigger>
-            <TabsTrigger value="ratings">تقييمات الفنيين</TabsTrigger>
+            <TabsTrigger value="delivered">طلبات الطابعات</TabsTrigger>
             <TabsTrigger value="logs">السجل</TabsTrigger>
           </TabsList>
 
@@ -657,7 +666,6 @@ const AdminPrinterProtection = () => {
                       <SelectItem value="active">نشط</SelectItem>
                       <SelectItem value="paused">متوقف</SelectItem>
                       <SelectItem value="expired">منتهي</SelectItem>
-                      <SelectItem value="cancelled">ملغي</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -992,24 +1000,36 @@ const AdminPrinterProtection = () => {
             </Card>
           </TabsContent>
 
-          {/* Maintenance Tickets Tab */}
-          <TabsContent value="maintenance" className="space-y-4">
-            <AdminMaintenanceTab />
-          </TabsContent>
-
-          {/* Engineer Ratings Tab */}
-          <TabsContent value="ratings" className="space-y-4">
-            <AdminRatingsTab />
-          </TabsContent>
-
           {/* Logs Tab */}
           <TabsContent value="logs" className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <History className="w-5 h-5" />
                   سجل التغييرات
                 </CardTitle>
+                {logs && logs.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={async () => {
+                      if (!confirm('هل أنت متأكد من حذف جميع السجلات؟')) return;
+                      const { error } = await supabase
+                        .from('printer_protection_logs')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000');
+                      if (error) {
+                        toast.error('فشل حذف السجلات');
+                      } else {
+                        toast.success('تم حذف جميع السجلات');
+                        queryClient.invalidateQueries({ queryKey: ['printer-protection-logs'] });
+                      }
+                    }}
+                  >
+                    <X className="w-4 h-4 ml-1" />
+                    حذف الكل
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 <Table>
@@ -1019,6 +1039,7 @@ const AdminPrinterProtection = () => {
                       <TableHead>النوع</TableHead>
                       <TableHead>التفاصيل</TableHead>
                       <TableHead>التاريخ</TableHead>
+                      <TableHead>حذف</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1032,11 +1053,31 @@ const AdminPrinterProtection = () => {
                           {JSON.stringify(log.details)}
                         </TableCell>
                         <TableCell>{format(new Date(log.created_at!), 'dd/MM/yyyy HH:mm')}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive h-8 w-8"
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from('printer_protection_logs')
+                                .delete()
+                                .eq('id', log.id);
+                              if (error) {
+                                toast.error('فشل الحذف');
+                              } else {
+                                queryClient.invalidateQueries({ queryKey: ['printer-protection-logs'] });
+                              }
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {(!logs || logs.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           لا توجد سجلات
                         </TableCell>
                       </TableRow>

@@ -75,6 +75,8 @@ import { type ReplyToMessage } from '@/components/chat/messages/ReplyPreviewBar'
 
 // Support account ID
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
+// Maintenance support account ID (virtual)
+const MAINTENANCE_SUPPORT_ID = "00000000-0000-0000-0000-000000000001";
 
 interface EntryContextData {
   type: 'product' | 'request';
@@ -247,8 +249,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       if (listingId) {
         query = query.eq('listing_id', listingId);
       } else if (isAdmin) {
-        // Admin sees all support conversations (where SUPPORT_USER_ID is participant)
-        query = query.or(`buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${SUPPORT_USER_ID}`);
+        // Admin sees all support AND maintenance conversations
+        query = query.or(`buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${SUPPORT_USER_ID},buyer_id.eq.${MAINTENANCE_SUPPORT_ID},seller_id.eq.${MAINTENANCE_SUPPORT_ID}`);
       } else {
         query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
       }
@@ -260,7 +262,44 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user && open,
   });
 
-  // Auto open conversation only once on initial load
+  // Check if user has active warranty/insurance (to show maintenance support contact)
+  const { data: hasActiveWarranty } = useQuery({
+    queryKey: ['user-active-warranty', user?.id],
+    queryFn: async () => {
+      if (!user || isAdmin) return false;
+      // Check for active printer subscriptions or active warranty (store_printers with active status)
+      const [{ data: subs }, { data: printers }] = await Promise.all([
+        supabase
+          .from('printer_subscriptions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .limit(1),
+        supabase
+          .from('user_printers')
+          .select('id, store_printers!inner(status, expiry_date)')
+          .eq('user_id', user.id)
+          .limit(1),
+      ]);
+      const hasActiveSub = (subs?.length || 0) > 0;
+      const hasActivePrinter = printers?.some((p: any) => 
+        p.store_printers?.status === 'active' && 
+        (!p.store_printers?.expiry_date || new Date(p.store_printers.expiry_date) > new Date())
+      );
+      return hasActiveSub || hasActivePrinter;
+    },
+    enabled: !!user && open && !isAdmin,
+    staleTime: 60_000,
+  });
+
+  // Find maintenance conversation for current user
+  const maintenanceConv = useMemo(() => {
+    if (isAdmin || !conversations) return null;
+    return conversations.find(c => 
+      c.buyer_id === MAINTENANCE_SUPPORT_ID || c.seller_id === MAINTENANCE_SUPPORT_ID
+    );
+  }, [conversations, isAdmin]);
+
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   useEffect(() => {
     if (autoOpenConversationId && conversations?.length && !hasAutoOpened) {
@@ -427,14 +466,15 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryKey: ['conv-unread-counts', user?.id, conversations?.map(c => c.id)],
     queryFn: async () => {
       if (!conversations?.length || !user) return {};
-      const effectiveId = isAdmin ? SUPPORT_USER_ID : user.id;
+      // For admin: exclude messages from both support and maintenance IDs
+      const excludeIds = isAdmin ? [SUPPORT_USER_ID, MAINTENANCE_SUPPORT_ID] : [user.id];
       const counts: Record<string, number> = {};
       // Batch: get all unread messages across all conversations
       const { data } = await supabase
         .from('listing_messages')
         .select('conversation_id')
         .in('conversation_id', conversations.map(c => c.id))
-        .neq('sender_id', effectiveId)
+        .not('sender_id', 'in', `(${excludeIds.join(',')})`)
         .eq('is_read', false);
       
       for (const msg of data || []) {
@@ -478,7 +518,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   useEffect(() => {
     if (selectedConversation && user) {
       const markAsRead = async () => {
-        const effectiveId = isAdmin ? SUPPORT_USER_ID : user.id;
+        const conv = conversations?.find(c => c.id === selectedConversation);
+        const isMaintenanceChat = conv?.buyer_id === MAINTENANCE_SUPPORT_ID || conv?.seller_id === MAINTENANCE_SUPPORT_ID;
+        const effectiveId = isAdmin ? (isMaintenanceChat ? MAINTENANCE_SUPPORT_ID : SUPPORT_USER_ID) : user.id;
         const { error } = await supabase
           .from('listing_messages')
           .update({ is_read: true })
@@ -517,8 +559,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       }
       
       // Send message - this is the only blocking operation
-      // Admin sends as SUPPORT_USER_ID to maintain support identity
-      const effectiveSenderId = isAdmin ? SUPPORT_USER_ID : user.id;
+      // Admin sends as SUPPORT_USER_ID or MAINTENANCE_SUPPORT_ID based on conversation type
+      const isMaintenanceChat = selectedConv?.buyer_id === MAINTENANCE_SUPPORT_ID || selectedConv?.seller_id === MAINTENANCE_SUPPORT_ID;
+      const effectiveSenderId = isAdmin ? (isMaintenanceChat ? MAINTENANCE_SUPPORT_ID : SUPPORT_USER_ID) : user.id;
       const { error } = await supabase.from('listing_messages').insert({
         conversation_id: selectedConversation,
         sender_id: effectiveSenderId,
@@ -689,8 +732,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   });
 
   const selectedConv = conversations?.find(c => c.id === selectedConversation);
-  // For admin, treat SUPPORT_USER_ID as "me" when determining buyer/seller roles
-  const effectiveUserId = isAdmin ? SUPPORT_USER_ID : user?.id;
+  // For admin, treat SUPPORT_USER_ID or MAINTENANCE_SUPPORT_ID as "me" based on conversation type
+  const isSelectedMaintenanceChat = selectedConv?.buyer_id === MAINTENANCE_SUPPORT_ID || selectedConv?.seller_id === MAINTENANCE_SUPPORT_ID;
+  const effectiveUserId = isAdmin ? (isSelectedMaintenanceChat ? MAINTENANCE_SUPPORT_ID : SUPPORT_USER_ID) : user?.id;
   const isBuyer = selectedConv?.buyer_id === effectiveUserId;
   const isSeller = selectedConv?.seller_id === effectiveUserId;
   const otherUserId = selectedConv ? (selectedConv.buyer_id === effectiveUserId ? selectedConv.seller_id : selectedConv.buyer_id) : null;
@@ -724,8 +768,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user,
   });
   
-   // Determine if this is a support/admin chat (with SUPPORT_USER_ID)
+   // Determine if this is a support/admin chat (with SUPPORT_USER_ID or MAINTENANCE_SUPPORT_ID)
    const isSupportConversation = selectedConv?.buyer_id === SUPPORT_USER_ID || selectedConv?.seller_id === SUPPORT_USER_ID;
+   const isMaintenanceConversation = selectedConv?.buyer_id === MAINTENANCE_SUPPORT_ID || selectedConv?.seller_id === MAINTENANCE_SUPPORT_ID;
    
    // Everyone can send products (from different sources based on context)
    const canSendProducts = true;
@@ -1077,11 +1122,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     );
                     
                     // Deduplicate conversations by other user ID (prevent showing same user multiple times)
-                    const effectiveId = isCurrentUserSupport ? SUPPORT_USER_ID : user?.id;
+                    const adminIds = [SUPPORT_USER_ID, MAINTENANCE_SUPPORT_ID];
                     const seenUserIds = new Set<string>();
                     const uniqueConversations = [...(conversations || [])].filter(conv => {
-                      const otherUserId = conv.buyer_id === effectiveId ? conv.seller_id : conv.buyer_id;
-                      if (seenUserIds.has(otherUserId)) return false;
+                      // For admin: the "other" user is whoever isn't support/maintenance
+                      let otherUserId: string;
+                      if (isCurrentUserSupport) {
+                        otherUserId = adminIds.includes(conv.buyer_id) ? conv.seller_id : conv.buyer_id;
+                      } else {
+                        otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                      }
                       if (seenUserIds.has(otherUserId)) return false;
                       seenUserIds.add(otherUserId);
                       return true;
@@ -1092,8 +1142,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     const sortedConvs = uniqueConversations
                       .filter(c => {
                         if (isCurrentUserSupport) {
-                          const otherUserId = c.buyer_id === effectiveId ? c.seller_id : c.buyer_id;
-                          if (otherUserId === SUPPORT_USER_ID) return false;
+                          const otherUserId = adminIds.includes(c.buyer_id) ? c.seller_id : c.buyer_id;
+                          if (otherUserId === SUPPORT_USER_ID || otherUserId === MAINTENANCE_SUPPORT_ID) return false;
                           // Apply admin search filter
                           if (adminSearchTerm.trim()) {
                             const otherProfile = profiles?.[otherUserId];
@@ -1104,8 +1154,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           }
                           return true;
                         } else {
-                          // Regular user: exclude support conversations (shown pinned)
+                          // Regular user: exclude support and maintenance conversations (shown pinned)
                           if (c.buyer_id === SUPPORT_USER_ID || c.seller_id === SUPPORT_USER_ID) return false;
+                          if (c.buyer_id === MAINTENANCE_SUPPORT_ID || c.seller_id === MAINTENANCE_SUPPORT_ID) return false;
                           // Apply search filter for regular users too
                           if (adminSearchTerm.trim()) {
                             const otherUserId = c.buyer_id === user?.id ? c.seller_id : c.buyer_id;
@@ -1199,11 +1250,77 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               </div>
                             )}
                           </button>
+                         )}
+
+                        {/* Pinned Maintenance Support - Only for users with active warranty */}
+                        {!isCurrentUserSupport && hasActiveWarranty && (
+                          <button
+                            onClick={async () => {
+                              if (maintenanceConv) {
+                                setSelectedConversation(maintenanceConv.id);
+                              } else {
+                                const convCode = `MAINT-${Date.now().toString(36).toUpperCase()}`;
+                                const { data: newConv, error } = await supabase
+                                  .from('listing_conversations')
+                                  .insert({
+                                    buyer_id: user?.id,
+                                    seller_id: MAINTENANCE_SUPPORT_ID,
+                                    listing_id: MAINTENANCE_SUPPORT_ID,
+                                    conversation_code: convCode,
+                                    status: 'open',
+                                  })
+                                  .select('id')
+                                  .single();
+
+                                if (!error && newConv) {
+                                  await supabase.from('listing_messages').insert({
+                                    conversation_id: newConv.id,
+                                    sender_id: MAINTENANCE_SUPPORT_ID,
+                                    content: '🔧 مرحباً بك في دعم الصيانة! كيف يمكننا مساعدتك؟',
+                                  });
+                                  queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                  setSelectedConversation(newConv.id);
+                                }
+                              }
+                            }}
+                            className={cn(
+                              "w-full p-3 flex gap-3 hover:bg-accent/10 transition-colors border-b border-border/50 bg-gradient-to-l from-accent/5 to-transparent",
+                              maintenanceConv && selectedConversation === maintenanceConv.id && "bg-accent/10"
+                            )}
+                          >
+                            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-accent-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                            </div>
+                            <div className="flex-1 min-w-0 text-right">
+                              <div className="flex items-center justify-between gap-2 mb-0.5">
+                                <p className="font-bold text-sm">دعم الصيانة</p>
+                                {maintenanceConv && lastMessages?.[maintenanceConv.id] && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {format(new Date(lastMessages[maintenanceConv.id].created_at), 'HH:mm')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {maintenanceConv && lastMessages?.[maintenanceConv.id]
+                                  ? lastMessages[maintenanceConv.id].content?.slice(0, 40)
+                                  : 'تواصل مع فريق الصيانة'}
+                              </p>
+                            </div>
+                            {maintenanceConv && lastMessages?.[maintenanceConv.id] &&
+                             !lastMessages[maintenanceConv.id].is_read &&
+                             lastMessages[maintenanceConv.id].sender_id !== user?.id && (
+                              <div className="h-5 w-5 rounded-full bg-accent flex items-center justify-center shrink-0">
+                                <span className="text-[9px] font-bold text-accent-foreground">!</span>
+                              </div>
+                            )}
+                          </button>
                         )}
                         
                         {/* Other conversations */}
                         {sortedConvs.map(conv => {
-                          const convOtherUserId = conv.buyer_id === effectiveId ? conv.seller_id : conv.buyer_id;
+                          const convOtherUserId = isAdmin 
+                            ? (adminIds.includes(conv.buyer_id) ? conv.seller_id : conv.buyer_id)
+                            : (conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id);
                           const convOtherUser = profiles?.[convOtherUserId];
                           const lastMsg = lastMessages?.[conv.id];
                           const isActive = selectedConversation === conv.id;

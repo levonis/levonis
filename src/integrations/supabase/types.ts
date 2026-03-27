@@ -1757,29 +1757,35 @@ export type Database = {
       }
       conversations: {
         Row: {
+          conversation_type: string
           created_at: string
           id: string
           last_message_at: string | null
           order_id: string | null
           status: string
+          technician_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          conversation_type?: string
           created_at?: string
           id?: string
           last_message_at?: string | null
           order_id?: string | null
           status?: string
+          technician_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          conversation_type?: string
           created_at?: string
           id?: string
           last_message_at?: string | null
           order_id?: string | null
           status?: string
+          technician_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1789,6 +1795,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_technicians"
             referencedColumns: ["id"]
           },
         ]
@@ -3305,6 +3318,39 @@ export type Database = {
           name_en?: string | null
           name_ku?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      maintenance_technicians: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          phone: string | null
+          specialization: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          phone?: string | null
+          specialization?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          phone?: string | null
+          specialization?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
