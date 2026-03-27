@@ -252,7 +252,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         taxPercent: taxPercent,
         delivery: deliveryFee,
         total: sub + taxAmount + deliveryFee,
-        invoiceNo: format(now, 'yyyyMMdd-HHmm'),
+        invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
       });
       setStep(sub > 0 ? 'preview' : 'config');
