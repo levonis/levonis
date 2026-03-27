@@ -321,7 +321,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setInvoiceData(null);
       setSelectedUserId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000' });
+      setManualFields({ subtotal: '', delivery: '12000', tax: '' });
     }
   }, [open]);
 
