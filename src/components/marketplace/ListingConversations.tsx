@@ -2220,30 +2220,78 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <p className="text-lg font-bold">{adminCartRequest.original_total?.toLocaleString()} د.ع</p>
                 </div>
 
-                {/* Cart items */}
+                {/* Cart items with per-item price editing */}
                 {adminCartRequest.cart_items?.length > 0 && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground">المنتجات ({adminCartRequest.cart_items.length})</p>
-                    {adminCartRequest.cart_items.map((item: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-xs">
-                        {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" />}
-                        <span className="flex-1 truncate">{item.name_ar || item.product_name || 'منتج'}</span>
-                        <span>×{item.quantity}</span>
-                      </div>
-                    ))}
+                    {adminCartRequest.cart_items.map((item: any, idx: number) => {
+                      const existingPrices = adminCartRequest._editItemPrices || {};
+                      const currentPrice = existingPrices[idx] ?? item.price ?? 0;
+                      return (
+                        <div key={idx} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-xs">
+                          {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" />}
+                          <div className="flex-1 min-w-0">
+                            <span className="block truncate">{item.name_ar || item.product_name || 'منتج'}</span>
+                            <span className="text-muted-foreground">×{item.quantity}</span>
+                          </div>
+                          <Input
+                            type="number"
+                            className="w-24 h-7 text-xs"
+                            value={currentPrice}
+                            onChange={(e) => setAdminCartRequest((prev: any) => ({
+                              ...prev,
+                              _editItemPrices: { ...(prev._editItemPrices || {}), [idx]: e.target.value }
+                            }))}
+                          />
+                          <span className="text-muted-foreground whitespace-nowrap">د.ع</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
-                {/* Editable price */}
+                {/* Delivery price */}
                 <div>
-                  <label className="text-sm font-medium mb-1 block">السعر الجديد (د.ع)</label>
+                  <label className="text-sm font-medium mb-1 block">سعر التوصيل (د.ع)</label>
                   <Input
                     type="number"
-                    value={adminCartRequest._editPrice ?? (adminCartRequest.adjusted_total || adminCartRequest.original_total) ?? ''}
-                    onChange={(e) => setAdminCartRequest((prev: any) => ({ ...prev, _editPrice: e.target.value }))}
-                    id="admin-cart-price"
+                    value={adminCartRequest._editDelivery ?? (() => {
+                      try { const n = JSON.parse(adminCartRequest.admin_notes || '{}'); return n.delivery_price ?? 0; } catch { return 0; }
+                    })()}
+                    onChange={(e) => setAdminCartRequest((prev: any) => ({ ...prev, _editDelivery: e.target.value }))}
                   />
                 </div>
+
+                {/* Computed total preview */}
+                {(() => {
+                  const items = adminCartRequest.cart_items || [];
+                  const editPrices = adminCartRequest._editItemPrices || {};
+                  const itemsTotal = items.reduce((sum: number, item: any, idx: number) => {
+                    const p = parseFloat(String(editPrices[idx] ?? item.price ?? 0)) || 0;
+                    const q = item.quantity || 1;
+                    return sum + (p * q);
+                  }, 0);
+                  const delivery = parseFloat(String(adminCartRequest._editDelivery ?? (() => {
+                    try { return JSON.parse(adminCartRequest.admin_notes || '{}').delivery_price ?? 0; } catch { return 0; }
+                  })())) || 0;
+                  const total = itemsTotal + delivery;
+                  return (
+                    <div className="p-3 bg-primary/5 rounded-lg space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>مجموع المنتجات</span>
+                        <span>{itemsTotal.toLocaleString()} د.ع</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>التوصيل</span>
+                        <span>{delivery.toLocaleString()} د.ع</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold border-t pt-1">
+                        <span>الإجمالي الجديد</span>
+                        <span>{total.toLocaleString()} د.ع</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <label className="text-sm font-medium mb-1 block">ملاحظات الإدارة</label>
@@ -2261,23 +2309,47 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <Button
                     className="flex-1 gap-1"
                     onClick={async () => {
-                      const priceVal = adminCartRequest._editPrice ?? (adminCartRequest.adjusted_total || adminCartRequest.original_total);
+                      const items = adminCartRequest.cart_items || [];
+                      const editPrices = adminCartRequest._editItemPrices || {};
                       const notesVal = adminCartRequest._editNotes ?? (() => {
                         try { return JSON.parse(adminCartRequest.admin_notes || '{}').notes || adminCartRequest.admin_notes || ''; } catch { return adminCartRequest.admin_notes || ''; }
                       })();
-                      const normalizedPrice = String(priceVal ?? '')
-                        .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+
+                      // Build adjusted items
+                      const adjustedItems = items.map((item: any, idx: number) => {
+                        const rawPrice = String(editPrices[idx] ?? item.price ?? 0)
+                          .replace(/[٠-٩]/g, (d: string) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                          .replace(/[٬،,\s]/g, '');
+                        return { ...item, price: parseFloat(rawPrice) || 0 };
+                      });
+
+                      const rawDelivery = String(adminCartRequest._editDelivery ?? (() => {
+                        try { return JSON.parse(adminCartRequest.admin_notes || '{}').delivery_price ?? 0; } catch { return 0; }
+                      })())
+                        .replace(/[٠-٩]/g, (d: string) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
                         .replace(/[٬،,\s]/g, '');
-                      const price = parseFloat(normalizedPrice || '0');
-                      if (isNaN(price) || price < 0) {
-                        toast.error('أدخل سعراً صحيحاً');
-                        return;
-                      }
+                      const deliveryPrice = parseFloat(rawDelivery) || 0;
+
+                      const itemsTotal = adjustedItems.reduce((sum: number, item: any) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                      const totalPrice = itemsTotal + deliveryPrice;
+
+                      const adminNotesJson = JSON.stringify({
+                        notes: notesVal || '',
+                        delivery_price: deliveryPrice,
+                        adjusted_items: adjustedItems.map((it: any, idx: number) => ({
+                          name: it.name_ar || it.product_name,
+                          original_price: items[idx]?.price || 0,
+                          adjusted_price: it.price,
+                          quantity: it.quantity,
+                        })),
+                      });
+
                       const { error } = await supabase
                         .from('cart_requests')
                         .update({
-                          adjusted_total: price,
-                          admin_notes: notesVal || null,
+                          adjusted_total: totalPrice,
+                          admin_notes: adminNotesJson,
+                          cart_items: adjustedItems,
                           status: 'adjusted',
                           updated_at: new Date().toISOString(),
                         })
@@ -2290,15 +2362,23 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       await supabase.from('notifications').insert({
                         user_id: adminCartRequest.user_id,
                         title: 'تم تعديل سعر السلة',
-                        message: `تم تعديل سعر السلة (${adminCartRequest.cart_code}) إلى ${price.toLocaleString()} د.ع`,
+                        message: `تم تعديل سعر السلة (${adminCartRequest.cart_code}) إلى ${totalPrice.toLocaleString()} د.ع`,
                         type: 'info',
                       });
-                      // Send message in chat
+                      // Build detailed message
+                      let msgLines = [`✅ تم تعديل سعر السلة (${adminCartRequest.cart_code})`];
+                      adjustedItems.forEach((it: any) => {
+                        msgLines.push(`📦 ${it.name_ar || it.product_name || 'منتج'}: ${(it.price || 0).toLocaleString()} د.ع × ${it.quantity || 1}`);
+                      });
+                      if (deliveryPrice > 0) msgLines.push(`🚚 التوصيل: ${deliveryPrice.toLocaleString()} د.ع`);
+                      msgLines.push(`💰 الإجمالي: ${totalPrice.toLocaleString()} د.ع`);
+                      if (notesVal) msgLines.push(`📝 ${notesVal}`);
+
                       if (selectedConversation && user) {
                         await supabase.from('listing_messages').insert({
                           conversation_id: selectedConversation,
                           sender_id: user.id,
-                          content: `✅ تم تعديل سعر السلة (${adminCartRequest.cart_code})\n💰 السعر الجديد: ${price.toLocaleString()} د.ع${notesVal ? `\n📝 ${notesVal}` : ''}`,
+                          content: msgLines.join('\n'),
                         });
                         queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
                       }
