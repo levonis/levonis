@@ -620,7 +620,7 @@ const AdminPrinterProtection = () => {
         </div>
 
         <Tabs defaultValue="qr-printers" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="qr-printers">إنشاء + QR</TabsTrigger>
             <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
             <TabsTrigger value="plans">الباقات</TabsTrigger>
@@ -630,9 +630,7 @@ const AdminPrinterProtection = () => {
                 <Badge className="mr-2 bg-amber-500 text-white text-xs px-1.5">{pendingRequests}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="delivered">الطلبات الموصلة</TabsTrigger>
-            <TabsTrigger value="maintenance">طلبات الصيانة</TabsTrigger>
-            <TabsTrigger value="ratings">تقييمات الفنيين</TabsTrigger>
+            <TabsTrigger value="delivered">طلبات الطابعات</TabsTrigger>
             <TabsTrigger value="logs">السجل</TabsTrigger>
           </TabsList>
 
