@@ -732,8 +732,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   });
 
   const selectedConv = conversations?.find(c => c.id === selectedConversation);
-  // For admin, treat SUPPORT_USER_ID as "me" when determining buyer/seller roles
-  const effectiveUserId = isAdmin ? SUPPORT_USER_ID : user?.id;
+  // For admin, treat SUPPORT_USER_ID or MAINTENANCE_SUPPORT_ID as "me" based on conversation type
+  const isSelectedMaintenanceChat = selectedConv?.buyer_id === MAINTENANCE_SUPPORT_ID || selectedConv?.seller_id === MAINTENANCE_SUPPORT_ID;
+  const effectiveUserId = isAdmin ? (isSelectedMaintenanceChat ? MAINTENANCE_SUPPORT_ID : SUPPORT_USER_ID) : user?.id;
   const isBuyer = selectedConv?.buyer_id === effectiveUserId;
   const isSeller = selectedConv?.seller_id === effectiveUserId;
   const otherUserId = selectedConv ? (selectedConv.buyer_id === effectiveUserId ? selectedConv.seller_id : selectedConv.buyer_id) : null;
