@@ -296,6 +296,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       paymentMethod: 'نقداً',
     });
     setSelectedUserId(null);
+    setSelectedOrderId(null);
     setStep('config');
   };
 
