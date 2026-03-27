@@ -504,6 +504,17 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 <PrinterIcon className="w-4 h-4 ml-2" />
                 طباعة
               </Button>
+              <Button onClick={() => {
+                if (!invoiceRef.current) return;
+                import('react-to-pdf').then(({ default: generatePDF }) => {
+                  generatePDF(() => invoiceRef.current!, {
+                    filename: `invoice-${invoiceData.invoiceNo}.pdf`,
+                    page: { margin: 0, format: 'A4' },
+                  });
+                });
+              }} size="sm">
+                حفظ PDF
+              </Button>
               <Button onClick={() => setStep('config')} variant="ghost" size="sm">
                 تعديل البيانات
               </Button>
