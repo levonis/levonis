@@ -32,6 +32,7 @@ interface InvoiceData {
   qrCodeData: string;
   subtotal: number;
   tax: number;
+  taxRate: number;
   delivery: number;
   total: number;
   invoiceNo: string;
@@ -61,7 +62,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000' });
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxRate: '3' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
@@ -232,7 +233,8 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-      const taxAmount = Math.round(sub * 0.03);
+      const taxRate = parseFloat(manualFields.taxRate) || 0;
+      const taxAmount = Math.round(sub * (taxRate / 100));
       const now = new Date();
 
       setInvoiceData({
@@ -244,6 +246,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
         tax: taxAmount,
+        taxRate: taxRate,
         delivery: deliveryFee,
         total: sub + taxAmount + deliveryFee,
         invoiceNo: format(now, 'yyyyMMdd-HHmm'),
@@ -268,6 +271,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       qrCodeData: printer.qr_code_data || '',
       subtotal: 0,
       tax: 0,
+      taxRate: 3,
       delivery: 12000,
       total: 12000,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
@@ -281,11 +285,13 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
     const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-    const taxAmount = Math.round(sub * 0.03);
+    const taxRate = parseFloat(manualFields.taxRate) || 0;
+    const taxAmount = Math.round(sub * (taxRate / 100));
     setInvoiceData({
       ...invoiceData,
       subtotal: sub,
       tax: taxAmount,
+      taxRate: taxRate,
       delivery: deliveryFee,
       total: sub + taxAmount + deliveryFee,
     });
@@ -321,7 +327,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       setInvoiceData(null);
       setSelectedUserId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000' });
+      setManualFields({ subtotal: '', delivery: '12000', taxRate: '3' });
     }
   }, [open]);
 
@@ -445,6 +451,17 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
                   onChange={(e) => setManualFields(prev => ({ ...prev, delivery: e.target.value }))}
                 />
               </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">نسبة الضريبة (%)</label>
+                <Input
+                  type="number"
+                  value={manualFields.taxRate}
+                  onChange={(e) => setManualFields(prev => ({ ...prev, taxRate: e.target.value }))}
+                  placeholder="3"
+                  min="0"
+                  max="100"
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleGeneratePreview} disabled={!manualFields.subtotal && invoiceData.subtotal === 0}>
@@ -553,7 +570,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
               <span style={{ fontSize: '14px' }} dir="rtl">{data.subtotal.toLocaleString()} د.ع</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>tax (3%):</span>
+              <span style={{ fontWeight: 700, fontSize: '13px' }}>tax ({data.taxRate}%):</span>
               <span style={{ fontSize: '14px' }} dir="rtl">{data.tax.toLocaleString()} د.ع</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
