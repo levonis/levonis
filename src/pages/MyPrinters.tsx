@@ -17,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import Footer from '@/components/Footer';
+import MaintenanceTicketDialog from '@/components/printer/MaintenanceTicketDialog';
+import MaintenanceTicketsList from '@/components/printer/MaintenanceTicketsList';
 
 interface EligiblePrinter {
   order_item_id: string;
@@ -94,6 +96,8 @@ const MyPrinters = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingSubscription, setCancellingSubscription] = useState<Subscription | null>(null);
   const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
+  const [maintenanceSubscription, setMaintenanceSubscription] = useState<Subscription | null>(null);
 
   // Fetch protection plans
   const { data: plans } = useQuery({
@@ -779,6 +783,20 @@ const MyPrinters = () => {
                           
                           {/* Action Buttons */}
                           <div className="flex gap-2">
+                            {sub.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => {
+                                  setMaintenanceSubscription(sub);
+                                  setMaintenanceDialogOpen(true);
+                                }}
+                              >
+                                <Wrench className="w-3 h-3 ml-1" />
+                                طلب صيانة
+                              </Button>
+                            )}
                             {availableUpgrades.length > 0 && sub.status === 'active' && (
                               <Button
                                 size="sm"
@@ -944,6 +962,16 @@ const MyPrinters = () => {
                 })}
               </div>
             </section>
+            {/* Section D: Maintenance Tickets */}
+            {subscriptions && subscriptions.length > 0 && (
+              <section>
+                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-primary" />
+                  طلبات الصيانة
+                </h2>
+                <MaintenanceTicketsList />
+              </section>
+            )}
           </div>
         )}
       </div>
@@ -1111,6 +1139,19 @@ const MyPrinters = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Maintenance Ticket Dialog */}
+      {maintenanceSubscription && (
+        <MaintenanceTicketDialog
+          open={maintenanceDialogOpen}
+          onOpenChange={(open) => {
+            setMaintenanceDialogOpen(open);
+            if (!open) setMaintenanceSubscription(null);
+          }}
+          subscriptionId={maintenanceSubscription.id}
+          userPrinterId={maintenanceSubscription.user_printer_id}
+          printerName={maintenanceSubscription.user_printers?.store_printers?.model_name_ar || 'الطابعة'}
+        />
+      )}
       
       <Footer />
     </>

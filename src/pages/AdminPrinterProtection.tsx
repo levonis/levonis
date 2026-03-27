@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import AdminMaintenanceTab from '@/components/admin/AdminMaintenanceTab';
+import AdminRatingsTab from '@/components/admin/AdminRatingsTab';
 
 interface ProtectionPlan {
   id: string;
@@ -604,7 +606,7 @@ const AdminPrinterProtection = () => {
         </div>
 
         <Tabs defaultValue="subscriptions" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
             <TabsTrigger value="plans">الباقات</TabsTrigger>
             <TabsTrigger value="requests" className="relative">
@@ -614,6 +616,8 @@ const AdminPrinterProtection = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="delivered">الطلبات الموصلة</TabsTrigger>
+            <TabsTrigger value="maintenance">طلبات الصيانة</TabsTrigger>
+            <TabsTrigger value="ratings">تقييمات الفنيين</TabsTrigger>
             <TabsTrigger value="logs">السجل</TabsTrigger>
           </TabsList>
 
@@ -979,6 +983,16 @@ const AdminPrinterProtection = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Maintenance Tickets Tab */}
+          <TabsContent value="maintenance" className="space-y-4">
+            <AdminMaintenanceTab />
+          </TabsContent>
+
+          {/* Engineer Ratings Tab */}
+          <TabsContent value="ratings" className="space-y-4">
+            <AdminRatingsTab />
           </TabsContent>
 
           {/* Logs Tab */}
