@@ -291,7 +291,7 @@ const AdminOrders = () => {
       
       // Auto-create invoice when order is confirmed
       if (values.status === 'confirmed' && previousStatus !== 'confirmed') {
-        await createAutoInvoice(id);
+        try { await createAutoInvoice(id); } catch (e) { console.error('Auto invoice error:', e); }
       }
 
       // Send notification when status changes
@@ -310,13 +310,17 @@ const AdminOrders = () => {
         };
         const statusLabel = statusLabels[values.status] || values.status;
         
-        await sendAllNotifications({
-          userId: order.user_id,
-          title: 'تحديث حالة طلبك 📦',
-          message: `تم تحديث حالة طلبك رقم ${order.order_number} إلى: ${statusLabel}`,
-          type: values.status === 'delivered' ? 'success' : 'info',
-          relatedId: id,
-        });
+        try {
+          await sendAllNotifications({
+            userId: order.user_id,
+            title: 'تحديث حالة طلبك 📦',
+            message: `تم تحديث حالة طلبك رقم ${order.order_number} إلى: ${statusLabel}`,
+            type: values.status === 'delivered' ? 'success' : 'info',
+            relatedId: id,
+          });
+        } catch (notifError) {
+          console.error('Notification error (non-blocking):', notifError);
+        }
       }
     },
     onSuccess: () => {
