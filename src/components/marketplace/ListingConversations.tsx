@@ -1138,7 +1138,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       .filter(c => {
                         if (isCurrentUserSupport) {
                           const otherUserId = c.buyer_id === effectiveId ? c.seller_id : c.buyer_id;
-                          if (otherUserId === SUPPORT_USER_ID) return false;
+                          if (otherUserId === SUPPORT_USER_ID || otherUserId === MAINTENANCE_SUPPORT_ID) return false;
                           // Apply admin search filter
                           if (adminSearchTerm.trim()) {
                             const otherProfile = profiles?.[otherUserId];
