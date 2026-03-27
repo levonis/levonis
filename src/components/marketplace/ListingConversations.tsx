@@ -466,7 +466,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryKey: ['conv-unread-counts', user?.id, conversations?.map(c => c.id)],
     queryFn: async () => {
       if (!conversations?.length || !user) return {};
-      const effectiveId = isAdmin ? SUPPORT_USER_ID : user.id;
+      const counts: Record<string, number> = {};
       const counts: Record<string, number> = {};
       // Batch: get all unread messages across all conversations
       const { data } = await supabase
