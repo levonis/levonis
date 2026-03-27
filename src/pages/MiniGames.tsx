@@ -50,7 +50,22 @@ export default function MiniGames() {
     return <Navigate to="/rewards" replace />;
   }
 
-  const filteredGames = filterGameNodes(GAME_NODES, activeFilter);
+  // Fetch disabled game settings
+  const { data: stackSettings } = useQuery({
+    queryKey: ["stack-game-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("stack_game_settings").select("game_enabled").limit(1).single();
+      return data as any;
+    },
+  });
+
+  // Filter out disabled games
+  const enabledGames = GAME_NODES.filter(game => {
+    if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) return false;
+    return true;
+  });
+
+  const filteredGames = filterGameNodes(enabledGames, activeFilter);
 
   const handlePlay = (game: GameResource) => {
     setActiveGame(game.node_name);
