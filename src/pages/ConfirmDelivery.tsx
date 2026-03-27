@@ -198,8 +198,7 @@ const ConfirmDelivery = () => {
           if (reviewError) throw reviewError;
         }
 
-        const pointsForThisReview = reviewPoints + (hasMedia ? mediaBonus : 0);
-        totalPointsEarned += pointsForThisReview;
+        totalPointsEarned += reviewPoints + (hasMedia ? mediaBonus : 0);
       }
 
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
