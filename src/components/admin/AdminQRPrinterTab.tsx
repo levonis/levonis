@@ -89,6 +89,22 @@ const AdminQRPrinterTab = () => {
 
   const createMutation = useMutation({
     mutationFn: async (printer: typeof newPrinter) => {
+      let finalImageUrl = printer.image_url || null;
+
+      // Upload image file if selected
+      if (imageFile) {
+        setUploading(true);
+        const ext = imageFile.name.split('.').pop();
+        const filePath = `printers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false });
+        setUploading(false);
+        if (uploadError) throw new Error('فشل رفع الصورة: ' + uploadError.message);
+        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
+        finalImageUrl = urlData.publicUrl;
+      }
+
       const origin = window.location.origin;
       const qrData = `${origin}/activate-printer?serial=${encodeURIComponent(printer.serial_number)}`;
       
