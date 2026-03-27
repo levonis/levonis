@@ -45,6 +45,10 @@ interface ProtectionPlan {
   badge_text: string | null;
   annual_coverage_cap: number | null;
   parts_discount_categories: string[] | null;
+  parts_discount_type: string;
+  parts_discount_value: number;
+  parts_discount_limit_type: string;
+  parts_discount_limit_count: number;
   display_order: number;
 }
 
@@ -138,6 +142,10 @@ const AdminPrinterProtection = () => {
     has_replacement_printer: false,
     icon_name: 'shield',
     parts_discount_categories: [],
+    parts_discount_type: 'fixed',
+    parts_discount_value: 0,
+    parts_discount_limit_type: 'weekly',
+    parts_discount_limit_count: 1,
   });
   const [requestActionDialogOpen, setRequestActionDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SerialRequest | null>(null);
@@ -379,6 +387,10 @@ const AdminPrinterProtection = () => {
         has_replacement_printer: false,
         icon_name: 'shield',
         parts_discount_categories: [],
+        parts_discount_type: 'fixed',
+        parts_discount_value: 0,
+        parts_discount_limit_type: 'weekly',
+        parts_discount_limit_count: 1,
       });
     },
     onError: (error: any) => {
@@ -1290,15 +1302,73 @@ const AdminPrinterProtection = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>أقسام الخصم (مفصولة بفاصلة)</Label>
-                  <Input
-                    defaultValue={selectedPlan.parts_discount_categories?.join('، ') || ''}
-                    onChange={(e) => setSelectedPlan({
-                      ...selectedPlan,
-                      parts_discount_categories: e.target.value.split(/[,،]/).map(s => s.trim()).filter(Boolean),
-                    })}
-                    placeholder="مثال: صيانة بامبولاب، قطع غيار"
-                  />
+                  <Label>أقسام الخصم</Label>
+                  <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1">
+                    {categories?.map((cat) => (
+                      <label key={cat.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={selectedPlan.parts_discount_categories?.includes(cat.id) || false}
+                          onChange={(e) => {
+                            const current = selectedPlan.parts_discount_categories || [];
+                            setSelectedPlan({
+                              ...selectedPlan,
+                              parts_discount_categories: e.target.checked
+                                ? [...current, cat.id]
+                                : current.filter(c => c !== cat.id),
+                            });
+                          }}
+                        />
+                        {cat.name_ar}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>نوع الخصم</Label>
+                    <Select
+                      value={selectedPlan.parts_discount_type || 'fixed'}
+                      onValueChange={(v) => setSelectedPlan({ ...selectedPlan, parts_discount_type: v })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">مبلغ ثابت (د.ع)</SelectItem>
+                        <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>قيمة الخصم {selectedPlan.parts_discount_type === 'percentage' ? '(%)' : '(د.ع)'}</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.parts_discount_value || 0}
+                      onChange={(e) => setSelectedPlan({ ...selectedPlan, parts_discount_value: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>نوع الحد</Label>
+                    <Select
+                      value={selectedPlan.parts_discount_limit_type || 'monthly'}
+                      onValueChange={(v) => setSelectedPlan({ ...selectedPlan, parts_discount_limit_type: v })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">أسبوعياً</SelectItem>
+                        <SelectItem value="monthly">شهرياً</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>عدد مرات الاستخدام</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.parts_discount_limit_count || 1}
+                      onChange={(e) => setSelectedPlan({ ...selectedPlan, parts_discount_limit_count: Number(e.target.value) })}
+                    />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <Label>خدمة استبدال عند الكسر والتلف</Label>
@@ -1342,6 +1412,10 @@ const AdminPrinterProtection = () => {
                       has_preventive_maintenance: selectedPlan.has_preventive_maintenance,
                       has_replacement_printer: selectedPlan.has_replacement_printer,
                       parts_discount_categories: selectedPlan.parts_discount_categories,
+                      parts_discount_type: selectedPlan.parts_discount_type,
+                      parts_discount_value: selectedPlan.parts_discount_value,
+                      parts_discount_limit_type: selectedPlan.parts_discount_limit_type,
+                      parts_discount_limit_count: selectedPlan.parts_discount_limit_count,
                       badge_text: selectedPlan.badge_text,
                     });
                   }
@@ -1497,12 +1571,73 @@ const AdminPrinterProtection = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>أقسام الخصم (مفصولة بفاصلة)</Label>
-                <Input
-                  value={newPlan.parts_discount_categories?.join('، ') || ''}
-                  onChange={(e) => setNewPlan({ ...newPlan, parts_discount_categories: e.target.value.split(/[,،]/).map(s => s.trim()).filter(Boolean) })}
-                  placeholder="مثال: صيانة بامبولاب، قطع غيار"
-                />
+                <Label>أقسام الخصم</Label>
+                <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1">
+                  {categories?.map((cat) => (
+                    <label key={cat.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={newPlan.parts_discount_categories?.includes(cat.id) || false}
+                        onChange={(e) => {
+                          const current = newPlan.parts_discount_categories || [];
+                          setNewPlan({
+                            ...newPlan,
+                            parts_discount_categories: e.target.checked
+                              ? [...current, cat.id]
+                              : current.filter(c => c !== cat.id),
+                          });
+                        }}
+                      />
+                      {cat.name_ar}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>نوع الخصم</Label>
+                  <Select
+                    value={newPlan.parts_discount_type || 'fixed'}
+                    onValueChange={(v) => setNewPlan({ ...newPlan, parts_discount_type: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">مبلغ ثابت (د.ع)</SelectItem>
+                      <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>قيمة الخصم {newPlan.parts_discount_type === 'percentage' ? '(%)' : '(د.ع)'}</Label>
+                  <Input
+                    type="number"
+                    value={newPlan.parts_discount_value || 0}
+                    onChange={(e) => setNewPlan({ ...newPlan, parts_discount_value: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>نوع الحد</Label>
+                  <Select
+                    value={newPlan.parts_discount_limit_type || 'weekly'}
+                    onValueChange={(v) => setNewPlan({ ...newPlan, parts_discount_limit_type: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly">أسبوعياً</SelectItem>
+                      <SelectItem value="monthly">شهرياً</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>عدد مرات الاستخدام</Label>
+                  <Input
+                    type="number"
+                    value={newPlan.parts_discount_limit_count || 1}
+                    onChange={(e) => setNewPlan({ ...newPlan, parts_discount_limit_count: Number(e.target.value) })}
+                  />
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label>خدمة استبدال عند الكسر والتلف</Label>

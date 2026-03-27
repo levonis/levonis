@@ -5206,6 +5206,81 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_discount_usage: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          discount_amount: number
+          id: string
+          order_id: string | null
+          plan_id: string
+          product_id: string | null
+          subscription_id: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          plan_id: string
+          product_id?: string | null
+          subscription_id: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          order_id?: string | null
+          plan_id?: string
+          product_id?: string | null
+          subscription_id?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_discount_usage_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_discount_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_discount_usage_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "protection_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_discount_usage_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_discount_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_product_redemptions: {
         Row: {
           created_at: string
@@ -6421,7 +6496,11 @@ export type Database = {
           name_ar: string
           name_en: string
           parts_discount_categories: string[] | null
+          parts_discount_limit_count: number | null
+          parts_discount_limit_type: string | null
           parts_discount_percentage: number | null
+          parts_discount_type: string | null
+          parts_discount_value: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months: number | null
           priority_level: number | null
@@ -6451,7 +6530,11 @@ export type Database = {
           name_ar: string
           name_en: string
           parts_discount_categories?: string[] | null
+          parts_discount_limit_count?: number | null
+          parts_discount_limit_type?: string | null
           parts_discount_percentage?: number | null
+          parts_discount_type?: string | null
+          parts_discount_value?: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months?: number | null
           priority_level?: number | null
@@ -6481,7 +6564,11 @@ export type Database = {
           name_ar?: string
           name_en?: string
           parts_discount_categories?: string[] | null
+          parts_discount_limit_count?: number | null
+          parts_discount_limit_type?: string | null
           parts_discount_percentage?: number | null
+          parts_discount_type?: string | null
+          parts_discount_value?: number | null
           plan_type?: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months?: number | null
           priority_level?: number | null

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
+import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
@@ -37,6 +38,28 @@ const Cart = () => {
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+
+  // Simple item price getter for protection discount calculation
+  const getCartItemPrice = (item: CartItem): number => {
+    if (!item.products) return 0;
+    const isDirect = (item as any).sale_type === 'direct';
+    let price = Number(item.products.price || 0);
+    if (isDirect && item.products.direct_sale_price != null) price = Number(item.products.direct_sale_price);
+    const colorData = (item as any).selected_color && item.products.colors
+      ? (item.products.colors as any[]).find((c: any) => c.name === (item as any).selected_color || c.name_ar === (item as any).selected_color)
+      : null;
+    if (colorData?.price != null) {
+      if (isDirect && colorData.direct_sale_price != null) price = Number(colorData.direct_sale_price);
+      else price = Number(colorData.price);
+    }
+    if ((item as any).product_options?.price_adjustment) {
+      price += Math.round(Number((item as any).product_options.price_adjustment) * usdToIqd);
+    }
+    if ((item.products as any)?.round_up_price === true) price = Math.ceil(price / 250) * 250;
+    return price;
+  };
+
+  const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -304,7 +327,8 @@ const Cart = () => {
   const discount = calculateDiscount();
   
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
-  const subtotalAfterDiscount = total - discount;
+  const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
+  const subtotalAfterDiscount = total - discount - protectionDiscountAmount;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
@@ -753,6 +777,17 @@ const Cart = () => {
           .in('id', offerPurchaseIds);
       }
 
+      // Record protection discount usage if applied
+      if (protectionDiscountAmount > 0 && protectionDiscount?.canUse) {
+        await supabase.from('plan_discount_usage' as any).insert({
+          user_id: user.id,
+          subscription_id: protectionDiscount.subscriptionId,
+          plan_id: protectionDiscount.planId,
+          order_id: orderResult.id,
+          discount_amount: protectionDiscountAmount,
+        });
+      }
+
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
@@ -1193,6 +1228,16 @@ const Cart = () => {
           .from('product_offer_purchases')
           .update({ purchase_status: 'shipping_requested', shipping_requested_at: new Date().toISOString() })
           .in('id', offerPurchaseIds2);
+      }
+
+      // Record protection discount usage if applied
+      if (protectionDiscountAmount > 0 && protectionDiscount?.canUse) {
+        await supabase.from('plan_discount_usage' as any).insert({
+          user_id: user!.id,
+          subscription_id: protectionDiscount.subscriptionId,
+          plan_id: protectionDiscount.planId,
+          discount_amount: protectionDiscountAmount,
+        });
       }
 
       // Clear cart after successful order
@@ -1733,6 +1778,18 @@ const Cart = () => {
                           -<AnimatedPrice value={discount} formatFn={formatPrice} /> دينار عراقي
                         </span>
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* خصم باقة الحماية */}
+                  {protectionDiscountAmount > 0 && protectionDiscount && (
+                    <div className="flex justify-between animate-fade-in">
+                      <span className="text-emerald-600 text-sm flex items-center gap-1">
+                        🛡️ خصم {protectionDiscount.planNameAr}
+                      </span>
+                      <span className="font-bold text-emerald-600">
+                        -<AnimatedPrice value={protectionDiscountAmount} formatFn={formatPrice} /> دينار عراقي
+                      </span>
                     </div>
                   )}
                   
