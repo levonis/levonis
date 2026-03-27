@@ -109,6 +109,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         productNameAr: string;
         totalPrice: number;
         orderItemId: string;
+        shippingAddress: string;
       }> = [];
 
       printerOrders?.forEach((order: any) => {
