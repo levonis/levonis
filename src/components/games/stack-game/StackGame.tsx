@@ -190,7 +190,7 @@ export default function StackGame({ onBack }: Props) {
           <Button variant="ghost" size="sm" onClick={activeView !== "main" ? () => setActiveView("main") : onBack} className="gap-1 text-muted-foreground font-mono text-xs pixel-btn-ghost">
             <ArrowRight className="h-4 w-4" /> {activeView !== "main" ? "رجوع" : "رجوع"}
           </Button>
-          <span className="text-primary font-bold text-xs font-mono tracking-wider">STACK</span>
+          <span className="text-primary font-bold text-xs font-mono tracking-wider">THE TOWER</span>
         </div>
       </div>
 
