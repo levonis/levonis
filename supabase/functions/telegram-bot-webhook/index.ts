@@ -305,9 +305,10 @@ Deno.serve(async (req) => {
     const text = sanitizeText(message.text);
 
     // /start command
-    if (text === "/start") {
-      const responseText = `🔢 رقم الـ ID الخاص بك:\n\`${chatId}\`\n\nانسخ رقم الـ ID الخاص بك وضعه في الموقع لتلقي الإشعارات.`;
-      await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, responseText, "Markdown");
+    if (text === "/start" || text.startsWith("/start@")) {
+      console.log(`/start command received from chat ${chatId}`);
+      const responseText = `🔢 <b>رقم الـ Chat ID الخاص بك:</b>\n\n<code>${chatId}</code>\n\n📋 انسخ رقم الـ ID وضعه في إعدادات حسابك على الموقع لتفعيل إشعارات تيليكرام.`;
+      await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, responseText, "HTML");
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
