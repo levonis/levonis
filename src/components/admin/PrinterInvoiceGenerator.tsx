@@ -271,6 +271,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       qrCodeData: printer.qr_code_data || '',
       subtotal: 0,
       tax: 0,
+      taxPercent: 3,
       delivery: 12000,
       total: 12000,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
