@@ -246,10 +246,12 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
-      const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+      const parsedTax = parseFloat(manualFields.taxPercent);
+      const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
       const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
 
+      setSelectedOrderId(buyer.orderId || null);
       setInvoiceData({
         customerName: buyer.fullName,
         phone: buyer.phone,
