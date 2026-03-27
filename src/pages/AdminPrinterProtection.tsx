@@ -1496,6 +1496,21 @@ const AdminPrinterProtection = () => {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>أقسام الخصم (مفصولة بفاصلة)</Label>
+                <Input
+                  value={newPlan.parts_discount_categories?.join('، ') || ''}
+                  onChange={(e) => setNewPlan({ ...newPlan, parts_discount_categories: e.target.value.split(/[,،]/).map(s => s.trim()).filter(Boolean) })}
+                  placeholder="مثال: صيانة بامبولاب، قطع غيار"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>خدمة استبدال عند الكسر والتلف</Label>
+                <Switch
+                  checked={newPlan.has_replacement_printer || false}
+                  onCheckedChange={(checked) => setNewPlan({ ...newPlan, has_replacement_printer: checked })}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setAddPlanDialogOpen(false)}>إلغاء</Button>
