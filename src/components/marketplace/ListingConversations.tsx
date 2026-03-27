@@ -2265,7 +2265,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       const notesVal = adminCartRequest._editNotes ?? (() => {
                         try { return JSON.parse(adminCartRequest.admin_notes || '{}').notes || adminCartRequest.admin_notes || ''; } catch { return adminCartRequest.admin_notes || ''; }
                       })();
-                      const price = parseFloat(String(priceVal) || '0');
+                      const normalizedPrice = String(priceVal ?? '')
+                        .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+                        .replace(/[٬،,\s]/g, '');
+                      const price = parseFloat(normalizedPrice || '0');
                       if (isNaN(price) || price <= 0) {
                         toast.error('أدخل سعراً صحيحاً');
                         return;
