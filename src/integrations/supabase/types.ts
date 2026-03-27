@@ -6980,6 +6980,7 @@ export type Database = {
           product_id: string
           rating: number
           reorder_count: number | null
+          status: string
           updated_at: string
           user_id: string
           video_url: string | null
@@ -6995,6 +6996,7 @@ export type Database = {
           product_id: string
           rating: number
           reorder_count?: number | null
+          status?: string
           updated_at?: string
           user_id: string
           video_url?: string | null
@@ -7010,6 +7012,7 @@ export type Database = {
           product_id?: string
           rating?: number
           reorder_count?: number | null
+          status?: string
           updated_at?: string
           user_id?: string
           video_url?: string | null
