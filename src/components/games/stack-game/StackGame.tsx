@@ -197,9 +197,9 @@ export default function StackGame({ onBack }: Props) {
       {/* Main Menu */}
       {activeView === "main" && (
         <div className="max-w-sm mx-auto space-y-5 text-center">
-          <div className="text-7xl mt-4">🏗️</div>
-          <h1 className="text-2xl font-bold text-foreground font-mono">برج التكديس</h1>
-          <p className="text-sm text-muted-foreground">كدّس القطع فوق بعضها بدقة! كل قطعة تتحرك وعليك إيقافها في الوقت المناسب.</p>
+          <div className="text-7xl mt-4">🏙️</div>
+          <h1 className="text-2xl font-bold text-foreground font-mono">البرج</h1>
+          <p className="text-sm text-muted-foreground">ابنِ أعلى برج بدقة! كل طابق يتحرك وعليك إيقافه في الوقت المناسب.</p>
 
           {/* Tickets */}
           <div className="flex justify-center gap-4">

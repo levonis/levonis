@@ -80,9 +80,9 @@ export const GAME_NODES: GameResource[] = [
   },
   {
     node_name: "stack_tower",
-    title: "برج التكديس",
-    description: "كدّس القطع فوق بعضها بدقة واحصل على نقاط!",
-    icon: "🏗️",
+    title: "البرج",
+    description: "كدّس الطوابق فوق بعضها بدقة وابنِ أعلى برج!",
+    icon: "🏙️",
     status: GameStatus.LIVE,
     category: GameCategory.STRATEGY,
     reward: "+1 ~ +100",
