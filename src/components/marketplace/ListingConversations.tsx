@@ -249,8 +249,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       if (listingId) {
         query = query.eq('listing_id', listingId);
       } else if (isAdmin) {
-        // Admin sees all support conversations (where SUPPORT_USER_ID is participant)
-        query = query.or(`buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${SUPPORT_USER_ID}`);
+        // Admin sees all support AND maintenance conversations
+        query = query.or(`buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${SUPPORT_USER_ID},buyer_id.eq.${MAINTENANCE_SUPPORT_ID},seller_id.eq.${MAINTENANCE_SUPPORT_ID}`);
       } else {
         query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
       }
