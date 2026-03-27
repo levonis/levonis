@@ -262,7 +262,44 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user && open,
   });
 
-  // Auto open conversation only once on initial load
+  // Check if user has active warranty/insurance (to show maintenance support contact)
+  const { data: hasActiveWarranty } = useQuery({
+    queryKey: ['user-active-warranty', user?.id],
+    queryFn: async () => {
+      if (!user || isAdmin) return false;
+      // Check for active printer subscriptions or active warranty (store_printers with active status)
+      const [{ data: subs }, { data: printers }] = await Promise.all([
+        supabase
+          .from('printer_subscriptions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .limit(1),
+        supabase
+          .from('user_printers')
+          .select('id, store_printers!inner(status, expiry_date)')
+          .eq('user_id', user.id)
+          .limit(1),
+      ]);
+      const hasActiveSub = (subs?.length || 0) > 0;
+      const hasActivePrinter = printers?.some((p: any) => 
+        p.store_printers?.status === 'active' && 
+        (!p.store_printers?.expiry_date || new Date(p.store_printers.expiry_date) > new Date())
+      );
+      return hasActiveSub || hasActivePrinter;
+    },
+    enabled: !!user && open && !isAdmin,
+    staleTime: 60_000,
+  });
+
+  // Find maintenance conversation for current user
+  const maintenanceConv = useMemo(() => {
+    if (isAdmin || !conversations) return null;
+    return conversations.find(c => 
+      c.buyer_id === MAINTENANCE_SUPPORT_ID || c.seller_id === MAINTENANCE_SUPPORT_ID
+    );
+  }, [conversations, isAdmin]);
+
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   useEffect(() => {
     if (autoOpenConversationId && conversations?.length && !hasAutoOpened) {
