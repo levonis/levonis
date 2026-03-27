@@ -488,6 +488,29 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   onChange={(e) => setManualFields(prev => ({ ...prev, delivery: e.target.value }))}
                 />
               </div>
+              <div className="md:col-span-2">
+                <Label>صورة المنتج (اختياري)</Label>
+                <div className="flex items-center gap-3 mt-1">
+                  {productImage && (
+                    <img src={productImage} alt="product" className="w-16 h-16 object-contain rounded border" />
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setProductImage(ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {productImage && (
+                    <Button variant="ghost" size="sm" onClick={() => setProductImage(null)}>إزالة</Button>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleGeneratePreview} disabled={!manualFields.subtotal && invoiceData.subtotal === 0}>
