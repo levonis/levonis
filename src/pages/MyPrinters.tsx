@@ -962,6 +962,16 @@ const MyPrinters = () => {
                 })}
               </div>
             </section>
+            {/* Section D: Maintenance Tickets */}
+            {subscriptions && subscriptions.length > 0 && (
+              <section>
+                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-primary" />
+                  طلبات الصيانة
+                </h2>
+                <MaintenanceTicketsList />
+              </section>
+            )}
           </div>
         )}
       </div>
