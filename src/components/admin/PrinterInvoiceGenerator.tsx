@@ -129,6 +129,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               totalPrice: item.total_price || 0,
               orderItemId: item.id,
               shippingAddress: order.shipping_address || '',
+              paymentMethod: order.payment_method || '',
             });
           }
         });
