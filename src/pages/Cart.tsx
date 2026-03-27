@@ -1512,7 +1512,7 @@ const Cart = () => {
                     }
                     
                     if (itemOption?.price_adjustment) {
-                      itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+                      itemPrice += Math.round(Number(itemOption.price_adjustment));
                     }
 
                     const shippingIndex = (item as any).shipping_option_index;
