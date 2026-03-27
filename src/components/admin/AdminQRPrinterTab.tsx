@@ -24,6 +24,10 @@ const AdminQRPrinterTab = () => {
   const [selectedPrinter, setSelectedPrinter] = useState<any>(null);
   const [invoicePrinter, setInvoicePrinter] = useState<any>(null);
   const qrRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [newPrinter, setNewPrinter] = useState({
     serial_number: '',
@@ -32,6 +36,28 @@ const AdminQRPrinterTab = () => {
     image_url: '',
     warranty_months: 6,
   });
+
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('الرجاء اختيار ملف صورة');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة يجب أن لا يتجاوز 5MB');
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }, []);
+
+  const clearImage = useCallback(() => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [imagePreview]);
 
   // Fetch all admin-created printers (with QR)
   const { data: printers, isLoading } = useQuery({
