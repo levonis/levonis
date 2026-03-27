@@ -299,13 +299,38 @@ const AdminQRPrinterTab = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>رابط الصورة</Label>
-              <Input
-                value={newPrinter.image_url}
-                onChange={(e) => setNewPrinter({ ...newPrinter, image_url: e.target.value })}
-                placeholder="https://..."
-                dir="ltr"
+              <Label>صورة الطابعة</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
               />
+              {imagePreview ? (
+                <div className="relative w-full">
+                  <img src={imagePreview} alt="معاينة" className="w-full h-32 object-contain rounded-lg border bg-muted" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 left-1 h-6 w-6"
+                    onClick={clearImage}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-20 flex-col gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">اختر صورة (حد أقصى 5MB)</span>
+                </Button>
+              )}
             </div>
             <div className="space-y-2">
               <Label>مدة الضمان</Label>
