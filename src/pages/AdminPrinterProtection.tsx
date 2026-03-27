@@ -253,15 +253,26 @@ const AdminPrinterProtection = () => {
     enabled: isAdmin,
   });
 
-  // Fetch delivered orders needing serial numbers
+  // Fetch delivered orders needing serial numbers - ONLY printer category
+  const PRINTER_CATEGORY_ID = '3cd72a43-3af6-4adb-83e4-a482b4feca25';
   const { data: deliveredItems, isLoading: deliveredLoading } = useQuery({
     queryKey: ['admin-delivered-printer-items'],
     queryFn: async () => {
+      // First get product IDs in printer category
+      const { data: printerProducts } = await supabase
+        .from('products')
+        .select('id')
+        .eq('category_id', PRINTER_CATEGORY_ID);
+      
+      const printerProductIds = printerProducts?.map(p => p.id) || [];
+      if (printerProductIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from('order_items')
         .select(`
           id,
           order_id,
+          product_id,
           product_name,
           product_name_ar,
           serial_number,
@@ -275,6 +286,7 @@ const AdminPrinterProtection = () => {
         `)
         .eq('orders.status', 'delivered')
         .is('serial_number', null)
+        .in('product_id', printerProductIds)
         .order('orders(delivered_at)', { ascending: false });
 
       if (error) throw error;
