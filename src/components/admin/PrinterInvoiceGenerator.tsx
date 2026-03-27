@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, FileText, Download, Printer as PrinterIcon } from 'lucide-react';
+import { Loader2, FileText, Printer as PrinterIcon, Search, User, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import logoImg from '@/assets/logo-new.png';
 
 interface PrinterData {
@@ -42,73 +44,104 @@ interface Props {
   onClose: () => void;
 }
 
+interface BuyerOption {
+  userId: string;
+  fullName: string;
+  username: string;
+  phone: string;
+  address: string;
+  printerSerial: string;
+  printerModel: string;
+}
+
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({
-    subtotal: '',
-    delivery: '12000',
-  });
-  const [step, setStep] = useState<'config' | 'preview'>('config');
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000' });
+  const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [buyerSearch, setBuyerSearch] = useState('');
 
-  const fetchInvoiceData = async () => {
+  // Fetch buyers who purchased printers
+  const { data: buyers, isLoading: buyersLoading } = useQuery({
+    queryKey: ['printer-buyers'],
+    queryFn: async () => {
+      const { data: printers } = await supabase
+        .from('store_printers')
+        .select('buyer_user_id, serial_number, model_name, model_name_ar')
+        .not('buyer_user_id', 'is', null);
+
+      if (!printers || printers.length === 0) return [];
+
+      const userIds = [...new Set(printers.map(p => p.buyer_user_id!))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, phone_number')
+        .in('id', userIds);
+
+      const { data: addresses } = await supabase
+        .from('user_addresses')
+        .select('user_id, governorate, area, neighborhood, nearest_landmark, phone_number, full_name')
+        .in('user_id', userIds)
+        .eq('is_default', true);
+
+      const profileMap: Record<string, any> = {};
+      profiles?.forEach(p => { profileMap[p.id] = p; });
+      const addrMap: Record<string, any> = {};
+      addresses?.forEach(a => { addrMap[a.user_id] = a; });
+
+      const results: BuyerOption[] = [];
+      printers.forEach(p => {
+        const prof = profileMap[p.buyer_user_id!];
+        const addr = addrMap[p.buyer_user_id!];
+        results.push({
+          userId: p.buyer_user_id!,
+          fullName: prof?.full_name || addr?.full_name || '',
+          username: prof?.username || '',
+          phone: prof?.phone_number || addr?.phone_number || '',
+          address: addr ? `${addr.governorate || ''} - ${addr.area || ''}${addr.neighborhood ? ' ' + addr.neighborhood : ''}` : '',
+          printerSerial: p.serial_number,
+          printerModel: p.model_name_ar || p.model_name || '',
+        });
+      });
+      return results;
+    },
+    enabled: open,
+  });
+
+  const filteredBuyers = buyers?.filter(b => {
+    if (!buyerSearch) return true;
+    const q = buyerSearch.toLowerCase();
+    return b.fullName.toLowerCase().includes(q) ||
+      b.username.toLowerCase().includes(q) ||
+      b.phone.includes(q) ||
+      b.printerSerial.toLowerCase().includes(q);
+  });
+
+  const handleSelectUser = async (buyer: BuyerOption) => {
+    setSelectedUserId(buyer.userId);
     setLoading(true);
     try {
-      // Fetch user profile & address
-      let customerName = '';
-      let phone = '';
-      let address = '';
-
-      if (printer.buyer_user_id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, username, phone_number')
-          .eq('id', printer.buyer_user_id)
-          .single();
-
-        customerName = profile?.full_name || profile?.username || '';
-        phone = profile?.phone_number || '';
-
-        // Get default address
-        const { data: addr } = await supabase
-          .from('user_addresses')
-          .select('*')
-          .eq('user_id', printer.buyer_user_id)
-          .eq('is_default', true)
-          .single();
-
-        if (addr) {
-          address = `${addr.governorate} - ${addr.area}${addr.neighborhood ? ' ' + addr.neighborhood : ''}${addr.nearest_landmark ? ' قرب ' + addr.nearest_landmark : ''}`;
-          if (!phone && addr.phone_number) phone = addr.phone_number;
-          if (!customerName && addr.full_name) customerName = addr.full_name;
-        }
-      }
-
-      // Get order item price if available
       let subtotal = 0;
       if (printer.order_item_id) {
         const { data: orderItem } = await supabase
           .from('order_items')
-          .select('total_price, quantity')
+          .select('total_price')
           .eq('id', printer.order_item_id)
           .single();
-        if (orderItem) {
-          subtotal = orderItem.total_price || 0;
-        }
+        if (orderItem) subtotal = orderItem.total_price || 0;
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = parseFloat(manualFields.delivery) || 12000;
       const taxAmount = Math.round(sub * 0.03);
-
       const now = new Date();
-      const invoiceNo = format(now, 'yyyyMMdd-HHmm');
 
       setInvoiceData({
-        customerName,
-        phone,
-        address,
+        customerName: buyer.fullName,
+        phone: buyer.phone,
+        address: buyer.address,
         printerModel: printer.model_name || printer.model_name_ar,
         serialNumber: printer.serial_number,
         qrCodeData: printer.qr_code_data || '',
@@ -116,21 +149,35 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         tax: taxAmount,
         delivery: deliveryFee,
         total: sub + taxAmount + deliveryFee,
-        invoiceNo,
+        invoiceNo: format(now, 'yyyyMMdd-HHmm'),
         date: now,
       });
-
-      if (sub > 0) {
-        setStep('preview');
-      } else {
-        // Need manual subtotal
-        setManualFields(prev => ({ ...prev, subtotal: '' }));
-      }
-    } catch (err) {
+      setStep(sub > 0 ? 'preview' : 'config');
+    } catch {
       toast.error('حدث خطأ أثناء جلب البيانات');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleManualEntry = () => {
+    const now = new Date();
+    setInvoiceData({
+      customerName: '',
+      phone: '',
+      address: '',
+      printerModel: printer.model_name || printer.model_name_ar,
+      serialNumber: printer.serial_number,
+      qrCodeData: printer.qr_code_data || '',
+      subtotal: 0,
+      tax: 0,
+      delivery: 12000,
+      total: 12000,
+      invoiceNo: format(now, 'yyyyMMdd-HHmm'),
+      date: now,
+    });
+    setSelectedUserId(null);
+    setStep('config');
   };
 
   const handleGeneratePreview = () => {
@@ -173,14 +220,13 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
 
   React.useEffect(() => {
     if (open) {
-      setStep('config');
+      setStep('select-user');
       setInvoiceData(null);
-      fetchInvoiceData();
+      setSelectedUserId(null);
+      setBuyerSearch('');
+      setManualFields({ subtotal: '', delivery: '12000' });
     }
   }, [open]);
-
-  const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-  const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
@@ -192,15 +238,75 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           </DialogTitle>
         </DialogHeader>
 
-        {loading && (
+        {/* Step 1: Select user */}
+        {step === 'select-user' && (
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">اختر المستخدم الذي اشترى الطابعة لجلب بياناته تلقائياً:</p>
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                value={buyerSearch}
+                onChange={(e) => setBuyerSearch(e.target.value)}
+                placeholder="بحث بالاسم أو الرقم أو السيريال..."
+                className="pr-10"
+              />
+            </div>
+            {buyersLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : filteredBuyers && filteredBuyers.length > 0 ? (
+              <ScrollArea className="h-[300px] rounded-md border">
+                <div className="divide-y">
+                  {filteredBuyers.map((buyer, idx) => (
+                    <button
+                      key={`${buyer.userId}-${buyer.printerSerial}-${idx}`}
+                      onClick={() => handleSelectUser(buyer)}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-accent/50 transition-colors text-right"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {buyer.fullName || buyer.username || 'بدون اسم'}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {buyer.phone && <span className="ml-3" dir="ltr">{buyer.phone}</span>}
+                          {buyer.address && <span>{buyer.address}</span>}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          🖨 {buyer.printerModel} — <span className="font-mono">{buyer.printerSerial}</span>
+                        </div>
+                      </div>
+                      {selectedUserId === buyer.userId && (
+                        <Check className="w-4 h-4 text-green-500 shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                لا يوجد مشترون مسجلون
+              </div>
+            )}
+            <Button variant="outline" onClick={handleManualEntry} className="w-full">
+              إدخال البيانات يدوياً
+            </Button>
+          </div>
+        )}
+
+        {loading && step !== 'select-user' && (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         )}
 
-        {!loading && step === 'config' && invoiceData && invoiceData.subtotal === 0 && (
+        {/* Step 2: Config / manual fields */}
+        {!loading && step === 'config' && invoiceData && (
           <div className="p-6 space-y-4">
-            <p className="text-muted-foreground">لم يتم العثور على سعر تلقائي. أدخل البيانات يدوياً:</p>
+            <p className="text-muted-foreground text-sm">أكمل أو عدّل البيانات:</p>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label>اسم العميل</Label>
@@ -227,7 +333,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
                 <Label>المبلغ الفرعي (Sub-total) - د.ع</Label>
                 <Input
                   type="number"
-                  value={manualFields.subtotal}
+                  value={manualFields.subtotal || (invoiceData.subtotal > 0 ? String(invoiceData.subtotal) : '')}
                   onChange={(e) => setManualFields(prev => ({ ...prev, subtotal: e.target.value }))}
                   placeholder="مثال: 2185000"
                 />
@@ -241,12 +347,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
                 />
               </div>
             </div>
-            <Button onClick={handleGeneratePreview} disabled={!manualFields.subtotal}>
-              عرض الفاتورة
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleGeneratePreview} disabled={!manualFields.subtotal && invoiceData.subtotal === 0}>
+                عرض الفاتورة
+              </Button>
+              <Button variant="ghost" onClick={() => setStep('select-user')}>رجوع</Button>
+            </div>
           </div>
         )}
 
+        {/* Step 3: Preview */}
         {!loading && step === 'preview' && invoiceData && (
           <>
             <div className="flex gap-2 p-4 border-b bg-muted/30">
