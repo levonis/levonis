@@ -179,6 +179,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           orderNumber: ob.orderNumber,
           totalPrice: ob.totalPrice,
           orderItemId: ob.orderItemId,
+          paymentMethod: ob.paymentMethod,
         });
       });
 
