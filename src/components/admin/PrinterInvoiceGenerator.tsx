@@ -657,7 +657,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             {data.date.getFullYear()}
           </div>
 
-          {/* Logo image */}
+          {/* Product / Logo image */}
           <div style={{
             width: '140px',
             height: '140px',
@@ -669,9 +669,9 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#e8f5e9',
+            background: data.productImage ? '#fff' : '#e8f5e9',
           }}>
-            <img src={logoSrc} alt="LEVONIS" style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
+            <img src={data.productImage || logoSrc} alt="Product" style={{ width: data.productImage ? '130px' : '100px', height: data.productImage ? '130px' : '100px', objectFit: 'contain' }} />
           </div>
 
           {/* Customer info */}
