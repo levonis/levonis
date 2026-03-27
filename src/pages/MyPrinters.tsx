@@ -1139,6 +1139,19 @@ const MyPrinters = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Maintenance Ticket Dialog */}
+      {maintenanceSubscription && (
+        <MaintenanceTicketDialog
+          open={maintenanceDialogOpen}
+          onOpenChange={(open) => {
+            setMaintenanceDialogOpen(open);
+            if (!open) setMaintenanceSubscription(null);
+          }}
+          subscriptionId={maintenanceSubscription.id}
+          userPrinterId={maintenanceSubscription.user_printer_id}
+          printerName={maintenanceSubscription.user_printers?.store_printers?.model_name_ar || 'الطابعة'}
+        />
+      )}
       
       <Footer />
     </>
