@@ -96,7 +96,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
             )
           )
         `)
-        .in('status', ['completed', 'delivered', 'processing', 'confirmed'])
+        .not('status', 'in', '("cancelled","refunded")')
         .order('created_at', { ascending: false });
 
       // Filter order items to printer category
