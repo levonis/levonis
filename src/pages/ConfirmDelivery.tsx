@@ -77,7 +77,7 @@ const ConfirmDelivery = () => {
           <Card className="border-border/50 bg-card/40 backdrop-blur-xl">
             <CardContent className="py-12 text-center">
               <h3 className="text-xl font-bold text-foreground mb-2">
-                {order?.user_confirmed_delivery ? 'تم تأكيد الاستلام مسبقاً ✅' : 'الطلب غير متاح'}
+                {(order?.user_confirmed_delivery || order?.auto_confirmed) ? 'تم تأكيد الاستلام مسبقاً ✅' : 'الطلب غير متاح'}
               </h3>
               <Button onClick={() => navigate('/my-orders')} className="mt-4">
                 <ArrowRight className="ml-2 h-4 w-4" />
