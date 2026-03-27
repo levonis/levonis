@@ -64,6 +64,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         .from('reviews')
         .select('*')
         .eq('product_id', productId)
+        .eq('status', 'approved')
         .order('created_at', { ascending: false });
       if (error) throw error;
       if (!data || data.length === 0) return [];

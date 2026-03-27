@@ -57,6 +57,7 @@ export const ADMIN_ROUTES = {
   productBundles: `${ADMIN_BASE_PATH}/product-bundles`,
   financialDrafts: `${ADMIN_BASE_PATH}/financial-drafts`,
   inventory: `${ADMIN_BASE_PATH}/inventory`,
+  reviews: `${ADMIN_BASE_PATH}/reviews`,
 } as const;
 
 // Helper to check if a path is an admin path
