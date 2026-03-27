@@ -110,6 +110,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       const orderBuyers: Array<{
         userId: string;
         orderNumber: string;
+        orderId: string;
         productName: string;
         productNameAr: string;
         totalPrice: number;
