@@ -75,6 +75,8 @@ import { type ReplyToMessage } from '@/components/chat/messages/ReplyPreviewBar'
 
 // Support account ID
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
+// Maintenance support account ID (virtual)
+const MAINTENANCE_SUPPORT_ID = "00000000-0000-0000-0000-000000000001";
 
 interface EntryContextData {
   type: 'product' | 'request';
