@@ -379,7 +379,7 @@ export default function AdminUsers() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="البحث بالاسم، اليوزر، الإيميل، أو الهاتف..."
+                placeholder="البحث بالاسم، اليوزر، الإيميل، الهاتف، أو رقم الطلب..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
