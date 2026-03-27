@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import AdminMaintenanceTab from '@/components/admin/AdminMaintenanceTab';
+import AdminRatingsTab from '@/components/admin/AdminRatingsTab';
 
 interface ProtectionPlan {
   id: string;
