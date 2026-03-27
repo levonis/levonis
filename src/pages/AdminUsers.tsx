@@ -201,7 +201,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('user_id, total, order_number');
+        .select('user_id, total_amount, order_number');
       
       if (error) throw error;
       
