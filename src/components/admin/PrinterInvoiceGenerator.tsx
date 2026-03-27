@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, FileText, Printer as PrinterIcon, Search, User, Check } from 'lucide-react';
+import { Loader2, FileText, Printer as PrinterIcon, Search, User, Check, Save, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
@@ -55,6 +55,7 @@ interface BuyerOption {
   printerSerial: string;
   printerModel: string;
   orderNumber?: string;
+  orderId?: string;
   totalPrice?: number;
   orderItemId?: string;
   paymentMethod?: string;
@@ -67,6 +68,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxPercent: '3' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
 
   // Fetch buyers from store_printers AND completed orders for printer category
@@ -108,6 +110,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       const orderBuyers: Array<{
         userId: string;
         orderNumber: string;
+        orderId: string;
         productName: string;
         productNameAr: string;
         totalPrice: number;
@@ -124,6 +127,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
             orderBuyers.push({
               userId: order.user_id,
               orderNumber: order.order_number || order.id?.slice(0, 8),
+              orderId: order.id,
               productName: product.name || '',
               productNameAr: product.name_ar || product.name || '',
               totalPrice: item.total_price || 0,
@@ -177,6 +181,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           printerSerial: '',
           printerModel: ob.productNameAr || ob.productName,
           orderNumber: ob.orderNumber,
+          orderId: ob.orderId,
           totalPrice: ob.totalPrice,
           orderItemId: ob.orderItemId,
           paymentMethod: ob.paymentMethod,
@@ -242,10 +247,12 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
-      const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+      const parsedTax = parseFloat(manualFields.taxPercent);
+      const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
       const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
 
+      setSelectedOrderId(buyer.orderId || null);
       setInvoiceData({
         customerName: buyer.fullName,
         phone: buyer.phone,
@@ -289,6 +296,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       paymentMethod: 'نقداً',
     });
     setSelectedUserId(null);
+    setSelectedOrderId(null);
     setStep('config');
   };
 
@@ -296,7 +304,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
     const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
-    const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+    const parsedTax = parseFloat(manualFields.taxPercent);
+    const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
     const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
       ...invoiceData,
@@ -337,6 +346,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setStep('select-user');
       setInvoiceData(null);
       setSelectedUserId(null);
+      setSelectedOrderId(null);
       setBuyerSearch('');
       setManualFields({ subtotal: '', delivery: '12000', taxPercent: '3' });
     }
@@ -504,6 +514,34 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 <PrinterIcon className="w-4 h-4 ml-2" />
                 طباعة
               </Button>
+              <Button onClick={async () => {
+                if (!invoiceRef.current) return;
+                try {
+                  const invoiceHtml = invoiceRef.current.innerHTML;
+                  if (!selectedOrderId) {
+                    toast.error('لا يمكن حفظ الفاتورة بدون طلب مرتبط');
+                    return;
+                  }
+                  const warrantyMonths = printer.warranty_months || 12;
+                  const warrantyExpiresAt = new Date(invoiceData.date);
+                  warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
+                  
+                  const { error } = await supabase.from('saved_invoices').insert({
+                    order_id: selectedOrderId,
+                    invoice_html: invoiceHtml,
+                    warranty_expires_at: warrantyExpiresAt.toISOString(),
+                    notes: `طابعة: ${invoiceData.printerModel} - رقم تسلسلي: ${invoiceData.serialNumber}`,
+                  });
+                  if (error) throw error;
+                  toast.success('تم حفظ الفاتورة بنجاح');
+                } catch (err) {
+                  console.error('Error saving invoice:', err);
+                  toast.error('حدث خطأ أثناء حفظ الفاتورة');
+                }
+              }} size="sm">
+                <Save className="w-4 h-4 ml-2" />
+                حفظ الفاتورة
+              </Button>
               <Button onClick={() => {
                 if (!invoiceRef.current) return;
                 import('react-to-pdf').then(({ default: generatePDF }) => {
@@ -512,8 +550,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                     page: { margin: 0, format: 'A4' },
                   });
                 });
-              }} size="sm">
-                حفظ PDF
+              }} variant="outline" size="sm">
+                <Download className="w-4 h-4 ml-2" />
+                تنزيل PDF
               </Button>
               <Button onClick={() => setStep('config')} variant="ghost" size="sm">
                 تعديل البيانات
