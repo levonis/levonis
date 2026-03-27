@@ -1122,11 +1122,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     );
                     
                     // Deduplicate conversations by other user ID (prevent showing same user multiple times)
-                    const effectiveId = isCurrentUserSupport ? SUPPORT_USER_ID : user?.id;
+                    const adminIds = [SUPPORT_USER_ID, MAINTENANCE_SUPPORT_ID];
                     const seenUserIds = new Set<string>();
                     const uniqueConversations = [...(conversations || [])].filter(conv => {
-                      const otherUserId = conv.buyer_id === effectiveId ? conv.seller_id : conv.buyer_id;
-                      if (seenUserIds.has(otherUserId)) return false;
+                      // For admin: the "other" user is whoever isn't support/maintenance
+                      let otherUserId: string;
+                      if (isCurrentUserSupport) {
+                        otherUserId = adminIds.includes(conv.buyer_id) ? conv.seller_id : conv.buyer_id;
+                      } else {
+                        otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                      }
                       if (seenUserIds.has(otherUserId)) return false;
                       seenUserIds.add(otherUserId);
                       return true;
