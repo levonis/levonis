@@ -5,7 +5,90 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, Users, RefreshCcw } from "lucide-react";
+import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search } from "lucide-react";
+
+function ProductPicker({ value, onChange }: { value: string | null; onChange: (id: string | null, name?: string, image?: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["admin-products-picker", search],
+    queryFn: async () => {
+      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock").order("created_at", { ascending: false }).limit(20);
+      if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
+      const { data } = await q;
+      return (data || []) as any[];
+    },
+    enabled: open,
+  });
+
+  const { data: selected } = useQuery({
+    queryKey: ["admin-product-selected", value],
+    queryFn: async () => {
+      if (!value) return null;
+      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock").eq("id", value).single();
+      return data as any;
+    },
+    enabled: !!value,
+  });
+
+  if (!open) {
+    return (
+      <div className="flex items-center gap-2">
+        {value && selected ? (
+          <div className="flex items-center gap-2 flex-1 bg-muted/30 rounded-md p-2 text-xs">
+            {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
+            <div className="flex-1 min-w-0">
+              <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
+              <div className="text-muted-foreground">مخزون: {selected.direct_stock ?? 0}</div>
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => { onChange(null); }}>إزالة</Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" className="text-xs gap-1 w-full" onClick={() => setOpen(true)}>
+            <Package className="h-3.5 w-3.5" /> اختر منتج
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 bg-muted/20 rounded-lg p-3 border border-border">
+      <div className="flex items-center gap-2">
+        <Search className="h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="ابحث عن منتج..."
+          className="h-7 text-xs"
+          autoFocus
+        />
+        <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setOpen(false)}>إغلاق</Button>
+      </div>
+      <div className="max-h-40 overflow-y-auto space-y-1">
+        {products.map((p: any) => (
+          <button
+            key={p.id}
+            onClick={() => {
+              onChange(p.id, p.name_ar, p.image_url);
+              setOpen(false);
+              setSearch("");
+            }}
+            className="flex items-center gap-2 w-full text-right p-2 rounded-md hover:bg-muted/50 transition-colors text-xs"
+          >
+            {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" />}
+            <div className="flex-1 min-w-0">
+              <div className="truncate text-foreground">{p.name_ar}</div>
+              <div className="text-muted-foreground text-[10px]">مخزون: {p.direct_stock ?? 0}</div>
+            </div>
+          </button>
+        ))}
+        {products.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">لا توجد نتائج</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function StackGameTab() {
   const queryClient = useQueryClient();
@@ -52,14 +135,9 @@ export default function StackGameTab() {
 
   const [form, setForm] = useState<any>(null);
   const s = form ?? settings;
-
-  // Sub-tab state
   const [subTab, setSubTab] = useState<"settings" | "milestones" | "leaderboard" | "winners">("settings");
-
-  // New milestone form
-  const [newMilestone, setNewMilestone] = useState({ target_score: 100, prize_name_ar: "", stock: 10 });
-  // New leaderboard prize form  
-  const [newLbPrize, setNewLbPrize] = useState({ position: 1, prize_name_ar: "" });
+  const [newMilestone, setNewMilestone] = useState({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null as string | null });
+  const [newLbPrize, setNewLbPrize] = useState({ position: 1, prize_name_ar: "", product_id: null as string | null });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -88,18 +166,19 @@ export default function StackGameTab() {
 
   const addMilestone = useMutation({
     mutationFn: async () => {
-      if (!newMilestone.prize_name_ar.trim()) throw new Error("أدخل اسم الجائزة");
+      if (!newMilestone.prize_name_ar.trim() && !newMilestone.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       const { error } = await supabase.from("stack_game_milestones" as any).insert({
         target_score: newMilestone.target_score,
-        prize_name_ar: newMilestone.prize_name_ar,
+        prize_name_ar: newMilestone.prize_name_ar || "منتج",
         stock: newMilestone.stock,
+        product_id: newMilestone.product_id,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تمت إضافة الجائزة");
       queryClient.invalidateQueries({ queryKey: ["admin-stack-milestones"] });
-      setNewMilestone({ target_score: 100, prize_name_ar: "", stock: 10 });
+      setNewMilestone({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null });
     },
     onError: (e: any) => toast.error(e.message || "فشل الإضافة"),
   });
@@ -125,17 +204,18 @@ export default function StackGameTab() {
 
   const addLbPrize = useMutation({
     mutationFn: async () => {
-      if (!newLbPrize.prize_name_ar.trim()) throw new Error("أدخل اسم الجائزة");
+      if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       const { error } = await supabase.from("stack_game_leaderboard_prizes" as any).insert({
         position: newLbPrize.position,
-        prize_name_ar: newLbPrize.prize_name_ar,
+        prize_name_ar: newLbPrize.prize_name_ar || "منتج",
+        product_id: newLbPrize.product_id,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تمت الإضافة");
       queryClient.invalidateQueries({ queryKey: ["admin-stack-leaderboard-prizes"] });
-      setNewLbPrize({ position: 1, prize_name_ar: "" });
+      setNewLbPrize({ position: 1, prize_name_ar: "", product_id: null });
     },
     onError: (e: any) => toast.error(e.message || "فشل الإضافة (قد يكون المركز مكرر)"),
   });
@@ -182,7 +262,6 @@ export default function StackGameTab() {
 
   return (
     <div className="space-y-4">
-      {/* Sub tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {SUB_TABS.map(t => {
           const Icon = t.icon;
@@ -254,32 +333,39 @@ export default function StackGameTab() {
       {/* Milestones Tab */}
       {subTab === "milestones" && (
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">أول مستخدم يصل للنقاط المطلوبة يربح الجائزة. عند نفاذ المخزون تتوقف الجائزة.</p>
+          <p className="text-xs text-muted-foreground">أول مستخدم يصل للنقاط المطلوبة يربح الجائزة (منتج من المتجر). يتم سحب المخزون تلقائياً عند الفوز.</p>
 
-          {/* Add new */}
           <div className="bg-muted/20 rounded-lg p-4 space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-1"><Plus className="h-4 w-4" /> إضافة جائزة نقاط</h4>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] text-muted-foreground">النقاط المطلوبة</label>
                 <Input type="number" min={1} value={newMilestone.target_score} onChange={e => setNewMilestone(p => ({ ...p, target_score: parseInt(e.target.value) || 1 }))} />
               </div>
               <div>
-                <label className="text-[10px] text-muted-foreground">اسم الجائزة</label>
-                <Input value={newMilestone.prize_name_ar} onChange={e => setNewMilestone(p => ({ ...p, prize_name_ar: e.target.value }))} placeholder="مثلاً: فلمنت مجاني" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground">المخزون</label>
+                <label className="text-[10px] text-muted-foreground">عدد الفائزين (مخزون)</label>
                 <Input type="number" min={1} value={newMilestone.stock} onChange={e => setNewMilestone(p => ({ ...p, stock: parseInt(e.target.value) || 1 }))} />
               </div>
             </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground">المنتج (الجائزة)</label>
+              <ProductPicker
+                value={newMilestone.product_id}
+                onChange={(id, name) => setNewMilestone(p => ({ ...p, product_id: id, prize_name_ar: name || p.prize_name_ar }))}
+              />
+            </div>
+            {!newMilestone.product_id && (
+              <div>
+                <label className="text-[10px] text-muted-foreground">أو أدخل اسم الجائزة يدوياً</label>
+                <Input value={newMilestone.prize_name_ar} onChange={e => setNewMilestone(p => ({ ...p, prize_name_ar: e.target.value }))} placeholder="مثلاً: فلمنت مجاني" />
+              </div>
+            )}
             <Button size="sm" onClick={() => addMilestone.mutate()} disabled={addMilestone.isPending}>
               {addMilestone.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               إضافة
             </Button>
           </div>
 
-          {/* List */}
           {milestones.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">لا توجد جوائز نقاط بعد</div>
           ) : (
@@ -290,9 +376,11 @@ export default function StackGameTab() {
                     <div className="flex items-center gap-2">
                       <Gift className="h-4 w-4 text-primary shrink-0" />
                       <span className="text-sm font-medium text-foreground truncate">{m.prize_name_ar}</span>
+                      {m.product_id && <Package className="h-3 w-3 text-muted-foreground" />}
                     </div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
                       🎯 {m.target_score} نقطة • 📦 {m.claimed_count}/{m.stock} مُطالَب
+                      {m.product_id && " • مرتبط بمنتج (سحب مخزون تلقائي)"}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -311,28 +399,33 @@ export default function StackGameTab() {
       {/* Leaderboard Tab */}
       {subTab === "leaderboard" && (
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">حدد جوائز لأعلى المراكز. عند الضغط على "تتويج الفائزين" يتم منح الجوائز وتصفير النقاط.</p>
+          <p className="text-xs text-muted-foreground">حدد جوائز (منتجات) لأعلى المراكز. عند التتويج يتم سحب المخزون تلقائياً وتصفير النقاط.</p>
 
-          {/* Add prize */}
           <div className="bg-muted/20 rounded-lg p-4 space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-1"><Plus className="h-4 w-4" /> جائزة مركز</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-muted-foreground">المركز</label>
+              <Input type="number" min={1} max={10} value={newLbPrize.position} onChange={e => setNewLbPrize(p => ({ ...p, position: parseInt(e.target.value) || 1 }))} />
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground">المنتج (الجائزة)</label>
+              <ProductPicker
+                value={newLbPrize.product_id}
+                onChange={(id, name) => setNewLbPrize(p => ({ ...p, product_id: id, prize_name_ar: name || p.prize_name_ar }))}
+              />
+            </div>
+            {!newLbPrize.product_id && (
               <div>
-                <label className="text-[10px] text-muted-foreground">المركز</label>
-                <Input type="number" min={1} max={10} value={newLbPrize.position} onChange={e => setNewLbPrize(p => ({ ...p, position: parseInt(e.target.value) || 1 }))} />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground">الجائزة</label>
+                <label className="text-[10px] text-muted-foreground">أو أدخل اسم الجائزة يدوياً</label>
                 <Input value={newLbPrize.prize_name_ar} onChange={e => setNewLbPrize(p => ({ ...p, prize_name_ar: e.target.value }))} placeholder="مثلاً: فلمنت مجاني" />
               </div>
-            </div>
+            )}
             <Button size="sm" onClick={() => addLbPrize.mutate()} disabled={addLbPrize.isPending}>
               {addLbPrize.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               إضافة
             </Button>
           </div>
 
-          {/* Prize list */}
           {leaderboardPrizes.length > 0 && (
             <div className="space-y-2">
               {leaderboardPrizes.map((p: any) => (
@@ -341,6 +434,7 @@ export default function StackGameTab() {
                     <span className="text-lg">🏅</span>
                     <div>
                       <span className="text-sm font-medium text-foreground">المركز {p.position}: {p.prize_name_ar}</span>
+                      {p.product_id && <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" /> مرتبط بمنتج</div>}
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteLbPrize.mutate(p.id)}>
@@ -377,10 +471,9 @@ export default function StackGameTab() {
             )}
           </div>
 
-          {/* Award winners button */}
           <Button
             onClick={() => {
-              if (confirm("هل أنت متأكد؟ سيتم تتويج الفائزين وتصفير جميع النقاط لبدء موسم جديد.")) {
+              if (confirm("هل أنت متأكد؟ سيتم تتويج الفائزين وسحب المخزون وتصفير جميع النقاط لبدء موسم جديد.")) {
                 awardWinners.mutate();
               }
             }}
@@ -405,7 +498,10 @@ export default function StackGameTab() {
               {winners.map((w: any) => (
                 <div key={w.id} className="flex items-center justify-between rounded-lg p-3 border border-border bg-muted/10">
                   <div>
-                    <div className="text-sm font-medium text-foreground">{w.prize_name_ar}</div>
+                    <div className="text-sm font-medium text-foreground flex items-center gap-1">
+                      {w.prize_name_ar}
+                      {w.product_id && <Package className="h-3 w-3 text-muted-foreground" />}
+                    </div>
                     <div className="text-[10px] text-muted-foreground">
                       {w.prize_type === 'leaderboard' ? `🏅 المركز ${w.position}` : `🎯 ${w.score} نقطة`}
                       {w.season && ` • الموسم ${w.season}`}
