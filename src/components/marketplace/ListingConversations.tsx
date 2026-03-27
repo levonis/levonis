@@ -2295,7 +2295,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         await supabase.from('listing_messages').insert({
                           conversation_id: selectedConversation,
                           sender_id: user.id,
-                          content: `✅ تم تعديل سعر السلة (${adminCartRequest.cart_code})\n💰 السعر الجديد: ${price.toLocaleString()} د.ع${notesEl?.value ? `\n📝 ${notesEl.value}` : ''}`,
+                          content: `✅ تم تعديل سعر السلة (${adminCartRequest.cart_code})\n💰 السعر الجديد: ${price.toLocaleString()} د.ع${notesVal ? `\n📝 ${notesVal}` : ''}`,
                         });
                         queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
                       }
