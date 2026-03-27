@@ -10,6 +10,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCart } from '@/hooks/useCart';
+import { useProtectionDiscount, calculateProtectionDiscountedPrice } from '@/hooks/useProtectionDiscount';
 import { useAuth } from '@/hooks/useAuth';
 import { ShoppingCart, ArrowRight, Package, Truck, Heart, Minus, Plus, Star, Check, Clock, Tag, X, BoxIcon, Share2, Trash2, Bell, BellRing } from 'lucide-react';
 import { toast } from 'sonner';
