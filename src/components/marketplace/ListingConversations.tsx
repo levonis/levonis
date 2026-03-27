@@ -2239,7 +2239,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <label className="text-sm font-medium mb-1 block">السعر الجديد (د.ع)</label>
                   <Input
                     type="number"
-                    defaultValue={adminCartRequest.adjusted_total || adminCartRequest.original_total}
+                    value={adminCartRequest._editPrice ?? (adminCartRequest.adjusted_total || adminCartRequest.original_total) ?? ''}
+                    onChange={(e) => setAdminCartRequest((prev: any) => ({ ...prev, _editPrice: e.target.value }))}
                     id="admin-cart-price"
                   />
                 </div>
@@ -2248,9 +2249,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <label className="text-sm font-medium mb-1 block">ملاحظات الإدارة</label>
                   <Input
                     placeholder="ملاحظات..."
-                    defaultValue={(() => {
+                    value={adminCartRequest._editNotes ?? (() => {
                       try { return JSON.parse(adminCartRequest.admin_notes || '{}').notes || adminCartRequest.admin_notes || ''; } catch { return adminCartRequest.admin_notes || ''; }
                     })()}
+                    onChange={(e) => setAdminCartRequest((prev: any) => ({ ...prev, _editNotes: e.target.value }))}
                     id="admin-cart-notes"
                   />
                 </div>
