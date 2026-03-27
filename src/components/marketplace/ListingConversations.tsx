@@ -556,8 +556,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       }
       
       // Send message - this is the only blocking operation
-      // Admin sends as SUPPORT_USER_ID to maintain support identity
-      const effectiveSenderId = isAdmin ? SUPPORT_USER_ID : user.id;
+      // Admin sends as SUPPORT_USER_ID or MAINTENANCE_SUPPORT_ID based on conversation type
+      const isMaintenanceChat = selectedConv?.buyer_id === MAINTENANCE_SUPPORT_ID || selectedConv?.seller_id === MAINTENANCE_SUPPORT_ID;
+      const effectiveSenderId = isAdmin ? (isMaintenanceChat ? MAINTENANCE_SUPPORT_ID : SUPPORT_USER_ID) : user.id;
       const { error } = await supabase.from('listing_messages').insert({
         conversation_id: selectedConversation,
         sender_id: effectiveSenderId,
