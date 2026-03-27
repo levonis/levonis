@@ -684,7 +684,7 @@ const Cart = () => {
             itemPrice = Number(colorData.price);
           }
           if (itemOption?.price_adjustment) {
-            itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+            itemPrice += Math.round(Number(itemOption.price_adjustment));
           }
 
           // Round to nearest 250 if enabled
