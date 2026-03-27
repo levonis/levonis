@@ -32,6 +32,7 @@ const subTabsConfig: Record<MainTabId, SubTabConfig[]> = {
   ],
   insurance: [
     { id: 'status', labelKey: 'rewards_sub_my_printers' },
+    { id: 'activate', labelKey: 'rewards_sub_activate' },
     { id: 'plans', labelKey: 'rewards_sub_plans' },
     { id: 'maintenance', labelKey: 'rewards_sub_maintenance' },
   ],
