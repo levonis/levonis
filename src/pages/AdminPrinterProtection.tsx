@@ -142,6 +142,10 @@ const AdminPrinterProtection = () => {
     has_replacement_printer: false,
     icon_name: 'shield',
     parts_discount_categories: [],
+    parts_discount_type: 'fixed',
+    parts_discount_value: 0,
+    parts_discount_limit_type: 'weekly',
+    parts_discount_limit_count: 1,
   });
   const [requestActionDialogOpen, setRequestActionDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SerialRequest | null>(null);
