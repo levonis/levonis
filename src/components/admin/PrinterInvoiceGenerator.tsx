@@ -291,6 +291,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       ...invoiceData,
       subtotal: sub,
       tax: taxAmount,
+      taxRate: taxRate,
       delivery: deliveryFee,
       total: sub + taxAmount + deliveryFee,
     });
