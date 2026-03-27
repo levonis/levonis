@@ -763,8 +763,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user,
   });
   
-   // Determine if this is a support/admin chat (with SUPPORT_USER_ID)
+   // Determine if this is a support/admin chat (with SUPPORT_USER_ID or MAINTENANCE_SUPPORT_ID)
    const isSupportConversation = selectedConv?.buyer_id === SUPPORT_USER_ID || selectedConv?.seller_id === SUPPORT_USER_ID;
+   const isMaintenanceConversation = selectedConv?.buyer_id === MAINTENANCE_SUPPORT_ID || selectedConv?.seller_id === MAINTENANCE_SUPPORT_ID;
    
    // Everyone can send products (from different sources based on context)
    const canSendProducts = true;
