@@ -1760,6 +1760,18 @@ const Cart = () => {
                     </div>
                   )}
                   
+                  {/* خصم باقة الحماية */}
+                  {protectionDiscountAmount > 0 && protectionDiscount && (
+                    <div className="flex justify-between animate-fade-in">
+                      <span className="text-emerald-600 text-sm flex items-center gap-1">
+                        🛡️ خصم {protectionDiscount.planNameAr}
+                      </span>
+                      <span className="font-bold text-emerald-600">
+                        -<AnimatedPrice value={protectionDiscountAmount} formatFn={formatPrice} /> دينار عراقي
+                      </span>
+                    </div>
+                  )}
+                  
                   {/* الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل */}
                   
                   <div className="flex justify-between text-foreground">
