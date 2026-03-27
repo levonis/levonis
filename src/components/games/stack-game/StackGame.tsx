@@ -190,16 +190,16 @@ export default function StackGame({ onBack }: Props) {
           <Button variant="ghost" size="sm" onClick={activeView !== "main" ? () => setActiveView("main") : onBack} className="gap-1 text-muted-foreground font-mono text-xs pixel-btn-ghost">
             <ArrowRight className="h-4 w-4" /> {activeView !== "main" ? "رجوع" : "رجوع"}
           </Button>
-          <span className="text-primary font-bold text-xs font-mono tracking-wider">STACK</span>
+          <span className="text-primary font-bold text-xs font-mono tracking-wider">THE TOWER</span>
         </div>
       </div>
 
       {/* Main Menu */}
       {activeView === "main" && (
         <div className="max-w-sm mx-auto space-y-5 text-center">
-          <div className="text-7xl mt-4">🏗️</div>
-          <h1 className="text-2xl font-bold text-foreground font-mono">برج التكديس</h1>
-          <p className="text-sm text-muted-foreground">كدّس القطع فوق بعضها بدقة! كل قطعة تتحرك وعليك إيقافها في الوقت المناسب.</p>
+          <div className="text-7xl mt-4">🏙️</div>
+          <h1 className="text-2xl font-bold text-foreground font-mono">البرج</h1>
+          <p className="text-sm text-muted-foreground">ابنِ أعلى برج بدقة! كل طابق يتحرك وعليك إيقافه في الوقت المناسب.</p>
 
           {/* Tickets */}
           <div className="flex justify-center gap-4">
@@ -403,7 +403,7 @@ export default function StackGame({ onBack }: Props) {
               </>
             ) : (
               <>
-                <div className="text-5xl">🏗️</div>
+                <div className="text-5xl">🏙️</div>
                 <h2 className="text-xl font-bold text-foreground font-mono">انتهت اللعبة!</h2>
               </>
             )}
