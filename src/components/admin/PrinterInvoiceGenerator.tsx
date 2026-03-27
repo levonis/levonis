@@ -69,6 +69,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
+  const [productImage, setProductImage] = useState<string | null>(null);
 
   // Fetch buyers from store_printers AND completed orders for printer category
   const { data: buyers, isLoading: buyersLoading } = useQuery({
