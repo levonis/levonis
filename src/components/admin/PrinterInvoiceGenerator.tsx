@@ -232,7 +232,8 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-      const taxAmount = Math.round(sub * 0.03);
+      const taxRate = parseFloat(manualFields.taxRate) || 0;
+      const taxAmount = Math.round(sub * (taxRate / 100));
       const now = new Date();
 
       setInvoiceData({
