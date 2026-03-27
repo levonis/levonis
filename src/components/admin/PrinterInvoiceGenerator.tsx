@@ -68,6 +68,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxPercent: '3' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
 
   // Fetch buyers from store_printers AND completed orders for printer category
