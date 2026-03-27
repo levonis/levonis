@@ -438,6 +438,15 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 />
               </div>
               <div>
+                <Label>الضريبة - د.ع (افتراضي 3%)</Label>
+                <Input
+                  type="number"
+                  value={manualFields.tax}
+                  onChange={(e) => setManualFields(prev => ({ ...prev, tax: e.target.value }))}
+                  placeholder={`تلقائي: ${Math.round((parseFloat(manualFields.subtotal) || invoiceData?.subtotal || 0) * 0.03).toLocaleString()}`}
+                />
+              </div>
+              <div>
                 <Label>رسوم التوصيل - د.ع</Label>
                 <Input
                   type="number"
