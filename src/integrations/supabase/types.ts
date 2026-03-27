@@ -9078,6 +9078,7 @@ export type Database = {
           user_printer_id: string
         }[]
       }
+      get_user_level: { Args: { p_user_id: string }; Returns: string }
       get_user_lock_key: { Args: { p_user_id: string }; Returns: number }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
