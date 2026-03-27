@@ -86,6 +86,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           id,
           order_number,
           user_id,
+          shipping_address,
           order_items!order_items_order_id_fkey (
             id,
             product_id,
