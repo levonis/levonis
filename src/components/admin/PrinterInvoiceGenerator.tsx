@@ -513,6 +513,34 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 <PrinterIcon className="w-4 h-4 ml-2" />
                 طباعة
               </Button>
+              <Button onClick={async () => {
+                if (!invoiceRef.current) return;
+                try {
+                  const invoiceHtml = invoiceRef.current.innerHTML;
+                  if (!selectedOrderId) {
+                    toast.error('لا يمكن حفظ الفاتورة بدون طلب مرتبط');
+                    return;
+                  }
+                  const warrantyMonths = printer.warranty_months || 12;
+                  const warrantyExpiresAt = new Date(invoiceData.date);
+                  warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
+                  
+                  const { error } = await supabase.from('saved_invoices').insert({
+                    order_id: selectedOrderId,
+                    invoice_html: invoiceHtml,
+                    warranty_expires_at: warrantyExpiresAt.toISOString(),
+                    notes: `طابعة: ${invoiceData.printerModel} - رقم تسلسلي: ${invoiceData.serialNumber}`,
+                  });
+                  if (error) throw error;
+                  toast.success('تم حفظ الفاتورة بنجاح');
+                } catch (err) {
+                  console.error('Error saving invoice:', err);
+                  toast.error('حدث خطأ أثناء حفظ الفاتورة');
+                }
+              }} size="sm">
+                <Save className="w-4 h-4 ml-2" />
+                حفظ الفاتورة
+              </Button>
               <Button onClick={() => {
                 if (!invoiceRef.current) return;
                 import('react-to-pdf').then(({ default: generatePDF }) => {
@@ -521,8 +549,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                     page: { margin: 0, format: 'A4' },
                   });
                 });
-              }} size="sm">
-                حفظ PDF
+              }} variant="outline" size="sm">
+                <Download className="w-4 h-4 ml-2" />
+                تنزيل PDF
               </Button>
               <Button onClick={() => setStep('config')} variant="ghost" size="sm">
                 تعديل البيانات
