@@ -94,6 +94,8 @@ const ProductDetail = () => {
     }
   });
 
+  const { discount: protectionDiscount } = useProtectionDiscount(product?.category_id);
+
   const { data: allLoyaltyLevels } = useQuery({
     queryKey: ['loyalty-levels-for-discounts'],
     staleTime: 10 * 60 * 1000,
