@@ -37,6 +37,7 @@ interface InvoiceData {
   total: number;
   invoiceNo: string;
   date: Date;
+  paymentMethod: string;
 }
 
 interface Props {
@@ -56,6 +57,7 @@ interface BuyerOption {
   orderNumber?: string;
   totalPrice?: number;
   orderItemId?: string;
+  paymentMethod?: string;
 }
 
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
@@ -87,6 +89,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           order_number,
           user_id,
           shipping_address,
+          payment_method,
           order_items!order_items_order_id_fkey (
             id,
             product_id,
@@ -110,6 +113,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         totalPrice: number;
         orderItemId: string;
         shippingAddress: string;
+        paymentMethod: string;
       }> = [];
 
       printerOrders?.forEach((order: any) => {
@@ -125,6 +129,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               totalPrice: item.total_price || 0,
               orderItemId: item.id,
               shippingAddress: order.shipping_address || '',
+              paymentMethod: order.payment_method || '',
             });
           }
         });
@@ -174,6 +179,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           orderNumber: ob.orderNumber,
           totalPrice: ob.totalPrice,
           orderItemId: ob.orderItemId,
+          paymentMethod: ob.paymentMethod,
         });
       });
 
@@ -254,6 +260,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         total: sub + taxAmount + deliveryFee,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
+        paymentMethod: buyer.paymentMethod || 'نقداً',
       });
       setStep(sub > 0 ? 'preview' : 'config');
     } catch {
@@ -279,6 +286,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       total: 12000,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
       date: now,
+      paymentMethod: 'نقداً',
     });
     setSelectedUserId(null);
     setStep('config');
@@ -436,6 +444,21 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   value={invoiceData.address}
                   onChange={(e) => setInvoiceData({ ...invoiceData, address: e.target.value })}
                 />
+              </div>
+              <div>
+                <Label>طريقة الدفع</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={invoiceData.paymentMethod}
+                  onChange={(e) => setInvoiceData({ ...invoiceData, paymentMethod: e.target.value })}
+                >
+                  <option value="نقداً">نقداً (عند الاستلام)</option>
+                  <option value="مقدماً">مقدماً (دفع كامل)</option>
+                  <option value="ربع المبلغ مقدماً">ربع المبلغ مقدماً</option>
+                  <option value="نصف المبلغ مقدماً">نصف المبلغ مقدماً</option>
+                  <option value="تحويل بنكي">تحويل بنكي</option>
+                  <option value="محفظة إلكترونية">محفظة إلكترونية</option>
+                </select>
               </div>
               <div>
                 <Label>المبلغ الفرعي (Sub-total) - د.ع</Label>
@@ -660,7 +683,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', borderTop: '2px solid #1a1a1a', paddingTop: '15px', fontSize: '13px' }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '2px', marginBottom: '4px' }}>PAYMENT DETAILS</div>
-          <div>CASH</div>
+          <div>{data.paymentMethod || 'CASH'}</div>
         </div>
         <div>
           <div style={{ fontWeight: 700, fontSize: '12px', letterSpacing: '2px', marginBottom: '4px' }}>MOBILE</div>
