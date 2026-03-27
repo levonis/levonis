@@ -350,11 +350,46 @@ export default function CartRequestDialog({
                 <span className="font-semibold">{formatPrice(existingRequest.original_total)} د.ع</span>
               </div>
 
-              {existingRequest.adjusted_total && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">المبلغ المعدّل:</span>
-                  <span className="font-semibold text-green-600">{formatPrice(existingRequest.adjusted_total)} د.ع</span>
-                </div>
+              {existingRequest.adjusted_total != null && existingRequest.status === 'adjusted' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">المبلغ المعدّل:</span>
+                    <span className="font-semibold text-green-600">{formatPrice(existingRequest.adjusted_total)} د.ع</span>
+                  </div>
+                  {(() => {
+                    try {
+                      const notes = JSON.parse(existingRequest.admin_notes || '{}');
+                      const deliveryPrice = notes.delivery_price;
+                      const adjustedItems = notes.adjusted_items;
+                      return (
+                        <>
+                          {adjustedItems?.length > 0 && (
+                            <div className="space-y-1 pt-1 border-t">
+                              <p className="text-xs text-muted-foreground font-medium">تفاصيل الأسعار:</p>
+                              {adjustedItems.map((it: any, idx: number) => (
+                                <div key={idx} className="flex justify-between text-xs">
+                                  <span className="truncate flex-1">{it.name || 'منتج'} ×{it.quantity || 1}</span>
+                                  <span className="font-medium">{(it.adjusted_price || 0).toLocaleString()} د.ع</span>
+                                </div>
+                              ))}
+                              {deliveryPrice != null && deliveryPrice > 0 && (
+                                <div className="flex justify-between text-xs">
+                                  <span>🚚 التوصيل</span>
+                                  <span className="font-medium">{deliveryPrice.toLocaleString()} د.ع</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {notes.notes && (
+                            <div className="text-xs text-muted-foreground pt-1 border-t">
+                              📝 {notes.notes}
+                            </div>
+                          )}
+                        </>
+                      );
+                    } catch { return null; }
+                  })()}
+                </>
               )}
             </div>
 
