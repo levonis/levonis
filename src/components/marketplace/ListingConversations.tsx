@@ -1238,6 +1238,70 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               </div>
                             )}
                           </button>
+                         )}
+
+                        {/* Pinned Maintenance Support - Only for users with active warranty */}
+                        {!isCurrentUserSupport && hasActiveWarranty && (
+                          <button
+                            onClick={async () => {
+                              if (maintenanceConv) {
+                                setSelectedConversation(maintenanceConv.id);
+                              } else {
+                                const convCode = `MAINT-${Date.now().toString(36).toUpperCase()}`;
+                                const { data: newConv, error } = await supabase
+                                  .from('listing_conversations')
+                                  .insert({
+                                    buyer_id: user?.id,
+                                    seller_id: MAINTENANCE_SUPPORT_ID,
+                                    listing_id: MAINTENANCE_SUPPORT_ID,
+                                    conversation_code: convCode,
+                                    status: 'open',
+                                  })
+                                  .select('id')
+                                  .single();
+
+                                if (!error && newConv) {
+                                  await supabase.from('listing_messages').insert({
+                                    conversation_id: newConv.id,
+                                    sender_id: MAINTENANCE_SUPPORT_ID,
+                                    content: '🔧 مرحباً بك في دعم الصيانة! كيف يمكننا مساعدتك؟',
+                                  });
+                                  queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                  setSelectedConversation(newConv.id);
+                                }
+                              }
+                            }}
+                            className={cn(
+                              "w-full p-3 flex gap-3 hover:bg-accent/10 transition-colors border-b border-border/50 bg-gradient-to-l from-accent/5 to-transparent",
+                              maintenanceConv && selectedConversation === maintenanceConv.id && "bg-accent/10"
+                            )}
+                          >
+                            <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center shrink-0">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-accent-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                            </div>
+                            <div className="flex-1 min-w-0 text-right">
+                              <div className="flex items-center justify-between gap-2 mb-0.5">
+                                <p className="font-bold text-sm">دعم الصيانة</p>
+                                {maintenanceConv && lastMessages?.[maintenanceConv.id] && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {format(new Date(lastMessages[maintenanceConv.id].created_at), 'HH:mm')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {maintenanceConv && lastMessages?.[maintenanceConv.id]
+                                  ? lastMessages[maintenanceConv.id].content?.slice(0, 40)
+                                  : 'تواصل مع فريق الصيانة'}
+                              </p>
+                            </div>
+                            {maintenanceConv && lastMessages?.[maintenanceConv.id] &&
+                             !lastMessages[maintenanceConv.id].is_read &&
+                             lastMessages[maintenanceConv.id].sender_id !== user?.id && (
+                              <div className="h-5 w-5 rounded-full bg-accent flex items-center justify-center shrink-0">
+                                <span className="text-[9px] font-bold text-accent-foreground">!</span>
+                              </div>
+                            )}
+                          </button>
                         )}
                         
                         {/* Other conversations */}
