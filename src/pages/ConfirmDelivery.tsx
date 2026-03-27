@@ -193,7 +193,6 @@ const ConfirmDelivery = () => {
             rating: data.rating,
             comment: data.comment.trim() || null,
             media_files: uploadedUrls.length > 0 ? uploadedUrls : null,
-            is_verified_purchase: true,
             points_awarded: pointsForThisReview,
           });
           if (reviewError) throw reviewError;
