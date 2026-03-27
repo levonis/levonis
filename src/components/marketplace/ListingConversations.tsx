@@ -2269,7 +2269,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
                         .replace(/[٬،,\s]/g, '');
                       const price = parseFloat(normalizedPrice || '0');
-                      if (isNaN(price) || price <= 0) {
+                      if (isNaN(price) || price < 0) {
                         toast.error('أدخل سعراً صحيحاً');
                         return;
                       }
