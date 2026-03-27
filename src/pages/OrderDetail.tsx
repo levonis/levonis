@@ -316,7 +316,7 @@ const OrderDetail = () => {
         )}
 
         {/* Delivery Confirmation */}
-        {!isAdmin && order.status === 'delivered' && !order.user_confirmed_delivery && (
+        {!isAdmin && order.status === 'delivered' && !order.user_confirmed_delivery && !order.auto_confirmed && (
           <GlassCard className="p-5 border-emerald-500/30" delay={0.15}>
             <div className="text-center space-y-3">
               <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
@@ -332,7 +332,7 @@ const OrderDetail = () => {
           </GlassCard>
         )}
 
-        {order.user_confirmed_delivery && (
+        {(order.user_confirmed_delivery || order.auto_confirmed) && (
           <GlassCard className="p-4" delay={0.15}>
             <div className="flex items-center justify-center gap-2 text-emerald-500">
               <CheckCircle2 className="h-4 w-4" />
