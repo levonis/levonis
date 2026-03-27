@@ -286,6 +286,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       total: 12000,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
       date: now,
+      paymentMethod: 'نقداً',
     });
     setSelectedUserId(null);
     setStep('config');
