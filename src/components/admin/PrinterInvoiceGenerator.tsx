@@ -323,7 +323,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       setInvoiceData(null);
       setSelectedUserId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000' });
+      setManualFields({ subtotal: '', delivery: '12000', taxRate: '3' });
     }
   }, [open]);
 
