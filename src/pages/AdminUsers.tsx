@@ -200,7 +200,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('user_id, total');
+        .select('user_id, total, order_number');
       
       if (error) throw error;
       
@@ -208,10 +208,13 @@ export default function AdminUsers() {
       const stats: Record<string, OrderStats> = {};
       data?.forEach((order: any) => {
         if (!stats[order.user_id]) {
-          stats[order.user_id] = { user_id: order.user_id, total_orders: 0, total_spent: 0 };
+          stats[order.user_id] = { user_id: order.user_id, total_orders: 0, total_spent: 0, order_numbers: [] };
         }
         stats[order.user_id].total_orders++;
         stats[order.user_id].total_spent += order.total || 0;
+        if (order.order_number) {
+          stats[order.user_id].order_numbers.push(order.order_number.toLowerCase());
+        }
       });
       
       return Object.values(stats);
