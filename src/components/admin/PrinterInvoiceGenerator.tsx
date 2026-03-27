@@ -142,9 +142,9 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
 
       const { data: addresses } = await supabase
         .from('user_addresses')
-        .select('user_id, governorate, area, neighborhood, nearest_landmark, phone_number, full_name')
+        .select('user_id, governorate, area, neighborhood, nearest_landmark, phone_number, full_name, is_default')
         .in('user_id', allUserIds)
-        .eq('is_default', true);
+        .order('is_default', { ascending: false });
 
       const profileMap: Record<string, any> = {};
       profiles?.forEach(p => { profileMap[p.id] = p; });
