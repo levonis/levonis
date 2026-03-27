@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import PrinterInvoiceGenerator from './PrinterInvoiceGenerator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
-import { Loader2, Plus, QrCode, Printer, Download, Eye, CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react';
+import { Loader2, Plus, QrCode, Printer, Download, Eye, CheckCircle, Clock, AlertTriangle, FileText, Upload, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 const AdminQRPrinterTab = () => {
@@ -24,6 +24,10 @@ const AdminQRPrinterTab = () => {
   const [selectedPrinter, setSelectedPrinter] = useState<any>(null);
   const [invoicePrinter, setInvoicePrinter] = useState<any>(null);
   const qrRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [newPrinter, setNewPrinter] = useState({
     serial_number: '',
@@ -32,6 +36,28 @@ const AdminQRPrinterTab = () => {
     image_url: '',
     warranty_months: 6,
   });
+
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('الرجاء اختيار ملف صورة');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة يجب أن لا يتجاوز 5MB');
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }, []);
+
+  const clearImage = useCallback(() => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [imagePreview]);
 
   // Fetch all admin-created printers (with QR)
   const { data: printers, isLoading } = useQuery({
@@ -63,6 +89,22 @@ const AdminQRPrinterTab = () => {
 
   const createMutation = useMutation({
     mutationFn: async (printer: typeof newPrinter) => {
+      let finalImageUrl = printer.image_url || null;
+
+      // Upload image file if selected
+      if (imageFile) {
+        setUploading(true);
+        const ext = imageFile.name.split('.').pop();
+        const filePath = `printers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false });
+        setUploading(false);
+        if (uploadError) throw new Error('فشل رفع الصورة: ' + uploadError.message);
+        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(filePath);
+        finalImageUrl = urlData.publicUrl;
+      }
+
       const origin = window.location.origin;
       const qrData = `${origin}/activate-printer?serial=${encodeURIComponent(printer.serial_number)}`;
       
@@ -70,7 +112,7 @@ const AdminQRPrinterTab = () => {
         serial_number: printer.serial_number,
         model_name_ar: printer.model_name_ar,
         model_name: printer.model_name || printer.model_name_ar,
-        image_url: printer.image_url || null,
+        image_url: finalImageUrl,
         warranty_months: printer.warranty_months,
         status: 'pending',
         qr_code_data: qrData,
@@ -91,6 +133,7 @@ const AdminQRPrinterTab = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-qr-printers'] });
       setCreateDialogOpen(false);
       setNewPrinter({ serial_number: '', model_name_ar: '', model_name: '', image_url: '', warranty_months: 6 });
+      clearImage();
     },
     onError: (error: any) => {
       if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
@@ -256,13 +299,38 @@ const AdminQRPrinterTab = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>رابط الصورة</Label>
-              <Input
-                value={newPrinter.image_url}
-                onChange={(e) => setNewPrinter({ ...newPrinter, image_url: e.target.value })}
-                placeholder="https://..."
-                dir="ltr"
+              <Label>صورة الطابعة</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
               />
+              {imagePreview ? (
+                <div className="relative w-full">
+                  <img src={imagePreview} alt="معاينة" className="w-full h-32 object-contain rounded-lg border bg-muted" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 left-1 h-6 w-6"
+                    onClick={clearImage}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-20 flex-col gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">اختر صورة (حد أقصى 5MB)</span>
+                </Button>
+              )}
             </div>
             <div className="space-y-2">
               <Label>مدة الضمان</Label>
@@ -290,9 +358,9 @@ const AdminQRPrinterTab = () => {
                 }
                 createMutation.mutate(newPrinter);
               }}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || uploading}
             >
-              {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إنشاء وتوليد QR'}
+              {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إنشاء وتوليد QR'}
             </Button>
           </DialogFooter>
         </DialogContent>
