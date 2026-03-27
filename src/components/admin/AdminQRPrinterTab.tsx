@@ -112,7 +112,7 @@ const AdminQRPrinterTab = () => {
         serial_number: printer.serial_number,
         model_name_ar: printer.model_name_ar,
         model_name: printer.model_name || printer.model_name_ar,
-        image_url: printer.image_url || null,
+        image_url: finalImageUrl,
         warranty_months: printer.warranty_months,
         status: 'pending',
         qr_code_data: qrData,
