@@ -358,9 +358,9 @@ const AdminQRPrinterTab = () => {
                 }
                 createMutation.mutate(newPrinter);
               }}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || uploading}
             >
-              {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إنشاء وتوليد QR'}
+              {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إنشاء وتوليد QR'}
             </Button>
           </DialogFooter>
         </DialogContent>
