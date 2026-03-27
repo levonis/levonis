@@ -129,6 +129,7 @@ const ProductBundles = lazy(() => import("./pages/ProductBundles"));
 const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
 const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
+const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
