@@ -437,7 +437,7 @@ const Cart = () => {
       .from('cart_requests')
       .select('id, cart_code, adjusted_total, admin_notes, status')
       .eq('user_id', user?.id)
-      .eq('status', 'pending')
+      .in('status', ['pending', 'adjusted'])
       .limit(1)
       .maybeSingle();
     
