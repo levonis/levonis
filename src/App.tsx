@@ -266,7 +266,7 @@ function AppContent() {
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/printer-protection" element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
             <Route path="/my-printers" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
-            <Route path="/activate-printer" element={<Navigate to="/rewards?tab=insurance&sub=activate" replace />} />
+            <Route path="/activate-printer" element={<ActivatePrinter />} />
             <Route path="/warranty-dashboard/:printerId" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
             
             <Route path="*" element={<NotFound />} />
