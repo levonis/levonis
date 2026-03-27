@@ -17,6 +17,8 @@ import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import Footer from '@/components/Footer';
+import MaintenanceTicketDialog from '@/components/printer/MaintenanceTicketDialog';
+import MaintenanceTicketsList from '@/components/printer/MaintenanceTicketsList';
 
 interface EligiblePrinter {
   order_item_id: string;
