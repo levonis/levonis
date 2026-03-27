@@ -127,6 +127,8 @@ const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
 const BundleDetail = lazy(() => import("./pages/BundleDetail"));
+const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
+const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
