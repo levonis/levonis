@@ -546,7 +546,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
             </div>
             <div className="p-4 overflow-auto bg-white">
               <div ref={invoiceRef}>
-                <InvoiceTemplate data={invoiceData} logoSrc={logoImg} />
+                <InvoiceTemplate data={{ ...invoiceData, productImage: productImage || undefined }} logoSrc={logoImg} />
               </div>
             </div>
           </>
