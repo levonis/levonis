@@ -38,6 +38,28 @@ const Cart = () => {
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+
+  // Simple item price getter for protection discount calculation
+  const getCartItemPrice = (item: CartItem): number => {
+    if (!item.products) return 0;
+    const isDirect = (item as any).sale_type === 'direct';
+    let price = Number(item.products.price || 0);
+    if (isDirect && item.products.direct_sale_price != null) price = Number(item.products.direct_sale_price);
+    const colorData = (item as any).selected_color && item.products.colors
+      ? (item.products.colors as any[]).find((c: any) => c.name === (item as any).selected_color || c.name_ar === (item as any).selected_color)
+      : null;
+    if (colorData?.price != null) {
+      if (isDirect && colorData.direct_sale_price != null) price = Number(colorData.direct_sale_price);
+      else price = Number(colorData.price);
+    }
+    if ((item as any).product_options?.price_adjustment) {
+      price += Math.round(Number((item as any).product_options.price_adjustment) * usdToIqd);
+    }
+    if ((item.products as any)?.round_up_price === true) price = Math.ceil(price / 250) * 250;
+    return price;
+  };
+
+  const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
