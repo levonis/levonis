@@ -63,27 +63,82 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
 
-  // Fetch buyers who purchased printers
+  // Fetch buyers from store_printers AND completed orders for printer category
   const { data: buyers, isLoading: buyersLoading } = useQuery({
     queryKey: ['printer-buyers'],
     queryFn: async () => {
-      const { data: printers } = await supabase
+      const PRINTER_CATEGORY_ID = '3cd72a43-3af6-4adb-83e4-a482b4feca25';
+
+      // Source 1: store_printers with buyer_user_id
+      const { data: registeredPrinters } = await supabase
         .from('store_printers')
         .select('buyer_user_id, serial_number, model_name, model_name_ar')
         .not('buyer_user_id', 'is', null);
 
-      if (!printers || printers.length === 0) return [];
+      // Source 2: completed orders containing printer products
+      const { data: printerOrders } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          user_id,
+          order_items!order_items_order_id_fkey (
+            id,
+            product_id,
+            total_price,
+            products!order_items_product_id_fkey (
+              name,
+              name_ar,
+              category_id
+            )
+          )
+        `)
+        .in('status', ['completed', 'delivered', 'processing', 'confirmed'])
+        .order('created_at', { ascending: false });
 
-      const userIds = [...new Set(printers.map(p => p.buyer_user_id!))];
+      // Filter order items to printer category
+      const orderBuyers: Array<{
+        userId: string;
+        orderNumber: string;
+        productName: string;
+        productNameAr: string;
+        totalPrice: number;
+        orderItemId: string;
+      }> = [];
+
+      printerOrders?.forEach((order: any) => {
+        const items = order.order_items || [];
+        items.forEach((item: any) => {
+          const product = item.products;
+          if (product && product.category_id === PRINTER_CATEGORY_ID) {
+            orderBuyers.push({
+              userId: order.user_id,
+              orderNumber: order.order_number || order.id?.slice(0, 8),
+              productName: product.name || '',
+              productNameAr: product.name_ar || product.name || '',
+              totalPrice: item.total_price || 0,
+              orderItemId: item.id,
+            });
+          }
+        });
+      });
+
+      // Collect all user IDs
+      const printerUserIds = registeredPrinters?.filter(p => p.buyer_user_id).map(p => p.buyer_user_id!) || [];
+      const orderUserIds = orderBuyers.map(o => o.userId);
+      const allUserIds = [...new Set([...printerUserIds, ...orderUserIds])];
+
+      if (allUserIds.length === 0) return [];
+
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, username, phone_number')
-        .in('id', userIds);
+        .in('id', allUserIds);
 
       const { data: addresses } = await supabase
         .from('user_addresses')
         .select('user_id, governorate, area, neighborhood, nearest_landmark, phone_number, full_name')
-        .in('user_id', userIds)
+        .in('user_id', allUserIds)
         .eq('is_default', true);
 
       const profileMap: Record<string, any> = {};
@@ -92,7 +147,31 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       addresses?.forEach(a => { addrMap[a.user_id] = a; });
 
       const results: BuyerOption[] = [];
-      printers.forEach(p => {
+      const seen = new Set<string>();
+
+      // Add order-based buyers first (more data available)
+      orderBuyers.forEach(ob => {
+        const key = `${ob.userId}-${ob.orderNumber}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const prof = profileMap[ob.userId];
+        const addr = addrMap[ob.userId];
+        results.push({
+          userId: ob.userId,
+          fullName: prof?.full_name || addr?.full_name || '',
+          username: prof?.username || '',
+          phone: prof?.phone_number || addr?.phone_number || '',
+          address: addr ? `${addr.governorate || ''} - ${addr.area || ''}${addr.neighborhood ? ' ' + addr.neighborhood : ''}` : '',
+          printerSerial: '',
+          printerModel: ob.productNameAr || ob.productName,
+          orderNumber: ob.orderNumber,
+          totalPrice: ob.totalPrice,
+          orderItemId: ob.orderItemId,
+        });
+      });
+
+      // Add registered printer buyers
+      registeredPrinters?.forEach(p => {
         const prof = profileMap[p.buyer_user_id!];
         const addr = addrMap[p.buyer_user_id!];
         results.push({
@@ -105,6 +184,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           printerModel: p.model_name_ar || p.model_name || '',
         });
       });
+
       return results;
     },
     enabled: open,
@@ -116,7 +196,9 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
     return b.fullName.toLowerCase().includes(q) ||
       b.username.toLowerCase().includes(q) ||
       b.phone.includes(q) ||
-      b.printerSerial.toLowerCase().includes(q);
+      b.printerSerial.toLowerCase().includes(q) ||
+      b.printerModel.toLowerCase().includes(q) ||
+      (b.orderNumber && b.orderNumber.toLowerCase().includes(q));
   });
 
   const handleSelectUser = async (buyer: BuyerOption) => {
