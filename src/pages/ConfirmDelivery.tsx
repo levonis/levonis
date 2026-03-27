@@ -70,7 +70,7 @@ const ConfirmDelivery = () => {
     );
   }
 
-  if (!order || order.status !== 'delivered' || order.user_confirmed_delivery) {
+  if (!order || order.status !== 'delivered' || order.user_confirmed_delivery || order.auto_confirmed) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm">
         <main className="container mx-auto px-4 py-8">
