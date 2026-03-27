@@ -73,6 +73,7 @@ interface OrderStats {
   user_id: string;
   total_orders: number;
   total_spent: number;
+  order_numbers: string[];
 }
 
 export default function AdminUsers() {
@@ -200,7 +201,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('user_id, total');
+        .select('user_id, total, order_number');
       
       if (error) throw error;
       
@@ -208,10 +209,13 @@ export default function AdminUsers() {
       const stats: Record<string, OrderStats> = {};
       data?.forEach((order: any) => {
         if (!stats[order.user_id]) {
-          stats[order.user_id] = { user_id: order.user_id, total_orders: 0, total_spent: 0 };
+          stats[order.user_id] = { user_id: order.user_id, total_orders: 0, total_spent: 0, order_numbers: [] };
         }
         stats[order.user_id].total_orders++;
         stats[order.user_id].total_spent += order.total || 0;
+        if (order.order_number) {
+          stats[order.user_id].order_numbers.push(order.order_number.toLowerCase());
+        }
       });
       
       return Object.values(stats);
@@ -256,11 +260,13 @@ export default function AdminUsers() {
     let result = users.filter(user => {
       // Search filter
       const searchLower = searchQuery.toLowerCase();
+      const userOrders = orderStatsMap.get(user.id);
       const matchesSearch = !searchQuery || 
         user.full_name?.toLowerCase().includes(searchLower) ||
         user.username?.toLowerCase().includes(searchLower) ||
         user.email?.toLowerCase().includes(searchLower) ||
-        user.phone_number?.includes(searchQuery);
+        user.phone_number?.includes(searchQuery) ||
+        userOrders?.order_numbers.some(on => on.includes(searchLower));
       
       // Type filter
       const isMerchant = merchantMap.has(user.id);
@@ -373,7 +379,7 @@ export default function AdminUsers() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="البحث بالاسم، اليوزر، الإيميل، أو الهاتف..."
+                placeholder="البحث بالاسم، اليوزر، الإيميل، الهاتف، أو رقم الطلب..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
