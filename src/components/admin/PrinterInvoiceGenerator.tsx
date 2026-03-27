@@ -61,7 +61,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', tax: '' });
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxPercent: '3' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
