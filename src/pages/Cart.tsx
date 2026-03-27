@@ -777,6 +777,17 @@ const Cart = () => {
           .in('id', offerPurchaseIds);
       }
 
+      // Record protection discount usage if applied
+      if (protectionDiscountAmount > 0 && protectionDiscount?.canUse) {
+        await supabase.from('plan_discount_usage' as any).insert({
+          user_id: user.id,
+          subscription_id: protectionDiscount.subscriptionId,
+          plan_id: protectionDiscount.planId,
+          order_id: orderResult.id,
+          discount_amount: protectionDiscountAmount,
+        });
+      }
+
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
