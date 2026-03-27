@@ -86,6 +86,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           id,
           order_number,
           user_id,
+          shipping_address,
           order_items!order_items_order_id_fkey (
             id,
             product_id,
@@ -108,6 +109,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         productNameAr: string;
         totalPrice: number;
         orderItemId: string;
+        shippingAddress: string;
       }> = [];
 
       printerOrders?.forEach((order: any) => {
@@ -122,6 +124,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               productNameAr: product.name_ar || product.name || '',
               totalPrice: item.total_price || 0,
               orderItemId: item.id,
+              shippingAddress: order.shipping_address || '',
             });
           }
         });
@@ -141,9 +144,9 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
 
       const { data: addresses } = await supabase
         .from('user_addresses')
-        .select('user_id, governorate, area, neighborhood, nearest_landmark, phone_number, full_name')
+        .select('user_id, governorate, area, neighborhood, nearest_landmark, phone_number, full_name, is_default')
         .in('user_id', allUserIds)
-        .eq('is_default', true);
+        .order('is_default', { ascending: false });
 
       const profileMap: Record<string, any> = {};
       profiles?.forEach(p => { profileMap[p.id] = p; });
@@ -165,7 +168,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           fullName: prof?.full_name || addr?.full_name || '',
           username: prof?.username || '',
           phone: prof?.phone_number || addr?.phone_number || '',
-address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_landmark].filter(Boolean).join(' - ') : '',
+          address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_landmark].filter(Boolean).join(' - ') : (ob.shippingAddress || ''),
           printerSerial: '',
           printerModel: ob.productNameAr || ob.productName,
           orderNumber: ob.orderNumber,
