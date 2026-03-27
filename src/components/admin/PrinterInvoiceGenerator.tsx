@@ -126,6 +126,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
             orderBuyers.push({
               userId: order.user_id,
               orderNumber: order.order_number || order.id?.slice(0, 8),
+              orderId: order.id,
               productName: product.name || '',
               productNameAr: product.name_ar || product.name || '',
               totalPrice: item.total_price || 0,
