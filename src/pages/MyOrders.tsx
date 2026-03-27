@@ -220,7 +220,7 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
                   تتبع الشحنة
                 </button>
               )}
-              {order.status === 'delivered' && (
+              {order.status === 'delivered' && !order.user_confirmed_delivery && !order.auto_confirmed && (
                 <button
                   onClick={(e) => { e.stopPropagation(); navigate(`/my-orders/${order.id}/confirm`); }}
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/15 rounded-xl py-2 transition-colors"
@@ -228,6 +228,12 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
                   <CheckCircle className="h-3.5 w-3.5" />
                   تأكيد الاستلام
                 </button>
+              )}
+              {order.status === 'delivered' && (order.user_confirmed_delivery || order.auto_confirmed) && (
+                <div className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 rounded-xl py-2">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  تم تأكيد الاستلام ✅
+                </div>
               )}
             </div>
           )}
