@@ -466,14 +466,15 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryKey: ['conv-unread-counts', user?.id, conversations?.map(c => c.id)],
     queryFn: async () => {
       if (!conversations?.length || !user) return {};
-      const counts: Record<string, number> = {};
+      // For admin: exclude messages from both support and maintenance IDs
+      const excludeIds = isAdmin ? [SUPPORT_USER_ID, MAINTENANCE_SUPPORT_ID] : [user.id];
       const counts: Record<string, number> = {};
       // Batch: get all unread messages across all conversations
       const { data } = await supabase
         .from('listing_messages')
         .select('conversation_id')
         .in('conversation_id', conversations.map(c => c.id))
-        .neq('sender_id', effectiveId)
+        .not('sender_id', 'in', `(${excludeIds.join(',')})`)
         .eq('is_read', false);
       
       for (const msg of data || []) {
