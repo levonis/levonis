@@ -57,6 +57,7 @@ interface BuyerOption {
   orderNumber?: string;
   totalPrice?: number;
   orderItemId?: string;
+  paymentMethod?: string;
 }
 
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
