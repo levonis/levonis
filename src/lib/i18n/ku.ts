@@ -346,6 +346,7 @@ export const ku: TranslationKeys = {
   rewards_sub_my_printers: 'پرینتەرەکانم',
   rewards_sub_plans: 'پلانەکان',
   rewards_sub_maintenance: 'چاککردنەوە',
+  rewards_sub_activate: 'چالاککردنی پرینتەر',
   rewards_quick_daily_tasks: 'ئەرکە ڕۆژانەکان',
   rewards_quick_competitions: 'پێشبڕکێکان',
   rewards_quick_points_store: 'فرۆشگای خاڵەکان',

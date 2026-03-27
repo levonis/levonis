@@ -27,6 +27,7 @@ import {
   ArrowUp, Sparkles
 } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
+import PrinterActivationPanel from "./panels/PrinterActivationPanel";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -466,6 +467,17 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
             </Button>
           </CardContent>
         </Card>
+      );
+    }
+
+    // Activate sub-tab
+    if (activeSubTab === 'activate') {
+      return (
+        <PrinterActivationPanel 
+          onActivated={() => {
+            queryClient.invalidateQueries({ queryKey: ['my-printers-with-subs'] });
+          }} 
+        />
       );
     }
 

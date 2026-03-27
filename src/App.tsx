@@ -129,6 +129,7 @@ const ProductBundles = lazy(() => import("./pages/ProductBundles"));
 const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
 const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
+const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Simple loading fallback
@@ -263,10 +264,10 @@ function AppContent() {
             <Route path="/my-points" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
-            <Route path="/printer-protection" element={<Navigate to="/rewards" replace />} />
-            <Route path="/my-printers" element={<Navigate to="/rewards" replace />} />
+            <Route path="/printer-protection" element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
+            <Route path="/my-printers" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
             <Route path="/activate-printer" element={<ActivatePrinter />} />
-            <Route path="/warranty-dashboard/:printerId" element={<RequireAuth><WarrantyDashboard /></RequireAuth>} />
+            <Route path="/warranty-dashboard/:printerId" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
