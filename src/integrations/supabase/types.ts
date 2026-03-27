@@ -7339,6 +7339,141 @@ export type Database = {
         }
         Relationships: []
       }
+      stack_game_high_scores: {
+        Row: {
+          achieved_at: string
+          high_score: number
+          id: string
+          season: number
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          high_score?: number
+          id?: string
+          season?: number
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          high_score?: number
+          id?: string
+          season?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stack_game_leaderboard_prizes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          position: number
+          prize_description_ar: string | null
+          prize_image_url: string | null
+          prize_name_ar: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          position: number
+          prize_description_ar?: string | null
+          prize_image_url?: string | null
+          prize_name_ar?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          position?: number
+          prize_description_ar?: string | null
+          prize_image_url?: string | null
+          prize_name_ar?: string
+        }
+        Relationships: []
+      }
+      stack_game_milestone_claims: {
+        Row: {
+          claimed_at: string
+          id: string
+          milestone_id: string
+          score_achieved: number
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          milestone_id: string
+          score_achieved: number
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          milestone_id?: string
+          score_achieved?: number
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stack_game_milestone_claims_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "stack_game_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stack_game_milestone_claims_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "stack_game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stack_game_milestones: {
+        Row: {
+          claimed_count: number
+          created_at: string
+          id: string
+          is_active: boolean
+          prize_description_ar: string | null
+          prize_image_url: string | null
+          prize_name_ar: string
+          stock: number
+          target_score: number
+          updated_at: string
+        }
+        Insert: {
+          claimed_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          prize_description_ar?: string | null
+          prize_image_url?: string | null
+          prize_name_ar?: string
+          stock?: number
+          target_score?: number
+          updated_at?: string
+        }
+        Update: {
+          claimed_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          prize_description_ar?: string | null
+          prize_image_url?: string | null
+          prize_name_ar?: string
+          stock?: number
+          target_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stack_game_sessions: {
         Row: {
           ended_at: string | null
@@ -7417,6 +7552,39 @@ export type Database = {
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      stack_game_winners: {
+        Row: {
+          awarded_at: string
+          id: string
+          position: number | null
+          prize_name_ar: string
+          prize_type: string
+          score: number | null
+          season: number | null
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          id?: string
+          position?: number | null
+          prize_name_ar: string
+          prize_type?: string
+          score?: number | null
+          season?: number | null
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          id?: string
+          position?: number | null
+          prize_name_ar?: string
+          prize_type?: string
+          score?: number | null
+          season?: number | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -8869,6 +9037,7 @@ export type Database = {
         Args: { p_transaction_id: string }
         Returns: boolean
       }
+      admin_award_stack_winners: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
         | { Args: { p_merchant_id: string }; Returns: string }
@@ -8899,6 +9068,10 @@ export type Database = {
           p_window_minutes: number
         }
         Returns: boolean
+      }
+      check_stack_milestone: {
+        Args: { p_score: number; p_session_id: string; p_user_id: string }
+        Returns: Json
       }
       check_username_available: {
         Args: { username_to_check: string }
@@ -9192,6 +9365,7 @@ export type Database = {
         Returns: boolean
       }
       trigger_badge_calculation: { Args: never; Returns: undefined }
+      update_stack_high_score: { Args: { p_score: number }; Returns: undefined }
       update_user_last_active: { Args: never; Returns: undefined }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {
