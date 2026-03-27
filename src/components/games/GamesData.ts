@@ -31,44 +31,21 @@ export enum Difficulty {
   HARD = "hard",
 }
 
-// ── Resource Interface (like Godot Resource class) ───────────
-
 export interface GameResource {
-  /** @export unique node name */
   node_name: string;
-
-  /** @export display title (Arabic) */
   title: string;
-
-  /** @export description text */
   description: string;
-
-  /** @export emoji icon for the game */
   icon: string;
-
-  /** @export AI-generated image path (optional) */
   image?: string;
-
-  /** @export current status */
   status: GameStatus;
-
-  /** @export game category for filtering */
   category: GameCategory;
-
-  /** @export reward range string */
   reward: string;
-
-  /** @export players count label */
   players: string;
-
-  /** @export difficulty level */
   difficulty: Difficulty;
-
-  /** @export_flags is this game popular? */
   popular: boolean;
-
-  /** @export_flags is this game new? */
   is_new: boolean;
+  /** Settings table key to check if game is enabled (e.g. "stack_game_settings") */
+  settings_table?: string;
 }
 
 // ── Scene Tree: Game Nodes ───────────────────────────────────
@@ -113,6 +90,7 @@ export const GAME_NODES: GameResource[] = [
     difficulty: Difficulty.MEDIUM,
     popular: true,
     is_new: true,
+    settings_table: "stack_game_settings",
   },
   {
     node_name: "rps",
