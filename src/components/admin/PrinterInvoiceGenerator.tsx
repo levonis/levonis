@@ -344,6 +344,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setStep('select-user');
       setInvoiceData(null);
       setSelectedUserId(null);
+      setSelectedOrderId(null);
       setBuyerSearch('');
       setManualFields({ subtotal: '', delivery: '12000', taxPercent: '3' });
     }
