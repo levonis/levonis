@@ -517,7 +517,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   useEffect(() => {
     if (selectedConversation && user) {
       const markAsRead = async () => {
-        const effectiveId = isAdmin ? SUPPORT_USER_ID : user.id;
+        const conv = conversations?.find(c => c.id === selectedConversation);
+        const isMaintenanceChat = conv?.buyer_id === MAINTENANCE_SUPPORT_ID || conv?.seller_id === MAINTENANCE_SUPPORT_ID;
+        const effectiveId = isAdmin ? (isMaintenanceChat ? MAINTENANCE_SUPPORT_ID : SUPPORT_USER_ID) : user.id;
         const { error } = await supabase
           .from('listing_messages')
           .update({ is_read: true })
