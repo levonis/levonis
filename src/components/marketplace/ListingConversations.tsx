@@ -1318,7 +1318,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         
                         {/* Other conversations */}
                         {sortedConvs.map(conv => {
-                          const convOtherUserId = conv.buyer_id === effectiveId ? conv.seller_id : conv.buyer_id;
+                          const convOtherUserId = isAdmin 
+                            ? (adminIds.includes(conv.buyer_id) ? conv.seller_id : conv.buyer_id)
+                            : (conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id);
                           const convOtherUser = profiles?.[convOtherUserId];
                           const lastMsg = lastMessages?.[conv.id];
                           const isActive = selectedConversation === conv.id;
