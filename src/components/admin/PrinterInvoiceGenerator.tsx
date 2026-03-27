@@ -260,6 +260,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         total: sub + taxAmount + deliveryFee,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
+        paymentMethod: buyer.paymentMethod || 'نقداً',
       });
       setStep(sub > 0 ? 'preview' : 'config');
     } catch {
