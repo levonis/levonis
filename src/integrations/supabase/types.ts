@@ -7372,6 +7372,7 @@ export type Database = {
           prize_description_ar: string | null
           prize_image_url: string | null
           prize_name_ar: string
+          product_id: string | null
         }
         Insert: {
           created_at?: string
@@ -7381,6 +7382,7 @@ export type Database = {
           prize_description_ar?: string | null
           prize_image_url?: string | null
           prize_name_ar?: string
+          product_id?: string | null
         }
         Update: {
           created_at?: string
@@ -7390,8 +7392,17 @@ export type Database = {
           prize_description_ar?: string | null
           prize_image_url?: string | null
           prize_name_ar?: string
+          product_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stack_game_leaderboard_prizes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stack_game_milestone_claims: {
         Row: {
@@ -7444,6 +7455,7 @@ export type Database = {
           prize_description_ar: string | null
           prize_image_url: string | null
           prize_name_ar: string
+          product_id: string | null
           stock: number
           target_score: number
           updated_at: string
@@ -7456,6 +7468,7 @@ export type Database = {
           prize_description_ar?: string | null
           prize_image_url?: string | null
           prize_name_ar?: string
+          product_id?: string | null
           stock?: number
           target_score?: number
           updated_at?: string
@@ -7468,11 +7481,20 @@ export type Database = {
           prize_description_ar?: string | null
           prize_image_url?: string | null
           prize_name_ar?: string
+          product_id?: string | null
           stock?: number
           target_score?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stack_game_milestones_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stack_game_sessions: {
         Row: {
@@ -7562,6 +7584,7 @@ export type Database = {
           position: number | null
           prize_name_ar: string
           prize_type: string
+          product_id: string | null
           score: number | null
           season: number | null
           user_id: string
@@ -7572,6 +7595,7 @@ export type Database = {
           position?: number | null
           prize_name_ar: string
           prize_type?: string
+          product_id?: string | null
           score?: number | null
           season?: number | null
           user_id: string
@@ -7582,11 +7606,20 @@ export type Database = {
           position?: number | null
           prize_name_ar?: string
           prize_type?: string
+          product_id?: string | null
           score?: number | null
           season?: number | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stack_game_winners_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_notifications: {
         Row: {
@@ -9131,6 +9164,7 @@ export type Database = {
         Returns: string
       }
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
+      deduct_prize_stock: { Args: { p_product_id: string }; Returns: boolean }
       deduct_user_points: {
         Args: {
           p_amount: number
