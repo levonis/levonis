@@ -37,6 +37,7 @@ interface InvoiceData {
   total: number;
   invoiceNo: string;
   date: Date;
+  paymentMethod: string;
 }
 
 interface Props {
