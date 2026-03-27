@@ -295,7 +295,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
   const handleGeneratePreview = () => {
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
-    const deliveryFee = parseFloat(manualFields.delivery) || 12000;
+    const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
     const taxPercent = parseFloat(manualFields.taxPercent) || 3;
     const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
