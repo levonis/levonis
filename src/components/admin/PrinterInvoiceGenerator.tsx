@@ -338,13 +338,13 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         {/* Step 1: Select user */}
         {step === 'select-user' && (
           <div className="p-6 space-y-4">
-            <p className="text-sm text-muted-foreground">اختر المستخدم الذي اشترى الطابعة لجلب بياناته تلقائياً:</p>
+             <p className="text-sm text-muted-foreground">اختر المستخدم الذي اشترى الطابعة لجلب بياناته تلقائياً:</p>
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 value={buyerSearch}
                 onChange={(e) => setBuyerSearch(e.target.value)}
-                placeholder="بحث بالاسم أو الرقم أو السيريال..."
+                placeholder="بحث بالاسم، رقم الطلب، اسم المنتج، أو السيريال..."
                 className="pr-10"
               />
             </div>
