@@ -447,6 +447,17 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
                   onChange={(e) => setManualFields(prev => ({ ...prev, delivery: e.target.value }))}
                 />
               </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">نسبة الضريبة (%)</label>
+                <Input
+                  type="number"
+                  value={manualFields.taxRate}
+                  onChange={(e) => setManualFields(prev => ({ ...prev, taxRate: e.target.value }))}
+                  placeholder="3"
+                  min="0"
+                  max="100"
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleGeneratePreview} disabled={!manualFields.subtotal && invoiceData.subtotal === 0}>
