@@ -1002,24 +1002,36 @@ const AdminPrinterProtection = () => {
             </Card>
           </TabsContent>
 
-          {/* Maintenance Tickets Tab */}
-          <TabsContent value="maintenance" className="space-y-4">
-            <AdminMaintenanceTab />
-          </TabsContent>
-
-          {/* Engineer Ratings Tab */}
-          <TabsContent value="ratings" className="space-y-4">
-            <AdminRatingsTab />
-          </TabsContent>
-
           {/* Logs Tab */}
           <TabsContent value="logs" className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <History className="w-5 h-5" />
                   سجل التغييرات
                 </CardTitle>
+                {logs && logs.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={async () => {
+                      if (!confirm('هل أنت متأكد من حذف جميع السجلات؟')) return;
+                      const { error } = await supabase
+                        .from('printer_protection_logs')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000');
+                      if (error) {
+                        toast.error('فشل حذف السجلات');
+                      } else {
+                        toast.success('تم حذف جميع السجلات');
+                        queryClient.invalidateQueries({ queryKey: ['printer-protection-logs'] });
+                      }
+                    }}
+                  >
+                    <X className="w-4 h-4 ml-1" />
+                    حذف الكل
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 <Table>
@@ -1029,6 +1041,7 @@ const AdminPrinterProtection = () => {
                       <TableHead>النوع</TableHead>
                       <TableHead>التفاصيل</TableHead>
                       <TableHead>التاريخ</TableHead>
+                      <TableHead>حذف</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1042,11 +1055,31 @@ const AdminPrinterProtection = () => {
                           {JSON.stringify(log.details)}
                         </TableCell>
                         <TableCell>{format(new Date(log.created_at!), 'dd/MM/yyyy HH:mm')}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive h-8 w-8"
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from('printer_protection_logs')
+                                .delete()
+                                .eq('id', log.id);
+                              if (error) {
+                                toast.error('فشل الحذف');
+                              } else {
+                                queryClient.invalidateQueries({ queryKey: ['printer-protection-logs'] });
+                              }
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {(!logs || logs.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           لا توجد سجلات
                         </TableCell>
                       </TableRow>
