@@ -379,6 +379,23 @@ export default function AdminUserChat({
             <div className="space-y-3">
               {messages.map((msg) => {
                 const isOwn = msg.sender_id === user.id;
+                
+                // Check for order_tracking card
+                let parsedContent: any = null;
+                try { parsedContent = JSON.parse(msg.content); } catch {}
+                
+                if (parsedContent?.type === 'order_tracking') {
+                  return (
+                    <OrderTrackingCard
+                      key={msg.id}
+                      orderNumber={parsedContent.order_number}
+                      orderId={parsedContent.order_id}
+                      isMe={isOwn}
+                      timestamp={formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ar })}
+                    />
+                  );
+                }
+                
                 return (
                   <div
                     key={msg.id}
