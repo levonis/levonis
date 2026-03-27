@@ -470,6 +470,17 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       );
     }
 
+    // Activate sub-tab
+    if (activeSubTab === 'activate') {
+      return (
+        <PrinterActivationPanel 
+          onActivated={() => {
+            queryClient.invalidateQueries({ queryKey: ['my-printers-with-subs'] });
+          }} 
+        />
+      );
+    }
+
     return null;
   };
 
