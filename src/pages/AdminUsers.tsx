@@ -73,6 +73,7 @@ interface OrderStats {
   user_id: string;
   total_orders: number;
   total_spent: number;
+  order_numbers: string[];
 }
 
 export default function AdminUsers() {
