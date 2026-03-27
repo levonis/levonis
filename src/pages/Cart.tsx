@@ -53,7 +53,7 @@ const Cart = () => {
       else price = Number(colorData.price);
     }
     if ((item as any).product_options?.price_adjustment) {
-      price += Math.round(Number((item as any).product_options.price_adjustment) * usdToIqd);
+      price += Math.round(Number((item as any).product_options.price_adjustment));
     }
     if ((item.products as any)?.round_up_price === true) price = Math.ceil(price / 250) * 250;
     return price;
@@ -684,7 +684,7 @@ const Cart = () => {
             itemPrice = Number(colorData.price);
           }
           if (itemOption?.price_adjustment) {
-            itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+            itemPrice += Math.round(Number(itemOption.price_adjustment));
           }
 
           // Round to nearest 250 if enabled
@@ -1016,7 +1016,7 @@ const Cart = () => {
           }
           
           if (itemOption?.price_adjustment) {
-            itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+            itemPrice += Math.round(Number(itemOption.price_adjustment));
           }
 
           // Add pre-order shipping adjustment (if chosen)
@@ -1149,7 +1149,7 @@ const Cart = () => {
         }
         
         if (itemOption?.price_adjustment) {
-          itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+          itemPrice += Math.round(Number(itemOption.price_adjustment));
         }
 
         // Add pre-order shipping adjustment (if chosen)
@@ -1512,7 +1512,7 @@ const Cart = () => {
                     }
                     
                     if (itemOption?.price_adjustment) {
-                      itemPrice += Math.round(Number(itemOption.price_adjustment) * usdToIqd);
+                      itemPrice += Math.round(Number(itemOption.price_adjustment));
                     }
 
                     const shippingIndex = (item as any).shipping_option_index;

@@ -108,7 +108,7 @@ export default function CartRequestDialog({
 
         // Check option-specific pricing
         if (item.product_options?.price_adjustment) {
-          itemPrice += Math.round(Number(item.product_options.price_adjustment) * usdToIqd);
+          itemPrice += Math.round(Number(item.product_options.price_adjustment));
         }
 
         // Round to nearest 250 if enabled

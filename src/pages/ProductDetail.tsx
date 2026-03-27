@@ -463,8 +463,7 @@ const ProductDetail = () => {
   };
 
   const basePrice = getPrice();
-  const optionAdjustmentUsd = selectedOptionData ? Number(selectedOptionData.price_adjustment) : 0;
-  const optionAdjustment = Math.round(optionAdjustmentUsd * usdToIqd);
+  const optionAdjustment = selectedOptionData ? Math.round(Number(selectedOptionData.price_adjustment) || 0) : 0;
   let shippingAdjustment = 0;
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
@@ -933,7 +932,7 @@ const ProductDetail = () => {
                                   {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
                                 </div>
                                 {option.price_adjustment > 0 ? (
-                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(Math.round(option.price_adjustment * usdToIqd))} د.ع</span>
+                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(Math.round(option.price_adjustment))} د.ع</span>
                                 ) : (
                                   <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 h-4">{t('product_free')}</Badge>
                                 )}
@@ -991,7 +990,7 @@ const ProductDetail = () => {
                               <div className="flex items-center gap-1 shrink-0">
                                 {option.price_adjustment !== 0 && (
                                   <span className={cn("text-[10px] font-black", option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600')}>
-                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Math.round(option.price_adjustment * usdToIqd))} د.ع
+                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Math.round(option.price_adjustment))} د.ع
                                   </span>
                                 )}
                                 {!option.isAvailable && (
