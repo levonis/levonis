@@ -37,13 +37,10 @@ export default function LevelBadge({
     queryKey: ["userPoints", userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_points")
-        .select("level")
-        .eq("user_id", userId)
-        .single();
+        .rpc("get_user_level", { p_user_id: userId });
       
-      if (error && error.code !== "PGRST116") throw error;
-      return data;
+      if (error) throw error;
+      return { level: data || "0" };
     },
     enabled: !!userId,
   });
