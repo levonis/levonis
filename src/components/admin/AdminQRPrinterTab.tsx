@@ -325,6 +325,13 @@ const AdminQRPrinterTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Generator */}
+      <PrinterInvoiceGenerator
+        printer={invoicePrinter}
+        open={!!invoicePrinter}
+        onClose={() => setInvoicePrinter(null)}
+      />
     </Card>
   );
 };
