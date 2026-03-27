@@ -28,6 +28,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
 import OptimizedImage from './OptimizedImage';
+import OrderTrackingCard from './chat/messages/OrderTrackingCard';
 
 interface Message {
   id: string;
@@ -68,6 +69,7 @@ export default function AdminUserChat({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [orderCardSent, setOrderCardSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,6 +157,53 @@ export default function AdminUserChat({
     enabled: !!conversation,
     refetchInterval: open ? 3000 : false,
   });
+
+  // Auto-send order reference card when opening chat about an order
+  useEffect(() => {
+    if (!conversation || !orderId || !user || !open || orderCardSent) return;
+    if (messagesLoading) return;
+    
+    // Check if an order_tracking card already exists in messages
+    const hasOrderCard = messages.some((m) => {
+      try {
+        const parsed = JSON.parse(m.content);
+        return parsed?.type === 'order_tracking';
+      } catch {
+        return m.content?.includes('بخصوص طلبك رقم');
+      }
+    });
+    
+    if (hasOrderCard) {
+      setOrderCardSent(true);
+      return;
+    }
+    
+    // Send order reference card
+    const sendOrderCard = async () => {
+      const orderNumber = orderId.slice(0, 8).toUpperCase();
+      const cardContent = JSON.stringify({
+        type: 'order_tracking',
+        order_number: orderNumber,
+        order_id: orderId,
+      });
+      
+      await supabase.from('messages').insert({
+        conversation_id: conversation.id,
+        sender_id: user.id,
+        content: cardContent,
+      });
+      
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversation.id);
+      
+      setOrderCardSent(true);
+      queryClient.invalidateQueries({ queryKey: ['admin-user-messages', conversation.id] });
+    };
+    
+    sendOrderCard();
+  }, [conversation, orderId, user, open, messages, messagesLoading, orderCardSent, queryClient]);
 
   // Mark messages as read
   useEffect(() => {
@@ -330,6 +379,23 @@ export default function AdminUserChat({
             <div className="space-y-3">
               {messages.map((msg) => {
                 const isOwn = msg.sender_id === user.id;
+                
+                // Check for order_tracking card
+                let parsedContent: any = null;
+                try { parsedContent = JSON.parse(msg.content); } catch {}
+                
+                if (parsedContent?.type === 'order_tracking') {
+                  return (
+                    <OrderTrackingCard
+                      key={msg.id}
+                      orderNumber={parsedContent.order_number}
+                      orderId={parsedContent.order_id}
+                      isMe={isOwn}
+                      timestamp={formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ar })}
+                    />
+                  );
+                }
+                
                 return (
                   <div
                     key={msg.id}
