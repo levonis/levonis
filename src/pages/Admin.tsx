@@ -1686,6 +1686,7 @@ const Admin = () => {
                 { icon: Music, title: 'الألعاب', desc: 'إعدادات', path: ADMIN_ROUTES.gamesSettings },
                 { icon: BadgeDollarSign, title: 'مطابقة أسعار', desc: 'طلبات', path: ADMIN_ROUTES.priceMatch },
                 { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
+                { icon: Star, title: 'التقييمات', desc: 'موافقة', path: ADMIN_ROUTES.reviews },
               ].map((item, idx) => (
                 <button
                   key={idx}
