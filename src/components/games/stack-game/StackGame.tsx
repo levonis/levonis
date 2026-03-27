@@ -403,7 +403,7 @@ export default function StackGame({ onBack }: Props) {
               </>
             ) : (
               <>
-                <div className="text-5xl">🏗️</div>
+                <div className="text-5xl">🏙️</div>
                 <h2 className="text-xl font-bold text-foreground font-mono">انتهت اللعبة!</h2>
               </>
             )}
