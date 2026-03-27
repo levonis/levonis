@@ -1340,6 +1340,8 @@ const AdminPrinterProtection = () => {
                       priority_level: selectedPlan.priority_level,
                       is_active: selectedPlan.is_active,
                       has_preventive_maintenance: selectedPlan.has_preventive_maintenance,
+                      has_replacement_printer: selectedPlan.has_replacement_printer,
+                      parts_discount_categories: selectedPlan.parts_discount_categories,
                       badge_text: selectedPlan.badge_text,
                     });
                   }
