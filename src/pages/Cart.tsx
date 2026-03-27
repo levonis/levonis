@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
+import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
