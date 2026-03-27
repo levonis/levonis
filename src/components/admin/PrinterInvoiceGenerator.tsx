@@ -63,12 +63,12 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
       if (printer.buyer_user_id) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, username, phone')
+          .select('full_name, username, phone_number')
           .eq('id', printer.buyer_user_id)
           .single();
 
         customerName = profile?.full_name || profile?.username || '';
-        phone = profile?.phone || '';
+        phone = profile?.phone_number || '';
 
         // Get default address
         const { data: addr } = await supabase
