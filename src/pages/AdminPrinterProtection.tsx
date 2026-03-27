@@ -606,8 +606,9 @@ const AdminPrinterProtection = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="subscriptions" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+        <Tabs defaultValue="qr-printers" className="w-full">
+          <TabsList className="grid w-full grid-cols-8">
+            <TabsTrigger value="qr-printers">إنشاء + QR</TabsTrigger>
             <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
             <TabsTrigger value="plans">الباقات</TabsTrigger>
             <TabsTrigger value="requests" className="relative">
@@ -621,6 +622,11 @@ const AdminPrinterProtection = () => {
             <TabsTrigger value="ratings">تقييمات الفنيين</TabsTrigger>
             <TabsTrigger value="logs">السجل</TabsTrigger>
           </TabsList>
+
+          {/* QR Printers Tab */}
+          <TabsContent value="qr-printers" className="space-y-4">
+            <AdminQRPrinterTab />
+          </TabsContent>
 
           {/* Subscriptions Tab */}
           <TabsContent value="subscriptions" className="space-y-4">
