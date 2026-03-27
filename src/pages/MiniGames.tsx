@@ -10,6 +10,8 @@ import GameCard from "@/components/games/GameCard";
 import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
 import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource } from "@/components/games/GamesData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
 const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCase"));
