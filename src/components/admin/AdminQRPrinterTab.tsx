@@ -133,6 +133,7 @@ const AdminQRPrinterTab = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-qr-printers'] });
       setCreateDialogOpen(false);
       setNewPrinter({ serial_number: '', model_name_ar: '', model_name: '', image_url: '', warranty_months: 6 });
+      clearImage();
     },
     onError: (error: any) => {
       if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
