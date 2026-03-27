@@ -260,11 +260,13 @@ export default function AdminUsers() {
     let result = users.filter(user => {
       // Search filter
       const searchLower = searchQuery.toLowerCase();
+      const userOrders = orderStatsMap.get(user.id);
       const matchesSearch = !searchQuery || 
         user.full_name?.toLowerCase().includes(searchLower) ||
         user.username?.toLowerCase().includes(searchLower) ||
         user.email?.toLowerCase().includes(searchLower) ||
-        user.phone_number?.includes(searchQuery);
+        user.phone_number?.includes(searchQuery) ||
+        userOrders?.order_numbers.some(on => on.includes(searchLower));
       
       // Type filter
       const isMerchant = merchantMap.has(user.id);
