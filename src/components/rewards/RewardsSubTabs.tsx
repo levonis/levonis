@@ -6,7 +6,7 @@ import { TranslationKeys } from "@/lib/i18n/types";
 export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem' | 'store';
 export type CompetitionsSubTab = 'competitions';
 export type CardsSubTab = 'benefits' | 'upgrade' | 'exclusive-offers';
-export type InsuranceSubTab = 'status' | 'plans' | 'maintenance';
+export type InsuranceSubTab = 'status' | 'plans' | 'maintenance' | 'activate';
 
 export type SubTabId = PointsSubTab | CompetitionsSubTab | CardsSubTab | InsuranceSubTab;
 
