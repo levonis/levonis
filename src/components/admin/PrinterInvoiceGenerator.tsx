@@ -61,7 +61,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000' });
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', tax: '' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
@@ -232,7 +232,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-      const taxAmount = Math.round(sub * 0.03);
+      const taxAmount = manualFields.tax !== '' ? parseFloat(manualFields.tax) || 0 : Math.round(sub * 0.03);
       const now = new Date();
 
       setInvoiceData({
@@ -281,7 +281,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
     const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-    const taxAmount = Math.round(sub * 0.03);
+    const taxAmount = manualFields.tax !== '' ? parseFloat(manualFields.tax) || 0 : Math.round(sub * 0.03);
     setInvoiceData({
       ...invoiceData,
       subtotal: sub,
@@ -321,7 +321,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setInvoiceData(null);
       setSelectedUserId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000' });
+      setManualFields({ subtotal: '', delivery: '12000', tax: '' });
     }
   }, [open]);
 
@@ -435,6 +435,15 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   value={manualFields.subtotal || (invoiceData.subtotal > 0 ? String(invoiceData.subtotal) : '')}
                   onChange={(e) => setManualFields(prev => ({ ...prev, subtotal: e.target.value }))}
                   placeholder="مثال: 2185000"
+                />
+              </div>
+              <div>
+                <Label>الضريبة - د.ع (افتراضي 3%)</Label>
+                <Input
+                  type="number"
+                  value={manualFields.tax}
+                  onChange={(e) => setManualFields(prev => ({ ...prev, tax: e.target.value }))}
+                  placeholder={`تلقائي: ${Math.round((parseFloat(manualFields.subtotal) || invoiceData?.subtotal || 0) * 0.03).toLocaleString()}`}
                 />
               </div>
               <div>
