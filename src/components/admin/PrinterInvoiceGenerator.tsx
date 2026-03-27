@@ -32,6 +32,7 @@ interface InvoiceData {
   qrCodeData: string;
   subtotal: number;
   tax: number;
+  taxPercent: number;
   delivery: number;
   total: number;
   invoiceNo: string;
@@ -61,7 +62,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', tax: '' });
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxPercent: '3' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [buyerSearch, setBuyerSearch] = useState('');
@@ -232,7 +233,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-      const taxAmount = manualFields.tax !== '' ? parseFloat(manualFields.tax) || 0 : Math.round(sub * 0.03);
+      const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+      const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
 
       setInvoiceData({
@@ -244,6 +246,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
         tax: taxAmount,
+        taxPercent: taxPercent,
         delivery: deliveryFee,
         total: sub + taxAmount + deliveryFee,
         invoiceNo: format(now, 'yyyyMMdd-HHmm'),
@@ -268,6 +271,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       qrCodeData: printer.qr_code_data || '',
       subtotal: 0,
       tax: 0,
+      taxPercent: 3,
       delivery: 12000,
       total: 12000,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
@@ -281,11 +285,13 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
     const deliveryFee = parseFloat(manualFields.delivery) || 12000;
-    const taxAmount = manualFields.tax !== '' ? parseFloat(manualFields.tax) || 0 : Math.round(sub * 0.03);
+    const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+    const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
       ...invoiceData,
       subtotal: sub,
       tax: taxAmount,
+      taxPercent: taxPercent,
       delivery: deliveryFee,
       total: sub + taxAmount + deliveryFee,
     });
@@ -321,7 +327,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setInvoiceData(null);
       setSelectedUserId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000', tax: '' });
+      setManualFields({ subtotal: '', delivery: '12000', taxPercent: '3' });
     }
   }, [open]);
 
@@ -438,12 +444,12 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 />
               </div>
               <div>
-                <Label>الضريبة - د.ع (افتراضي 3%)</Label>
+                <Label>نسبة الضريبة (%)</Label>
                 <Input
                   type="number"
-                  value={manualFields.tax}
-                  onChange={(e) => setManualFields(prev => ({ ...prev, tax: e.target.value }))}
-                  placeholder={`تلقائي: ${Math.round((parseFloat(manualFields.subtotal) || invoiceData?.subtotal || 0) * 0.03).toLocaleString()}`}
+                  value={manualFields.taxPercent}
+                  onChange={(e) => setManualFields(prev => ({ ...prev, taxPercent: e.target.value }))}
+                  placeholder="3"
                 />
               </div>
               <div>
@@ -562,7 +568,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
               <span style={{ fontSize: '14px' }} dir="rtl">{data.subtotal.toLocaleString()} د.ع</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>tax (3%):</span>
+              <span style={{ fontWeight: 700, fontSize: '13px' }}>tax ({data.taxPercent}%):</span>
               <span style={{ fontSize: '14px' }} dir="rtl">{data.tax.toLocaleString()} د.ع</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
