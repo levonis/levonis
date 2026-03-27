@@ -52,6 +52,9 @@ interface BuyerOption {
   address: string;
   printerSerial: string;
   printerModel: string;
+  orderNumber?: string;
+  totalPrice?: number;
+  orderItemId?: string;
 }
 
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
