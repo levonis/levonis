@@ -302,7 +302,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
     const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
-    const taxPercent = parseFloat(manualFields.taxPercent) || 3;
+    const parsedTax = parseFloat(manualFields.taxPercent);
+    const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
     const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
       ...invoiceData,
