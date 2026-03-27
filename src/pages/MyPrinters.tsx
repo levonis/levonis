@@ -96,6 +96,8 @@ const MyPrinters = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingSubscription, setCancellingSubscription] = useState<Subscription | null>(null);
   const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
+  const [maintenanceSubscription, setMaintenanceSubscription] = useState<Subscription | null>(null);
 
   // Fetch protection plans
   const { data: plans } = useQuery({
