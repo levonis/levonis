@@ -783,6 +783,20 @@ const MyPrinters = () => {
                           
                           {/* Action Buttons */}
                           <div className="flex gap-2">
+                            {sub.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => {
+                                  setMaintenanceSubscription(sub);
+                                  setMaintenanceDialogOpen(true);
+                                }}
+                              >
+                                <Wrench className="w-3 h-3 ml-1" />
+                                طلب صيانة
+                              </Button>
+                            )}
                             {availableUpgrades.length > 0 && sub.status === 'active' && (
                               <Button
                                 size="sm"
