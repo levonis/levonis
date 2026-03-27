@@ -32,6 +32,7 @@ interface InvoiceData {
   qrCodeData: string;
   subtotal: number;
   tax: number;
+  taxRate: number;
   delivery: number;
   total: number;
   invoiceNo: string;
