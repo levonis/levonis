@@ -1230,6 +1230,16 @@ const Cart = () => {
           .in('id', offerPurchaseIds2);
       }
 
+      // Record protection discount usage if applied
+      if (protectionDiscountAmount > 0 && protectionDiscount?.canUse) {
+        await supabase.from('plan_discount_usage' as any).insert({
+          user_id: user!.id,
+          subscription_id: protectionDiscount.subscriptionId,
+          plan_id: protectionDiscount.planId,
+          discount_amount: protectionDiscountAmount,
+        });
+      }
+
       // Clear cart after successful order
       await clearCart();
 
