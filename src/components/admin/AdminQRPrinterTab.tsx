@@ -199,6 +199,9 @@ const AdminQRPrinterTab = () => {
                       <Button variant="ghost" size="icon" onClick={() => downloadQR(printer)}>
                         <Download className="w-4 h-4" />
                       </Button>
+                      <Button variant="ghost" size="icon" title="توليد فاتورة" onClick={() => setInvoicePrinter(printer)}>
+                        <FileText className="w-4 h-4" />
+                      </Button>
                     </div>
                     {/* Hidden QR for download */}
                     <div className="hidden">
