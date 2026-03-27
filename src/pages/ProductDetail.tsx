@@ -78,7 +78,6 @@ const ProductDetail = () => {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
-  const { discount: protectionDiscount } = useProtectionDiscount(product?.category_id);
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     staleTime: 5 * 60 * 1000,
