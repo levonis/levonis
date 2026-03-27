@@ -53,6 +53,7 @@ const ConfirmDelivery = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
       toast.success('تم تأكيد الاستلام والتقييم بنجاح ✅');
       navigate('/my-orders');
     },
