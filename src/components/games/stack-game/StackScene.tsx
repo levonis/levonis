@@ -285,7 +285,7 @@ export default function StackScene({ onGameOver }: Props) {
       setGameOver(true);
       audioSystem.playGameOver();
       setShakeIntensity(0.3);
-      onGameOver(score, perfectCount, maxCombo);
+      onGameOverRef.current(score, perfectCount, maxCombo);
       return;
     }
 
