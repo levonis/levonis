@@ -198,6 +198,9 @@ const audioSystem = new TowerAudio();
 
 export default function StackScene({ onGameOver }: Props) {
   const { camera } = useThree();
+  // Use ref to always have latest callback (avoids stale closure in R3F)
+  const onGameOverRef = useRef(onGameOver);
+  onGameOverRef.current = onGameOver;
   const [stack, setStack] = useState<Block[]>([
     { position: [0, 0, 0], size: [...INITIAL_SIZE], color: PALETTES[0].color, emissive: PALETTES[0].emissive },
   ]);
