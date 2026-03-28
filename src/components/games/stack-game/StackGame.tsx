@@ -134,17 +134,26 @@ export default function StackGame({ onBack }: Props) {
       setMaxCombo(combo);
       setGameState("gameover");
 
-      if (!sessionToken || !user) return;
+      const token = sessionTokenRef.current;
+      if (!token || !user) return;
+      
       try {
-        const { data } = await supabase.rpc("end_stack_game", {
-          p_session_token: sessionToken,
+        const { data, error: rpcError } = await supabase.rpc("end_stack_game", {
+          p_session_token: token,
           p_score: finalScore,
           p_perfect_count: perfects,
           p_max_combo: combo,
         });
+        
+        if (rpcError) {
+          console.error("end_stack_game error:", rpcError);
+        }
+        
         const result = data as any;
         if (result?.success) {
           setPointsAwarded(result.points_awarded);
+        } else {
+          console.error("end_stack_game failed:", result);
         }
 
         // Update high score
@@ -160,15 +169,18 @@ export default function StackGame({ onBack }: Props) {
           setMilestoneWin(milestoneResult);
         }
 
-        // Refresh leaderboard
+        // Refresh queries
         queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
         queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
-      } catch {
-        // silently fail
+        queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
+        queryClient.invalidateQueries({ queryKey: ["user-points"] });
+      } catch (e) {
+        console.error("handleGameOver error:", e);
       }
+      sessionTokenRef.current = null;
       setSessionToken(null);
     },
-    [sessionToken, user, queryClient]
+    [user, queryClient]
   );
 
   const entryCost = settings?.entry_fee_tickets ?? 2;
