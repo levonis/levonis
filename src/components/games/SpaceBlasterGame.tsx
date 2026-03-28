@@ -233,6 +233,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       setPendingPoints(totalPts);
       syncPoints(totalPts);
       stopMusic();
+      refetchTickets();
       if (victory) soundsRef.current.playVictory();
     };
 
