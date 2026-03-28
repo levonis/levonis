@@ -198,6 +198,9 @@ const audioSystem = new TowerAudio();
 
 export default function StackScene({ onGameOver }: Props) {
   const { camera } = useThree();
+  // Use ref to always have latest callback (avoids stale closure in R3F)
+  const onGameOverRef = useRef(onGameOver);
+  onGameOverRef.current = onGameOver;
   const [stack, setStack] = useState<Block[]>([
     { position: [0, 0, 0], size: [...INITIAL_SIZE], color: PALETTES[0].color, emissive: PALETTES[0].emissive },
   ]);
@@ -282,7 +285,7 @@ export default function StackScene({ onGameOver }: Props) {
       setGameOver(true);
       audioSystem.playGameOver();
       setShakeIntensity(0.3);
-      onGameOver(score, perfectCount, maxCombo);
+      onGameOverRef.current(score, perfectCount, maxCombo);
       return;
     }
 
@@ -372,7 +375,7 @@ export default function StackScene({ onGameOver }: Props) {
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
-  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, onGameOver, currentY, spawnParticles]);
+  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, spawnParticles]);
 
   useEffect(() => {
     const handleClick = () => placeBlock();

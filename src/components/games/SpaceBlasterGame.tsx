@@ -233,6 +233,7 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
       setPendingPoints(totalPts);
       syncPoints(totalPts);
       stopMusic();
+      refetchTickets();
       if (victory) soundsRef.current.playVictory();
     };
 
@@ -749,7 +750,16 @@ export default function SpaceBlasterGame({ onBack }: { onBack: () => void }) {
               <p className="text-muted-foreground">الكوكب: {getPlanetForWave(finalWave).nameAr}</p>
               {pendingPoints > 0 && <p className="text-green-400 font-bold">+{pendingPoints} نقطة مكافأة! 🎉</p>}
             </div>
-            <Button variant="ghost" onClick={onBack} className="font-mono text-xs w-full">رجوع</Button>
+            <div className="flex gap-2 w-full">
+              <Button variant="ghost" onClick={onBack} className="font-mono text-xs flex-1">رجوع</Button>
+              <Button 
+                onClick={startGame} 
+                disabled={entryFee > 0 && userTickets < entryFee}
+                className="font-mono text-xs flex-1"
+              >
+                {entryFee > 0 && userTickets < entryFee ? "تذاكر غير كافية" : "🔄 أعد اللعب"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
