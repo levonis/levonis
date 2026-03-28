@@ -375,7 +375,7 @@ export default function StackScene({ onGameOver }: Props) {
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
-  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, onGameOver, currentY, spawnParticles]);
+  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, spawnParticles]);
 
   useEffect(() => {
     const handleClick = () => placeBlock();
