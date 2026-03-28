@@ -113,11 +113,13 @@ export default function StackGame({ onBack }: Props) {
         return;
       }
       setSessionToken(result.session_token);
+      sessionTokenRef.current = result.session_token;
       setScore(0);
       setPerfectCount(0);
       setMaxCombo(0);
       setPointsAwarded(0);
       setGameState("playing");
+      queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
     } catch (e: any) {
       setError("حدث خطأ في بدء اللعبة");
     } finally {
