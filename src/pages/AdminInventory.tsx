@@ -864,7 +864,7 @@ export default function AdminInventory() {
                                   <ProductSearchDropdown
                                 products={products}
                                 value={draftItemForm.product_id}
-                                onSelect={(p) => setDraftItemForm((f) => ({ ...f, product_id: p.id || '', color: '', option: '' }))} />
+                                onSelect={(p) => setDraftItemForm((f) => ({ ...f, product_id: p.id || '', colors: [], options: [] }))} />
                               
                                 </div>
                               </div>
