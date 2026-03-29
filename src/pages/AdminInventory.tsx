@@ -331,10 +331,6 @@ function VariantSelector({
     </motion.div>
   );
 }
-      </AnimatePresence>
-    </motion.div>);
-
-}
 
 // ====== NAV ITEMS ======
 const NAV_ITEMS: {id: Section;icon: any;label: string;color: string;}[] = [
