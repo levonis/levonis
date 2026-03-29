@@ -550,17 +550,25 @@ export default function AdminInventory() {
   const addItemToDraft = useCallback(() => {
     if (!draftItemForm.product_id || draftItemForm.quantity <= 0 || draftItemForm.unit_cost <= 0) return;
     const product = products.find((p) => p.id === draftItemForm.product_id);
-    const newItem: DraftItem = {
-      product_id: draftItemForm.product_id,
-      product_name: product?.name_ar || '',
-      color: draftItemForm.color,
-      option: draftItemForm.option,
-      quantity: draftItemForm.quantity,
-      unit_cost: draftItemForm.unit_cost,
-      line_total: draftItemForm.quantity * draftItemForm.unit_cost
-    };
-    setDraftItems((prev) => [...prev, newItem]);
-    setDraftItemForm({ product_id: '', color: '', option: '', quantity: 0, unit_cost: 0 });
+    const colorsToAdd = draftItemForm.colors.length > 0 ? draftItemForm.colors : [''];
+    const optionsToAdd = draftItemForm.options.length > 0 ? draftItemForm.options : [''];
+    
+    const newItems: DraftItem[] = [];
+    for (const color of colorsToAdd) {
+      for (const option of optionsToAdd) {
+        newItems.push({
+          product_id: draftItemForm.product_id,
+          product_name: product?.name_ar || '',
+          color,
+          option,
+          quantity: draftItemForm.quantity,
+          unit_cost: draftItemForm.unit_cost,
+          line_total: draftItemForm.quantity * draftItemForm.unit_cost
+        });
+      }
+    }
+    setDraftItems((prev) => [...prev, ...newItems]);
+    setDraftItemForm({ product_id: '', colors: [], options: [], quantity: 0, unit_cost: 0 });
   }, [draftItemForm, products]);
 
   const removeItemFromDraft = (index: number) => setDraftItems((prev) => prev.filter((_, i) => i !== index));
