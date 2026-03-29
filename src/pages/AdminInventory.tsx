@@ -47,6 +47,14 @@ interface DraftItem {
   line_total: number;
 }
 
+interface DraftItemFormState {
+  product_id: string;
+  colors: string[];
+  options: string[];
+  quantity: number;
+  unit_cost: number;
+}
+
 // ====== GLASS COMPONENTS ======
 const GlassCard = ({ children, className = '', style }: {children: React.ReactNode;className?: string;style?: React.CSSProperties;}) =>
 <div className={`relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-white/[0.12] ${className}`} style={style}>
