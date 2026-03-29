@@ -880,10 +880,10 @@ export default function AdminInventory() {
                               
                                     <VariantSelector
                                 product={selectedDraftProduct}
-                                selectedColor={draftItemForm.color}
-                                selectedOption={draftItemForm.option}
-                                onColorChange={(c) => setDraftItemForm((f) => ({ ...f, color: c, option: '' }))}
-                                onOptionChange={(o) => setDraftItemForm((f) => ({ ...f, option: o }))} />
+                                selectedColors={draftItemForm.colors}
+                                selectedOptions={draftItemForm.options}
+                                onColorsChange={(c) => setDraftItemForm((f) => ({ ...f, colors: c }))}
+                                onOptionsChange={(o) => setDraftItemForm((f) => ({ ...f, options: o }))} />
                               
                                   </motion.div>
                             }
