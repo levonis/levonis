@@ -356,7 +356,7 @@ export default function AdminInventory() {
   const [draftTitle, setDraftTitle] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [draftNotes, setDraftNotes] = useState('');
-  const [draftItemForm, setDraftItemForm] = useState({ product_id: '', color: '', option: '', quantity: 0, unit_cost: 0 });
+  const [draftItemForm, setDraftItemForm] = useState<DraftItemFormState>({ product_id: '', colors: [], options: [], quantity: 0, unit_cost: 0 });
 
   // Inventory variant expansion
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
