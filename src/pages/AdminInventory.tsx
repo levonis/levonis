@@ -184,20 +184,14 @@ function ProductSearchDropdown({
 
 }
 
-// ====== VARIANT SELECTOR (Color + Option) ======
+// ====== VARIANT SELECTOR (Color + Option) - Multi-Select ======
 function VariantSelector({
   product,
-  selectedColor,
-  selectedOption,
-  onColorChange,
-  onOptionChange
-
-
-
-
-
-
-}: {product: any;selectedColor: string;selectedOption: string;onColorChange: (c: string) => void;onOptionChange: (o: string) => void;}) {
+  selectedColors,
+  selectedOptions,
+  onColorsChange,
+  onOptionsChange
+}: {product: any; selectedColors: string[]; selectedOptions: string[]; onColorsChange: (c: string[]) => void; onOptionsChange: (o: string[]) => void;}) {
   const productColors = useMemo(() => {
     if (!product?.colors) return [];
     try {
@@ -206,16 +200,27 @@ function VariantSelector({
     } catch {return [];}
   }, [product]);
 
-  const colorOptions = useMemo(() => {
-    if (!selectedColor || selectedColor === 'none') return [];
-    const colorObj = productColors.find((c: any) => (c.name || c.color) === selectedColor);
-    if (!colorObj) return [];
-    return colorObj.options || colorObj.option_stocks || [];
-  }, [productColors, selectedColor]);
+  // Collect all unique options from all colors (handle both array and object formats)
+  const allOptions = useMemo(() => {
+    const optionSet = new Set<string>();
+    productColors.forEach((c: any) => {
+      // Handle options array
+      if (Array.isArray(c.options)) {
+        c.options.forEach((o: any) => {
+          const name = o.name || o.option;
+          if (name) optionSet.add(name);
+        });
+      }
+      // Handle option_stocks object (key-value pairs like {"option_name": stock_qty})
+      if (c.option_stocks && typeof c.option_stocks === 'object' && !Array.isArray(c.option_stocks)) {
+        Object.keys(c.option_stocks).forEach((key) => optionSet.add(key));
+      }
+    });
+    return Array.from(optionSet);
+  }, [productColors]);
 
-  if (productColors.length === 0) return null;
+  if (productColors.length === 0 && allOptions.length === 0) return null;
 
-  // Map color names to approximate CSS colors
   const getColorHint = (name: string): string => {
     const map: Record<string, string> = {
       'أحمر': '#ef4444', 'أزرق': '#3b82f6', 'أخضر': '#22c55e', 'أصفر': '#eab308',
@@ -232,6 +237,31 @@ function VariantSelector({
     return NEON.cyan;
   };
 
+  const toggleColor = (name: string) => {
+    if (selectedColors.includes(name)) {
+      onColorsChange(selectedColors.filter(c => c !== name));
+    } else {
+      onColorsChange([...selectedColors, name]);
+    }
+  };
+
+  const toggleOption = (name: string) => {
+    if (selectedOptions.includes(name)) {
+      onOptionsChange(selectedOptions.filter(o => o !== name));
+    } else {
+      onOptionsChange([...selectedOptions, name]);
+    }
+  };
+
+  const selectAllColors = () => {
+    const allNames = productColors.map((c: any) => c.name || c.color || '').filter(Boolean);
+    onColorsChange(allNames);
+  };
+
+  const selectAllOptions = () => {
+    onOptionsChange([...allOptions]);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -241,75 +271,66 @@ function VariantSelector({
       className="space-y-2.5">
       
       {/* Colors */}
-      <div>
-        <Label className="text-white/35 text-[10px] flex items-center gap-1.5">
-          <Palette className="h-3 w-3" /> اللون
-        </Label>
-        <div className="flex flex-wrap gap-1.5 mt-1.5">
-          <button
-            onClick={() => {onColorChange('none');onOptionChange('none');}}
-            className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all duration-200
-              ${selectedColor === 'none' || !selectedColor ? 'bg-white/10 border-white/20 text-white/70' : 'bg-white/[0.03] border-white/5 text-white/35 hover:border-white/15'}`}>
-            
-            بدون
-          </button>
-          {productColors.map((c: any, i: number) => {
-            const name = c.name || c.color || `color-${i}`;
-            const hint = getColorHint(name);
-            const isActive = selectedColor === name;
-            return (
-              <button
-                key={i}
-                onClick={() => {onColorChange(name);onOptionChange('none');}}
-                className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all duration-200 flex items-center gap-1.5
-                  ${isActive ? 'border-white/25 text-white/80' : 'bg-white/[0.03] border-white/5 text-white/40 hover:border-white/15'}`}
-                style={isActive ? { background: `${hint}18`, borderColor: `${hint}50`, boxShadow: `0 0 12px ${hint}20` } : {}}>
-                
-                <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0"
-                style={{ background: hint, boxShadow: isActive ? `0 0 8px ${hint}60` : 'none' }} />
-                {name}
-              </button>);
-
-          })}
-        </div>
-      </div>
-
-      {/* Options (if color selected and has options) */}
-      <AnimatePresence>
-        {colorOptions.length > 0 &&
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}>
-          
+      {productColors.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between">
             <Label className="text-white/35 text-[10px] flex items-center gap-1.5">
-              <Settings2 className="h-3 w-3" /> الخيار
+              <Palette className="h-3 w-3" /> الألوان
+              {selectedColors.length > 0 && <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-[8px] px-1 py-0">{selectedColors.length}</Badge>}
             </Label>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              <button
-              onClick={() => onOptionChange('none')}
-              className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all
-                  ${!selectedOption || selectedOption === 'none' ? 'bg-white/10 border-white/20 text-white/70' : 'bg-white/[0.03] border-white/5 text-white/35 hover:border-white/15'}`}>
-              
-                بدون
-              </button>
-              {colorOptions.map((o: any, i: number) => {
-              const name = o.name || o.option || `opt-${i}`;
-              const isActive = selectedOption === name;
+            <button onClick={selectAllColors} className="text-[9px] text-cyan-400/60 hover:text-cyan-400 transition-colors">تحديد الكل</button>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {productColors.map((c: any, i: number) => {
+              const name = c.name || c.color || `color-${i}`;
+              const hint = getColorHint(name);
+              const isActive = selectedColors.includes(name);
               return (
                 <button
                   key={i}
-                  onClick={() => onOptionChange(name)}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all
-                      ${isActive ? 'bg-blue-500/15 border-blue-500/30 text-blue-300' : 'bg-white/[0.03] border-white/5 text-white/40 hover:border-white/15'}`}>
-                  
-                    {name}
-                  </button>);
-
+                  onClick={() => toggleColor(name)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all duration-200 flex items-center gap-1.5
+                    ${isActive ? 'border-white/25 text-white/80' : 'bg-white/[0.03] border-white/5 text-white/40 hover:border-white/15'}`}
+                  style={isActive ? { background: `${hint}18`, borderColor: `${hint}50`, boxShadow: `0 0 12px ${hint}20` } : {}}>
+                  <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0"
+                    style={{ background: hint, boxShadow: isActive ? `0 0 8px ${hint}60` : 'none' }} />
+                  {name}
+                </button>
+              );
             })}
-            </div>
-          </motion.div>
-        }
+          </div>
+        </div>
+      )}
+
+      {/* Options */}
+      {allOptions.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between">
+            <Label className="text-white/35 text-[10px] flex items-center gap-1.5">
+              <Settings2 className="h-3 w-3" /> الخيارات
+              {selectedOptions.length > 0 && <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[8px] px-1 py-0">{selectedOptions.length}</Badge>}
+            </Label>
+            <button onClick={selectAllOptions} className="text-[9px] text-blue-400/60 hover:text-blue-400 transition-colors">تحديد الكل</button>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {allOptions.map((name, i) => {
+              const isActive = selectedOptions.includes(name);
+              return (
+                <button
+                  key={i}
+                  onClick={() => toggleOption(name)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] border transition-all
+                    ${isActive ? 'bg-blue-500/15 border-blue-500/30 text-blue-300' : 'bg-white/[0.03] border-white/5 text-white/40 hover:border-white/15'}`}>
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
       </AnimatePresence>
     </motion.div>);
 
