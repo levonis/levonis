@@ -409,12 +409,12 @@ export default function StackGameTab() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-muted/30 rounded-lg p-4 text-center">
               <BarChart3 className="h-5 w-5 mx-auto text-primary mb-1" />
-              <div className="text-xl font-bold text-foreground font-mono">{s.total_plays ?? 0}</div>
+              <div className="text-xl font-bold text-foreground font-mono">{sessionStats?.totalPlays ?? s.total_plays ?? 0}</div>
               <div className="text-xs text-muted-foreground">إجمالي المحاولات</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 text-center">
               <Star className="h-5 w-5 mx-auto text-primary mb-1" />
-              <div className="text-xl font-bold text-foreground font-mono">{s.total_points_distributed ?? 0}</div>
+              <div className="text-xl font-bold text-foreground font-mono">{sessionStats?.totalPoints ?? s.total_points_distributed ?? 0}</div>
               <div className="text-xs text-muted-foreground">النقاط الموزعة</div>
             </div>
           </div>
