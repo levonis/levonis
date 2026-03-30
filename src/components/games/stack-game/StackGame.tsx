@@ -94,6 +94,14 @@ export default function StackGame({ onBack }: Props) {
     return p?.display_name || "لاعب";
   };
 
+  const invalidateBalances = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
+    queryClient.invalidateQueries({ queryKey: ["user-tickets-game"] });
+    queryClient.invalidateQueries({ queryKey: ["user-tickets"] });
+    queryClient.invalidateQueries({ queryKey: ["user-points"] });
+    queryClient.invalidateQueries({ queryKey: ["user-points-game"] });
+  }, [queryClient]);
+
   const startGame = useCallback(async () => {
     setStarting(true);
     setError(null);
@@ -119,13 +127,14 @@ export default function StackGame({ onBack }: Props) {
       setMaxCombo(0);
       setPointsAwarded(0);
       setGameState("playing");
-      queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
+      invalidateBalances();
     } catch (e: any) {
+      console.error("startGame error:", e);
       setError("حدث خطأ في بدء اللعبة");
     } finally {
       setStarting(false);
     }
-  }, []);
+  }, [invalidateBalances]);
 
   const handleGameOver = useCallback(
     async (finalScore: number, perfects: number, combo: number) => {
