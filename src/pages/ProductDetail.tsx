@@ -481,9 +481,11 @@ const ProductDetail = () => {
   const finalPrice = shouldRoundUp ? Math.ceil(rawFinalPrice / 250) * 250 : rawFinalPrice;
 
   let finalOriginalPrice: number | null = null;
-  if (product.original_price != null) {
-    const productOriginal = Number(product.original_price);
-    const colorDelta = selectedColorData?.price != null ? (Number(selectedColorData.price) - Number(product.price)) : 0;
+  if (guardedPrices.original_price != null) {
+    const productOriginal = guardedPrices.original_price;
+    const colorDelta = selectedColorData?.price != null
+      ? (ensurePriceIqd(Number(selectedColorData.price), (product as any).price_usd, usdToIqd) - guardedPrices.price)
+      : 0;
     const rawOriginal = productOriginal + colorDelta + optionAdjustment;
     finalOriginalPrice = shouldRoundUp ? Math.ceil(rawOriginal / 250) * 250 : rawOriginal;
   }
