@@ -94,6 +94,14 @@ export default function StackGame({ onBack }: Props) {
     return p?.display_name || "لاعب";
   };
 
+  const invalidateBalances = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
+    queryClient.invalidateQueries({ queryKey: ["user-tickets-game"] });
+    queryClient.invalidateQueries({ queryKey: ["user-tickets"] });
+    queryClient.invalidateQueries({ queryKey: ["user-points"] });
+    queryClient.invalidateQueries({ queryKey: ["user-points-game"] });
+  }, [queryClient]);
+
   const startGame = useCallback(async () => {
     setStarting(true);
     setError(null);
@@ -119,13 +127,14 @@ export default function StackGame({ onBack }: Props) {
       setMaxCombo(0);
       setPointsAwarded(0);
       setGameState("playing");
-      queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
+      invalidateBalances();
     } catch (e: any) {
+      console.error("startGame error:", e);
       setError("حدث خطأ في بدء اللعبة");
     } finally {
       setStarting(false);
     }
-  }, []);
+  }, [invalidateBalances]);
 
   const handleGameOver = useCallback(
     async (finalScore: number, perfects: number, combo: number) => {
@@ -135,9 +144,13 @@ export default function StackGame({ onBack }: Props) {
       setGameState("gameover");
 
       const token = sessionTokenRef.current;
-      if (!token || !user) return;
+      if (!token || !user) {
+        console.warn("handleGameOver: no token or user", { token: !!token, user: !!user });
+        return;
+      }
       
       try {
+        console.log("end_stack_game calling with:", { token: token.substring(0, 8) + "...", finalScore, perfects, combo });
         const { data, error: rpcError } = await supabase.rpc("end_stack_game", {
           p_session_token: token,
           p_score: finalScore,
@@ -146,41 +159,49 @@ export default function StackGame({ onBack }: Props) {
         });
         
         if (rpcError) {
-          console.error("end_stack_game error:", rpcError);
+          console.error("end_stack_game RPC error:", rpcError);
         }
         
         const result = data as any;
         if (result?.success) {
-          setPointsAwarded(result.points_awarded);
+          setPointsAwarded(result.points_awarded || 0);
+          console.log("end_stack_game success, points:", result.points_awarded);
         } else {
-          console.error("end_stack_game failed:", result);
+          console.error("end_stack_game result not success:", result);
         }
 
         // Update high score
-        await supabase.rpc("update_stack_high_score" as any, { p_score: finalScore });
+        try {
+          await supabase.rpc("update_stack_high_score" as any, { p_score: finalScore });
+        } catch (e) {
+          console.error("update_stack_high_score error:", e);
+        }
 
         // Check milestone
-        const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id,
-          p_score: finalScore,
-          p_session_id: null,
-        });
-        if (milestoneResult && (milestoneResult as any).won) {
-          setMilestoneWin(milestoneResult);
+        try {
+          const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
+            p_user_id: user.id,
+            p_score: finalScore,
+            p_session_id: null,
+          });
+          if (milestoneResult && (milestoneResult as any).won) {
+            setMilestoneWin(milestoneResult);
+          }
+        } catch (e) {
+          console.error("check_stack_milestone error:", e);
         }
 
         // Refresh queries
         queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
         queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
-        queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
-        queryClient.invalidateQueries({ queryKey: ["user-points"] });
+        invalidateBalances();
       } catch (e) {
         console.error("handleGameOver error:", e);
       }
       sessionTokenRef.current = null;
       setSessionToken(null);
     },
-    [user, queryClient]
+    [user, queryClient, invalidateBalances]
   );
 
   const entryCost = settings?.entry_fee_tickets ?? 2;
