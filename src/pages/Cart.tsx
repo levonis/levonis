@@ -27,6 +27,7 @@ import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
+import { ensurePriceIqd } from '@/lib/priceGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Cart = () => {
@@ -43,14 +44,20 @@ const Cart = () => {
   const getCartItemPrice = (item: CartItem): number => {
     if (!item.products) return 0;
     const isDirect = (item as any).sale_type === 'direct';
-    let price = Number(item.products.price || 0);
-    if (isDirect && item.products.direct_sale_price != null) price = Number(item.products.direct_sale_price);
+    const priceUsd = (item.products as any)?.price_usd ?? null;
+    let price = ensurePriceIqd(Number(item.products.price || 0), priceUsd, usdToIqd);
+    if (isDirect && item.products.direct_sale_price != null) {
+      price = ensurePriceIqd(Number(item.products.direct_sale_price), priceUsd, usdToIqd);
+    }
     const colorData = (item as any).selected_color && item.products.colors
       ? (item.products.colors as any[]).find((c: any) => c.name === (item as any).selected_color || c.name_ar === (item as any).selected_color)
       : null;
     if (colorData?.price != null) {
-      if (isDirect && colorData.direct_sale_price != null) price = Number(colorData.direct_sale_price);
-      else price = Number(colorData.price);
+      if (isDirect && colorData.direct_sale_price != null) {
+        price = ensurePriceIqd(Number(colorData.direct_sale_price), priceUsd, usdToIqd);
+      } else {
+        price = ensurePriceIqd(Number(colorData.price), priceUsd, usdToIqd);
+      }
     }
     if ((item as any).product_options?.price_adjustment) {
       price += Math.round(Number((item as any).product_options.price_adjustment));

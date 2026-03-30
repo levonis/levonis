@@ -25,6 +25,7 @@ import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
+import { ensurePriceIqd, guardProductPrices } from '@/lib/priceGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamic icon map for features
@@ -437,28 +438,35 @@ const ProductDetail = () => {
   });
 
   const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
+  // Guard all product prices through USD→IQD safeguard
+  const guardedPrices = guardProductPrices(product as any, usdToIqd);
+
   const getPrice = () => {
     if (activeSaleType === 'direct') {
       // For direct sale: use color's direct_sale_price, then product's direct_sale_price, then fall back to regular price
-      if (selectedColorData?.direct_sale_price) return Number(selectedColorData.direct_sale_price);
-      if ((product as any).direct_sale_price) return Number((product as any).direct_sale_price);
+      if (selectedColorData?.direct_sale_price) {
+        return ensurePriceIqd(Number(selectedColorData.direct_sale_price), (product as any).price_usd, usdToIqd);
+      }
+      if (guardedPrices.direct_sale_price != null) return guardedPrices.direct_sale_price;
       // Fall through to regular price logic
     }
     if (activeSaleType === 'preorder') {
       // Use sea_price or air_price based on shipping type
       const shippingType = product.shipping_type;
-      if (shippingType === 'sea' && (product as any).sea_price) return Number((product as any).sea_price);
-      if (shippingType === 'air' && (product as any).air_price) return Number((product as any).air_price);
+      if (shippingType === 'sea' && guardedPrices.sea_price != null) return guardedPrices.sea_price;
+      if (shippingType === 'air' && guardedPrices.air_price != null) return guardedPrices.air_price;
       // For 'both', use the lower price as base (shipping options handle the adjustment)
       if (shippingType === 'both') {
-        const seaP = (product as any).sea_price;
-        const airP = (product as any).air_price;
-        if (seaP && airP) return Math.min(Number(seaP), Number(airP));
-        if (seaP) return Number(seaP);
-        if (airP) return Number(airP);
+        const seaP = guardedPrices.sea_price;
+        const airP = guardedPrices.air_price;
+        if (seaP && airP) return Math.min(seaP, airP);
+        if (seaP) return seaP;
+        if (airP) return airP;
       }
     }
-    const base = selectedColorData?.price != null ? Number(selectedColorData.price) : Number(product.price);
+    const base = selectedColorData?.price != null
+      ? ensurePriceIqd(Number(selectedColorData.price), (product as any).price_usd, usdToIqd)
+      : guardedPrices.price;
     return base;
   };
 
@@ -473,9 +481,11 @@ const ProductDetail = () => {
   const finalPrice = shouldRoundUp ? Math.ceil(rawFinalPrice / 250) * 250 : rawFinalPrice;
 
   let finalOriginalPrice: number | null = null;
-  if (product.original_price != null) {
-    const productOriginal = Number(product.original_price);
-    const colorDelta = selectedColorData?.price != null ? (Number(selectedColorData.price) - Number(product.price)) : 0;
+  if (guardedPrices.original_price != null) {
+    const productOriginal = guardedPrices.original_price;
+    const colorDelta = selectedColorData?.price != null
+      ? (ensurePriceIqd(Number(selectedColorData.price), (product as any).price_usd, usdToIqd) - guardedPrices.price)
+      : 0;
     const rawOriginal = productOriginal + colorDelta + optionAdjustment;
     finalOriginalPrice = shouldRoundUp ? Math.ceil(rawOriginal / 250) * 250 : rawOriginal;
   }
