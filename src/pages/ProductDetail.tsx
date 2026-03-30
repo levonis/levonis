@@ -25,6 +25,7 @@ import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
+import { ensurePriceIqd, guardProductPrices } from '@/lib/priceGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamic icon map for features
