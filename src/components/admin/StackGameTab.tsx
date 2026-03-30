@@ -237,6 +237,16 @@ export default function StackGameTab() {
     },
   });
 
+  const { data: sessionStats } = useQuery({
+    queryKey: ["admin-stack-session-stats"],
+    queryFn: async () => {
+      const { count } = await supabase.from("stack_game_sessions" as any).select("*", { count: "exact", head: true });
+      const { data: pointsData } = await supabase.from("stack_game_sessions" as any).select("points_awarded").not("points_awarded", "is", null);
+      const totalPoints = (pointsData || []).reduce((sum: number, r: any) => sum + (r.points_awarded || 0), 0);
+      return { totalPlays: count || 0, totalPoints };
+    },
+  });
+
   const [form, setForm] = useState<any>(null);
   const s = form ?? settings;
   const [subTab, setSubTab] = useState<"settings" | "milestones" | "leaderboard" | "winners">("settings");
