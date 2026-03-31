@@ -571,6 +571,8 @@ export type Database = {
           created_at: string | null
           custom_request_id: string | null
           id: string
+          is_gift: boolean
+          is_locked: boolean
           offer_purchase_id: string | null
           option_image_url: string | null
           product_id: string | null
@@ -589,6 +591,8 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
+          is_gift?: boolean
+          is_locked?: boolean
           offer_purchase_id?: string | null
           option_image_url?: string | null
           product_id?: string | null
@@ -607,6 +611,8 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
+          is_gift?: boolean
+          is_locked?: boolean
           offer_purchase_id?: string | null
           option_image_url?: string | null
           product_id?: string | null
@@ -9139,6 +9145,10 @@ export type Database = {
       claim_assistance_gift: {
         Args: { p_gift_id: string; p_user_id: string }
         Returns: boolean
+      }
+      claim_stack_prize_to_cart: {
+        Args: { p_milestone_id: string }
+        Returns: Json
       }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       cleanup_old_coupon_attempts: { Args: never; Returns: undefined }
