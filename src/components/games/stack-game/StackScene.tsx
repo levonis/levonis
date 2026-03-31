@@ -314,8 +314,8 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         comboTextOpacity.current = 1;
       }
       
-      setTimeout(() => setShowPerfect(false), 800);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 20);
+      setTimeout(() => setShowPerfect(false), 1500);
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 30);
       setShakeIntensity(0.05);
     } else {
       const newCenter = prevCenter + delta / 2;
