@@ -254,8 +254,8 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         ],
         color,
         life: 1,
-        maxLife: 0.6 + Math.random() * 0.4,
-        size: 0.03 + Math.random() * 0.05,
+        maxLife: 1.0 + Math.random() * 0.8,
+        size: 0.04 + Math.random() * 0.07,
       });
     }
     setParticles(prev => [...prev, ...newParticles]);
