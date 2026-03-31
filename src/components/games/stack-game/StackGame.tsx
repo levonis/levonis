@@ -476,6 +476,7 @@ export default function StackGame({ onBack }: Props) {
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                   <Gift className="h-8 w-8 text-primary mx-auto mb-2" />
                   <div className="text-lg font-bold text-foreground">{milestoneWin.prize_name}</div>
+                  <div className="text-xs text-primary mt-2">🛒 تمت إضافة الجائزة إلى سلة التسوق كهدية!</div>
                   {milestoneWin.stock_remaining !== undefined && (
                     <div className="text-xs text-muted-foreground mt-1">📦 متبقي: {milestoneWin.stock_remaining}</div>
                   )}
