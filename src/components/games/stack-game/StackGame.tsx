@@ -189,6 +189,17 @@ export default function StackGame({ onBack }: Props) {
           });
           if (milestoneResult && (milestoneResult as any).won) {
             setMilestoneWin(milestoneResult);
+            // Add prize to cart as gift
+            if ((milestoneResult as any).milestone_id) {
+              try {
+                await supabase.rpc("claim_stack_prize_to_cart" as any, {
+                  p_milestone_id: (milestoneResult as any).milestone_id,
+                });
+                queryClient.invalidateQueries({ queryKey: ["cart"] });
+              } catch (cartErr) {
+                console.error("claim_stack_prize_to_cart error:", cartErr);
+              }
+            }
           }
         } catch (e) {
           console.error("check_stack_milestone error:", e);
