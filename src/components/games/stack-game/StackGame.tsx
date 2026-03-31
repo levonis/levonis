@@ -210,10 +210,40 @@ export default function StackGame({ onBack }: Props) {
   const entryCost = settings?.entry_fee_tickets ?? 2;
   const userTickets = tickets?.ticket_count ?? 0;
 
+  const handleScoreUpdate = useCallback((s: number, c: number, p: number) => {
+    setLiveScore(s);
+    setLiveCombo(c);
+    setLivePerfects(p);
+  }, []);
+
   if (gameState === "playing") {
     return (
       <div className="fixed inset-0 z-50 bg-black">
-        <StackGameCanvas onGameOver={handleGameOver} />
+        <StackGameCanvas onGameOver={handleGameOver} onScoreUpdate={handleScoreUpdate} />
+        {/* Live Score Overlay */}
+        <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/30">
+                <span className="text-[10px] text-muted-foreground block">النقاط</span>
+                <span className="text-lg font-bold text-primary font-mono">{liveScore}</span>
+              </div>
+              {liveCombo >= 2 && (
+                <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-yellow-500/30 animate-scale-in">
+                  <span className="text-[10px] text-yellow-400 block">كومبو</span>
+                  <span className="text-lg font-bold text-yellow-400 font-mono">{liveCombo}x</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {livePerfects > 0 && (
+                <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-yellow-500/30">
+                  <span className="text-[10px] text-yellow-400">⭐ {livePerfects}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
