@@ -349,7 +349,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
           ],
         },
       ]);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 8);
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 12);
       setShakeIntensity(0.1);
     }
 
