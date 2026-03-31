@@ -10,6 +10,7 @@ interface GameCardProps {
   game: GameResource;
   onPlay: () => void;
   onClickSound: () => void;
+  disabled?: boolean;
 }
 
 export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) {
