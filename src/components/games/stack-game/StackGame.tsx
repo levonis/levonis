@@ -24,6 +24,9 @@ export default function StackGame({ onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [milestoneWin, setMilestoneWin] = useState<any>(null);
   const [activeView, setActiveView] = useState<"main" | "leaderboard" | "winners">("main");
+  const [liveScore, setLiveScore] = useState(0);
+  const [liveCombo, setLiveCombo] = useState(0);
+  const [livePerfects, setLivePerfects] = useState(0);
 
   const { data: settings } = useQuery({
     queryKey: ["stack-game-settings"],
