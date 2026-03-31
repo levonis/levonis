@@ -55,6 +55,7 @@ const PERFECT_THRESHOLD = 0.1;
 
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
+  onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
 }
 
 // Sound system
