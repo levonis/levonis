@@ -692,6 +692,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   
   const total = items.reduce((sum, item) => {
+    // Gift items are free
+    if ((item as any).is_gift) return sum;
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
     if (item.products) {

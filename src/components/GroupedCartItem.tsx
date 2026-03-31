@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, Trash2, Package } from 'lucide-react';
+import { Minus, Plus, Trash2, Package, Gift } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
@@ -141,51 +141,73 @@ const GroupedCartItem = ({
             
             {items.map((item) => {
               const shippingName = (item as any).shipping_option_name_ar || 'شحن افتراضي';
-              const itemPrice = calculateItemPrice(item);
+              const isGift = !!(item as any).is_gift;
+              const isLocked = !!(item as any).is_locked;
+              const itemPrice = isGift ? 0 : calculateItemPrice(item);
               const isRemoving = removingIds.has(item.id);
               
               return (
                 <div 
                   key={item.id} 
-                  className={`bg-card rounded-lg p-2 border border-border/30 transition-all duration-300 max-w-full overflow-hidden ${
+                  className={`bg-card rounded-lg p-2 border transition-all duration-300 max-w-full overflow-hidden ${
+                    isGift ? 'border-primary/40 bg-primary/5' : 'border-border/30'
+                  } ${
                     isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
                   }`}
                 >
+                  {isGift && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <Gift className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] font-bold text-primary">🎁 هدية مجانية</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between gap-1 mb-1">
                     <span className="text-[11px] font-medium text-foreground line-clamp-1">{shippingName}</span>
-                    <AnimatedPrice 
-                      value={itemPrice} 
-                      formatFn={formatPrice} 
-                      className="text-[11px] font-bold text-primary shrink-0"
-                    />
-                    <span className="text-[11px] font-bold text-primary shrink-0">د.ع</span>
+                    {isGift ? (
+                      <span className="text-[11px] font-bold text-primary shrink-0">مجاناً</span>
+                    ) : (
+                      <>
+                        <AnimatedPrice 
+                          value={itemPrice} 
+                          formatFn={formatPrice} 
+                          className="text-[11px] font-bold text-primary shrink-0"
+                        />
+                        <span className="text-[11px] font-bold text-primary shrink-0">د.ع</span>
+                      </>
+                    )}
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 bg-background rounded border border-border/40">
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
-                        disabled={item.quantity <= 1}>
-                        <Minus className="h-2.5 w-2.5" />
-                      </Button>
-                      <AnimatedQuantity value={item.quantity} className="w-5 text-center font-bold text-[11px]" />
-                      <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}>
-                        <Plus className="h-2.5 w-2.5" />
-                      </Button>
-                    </div>
+                    {!isLocked ? (
+                      <div className="flex items-center gap-1 bg-background rounded border border-border/40">
+                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity - 1); }}
+                          disabled={item.quantity <= 1}>
+                          <Minus className="h-2.5 w-2.5" />
+                        </Button>
+                        <AnimatedQuantity value={item.quantity} className="w-5 text-center font-bold text-[11px]" />
+                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}>
+                          <Plus className="h-2.5 w-2.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-muted-foreground">الكمية: {item.quantity}</div>
+                    )}
 
                     <div className="flex items-center gap-1.5">
-                      {item.quantity > 1 && (
+                      {!isGift && item.quantity > 1 && (
                         <span className="text-[10px] text-muted-foreground transition-all duration-300">
                           <AnimatedPrice value={itemPrice * item.quantity} formatFn={formatPrice} /> د.ع
                         </span>
                       )}
-                      <Button type="button" size="icon" variant="ghost"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 touch-manipulation active:scale-75 transition-transform"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemove(item.id); }}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      {!isLocked && (
+                        <Button type="button" size="icon" variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 touch-manipulation active:scale-75 transition-transform"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemove(item.id); }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

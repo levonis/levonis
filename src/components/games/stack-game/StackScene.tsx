@@ -55,6 +55,7 @@ const PERFECT_THRESHOLD = 0.1;
 
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
+  onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
 }
 
 // Sound system
@@ -196,7 +197,7 @@ class TowerAudio {
 
 const audioSystem = new TowerAudio();
 
-export default function StackScene({ onGameOver }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const { camera } = useThree();
   // Use ref to always have latest callback (avoids stale closure in R3F)
   const onGameOverRef = useRef(onGameOver);
@@ -253,8 +254,8 @@ export default function StackScene({ onGameOver }: Props) {
         ],
         color,
         life: 1,
-        maxLife: 0.6 + Math.random() * 0.4,
-        size: 0.03 + Math.random() * 0.05,
+        maxLife: 1.0 + Math.random() * 0.8,
+        size: 0.04 + Math.random() * 0.07,
       });
     }
     setParticles(prev => [...prev, ...newParticles]);
@@ -313,8 +314,8 @@ export default function StackScene({ onGameOver }: Props) {
         comboTextOpacity.current = 1;
       }
       
-      setTimeout(() => setShowPerfect(false), 800);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 20);
+      setTimeout(() => setShowPerfect(false), 1500);
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 30);
       setShakeIntensity(0.05);
     } else {
       const newCenter = prevCenter + delta / 2;
@@ -348,7 +349,7 @@ export default function StackScene({ onGameOver }: Props) {
           ],
         },
       ]);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 8);
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 12);
       setShakeIntensity(0.1);
     }
 
@@ -362,10 +363,12 @@ export default function StackScene({ onGameOver }: Props) {
     };
 
     setStack(prev => [...prev, newBlock]);
-    setScore(s => s + 1);
+    const newScore = score + 1;
+    setScore(newScore);
     setCombo(newCombo);
     setPerfectCount(newPerfects);
     setMaxCombo(newMaxCombo);
+    onScoreUpdate?.(newScore, newCombo, newPerfects);
 
     currentAxis.current = axis === "x" ? "z" : "x";
     speed.current = Math.min(INITIAL_SPEED + stack.length * SPEED_INCREMENT, MAX_SPEED);

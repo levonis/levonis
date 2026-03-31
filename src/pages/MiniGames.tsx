@@ -59,13 +59,15 @@ export default function MiniGames() {
     },
   });
 
-  // Filter out disabled games
-  const enabledGames = GAME_NODES.filter(game => {
-    if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) return false;
-    return true;
+  // Mark disabled games instead of filtering them out
+  const gamesWithStatus = GAME_NODES.map(game => {
+    if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
+      return { ...game, _disabled: true };
+    }
+    return { ...game, _disabled: false };
   });
 
-  const filteredGames = filterGameNodes(enabledGames, activeFilter);
+  const filteredGames = filterGameNodes(gamesWithStatus, activeFilter);
 
   const handlePlay = (game: GameResource) => {
     setActiveGame(game.node_name);
@@ -172,6 +174,7 @@ export default function MiniGames() {
               game={game}
               onPlay={() => handlePlay(game)}
               onClickSound={playClick}
+              disabled={(game as any)._disabled}
             />
           ))}
         </div>
