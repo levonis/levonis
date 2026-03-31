@@ -363,10 +363,12 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
     };
 
     setStack(prev => [...prev, newBlock]);
-    setScore(s => s + 1);
+    const newScore = score + 1;
+    setScore(newScore);
     setCombo(newCombo);
     setPerfectCount(newPerfects);
     setMaxCombo(newMaxCombo);
+    onScoreUpdate?.(newScore, newCombo, newPerfects);
 
     currentAxis.current = axis === "x" ? "z" : "x";
     speed.current = Math.min(INITIAL_SPEED + stack.length * SPEED_INCREMENT, MAX_SPEED);
