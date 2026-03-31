@@ -4,9 +4,10 @@ import StackScene from "./StackScene";
 
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
+  onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
 }
 
-export default function StackGameCanvas({ onGameOver }: Props) {
+export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
   return (
     <Canvas
       shadows
@@ -17,7 +18,7 @@ export default function StackGameCanvas({ onGameOver }: Props) {
     >
       <color attach="background" args={["#0f0a1e"]} />
       <Suspense fallback={null}>
-        <StackScene onGameOver={onGameOver} />
+        <StackScene onGameOver={onGameOver} onScoreUpdate={onScoreUpdate} />
       </Suspense>
     </Canvas>
   );
