@@ -13,14 +13,19 @@ interface GameCardProps {
   disabled?: boolean;
 }
 
-export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) {
+export default function GameCard({ game, onPlay, onClickSound, disabled }: GameCardProps) {
   const isLive = game.status === GameStatus.LIVE;
 
-  // Locked / Coming Soon card – minimal placeholder
-  if (!isLive) {
+  // Locked / Coming Soon card or admin-disabled card
+  if (!isLive || disabled) {
     return (
-      <div className="pixel-frame-disabled opacity-60 p-4 flex flex-col items-center justify-center min-h-[180px] text-center">
-        <Lock className="h-8 w-8 text-muted-foreground/40 mb-3" />
+      <div className="pixel-frame-disabled opacity-60 p-4 flex flex-col items-center justify-center min-h-[180px] text-center relative overflow-hidden">
+        {disabled && game.image ? (
+          <img src={game.image} alt={game.title} className="w-12 h-12 object-cover rounded mb-2 opacity-40" />
+        ) : (
+          <Lock className="h-8 w-8 text-muted-foreground/40 mb-3" />
+        )}
+        {disabled && <h3 className="text-xs font-bold font-mono text-muted-foreground mb-2">{game.title}</h3>}
         <span className="pixel-badge-locked text-[11px] font-mono font-bold px-3 py-1 uppercase tracking-wider">
           قريباً
         </span>

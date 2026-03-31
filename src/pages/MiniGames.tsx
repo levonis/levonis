@@ -174,6 +174,7 @@ export default function MiniGames() {
               game={game}
               onPlay={() => handlePlay(game)}
               onClickSound={playClick}
+              disabled={(game as any)._disabled}
             />
           ))}
         </div>
