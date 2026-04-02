@@ -28,12 +28,9 @@ type ShippingType = 'sea' | 'air';
 interface ShippingSettings {
   sea_cbm_price: number;
   sea_padding_cm: number;
-  air_usa_kg_price: number;
-  air_usa_weight_buffer_percent: number;
   air_china_volumetric_price: number;
   air_china_volumetric_divider: number;
   air_china_weight_safety_margin: number;
-  commission_fee: number;
   local_delivery_baghdad: number;
   local_delivery_provinces: number;
   usd_to_iqd_rate: number;
@@ -52,12 +49,9 @@ export const useShippingSettings = () => {
       const settings: ShippingSettings = {
         sea_cbm_price: 350000,
         sea_padding_cm: 5,
-        air_usa_kg_price: 30000,
-        air_usa_weight_buffer_percent: 20,
         air_china_volumetric_price: 15000,
         air_china_volumetric_divider: 5000,
         air_china_weight_safety_margin: 20,
-        commission_fee: 1000,
         local_delivery_baghdad: 6000,
         local_delivery_provinces: 5000,
         usd_to_iqd_rate: 1410,
@@ -115,19 +109,7 @@ export const calculateShippingCost = (
     }
     notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
   } else if (shippingType === 'air') {
-    if (sourceCountry === 'usa') {
-      // Air shipping from USA - weight-based
-      if (weight) {
-        const bufferPercent = settings.air_usa_weight_buffer_percent / 100;
-        actualWeight = weight * (1 + bufferPercent);
-        shippingCost = actualWeight * settings.air_usa_kg_price;
-        
-        // Only show final weight with packaging
-        breakdown.push({ label: 'الوزن مع التغليف', value: `${actualWeight.toFixed(2)} كغ` });
-        breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
-      }
-      notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
-    } else if (sourceCountry === 'china') {
+    if (sourceCountry === 'china') {
       // Air shipping from China - use the GREATER of volumetric weight or actual weight
       const padding = settings.sea_padding_cm;
       
@@ -166,12 +148,8 @@ export const calculateShippingCost = (
     }
   }
 
-  // Commission is separate - show it as "عمولتنا"
-  const commission = settings.commission_fee;
-  breakdown.push({ label: 'عمولتنا', value: commission });
-  
-  // Total = shipping cost + commission (but we keep them separate for display)
-  const totalCost = Math.round(shippingCost) + commission;
+  const commission = 0;
+  const totalCost = Math.round(shippingCost);
   breakdown.push({ label: 'إجمالي الشحن', value: totalCost });
 
   return {

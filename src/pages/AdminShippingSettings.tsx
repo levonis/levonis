@@ -489,12 +489,9 @@ export default function AdminShippingSettings() {
   const [settings, setSettings] = useState<Record<string, number>>({
     sea_cbm_price: 350000,
     sea_padding_cm: 5,
-    air_usa_kg_price: 30000,
-    air_usa_weight_buffer_percent: 20,
     air_china_volumetric_price: 15000,
     air_china_volumetric_divider: 5000,
     air_china_weight_safety_margin: 20,
-    commission_fee: 1000,
     local_delivery_baghdad: 6000,
     local_delivery_provinces: 5000,
     usd_to_iqd_rate: 1410,
@@ -530,12 +527,9 @@ export default function AdminShippingSettings() {
     const shippingSettingsObj: ShippingSettings = {
       sea_cbm_price: newSettings.sea_cbm_price ?? 350000,
       sea_padding_cm: newSettings.sea_padding_cm ?? 5,
-      air_usa_kg_price: newSettings.air_usa_kg_price ?? 30000,
-      air_usa_weight_buffer_percent: newSettings.air_usa_weight_buffer_percent ?? 20,
       air_china_volumetric_price: newSettings.air_china_volumetric_price ?? 15000,
       air_china_volumetric_divider: newSettings.air_china_volumetric_divider ?? 5000,
       air_china_weight_safety_margin: newSettings.air_china_weight_safety_margin ?? 20,
-      commission_fee: newSettings.commission_fee ?? 1000,
       local_delivery_baghdad: newSettings.local_delivery_baghdad ?? 6000,
       local_delivery_provinces: newSettings.local_delivery_provinces ?? 5000,
       usd_to_iqd_rate: newSettings.usd_to_iqd_rate ?? 1410,
@@ -718,33 +712,6 @@ export default function AdminShippingSettings() {
             </div>
           </GlassCard>
 
-          {/* Air USA */}
-          <GlassCard gradient="linear-gradient(145deg, hsl(270 60% 55% / 0.08), hsl(300 50% 50% / 0.04), transparent)">
-            <GlassCardHeader
-              icon={<Plane className="h-5 w-5 text-white" />}
-              iconBg="bg-gradient-to-br from-purple-500 to-pink-500"
-              title="الجوي - أمريكا"
-              subtitle="بالكيلوغرام مع هامش الوزن"
-            />
-            <div className="px-5 pb-5 grid grid-cols-2 gap-4">
-              <SettingField
-                label="سعر الكيلو"
-                icon={<DollarSign className="h-3 w-3" />}
-                value={settings.air_usa_kg_price}
-                onChange={(v) => updateSetting("air_usa_kg_price", v)}
-                hint={`${settings.air_usa_kg_price.toLocaleString()} د.ع/كغ`}
-                suffix="د.ع"
-              />
-              <SettingField
-                label="نسبة الاحتياط"
-                icon={<Percent className="h-3 w-3" />}
-                value={settings.air_usa_weight_buffer_percent}
-                onChange={(v) => updateSetting("air_usa_weight_buffer_percent", v)}
-                hint={`+${settings.air_usa_weight_buffer_percent}% وزن إضافي`}
-                suffix="%"
-              />
-            </div>
-          </GlassCard>
         </div>
 
         {/* ═══ Row 2: Air China ═══ */}
@@ -807,25 +774,6 @@ export default function AdminShippingSettings() {
             </div>
           </GlassCard>
 
-          {/* Commission */}
-          <GlassCard gradient="linear-gradient(145deg, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), transparent)">
-            <GlassCardHeader
-              icon={<Package className="h-5 w-5 text-white" />}
-              iconBg="bg-gradient-to-br from-primary to-accent"
-              title="العمولة"
-              subtitle="تظهر منفصلة عن تكلفة الشحن"
-            />
-            <div className="px-5 pb-5">
-              <SettingField
-                label="عمولتنا"
-                icon={<DollarSign className="h-3 w-3" />}
-                value={settings.commission_fee}
-                onChange={(v) => updateSetting("commission_fee", v)}
-                hint="تظهر باسم 'عمولتنا' للزبون"
-                suffix="د.ع"
-              />
-            </div>
-          </GlassCard>
         </div>
 
         {/* ═══ Row 4: Delivery Methods ═══ */}
@@ -846,16 +794,7 @@ export default function AdminShippingSettings() {
               color="bg-blue-500/15"
               formula={[
                 `CBM = (L+${settings.sea_padding_cm}) × (W+${settings.sea_padding_cm}) × (H+${settings.sea_padding_cm}) ÷ 1,000,000`,
-                `Cost = CBM × ${settings.sea_cbm_price.toLocaleString()} + ${settings.commission_fee.toLocaleString()}`,
-              ]}
-            />
-            <FormulaCard
-              icon={<Plane className="h-3.5 w-3.5 text-purple-400" />}
-              title="جوي - أمريكا"
-              color="bg-purple-500/15"
-              formula={[
-                `Weight = W × (1 + ${settings.air_usa_weight_buffer_percent}%)`,
-                `Cost = Weight × ${settings.air_usa_kg_price.toLocaleString()} + ${settings.commission_fee.toLocaleString()}`,
+                `Cost = CBM × ${settings.sea_cbm_price.toLocaleString()}`,
               ]}
             />
             <FormulaCard
