@@ -341,6 +341,19 @@ const Cart = () => {
       const catId = exc.category_id;
       if (handledCategories.has(catId)) continue;
       if (!categoryQty[catId]) continue;
+
+      // __follow_gov__ means use governorate exception price for this category
+      if (exc.governorate === '__follow_gov__') {
+        handledCategories.add(catId);
+        const qty = categoryQty[catId];
+        const unitsPerDelivery = exc.units_per_delivery || 1;
+        const deliveryCount = Math.ceil(qty / unitsPerDelivery);
+        const matchingGov = govExceptions.find((g: any) => g.governorate === governorate);
+        const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
+        totalCatFee += govPrice * deliveryCount;
+        continue;
+      }
+
       const matchesGov = !exc.governorate || exc.governorate === governorate;
       if (!matchesGov) continue;
 

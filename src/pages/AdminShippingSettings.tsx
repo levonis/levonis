@@ -204,12 +204,15 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
     },
   });
 
+  const isFollowGov = newGov === "__follow_gov__";
+
   const addException = useMutation({
     mutationFn: async () => {
-      if (!newCat || newPrice <= 0) throw new Error("أدخل القسم والسعر");
+      if (!newCat) throw new Error("أدخل القسم");
+      if (!isFollowGov && newPrice <= 0) throw new Error("أدخل السعر");
       const { error } = await supabase.from("delivery_category_exceptions").insert({
         category_id: newCat,
-        delivery_price: newPrice,
+        delivery_price: isFollowGov ? 0 : newPrice,
         governorate: newGov === "all" ? null : newGov,
         delivery_method_key: methodKey,
         units_per_delivery: newUnits || 1,
@@ -242,15 +245,19 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
     <div className="space-y-3">
       {exceptions.length > 0 && (
         <div className="space-y-2">
-          {exceptions.map((exc: any) => (
+          {exceptions.map((exc: any) => {
+            const isFollowGovExc = exc.governorate === '__follow_gov__';
+            return (
             <div key={exc.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-background/30 border border-white/5 backdrop-blur-sm group">
               <Tag className="h-3.5 w-3.5 text-amber-500/70 shrink-0" />
               <span className="text-xs font-medium flex-1">
                 {exc.categories?.name_ar || 'قسم محذوف'}
-                {exc.governorate && <span className="text-muted-foreground mr-1">({exc.governorate})</span>}
+                {isFollowGovExc 
+                  ? <span className="text-blue-400 mr-1">(اتباع استثناءات المحافظات)</span>
+                  : exc.governorate && <span className="text-muted-foreground mr-1">({exc.governorate})</span>}
               </span>
               <span className="text-[10px] text-muted-foreground">كل {exc.units_per_delivery || 1} قطعة</span>
-              <span className="text-xs font-bold text-amber-500">{Number(exc.delivery_price).toLocaleString()} د.ع</span>
+              {!isFollowGovExc && <span className="text-xs font-bold text-amber-500">{Number(exc.delivery_price).toLocaleString()} د.ع</span>}
               <Button
                 variant="ghost"
                 size="icon"
@@ -260,7 +267,8 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -278,7 +286,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="w-28 space-y-1">
+        <div className="w-36 space-y-1">
           <Label className="text-[10px] text-muted-foreground">المحافظة (اختياري)</Label>
           <Select value={newGov} onValueChange={setNewGov}>
             <SelectTrigger className="h-8 text-xs bg-background/50 border-white/10">
@@ -286,22 +294,27 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="__follow_gov__">
+                <span className="text-blue-400">اتباع استثناءات المحافظات</span>
+              </SelectItem>
               {IRAQI_GOVERNORATES.map((g) => (
                 <SelectItem key={g} value={g}>{g}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <div className="w-24 space-y-1">
-          <Label className="text-[10px] text-muted-foreground">السعر (د.ع)</Label>
-          <Input
-            type="number"
-            value={newPrice || ''}
-            onChange={(e) => setNewPrice(Number(e.target.value))}
-            className="h-8 text-xs bg-background/50 border-white/10"
-            placeholder="12000"
-          />
-        </div>
+        {!isFollowGov && (
+          <div className="w-24 space-y-1">
+            <Label className="text-[10px] text-muted-foreground">السعر (د.ع)</Label>
+            <Input
+              type="number"
+              value={newPrice || ''}
+              onChange={(e) => setNewPrice(Number(e.target.value))}
+              className="h-8 text-xs bg-background/50 border-white/10"
+              placeholder="12000"
+            />
+          </div>
+        )}
         <div className="w-20 space-y-1">
           <Label className="text-[10px] text-muted-foreground">قطع/توصيل</Label>
           <Input
@@ -317,7 +330,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
           size="sm"
           className="h-8 px-3 gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-white"
           onClick={() => addException.mutate()}
-          disabled={!newCat || newPrice <= 0}
+          disabled={!newCat || (!isFollowGov && newPrice <= 0)}
         >
           <Plus className="h-3 w-3" />
           إضافة
