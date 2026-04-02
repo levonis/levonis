@@ -128,7 +128,13 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       setSelectedPrinter(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || t('common_error'));
+      console.error('Insurance purchase error:', error);
+      const msg = error.message || t('common_error');
+      if (msg.includes('رصيد')) {
+        toast.error(`${msg} — رصيدك الحالي: ${(walletBalance || 0).toLocaleString()} د.ع`);
+      } else {
+        toast.error(msg);
+      }
     },
   });
 
@@ -501,14 +507,26 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                       .replace('{printer}', selectedPrinter.store_printers?.model_name_ar || t('insurance_unknown_printer'))
                       .replace('{plan}', selectedPlan.name_ar)}
                   </p>
-                  <div className="p-3 rounded-lg bg-muted">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>{t('insurance_cost_after_discount')}</span>
-                      <span className="font-bold text-primary text-lg">
-                        {selectedPlan.upgradeCost?.toLocaleString()} {t('common_iqd')}
-                      </span>
+                    <div className="p-3 rounded-lg bg-muted">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>{t('insurance_cost_after_discount')}</span>
+                        <span className="font-bold text-primary text-lg">
+                          {selectedPlan.upgradeCost?.toLocaleString()} {t('common_iqd')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
+                        <span>رصيد المحفظة الحالي</span>
+                        <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.upgradeCost || 0) ? 'text-green-600' : 'text-destructive'}`}>
+                          {(walletBalance || 0).toLocaleString()} {t('common_iqd')}
+                        </span>
+                      </div>
+                      {(walletBalance || 0) < (selectedPlan.upgradeCost || 0) && (
+                        <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          رصيدك غير كافٍ
+                        </p>
+                      )}
                     </div>
-                  </div>
                   <p className="text-xs text-amber-600 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     {t('insurance_upgrade_note')}
@@ -566,6 +584,18 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                         {selectedPlan.monthly_price?.toLocaleString()} {t('common_iqd')}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
+                      <span>رصيد المحفظة الحالي</span>
+                      <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.monthly_price || 0) ? 'text-green-600' : 'text-destructive'}`}>
+                        {(walletBalance || 0).toLocaleString()} {t('common_iqd')}
+                      </span>
+                    </div>
+                    {(walletBalance || 0) < (selectedPlan.monthly_price || 0) && (
+                      <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        رصيدك غير كافٍ. تحتاج {((selectedPlan.monthly_price || 0) - (walletBalance || 0)).toLocaleString()} {t('common_iqd')} إضافية
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

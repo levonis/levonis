@@ -11,10 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
-import { Loader2, Plus, QrCode, Printer, Download, Eye, CheckCircle, Clock, AlertTriangle, FileText, Upload, X } from 'lucide-react';
+import { Loader2, Plus, QrCode, Printer, Download, Eye, CheckCircle, Clock, AlertTriangle, FileText, Upload, X, Pencil, Trash2, CalendarIcon, Shield } from 'lucide-react';
 import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const AdminQRPrinterTab = () => {
   const { user } = useAuth();
@@ -28,6 +33,21 @@ const AdminQRPrinterTab = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Edit serial dialog state
+  const [editSerialDialog, setEditSerialDialog] = useState(false);
+  const [editingPrinter, setEditingPrinter] = useState<any>(null);
+  const [newSerialNumber, setNewSerialNumber] = useState('');
+
+  // Delete confirm dialog state
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+  const [deletingPrinter, setDeletingPrinter] = useState<any>(null);
+
+  // Warranty date dialog state
+  const [warrantyDialog, setWarrantyDialog] = useState(false);
+  const [warrantyPrinter, setWarrantyPrinter] = useState<any>(null);
+  const [warrantyStartDate, setWarrantyStartDate] = useState<Date | undefined>();
+  const [warrantyEndDate, setWarrantyEndDate] = useState<Date | undefined>();
 
   const [newPrinter, setNewPrinter] = useState({
     serial_number: '',
@@ -91,7 +111,6 @@ const AdminQRPrinterTab = () => {
     mutationFn: async (printer: typeof newPrinter) => {
       let finalImageUrl = printer.image_url || null;
 
-      // Upload image file if selected
       if (imageFile) {
         setUploading(true);
         const ext = imageFile.name.split('.').pop();
@@ -120,7 +139,6 @@ const AdminQRPrinterTab = () => {
       });
       if (error) throw error;
 
-      // Log
       await supabase.from('printer_protection_logs').insert({
         admin_id: user?.id,
         action: 'create_qr_printer',
@@ -141,6 +159,113 @@ const AdminQRPrinterTab = () => {
       } else {
         toast.error(error.message || 'حدث خطأ');
       }
+    },
+  });
+
+  // Edit serial mutation
+  const editSerialMutation = useMutation({
+    mutationFn: async ({ printerId, oldSerial, newSerial }: { printerId: string; oldSerial: string; newSerial: string }) => {
+      const origin = window.location.origin;
+      const newQrData = `${origin}/activate-printer?serial=${encodeURIComponent(newSerial)}`;
+      
+      const { error } = await supabase
+        .from('store_printers')
+        .update({ serial_number: newSerial, qr_code_data: newQrData })
+        .eq('id', printerId);
+      if (error) throw error;
+
+      await supabase.from('printer_protection_logs').insert({
+        admin_id: user?.id,
+        action: 'edit_serial_number',
+        entity_type: 'store_printer',
+        entity_id: printerId,
+        details: { old_serial: oldSerial, new_serial: newSerial },
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم تعديل الرقم التسلسلي بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-qr-printers'] });
+      setEditSerialDialog(false);
+      setEditingPrinter(null);
+      setNewSerialNumber('');
+    },
+    onError: (error: any) => {
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        toast.error('الرقم التسلسلي مستخدم بالفعل');
+      } else {
+        toast.error(error.message || 'حدث خطأ في تعديل الرقم التسلسلي');
+      }
+    },
+  });
+
+  // Delete/reset printer mutation
+  const deletePrinterMutation = useMutation({
+    mutationFn: async (printer: any) => {
+      // Remove user_printers records
+      await supabase.from('user_printers').delete().eq('store_printer_id', printer.id);
+
+      // Reset the printer
+      const { error } = await supabase
+        .from('store_printers')
+        .update({
+          buyer_user_id: null,
+          status: 'pending',
+          is_registered: false,
+          activation_date: null,
+          expiry_date: null,
+        })
+        .eq('id', printer.id);
+      if (error) throw error;
+
+      await supabase.from('printer_protection_logs').insert({
+        admin_id: user?.id,
+        action: 'reset_printer',
+        entity_type: 'store_printer',
+        entity_id: printer.id,
+        details: { serial_number: printer.serial_number, previous_user: printer.buyer_user_id },
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم إعادة تعيين الطابعة بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-qr-printers'] });
+      setDeleteConfirmDialog(false);
+      setDeletingPrinter(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
+  // Set warranty dates mutation
+  const setWarrantyMutation = useMutation({
+    mutationFn: async ({ printerId, startDate, endDate }: { printerId: string; startDate: Date; endDate: Date }) => {
+      const { error } = await supabase
+        .from('store_printers')
+        .update({
+          activation_date: startDate.toISOString(),
+          expiry_date: endDate.toISOString(),
+          status: 'active',
+          is_registered: true,
+        })
+        .eq('id', printerId);
+      if (error) throw error;
+
+      await supabase.from('printer_protection_logs').insert({
+        admin_id: user?.id,
+        action: 'set_warranty_dates',
+        entity_type: 'store_printer',
+        entity_id: printerId,
+        details: { start_date: startDate.toISOString(), end_date: endDate.toISOString() },
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم تحديد تواريخ الضمان بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-qr-printers'] });
+      setWarrantyDialog(false);
+      setWarrantyPrinter(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ في تحديد تواريخ الضمان');
     },
   });
 
@@ -202,7 +327,7 @@ const AdminQRPrinterTab = () => {
                 <TableHead>المستخدم</TableHead>
                 <TableHead>تاريخ التفعيل</TableHead>
                 <TableHead>انتهاء الضمان</TableHead>
-                <TableHead>QR</TableHead>
+                <TableHead>الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -236,11 +361,32 @@ const AdminQRPrinterTab = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => { setSelectedPrinter(printer); setViewQRDialogOpen(true); }}>
+                      <Button variant="ghost" size="icon" title="عرض QR" onClick={() => { setSelectedPrinter(printer); setViewQRDialogOpen(true); }}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => downloadQR(printer)}>
+                      <Button variant="ghost" size="icon" title="تحميل QR" onClick={() => downloadQR(printer)}>
                         <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="تعديل السيريال" onClick={() => {
+                        setEditingPrinter(printer);
+                        setNewSerialNumber(printer.serial_number);
+                        setEditSerialDialog(true);
+                      }}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="تحديد تاريخ الضمان" onClick={() => {
+                        setWarrantyPrinter(printer);
+                        setWarrantyStartDate(printer.activation_date ? new Date(printer.activation_date) : new Date());
+                        setWarrantyEndDate(printer.expiry_date ? new Date(printer.expiry_date) : undefined);
+                        setWarrantyDialog(true);
+                      }}>
+                        <Shield className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="إعادة تعيين" className="text-destructive hover:text-destructive" onClick={() => {
+                        setDeletingPrinter(printer);
+                        setDeleteConfirmDialog(true);
+                      }}>
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" title="توليد فاتورة" onClick={() => setInvoicePrinter(printer)}>
                         <FileText className="w-4 h-4" />
@@ -389,6 +535,160 @@ const AdminQRPrinterTab = () => {
             <Button variant="outline" className="w-full" onClick={() => selectedPrinter && downloadQR(selectedPrinter)}>
               <Download className="w-4 h-4 ml-2" />
               تحميل QR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Serial Dialog */}
+      <Dialog open={editSerialDialog} onOpenChange={setEditSerialDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>تعديل الرقم التسلسلي</DialogTitle>
+            <DialogDescription>
+              الطراز: {editingPrinter?.model_name_ar}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>الرقم التسلسلي الحالي</Label>
+              <Input value={editingPrinter?.serial_number || ''} disabled dir="ltr" className="opacity-60" />
+            </div>
+            <div className="space-y-2">
+              <Label>الرقم التسلسلي الجديد</Label>
+              <Input
+                value={newSerialNumber}
+                onChange={(e) => setNewSerialNumber(e.target.value)}
+                placeholder="أدخل الرقم التسلسلي الجديد"
+                dir="ltr"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditSerialDialog(false)}>إلغاء</Button>
+            <Button
+              onClick={() => {
+                if (!newSerialNumber.trim()) {
+                  toast.error('الرجاء إدخال الرقم التسلسلي الجديد');
+                  return;
+                }
+                if (newSerialNumber.trim() === editingPrinter?.serial_number) {
+                  toast.error('الرقم التسلسلي الجديد مطابق للحالي');
+                  return;
+                }
+                editSerialMutation.mutate({
+                  printerId: editingPrinter.id,
+                  oldSerial: editingPrinter.serial_number,
+                  newSerial: newSerialNumber.trim(),
+                });
+              }}
+              disabled={editSerialMutation.isPending}
+            >
+              {editSerialMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'حفظ التعديل'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete/Reset Confirm Dialog */}
+      <AlertDialog open={deleteConfirmDialog} onOpenChange={setDeleteConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>إعادة تعيين الطابعة</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم إلغاء ربط الطابعة "{deletingPrinter?.model_name_ar}" (السيريال: {deletingPrinter?.serial_number}) من المستخدم الحالي وإعادة حالتها إلى "معلّقة".
+              {deletingPrinter?.buyer_user_id && (
+                <span className="block mt-2 text-destructive font-medium">
+                  ⚠️ هذا الإجراء سيزيل الطابعة من حساب المستخدم ويلغي الضمان.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingPrinter && deletePrinterMutation.mutate(deletingPrinter)}
+              disabled={deletePrinterMutation.isPending}
+            >
+              {deletePrinterMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد الإعادة'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Warranty Date Dialog */}
+      <Dialog open={warrantyDialog} onOpenChange={setWarrantyDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>تحديد تاريخ الضمان</DialogTitle>
+            <DialogDescription>
+              {warrantyPrinter?.model_name_ar} — {warrantyPrinter?.serial_number}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>تاريخ بدء الضمان</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !warrantyStartDate && "text-muted-foreground")}>
+                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    {warrantyStartDate ? format(warrantyStartDate, 'dd/MM/yyyy') : 'اختر التاريخ'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={warrantyStartDate}
+                    onSelect={setWarrantyStartDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>تاريخ انتهاء الضمان</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !warrantyEndDate && "text-muted-foreground")}>
+                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    {warrantyEndDate ? format(warrantyEndDate, 'dd/MM/yyyy') : 'اختر التاريخ'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={warrantyEndDate}
+                    onSelect={setWarrantyEndDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWarrantyDialog(false)}>إلغاء</Button>
+            <Button
+              onClick={() => {
+                if (!warrantyStartDate || !warrantyEndDate) {
+                  toast.error('الرجاء تحديد تاريخ البدء والانتهاء');
+                  return;
+                }
+                if (warrantyEndDate <= warrantyStartDate) {
+                  toast.error('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء');
+                  return;
+                }
+                setWarrantyMutation.mutate({
+                  printerId: warrantyPrinter.id,
+                  startDate: warrantyStartDate,
+                  endDate: warrantyEndDate,
+                });
+              }}
+              disabled={setWarrantyMutation.isPending}
+            >
+              {setWarrantyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'حفظ تواريخ الضمان'}
             </Button>
           </DialogFooter>
         </DialogContent>
