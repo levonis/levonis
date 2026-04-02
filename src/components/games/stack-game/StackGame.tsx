@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Bug } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
-import { getStage } from "./StackEnvironment";
+
 
 interface Props {
   onBack: () => void;
@@ -192,17 +192,17 @@ export default function StackGame({ onBack }: Props) {
           setScore(gameScore);
         } else if (result) {
           console.error("end_stack_game returned failure:", result.error);
-          // Still try to show something useful
           setPointsAwarded(0);
         }
       } catch (e) {
         console.error("end_stack_game error:", e);
       }
 
-      try { await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore }); } catch (e) { console.error("update_high_score error:", e); }
+      // Use raw block count (finalScore) for high score & milestones, NOT inflated game_score
+      try { await supabase.rpc("update_stack_high_score" as any, { p_score: finalScore }); } catch (e) { console.error("update_high_score error:", e); }
       try {
         const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id, p_score: gameScore, p_session_id: sessionId,
+          p_user_id: user.id, p_score: finalScore, p_session_id: sessionId,
         });
         console.log("check_stack_milestone result:", JSON.stringify(milestoneResult));
         if (milestoneResult && (milestoneResult as any).won) {
@@ -270,12 +270,6 @@ export default function StackGame({ onBack }: Props) {
           </div>
         </div>
 
-        {/* Stage indicator */}
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="bg-black/40 backdrop-blur-xl rounded-full px-4 py-1 border border-white/5">
-            <span className="text-[10px] text-white/40 tracking-widest uppercase">{getStage(liveScore)}</span>
-          </div>
-        </div>
 
         {/* Admin Debug Toggle */}
         {isAdmin && !debugMode && (
@@ -302,10 +296,9 @@ export default function StackGame({ onBack }: Props) {
               </button>
             </div>
 
-            {/* Stage info */}
+            {/* Score info */}
             <div className="text-[10px] text-white/40 mb-3">
-              المرحلة: <span className="text-white/80 font-semibold">{getStage(liveScore)}</span>
-              {" • "}السكور الحقيقي: <span className="text-white/80 font-semibold">{liveScore}</span>
+              السكور الحقيقي: <span className="text-white/80 font-semibold">{liveScore}</span>
             </div>
 
             {/* Speed multiplier */}
