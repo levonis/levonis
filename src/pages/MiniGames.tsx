@@ -30,6 +30,7 @@ export default function MiniGames() {
   const [activeFilter, setActiveFilter] = useState<GameCategory>(GameCategory.ALL);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [showStore, setShowStore] = useState(false);
+  const [showPrizes, setShowPrizes] = useState(false);
 
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
