@@ -16,13 +16,18 @@ interface ProductPickerValue {
 
 function ProductPicker({ 
   value, 
-  onChange 
+  onChange,
+  requireStock = false,
 }: { 
   value: ProductPickerValue; 
   onChange: (val: ProductPickerValue, productName?: string, productImage?: string) => void;
+  requireStock?: boolean;
 }) {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [settingStock, setSettingStock] = useState(false);
+  const [manualStock, setManualStock] = useState(10);
 
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
@@ -149,6 +154,45 @@ function ProductPicker({
             </Select>
             {selectedOption && (
               <div className="text-[10px] text-primary">{selectedOption.name_ar}</div>
+            )}
+          </div>
+        )}
+
+        {/* Stock warning for prizes */}
+        {requireStock && selected && selected.direct_stock == null && selected.pre_order_stock == null && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-md p-2.5 space-y-2">
+            <div className="text-[11px] text-destructive font-medium flex items-center gap-1">
+              ⚠️ هذا المنتج ليس لديه مخزون! يجب تحديد مخزون للجوائز
+            </div>
+            {!settingStock ? (
+              <Button variant="outline" size="sm" className="text-xs h-7 w-full border-destructive/30 text-destructive" onClick={() => setSettingStock(true)}>
+                تحديد مخزون يدوي للجوائز
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  min={1} 
+                  value={manualStock} 
+                  onChange={e => setManualStock(parseInt(e.target.value) || 1)} 
+                  className="h-7 text-xs w-20" 
+                  placeholder="الكمية"
+                />
+                <Button 
+                  size="sm" 
+                  className="text-xs h-7" 
+                  onClick={async () => {
+                    const { error } = await supabase.from("products").update({ direct_stock: manualStock } as any).eq("id", value.product_id!);
+                    if (error) { toast.error("فشل تحديث المخزون"); return; }
+                    toast.success(`تم تحديد المخزون: ${manualStock}`);
+                    setSettingStock(false);
+                    queryClient.invalidateQueries({ queryKey: ["admin-product-selected", value.product_id] });
+                    queryClient.invalidateQueries({ queryKey: ["admin-products-picker"] });
+                  }}
+                >
+                  حفظ المخزون
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -304,6 +348,13 @@ export default function StackGameTab() {
   const addMilestone = useMutation({
     mutationFn: async () => {
       if (!newMilestone.prize_name_ar.trim() && !newMilestone.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
+      // Validate stock exists for product-based prizes
+      if (newMilestone.product_id) {
+        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock").eq("id", newMilestone.product_id).single();
+        if (prod && prod.direct_stock == null && prod.pre_order_stock == null) {
+          throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً من خلال زر 'تحديد مخزون يدوي للجوائز'");
+        }
+      }
       const { error } = await supabase.from("stack_game_milestones" as any).insert({
         target_score: newMilestone.target_score,
         prize_name_ar: newMilestone.prize_name_ar || "منتج",
@@ -344,6 +395,12 @@ export default function StackGameTab() {
   const addLbPrize = useMutation({
     mutationFn: async () => {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
+      if (newLbPrize.product_id) {
+        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock").eq("id", newLbPrize.product_id).single();
+        if (prod && prod.direct_stock == null && prod.pre_order_stock == null) {
+          throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً");
+        }
+      }
       const { error } = await supabase.from("stack_game_leaderboard_prizes" as any).insert({
         position: newLbPrize.position,
         prize_name_ar: newLbPrize.prize_name_ar || "منتج",
@@ -545,6 +602,7 @@ export default function StackGameTab() {
             <div>
               <label className="text-[10px] text-muted-foreground">المنتج (الجائزة) + اللون والخيار</label>
               <ProductPicker
+                requireStock
                 value={{ product_id: newMilestone.product_id, selected_color: newMilestone.selected_color, selected_option_id: newMilestone.selected_option_id }}
                 onChange={(val, name) => setNewMilestone(p => ({ 
                   ...p, 
@@ -612,6 +670,7 @@ export default function StackGameTab() {
             <div>
               <label className="text-[10px] text-muted-foreground">المنتج (الجائزة) + اللون والخيار</label>
               <ProductPicker
+                requireStock
                 value={{ product_id: newLbPrize.product_id, selected_color: newLbPrize.selected_color, selected_option_id: newLbPrize.selected_option_id }}
                 onChange={(val, name) => setNewLbPrize(p => ({ 
                   ...p, 
