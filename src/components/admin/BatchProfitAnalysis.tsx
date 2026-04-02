@@ -409,7 +409,10 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                         <Package className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-lg">{group.productName}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-lg">{group.productName}</h4>
+                          {group.isBundle && <Badge variant="outline" className="text-xs">📦 بندل</Badge>}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {group.batches.length} وجبة • إجمالي {group.totalBatchQty} قطعة • مباع {group.totalSoldQty} قطعة
                           {group.productId && productStocks[group.productId] !== undefined && (
