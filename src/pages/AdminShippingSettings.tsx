@@ -564,6 +564,7 @@ export default function AdminShippingSettings() {
     local_delivery_baghdad: 6000,
     local_delivery_provinces: 5000,
     usd_to_iqd_rate: 1410,
+    cny_to_usd_rate: 6.7,
   });
 
   useEffect(() => {
