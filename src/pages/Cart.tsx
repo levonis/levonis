@@ -366,8 +366,6 @@ const Cart = () => {
     });
   })();
 
-  // Check if cart contains only gift items (all items are gifts with price 0)
-  const isGiftOnlyCart = items.length > 0 && items.every((item: any) => item.is_gift);
 
   const getDeliveryFee = (governorate: string | null) => {
     // Pickup = always free
