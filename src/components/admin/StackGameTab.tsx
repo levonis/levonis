@@ -262,7 +262,7 @@ export default function StackGameTab() {
   const save = useMutation({
     mutationFn: async () => {
       if (!s || !settings?.id) throw new Error("لا توجد إعدادات");
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("stack_game_settings")
         .update({
           game_enabled: s.game_enabled,
@@ -276,15 +276,19 @@ export default function StackGameTab() {
           max_daily_plays: s.max_daily_plays || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", settings.id);
+        .eq("id", settings.id)
+        .select("id")
+        .single();
       if (error) throw error;
+      if (!data) throw new Error("لم يتم التحديث - تأكد من صلاحيات الأدمن");
     },
     onSuccess: () => {
       toast.success("تم حفظ الإعدادات");
       queryClient.invalidateQueries({ queryKey: ["admin-stack-game-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["stack-game-enabled"] });
       setForm(null);
     },
-    onError: () => toast.error("فشل حفظ الإعدادات"),
+    onError: (e: any) => toast.error(e?.message || "فشل حفظ الإعدادات"),
   });
 
   const addMilestone = useMutation({
