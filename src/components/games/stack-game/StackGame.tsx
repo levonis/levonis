@@ -359,7 +359,7 @@ export default function StackGame({ onBack }: Props) {
             </div>
 
             {/* Speed multiplier */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <span className="text-[10px] text-muted-foreground">السرعة:</span>
               {[1, 2, 3, 5, 10].map(s => (
                 <button
@@ -374,6 +374,24 @@ export default function StackGame({ onBack }: Props) {
                   {s}x
                 </button>
               ))}
+            </div>
+
+            {/* Auto-play toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setAutoPlay(!autoPlay)}
+                className={`text-[10px] px-3 py-1.5 rounded font-mono font-bold border transition-colors flex items-center gap-1.5 ${
+                  autoPlay
+                    ? "bg-green-600 text-white border-green-500"
+                    : "bg-black/50 text-muted-foreground border-border/50 hover:border-primary/50"
+                }`}
+              >
+                <Gamepad2 className="h-3 w-3" />
+                {autoPlay ? "⏸ إيقاف اللعب التلقائي" : "▶ تشغيل اللعب التلقائي"}
+              </button>
+              {autoPlay && (
+                <span className="text-[9px] text-green-400 font-mono animate-pulse">● يلعب تلقائياً...</span>
+              )}
             </div>
           </div>
         )}
