@@ -37,11 +37,9 @@ function getTileColor(index: number): string {
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
-  speedMultiplier?: number;
-  autoPlay?: boolean;
 }
 
-export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier = 1, autoPlay = false }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const { camera } = useThree();
   const onGameOverRef = useRef(onGameOver);
   onGameOverRef.current = onGameOver;
