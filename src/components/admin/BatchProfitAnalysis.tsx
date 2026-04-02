@@ -27,6 +27,9 @@ interface SoldItem {
   revenue: number;
   orderNumber: string;
   date: string;
+  color?: string;
+  orderItemId?: string;
+  unitPrice?: number;
 }
 
 const calcItemRevenue = (item: any): number => {
@@ -40,6 +43,8 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ batch_quantity: number; batch_cost: number }>({ batch_quantity: 0, batch_cost: 0 });
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editPriceForm, setEditPriceForm] = useState<{ unit_price: number; quantity: number }>({ unit_price: 0, quantity: 1 });
   const [productSearch, setProductSearch] = useState('');
   const [searchType, setSearchType] = useState<'product' | 'bundle'>('product');
   const [form, setForm] = useState({
@@ -60,7 +65,7 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
         .select(`
           *, order_type,
           profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id)
+          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, selected_color)
         `)
         .neq('status', 'cancelled')
         .order('created_at', { ascending: true });
@@ -211,6 +216,20 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     onError: () => toast.error('حدث خطأ أثناء التحديث'),
   });
 
+  const updatePriceMutation = useMutation({
+    mutationFn: async ({ id, unit_price, quantity }: { id: string; unit_price: number; quantity: number }) => {
+      const total_price = unit_price * quantity;
+      const { error } = await supabase.from('order_items').update({ unit_price, total_price }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['batch-all-orders'] });
+      toast.success('تم تحديث السعر');
+      setEditingPriceId(null);
+    },
+    onError: () => toast.error('حدث خطأ أثناء التحديث'),
+  });
+
   // Build analysis: group batches by product/bundle, distribute sold items sequentially
   const productGroups = useMemo(() => {
     // 1. Collect sold items per product_id from DIRECT SALE orders only
@@ -235,6 +254,9 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
           if (!soldByEntity[bundleKey]) soldByEntity[bundleKey] = [];
           soldByEntity[bundleKey].push({
             username, quantity: bundleQty, revenue: bundleRevenue, orderNumber, date: orderDate,
+            color: item.selected_color || undefined,
+            orderItemId: item.id,
+            unitPrice: item.unit_price,
           });
           // Expand into component products
           components.forEach((comp) => {
@@ -246,6 +268,9 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
               revenue: 0, // Revenue attributed to bundle, not individual components
               orderNumber,
               date: orderDate,
+              color: item.selected_color || undefined,
+              orderItemId: item.id,
+              unitPrice: item.unit_price,
             });
           });
         } else if (item.product_id) {
@@ -257,6 +282,9 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
             revenue: calcItemRevenue(item),
             orderNumber,
             date: orderDate,
+            color: item.selected_color || undefined,
+            orderItemId: item.id,
+            unitPrice: item.unit_price,
           });
         }
       });
@@ -688,9 +716,11 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
                                     <TableRow>
                                       <TableHead className="text-right">رقم الطلب</TableHead>
                                       <TableHead className="text-right">المستخدم</TableHead>
+                                      <TableHead className="text-right">اللون</TableHead>
                                       <TableHead className="text-right">الكمية</TableHead>
                                       <TableHead className="text-right">المبلغ (بدون توصيل)</TableHead>
                                       <TableHead className="text-right">التاريخ</TableHead>
+                                      <TableHead className="text-right w-10"></TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
@@ -698,18 +728,59 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
                                       <TableRow key={idx}>
                                         <TableCell className="font-mono text-sm">{item.orderNumber}</TableCell>
                                         <TableCell className="font-medium">{item.username}</TableCell>
+                                        <TableCell className="text-sm">{item.color || '-'}</TableCell>
                                         <TableCell>{item.quantity}</TableCell>
-                                        <TableCell className="text-green-600">{formatPrice(item.revenue)}</TableCell>
+                                        <TableCell>
+                                          {editingPriceId === `${item.orderItemId}_${idx}` ? (
+                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                              <Input
+                                                type="number"
+                                                value={editPriceForm.unit_price || ''}
+                                                onChange={(e) => setEditPriceForm({ ...editPriceForm, unit_price: parseFloat(e.target.value) || 0 })}
+                                                className="h-7 w-24 text-sm"
+                                              />
+                                              <Button
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                disabled={updatePriceMutation.isPending}
+                                                onClick={() => updatePriceMutation.mutate({ id: item.orderItemId, unit_price: editPriceForm.unit_price, quantity: editPriceForm.quantity })}
+                                              >
+                                                <Check className="h-3 w-3" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingPriceId(null)}>
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <span className="text-green-600">{formatPrice(item.revenue)}</span>
+                                          )}
+                                        </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
                                           {format(new Date(item.date), 'dd/MM/yyyy', { locale: ar })}
+                                        </TableCell>
+                                        <TableCell>
+                                          {item.orderItemId && (
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-6 w-6"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingPriceId(`${item.orderItemId}_${idx}`);
+                                                setEditPriceForm({ unit_price: item.unitPrice || 0, quantity: item.quantity || 1 });
+                                              }}
+                                            >
+                                              <Pencil className="h-3 w-3" />
+                                            </Button>
+                                          )}
                                         </TableCell>
                                       </TableRow>
                                     ))}
                                     <TableRow className="bg-muted/30 font-bold">
-                                      <TableCell colSpan={2}>المجموع</TableCell>
+                                      <TableCell colSpan={3}>المجموع</TableCell>
                                       <TableCell>{batch.soldInBatch}</TableCell>
                                       <TableCell className="text-green-600">{formatPrice(batch.batchRevenue)}</TableCell>
-                                      <TableCell />
+                                      <TableCell colSpan={2} />
                                     </TableRow>
                                   </TableBody>
                                 </Table>
