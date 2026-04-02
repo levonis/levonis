@@ -564,6 +564,7 @@ export default function AdminShippingSettings() {
     local_delivery_baghdad: 6000,
     local_delivery_provinces: 5000,
     usd_to_iqd_rate: 1410,
+    cny_to_usd_rate: 6.7,
   });
 
   useEffect(() => {
@@ -602,6 +603,7 @@ export default function AdminShippingSettings() {
       local_delivery_baghdad: newSettings.local_delivery_baghdad ?? 6000,
       local_delivery_provinces: newSettings.local_delivery_provinces ?? 5000,
       usd_to_iqd_rate: newSettings.usd_to_iqd_rate ?? 1410,
+      cny_to_usd_rate: newSettings.cny_to_usd_rate ?? 6.7,
     };
     const rate = shippingSettingsObj.usd_to_iqd_rate;
     const roundUpTo250 = (v: number) => Math.ceil(v / 250) * 250;
@@ -829,9 +831,9 @@ export default function AdminShippingSettings() {
               icon={<DollarSign className="h-5 w-5 text-white" />}
               iconBg="bg-gradient-to-br from-emerald-500 to-green-600"
               title="سعر الصرف"
-              subtitle="دولار → دينار عراقي"
+              subtitle="أسعار الصرف"
             />
-            <div className="px-5 pb-5">
+            <div className="px-5 pb-5 space-y-4">
               <SettingField
                 label="سعر الدولار"
                 icon={<DollarSign className="h-3 w-3" />}
@@ -839,6 +841,14 @@ export default function AdminShippingSettings() {
                 onChange={(v) => updateSetting("usd_to_iqd_rate", v)}
                 hint={`1$ = ${settings.usd_to_iqd_rate.toLocaleString()} د.ع`}
                 suffix="د.ع"
+              />
+              <SettingField
+                label="سعر اليوان الصيني"
+                icon={<span className="text-xs font-bold">¥</span>}
+                value={settings.cny_to_usd_rate}
+                onChange={(v) => updateSetting("cny_to_usd_rate", v)}
+                hint={`${settings.cny_to_usd_rate} ¥ = 1$`}
+                suffix="¥/1$"
               />
             </div>
           </GlassCard>

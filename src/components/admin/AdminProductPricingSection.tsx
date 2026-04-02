@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
@@ -40,6 +41,29 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
+  
+  // CNY converter
+  const [showCnyInput, setShowCnyInput] = useState(false);
+  const [cnyValue, setCnyValue] = useState<string>('');
+  const [showCnyOrigInput, setShowCnyOrigInput] = useState(false);
+  const [cnyOrigValue, setCnyOrigValue] = useState<string>('');
+  
+  const cnyToUsdRate = shippingSettings?.cny_to_usd_rate || 6.7;
+  
+  const handleCnyConvert = (target: 'price' | 'original') => {
+    const val = target === 'price' ? Number(cnyValue) : Number(cnyOrigValue);
+    if (!val || val <= 0) return;
+    const usdVal = Math.round((val / cnyToUsdRate) * 100) / 100;
+    if (target === 'price') {
+      setPriceUsd(usdVal);
+      setCnyValue('');
+      setShowCnyInput(false);
+    } else {
+      setOriginalPriceUsd(usdVal);
+      setCnyOrigValue('');
+      setShowCnyOrigInput(false);
+    }
+  };
 
   useEffect(() => {
     if (editingProduct) {
@@ -179,7 +203,48 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         {/* USD Price Fields */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="price_usd">سعر تكلفة المنتج ($) *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="price_usd">سعر تكلفة المنتج ($) *</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => setShowCnyInput(!showCnyInput)}
+              >
+                <span className="font-bold">¥</span>
+                {showCnyInput ? 'إخفاء' : 'تحويل من يوان'}
+              </Button>
+            </div>
+            {showCnyInput && (
+              <div className="flex gap-1.5 items-center p-2 rounded-md bg-amber-50 border border-amber-200">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cnyValue}
+                  onChange={(e) => setCnyValue(e.target.value)}
+                  placeholder="المبلغ بالـ ¥"
+                  className="h-8 text-sm"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert('price'); } }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs shrink-0"
+                  onClick={() => handleCnyConvert('price')}
+                  disabled={!cnyValue || Number(cnyValue) <= 0}
+                >
+                  تحويل
+                </Button>
+                {cnyValue && Number(cnyValue) > 0 && (
+                  <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+                    = {(Number(cnyValue) / cnyToUsdRate).toFixed(2)}$
+                  </span>
+                )}
+              </div>
+            )}
             <Input
               id="price_usd"
               name="price_usd"
@@ -192,7 +257,48 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="original_price_usd">السعر الأصلي قبل التخفيض ($)</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="original_price_usd">السعر الأصلي ($)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => setShowCnyOrigInput(!showCnyOrigInput)}
+              >
+                <span className="font-bold">¥</span>
+                {showCnyOrigInput ? 'إخفاء' : 'تحويل من يوان'}
+              </Button>
+            </div>
+            {showCnyOrigInput && (
+              <div className="flex gap-1.5 items-center p-2 rounded-md bg-amber-50 border border-amber-200">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cnyOrigValue}
+                  onChange={(e) => setCnyOrigValue(e.target.value)}
+                  placeholder="المبلغ بالـ ¥"
+                  className="h-8 text-sm"
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert('original'); } }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 px-3 text-xs shrink-0"
+                  onClick={() => handleCnyConvert('original')}
+                  disabled={!cnyOrigValue || Number(cnyOrigValue) <= 0}
+                >
+                  تحويل
+                </Button>
+                {cnyOrigValue && Number(cnyOrigValue) > 0 && (
+                  <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+                    = {(Number(cnyOrigValue) / cnyToUsdRate).toFixed(2)}$
+                  </span>
+                )}
+              </div>
+            )}
             <Input
               id="original_price_usd"
               name="original_price_usd"
