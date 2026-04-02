@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
@@ -205,7 +205,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return !!data;
   };
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!user) {
       setItems([]);
       setLoading(false);
@@ -314,12 +314,36 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchCart();
     fetchPendingCartRequest();
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`cart-items-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cart_items',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchCart();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, fetchCart]);
 
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
