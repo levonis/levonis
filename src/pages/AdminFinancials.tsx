@@ -715,10 +715,10 @@ const AdminFinancials = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {isLoading ? (
-                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : 10} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
-                        ) : paginatedOrders.length === 0 ? (
-                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
+                         {isLoading ? (
+                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
+                         ) : paginatedOrders.length === 0 ? (
+                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
                           const profit = calcOrderProfit(order, usdToIqdRate);
                           return (
