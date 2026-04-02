@@ -27,7 +27,7 @@ function ProductPicker({
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, colors").order("created_at", { ascending: false }).limit(20);
+      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
