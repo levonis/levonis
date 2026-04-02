@@ -255,12 +255,12 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
     }
 
-    // Camera follow
+    // Camera follow - match original Stack game: camera from bottom-left
     const targetY = cameraTargetY.current;
-    camera.position.y += (targetY - camera.position.y + 4) * delta * 2.5;
-    camera.position.x = 2;
-    camera.position.z = 2;
-    camera.lookAt(0, targetY - 2, 0);
+    camera.position.y += (targetY - camera.position.y + 2) * delta * 2.5;
+    camera.position.x = -2;
+    camera.position.z = -2;
+    camera.lookAt(0, targetY - 1.5, 0);
 
     // Falling pieces
     setFallingPieces(prev =>
