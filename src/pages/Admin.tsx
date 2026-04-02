@@ -2779,6 +2779,7 @@ const Admin = () => {
                                     <p className="text-xs text-muted-foreground">
                                       اتركه فارغاً لاستخدام السعر الأساسي
                                     </p>
+                                    <ColorPricePreview color={color} editingProduct={editingProduct} />
                                   </div>
                                 </div>
                                 
