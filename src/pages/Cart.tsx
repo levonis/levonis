@@ -426,15 +426,19 @@ const Cart = () => {
         totalCatFee += basePrice * deliveryCount;
       }
 
-      // Uncovered items get governorate or 0 (no generic base price)
+      // Uncovered items (non-printer items) should use standard delivery method's price
       const hasUncoveredItems = Object.keys(categoryQty).some(catId => !handledCategories.has(catId));
       const hasNoCategoryItems = items.some(item => !item.products?.category_id);
 
       if (hasUncoveredItems || hasNoCategoryItems) {
-        const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
-        if (matchingGovExc) {
-          totalCatFee += Number(matchingGovExc.delivery_price);
-        }
+        // Find the standard (non-category-specific) delivery method to get its price
+        const standardMethod = deliveryMethods.find((m: any) => m.method_key === 'standard' && !m.base_price_category_id);
+        const standardBasePrice = standardMethod ? Number(standardMethod.base_price) : 0;
+        
+        // Check governorate exceptions for the standard method
+        const standardGovExc = allGovExceptions.find((e: any) => e.delivery_method_key === 'standard' && e.governorate === governorate);
+        const uncoveredFee = standardGovExc ? Number(standardGovExc.delivery_price) : standardBasePrice;
+        totalCatFee += uncoveredFee;
       }
       return totalCatFee;
     }
