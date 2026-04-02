@@ -5,6 +5,8 @@ import { Minus, Plus, Trash2, Package, Gift } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
+import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
 
 interface GroupedCartItemProps {
   productId: string;
