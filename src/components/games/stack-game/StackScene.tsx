@@ -1,7 +1,9 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { Text, Float, Environment, Stars } from "@react-three/drei";
+import { Text, Float } from "@react-three/drei";
+import StackEnvironment, { getStage } from "./StackEnvironment";
+import { useStageAudio } from "./StackStageAudio";
 
 interface Block {
   position: [number, number, number];
@@ -228,13 +230,20 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const comboTextOpacity = useRef(0);
   const time = useRef(0);
 
-  // Start ambient music
+  // Stage audio system
+  const { setStage: setAudioStage } = useStageAudio();
+
+  // Start ambient music + update stage audio based on score
   useEffect(() => {
     audioSystem.startAmbient();
     return () => {
       audioSystem.stopAmbient();
     };
   }, []);
+
+  useEffect(() => {
+    setAudioStage(getStage(score));
+  }, [score, setAudioStage]);
 
   const getPalette = (index: number) => PALETTES[index % PALETTES.length];
   const topBlock = stack[stack.length - 1];
@@ -490,15 +499,11 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
 
   return (
     <>
-      {/* Environment */}
-      <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
-      <fog attach="fog" args={["#0f0a1e", 8, 35]} />
+      {/* Dynamic Environment */}
+      <StackEnvironment score={score} cameraY={cameraTargetY.current} />
       
       {/* Lighting */}
-      <ambientLight intensity={0.4} color="#8b5cf6" />
       <directionalLight position={[5, 12, 5]} intensity={0.8} color="#ffffff" castShadow shadow-mapSize={2048} />
-      <pointLight position={[0, currentY + 2, 0]} intensity={0.6} color={nextPalette.emissive} distance={8} />
-      <pointLight position={[-3, currentY, 3]} intensity={0.3} color="#6366f1" distance={6} />
 
       {/* Base platform - glass effect */}
       <mesh position={[0, -0.3, 0]} receiveShadow>
