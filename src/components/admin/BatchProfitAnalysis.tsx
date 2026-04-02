@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Package, Trash2, ChevronDown, ChevronUp, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Package, Trash2, ChevronDown, ChevronUp, Users, AlertTriangle, Pencil, Check, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -38,6 +38,8 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ batch_quantity: number; batch_cost: number }>({ batch_quantity: 0, batch_cost: 0 });
   const [productSearch, setProductSearch] = useState('');
   const [form, setForm] = useState({
     product_id: '' as string,
@@ -106,6 +108,19 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
       toast.success('تم حذف الوجبة');
     },
     onError: () => toast.error('حدث خطأ أثناء الحذف'),
+  });
+
+  const updateBatchMutation = useMutation({
+    mutationFn: async ({ id, batch_quantity, batch_cost }: { id: string; batch_quantity: number; batch_cost: number }) => {
+      const { error } = await supabase.from('product_batches').update({ batch_quantity, batch_cost }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product-batches'] });
+      toast.success('تم تحديث الوجبة');
+      setEditingBatchId(null);
+    },
+    onError: () => toast.error('حدث خطأ أثناء التحديث'),
   });
 
   // Build analysis: group batches by product, distribute sold items sequentially
@@ -401,6 +416,22 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                               )}
                             </div>
                             <div className="flex items-center gap-2">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (editingBatchId === batch.id) {
+                                    setEditingBatchId(null);
+                                  } else {
+                                    setEditingBatchId(batch.id);
+                                    setEditForm({ batch_quantity: batch.batch_quantity, batch_cost: Number(batch.batch_cost) });
+                                  }
+                                }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}>
@@ -421,6 +452,47 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                               {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                             </div>
                           </div>
+
+                          {/* Inline edit form */}
+                          {editingBatchId === batch.id && (
+                            <div className="flex items-end gap-3 mb-3 p-3 rounded-lg bg-muted/40 border" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex-1">
+                                <Label className="text-xs">عدد القطع</Label>
+                                <Input
+                                  type="number"
+                                  value={editForm.batch_quantity || ''}
+                                  onChange={(e) => setEditForm({ ...editForm, batch_quantity: parseInt(e.target.value) || 0 })}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <Label className="text-xs">التكلفة (د.ع)</Label>
+                                <Input
+                                  type="number"
+                                  value={editForm.batch_cost || ''}
+                                  onChange={(e) => setEditForm({ ...editForm, batch_cost: parseFloat(e.target.value) || 0 })}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <Button
+                                size="sm"
+                                className="h-8 gap-1"
+                                disabled={updateBatchMutation.isPending}
+                                onClick={() => updateBatchMutation.mutate({ id: batch.id, ...editForm })}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                                حفظ
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8"
+                                onClick={() => setEditingBatchId(null)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
 
                           {/* Batch stats */}
                           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-sm">
