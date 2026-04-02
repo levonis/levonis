@@ -110,6 +110,19 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     onError: () => toast.error('حدث خطأ أثناء الحذف'),
   });
 
+  const updateBatchMutation = useMutation({
+    mutationFn: async ({ id, batch_quantity, batch_cost }: { id: string; batch_quantity: number; batch_cost: number }) => {
+      const { error } = await supabase.from('product_batches').update({ batch_quantity, batch_cost }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product-batches'] });
+      toast.success('تم تحديث الوجبة');
+      setEditingBatchId(null);
+    },
+    onError: () => toast.error('حدث خطأ أثناء التحديث'),
+  });
+
   // Build analysis: group batches by product, distribute sold items sequentially
   const productGroups = useMemo(() => {
     // 1. Collect all sold items per product_id from delivered direct orders (sorted by date)
