@@ -5,12 +5,11 @@ import StackScene from "./StackScene";
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
-  debugScoreOverride?: number | null;
   speedMultiplier?: number;
   autoPlay?: boolean;
 }
 
-export default function StackGameCanvas({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier, autoPlay }: Props) {
+export default function StackGameCanvas({ onGameOver, onScoreUpdate, speedMultiplier, autoPlay }: Props) {
   return (
     <Canvas
       shadows
@@ -24,7 +23,6 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate, debugScoreO
         <StackScene
           onGameOver={onGameOver}
           onScoreUpdate={onScoreUpdate}
-          debugScoreOverride={debugScoreOverride}
           speedMultiplier={speedMultiplier}
           autoPlay={autoPlay}
         />

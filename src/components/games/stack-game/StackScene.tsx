@@ -34,7 +34,6 @@ interface Particle {
   type: "spark" | "ring" | "trail";
 }
 
-// Enhanced color palette with gradients
 const PALETTES = [
   { color: "#6366f1", emissive: "#4f46e5", glow: "#818cf8" },
   { color: "#8b5cf6", emissive: "#7c3aed", glow: "#a78bfa" },
@@ -60,12 +59,11 @@ const PERFECT_THRESHOLD = 0.1;
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
-  debugScoreOverride?: number | null;
   speedMultiplier?: number;
   autoPlay?: boolean;
 }
 
-export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier = 1, autoPlay = false }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier = 1, autoPlay = false }: Props) {
   const { camera } = useThree();
   const onGameOverRef = useRef(onGameOver);
   onGameOverRef.current = onGameOver;
@@ -95,6 +93,8 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
   const comboTextOpacity = useRef(0);
   const time = useRef(0);
   const autoPlayTimer = useRef(0);
+  // Track if we already initialized the moving block position for this "turn"
+  const blockSpawned = useRef(false);
 
   // Audio systems
   const audioSystem = useMemo(() => getTowerAudio(), []);
@@ -107,10 +107,9 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     };
   }, [audioSystem]);
 
-  const effectiveScore = debugScoreOverride ?? score;
   useEffect(() => {
-    setAudioStage(getStage(effectiveScore));
-  }, [effectiveScore, setAudioStage]);
+    setAudioStage(getStage(score));
+  }, [score, setAudioStage]);
 
   const getPalette = (index: number) => PALETTES[index % PALETTES.length];
   const topBlock = stack[stack.length - 1];
@@ -127,37 +126,21 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
           id: particleIdCounter.current++,
           position: [...pos],
           velocity: [Math.cos(angle) * ringSpeed, Math.random() * 1.5, Math.sin(angle) * ringSpeed],
-          color,
-          life: 1,
-          maxLife: 0.8 + Math.random() * 0.4,
-          size: 0.03 + Math.random() * 0.04,
-          type,
+          color, life: 1, maxLife: 0.8 + Math.random() * 0.4, size: 0.03 + Math.random() * 0.04, type,
         });
       } else if (type === "trail") {
         newParticles.push({
           id: particleIdCounter.current++,
           position: [pos[0] + (Math.random() - 0.5) * 2, pos[1], pos[2] + (Math.random() - 0.5) * 2],
           velocity: [0, 2 + Math.random() * 3, 0],
-          color,
-          life: 1,
-          maxLife: 1.5 + Math.random() * 1,
-          size: 0.02 + Math.random() * 0.03,
-          type,
+          color, life: 1, maxLife: 1.5 + Math.random() * 1, size: 0.02 + Math.random() * 0.03, type,
         });
       } else {
         newParticles.push({
           id: particleIdCounter.current++,
           position: [...pos],
-          velocity: [
-            (Math.random() - 0.5) * 5,
-            Math.random() * 4 + 1.5,
-            (Math.random() - 0.5) * 5,
-          ],
-          color,
-          life: 1,
-          maxLife: 0.8 + Math.random() * 0.6,
-          size: 0.03 + Math.random() * 0.06,
-          type,
+          velocity: [(Math.random() - 0.5) * 5, Math.random() * 4 + 1.5, (Math.random() - 0.5) * 5],
+          color, life: 1, maxLife: 0.8 + Math.random() * 0.6, size: 0.03 + Math.random() * 0.06, type,
         });
       }
     }
@@ -187,7 +170,6 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       setGameOver(true);
       audioSystem.playGameOver();
       setShakeIntensity(0.4);
-      // Explosion particles
       spawnParticles([pos.x, currentY, pos.z], "#ff4444", 40, "spark");
       onGameOverRef.current(score, perfectCount, maxCombo);
       return;
@@ -211,14 +193,11 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       newMaxCombo = Math.max(maxCombo, newCombo);
       setShowPerfect(true);
       perfectTextOpacity.current = 1;
-
       if (newCombo >= 3) {
         setComboText(`${newCombo}x COMBO!`);
         comboTextOpacity.current = 1;
       }
-
       setTimeout(() => setShowPerfect(false), 1500);
-      // Multi-layer particles for perfect
       spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 20, "ring");
       spawnParticles([newPos[0], currentY, newPos[2]], palette.glow || palette.color, 15, "trail");
       spawnParticles([newPos[0], currentY, newPos[2]], "#fbbf24", 25, "spark");
@@ -243,16 +222,9 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
         ...prev,
         {
           id: fallingIdCounter.current++,
-          position: fallingPos,
-          size: fallingSize,
-          color: palette.color,
-          velocity: vel,
-          rotation: [0, 0, 0],
-          rotVel: [
-            (Math.random() - 0.5) * 5,
-            (Math.random() - 0.5) * 5,
-            (Math.random() - 0.5) * 5,
-          ],
+          position: fallingPos, size: fallingSize, color: palette.color,
+          velocity: vel, rotation: [0, 0, 0],
+          rotVel: [(Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5],
         },
       ]);
       spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 15, "spark");
@@ -262,10 +234,8 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     audioSystem.playPlace(isPerfect, newCombo);
 
     const newBlock: Block = {
-      position: newPos,
-      size: newSize,
-      color: palette.color,
-      emissive: palette.emissive,
+      position: newPos, size: newSize,
+      color: palette.color, emissive: palette.emissive,
     };
 
     setStack(prev => [...prev, newBlock]);
@@ -281,17 +251,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     movingDir.current = 1;
     cameraTargetY.current = currentY + 2.5;
 
+    // Mark that we need to spawn a new block at the start position
+    blockSpawned.current = false;
+
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
   }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, spawnParticles, audioSystem]);
 
   useEffect(() => {
-    if (autoPlay) return; // Don't bind manual controls in autoplay
+    if (autoPlay) return;
     const handleClick = () => placeBlock();
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.code === "Space") placeBlock();
-    };
+    const handleKey = (e: KeyboardEvent) => { if (e.code === "Space") placeBlock(); };
     window.addEventListener("pointerdown", handleClick);
     window.addEventListener("keydown", handleKey);
     return () => {
@@ -300,67 +271,60 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     };
   }, [placeBlock, autoPlay]);
 
-  // Glow ring geometry (memoized)
   const ringGeo = useMemo(() => new THREE.RingGeometry(1.8, 2.2, 64), []);
   const baseRingGeo = useMemo(() => new THREE.RingGeometry(2.6, 2.9, 64), []);
 
   useFrame((state, delta) => {
     time.current += delta;
 
+    const mesh = movingBlockRef.current;
+    if (mesh && !gameOver && !hasPlaced.current) {
+      // Initialize position when a new block spawns
+      if (!blockSpawned.current) {
+        const newAxis = currentAxis.current;
+        const tb = stack[stack.length - 1];
+        const cy = stack.length * BLOCK_HEIGHT;
+        if (newAxis === "x") {
+          mesh.position.set(-4, cy, tb.position[2]);
+        } else {
+          mesh.position.set(tb.position[0], cy, -4);
+        }
+        movingDir.current = 1;
+        blockSpawned.current = true;
+      }
+
+      // Move the block
+      const range = 4;
+      const moveSpeed = speed.current * speedMultiplier;
+      const currentAxisVal = currentAxis.current;
+      if (currentAxisVal === "x") {
+        mesh.position.x += movingDir.current * moveSpeed * delta;
+        if (mesh.position.x > range) movingDir.current = -1;
+        if (mesh.position.x < -range) movingDir.current = 1;
+      } else {
+        mesh.position.z += movingDir.current * moveSpeed * delta;
+        if (mesh.position.z > range) movingDir.current = -1;
+        if (mesh.position.z < -range) movingDir.current = 1;
+      }
+    }
+
     // Auto-play: place block when crossing near center
-    if (autoPlay && !gameOver && !hasPlaced.current) {
+    if (autoPlay && !gameOver && !hasPlaced.current && mesh) {
       autoPlayTimer.current += delta;
-      const mesh = movingBlockRef.current;
-      if (mesh) {
-        const axisIdx = axis === "x" ? 0 : 2;
-        const prevCenter = topBlock.position[axisIdx];
-        const currentPos = axisIdx === 0 ? mesh.position.x : mesh.position.z;
-        const movePerFrame = speed.current * speedMultiplier * delta;
-        // Dynamic tolerance: scales with speed so we never overshoot
-        const tolerance = Math.max(0.15, movePerFrame * 2);
-        const distFromCenter = Math.abs(currentPos - prevCenter);
-        if (distFromCenter < tolerance && autoPlayTimer.current > 0.08) {
-          autoPlayTimer.current = 0;
-          placeBlock();
-        }
+      const axisIdx = currentAxis.current === "x" ? 0 : 2;
+      const prevCenter = topBlock.position[axisIdx];
+      const currentPos = axisIdx === 0 ? mesh.position.x : mesh.position.z;
+      const movePerFrame = speed.current * speedMultiplier * delta;
+      const tolerance = Math.max(0.15, movePerFrame * 3);
+      const distFromCenter = Math.abs(currentPos - prevCenter);
+      // Only place if block is moving TOWARD center (crossed it)
+      if (distFromCenter < tolerance && autoPlayTimer.current > 0.1) {
+        autoPlayTimer.current = 0;
+        placeBlock();
       }
     }
 
-    if (!gameOver && !autoPlay) {
-      const mesh = movingBlockRef.current;
-      if (mesh && !hasPlaced.current) {
-        const range = 4;
-        if (axis === "x") {
-          mesh.position.x += movingDir.current * speed.current * speedMultiplier * delta;
-          if (mesh.position.x > range) movingDir.current = -1;
-          if (mesh.position.x < -range) movingDir.current = 1;
-        } else {
-          mesh.position.z += movingDir.current * speed.current * speedMultiplier * delta;
-          if (mesh.position.z > range) movingDir.current = -1;
-          if (mesh.position.z < -range) movingDir.current = 1;
-        }
-      }
-    }
-
-    // Auto-play also needs block movement
-    if (autoPlay && !gameOver) {
-      const mesh = movingBlockRef.current;
-      if (mesh && !hasPlaced.current) {
-        const range = 4;
-        const moveSpeed = speed.current * speedMultiplier;
-        if (axis === "x") {
-          mesh.position.x += movingDir.current * moveSpeed * delta;
-          if (mesh.position.x > range) movingDir.current = -1;
-          if (mesh.position.x < -range) movingDir.current = 1;
-        } else {
-          mesh.position.z += movingDir.current * moveSpeed * delta;
-          if (mesh.position.z > range) movingDir.current = -1;
-          if (mesh.position.z < -range) movingDir.current = 1;
-        }
-      }
-    }
-
-    // Camera with smooth shake
+    // Camera
     const targetY = cameraTargetY.current;
     const shakeX = shakeIntensity * Math.sin(time.current * 50) * Math.cos(time.current * 33);
     const shakeZ = shakeIntensity * Math.cos(time.current * 47) * Math.sin(time.current * 29);
@@ -369,7 +333,6 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     camera.position.z = 3.5 + shakeZ;
     camera.lookAt(0, targetY - 2, 0);
 
-    // Decay shake
     if (shakeIntensity > 0.001) {
       setShakeIntensity(prev => prev * 0.9);
     }
@@ -379,21 +342,9 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       prev
         .map(p => ({
           ...p,
-          position: [
-            p.position[0] + p.velocity[0] * delta,
-            p.position[1] + p.velocity[1] * delta,
-            p.position[2] + p.velocity[2] * delta,
-          ] as [number, number, number],
-          velocity: [
-            p.velocity[0],
-            p.velocity[1] - 15 * delta,
-            p.velocity[2],
-          ] as [number, number, number],
-          rotation: [
-            p.rotation[0] + p.rotVel[0] * delta,
-            p.rotation[1] + p.rotVel[1] * delta,
-            p.rotation[2] + p.rotVel[2] * delta,
-          ] as [number, number, number],
+          position: [p.position[0] + p.velocity[0] * delta, p.position[1] + p.velocity[1] * delta, p.position[2] + p.velocity[2] * delta] as [number, number, number],
+          velocity: [p.velocity[0], p.velocity[1] - 15 * delta, p.velocity[2]] as [number, number, number],
+          rotation: [p.rotation[0] + p.rotVel[0] * delta, p.rotation[1] + p.rotVel[1] * delta, p.rotation[2] + p.rotVel[2] * delta] as [number, number, number],
         }))
         .filter(p => p.position[1] > -15)
     );
@@ -403,11 +354,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       prev
         .map(p => ({
           ...p,
-          position: [
-            p.position[0] + p.velocity[0] * delta,
-            p.position[1] + p.velocity[1] * delta,
-            p.position[2] + p.velocity[2] * delta,
-          ] as [number, number, number],
+          position: [p.position[0] + p.velocity[0] * delta, p.position[1] + p.velocity[1] * delta, p.position[2] + p.velocity[2] * delta] as [number, number, number],
           velocity: [
             p.velocity[0] * (p.type === "trail" ? 0.99 : 0.96),
             p.velocity[1] - (p.type === "trail" ? 2 : 6) * delta,
@@ -418,102 +365,62 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
         .filter(p => p.life > 0)
     );
 
-    // Fade text
-    if (perfectTextOpacity.current > 0) {
-      perfectTextOpacity.current -= delta * 1.5;
-    }
-    if (comboTextOpacity.current > 0) {
-      comboTextOpacity.current -= delta * 1.2;
-    }
+    if (perfectTextOpacity.current > 0) perfectTextOpacity.current -= delta * 1.5;
+    if (comboTextOpacity.current > 0) comboTextOpacity.current -= delta * 1.2;
   });
 
   const nextPalette = getPalette(stack.length);
-  const startPos: [number, number, number] = [
-    axis === "x" ? -4 : topBlock.position[0],
-    currentY,
-    axis === "z" ? -4 : topBlock.position[2],
-  ];
 
   return (
     <>
-      {/* Dynamic Environment */}
-      <StackEnvironment score={effectiveScore} cameraY={cameraTargetY.current} />
+      {/* Dynamic Environment based on REAL score */}
+      <StackEnvironment score={score} cameraY={cameraTargetY.current} />
 
-      {/* Lighting - enhanced */}
+      {/* Lighting */}
       <directionalLight position={[5, 12, 5]} intensity={0.9} color="#ffffff" castShadow shadow-mapSize={2048} />
       <directionalLight position={[-3, 8, -3]} intensity={0.3} color="#6366f1" />
 
-      {/* Base platform - hexagonal with glow layers */}
+      {/* Base platform */}
       <group>
-        {/* Main platform */}
         <mesh position={[0, -0.35, 0]} receiveShadow>
           <cylinderGeometry args={[2.8, 3.2, 0.7, 6]} />
-          <meshPhysicalMaterial
-            color="#0f0a2e"
-            metalness={0.9}
-            roughness={0.15}
-            clearcoat={1}
-            clearcoatRoughness={0.05}
-          />
+          <meshPhysicalMaterial color="#0f0a2e" metalness={0.9} roughness={0.15} clearcoat={1} clearcoatRoughness={0.05} />
         </mesh>
-        {/* Inner ring */}
         <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <primitive object={ringGeo} />
-          <meshBasicMaterial
-            color="#6366f1"
-            transparent
-            opacity={0.4 + Math.sin(time.current * 2) * 0.15}
-            side={THREE.DoubleSide}
-          />
+          <meshBasicMaterial color="#6366f1" transparent opacity={0.4 + Math.sin(time.current * 2) * 0.15} side={THREE.DoubleSide} />
         </mesh>
-        {/* Outer ring pulse */}
         <mesh position={[0, -0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <primitive object={baseRingGeo} />
-          <meshBasicMaterial
-            color="#8b5cf6"
-            transparent
-            opacity={0.2 + Math.sin(time.current * 3 + 1) * 0.1}
-            side={THREE.DoubleSide}
-          />
+          <meshBasicMaterial color="#8b5cf6" transparent opacity={0.2 + Math.sin(time.current * 3 + 1) * 0.1} side={THREE.DoubleSide} />
         </mesh>
-        {/* Bottom glow */}
         <pointLight position={[0, -0.5, 0]} color="#6366f1" intensity={0.8} distance={5} />
-        {/* Edge lights */}
         {[0, 1, 2, 3, 4, 5].map(i => {
           const angle = (i / 6) * Math.PI * 2;
           return (
-            <pointLight
-              key={i}
-              position={[Math.cos(angle) * 3, -0.1, Math.sin(angle) * 3]}
-              color="#4f46e5"
-              intensity={0.3 + Math.sin(time.current * 2 + i) * 0.1}
-              distance={3}
-            />
+            <pointLight key={i} position={[Math.cos(angle) * 3, -0.1, Math.sin(angle) * 3]}
+              color="#4f46e5" intensity={0.3 + Math.sin(time.current * 2 + i) * 0.1} distance={3} />
           );
         })}
       </group>
 
-      {/* Stacked blocks - enhanced materials */}
+      {/* Stacked blocks */}
       {stack.map((block, i) => {
         const isTop = i === stack.length - 1;
         return (
           <mesh key={i} position={block.position} castShadow receiveShadow>
             <boxGeometry args={block.size} />
             <meshPhysicalMaterial
-              color={block.color}
-              emissive={block.emissive}
+              color={block.color} emissive={block.emissive}
               emissiveIntensity={isTop ? 0.25 : 0.1}
-              metalness={0.5}
-              roughness={0.2}
-              clearcoat={1}
-              clearcoatRoughness={0.08}
-              envMapIntensity={1.2}
+              metalness={0.5} roughness={0.2}
+              clearcoat={1} clearcoatRoughness={0.08} envMapIntensity={1.2}
             />
           </mesh>
         );
       })}
 
-      {/* Edge glow lines on top block */}
+      {/* Edge glow on top block */}
       {!gameOver && (
         <lineSegments position={[topBlock.position[0], topBlock.position[1] + BLOCK_HEIGHT / 2 + 0.005, topBlock.position[2]]}>
           <edgesGeometry args={[new THREE.BoxGeometry(topBlock.size[0], 0.01, topBlock.size[2])]} />
@@ -521,68 +428,37 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
         </lineSegments>
       )}
 
-      {/* Ghost guide on top block showing target zone */}
+      {/* Ghost guide */}
       {!gameOver && !autoPlay && (
-        <mesh
-          position={[topBlock.position[0], currentY + 0.001, topBlock.position[2]]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
+        <mesh position={[topBlock.position[0], currentY + 0.001, topBlock.position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[topBlock.size[0], topBlock.size[2]]} />
-          <meshBasicMaterial
-            color={nextPalette.color}
-            transparent
-            opacity={0.08 + Math.sin(time.current * 3) * 0.04}
-          />
+          <meshBasicMaterial color={nextPalette.color} transparent opacity={0.08 + Math.sin(time.current * 3) * 0.04} />
         </mesh>
       )}
 
-      {/* Moving block */}
+      {/* Moving block - NO position prop so React doesn't reset it */}
       {!gameOver && (
-        <mesh ref={movingBlockRef} position={startPos} castShadow>
+        <mesh ref={movingBlockRef} castShadow>
           <boxGeometry args={topBlock.size} />
           <meshPhysicalMaterial
-            color={nextPalette.color}
-            emissive={nextPalette.emissive}
+            color={nextPalette.color} emissive={nextPalette.emissive}
             emissiveIntensity={0.35 + Math.sin(time.current * 6) * 0.1}
-            metalness={0.6}
-            roughness={0.15}
-            clearcoat={1}
-            clearcoatRoughness={0.05}
-            transparent
-            opacity={0.9}
+            metalness={0.6} roughness={0.15}
+            clearcoat={1} clearcoatRoughness={0.05}
+            transparent opacity={0.9}
           />
         </mesh>
       )}
 
-      {/* Trail behind moving block */}
-      {!gameOver && movingBlockRef.current && (
-        <mesh
-          position={[
-            movingBlockRef.current.position.x,
-            movingBlockRef.current.position.y,
-            movingBlockRef.current.position.z,
-          ]}
-        >
-          <boxGeometry args={[topBlock.size[0] * 1.05, BLOCK_HEIGHT * 0.5, topBlock.size[2] * 1.05]} />
-          <meshBasicMaterial color={nextPalette.glow || nextPalette.color} transparent opacity={0.08} />
-        </mesh>
-      )}
-
-      {/* Falling pieces with rotation */}
+      {/* Falling pieces */}
       {fallingPieces.map(piece => (
         <mesh key={piece.id} position={piece.position} rotation={piece.rotation}>
           <boxGeometry args={piece.size} />
-          <meshPhysicalMaterial
-            color={piece.color}
-            metalness={0.3}
-            roughness={0.4}
-            transparent
-            opacity={0.6}
-          />
+          <meshPhysicalMaterial color={piece.color} metalness={0.3} roughness={0.4} transparent opacity={0.6} />
         </mesh>
       ))}
 
-      {/* Particles - multi-type */}
+      {/* Particles */}
       {particles.map(p => (
         <mesh key={p.id} position={p.position} scale={p.size * p.life * (p.type === "ring" ? 1.5 : 1)}>
           {p.type === "trail" ? (
@@ -590,27 +466,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
           ) : (
             <sphereGeometry args={[1, p.type === "ring" ? 8 : 6, p.type === "ring" ? 8 : 6]} />
           )}
-          <meshBasicMaterial
-            color={p.color}
-            transparent
-            opacity={p.life * (p.type === "trail" ? 0.5 : 0.9)}
-          />
+          <meshBasicMaterial color={p.color} transparent opacity={p.life * (p.type === "trail" ? 0.5 : 0.9)} />
         </mesh>
       ))}
 
-      {/* Score - floating */}
+      {/* Score floating */}
       <Float speed={1} rotationIntensity={0} floatIntensity={0.3}>
         <Text
           position={[0, cameraTargetY.current + 2.5, 0]}
-          fontSize={0.8}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-          font={undefined}
-          outlineWidth={0.03}
-          outlineColor="#6366f1"
+          fontSize={0.8} color="#ffffff" anchorX="center" anchorY="middle"
+          font={undefined} outlineWidth={0.03} outlineColor="#6366f1"
         >
-          {effectiveScore}
+          {score}
         </Text>
       </Float>
 
@@ -619,13 +486,8 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
         <Float speed={3} floatIntensity={0.5}>
           <Text
             position={[0, currentY + 1, 0]}
-            fontSize={0.45}
-            color="#fbbf24"
-            anchorX="center"
-            anchorY="middle"
-            font={undefined}
-            outlineWidth={0.02}
-            outlineColor="#f59e0b"
+            fontSize={0.45} color="#fbbf24" anchorX="center" anchorY="middle"
+            font={undefined} outlineWidth={0.02} outlineColor="#f59e0b"
           >
             ✦ PERFECT ✦
           </Text>
@@ -637,13 +499,8 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
         <Float speed={4} floatIntensity={0.4}>
           <Text
             position={[0, currentY + 1.6, 0]}
-            fontSize={0.4}
-            color="#e879f9"
-            anchorX="center"
-            anchorY="middle"
-            font={undefined}
-            outlineWidth={0.015}
-            outlineColor="#d946ef"
+            fontSize={0.4} color="#e879f9" anchorX="center" anchorY="middle"
+            font={undefined} outlineWidth={0.015} outlineColor="#d946ef"
           >
             {comboText}
           </Text>
