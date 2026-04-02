@@ -60,9 +60,9 @@ const getOrderItemsSubtotal = (order: OrderWithDetails): number => {
   return order.order_items.reduce((sum, item) => sum + calcItemRevenue(item), 0);
 };
 
-// Calculate delivery cost (admin_shipping_cost, or fallback to order delivery fee)
+// Calculate delivery cost (respect manual admin_shipping_cost even when it's 0)
 const calcDeliveryCost = (order: OrderWithDetails): number => {
-  if (order.admin_shipping_cost != null && order.admin_shipping_cost !== 0) {
+  if (order.admin_shipping_cost != null) {
     return order.admin_shipping_cost;
   }
   const subtotal = getOrderItemsSubtotal(order);
