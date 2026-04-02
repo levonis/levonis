@@ -168,7 +168,8 @@ export default function StackGame({ onBack }: Props) {
         const result = data as any;
         if (result?.success) {
           setPointsAwarded(result.points_awarded || 0);
-          console.log("end_stack_game success, points:", result.points_awarded);
+          setScore(result.game_score || finalScore);
+          console.log("end_stack_game success, game_score:", result.game_score, "website_points:", result.points_awarded);
         } else {
           console.error("end_stack_game result not success:", result);
         }
