@@ -16,11 +16,18 @@ interface ProductPickerValue {
 
 function ProductPicker({ 
   value, 
-  onChange 
+  onChange,
+  requireStock = false,
 }: { 
   value: ProductPickerValue; 
   onChange: (val: ProductPickerValue, productName?: string, productImage?: string) => void;
+  requireStock?: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [settingStock, setSettingStock] = useState(false);
+  const [manualStock, setManualStock] = useState(10);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
 
