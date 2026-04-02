@@ -82,9 +82,10 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
         if (colors.length === 0) {
           map[p.id] = p.direct_stock != null ? Number(p.direct_stock) : 0;
         } else {
-          // Sum all color stocks
+          // Sum only colors that are available for direct sale
           let total = 0;
           colors.forEach((c: any) => {
+            if (c.available_for_direct_sale === false) return;
             if (c.option_stocks && typeof c.option_stocks === 'object') {
               Object.values(c.option_stocks).forEach((v: any) => { total += Number(v) || 0; });
             } else {
