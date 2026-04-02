@@ -152,6 +152,9 @@ export default function StackGame({ onBack }: Props) {
         return;
       }
       
+      let gameScore = finalScore;
+      let sessionId: string | null = null;
+
       try {
         console.log("end_stack_game calling with:", { token: token.substring(0, 8) + "...", finalScore, perfects, combo });
         const { data, error: rpcError } = await supabase.rpc("end_stack_game", {
@@ -168,51 +171,54 @@ export default function StackGame({ onBack }: Props) {
         const result = data as any;
         if (result?.success) {
           setPointsAwarded(result.points_awarded || 0);
-          setScore(result.game_score || finalScore);
-          console.log("end_stack_game success, game_score:", result.game_score, "website_points:", result.points_awarded);
+          gameScore = result.game_score || finalScore;
+          sessionId = result.session_id || null;
+          setScore(gameScore);
+          console.log("end_stack_game success, game_score:", gameScore, "website_points:", result.points_awarded);
         } else {
           console.error("end_stack_game result not success:", result);
         }
+      } catch (e) {
+        console.error("end_stack_game error:", e);
+      }
 
-        // Update high score
-        try {
-          await supabase.rpc("update_stack_high_score" as any, { p_score: finalScore });
-        } catch (e) {
-          console.error("update_stack_high_score error:", e);
-        }
+      // Update high score with GAME score (not raw blocks)
+      try {
+        await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore });
+      } catch (e) {
+        console.error("update_stack_high_score error:", e);
+      }
 
-        // Check milestone
-        try {
-          const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
-            p_user_id: user.id,
-            p_score: finalScore,
-            p_session_id: null,
-          });
-          if (milestoneResult && (milestoneResult as any).won) {
-            setMilestoneWin(milestoneResult);
-            // Add prize to cart as gift
-            if ((milestoneResult as any).milestone_id) {
-              try {
-                await supabase.rpc("claim_stack_prize_to_cart" as any, {
-                  p_milestone_id: (milestoneResult as any).milestone_id,
-                });
-                queryClient.invalidateQueries({ queryKey: ["cart"] });
-              } catch (cartErr) {
-                console.error("claim_stack_prize_to_cart error:", cartErr);
-              }
+      // Check milestone with GAME score
+      try {
+        const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
+          p_user_id: user.id,
+          p_score: gameScore,
+          p_session_id: sessionId,
+        });
+        if (milestoneResult && (milestoneResult as any).won) {
+          setMilestoneWin(milestoneResult);
+          if ((milestoneResult as any).milestone_id) {
+            try {
+              await supabase.rpc("claim_stack_prize_to_cart" as any, {
+                p_milestone_id: (milestoneResult as any).milestone_id,
+              });
+              queryClient.invalidateQueries({ queryKey: ["cart"] });
+            } catch (cartErr) {
+              console.error("claim_stack_prize_to_cart error:", cartErr);
             }
           }
-        } catch (e) {
-          console.error("check_stack_milestone error:", e);
         }
-
-        // Refresh queries
-        queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
-        queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
-        invalidateBalances();
       } catch (e) {
-        console.error("handleGameOver error:", e);
+        console.error("check_stack_milestone error:", e);
       }
+
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
+      queryClient.invalidateQueries({ queryKey: ["stack-high-score"] });
+      invalidateBalances();
+
       sessionTokenRef.current = null;
       setSessionToken(null);
     },
