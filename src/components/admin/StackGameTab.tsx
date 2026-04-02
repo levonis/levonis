@@ -64,9 +64,24 @@ function ProductPicker({
   const hasColors = colors.length > 0;
   const hasOptions = options.length > 0;
 
+  const getColorStock = (p: any) => {
+    const cols = Array.isArray(p?.colors) ? p.colors : [];
+    let total = 0;
+    for (const c of cols) {
+      if (c?.available_for_direct_sale === false) continue;
+      const stocks = c?.option_stocks;
+      if (stocks && typeof stocks === 'object') {
+        for (const v of Object.values(stocks)) total += Math.max(0, Number(v) || 0);
+      }
+    }
+    return total;
+  };
+
   const getStockDisplay = (p: any, opts?: any[]) => {
     if (p.direct_stock != null && p.direct_stock > 0) return `مباشر: ${p.direct_stock}`;
     if (p.pre_order_stock != null && p.pre_order_stock > 0) return `طلب مسبق: ${p.pre_order_stock}`;
+    const colorStock = getColorStock(p);
+    if (colorStock > 0) return `مباشر (ألوان): ${colorStock}`;
     if (opts && opts.length > 0) {
       const totalOptStock = opts.reduce((sum: number, o: any) => sum + (o.stock_quantity || 0), 0);
       if (totalOptStock > 0) return `خيارات: ${totalOptStock}`;
