@@ -494,7 +494,7 @@ const AdminFinancials = () => {
 
               {/* Sub tabs */}
               <Tabs value={subTab} onValueChange={setSubTab}>
-                <TabsList className="mb-3">
+                <TabsList className="mb-3 bg-sidebar">
                   <TabsTrigger value="general">عام</TabsTrigger>
                   <TabsTrigger value="by-section">حسب القسم الرئيسي</TabsTrigger>
                   <TabsTrigger value="by-product">حسب المنتج</TabsTrigger>
