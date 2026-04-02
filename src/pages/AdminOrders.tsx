@@ -161,7 +161,7 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd))
+          order_items!order_items_order_id_fkey(id, product_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, is_gift, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd))
         `)
         .order('created_at', { ascending: false });
 
@@ -250,8 +250,8 @@ const AdminOrders = () => {
           <hr/>
           <h3>المنتجات:</h3>
           <ul>
-            ${order.order_items?.map((item: any) => `
-              <li>${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${item.total_price?.toLocaleString()}</li>
+             ${order.order_items?.map((item: any) => `
+               <li>${item.is_gift ? '🎁 ' : ''}${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${item.total_price?.toLocaleString()}</li>
             `).join('') || ''}
           </ul>
           <hr/>

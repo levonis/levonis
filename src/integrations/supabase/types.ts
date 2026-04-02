@@ -4892,6 +4892,7 @@ export type Database = {
           custom_request_id: string | null
           customer_notes: string | null
           id: string
+          is_gift: boolean
           order_id: string
           product_id: string | null
           product_name: string
@@ -4914,6 +4915,7 @@ export type Database = {
           custom_request_id?: string | null
           customer_notes?: string | null
           id?: string
+          is_gift?: boolean
           order_id: string
           product_id?: string | null
           product_name: string
@@ -4936,6 +4938,7 @@ export type Database = {
           custom_request_id?: string | null
           customer_notes?: string | null
           id?: string
+          is_gift?: boolean
           order_id?: string
           product_id?: string | null
           product_name?: string

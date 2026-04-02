@@ -842,6 +842,7 @@ const Cart = () => {
             selected_option: itemOption?.name_ar || null,
             product_name: productName,
             product_name_ar: productNameAr,
+            is_gift: !!(item as any).is_gift,
           };
         });
 
@@ -1168,6 +1169,7 @@ const Cart = () => {
             shipping_option_name_ar: (item as any).shipping_option_name_ar || null,
             product_name: productName,
             product_name_ar: productNameAr,
+            is_gift: !!(item as any).is_gift,
           };
         });
 
