@@ -17,7 +17,6 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 interface BatchProfitAnalysisProps {
-  deliveredDirectOrders: any[];
   usdToIqdRate: number;
 }
 
@@ -34,7 +33,7 @@ const calcItemRevenue = (item: any): number => {
   return (item.unit_price || 0) * (item.quantity || 1);
 };
 
-const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfitAnalysisProps) => {
+const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
@@ -49,6 +48,25 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     batch_quantity: 0,
     batch_cost: 0,
     notes: '',
+  });
+
+  // Fetch ALL non-cancelled orders independently (not filtered by date range)
+  const { data: allOrders = [] } = useQuery({
+    queryKey: ['batch-all-orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *, order_type,
+          profile:profiles!orders_user_id_fkey_profiles(username, full_name),
+          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id)
+        `)
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch batches ordered by creation date ascending (oldest first for sequential counting)
@@ -177,7 +195,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     // 1. Collect all sold items per product_id AND per bundle_id from delivered direct orders
     const soldByEntity: Record<string, SoldItem[]> = {};
     
-    deliveredDirectOrders.forEach((order: any) => {
+    allOrders.forEach((order: any) => {
       order.order_items?.forEach((item: any) => {
         // Track by bundle_id if present, otherwise by product_id
         const key = item.bundle_id ? `bundle_${item.bundle_id}` : (item.product_id ? item.product_id : null);
@@ -285,7 +303,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
         overflowQty: hasStockError ? totalSoldQty - totalBatchQty : 0,
       };
     });
-  }, [batches, deliveredDirectOrders]);
+  }, [batches, allOrders]);
 
   return (
     <div className="space-y-4">
