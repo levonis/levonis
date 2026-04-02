@@ -38,6 +38,8 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ batch_quantity: number; batch_cost: number }>({ batch_quantity: 0, batch_cost: 0 });
   const [productSearch, setProductSearch] = useState('');
   const [form, setForm] = useState({
     product_id: '' as string,
