@@ -96,7 +96,36 @@ const Cart = () => {
     enabled: !!user?.id
   });
 
-  // جلب رصيد المحفظة
+  // جلب طرق التوصيل
+  const { data: deliveryMethods = [] } = useQuery({
+    queryKey: ['delivery-methods'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_methods').select('*').eq('is_active', true).order('display_order');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // جلب استثناءات المحافظات للطريقة المختارة
+  const { data: govExceptions = [] } = useQuery({
+    queryKey: ['delivery-gov-exceptions-cart', selectedDeliveryMethod],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_governorate_exceptions').select('*').eq('delivery_method_key', selectedDeliveryMethod);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // جلب استثناءات الأقسام للطريقة المختارة
+  const { data: catExceptions = [] } = useQuery({
+    queryKey: ['delivery-cat-exceptions-cart', selectedDeliveryMethod],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_category_exceptions').select('*').eq('delivery_method_key', selectedDeliveryMethod);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: wallet } = useQuery({
     queryKey: ['wallet', user?.id],
     queryFn: async () => {
