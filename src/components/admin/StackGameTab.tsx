@@ -439,38 +439,57 @@ export default function StackGameTab() {
               <p className="text-[10px] text-muted-foreground">0 = مجاني</p>
             </div>
 
-            <hr className="border-border/30" />
-            <h4 className="text-xs font-bold font-mono flex items-center gap-1">
-              <Star className="h-3 w-3 text-primary" /> إعدادات نقاط الموقع
-            </h4>
+            {/* Game Points Section */}
+            <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-2">
+              <h4 className="text-xs font-bold font-mono flex items-center gap-1">
+                <Gamepad2 className="h-3.5 w-3.5 text-accent-foreground" /> نقاط اللعبة (السكور)
+              </h4>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                نقاط اللعبة هي السكور الداخلي الذي يظهر للاعب أثناء اللعب. كل قطعة يضعها = 1 نقطة لعبة. هذه النقاط تُستخدم لتحديد الترتيب في قائمة المتصدرين وتحقيق الأهداف المرحلية.
+              </p>
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Star className="h-3.5 w-3.5" /> نقاط الموقع لكل قطعة</label>
-              <Input type="number" min={0} value={s.points_per_block} onChange={(e) => update("points_per_block", parseInt(e.target.value) || 0)} className="w-32" />
-              <p className="text-[10px] text-muted-foreground">عدد نقاط الموقع التي يكسبها اللاعب عن كل قطعة يضعها</p>
+            {/* Website Points Section */}
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+              <h4 className="text-xs font-bold font-mono flex items-center gap-1">
+                <Star className="h-3.5 w-3.5 text-primary" /> نقاط الموقع (المكافآت)
+              </h4>
+              <p className="text-[10px] text-muted-foreground">نقاط الموقع تُضاف لرصيد المستخدم ويمكنه استبدالها بتذاكر أو مكافآت</p>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1"><Star className="h-3 w-3" /> نقاط الموقع لكل قطعة</label>
+                <Input type="number" min={0} value={s.points_per_block} onChange={(e) => update("points_per_block", parseInt(e.target.value) || 0)} className="w-32" />
+                <p className="text-[10px] text-muted-foreground">كل قطعة يضعها اللاعب = هذا العدد من نقاط الموقع</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1"><Zap className="h-3 w-3" /> مكافأة المثالي (نقاط موقع)</label>
+                <Input type="number" min={0} value={s.perfect_bonus_points} onChange={(e) => update("perfect_bonus_points", parseInt(e.target.value) || 0)} className="w-32" />
+                <p className="text-[10px] text-muted-foreground">نقاط موقع إضافية لكل وضع مثالي (Perfect)</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1"><Trophy className="h-3 w-3" /> مضاعف الكومبو</label>
+                <Input type="number" min={0} step={0.1} value={s.combo_bonus_multiplier} onChange={(e) => update("combo_bonus_multiplier", parseFloat(e.target.value) || 0)} className="w-32" />
+                <p className="text-[10px] text-muted-foreground">نقاط موقع إضافية = أعلى كومبو × المضاعف</p>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> مكافأة التكديس المثالي (نقاط موقع)</label>
-              <Input type="number" min={0} value={s.perfect_bonus_points} onChange={(e) => update("perfect_bonus_points", parseInt(e.target.value) || 0)} className="w-32" />
-              <p className="text-[10px] text-muted-foreground">نقاط إضافية عند وضع القطعة بشكل مثالي</p>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> مضاعف الكومبو</label>
-              <Input type="number" min={0} step={0.1} value={s.combo_bonus_multiplier} onChange={(e) => update("combo_bonus_multiplier", parseFloat(e.target.value) || 0)} className="w-32" />
-              <p className="text-[10px] text-muted-foreground">نقاط إضافية = أعلى كومبو × المضاعف</p>
-            </div>
+
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">الحد اليومي (اتركه فارغ = بدون حد)</label>
               <Input type="number" min={0} value={s.max_daily_plays ?? ""} onChange={(e) => update("max_daily_plays", e.target.value ? parseInt(e.target.value) : null)} placeholder="بدون حد" />
             </div>
 
             {/* Simulation Preview */}
-            <div className="bg-muted/30 rounded-lg p-3 text-xs font-mono space-y-1" dir="rtl">
-              <p className="font-bold text-primary mb-1">📊 محاكاة نقاط الموقع:</p>
-              <p>سكور 10 قطع (بدون مثالي) = {10 * s.points_per_block} نقطة</p>
-              <p>سكور 20 قطعة + 5 مثالي + كومبو 3 = {20 * s.points_per_block + 5 * s.perfect_bonus_points + Math.floor(3 * s.combo_bonus_multiplier)} نقطة</p>
-              <p>سكور 50 قطعة + 20 مثالي + كومبو 10 = {50 * s.points_per_block + 20 * s.perfect_bonus_points + Math.floor(10 * s.combo_bonus_multiplier)} نقطة</p>
-              <p>رسوم الدخول: {s.entry_fee_tickets > 0 ? `${s.entry_fee_tickets} تذكرة` : "مجاني"}</p>
+            <div className="bg-muted/30 rounded-lg p-3 text-xs font-mono space-y-1.5" dir="rtl">
+              <p className="font-bold text-primary mb-1">📊 محاكاة:</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-muted-foreground">10 قطع عادية:</span>
+                <span>🎮 سكور 10 → ⭐ {10 * s.points_per_block} نقطة موقع</span>
+                <span className="text-muted-foreground">20 قطعة + 5 مثالي:</span>
+                <span>🎮 سكور 20 → ⭐ {20 * s.points_per_block + 5 * s.perfect_bonus_points} نقطة موقع</span>
+                <span className="text-muted-foreground">50 قطعة + 20 مثالي + كومبو 10:</span>
+                <span>🎮 سكور 50 → ⭐ {50 * s.points_per_block + 20 * s.perfect_bonus_points + Math.floor(10 * s.combo_bonus_multiplier)} نقطة موقع</span>
+              </div>
+              <p className="text-muted-foreground pt-1">رسوم الدخول: {s.entry_fee_tickets > 0 ? `${s.entry_fee_tickets} تذكرة` : "مجاني"}</p>
             </div>
           </div>
 
