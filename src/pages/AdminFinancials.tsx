@@ -697,20 +697,21 @@ const AdminFinancials = () => {
                   <div className="rounded-lg border overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">رقم الطلب</TableHead>
-                          <TableHead className="text-right">المستخدم</TableHead>
-                          <TableHead className="text-right">المنتجات</TableHead>
-                          <TableHead className="text-right">المبلغ</TableHead>
-                          {mainTab === 'preorder' && <TableHead className="text-right">المدفوع مقدماً</TableHead>}
-                          {mainTab === 'preorder' && <TableHead className="text-right">المتبقي</TableHead>}
-                          {mainTab === 'preorder' && <TableHead className="text-right">المتبقي + التوصيل</TableHead>}
-                          <TableHead className="text-right">تكلفة التوصيل</TableHead>
-                          <TableHead className="text-right">تكلفة المنتج</TableHead>
-                          <TableHead className="text-right">العمولة</TableHead>
-                          <TableHead className="text-right">الحالة</TableHead>
-                          <TableHead className="text-center">التاريخ</TableHead>
-                          <TableHead className="text-center">إجراءات</TableHead>
+                         <TableRow>
+                          <TableHead className="text-right whitespace-nowrap">رقم الطلب</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">المستخدم</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">المنتجات</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">المبلغ</TableHead>
+                          {mainTab === 'preorder' && <TableHead className="text-right whitespace-nowrap">المدفوع مقدماً</TableHead>}
+                          {mainTab === 'preorder' && <TableHead className="text-right whitespace-nowrap">المتبقي</TableHead>}
+                          {mainTab === 'preorder' && <TableHead className="text-right whitespace-nowrap">المتبقي + التوصيل</TableHead>}
+                          {mainTab === 'direct' && <TableHead className="text-right whitespace-nowrap">المجموع بدون التوصيل</TableHead>}
+                          <TableHead className="text-right whitespace-nowrap">تكلفة التوصيل</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">تكلفة المنتج</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">العمولة</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">الحالة</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">التاريخ</TableHead>
+                          <TableHead className="text-center whitespace-nowrap">إجراءات</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
