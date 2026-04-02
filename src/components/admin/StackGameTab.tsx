@@ -59,6 +59,16 @@ function ProductPicker({
   const hasColors = colors.length > 0;
   const hasOptions = options.length > 0;
 
+  const getStockDisplay = (p: any, opts?: any[]) => {
+    if (p.direct_stock != null && p.direct_stock > 0) return `مباشر: ${p.direct_stock}`;
+    if (p.pre_order_stock != null && p.pre_order_stock > 0) return `طلب مسبق: ${p.pre_order_stock}`;
+    if (opts && opts.length > 0) {
+      const totalOptStock = opts.reduce((sum: number, o: any) => sum + (o.stock_quantity || 0), 0);
+      if (totalOptStock > 0) return `خيارات: ${totalOptStock}`;
+    }
+    return "مخزون: —";
+  };
+
   if (!open && !value.product_id) {
     return (
       <Button variant="outline" size="sm" className="text-xs gap-1 w-full" onClick={() => setOpen(true)}>
