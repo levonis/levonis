@@ -58,6 +58,8 @@ const PERFECT_THRESHOLD = 0.1;
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
+  debugScoreOverride?: number | null;
+  speedMultiplier?: number;
 }
 
 // Sound system
@@ -199,7 +201,7 @@ class TowerAudio {
 
 const audioSystem = new TowerAudio();
 
-export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier = 1 }: Props) {
   const { camera } = useThree();
   // Use ref to always have latest callback (avoids stale closure in R3F)
   const onGameOverRef = useRef(onGameOver);
@@ -241,9 +243,10 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
     };
   }, []);
 
+  const effectiveScore = debugScoreOverride ?? score;
   useEffect(() => {
-    setAudioStage(getStage(score));
-  }, [score, setAudioStage]);
+    setAudioStage(getStage(effectiveScore));
+  }, [effectiveScore, setAudioStage]);
 
   const getPalette = (index: number) => PALETTES[index % PALETTES.length];
   const topBlock = stack[stack.length - 1];
@@ -413,11 +416,11 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       if (mesh && !hasPlaced.current) {
         const range = 4;
         if (axis === "x") {
-          mesh.position.x += movingDir.current * speed.current * delta;
+          mesh.position.x += movingDir.current * speed.current * speedMultiplier * delta;
           if (mesh.position.x > range) movingDir.current = -1;
           if (mesh.position.x < -range) movingDir.current = 1;
         } else {
-          mesh.position.z += movingDir.current * speed.current * delta;
+          mesh.position.z += movingDir.current * speed.current * speedMultiplier * delta;
           if (mesh.position.z > range) movingDir.current = -1;
           if (mesh.position.z < -range) movingDir.current = 1;
         }
@@ -500,7 +503,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   return (
     <>
       {/* Dynamic Environment */}
-      <StackEnvironment score={score} cameraY={cameraTargetY.current} />
+      <StackEnvironment score={effectiveScore} cameraY={cameraTargetY.current} />
       
       {/* Lighting */}
       <directionalLight position={[5, 12, 5]} intensity={0.8} color="#ffffff" castShadow shadow-mapSize={2048} />

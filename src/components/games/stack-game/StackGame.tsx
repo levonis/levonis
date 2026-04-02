@@ -3,15 +3,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2 } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Bug } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
+import { getStage } from "./StackEnvironment";
 
 interface Props {
   onBack: () => void;
 }
 
 export default function StackGame({ onBack }: Props) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [gameState, setGameState] = useState<"menu" | "playing" | "gameover">("menu");
   const [sessionToken, setSessionToken] = useState<string | null>(null);
@@ -27,6 +28,11 @@ export default function StackGame({ onBack }: Props) {
   const [liveScore, setLiveScore] = useState(0);
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
+
+  // Admin debug mode
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugScore, setDebugScore] = useState<number | null>(null);
+  const [debugSpeed, setDebugSpeed] = useState(1);
 
   const { data: settings } = useQuery({
     queryKey: ["stack-game-settings"],
@@ -244,17 +250,33 @@ export default function StackGame({ onBack }: Props) {
     setLivePerfects(p);
   }, []);
 
+  const STAGE_PRESETS = [
+    { label: "🏙️ مدينة", score: 10 },
+    { label: "☁️ غيوم", score: 35 },
+    { label: "🌐 غلاف", score: 60 },
+    { label: "🌌 فضاء", score: 85 },
+    { label: "🌙 قمر", score: 150 },
+    { label: "🪐 مشتري", score: 300 },
+    { label: "☀️ شمس", score: 700 },
+    { label: "🌀 مجرات", score: 2000 },
+  ];
+
   if (gameState === "playing") {
     return (
       <div className="fixed inset-0 z-50 bg-black">
-        <StackGameCanvas onGameOver={handleGameOver} onScoreUpdate={handleScoreUpdate} />
+        <StackGameCanvas
+          onGameOver={handleGameOver}
+          onScoreUpdate={handleScoreUpdate}
+          debugScoreOverride={debugMode ? debugScore : null}
+          speedMultiplier={debugMode ? debugSpeed : 1}
+        />
         {/* Live Score Overlay */}
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/30">
                 <span className="text-[10px] text-muted-foreground block">النقاط</span>
-                <span className="text-lg font-bold text-primary font-mono">{liveScore}</span>
+                <span className="text-lg font-bold text-primary font-mono">{debugMode && debugScore !== null ? debugScore : liveScore}</span>
               </div>
               {liveCombo >= 2 && (
                 <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-yellow-500/30 animate-scale-in">
@@ -272,6 +294,87 @@ export default function StackGame({ onBack }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Admin Debug Toggle */}
+        {isAdmin && !debugMode && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setDebugMode(true); }}
+            className="absolute bottom-4 left-4 z-20 bg-black/70 backdrop-blur-sm rounded-full p-2 border border-primary/30 pointer-events-auto"
+          >
+            <Bug className="h-5 w-5 text-primary" />
+          </button>
+        )}
+
+        {/* Admin Debug Panel */}
+        {isAdmin && debugMode && (
+          <div
+            className="absolute bottom-0 left-0 right-0 z-20 bg-black/85 backdrop-blur-md border-t border-primary/30 p-3 pointer-events-auto"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-primary font-mono font-bold">🛠 وضع الاختبار</span>
+              <button onClick={() => { setDebugMode(false); setDebugScore(null); setDebugSpeed(1); }} className="text-[10px] text-muted-foreground hover:text-foreground">
+                إغلاق ✕
+              </button>
+            </div>
+
+            {/* Stage info */}
+            <div className="text-[10px] text-muted-foreground mb-2">
+              المرحلة الحالية: <span className="text-primary font-bold">{getStage(debugScore ?? liveScore)}</span>
+            </div>
+
+            {/* Score slider */}
+            <div className="mb-2">
+              <label className="text-[10px] text-muted-foreground block mb-1">السكور: <span className="text-primary font-bold">{debugScore ?? liveScore}</span></label>
+              <input
+                type="range"
+                min={0}
+                max={5000}
+                step={1}
+                value={debugScore ?? liveScore}
+                onChange={(e) => setDebugScore(Number(e.target.value))}
+                className="w-full h-1.5 accent-primary"
+              />
+            </div>
+
+            {/* Stage presets */}
+            <div className="flex gap-1 flex-wrap mb-2">
+              {STAGE_PRESETS.map(p => (
+                <button
+                  key={p.score}
+                  onClick={() => setDebugScore(p.score)}
+                  className={`text-[9px] px-2 py-1 rounded font-mono border transition-colors ${
+                    debugScore === p.score
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-black/50 text-muted-foreground border-border/50 hover:border-primary/50"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Speed multiplier */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground">السرعة:</span>
+              {[1, 2, 3, 5, 10].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setDebugSpeed(s)}
+                  className={`text-[10px] px-2 py-1 rounded font-mono font-bold border transition-colors ${
+                    debugSpeed === s
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-black/50 text-muted-foreground border-border/50 hover:border-primary/50"
+                  }`}
+                >
+                  {s}x
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
