@@ -315,17 +315,29 @@ const Cart = () => {
   })();
 
   const getDeliveryFee = (governorate: string | null) => {
+    // Pickup = always free
+    if (selectedDeliveryMethod === 'pickup') return 0;
     // Free delivery for 2nd+ direct sale orders before 5PM
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
-    if (hasPrinterItems) return 12000;
-    if (!governorate) return 6000;
-    if (governorate.includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
-      return 5000;
-    }
-    if (governorate.includes('بابل')) {
-      return 4000;
-    }
-    return 6000;
+
+    // Get base price from selected method
+    const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+    const basePrice = method ? Number(method.base_price) : 5000;
+
+    // Check category exceptions first (higher priority)
+    const itemCategoryIds = items.map(item => item.products?.category_id).filter(Boolean);
+    const matchingCatExc = catExceptions.find((exc: any) => {
+      const matchesCategory = itemCategoryIds.includes(exc.category_id);
+      const matchesGov = !exc.governorate || exc.governorate === governorate;
+      return matchesCategory && matchesGov;
+    });
+    if (matchingCatExc) return Number(matchingCatExc.delivery_price);
+
+    // Check governorate exceptions
+    const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
+    if (matchingGovExc) return Number(matchingGovExc.delivery_price);
+
+    return basePrice;
   };
 
   // Use selected address governorate first, fallback to profile governorate
