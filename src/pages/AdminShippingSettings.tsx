@@ -302,6 +302,17 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
             placeholder="12000"
           />
         </div>
+        <div className="w-20 space-y-1">
+          <Label className="text-[10px] text-muted-foreground">قطع/توصيل</Label>
+          <Input
+            type="number"
+            min={1}
+            value={newUnits || ''}
+            onChange={(e) => setNewUnits(Number(e.target.value) || 1)}
+            className="h-8 text-xs bg-background/50 border-white/10"
+            placeholder="1"
+          />
+        </div>
         <Button
           size="sm"
           className="h-8 px-3 gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-white"

@@ -324,16 +324,49 @@ const Cart = () => {
     const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
     const basePrice = method ? Number(method.base_price) : 5000;
 
-    // Check category exceptions first (higher priority)
-    const itemCategoryIds = items.map(item => item.products?.category_id).filter(Boolean);
-    const matchingCatExc = catExceptions.find((exc: any) => {
-      const matchesCategory = itemCategoryIds.includes(exc.category_id);
-      const matchesGov = !exc.governorate || exc.governorate === governorate;
-      return matchesCategory && matchesGov;
+    // Group items by category_id and sum quantities
+    const categoryQty: Record<string, number> = {};
+    items.forEach(item => {
+      const catId = item.products?.category_id;
+      if (catId) {
+        categoryQty[catId] = (categoryQty[catId] || 0) + (item.quantity || 1);
+      }
     });
-    if (matchingCatExc) return Number(matchingCatExc.delivery_price);
 
-    // Check governorate exceptions
+    // Calculate category-based delivery fees
+    let totalCatFee = 0;
+    const handledCategories = new Set<string>();
+
+    for (const exc of catExceptions as any[]) {
+      const catId = exc.category_id;
+      if (handledCategories.has(catId)) continue;
+      if (!categoryQty[catId]) continue;
+      const matchesGov = !exc.governorate || exc.governorate === governorate;
+      if (!matchesGov) continue;
+
+      handledCategories.add(catId);
+      const qty = categoryQty[catId];
+      const unitsPerDelivery = exc.units_per_delivery || 1;
+      const deliveryCount = Math.ceil(qty / unitsPerDelivery);
+      totalCatFee += Number(exc.delivery_price) * deliveryCount;
+    }
+
+    // Check if there are items NOT covered by category exceptions
+    const hasUncoveredItems = Object.keys(categoryQty).some(catId => !handledCategories.has(catId));
+    // Also count items with no category
+    const hasNoCategoryItems = items.some(item => !item.products?.category_id);
+
+    if (handledCategories.size > 0) {
+      // If there are uncovered items, add base/gov delivery for them
+      if (hasUncoveredItems || hasNoCategoryItems) {
+        const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
+        const uncoveredFee = matchingGovExc ? Number(matchingGovExc.delivery_price) : basePrice;
+        return totalCatFee + uncoveredFee;
+      }
+      return totalCatFee;
+    }
+
+    // No category exceptions matched, use governorate or base
     const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
     if (matchingGovExc) return Number(matchingGovExc.delivery_price);
 
