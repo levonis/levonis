@@ -284,19 +284,45 @@ const AdminOrders = () => {
     mutationFn: async ({ id, values, previousStatus, order }: { id: string; values: any; previousStatus?: string; order?: any }) => {
       // If changing to cancelled, use cancel_order RPC to restore stock
       if (values.status === 'cancelled' && previousStatus !== 'cancelled') {
-        const { data: cancelResult, error: cancelError } = await supabase.rpc('cancel_order', {
-          p_order_id: id,
-          p_cancelled_by: 'admin'
-        });
-        if (cancelError) throw cancelError;
-        const result = cancelResult as any;
-        if (result && !result.success) throw new Error(result.error || 'فشل إلغاء الطلب');
+        try {
+          const { data: cancelResult, error: cancelError } = await supabase.rpc('cancel_order', {
+            p_order_id: id,
+            p_cancelled_by: 'admin'
+          });
+          if (cancelError) {
+            console.error('cancel_order RPC error:', cancelError);
+            throw cancelError;
+          }
+          const result = cancelResult as any;
+          if (result && !result.success) {
+            console.error('cancel_order RPC failed:', result.error);
+            throw new Error(result.error || 'فشل إلغاء الطلب');
+          }
+        } catch (rpcError) {
+          console.error('cancel_order exception:', rpcError);
+          throw rpcError;
+        }
 
         // Apply any extra fields from values (like timestamps, notes) that cancel_order doesn't set
         const extraFields = { ...values };
         delete extraFields.status; // Already set by RPC
         if (Object.keys(extraFields).length > 0) {
           await supabase.from('orders').update(extraFields).eq('id', id);
+        }
+      } else if (values.status === 'confirmed' && previousStatus === 'cancelled') {
+        // Re-confirm a cancelled order: update status first, then re-deduct stock
+        const { error } = await supabase
+          .from('orders')
+          .update({ ...values, stock_deducted: false })
+          .eq('id', id);
+        if (error) throw error;
+
+        // Re-deduct stock since order is being re-activated
+        if (order?.order_type === 'direct') {
+          const { error: stockError } = await supabase.rpc('deduct_order_stock', { p_order_id: id });
+          if (stockError) {
+            console.error('Stock re-deduction error:', stockError);
+          }
         }
       } else {
         const { error } = await supabase
