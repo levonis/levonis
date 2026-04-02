@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Text, Float } from "@react-three/drei";
-import StackEnvironment, { getStage } from "./StackEnvironment";
+import { getStage } from "./StackEnvironment";
 import { useStageAudio } from "./StackStageAudio";
 import { getTowerAudio, disposeTowerAudio } from "./TowerAudioPro";
 
@@ -10,7 +10,6 @@ interface Block {
   position: [number, number, number];
   size: [number, number, number];
   color: string;
-  emissive: string;
 }
 
 interface FallingPiece {
@@ -23,38 +22,17 @@ interface FallingPiece {
   rotVel: [number, number, number];
 }
 
-interface Particle {
-  id: number;
-  position: [number, number, number];
-  velocity: [number, number, number];
-  color: string;
-  life: number;
-  maxLife: number;
-  size: number;
-  type: "spark" | "ring" | "trail";
-}
-
-const PALETTES = [
-  { color: "#6366f1", emissive: "#4f46e5", glow: "#818cf8" },
-  { color: "#8b5cf6", emissive: "#7c3aed", glow: "#a78bfa" },
-  { color: "#a78bfa", emissive: "#8b5cf6", glow: "#c4b5fd" },
-  { color: "#c084fc", emissive: "#a855f7", glow: "#d8b4fe" },
-  { color: "#e879f9", emissive: "#d946ef", glow: "#f0abfc" },
-  { color: "#f472b6", emissive: "#ec4899", glow: "#f9a8d4" },
-  { color: "#fb7185", emissive: "#f43f5e", glow: "#fda4af" },
-  { color: "#f97316", emissive: "#ea580c", glow: "#fb923c" },
-  { color: "#fbbf24", emissive: "#f59e0b", glow: "#fcd34d" },
-  { color: "#34d399", emissive: "#10b981", glow: "#6ee7b7" },
-  { color: "#22d3ee", emissive: "#06b6d4", glow: "#67e8f9" },
-  { color: "#60a5fa", emissive: "#3b82f6", glow: "#93c5fd" },
-];
-
-const BLOCK_HEIGHT = 0.25;
-const INITIAL_SIZE: [number, number, number] = [2.5, BLOCK_HEIGHT, 2.5];
+const BLOCK_HEIGHT = 0.2;
+const INITIAL_SIZE: [number, number, number] = [3, BLOCK_HEIGHT, 3];
 const INITIAL_SPEED = 3;
 const SPEED_INCREMENT = 0.12;
 const MAX_SPEED = 10;
 const PERFECT_THRESHOLD = 0.1;
+
+function getTileColor(index: number): string {
+  const hue = ((index + 1) * 5) % 360;
+  return `hsl(${hue}, 50%, 50%)`;
+}
 
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
@@ -67,11 +45,11 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
   const { camera } = useThree();
   const onGameOverRef = useRef(onGameOver);
   onGameOverRef.current = onGameOver;
+
   const [stack, setStack] = useState<Block[]>([
-    { position: [0, 0, 0], size: [...INITIAL_SIZE], color: PALETTES[0].color, emissive: PALETTES[0].emissive },
+    { position: [0, 0, 0], size: [...INITIAL_SIZE], color: getTileColor(0) },
   ]);
   const [fallingPieces, setFallingPieces] = useState<FallingPiece[]>([]);
-  const [particles, setParticles] = useState<Particle[]>([]);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -79,21 +57,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
   const [gameOver, setGameOver] = useState(false);
   const [showPerfect, setShowPerfect] = useState(false);
   const [comboText, setComboText] = useState("");
-  const [shakeIntensity, setShakeIntensity] = useState(0);
+  const [perfectEffects, setPerfectEffects] = useState<{ id: number; y: number; size: [number, number]; time: number }[]>([]);
 
   const movingBlockRef = useRef<THREE.Mesh>(null);
   const movingDir = useRef(1);
   const currentAxis = useRef<"x" | "z">("x");
   const speed = useRef(INITIAL_SPEED);
   const fallingIdCounter = useRef(0);
-  const particleIdCounter = useRef(0);
+  const perfectEffectId = useRef(0);
   const cameraTargetY = useRef(3);
   const hasPlaced = useRef(false);
-  const perfectTextOpacity = useRef(0);
-  const comboTextOpacity = useRef(0);
   const time = useRef(0);
   const autoPlayTimer = useRef(0);
-  // Track if we already initialized the moving block position for this "turn"
   const blockSpawned = useRef(false);
 
   // Audio systems
@@ -111,41 +86,9 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
     setAudioStage(getStage(score));
   }, [score, setAudioStage]);
 
-  const getPalette = (index: number) => PALETTES[index % PALETTES.length];
   const topBlock = stack[stack.length - 1];
   const currentY = stack.length * BLOCK_HEIGHT;
   const axis = currentAxis.current;
-
-  const spawnParticles = useCallback((pos: [number, number, number], color: string, count: number, type: "spark" | "ring" | "trail" = "spark") => {
-    const newParticles: Particle[] = [];
-    for (let i = 0; i < count; i++) {
-      if (type === "ring") {
-        const angle = (i / count) * Math.PI * 2;
-        const ringSpeed = 3 + Math.random() * 2;
-        newParticles.push({
-          id: particleIdCounter.current++,
-          position: [...pos],
-          velocity: [Math.cos(angle) * ringSpeed, Math.random() * 1.5, Math.sin(angle) * ringSpeed],
-          color, life: 1, maxLife: 0.8 + Math.random() * 0.4, size: 0.03 + Math.random() * 0.04, type,
-        });
-      } else if (type === "trail") {
-        newParticles.push({
-          id: particleIdCounter.current++,
-          position: [pos[0] + (Math.random() - 0.5) * 2, pos[1], pos[2] + (Math.random() - 0.5) * 2],
-          velocity: [0, 2 + Math.random() * 3, 0],
-          color, life: 1, maxLife: 1.5 + Math.random() * 1, size: 0.02 + Math.random() * 0.03, type,
-        });
-      } else {
-        newParticles.push({
-          id: particleIdCounter.current++,
-          position: [...pos],
-          velocity: [(Math.random() - 0.5) * 5, Math.random() * 4 + 1.5, (Math.random() - 0.5) * 5],
-          color, life: 1, maxLife: 0.8 + Math.random() * 0.6, size: 0.03 + Math.random() * 0.06, type,
-        });
-      }
-    }
-    setParticles(prev => [...prev, ...newParticles]);
-  }, []);
 
   const placeBlock = useCallback(() => {
     if (gameOver || hasPlaced.current) return;
@@ -169,14 +112,12 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
     if (overlap <= 0) {
       setGameOver(true);
       audioSystem.playGameOver();
-      setShakeIntensity(0.4);
-      spawnParticles([pos.x, currentY, pos.z], "#ff4444", 40, "spark");
       onGameOverRef.current(score, perfectCount, maxCombo);
       return;
     }
 
     const isPerfect = Math.abs(delta) < PERFECT_THRESHOLD;
-    const palette = getPalette(stack.length);
+    const tileColor = getTileColor(stack.length);
 
     let newSize: [number, number, number] = [...prevSize];
     let newPos: [number, number, number] = [...prevPos];
@@ -192,16 +133,17 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       newPerfects = perfectCount + 1;
       newMaxCombo = Math.max(maxCombo, newCombo);
       setShowPerfect(true);
-      perfectTextOpacity.current = 1;
       if (newCombo >= 3) {
         setComboText(`${newCombo}x COMBO!`);
-        comboTextOpacity.current = 1;
       }
       setTimeout(() => setShowPerfect(false), 1500);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 20, "ring");
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.glow || palette.color, 15, "trail");
-      spawnParticles([newPos[0], currentY, newPos[2]], "#fbbf24", 25, "spark");
-      setShakeIntensity(0.06);
+      // Add perfect border effect
+      setPerfectEffects(prev => [...prev, {
+        id: perfectEffectId.current++,
+        y: currentY,
+        size: [prevSize[0], prevSize[2]],
+        time: 0,
+      }]);
     } else {
       const newCenter = prevCenter + delta / 2;
       newSize[axisIdx] = overlap;
@@ -222,20 +164,17 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
         ...prev,
         {
           id: fallingIdCounter.current++,
-          position: fallingPos, size: fallingSize, color: palette.color,
+          position: fallingPos, size: fallingSize, color: tileColor,
           velocity: vel, rotation: [0, 0, 0],
           rotVel: [(Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5],
         },
       ]);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 15, "spark");
-      setShakeIntensity(0.12);
     }
 
     audioSystem.playPlace(isPerfect, newCombo);
 
     const newBlock: Block = {
-      position: newPos, size: newSize,
-      color: palette.color, emissive: palette.emissive,
+      position: newPos, size: newSize, color: tileColor,
     };
 
     setStack(prev => [...prev, newBlock]);
@@ -250,14 +189,12 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
     speed.current = Math.min(INITIAL_SPEED + stack.length * SPEED_INCREMENT, MAX_SPEED);
     movingDir.current = 1;
     cameraTargetY.current = currentY + 2.5;
-
-    // Mark that we need to spawn a new block at the start position
     blockSpawned.current = false;
 
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
-  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, spawnParticles, audioSystem]);
+  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, audioSystem]);
 
   useEffect(() => {
     if (autoPlay) return;
@@ -271,30 +208,25 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
     };
   }, [placeBlock, autoPlay]);
 
-  const ringGeo = useMemo(() => new THREE.RingGeometry(1.8, 2.2, 64), []);
-  const baseRingGeo = useMemo(() => new THREE.RingGeometry(2.6, 2.9, 64), []);
-
   useFrame((state, delta) => {
     time.current += delta;
 
     const mesh = movingBlockRef.current;
     if (mesh && !gameOver && !hasPlaced.current) {
-      // Initialize position when a new block spawns
       if (!blockSpawned.current) {
         const newAxis = currentAxis.current;
         const tb = stack[stack.length - 1];
         const cy = stack.length * BLOCK_HEIGHT;
         if (newAxis === "x") {
-          mesh.position.set(-4, cy, tb.position[2]);
+          mesh.position.set(-5, cy, tb.position[2]);
         } else {
-          mesh.position.set(tb.position[0], cy, -4);
+          mesh.position.set(tb.position[0], cy, -5);
         }
         movingDir.current = 1;
         blockSpawned.current = true;
       }
 
-      // Move the block
-      const range = 4;
+      const range = 5;
       const moveSpeed = speed.current * speedMultiplier;
       const currentAxisVal = currentAxis.current;
       if (currentAxisVal === "x") {
@@ -308,13 +240,12 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
     }
 
-    // Auto-play: snap block to perfect center then place
+    // Auto-play
     if (autoPlay && !gameOver && !hasPlaced.current && mesh) {
       autoPlayTimer.current += delta;
       if (autoPlayTimer.current > 0.08) {
         autoPlayTimer.current = 0;
         const tb = stack[stack.length - 1];
-        // Snap to exact center of previous block for perfect placement
         if (currentAxis.current === "x") {
           mesh.position.x = tb.position[0];
         } else {
@@ -324,20 +255,14 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
     }
 
-    // Camera
+    // Camera follow
     const targetY = cameraTargetY.current;
-    const shakeX = shakeIntensity * Math.sin(time.current * 50) * Math.cos(time.current * 33);
-    const shakeZ = shakeIntensity * Math.cos(time.current * 47) * Math.sin(time.current * 29);
     camera.position.y += (targetY - camera.position.y + 4) * delta * 2.5;
-    camera.position.x = 3.5 + shakeX;
-    camera.position.z = 3.5 + shakeZ;
+    camera.position.x = 2;
+    camera.position.z = 2;
     camera.lookAt(0, targetY - 2, 0);
 
-    if (shakeIntensity > 0.001) {
-      setShakeIntensity(prev => prev * 0.9);
-    }
-
-    // Animate falling pieces
+    // Falling pieces
     setFallingPieces(prev =>
       prev
         .map(p => ({
@@ -349,104 +274,47 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
         .filter(p => p.position[1] > -15)
     );
 
-    // Animate particles
-    setParticles(prev =>
+    // Perfect effects
+    setPerfectEffects(prev =>
       prev
-        .map(p => ({
-          ...p,
-          position: [p.position[0] + p.velocity[0] * delta, p.position[1] + p.velocity[1] * delta, p.position[2] + p.velocity[2] * delta] as [number, number, number],
-          velocity: [
-            p.velocity[0] * (p.type === "trail" ? 0.99 : 0.96),
-            p.velocity[1] - (p.type === "trail" ? 2 : 6) * delta,
-            p.velocity[2] * (p.type === "trail" ? 0.99 : 0.96),
-          ] as [number, number, number],
-          life: p.life - delta / p.maxLife,
-        }))
-        .filter(p => p.life > 0)
+        .map(e => ({ ...e, time: e.time + delta }))
+        .filter(e => e.time < 1.0)
     );
-
-    if (perfectTextOpacity.current > 0) perfectTextOpacity.current -= delta * 1.5;
-    if (comboTextOpacity.current > 0) comboTextOpacity.current -= delta * 1.2;
   });
 
-  const nextPalette = getPalette(stack.length);
+  const nextColor = getTileColor(stack.length);
 
   return (
     <>
-      {/* Dynamic Environment based on REAL score */}
-      <StackEnvironment score={score} cameraY={cameraTargetY.current} />
+      {/* Lighting - clean and simple */}
+      <ambientLight intensity={0.6} color="#ffffff" />
+      <directionalLight
+        position={[5, 10, 5]}
+        intensity={0.8}
+        color="#ffffff"
+        castShadow
+        shadow-mapSize={1024}
+      />
 
-      {/* Lighting */}
-      <directionalLight position={[5, 12, 5]} intensity={0.9} color="#ffffff" castShadow shadow-mapSize={2048} />
-      <directionalLight position={[-3, 8, -3]} intensity={0.3} color="#6366f1" />
-
-      {/* Base platform */}
-      <group>
-        <mesh position={[0, -0.35, 0]} receiveShadow>
-          <cylinderGeometry args={[2.8, 3.2, 0.7, 6]} />
-          <meshPhysicalMaterial color="#0f0a2e" metalness={0.9} roughness={0.15} clearcoat={1} clearcoatRoughness={0.05} />
-        </mesh>
-        <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <primitive object={ringGeo} />
-          <meshBasicMaterial color="#6366f1" transparent opacity={0.4 + Math.sin(time.current * 2) * 0.15} side={THREE.DoubleSide} />
-        </mesh>
-        <mesh position={[0, -0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <primitive object={baseRingGeo} />
-          <meshBasicMaterial color="#8b5cf6" transparent opacity={0.2 + Math.sin(time.current * 3 + 1) * 0.1} side={THREE.DoubleSide} />
-        </mesh>
-        <pointLight position={[0, -0.5, 0]} color="#6366f1" intensity={0.8} distance={5} />
-        {[0, 1, 2, 3, 4, 5].map(i => {
-          const angle = (i / 6) * Math.PI * 2;
-          return (
-            <pointLight key={i} position={[Math.cos(angle) * 3, -0.1, Math.sin(angle) * 3]}
-              color="#4f46e5" intensity={0.3 + Math.sin(time.current * 2 + i) * 0.1} distance={3} />
-          );
-        })}
-      </group>
+      {/* Base tile - large colored box */}
+      <mesh position={[0, -0.15, 0]} receiveShadow>
+        <boxGeometry args={[INITIAL_SIZE[0], 0.3, INITIAL_SIZE[2]]} />
+        <meshLambertMaterial color={getTileColor(0)} />
+      </mesh>
 
       {/* Stacked blocks */}
-      {stack.map((block, i) => {
-        const isTop = i === stack.length - 1;
-        return (
-          <mesh key={i} position={block.position} castShadow receiveShadow>
-            <boxGeometry args={block.size} />
-            <meshPhysicalMaterial
-              color={block.color} emissive={block.emissive}
-              emissiveIntensity={isTop ? 0.25 : 0.1}
-              metalness={0.5} roughness={0.2}
-              clearcoat={1} clearcoatRoughness={0.08} envMapIntensity={1.2}
-            />
-          </mesh>
-        );
-      })}
-
-      {/* Edge glow on top block */}
-      {!gameOver && (
-        <lineSegments position={[topBlock.position[0], topBlock.position[1] + BLOCK_HEIGHT / 2 + 0.005, topBlock.position[2]]}>
-          <edgesGeometry args={[new THREE.BoxGeometry(topBlock.size[0], 0.01, topBlock.size[2])]} />
-          <lineBasicMaterial color={nextPalette.emissive} transparent opacity={0.6 + Math.sin(time.current * 4) * 0.3} />
-        </lineSegments>
-      )}
-
-      {/* Ghost guide */}
-      {!gameOver && !autoPlay && (
-        <mesh position={[topBlock.position[0], currentY + 0.001, topBlock.position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[topBlock.size[0], topBlock.size[2]]} />
-          <meshBasicMaterial color={nextPalette.color} transparent opacity={0.08 + Math.sin(time.current * 3) * 0.04} />
+      {stack.map((block, i) => (
+        <mesh key={i} position={block.position} castShadow receiveShadow>
+          <boxGeometry args={block.size} />
+          <meshLambertMaterial color={block.color} />
         </mesh>
-      )}
+      ))}
 
-      {/* Moving block - NO position prop so React doesn't reset it */}
+      {/* Moving block */}
       {!gameOver && (
         <mesh ref={movingBlockRef} castShadow>
           <boxGeometry args={topBlock.size} />
-          <meshPhysicalMaterial
-            color={nextPalette.color} emissive={nextPalette.emissive}
-            emissiveIntensity={0.35 + Math.sin(time.current * 6) * 0.1}
-            metalness={0.6} roughness={0.15}
-            clearcoat={1} clearcoatRoughness={0.05}
-            transparent opacity={0.9}
-          />
+          <meshLambertMaterial color={nextColor} />
         </mesh>
       )}
 
@@ -454,28 +322,53 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       {fallingPieces.map(piece => (
         <mesh key={piece.id} position={piece.position} rotation={piece.rotation}>
           <boxGeometry args={piece.size} />
-          <meshPhysicalMaterial color={piece.color} metalness={0.3} roughness={0.4} transparent opacity={0.6} />
+          <meshLambertMaterial color={piece.color} transparent opacity={0.7} />
         </mesh>
       ))}
 
-      {/* Particles */}
-      {particles.map(p => (
-        <mesh key={p.id} position={p.position} scale={p.size * p.life * (p.type === "ring" ? 1.5 : 1)}>
-          {p.type === "trail" ? (
-            <boxGeometry args={[1, 3, 1]} />
-          ) : (
-            <sphereGeometry args={[1, p.type === "ring" ? 8 : 6, p.type === "ring" ? 8 : 6]} />
-          )}
-          <meshBasicMaterial color={p.color} transparent opacity={p.life * (p.type === "trail" ? 0.5 : 0.9)} />
-        </mesh>
-      ))}
+      {/* Perfect border effects - white expanding planes */}
+      {perfectEffects.map(effect => {
+        const progress = effect.time / 1.0;
+        const scale = 1 + progress * 0.5;
+        const opacity = 1 - progress;
+        const w = effect.size[0] * scale;
+        const h = effect.size[1] * scale;
+        const thickness = 0.04;
+        return (
+          <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT / 2 + 0.01, 0]}>
+            {/* Top edge */}
+            <mesh position={[0, 0, -h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[w, thickness]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
+            </mesh>
+            {/* Bottom edge */}
+            <mesh position={[0, 0, h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[w, thickness]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
+            </mesh>
+            {/* Left edge */}
+            <mesh position={[-w / 2, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
+              <planeGeometry args={[h, thickness]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
+            </mesh>
+            {/* Right edge */}
+            <mesh position={[w / 2, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
+              <planeGeometry args={[h, thickness]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
+            </mesh>
+          </group>
+        );
+      })}
 
-      {/* Score floating */}
-      <Float speed={1} rotationIntensity={0} floatIntensity={0.3}>
+      {/* Score */}
+      <Float speed={1} rotationIntensity={0} floatIntensity={0.2}>
         <Text
           position={[0, cameraTargetY.current + 2.5, 0]}
-          fontSize={0.8} color="#ffffff" anchorX="center" anchorY="middle"
-          font={undefined} outlineWidth={0.03} outlineColor="#6366f1"
+          fontSize={0.8}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+          font={undefined}
         >
           {score}
         </Text>
@@ -483,24 +376,30 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
 
       {/* Perfect text */}
       {showPerfect && (
-        <Float speed={3} floatIntensity={0.5}>
+        <Float speed={2} floatIntensity={0.3}>
           <Text
-            position={[0, currentY + 1, 0]}
-            fontSize={0.45} color="#fbbf24" anchorX="center" anchorY="middle"
-            font={undefined} outlineWidth={0.02} outlineColor="#f59e0b"
+            position={[0, currentY + 0.8, 0]}
+            fontSize={0.35}
+            color="#ffffff"
+            anchorX="center"
+            anchorY="middle"
+            font={undefined}
           >
-            ✦ PERFECT ✦
+            PERFECT
           </Text>
         </Float>
       )}
 
       {/* Combo text */}
-      {comboText && comboTextOpacity.current > 0.1 && (
-        <Float speed={4} floatIntensity={0.4}>
+      {comboText && combo >= 3 && (
+        <Float speed={3} floatIntensity={0.3}>
           <Text
-            position={[0, currentY + 1.6, 0]}
-            fontSize={0.4} color="#e879f9" anchorX="center" anchorY="middle"
-            font={undefined} outlineWidth={0.015} outlineColor="#d946ef"
+            position={[0, currentY + 1.3, 0]}
+            fontSize={0.3}
+            color="#ffffff"
+            anchorX="center"
+            anchorY="middle"
+            font={undefined}
           >
             {comboText}
           </Text>

@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import StackScene from "./StackScene";
+import * as THREE from "three";
 
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
@@ -13,12 +14,13 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate, speedMultip
   return (
     <Canvas
       shadows
-      camera={{ position: [3.5, 7, 3.5], fov: 45 }}
+      orthographic
+      camera={{ position: [2, 5, 2], zoom: 40, near: -100, far: 200 }}
       style={{ width: "100%", height: "100%", touchAction: "none" }}
-      gl={{ antialias: true, alpha: false, toneMapping: 3 }}
+      gl={{ antialias: true, alpha: false, toneMapping: THREE.NoToneMapping }}
       dpr={[1, 1.5]}
     >
-      <color attach="background" args={["#0f0a1e"]} />
+      <color attach="background" args={["#000000"]} />
       <Suspense fallback={null}>
         <StackScene
           onGameOver={onGameOver}
