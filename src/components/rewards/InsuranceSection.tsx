@@ -128,7 +128,13 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       setSelectedPrinter(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || t('common_error'));
+      console.error('Insurance purchase error:', error);
+      const msg = error.message || t('common_error');
+      if (msg.includes('رصيد')) {
+        toast.error(`${msg} — رصيدك الحالي: ${(walletBalance || 0).toLocaleString()} د.ع`);
+      } else {
+        toast.error(msg);
+      }
     },
   });
 
