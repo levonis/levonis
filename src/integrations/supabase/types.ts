@@ -4843,6 +4843,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          bundle_id: string | null
           color_image_url: string | null
           cost_price: number | null
           created_at: string
@@ -4864,6 +4865,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          bundle_id?: string | null
           color_image_url?: string | null
           cost_price?: number | null
           created_at?: string
@@ -4885,6 +4887,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          bundle_id?: string | null
           color_image_url?: string | null
           cost_price?: number | null
           created_at?: string
@@ -4906,6 +4909,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "product_bundles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_custom_request_id_fkey"
             columns: ["custom_request_id"]
@@ -5932,6 +5942,7 @@ export type Database = {
         Row: {
           batch_cost: number
           batch_quantity: number
+          bundle_id: string | null
           created_at: string
           id: string
           notes: string | null
@@ -5943,6 +5954,7 @@ export type Database = {
         Insert: {
           batch_cost?: number
           batch_quantity?: number
+          bundle_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -5954,6 +5966,7 @@ export type Database = {
         Update: {
           batch_cost?: number
           batch_quantity?: number
+          bundle_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -5963,6 +5976,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_batches_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "product_bundles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_batches_product_id_fkey"
             columns: ["product_id"]

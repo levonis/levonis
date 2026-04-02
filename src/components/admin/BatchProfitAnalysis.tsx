@@ -41,8 +41,10 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ batch_quantity: number; batch_cost: number }>({ batch_quantity: 0, batch_cost: 0 });
   const [productSearch, setProductSearch] = useState('');
+  const [searchType, setSearchType] = useState<'product' | 'bundle'>('product');
   const [form, setForm] = useState({
     product_id: '' as string,
+    bundle_id: '' as string,
     product_name_ar: '',
     batch_quantity: 0,
     batch_cost: 0,
@@ -100,17 +102,25 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     enabled: batchProductIds.length > 0,
   });
 
-  // Search products for picker
+  // Search products/bundles for picker
   const { data: searchResults = [] } = useQuery({
-    queryKey: ['batch-product-search', productSearch],
+    queryKey: ['batch-product-search', productSearch, searchType],
     queryFn: async () => {
       if (!productSearch.trim()) return [];
+      if (searchType === 'bundle') {
+        const { data } = await supabase
+          .from('product_bundles')
+          .select('id, title_ar, image_url')
+          .ilike('title_ar', `%${productSearch}%`)
+          .limit(10);
+        return (data || []).map((b: any) => ({ id: b.id, name_ar: b.title_ar, image_url: b.image_url, _type: 'bundle' }));
+      }
       const { data } = await supabase
         .from('products')
         .select('id, name_ar, image_url')
         .ilike('name_ar', `%${productSearch}%`)
         .limit(10);
-      return data || [];
+      return (data || []).map((p: any) => ({ ...p, _type: 'product' }));
     },
     enabled: productSearch.length >= 2,
   });
@@ -119,6 +129,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     mutationFn: async (formData: typeof form) => {
       const { error } = await supabase.from('product_batches').insert({
         product_id: formData.product_id || null,
+        bundle_id: formData.bundle_id || null,
         product_name_ar: formData.product_name_ar,
         batch_quantity: formData.batch_quantity,
         batch_cost: formData.batch_cost,
@@ -130,7 +141,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
       queryClient.invalidateQueries({ queryKey: ['product-batches'] });
       toast.success('تم إضافة الوجبة بنجاح');
       setIsAddOpen(false);
-      setForm({ product_id: '', product_name_ar: '', batch_quantity: 0, batch_cost: 0, notes: '' });
+      setForm({ product_id: '', bundle_id: '', product_name_ar: '', batch_quantity: 0, batch_cost: 0, notes: '' });
       setProductSearch('');
     },
     onError: () => toast.error('حدث خطأ أثناء الإضافة'),
@@ -161,17 +172,18 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     onError: () => toast.error('حدث خطأ أثناء التحديث'),
   });
 
-  // Build analysis: group batches by product, distribute sold items sequentially
+  // Build analysis: group batches by product/bundle, distribute sold items sequentially
   const productGroups = useMemo(() => {
-    // 1. Collect all sold items per product_id from delivered direct orders (sorted by date)
-    const soldByProduct: Record<string, SoldItem[]> = {};
+    // 1. Collect all sold items per product_id AND per bundle_id from delivered direct orders
+    const soldByEntity: Record<string, SoldItem[]> = {};
     
     deliveredDirectOrders.forEach((order: any) => {
       order.order_items?.forEach((item: any) => {
-        if (!item.product_id) return;
-        const pid = item.product_id;
-        if (!soldByProduct[pid]) soldByProduct[pid] = [];
-        soldByProduct[pid].push({
+        // Track by bundle_id if present, otherwise by product_id
+        const key = item.bundle_id ? `bundle_${item.bundle_id}` : (item.product_id ? item.product_id : null);
+        if (!key) return;
+        if (!soldByEntity[key]) soldByEntity[key] = [];
+        soldByEntity[key].push({
           username: order.profile?.full_name || order.profile?.username || 'غير معروف',
           quantity: item.quantity || 1,
           revenue: calcItemRevenue(item),
@@ -182,19 +194,21 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     });
 
     // Sort sold items by date ascending for sequential distribution
-    Object.values(soldByProduct).forEach(items => {
+    Object.values(soldByEntity).forEach(items => {
       items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     });
 
-    // 2. Group batches by product_id (ordered by created_at ascending already)
-    const groupMap: Record<string, { productId: string; productName: string; batches: any[] }> = {};
+    // 2. Group batches by product_id or bundle_id (ordered by created_at ascending already)
+    const groupMap: Record<string, { productId: string; bundleId: string; productName: string; isBundle: boolean; batches: any[] }> = {};
     
     batches.forEach((batch: any) => {
-      const key = batch.product_id || `manual_${batch.product_name_ar}`;
+      const key = batch.bundle_id ? `bundle_${batch.bundle_id}` : (batch.product_id || `manual_${batch.product_name_ar}`);
       if (!groupMap[key]) {
         groupMap[key] = {
           productId: batch.product_id || '',
+          bundleId: batch.bundle_id || '',
           productName: batch.product_name_ar,
+          isBundle: !!batch.bundle_id,
           batches: [],
         };
       }
@@ -203,26 +217,22 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
 
     // 3. For each product group, distribute sold items sequentially across batches
     return Object.entries(groupMap).map(([key, group]) => {
-      const allSold = soldByProduct[group.productId] || [];
+      const entityKey = group.bundleId ? `bundle_${group.bundleId}` : group.productId;
+      const allSold = soldByEntity[entityKey] || [];
       const totalSoldQty = allSold.reduce((s, i) => s + i.quantity, 0);
       const totalBatchQty = group.batches.reduce((s: number, b: any) => s + b.batch_quantity, 0);
       const totalBatchCost = group.batches.reduce((s: number, b: any) => s + Number(b.batch_cost), 0);
       
-      // Stock error: sold more than total batches
       const hasStockError = totalSoldQty > totalBatchQty;
 
-      // Distribute sold items sequentially across batches
       let remainingSoldQty = totalSoldQty;
       let remainingSoldItems = [...allSold];
       
       const batchesWithData = group.batches.map((batch: any, batchIndex: number) => {
         const batchQty = batch.batch_quantity;
-        
-        // How many items this batch absorbs
         const soldInBatch = Math.min(remainingSoldQty, batchQty);
         remainingSoldQty = Math.max(0, remainingSoldQty - batchQty);
         
-        // Distribute actual sold items to this batch
         const batchSoldItems: SoldItem[] = [];
         let qtyToFill = soldInBatch;
         
@@ -233,7 +243,6 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
             qtyToFill -= item.quantity;
             remainingSoldItems.shift();
           } else {
-            // Split: part goes to this batch, rest stays
             batchSoldItems.push({ ...item, quantity: qtyToFill, revenue: (item.revenue / item.quantity) * qtyToFill });
             remainingSoldItems[0] = { ...item, quantity: item.quantity - qtyToFill, revenue: item.revenue - (item.revenue / item.quantity) * qtyToFill };
             qtyToFill = 0;
@@ -264,6 +273,8 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
       return {
         key,
         productId: group.productId,
+        bundleId: group.bundleId,
+        isBundle: group.isBundle,
         productName: group.productName,
         batches: batchesWithData,
         totalSoldQty,
@@ -292,11 +303,15 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
             <DialogHeader><DialogTitle>إضافة وجبة جديدة</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>البحث عن منتج</Label>
+                <div className="flex gap-2 mb-2">
+                  <Button size="sm" variant={searchType === 'product' ? 'default' : 'outline'} onClick={() => { setSearchType('product'); setProductSearch(''); }}>منتج</Button>
+                  <Button size="sm" variant={searchType === 'bundle' ? 'default' : 'outline'} onClick={() => { setSearchType('bundle'); setProductSearch(''); }}>بندل</Button>
+                </div>
+                <Label>{searchType === 'bundle' ? 'البحث عن بندل' : 'البحث عن منتج'}</Label>
                 <Input
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder="ابحث عن المنتج (بغض النظر عن اللون والخيار)..."
+                  placeholder={searchType === 'bundle' ? 'ابحث عن البندل...' : 'ابحث عن المنتج (بغض النظر عن اللون والخيار)...'}
                 />
                 {searchResults.length > 0 && (
                   <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
@@ -305,20 +320,27 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                         key={p.id}
                         className="w-full text-right p-2 hover:bg-muted/50 flex items-center gap-2 text-sm"
                         onClick={() => {
-                          setForm({ ...form, product_id: p.id, product_name_ar: p.name_ar });
+                          if (p._type === 'bundle') {
+                            setForm({ ...form, product_id: '', bundle_id: p.id, product_name_ar: p.name_ar });
+                          } else {
+                            setForm({ ...form, product_id: p.id, bundle_id: '', product_name_ar: p.name_ar });
+                          }
                           setProductSearch('');
                         }}
                       >
                         {p.image_url && <img src={p.image_url} className="w-8 h-8 rounded object-cover" alt="" />}
                         <span>{p.name_ar}</span>
+                        {p._type === 'bundle' && <Badge variant="outline" className="text-[10px]">بندل</Badge>}
                       </button>
                     ))}
                   </div>
                 )}
                 {form.product_name_ar && (
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary">{form.product_name_ar}</Badge>
-                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setForm({ ...form, product_id: '', product_name_ar: '' })}>تغيير</Button>
+                    <Badge variant={form.bundle_id ? 'default' : 'secondary'}>
+                      {form.bundle_id ? '📦 ' : ''}{form.product_name_ar}
+                    </Badge>
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setForm({ ...form, product_id: '', bundle_id: '', product_name_ar: '' })}>تغيير</Button>
                   </div>
                 )}
               </div>
@@ -354,7 +376,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
               <Button
                 className="w-full"
                 onClick={() => {
-                  if (!form.product_name_ar) { toast.error('يرجى تحديد المنتج'); return; }
+                  if (!form.product_name_ar) { toast.error('يرجى تحديد المنتج أو البندل'); return; }
                   if (!form.batch_quantity) { toast.error('يرجى إدخال الكمية'); return; }
                   addBatchMutation.mutate(form);
                 }}
@@ -387,7 +409,10 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                         <Package className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-lg">{group.productName}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-lg">{group.productName}</h4>
+                          {group.isBundle && <Badge variant="outline" className="text-xs">📦 بندل</Badge>}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {group.batches.length} وجبة • إجمالي {group.totalBatchQty} قطعة • مباع {group.totalSoldQty} قطعة
                           {group.productId && productStocks[group.productId] !== undefined && (
