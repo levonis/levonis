@@ -286,7 +286,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="w-28 space-y-1">
+        <div className="w-36 space-y-1">
           <Label className="text-[10px] text-muted-foreground">المحافظة (اختياري)</Label>
           <Select value={newGov} onValueChange={setNewGov}>
             <SelectTrigger className="h-8 text-xs bg-background/50 border-white/10">
@@ -294,22 +294,27 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="__follow_gov__">
+                <span className="text-blue-400">اتباع استثناءات المحافظات</span>
+              </SelectItem>
               {IRAQI_GOVERNORATES.map((g) => (
                 <SelectItem key={g} value={g}>{g}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <div className="w-24 space-y-1">
-          <Label className="text-[10px] text-muted-foreground">السعر (د.ع)</Label>
-          <Input
-            type="number"
-            value={newPrice || ''}
-            onChange={(e) => setNewPrice(Number(e.target.value))}
-            className="h-8 text-xs bg-background/50 border-white/10"
-            placeholder="12000"
-          />
-        </div>
+        {!isFollowGov && (
+          <div className="w-24 space-y-1">
+            <Label className="text-[10px] text-muted-foreground">السعر (د.ع)</Label>
+            <Input
+              type="number"
+              value={newPrice || ''}
+              onChange={(e) => setNewPrice(Number(e.target.value))}
+              className="h-8 text-xs bg-background/50 border-white/10"
+              placeholder="12000"
+            />
+          </div>
+        )}
         <div className="w-20 space-y-1">
           <Label className="text-[10px] text-muted-foreground">قطع/توصيل</Label>
           <Input
@@ -325,7 +330,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
           size="sm"
           className="h-8 px-3 gap-1 text-xs bg-amber-500 hover:bg-amber-600 text-white"
           onClick={() => addException.mutate()}
-          disabled={!newCat || newPrice <= 0}
+          disabled={!newCat || (!isFollowGov && newPrice <= 0)}
         >
           <Plus className="h-3 w-3" />
           إضافة
