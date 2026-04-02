@@ -172,17 +172,18 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     onError: () => toast.error('حدث خطأ أثناء التحديث'),
   });
 
-  // Build analysis: group batches by product, distribute sold items sequentially
+  // Build analysis: group batches by product/bundle, distribute sold items sequentially
   const productGroups = useMemo(() => {
-    // 1. Collect all sold items per product_id from delivered direct orders (sorted by date)
-    const soldByProduct: Record<string, SoldItem[]> = {};
+    // 1. Collect all sold items per product_id AND per bundle_id from delivered direct orders
+    const soldByEntity: Record<string, SoldItem[]> = {};
     
     deliveredDirectOrders.forEach((order: any) => {
       order.order_items?.forEach((item: any) => {
-        if (!item.product_id) return;
-        const pid = item.product_id;
-        if (!soldByProduct[pid]) soldByProduct[pid] = [];
-        soldByProduct[pid].push({
+        // Track by bundle_id if present, otherwise by product_id
+        const key = item.bundle_id ? `bundle_${item.bundle_id}` : (item.product_id ? item.product_id : null);
+        if (!key) return;
+        if (!soldByEntity[key]) soldByEntity[key] = [];
+        soldByEntity[key].push({
           username: order.profile?.full_name || order.profile?.username || 'غير معروف',
           quantity: item.quantity || 1,
           revenue: calcItemRevenue(item),
@@ -193,19 +194,21 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     });
 
     // Sort sold items by date ascending for sequential distribution
-    Object.values(soldByProduct).forEach(items => {
+    Object.values(soldByEntity).forEach(items => {
       items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     });
 
-    // 2. Group batches by product_id (ordered by created_at ascending already)
-    const groupMap: Record<string, { productId: string; productName: string; batches: any[] }> = {};
+    // 2. Group batches by product_id or bundle_id (ordered by created_at ascending already)
+    const groupMap: Record<string, { productId: string; bundleId: string; productName: string; isBundle: boolean; batches: any[] }> = {};
     
     batches.forEach((batch: any) => {
-      const key = batch.product_id || `manual_${batch.product_name_ar}`;
+      const key = batch.bundle_id ? `bundle_${batch.bundle_id}` : (batch.product_id || `manual_${batch.product_name_ar}`);
       if (!groupMap[key]) {
         groupMap[key] = {
           productId: batch.product_id || '',
+          bundleId: batch.bundle_id || '',
           productName: batch.product_name_ar,
+          isBundle: !!batch.bundle_id,
           batches: [],
         };
       }
