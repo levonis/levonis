@@ -100,7 +100,7 @@ export default function StackGame({ onBack }: Props) {
         ...recentWinners.map((w: any) => w.user_id),
       ])].filter(Boolean);
       if (ids.length === 0) return [];
-      const { data } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data } = await supabase.from("profiles").select("id, full_name, username, avatar_url").in("id", ids);
       return (data || []) as any[];
     },
     enabled: leaderboard.length > 0 || recentWinners.length > 0,
@@ -108,7 +108,7 @@ export default function StackGame({ onBack }: Props) {
 
   const getProfileName = (userId: string) => {
     const p = userProfiles.find((pr: any) => pr.id === userId);
-    return p?.display_name || "لاعب";
+    return p?.full_name || p?.username || "لاعب";
   };
 
   const invalidateBalances = useCallback(() => {
