@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle, Wallet } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -981,7 +981,16 @@ const AdminOrders = () => {
                           <span className="font-medium truncate">{order.profiles?.full_name || order.profiles?.username}</span>
                           <span className="text-xs text-muted-foreground">{order.governorate} • {order.phone_number}</span>
                         </div>
-                        <span className="font-bold text-foreground whitespace-nowrap">{formatPrice(order.total_amount)}</span>
+                        <div className="text-left whitespace-nowrap">
+                          <span className="font-bold text-foreground">{formatPrice(order.total_amount)}</span>
+                          {(Number(order.paid_amount) > 0 || Number(order.customer_paid_amount) > 0) && Number(order.remaining_amount) > 0 && (
+                            <div className="text-[10px] leading-tight">
+                              <span className="text-emerald-600">محفظة: {formatPrice(Number(order.customer_paid_amount) || Number(order.paid_amount))}</span>
+                              <br />
+                              <span className="text-amber-600">متبقي: {formatPrice(order.remaining_amount)}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Date */}
@@ -1211,10 +1220,40 @@ const AdminOrders = () => {
                   <p className="font-medium">{editingOrder.governorate}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">المبلغ:</span>
+                  <span className="text-sm text-muted-foreground">المبلغ الكلي:</span>
                   <p className="font-medium">{formatPrice(editingOrder.total_amount)}</p>
                 </div>
               </div>
+
+              {/* Wallet / Payment breakdown for direct sale */}
+              {(() => {
+                const totalAmt = Number(editingOrder.total_amount) || 0;
+                const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
+                const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
+                if (walletPaid <= 0 && remainingAmt <= 0) return null;
+                return (
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 space-y-1.5">
+                    <h4 className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                      <Wallet className="h-3.5 w-3.5" />
+                      تفاصيل الدفع
+                    </h4>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground text-xs">المبلغ الكلي</span>
+                        <p className="font-bold">{formatPrice(totalAmt)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-xs">مدفوع (محفظة)</span>
+                        <p className="font-bold text-emerald-600">{formatPrice(walletPaid)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-xs">المتبقي عند الاستلام</span>
+                        <p className="font-bold text-amber-600">{formatPrice(remainingAmt)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Status */}
               {(() => {
