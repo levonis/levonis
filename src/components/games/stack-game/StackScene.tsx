@@ -195,7 +195,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, audioSystem]);
 
   useEffect(() => {
-    if (autoPlay) return;
     const handleClick = () => placeBlock();
     const handleKey = (e: KeyboardEvent) => { if (e.code === "Space") placeBlock(); };
     window.addEventListener("pointerdown", handleClick);
@@ -204,7 +203,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       window.removeEventListener("pointerdown", handleClick);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [placeBlock, autoPlay]);
+  }, [placeBlock]);
 
   useFrame((state, delta) => {
     time.current += delta;
