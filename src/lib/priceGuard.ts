@@ -9,6 +9,17 @@
 const MIN_IQD_THRESHOLD = 500;
 
 /**
+ * Detects if a numeric value looks like it's in USD rather than IQD.
+ * A value is likely USD if it's below the minimum IQD threshold
+ * or suspiciously close to the known USD price.
+ */
+function looksLikeUsd(value: number, knownUsd: number | null | undefined): boolean {
+  if (value < MIN_IQD_THRESHOLD) return true;
+  if (knownUsd && knownUsd > 0 && value <= knownUsd * 2) return true;
+  return false;
+}
+
+/**
  * Ensures a price value is in IQD by checking against price_usd and the current exchange rate.
  * If the price looks like it wasn't converted (matches USD value or is suspiciously low),
  * it recalculates from price_usd * rate.
@@ -26,8 +37,32 @@ export function ensurePriceIqd(
   if (!priceIqd || priceIqd <= 0) return 0;
   if (!priceUsd || priceUsd <= 0 || !usdToIqd || usdToIqd <= 0) return priceIqd;
 
-  // ALWAYS use USD * rate when price_usd is available — deterministic conversion
-  return Math.round(priceUsd * usdToIqd);
+  // Only convert if the stored value looks like it's still in USD
+  if (looksLikeUsd(priceIqd, priceUsd)) {
+    return Math.round(priceUsd * usdToIqd);
+  }
+
+  // Price looks like valid IQD — return as-is
+  return priceIqd;
+}
+
+/**
+ * Converts a price adjustment value that may be in USD to IQD.
+ * Option price_adjustments are SUPPOSED to be in IQD, but some were entered in USD.
+ * If the value is very small (< MIN_IQD_THRESHOLD), it's likely in USD and needs conversion.
+ */
+export function ensureAdjustmentIqd(
+  adjustment: number,
+  usdToIqd: number
+): number {
+  if (!adjustment || adjustment === 0) return 0;
+  if (!usdToIqd || usdToIqd <= 0) return adjustment;
+  
+  // If adjustment is less than threshold, it's likely in USD
+  if (Math.abs(adjustment) < MIN_IQD_THRESHOLD) {
+    return Math.round(adjustment * usdToIqd);
+  }
+  return Math.round(adjustment);
 }
 
 /**
