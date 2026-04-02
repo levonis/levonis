@@ -254,6 +254,9 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
           if (!soldByEntity[bundleKey]) soldByEntity[bundleKey] = [];
           soldByEntity[bundleKey].push({
             username, quantity: bundleQty, revenue: bundleRevenue, orderNumber, date: orderDate,
+            color: item.selected_color || undefined,
+            orderItemId: item.id,
+            unitPrice: item.unit_price,
           });
           // Expand into component products
           components.forEach((comp) => {
@@ -265,6 +268,9 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
               revenue: 0, // Revenue attributed to bundle, not individual components
               orderNumber,
               date: orderDate,
+              color: item.selected_color || undefined,
+              orderItemId: item.id,
+              unitPrice: item.unit_price,
             });
           });
         } else if (item.product_id) {
@@ -276,6 +282,9 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
             revenue: calcItemRevenue(item),
             orderNumber,
             date: orderDate,
+            color: item.selected_color || undefined,
+            orderItemId: item.id,
+            unitPrice: item.unit_price,
           });
         }
       });
