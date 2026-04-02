@@ -9301,10 +9301,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      check_stack_milestone: {
-        Args: { p_score: number; p_session_id?: string; p_user_id: string }
-        Returns: Json
-      }
+      check_stack_milestone:
+        | {
+            Args: { p_score: number; p_session_id?: string; p_user_id: string }
+            Returns: Json
+          }
+        | {
+            Args: { p_score: number; p_session_id?: string; p_user_id: string }
+            Returns: Json
+          }
       check_username_available: {
         Args: { username_to_check: string }
         Returns: boolean
@@ -9369,6 +9374,14 @@ export type Database = {
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
       deduct_prize_stock:
         | { Args: { p_product_id: string }; Returns: boolean }
+        | {
+            Args: {
+              p_color?: string
+              p_option_name?: string
+              p_product_id: string
+            }
+            Returns: boolean
+          }
         | {
             Args: {
               p_product_id: string

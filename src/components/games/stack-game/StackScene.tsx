@@ -318,7 +318,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         const h = effect.size[1] * scale;
         const thickness = 0.04;
         return (
-          <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT * 0.501, 0]}>
+          <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT / 2 + 0.001, 0]}>
             {/* Top edge */}
             <mesh position={[0, 0, -h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[w, thickness]} />
