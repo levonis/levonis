@@ -179,7 +179,7 @@ function GovernorateExceptionsSection({ methodKey }: { methodKey: string }) {
 }
 
 // ─── Category Exceptions Section ───
-function CategoryExceptionsSection() {
+function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
   const queryClient = useQueryClient();
   const [newCat, setNewCat] = useState("");
   const [newPrice, setNewPrice] = useState<number>(0);
@@ -195,9 +195,9 @@ function CategoryExceptionsSection() {
   });
 
   const { data: exceptions = [] } = useQuery({
-    queryKey: ["delivery-cat-exceptions"],
+    queryKey: ["delivery-cat-exceptions", methodKey],
     queryFn: async () => {
-      const { data, error } = await supabase.from("delivery_category_exceptions").select("*, categories(name_ar)").order("created_at");
+      const { data, error } = await supabase.from("delivery_category_exceptions").select("*, categories(name_ar)").eq("delivery_method_key", methodKey).order("created_at");
       if (error) throw error;
       return data;
     },
@@ -210,11 +210,12 @@ function CategoryExceptionsSection() {
         category_id: newCat,
         delivery_price: newPrice,
         governorate: newGov === "all" ? null : newGov,
+        delivery_method_key: methodKey,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions", methodKey] });
       setNewCat("");
       setNewPrice(0);
       setNewGov("all");
@@ -229,7 +230,7 @@ function CategoryExceptionsSection() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions", methodKey] });
       toast.success("تم حذف الاستثناء");
     },
   });
@@ -259,7 +260,6 @@ function CategoryExceptionsSection() {
         </div>
       )}
 
-      {/* Add new category exception */}
       <div className="flex flex-wrap items-end gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
         <div className="flex-1 min-w-[140px] space-y-1">
           <Label className="text-[10px] text-muted-foreground">القسم</Label>
@@ -309,6 +309,97 @@ function CategoryExceptionsSection() {
         </Button>
       </div>
     </div>
+  );
+}
+
+// ─── Delivery Method Card ───
+function DeliveryMethodCard({ method, onUpdatePrice }: { method: any; onUpdatePrice: (id: string, price: number) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [editPrice, setEditPrice] = useState(Number(method.base_price));
+  const iconMap: Record<string, React.ReactNode> = {
+    warehouse: <Warehouse className="h-5 w-5 text-white" />,
+    truck: <Truck className="h-5 w-5 text-white" />,
+    user: <User className="h-5 w-5 text-white" />,
+  };
+  const gradientMap: Record<string, string> = {
+    pickup: "bg-gradient-to-br from-emerald-500 to-green-600",
+    standard: "bg-gradient-to-br from-sky-500 to-blue-600",
+    personal: "bg-gradient-to-br from-purple-500 to-indigo-600",
+  };
+  const cardGradientMap: Record<string, string> = {
+    pickup: "linear-gradient(145deg, hsl(145 60% 45% / 0.08), hsl(160 50% 40% / 0.04), transparent)",
+    standard: "linear-gradient(145deg, hsl(200 70% 50% / 0.08), hsl(220 60% 45% / 0.04), transparent)",
+    personal: "linear-gradient(145deg, hsl(270 60% 55% / 0.08), hsl(280 50% 50% / 0.04), transparent)",
+  };
+
+  const isPickup = method.method_key === 'pickup';
+
+  return (
+    <GlassCard gradient={cardGradientMap[method.method_key] || cardGradientMap.standard}>
+      <div className="p-5 pb-3 flex items-start gap-3">
+        <div className={cn("p-2.5 rounded-xl shadow-lg", gradientMap[method.method_key] || gradientMap.standard)} style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+          {iconMap[method.icon] || <Package className="h-5 w-5 text-white" />}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-base text-foreground">{method.name_ar}</h3>
+          {method.description_ar && <p className="text-[11px] text-muted-foreground mt-0.5">{method.description_ar}</p>}
+        </div>
+        {!isPickup && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            الاستثناءات
+          </Button>
+        )}
+      </div>
+
+      <div className="px-5 pb-5">
+        {/* Base price */}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <SettingField
+              label="السعر الأساسي"
+              icon={<DollarSign className="h-3 w-3" />}
+              value={editPrice}
+              onChange={(v) => setEditPrice(v)}
+              suffix="د.ع"
+            />
+          </div>
+          {editPrice !== Number(method.base_price) && (
+            <Button
+              size="sm"
+              className="h-9 px-3 gap-1 text-xs"
+              onClick={() => onUpdatePrice(method.id, editPrice)}
+            >
+              <Save className="h-3 w-3" />
+              حفظ
+            </Button>
+          )}
+        </div>
+
+        {/* Exceptions for non-pickup methods */}
+        {!isPickup && expanded && (
+          <div className="mt-5 space-y-5 border-t border-white/5 pt-4">
+            {/* Governorate exceptions */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-sky-400" />
+                <h4 className="text-sm font-bold">استثناءات المحافظات</h4>
+              </div>
+              <GovernorateExceptionsSection methodKey={method.method_key} />
+            </div>
+
+            {/* Category exceptions */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-amber-400" />
+                <h4 className="text-sm font-bold">استثناءات الأقسام</h4>
+              </div>
+              <CategoryExceptionsSection methodKey={method.method_key} />
+            </div>
+          </div>
+        )}
+      </div>
+    </GlassCard>
   );
 }
 
