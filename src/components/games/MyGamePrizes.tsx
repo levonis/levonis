@@ -29,7 +29,7 @@ export default function MyGamePrizes({ onBack }: Props) {
     enabled: !!user,
   });
 
-  // Check which prizes are already in cart as gifts
+  // Check which prizes are already in cart as gifts - always refetch fresh
   const { data: cartGiftProductIds = [] } = useQuery({
     queryKey: ["cart-gift-ids", user?.id],
     queryFn: async () => {
@@ -42,13 +42,15 @@ export default function MyGamePrizes({ onBack }: Props) {
       return (data || []).map((c: any) => c.product_id);
     },
     enabled: !!user,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const handleAddToCart = async (prize: any) => {
     if (!prize.product_id || !user) return;
     setAddingToCart(prize.id);
     try {
-      // Check if already in cart
+      // First check if already in cart (fresh check)
       const { data: existing } = await supabase
         .from("cart_items")
         .select("id")
@@ -59,20 +61,50 @@ export default function MyGamePrizes({ onBack }: Props) {
 
       if (existing) {
         toast.info("الجائزة موجودة بالفعل في السلة");
+        queryClient.invalidateQueries({ queryKey: ["cart-gift-ids"] });
         return;
       }
 
-      // Add as locked gift with price 0
+      // Find matching milestone to get proper option/color
+      const { data: milestones } = await supabase
+        .from("stack_game_milestones" as any)
+        .select("*")
+        .eq("product_id", prize.product_id)
+        .eq("is_active", true)
+        .limit(1);
+
+      const milestone = (milestones as any)?.[0];
+
+      // Insert with proper option/color from milestone config
       const { error } = await supabase.from("cart_items").insert({
         user_id: user.id,
         product_id: prize.product_id,
+        product_option_id: milestone?.selected_option_id || null,
+        selected_color: milestone?.selected_color || null,
         quantity: 1,
         sale_type: "direct",
         is_gift: true,
         is_locked: true,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("cart insert error:", error);
+        throw error;
+      }
+
+      // Verify the insert actually worked
+      const { data: verify } = await supabase
+        .from("cart_items")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("product_id", prize.product_id)
+        .eq("is_gift", true)
+        .maybeSingle();
+
+      if (!verify) {
+        toast.error("فشل إضافة الجائزة للسلة");
+        return;
+      }
 
       toast.success("تمت إضافة الجائزة للسلة!");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -140,26 +172,24 @@ export default function MyGamePrizes({ onBack }: Props) {
                         <div className="flex items-center gap-2">
                           {/* Add to cart button */}
                           {!prize.is_delivered && prize.product_id && (
-                            isInCart ? (
-                              <span className="flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-2 py-1 rounded-lg">
-                                <ShoppingCart className="h-3 w-3" /> في السلة
-                              </span>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddToCart(prize)}
-                                disabled={isAdding}
-                                className="h-7 text-[10px] gap-1 rounded-lg border-primary/30 text-primary hover:bg-primary/10"
-                              >
-                                {isAdding ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <ShoppingCart className="h-3 w-3" />
-                                )}
-                                إضافة للسلة (مجاناً)
-                              </Button>
-                            )
+                            <Button
+                              size="sm"
+                              variant={isInCart ? "ghost" : "outline"}
+                              onClick={() => !isInCart && handleAddToCart(prize)}
+                              disabled={isAdding || isInCart}
+                              className={`h-7 text-[10px] gap-1 rounded-lg ${
+                                isInCart 
+                                  ? "text-primary cursor-default" 
+                                  : "border-primary/30 text-primary hover:bg-primary/10"
+                              }`}
+                            >
+                              {isAdding ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <ShoppingCart className="h-3 w-3" />
+                              )}
+                              {isInCart ? "في السلة ✓" : "إضافة للسلة (مجاناً)"}
+                            </Button>
                           )}
                         </div>
                         <span className="text-[10px] text-muted-foreground">
