@@ -233,6 +233,11 @@ const AdminFinancials = () => {
     return filteredOrders;
   }, [filteredOrders, mainTab]);
 
+  // Direct orders for batch analysis should ignore the status tab filter and only exclude cancelled orders
+  const batchAnalysisOrders = useMemo(() => {
+    return (orders || []).filter(o => (o as any).order_type === 'direct' && o.status !== 'cancelled');
+  }, [orders]);
+
   // Global totals (all delivered orders, shipping excluded)
   const globalProfit = useMemo(() => {
     return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o, usdToIqdRate), 0);
@@ -637,7 +642,7 @@ const AdminFinancials = () => {
                 {tab === 'direct' && (
                   <TabsContent value="by-batch">
                     <BatchProfitAnalysis
-                      deliveredDirectOrders={tabFilteredOrders.filter(o => o.status !== 'cancelled')}
+                      deliveredDirectOrders={batchAnalysisOrders}
                       usdToIqdRate={usdToIqdRate}
                     />
                   </TabsContent>
