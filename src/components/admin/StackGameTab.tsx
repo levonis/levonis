@@ -478,7 +478,8 @@ export default function StackGameTab() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-medium flex items-center gap-1"><Star className="h-3 w-3" /> نقاط الموقع لكل قطعة</label>
-                <Input type="number" min={0} value={s.points_per_block} onChange={(e) => update("points_per_block", parseInt(e.target.value) || 0)} className="w-32" />
+                <Input type="number" min={0} step={0.01} value={s.points_per_block} onChange={(e) => update("points_per_block", parseFloat(e.target.value) || 0)} className="w-32" />
+                <p className="text-[10px] text-muted-foreground">مثال: 0.1 يعني كل 10 قطع = 1 نقطة موقع</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium flex items-center gap-1"><Zap className="h-3 w-3" /> مكافأة المثالي (نقاط موقع)</label>
@@ -491,8 +492,9 @@ export default function StackGameTab() {
 
               <div className="bg-muted/30 rounded-md p-2 text-[10px] font-mono space-y-0.5">
                 <p className="font-bold mb-1">⭐ محاكاة نقاط الموقع:</p>
-                <p>10 قطع عادية = {10 * s.points_per_block} نقطة موقع</p>
-                <p>20 قطعة + 5 مثالي + كومبو 3 = {20 * s.points_per_block + 5 * s.perfect_bonus_points + Math.floor(3 * s.combo_bonus_multiplier)} نقطة موقع</p>
+                <p>10 قطع عادية = {Math.floor(10 * s.points_per_block)} نقطة موقع</p>
+                <p>20 قطعة + 5 مثالي + كومبو 3 = {Math.floor(20 * s.points_per_block + 5 * s.perfect_bonus_points + 3 * s.combo_bonus_multiplier)} نقطة موقع</p>
+                <p>50 قطعة + 20 مثالي + كومبو 10 = {Math.floor(50 * s.points_per_block + 20 * s.perfect_bonus_points + 10 * s.combo_bonus_multiplier)} نقطة موقع</p>
               </div>
             </div>
           </div>
