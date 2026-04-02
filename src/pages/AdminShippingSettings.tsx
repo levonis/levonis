@@ -245,15 +245,19 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
     <div className="space-y-3">
       {exceptions.length > 0 && (
         <div className="space-y-2">
-          {exceptions.map((exc: any) => (
+          {exceptions.map((exc: any) => {
+            const isFollowGovExc = exc.governorate === '__follow_gov__';
+            return (
             <div key={exc.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-background/30 border border-white/5 backdrop-blur-sm group">
               <Tag className="h-3.5 w-3.5 text-amber-500/70 shrink-0" />
               <span className="text-xs font-medium flex-1">
                 {exc.categories?.name_ar || 'قسم محذوف'}
-                {exc.governorate && <span className="text-muted-foreground mr-1">({exc.governorate})</span>}
+                {isFollowGovExc 
+                  ? <span className="text-blue-400 mr-1">(اتباع استثناءات المحافظات)</span>
+                  : exc.governorate && <span className="text-muted-foreground mr-1">({exc.governorate})</span>}
               </span>
               <span className="text-[10px] text-muted-foreground">كل {exc.units_per_delivery || 1} قطعة</span>
-              <span className="text-xs font-bold text-amber-500">{Number(exc.delivery_price).toLocaleString()} د.ع</span>
+              {!isFollowGovExc && <span className="text-xs font-bold text-amber-500">{Number(exc.delivery_price).toLocaleString()} د.ع</span>}
               <Button
                 variant="ghost"
                 size="icon"
