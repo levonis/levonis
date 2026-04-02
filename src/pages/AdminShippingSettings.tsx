@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers } from "lucide-react";
+import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp } from "lucide-react";
 import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippingCalculator";
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
 import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
@@ -75,15 +75,15 @@ function SettingField({ label, value, onChange, hint, icon, suffix }: {
 }
 
 // ─── Governorate Exceptions Section ───
-function GovernorateExceptionsSection() {
+function GovernorateExceptionsSection({ methodKey }: { methodKey: string }) {
   const queryClient = useQueryClient();
   const [newGov, setNewGov] = useState("");
   const [newPrice, setNewPrice] = useState<number>(0);
 
   const { data: exceptions = [] } = useQuery({
-    queryKey: ["delivery-gov-exceptions"],
+    queryKey: ["delivery-gov-exceptions", methodKey],
     queryFn: async () => {
-      const { data, error } = await supabase.from("delivery_governorate_exceptions").select("*").order("governorate");
+      const { data, error } = await supabase.from("delivery_governorate_exceptions").select("*").eq("delivery_method_key", methodKey).order("governorate");
       if (error) throw error;
       return data;
     },
@@ -92,11 +92,11 @@ function GovernorateExceptionsSection() {
   const addException = useMutation({
     mutationFn: async () => {
       if (!newGov || newPrice <= 0) throw new Error("أدخل المحافظة والسعر");
-      const { error } = await supabase.from("delivery_governorate_exceptions").insert({ governorate: newGov, delivery_price: newPrice });
+      const { error } = await supabase.from("delivery_governorate_exceptions").insert({ governorate: newGov, delivery_price: newPrice, delivery_method_key: methodKey });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions", methodKey] });
       setNewGov("");
       setNewPrice(0);
       toast.success("تمت إضافة الاستثناء");
@@ -110,7 +110,7 @@ function GovernorateExceptionsSection() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions", methodKey] });
       toast.success("تم حذف الاستثناء");
     },
   });
@@ -120,7 +120,6 @@ function GovernorateExceptionsSection() {
 
   return (
     <div className="space-y-3">
-      {/* Existing exceptions */}
       {exceptions.length > 0 && (
         <div className="space-y-2">
           {exceptions.map((exc: any) => (
@@ -141,7 +140,6 @@ function GovernorateExceptionsSection() {
         </div>
       )}
 
-      {/* Add new exception */}
       <div className="flex items-end gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10">
         <div className="flex-1 space-y-1">
           <Label className="text-[10px] text-muted-foreground">المحافظة</Label>
@@ -181,7 +179,7 @@ function GovernorateExceptionsSection() {
 }
 
 // ─── Category Exceptions Section ───
-function CategoryExceptionsSection() {
+function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
   const queryClient = useQueryClient();
   const [newCat, setNewCat] = useState("");
   const [newPrice, setNewPrice] = useState<number>(0);
@@ -197,9 +195,9 @@ function CategoryExceptionsSection() {
   });
 
   const { data: exceptions = [] } = useQuery({
-    queryKey: ["delivery-cat-exceptions"],
+    queryKey: ["delivery-cat-exceptions", methodKey],
     queryFn: async () => {
-      const { data, error } = await supabase.from("delivery_category_exceptions").select("*, categories(name_ar)").order("created_at");
+      const { data, error } = await supabase.from("delivery_category_exceptions").select("*, categories(name_ar)").eq("delivery_method_key", methodKey).order("created_at");
       if (error) throw error;
       return data;
     },
@@ -212,11 +210,12 @@ function CategoryExceptionsSection() {
         category_id: newCat,
         delivery_price: newPrice,
         governorate: newGov === "all" ? null : newGov,
+        delivery_method_key: methodKey,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions", methodKey] });
       setNewCat("");
       setNewPrice(0);
       setNewGov("all");
@@ -231,7 +230,7 @@ function CategoryExceptionsSection() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-cat-exceptions", methodKey] });
       toast.success("تم حذف الاستثناء");
     },
   });
@@ -261,7 +260,6 @@ function CategoryExceptionsSection() {
         </div>
       )}
 
-      {/* Add new category exception */}
       <div className="flex flex-wrap items-end gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
         <div className="flex-1 min-w-[140px] space-y-1">
           <Label className="text-[10px] text-muted-foreground">القسم</Label>
@@ -314,6 +312,97 @@ function CategoryExceptionsSection() {
   );
 }
 
+// ─── Delivery Method Card ───
+function DeliveryMethodCard({ method, onUpdatePrice }: { method: any; onUpdatePrice: (id: string, price: number) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [editPrice, setEditPrice] = useState(Number(method.base_price));
+  const iconMap: Record<string, React.ReactNode> = {
+    warehouse: <Warehouse className="h-5 w-5 text-white" />,
+    truck: <Truck className="h-5 w-5 text-white" />,
+    user: <User className="h-5 w-5 text-white" />,
+  };
+  const gradientMap: Record<string, string> = {
+    pickup: "bg-gradient-to-br from-emerald-500 to-green-600",
+    standard: "bg-gradient-to-br from-sky-500 to-blue-600",
+    personal: "bg-gradient-to-br from-purple-500 to-indigo-600",
+  };
+  const cardGradientMap: Record<string, string> = {
+    pickup: "linear-gradient(145deg, hsl(145 60% 45% / 0.08), hsl(160 50% 40% / 0.04), transparent)",
+    standard: "linear-gradient(145deg, hsl(200 70% 50% / 0.08), hsl(220 60% 45% / 0.04), transparent)",
+    personal: "linear-gradient(145deg, hsl(270 60% 55% / 0.08), hsl(280 50% 50% / 0.04), transparent)",
+  };
+
+  const isPickup = method.method_key === 'pickup';
+
+  return (
+    <GlassCard gradient={cardGradientMap[method.method_key] || cardGradientMap.standard}>
+      <div className="p-5 pb-3 flex items-start gap-3">
+        <div className={cn("p-2.5 rounded-xl shadow-lg", gradientMap[method.method_key] || gradientMap.standard)} style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+          {iconMap[method.icon] || <Package className="h-5 w-5 text-white" />}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-base text-foreground">{method.name_ar}</h3>
+          {method.description_ar && <p className="text-[11px] text-muted-foreground mt-0.5">{method.description_ar}</p>}
+        </div>
+        {!isPickup && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            الاستثناءات
+          </Button>
+        )}
+      </div>
+
+      <div className="px-5 pb-5">
+        {/* Base price */}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <SettingField
+              label="السعر الأساسي"
+              icon={<DollarSign className="h-3 w-3" />}
+              value={editPrice}
+              onChange={(v) => setEditPrice(v)}
+              suffix="د.ع"
+            />
+          </div>
+          {editPrice !== Number(method.base_price) && (
+            <Button
+              size="sm"
+              className="h-9 px-3 gap-1 text-xs"
+              onClick={() => onUpdatePrice(method.id, editPrice)}
+            >
+              <Save className="h-3 w-3" />
+              حفظ
+            </Button>
+          )}
+        </div>
+
+        {/* Exceptions for non-pickup methods */}
+        {!isPickup && expanded && (
+          <div className="mt-5 space-y-5 border-t border-white/5 pt-4">
+            {/* Governorate exceptions */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-sky-400" />
+                <h4 className="text-sm font-bold">استثناءات المحافظات</h4>
+              </div>
+              <GovernorateExceptionsSection methodKey={method.method_key} />
+            </div>
+
+            {/* Category exceptions */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-amber-400" />
+                <h4 className="text-sm font-bold">استثناءات الأقسام</h4>
+              </div>
+              <CategoryExceptionsSection methodKey={method.method_key} />
+            </div>
+          </div>
+        )}
+      </div>
+    </GlassCard>
+  );
+}
+
 // ─── Formula Card ───
 function FormulaCard({ icon, title, formula, color }: { icon: React.ReactNode; title: string; formula: string[]; color: string }) {
   return (
@@ -329,6 +418,48 @@ function FormulaCard({ icon, title, formula, color }: { icon: React.ReactNode; t
           <p key={i} className="text-[10px] text-muted-foreground font-mono leading-relaxed" dir="ltr">{line}</p>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Delivery Methods Manager ───
+function DeliveryMethodsManager() {
+  const queryClient = useQueryClient();
+
+  const { data: methods = [] } = useQuery({
+    queryKey: ["delivery-methods"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("delivery_methods").select("*").order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updatePrice = useMutation({
+    mutationFn: async ({ id, price }: { id: string; price: number }) => {
+      const { error } = await supabase.from("delivery_methods").update({ base_price: price }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["delivery-methods"] });
+      toast.success("تم تحديث السعر");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-1">
+        <MapPin className="h-5 w-5 text-primary" />
+        <h2 className="text-lg font-bold">طرق التوصيل داخل العراق</h2>
+      </div>
+      {methods.map((method: any) => (
+        <DeliveryMethodCard
+          key={method.id}
+          method={method}
+          onUpdatePrice={(id, price) => updatePrice.mutate({ id, price })}
+        />
+      ))}
     </div>
   );
 }
@@ -682,56 +813,8 @@ export default function AdminShippingSettings() {
           </GlassCard>
         </div>
 
-        {/* ═══ Row 4: Local Delivery + Governorate Exceptions ═══ */}
-        <GlassCard gradient="linear-gradient(145deg, hsl(200 70% 50% / 0.08), hsl(220 60% 45% / 0.04), transparent)">
-          <GlassCardHeader
-            icon={<MapPin className="h-5 w-5 text-white" />}
-            iconBg="bg-gradient-to-br from-sky-500 to-blue-600"
-            title="التوصيل المحلي"
-            subtitle="أسعار التوصيل الافتراضية مع استثناءات لكل محافظة"
-          />
-          <div className="px-5 pb-4">
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <SettingField
-                label="بغداد"
-                icon={<MapPin className="h-3 w-3" />}
-                value={settings.local_delivery_baghdad}
-                onChange={(v) => updateSetting("local_delivery_baghdad", v)}
-                suffix="د.ع"
-              />
-              <SettingField
-                label="باقي المحافظات"
-                icon={<MapPin className="h-3 w-3" />}
-                value={settings.local_delivery_provinces}
-                onChange={(v) => updateSetting("local_delivery_provinces", v)}
-                suffix="د.ع"
-              />
-            </div>
-
-            {/* Governorate exceptions */}
-            <div className="border-t border-white/5 pt-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-sky-400" />
-                <h4 className="text-sm font-bold">استثناءات المحافظات</h4>
-                <span className="text-[10px] text-muted-foreground">(تجاوز السعر الافتراضي)</span>
-              </div>
-              <GovernorateExceptionsSection />
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* ═══ Row 5: Category Exceptions ═══ */}
-        <GlassCard gradient="linear-gradient(145deg, hsl(35 80% 50% / 0.08), hsl(45 70% 45% / 0.04), transparent)">
-          <GlassCardHeader
-            icon={<Tag className="h-5 w-5 text-white" />}
-            iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
-            title="استثناءات حسب القسم"
-            subtitle="أسعار توصيل مخصصة لأقسام معينة (مثل الطابعات)"
-          />
-          <div className="px-5 pb-5">
-            <CategoryExceptionsSection />
-          </div>
-        </GlassCard>
+        {/* ═══ Row 4: Delivery Methods ═══ */}
+        <DeliveryMethodsManager />
 
         {/* ═══ Row 6: Formulas ═══ */}
         <GlassCard gradient="linear-gradient(145deg, hsl(var(--muted) / 0.5), transparent)" className="border-white/5">

@@ -2159,6 +2159,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          delivery_method_key: string
           delivery_price: number
           governorate: string | null
           id: string
@@ -2167,6 +2168,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          delivery_method_key?: string
           delivery_price?: number
           governorate?: string | null
           id?: string
@@ -2175,6 +2177,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          delivery_method_key?: string
           delivery_price?: number
           governorate?: string | null
           id?: string
@@ -2193,6 +2196,7 @@ export type Database = {
       delivery_governorate_exceptions: {
         Row: {
           created_at: string
+          delivery_method_key: string
           delivery_price: number
           governorate: string
           id: string
@@ -2200,6 +2204,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_method_key?: string
           delivery_price?: number
           governorate: string
           id?: string
@@ -2207,9 +2212,49 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_method_key?: string
           delivery_price?: number
           governorate?: string
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      delivery_methods: {
+        Row: {
+          base_price: number
+          created_at: string
+          description_ar: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          method_key: string
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          method_key: string
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          method_key?: string
+          name_ar?: string
           updated_at?: string
         }
         Relationships: []
@@ -4907,6 +4952,7 @@ export type Database = {
           customer_paid_amount: number | null
           customs_declaration_number: string | null
           delivered_at: string | null
+          delivery_method: string | null
           discount_amount: number | null
           estimated_delivery_date: string | null
           financial_notes: string | null
@@ -4962,6 +5008,7 @@ export type Database = {
           customer_paid_amount?: number | null
           customs_declaration_number?: string | null
           delivered_at?: string | null
+          delivery_method?: string | null
           discount_amount?: number | null
           estimated_delivery_date?: string | null
           financial_notes?: string | null
@@ -5017,6 +5064,7 @@ export type Database = {
           customer_paid_amount?: number | null
           customs_declaration_number?: string | null
           delivered_at?: string | null
+          delivery_method?: string | null
           discount_amount?: number | null
           estimated_delivery_date?: string | null
           financial_notes?: string | null
