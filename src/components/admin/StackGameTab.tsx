@@ -242,7 +242,7 @@ function ProductPicker({
             {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="truncate text-foreground">{p.name_ar}</div>
-              <div className="text-muted-foreground text-[10px]">{p.direct_stock != null && p.direct_stock > 0 ? `مباشر: ${p.direct_stock}` : p.pre_order_stock != null && p.pre_order_stock > 0 ? `طلب مسبق: ${p.pre_order_stock}` : "مخزون: —"}</div>
+              <div className="text-muted-foreground text-[10px]">{getStockDisplay(p)}</div>
             </div>
           </button>
         ))}
