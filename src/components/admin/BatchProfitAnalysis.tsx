@@ -43,6 +43,8 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ batch_quantity: number; batch_cost: number }>({ batch_quantity: 0, batch_cost: 0 });
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editPriceForm, setEditPriceForm] = useState<{ unit_price: number; quantity: number }>({ unit_price: 0, quantity: 1 });
   const [productSearch, setProductSearch] = useState('');
   const [searchType, setSearchType] = useState<'product' | 'bundle'>('product');
   const [form, setForm] = useState({
