@@ -267,6 +267,9 @@ export default function StackGameTab() {
         .update({
           game_enabled: s.game_enabled,
           entry_fee_tickets: s.entry_fee_tickets,
+          game_points_per_block: s.game_points_per_block,
+          game_perfect_bonus: s.game_perfect_bonus,
+          game_combo_multiplier: s.game_combo_multiplier,
           points_per_block: s.points_per_block,
           perfect_bonus_points: s.perfect_bonus_points,
           combo_bonus_multiplier: s.combo_bonus_multiplier,
