@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading } from '@/components/admin/AdminLayout';
+import BatchProfitAnalysis from '@/components/admin/BatchProfitAnalysis';
 
 interface EditingCell { orderId: string; field: string; value: number; }
 
