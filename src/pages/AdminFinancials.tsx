@@ -244,31 +244,40 @@ const AdminFinancials = () => {
   const addManualOrderMutation = useMutation({
     mutationFn: async (form: ManualOrderForm) => {
       const orderNumber = `MAN-${Date.now()}`;
+      const totalProductCost = form.products.reduce((s, p) => s + (p.cost_price * p.quantity), 0);
       const { data: order, error: orderError } = await supabase.from('orders').insert({
         order_number: orderNumber, user_id: user?.id || '', total_amount: form.total_amount,
-        customer_paid_amount: form.customer_paid_amount, admin_paid_amount: form.admin_paid_amount,
-        admin_product_cost: form.admin_product_cost, admin_shipping_cost: 0, admin_other_costs: 0,
-        tax_amount: form.tax_amount, financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
-        remaining_amount: form.total_amount - form.customer_paid_amount, status: 'delivered',
+        customer_paid_amount: form.customer_paid_amount, admin_paid_amount: 0,
+        admin_product_cost: form.admin_product_cost || totalProductCost, admin_shipping_cost: form.admin_shipping_cost, admin_other_costs: 0,
+        tax_amount: 0, financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
+        remaining_amount: form.remaining_amount, status: form.status,
+        order_type: form.order_type,
         shipping_address: 'طلب يدوي', phone_number: '-', governorate: '-',
       }).select().single();
       if (orderError) throw orderError;
-      if (form.product_names.trim() && order) {
-        const productNames = form.product_names.split('\n').filter(n => n.trim());
-        const orderItems = productNames.map(name => ({
-          order_id: order.id, product_name: name.trim(), product_name_ar: name.trim(),
-          quantity: 1, unit_price: form.total_amount / productNames.length,
-          total_price: form.total_amount / productNames.length,
-        }));
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-        if (itemsError) throw itemsError;
+      if (order) {
+        const validProducts = form.products.filter(p => p.name.trim());
+        if (validProducts.length > 0) {
+          const orderItems = validProducts.map(p => ({
+            order_id: order.id, product_name: p.name, product_name_ar: p.name,
+            product_id: p.product_id || null,
+            quantity: p.quantity, unit_price: p.unit_price,
+            total_price: p.unit_price * p.quantity, cost_price: p.cost_price,
+          }));
+          const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+          if (itemsError) throw itemsError;
+        }
       }
       return order;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
       toast.success('تم إضافة الطلب بنجاح'); setIsAddDialogOpen(false);
-      setManualOrderForm({ customer_name: '', product_names: '', total_amount: 0, customer_paid_amount: 0, admin_paid_amount: 0, admin_product_cost: 0, tax_amount: 0, financial_notes: '' });
+      setManualOrderForm({
+        order_type: 'direct', customer_name: '', products: [{ type: 'manual', name: '', quantity: 1, unit_price: 0, cost_price: 0 }],
+        total_amount: 0, customer_paid_amount: 0, remaining_amount: 0, admin_shipping_cost: 0,
+        admin_product_cost: 0, status: 'delivered', financial_notes: '',
+      });
     },
     onError: () => { toast.error('حدث خطأ أثناء إضافة الطلب'); },
   });
