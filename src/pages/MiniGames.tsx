@@ -71,6 +71,20 @@ export default function MiniGames() {
     setActiveGame(game.node_name);
   };
 
+  if (showPrizes) {
+    return (
+      <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
+        <PixelBackground />
+        <div className="relative z-10 max-w-2xl mx-auto">
+          <Suspense fallback={<div className="flex items-center justify-center h-screen text-primary font-mono">Loading...</div>}>
+            <MyGamePrizes onBack={() => setShowPrizes(false)} />
+          </Suspense>
+        </div>
+        <PixelMusicRadio />
+      </div>
+    );
+  }
+
   if (showStore) {
     return (
       <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
