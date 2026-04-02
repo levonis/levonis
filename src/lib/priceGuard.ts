@@ -48,20 +48,33 @@ export function ensurePriceIqd(
 
 /**
  * Converts a price adjustment value that may be in USD to IQD.
- * Option price_adjustments are SUPPOSED to be in IQD, but some were entered in USD.
- * If the value is very small (< MIN_IQD_THRESHOLD), it's likely in USD and needs conversion.
+ * Option price_adjustments are sometimes stored in USD.
+ * Detection: if the adjustment is below MIN_IQD_THRESHOLD it's clearly USD.
+ * If a product's price_usd is provided, any adjustment smaller than price_usd * 2
+ * is also treated as USD (since a genuine IQD adjustment would be far larger).
  */
 export function ensureAdjustmentIqd(
   adjustment: number,
-  usdToIqd: number
+  usdToIqd: number,
+  priceUsd?: number | null
 ): number {
   if (!adjustment || adjustment === 0) return 0;
   if (!usdToIqd || usdToIqd <= 0) return adjustment;
   
-  // If adjustment is less than threshold, it's likely in USD
-  if (Math.abs(adjustment) < MIN_IQD_THRESHOLD) {
+  const abs = Math.abs(adjustment);
+
+  // Clearly USD — below minimum IQD threshold
+  if (abs < MIN_IQD_THRESHOLD) {
     return Math.round(adjustment * usdToIqd);
   }
+
+  // If we know the product's USD price, use it as a reference:
+  // a genuine IQD adjustment would be >> price_usd, so if adjustment ≤ price_usd * 2
+  // it's almost certainly still in USD.
+  if (priceUsd && priceUsd > 0 && abs <= priceUsd * 2) {
+    return Math.round(adjustment * usdToIqd);
+  }
+
   return Math.round(adjustment);
 }
 
