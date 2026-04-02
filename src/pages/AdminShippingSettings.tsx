@@ -344,7 +344,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
 function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: string, updates: Record<string, any>) => void }) {
   const [expanded, setExpanded] = useState(false);
   const [editPrice, setEditPrice] = useState(Number(method.base_price));
-  const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "");
+  const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "__none__");
   const [editBaseUnits, setEditBaseUnits] = useState<number>(method.base_price_units_per_delivery || 1);
 
   const { data: categories = [] } = useQuery({
