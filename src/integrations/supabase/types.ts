@@ -9388,15 +9388,24 @@ export type Database = {
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
-      end_stack_game: {
-        Args: {
-          p_max_combo: number
-          p_perfect_count: number
-          p_score: number
-          p_session_token: string
-        }
-        Returns: Json
-      }
+      end_stack_game:
+        | {
+            Args: {
+              p_score: number
+              p_session_id: string
+              p_session_token: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_max_combo: number
+              p_perfect_count: number
+              p_score: number
+              p_session_token: string
+            }
+            Returns: Json
+          }
       enter_collect_letters_competition:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
