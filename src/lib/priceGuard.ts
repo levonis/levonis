@@ -175,10 +175,10 @@ export function getGuardedCartItemPrice(
     }
   }
 
-  // 4. Add option price adjustment (already in IQD)
+  // 4. Add option price adjustment (may be in USD for some products)
   const optAdj = item.product_options?.price_adjustment;
   if (optAdj) {
-    price += Math.round(Number(optAdj));
+    price += ensureAdjustmentIqd(Number(optAdj), usdToIqd);
   }
 
   // 5. Add pre-order shipping adjustment
