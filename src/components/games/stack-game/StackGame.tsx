@@ -298,7 +298,14 @@ export default function StackGame({ onBack }: Props) {
           <h1 className="text-2xl font-bold text-foreground font-mono">البرج</h1>
           <p className="text-sm text-muted-foreground">ابنِ أعلى برج بدقة! كل طابق يتحرك وعليك إيقافه في الوقت المناسب.</p>
 
-          {/* Tickets */}
+          {/* User High Score */}
+          {userHighScore > 0 && (
+            <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+              <Trophy className="h-4 w-4 text-primary" />
+              <span className="text-xs text-muted-foreground">أعلى سكور:</span>
+              <span className="text-lg font-bold text-primary font-mono">{userHighScore}</span>
+            </div>
+          )}
           <div className="flex justify-center gap-4">
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
               <Ticket className="h-4 w-4 text-accent-foreground" />
