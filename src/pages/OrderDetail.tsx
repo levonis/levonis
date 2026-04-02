@@ -398,14 +398,23 @@ const OrderDetail = () => {
                             {isCustomRequest && (
                               <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">خاص</span>
                             )}
+                            {item.is_gift && (
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">🎁 هدية</span>
+                            )}
                           </h4>
                           {isAdmin && !isCustomRequest && item.products?.taobao_url && (
                             <TaobaoLinkButton taobaoUrl={item.products.taobao_url} />
                           )}
                         </div>
                         <div className="text-left shrink-0">
-                          <p className="font-black text-base text-primary">{formatPrice(Number(item.total_price))}</p>
-                          <p className="text-[10px] text-muted-foreground">{formatPrice(Number(item.unit_price))} × {item.quantity}</p>
+                          {item.is_gift ? (
+                            <p className="font-black text-base text-primary">مجاناً</p>
+                          ) : (
+                            <>
+                              <p className="font-black text-base text-primary">{formatPrice(Number(item.total_price))}</p>
+                              <p className="text-[10px] text-muted-foreground">{formatPrice(Number(item.unit_price))} × {item.quantity}</p>
+                            </>
+                          )}
                         </div>
                       </div>
                       
