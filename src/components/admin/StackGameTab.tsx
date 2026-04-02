@@ -157,6 +157,45 @@ function ProductPicker({
             )}
           </div>
         )}
+
+        {/* Stock warning for prizes */}
+        {requireStock && selected && selected.direct_stock == null && selected.pre_order_stock == null && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-md p-2.5 space-y-2">
+            <div className="text-[11px] text-destructive font-medium flex items-center gap-1">
+              ⚠️ هذا المنتج ليس لديه مخزون! يجب تحديد مخزون للجوائز
+            </div>
+            {!settingStock ? (
+              <Button variant="outline" size="sm" className="text-xs h-7 w-full border-destructive/30 text-destructive" onClick={() => setSettingStock(true)}>
+                تحديد مخزون يدوي للجوائز
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  min={1} 
+                  value={manualStock} 
+                  onChange={e => setManualStock(parseInt(e.target.value) || 1)} 
+                  className="h-7 text-xs w-20" 
+                  placeholder="الكمية"
+                />
+                <Button 
+                  size="sm" 
+                  className="text-xs h-7" 
+                  onClick={async () => {
+                    const { error } = await supabase.from("products").update({ direct_stock: manualStock } as any).eq("id", value.product_id!);
+                    if (error) { toast.error("فشل تحديث المخزون"); return; }
+                    toast.success(`تم تحديد المخزون: ${manualStock}`);
+                    setSettingStock(false);
+                    queryClient.invalidateQueries({ queryKey: ["admin-product-selected", value.product_id] });
+                    queryClient.invalidateQueries({ queryKey: ["admin-products-picker"] });
+                  }}
+                >
+                  حفظ المخزون
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
