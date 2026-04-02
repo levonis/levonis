@@ -62,6 +62,15 @@ export default function StackGame({ onBack }: Props) {
     },
   });
 
+  const { data: userHighScore } = useQuery({
+    queryKey: ["stack-high-score", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("stack_game_high_scores" as any).select("high_score").eq("user_id", user.id).maybeSingle();
+      return (data as any)?.high_score ?? 0;
+    },
+    enabled: !!user,
+
   const { data: lbPrizes = [] } = useQuery({
     queryKey: ["stack-lb-prizes"],
     queryFn: async () => {
