@@ -308,7 +308,17 @@ export default function StackGame({ onBack }: Props) {
           </div>
         </div>
 
-        {/* Stage indicator removed for clean design */}
+        {/* Mid-game prize notification */}
+        {midGamePrize && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <div className="bg-black/70 backdrop-blur-xl rounded-3xl px-8 py-6 border border-primary/40 shadow-2xl shadow-primary/20 animate-scale-in text-center max-w-xs pointer-events-auto">
+              <div className="text-5xl mb-3">🎁</div>
+              <p className="text-lg font-bold text-white mb-1">🎉 حصلت على جائزة!</p>
+              <p className="text-primary font-bold text-base">{(midGamePrize as any).prize_name}</p>
+              <p className="text-xs text-white/50 mt-2">أكمل اللعب!</p>
+            </div>
+          </div>
+        )}
 
       </div>
     );
