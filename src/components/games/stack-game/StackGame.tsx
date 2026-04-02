@@ -296,10 +296,9 @@ export default function StackGame({ onBack }: Props) {
               </button>
             </div>
 
-            {/* Stage info */}
+            {/* Score info */}
             <div className="text-[10px] text-white/40 mb-3">
-              المرحلة: <span className="text-white/80 font-semibold">{getStage(liveScore)}</span>
-              {" • "}السكور الحقيقي: <span className="text-white/80 font-semibold">{liveScore}</span>
+              السكور الحقيقي: <span className="text-white/80 font-semibold">{liveScore}</span>
             </div>
 
             {/* Speed multiplier */}
