@@ -87,7 +87,7 @@ function ProductPicker({
           {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
           <div className="flex-1 min-w-0">
             <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
-            <div className="text-muted-foreground">مخزون: {selected.direct_stock ?? 0}</div>
+            <div className="text-muted-foreground">{getStockDisplay(selected, options)}</div>
           </div>
           <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => onChange({ product_id: null, selected_color: null, selected_option_id: null })}>إزالة</Button>
         </div>
