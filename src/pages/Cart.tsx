@@ -126,6 +126,31 @@ const Cart = () => {
     },
   });
 
+  // جلب جميع استثناءات المحافظات لعرض السعر التقريبي لكل طريقة
+  const { data: allGovExceptions = [] } = useQuery({
+    queryKey: ['delivery-all-gov-exceptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_governorate_exceptions').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // حساب سعر تقريبي لطريقة توصيل معينة (للعرض فقط)
+  const getMethodPreviewPrice = (methodKey: string) => {
+    if (methodKey === 'pickup') return 0;
+    if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
+    const method = deliveryMethods.find((m: any) => m.method_key === methodKey);
+    if (!method) return 0;
+    const basePrice = Number(method.base_price) || 0;
+    const gov = selectedAddress?.governorate || profile?.governorate || null;
+    if (gov) {
+      const govExc = allGovExceptions.find((e: any) => e.delivery_method_key === methodKey && e.governorate === gov);
+      if (govExc) return Number(govExc.delivery_price);
+    }
+    return basePrice;
+  };
+
   const { data: wallet } = useQuery({
     queryKey: ['wallet', user?.id],
     queryFn: async () => {
