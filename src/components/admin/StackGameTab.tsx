@@ -492,7 +492,7 @@ export default function StackGameTab() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium flex items-center gap-1"><Zap className="h-3 w-3" /> مكافأة المثالي (نقاط موقع)</label>
-                <Input type="number" min={0} value={s.perfect_bonus_points} onChange={(e) => update("perfect_bonus_points", parseInt(e.target.value) || 0)} className="w-32" />
+                <Input type="number" min={0} step={0.01} value={s.perfect_bonus_points} onChange={(e) => update("perfect_bonus_points", parseFloat(e.target.value) || 0)} className="w-32" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium flex items-center gap-1"><Trophy className="h-3 w-3" /> مضاعف الكومبو (نقاط موقع)</label>
