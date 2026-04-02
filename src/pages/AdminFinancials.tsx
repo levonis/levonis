@@ -138,8 +138,21 @@ const AdminFinancials = () => {
   const [subTab, setSubTab] = useState('general');
   const [currentPage, setCurrentPage] = useState(1);
   const [manualOrderForm, setManualOrderForm] = useState<ManualOrderForm>({
-    customer_name: '', product_names: '', total_amount: 0, customer_paid_amount: 0,
-    admin_paid_amount: 0, admin_product_cost: 0, tax_amount: 0, financial_notes: '',
+    order_type: 'direct', customer_name: '', products: [{ type: 'manual', name: '', quantity: 1, unit_price: 0, cost_price: 0 }],
+    total_amount: 0, customer_paid_amount: 0, remaining_amount: 0, admin_shipping_cost: 0,
+    admin_product_cost: 0, status: 'delivered', financial_notes: '',
+  });
+  const [productSearch, setProductSearch] = useState('');
+
+  // Fetch site products for product selector
+  const { data: siteProducts } = useQuery({
+    queryKey: ['admin-products-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price').order('name_ar').limit(500);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isAdmin && isAddDialogOpen,
   });
 
   const applyQuickFilter = (filter: string) => {
