@@ -2226,6 +2226,8 @@ export type Database = {
       delivery_methods: {
         Row: {
           base_price: number
+          base_price_category_id: string | null
+          base_price_units_per_delivery: number
           created_at: string
           description_ar: string | null
           display_order: number
@@ -2238,6 +2240,8 @@ export type Database = {
         }
         Insert: {
           base_price?: number
+          base_price_category_id?: string | null
+          base_price_units_per_delivery?: number
           created_at?: string
           description_ar?: string | null
           display_order?: number
@@ -2250,6 +2254,8 @@ export type Database = {
         }
         Update: {
           base_price?: number
+          base_price_category_id?: string | null
+          base_price_units_per_delivery?: number
           created_at?: string
           description_ar?: string | null
           display_order?: number
@@ -2260,7 +2266,15 @@ export type Database = {
           name_ar?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "delivery_methods_base_price_category_id_fkey"
+            columns: ["base_price_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_verification_codes: {
         Row: {
