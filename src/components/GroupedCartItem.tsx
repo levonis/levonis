@@ -5,6 +5,8 @@ import { Minus, Plus, Trash2, Package, Gift } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
+import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
 
 interface GroupedCartItemProps {
   productId: string;
@@ -24,55 +26,13 @@ const GroupedCartItem = ({
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const firstItem = items[0];
   const product = firstItem.products;
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   
   if (!product) return null;
 
   const calculateItemPrice = (item: CartItem) => {
-    const isDirect = (item as any).sale_type === 'direct';
-    const itemOption = (item as any).product_options;
-    const itemColor = (item as any).selected_color;
-    const colorData = itemColor && product.colors
-      ? (product.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
-      : null;
-    
-    let itemPrice = Number(product.price);
-    
-    if (isDirect && (product as any).direct_sale_price != null) {
-      itemPrice = Number((product as any).direct_sale_price);
-    } else if (!isDirect) {
-      const shippingType = (item as any).shipping_type;
-      if (shippingType === 'sea' && (product as any).sea_price != null) {
-        itemPrice = Number((product as any).sea_price);
-      } else if (shippingType === 'air' && (product as any).air_price != null) {
-        itemPrice = Number((product as any).air_price);
-      }
-    }
-    
-    if (colorData) {
-      if (isDirect && colorData.direct_sale_price != null) {
-        itemPrice = Number(colorData.direct_sale_price);
-      } else if (colorData.price != null) {
-        itemPrice = Number(colorData.price);
-      }
-    }
-    
-    if (itemOption?.price_adjustment) {
-      itemPrice += Number(itemOption.price_adjustment);
-    }
-
-    const shippingIndex = (item as any).shipping_option_index;
-    const shippingOptions = product.pre_order_shipping_options;
-    if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-      const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-      itemPrice += shippingAdjustment;
-    }
-    
-    // Round to nearest 250 if enabled
-    if ((product as any)?.round_up_price === true) {
-      itemPrice = Math.ceil(itemPrice / 250) * 250;
-    }
-    
-    return itemPrice;
+    return getGuardedCartItemPrice(item as any, usdToIqd);
   };
 
   const groupTotal = items.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);

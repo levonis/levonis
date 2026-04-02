@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
+import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { toast } from 'sonner';
 
 export interface CartItem {
@@ -697,65 +698,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
     if (item.products) {
-      const isDirect = (item as any).sale_type === 'direct';
-      let itemPrice = Number(item.products.price);
-
-      // For direct sale, use direct_sale_price if available
-      if (isDirect && item.products.direct_sale_price != null) {
-        itemPrice = Number(item.products.direct_sale_price);
-      }
-
-      // For pre-order, use sea_price or air_price based on shipping option
-      if (!isDirect) {
-        const shippingType = (item.products as any).shipping_type;
-        const shippingIndex = (item as any).shipping_option_index;
-        const seaPrice = (item.products as any).sea_price;
-        const airPrice = (item.products as any).air_price;
-        
-        if (shippingType === 'sea' && seaPrice != null) {
-          itemPrice = Number(seaPrice);
-        } else if (shippingType === 'air' && airPrice != null) {
-          itemPrice = Number(airPrice);
-        } else if (shippingType === 'both' && seaPrice != null && airPrice != null) {
-          // Base price is the lower one; shipping adjustment adds the difference
-          itemPrice = Math.min(Number(seaPrice), Number(airPrice));
-        }
-      }
-
-      // Add color price if selected and different from base price
-      const selColor = (item as any).selected_color;
-      const selectedColorData = selColor && item.products?.colors
-        ? (item.products.colors as any[]).find((c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor)
-        : null;
-
-      if (selectedColorData?.price != null) {
-        // For direct sale, prefer direct_sale_price from color
-        if (isDirect && selectedColorData?.direct_sale_price != null) {
-          itemPrice = Number(selectedColorData.direct_sale_price);
-        } else {
-          itemPrice = Number(selectedColorData.price);
-        }
-      }
-
-      // Add option price adjustment
-      const itemOption = (item as any).product_options;
-      if (itemOption?.price_adjustment) {
-        itemPrice += Math.round(Number(itemOption.price_adjustment));
-      }
-
-      // Add pre-order shipping adjustment (if chosen)
-      const shippingIndex = (item as any).shipping_option_index;
-      const shippingOptions = item.products?.pre_order_shipping_options;
-      if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-        const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-        itemPrice += shippingAdjustment;
-      }
-
-      // Round to nearest 250 if enabled
-      if ((item.products as any)?.round_up_price === true) {
-        itemPrice = Math.ceil(itemPrice / 250) * 250;
-      }
-
+      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
