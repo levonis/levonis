@@ -422,6 +422,48 @@ function FormulaCard({ icon, title, formula, color }: { icon: React.ReactNode; t
   );
 }
 
+// ─── Delivery Methods Manager ───
+function DeliveryMethodsManager() {
+  const queryClient = useQueryClient();
+
+  const { data: methods = [] } = useQuery({
+    queryKey: ["delivery-methods"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("delivery_methods").select("*").order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updatePrice = useMutation({
+    mutationFn: async ({ id, price }: { id: string; price: number }) => {
+      const { error } = await supabase.from("delivery_methods").update({ base_price: price }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["delivery-methods"] });
+      toast.success("تم تحديث السعر");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-1">
+        <MapPin className="h-5 w-5 text-primary" />
+        <h2 className="text-lg font-bold">طرق التوصيل داخل العراق</h2>
+      </div>
+      {methods.map((method: any) => (
+        <DeliveryMethodCard
+          key={method.id}
+          method={method}
+          onUpdatePrice={(id, price) => updatePrice.mutate({ id, price })}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Main Component ───
 export default function AdminShippingSettings() {
   const { user } = useAuth();
