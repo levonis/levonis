@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { isDirectSaleLikeOrder } from '@/lib/orderFinancials';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,6 +83,27 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     },
   });
 
+  // Fetch bundle_items to expand bundle sales into component products
+  const { data: allBundleItems = [] } = useQuery({
+    queryKey: ['batch-bundle-items'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('bundle_items')
+        .select('bundle_id, product_id, quantity');
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const bundlesById = useMemo(() => {
+    const map: Record<string, { product_id: string; quantity: number }[]> = {};
+    allBundleItems.forEach((bi: any) => {
+      if (!map[bi.bundle_id]) map[bi.bundle_id] = [];
+      map[bi.bundle_id].push({ product_id: bi.product_id, quantity: bi.quantity || 1 });
+    });
+    return map;
+  }, [allBundleItems]);
+
   // Fetch current stock for products that have batches
   const batchProductIds = useMemo(() => {
     return [...new Set(batches.filter((b: any) => b.product_id).map((b: any) => b.product_id))];
@@ -102,7 +124,6 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
         if (colors.length === 0) {
           map[p.id] = p.direct_stock != null ? Number(p.direct_stock) : 0;
         } else {
-          // Sum only colors that are available for direct sale
           let total = 0;
           colors.forEach((c: any) => {
             if (c.available_for_direct_sale === false) return;
@@ -192,22 +213,52 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
 
   // Build analysis: group batches by product/bundle, distribute sold items sequentially
   const productGroups = useMemo(() => {
-    // 1. Collect all sold items per product_id AND per bundle_id from delivered direct orders
+    // 1. Collect sold items per product_id from DIRECT SALE orders only
+    // Also expand bundle sales into component product quantities
     const soldByEntity: Record<string, SoldItem[]> = {};
     
-    allOrders.forEach((order: any) => {
+    const directOrders = allOrders.filter((order: any) => isDirectSaleLikeOrder(order));
+    
+    directOrders.forEach((order: any) => {
       order.order_items?.forEach((item: any) => {
-        // Track by bundle_id if present, otherwise by product_id
-        const key = item.bundle_id ? `bundle_${item.bundle_id}` : (item.product_id ? item.product_id : null);
-        if (!key) return;
-        if (!soldByEntity[key]) soldByEntity[key] = [];
-        soldByEntity[key].push({
-          username: order.profile?.full_name || order.profile?.username || 'غير معروف',
-          quantity: item.quantity || 1,
-          revenue: calcItemRevenue(item),
-          orderNumber: order.order_number,
-          date: order.created_at,
-        });
+        const username = order.profile?.full_name || order.profile?.username || 'غير معروف';
+        const orderDate = order.created_at;
+        const orderNumber = order.order_number;
+
+        // If this item is a bundle sale, expand into component products
+        if (item.bundle_id && bundlesById[item.bundle_id]) {
+          const components = bundlesById[item.bundle_id];
+          const bundleQty = item.quantity || 1;
+          const bundleRevenue = calcItemRevenue(item);
+          // Also track the bundle itself for bundle batches
+          const bundleKey = `bundle_${item.bundle_id}`;
+          if (!soldByEntity[bundleKey]) soldByEntity[bundleKey] = [];
+          soldByEntity[bundleKey].push({
+            username, quantity: bundleQty, revenue: bundleRevenue, orderNumber, date: orderDate,
+          });
+          // Expand into component products
+          components.forEach((comp) => {
+            const compKey = comp.product_id;
+            if (!soldByEntity[compKey]) soldByEntity[compKey] = [];
+            soldByEntity[compKey].push({
+              username,
+              quantity: bundleQty * comp.quantity,
+              revenue: 0, // Revenue attributed to bundle, not individual components
+              orderNumber,
+              date: orderDate,
+            });
+          });
+        } else if (item.product_id) {
+          // Direct product sale
+          if (!soldByEntity[item.product_id]) soldByEntity[item.product_id] = [];
+          soldByEntity[item.product_id].push({
+            username,
+            quantity: item.quantity || 1,
+            revenue: calcItemRevenue(item),
+            orderNumber,
+            date: orderDate,
+          });
+        }
       });
     });
 
@@ -303,7 +354,7 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
         overflowQty: hasStockError ? totalSoldQty - totalBatchQty : 0,
       };
     });
-  }, [batches, allOrders]);
+  }, [batches, allOrders, bundlesById]);
 
   return (
     <div className="space-y-4">
