@@ -249,6 +249,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
                 {exc.categories?.name_ar || 'قسم محذوف'}
                 {exc.governorate && <span className="text-muted-foreground mr-1">({exc.governorate})</span>}
               </span>
+              <span className="text-[10px] text-muted-foreground">كل {exc.units_per_delivery || 1} قطعة</span>
               <span className="text-xs font-bold text-amber-500">{Number(exc.delivery_price).toLocaleString()} د.ع</span>
               <Button
                 variant="ghost"
