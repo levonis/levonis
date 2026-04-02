@@ -1050,22 +1050,7 @@ const Cart = () => {
           : (item.products?.name_ar || 'منتج');
         
         const isDirect = (item as any).sale_type === 'direct';
-        let itemPrice = isCustomRequest
-          ? Number(customRequest?.suggested_price || 0)
-          : Number(item.products?.price || 0);
-        
-        if (!isCustomRequest && item.products) {
-          if (isDirect && item.products.direct_sale_price != null) {
-            itemPrice = Number(item.products.direct_sale_price);
-          } else if (!isDirect) {
-            const shippingType = (item as any).shipping_type;
-            if (shippingType === 'sea' && item.products.sea_price != null) {
-              itemPrice = Number(item.products.sea_price);
-            } else if (shippingType === 'air' && item.products.air_price != null) {
-              itemPrice = Number(item.products.air_price);
-            }
-          }
-        }
+        const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
         
         // Use product_options data directly from the cart item
         const itemOption = (item as any).product_options;
@@ -1074,31 +1059,6 @@ const Cart = () => {
         const colorData = itemColor && item.products?.colors
           ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
           : null;
-        
-        if (colorData) {
-          if (isDirect && colorData.direct_sale_price != null) {
-            itemPrice = Number(colorData.direct_sale_price);
-          } else if (colorData.price != null) {
-            itemPrice = Number(colorData.price);
-          }
-        }
-        
-        if (itemOption?.price_adjustment) {
-          itemPrice += Math.round(Number(itemOption.price_adjustment));
-        }
-
-        // Add pre-order shipping adjustment (if chosen)
-        const shippingIndex = (item as any).shipping_option_index;
-        const shippingOptions = item.products?.pre_order_shipping_options;
-        if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-          const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-          itemPrice += shippingAdjustment;
-        }
-        
-        // Round to nearest 250 if enabled
-        if ((item.products as any)?.round_up_price === true) {
-          itemPrice = Math.ceil(itemPrice / 250) * 250;
-        }
         
         message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
         if (itemOption) {
