@@ -408,16 +408,20 @@ const AdminOrders = () => {
     mutationFn: async (order: any) => {
       const paidAmount = Number(order.customer_paid_amount) || Number(order.paid_amount) || 0;
       
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'cancelled',
-          payment_status: 'refunded',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', order.id);
+      // Use cancel_order RPC to properly restore stock
+      const { data: cancelResult, error: cancelError } = await supabase.rpc('cancel_order', {
+        p_order_id: order.id,
+        p_cancelled_by: 'admin'
+      });
+      if (cancelError) throw cancelError;
+      const result = cancelResult as any;
+      if (result && !result.success) throw new Error(result.error || 'فشل إلغاء الطلب');
 
-      if (updateError) throw updateError;
+      // Update payment status to refunded
+      await supabase.from('orders').update({
+        payment_status: 'refunded',
+        updated_at: new Date().toISOString()
+      }).eq('id', order.id);
 
       if (paidAmount > 0) {
         const { data: wallet, error: walletFetchError } = await supabase
