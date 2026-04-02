@@ -794,7 +794,7 @@ export default function AdminShippingSettings() {
               color="bg-blue-500/15"
               formula={[
                 `CBM = (L+${settings.sea_padding_cm}) × (W+${settings.sea_padding_cm}) × (H+${settings.sea_padding_cm}) ÷ 1,000,000`,
-                `Cost = CBM × ${settings.sea_cbm_price.toLocaleString()} + ${settings.commission_fee.toLocaleString()}`,
+                `Cost = CBM × ${settings.sea_cbm_price.toLocaleString()}`,
               ]}
             />
             <FormulaCard
