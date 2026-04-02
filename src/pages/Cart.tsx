@@ -68,6 +68,7 @@ const Cart = () => {
   const [removingItemIds, setRemovingItemIds] = useState<Set<string>>(new Set());
   const [showAddressSwitcher, setShowAddressSwitcher] = useState(false);
   const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<string>('standard');
+  const [deliveryOptionsOpen, setDeliveryOptionsOpen] = useState(false);
   // Refresh cart data on mount to get latest pendingCartRequest
   useEffect(() => {
     refreshCart();
