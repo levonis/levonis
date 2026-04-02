@@ -212,6 +212,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
         delivery_price: newPrice,
         governorate: newGov === "all" ? null : newGov,
         delivery_method_key: methodKey,
+        units_per_delivery: newUnits || 1,
       });
       if (error) throw error;
     },
@@ -220,6 +221,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
       setNewCat("");
       setNewPrice(0);
       setNewGov("all");
+      setNewUnits(1);
       toast.success("تمت إضافة استثناء القسم");
     },
     onError: (e: any) => toast.error(e.message),
