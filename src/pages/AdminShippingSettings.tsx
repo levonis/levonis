@@ -489,12 +489,9 @@ export default function AdminShippingSettings() {
   const [settings, setSettings] = useState<Record<string, number>>({
     sea_cbm_price: 350000,
     sea_padding_cm: 5,
-    air_usa_kg_price: 30000,
-    air_usa_weight_buffer_percent: 20,
     air_china_volumetric_price: 15000,
     air_china_volumetric_divider: 5000,
     air_china_weight_safety_margin: 20,
-    commission_fee: 1000,
     local_delivery_baghdad: 6000,
     local_delivery_provinces: 5000,
     usd_to_iqd_rate: 1410,
