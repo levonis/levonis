@@ -76,6 +76,7 @@ const Cart = () => {
 
   // Check cart sale type
   const isDirectSaleCart = cartSaleType === 'direct';
+  const isGiftOnlyCart = items.length > 0 && items.every((item: any) => item.is_gift);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = !isDirectSaleCart && items.some((item: any) => 
