@@ -2050,8 +2050,76 @@ const Admin = () => {
                         </Button>
                       </div>
                     </div>
-                    
-                    
+
+/** Inline price preview for options — shows the final user-facing price */
+const OptionPricePreview = ({ adjustment, editingProduct }: { adjustment: number; editingProduct: any }) => {
+  const { data: ss } = useShippingSettings();
+  if (!ss || !editingProduct) return null;
+  const rate = ss.usd_to_iqd_rate || 1410;
+  const adjIqd = adjustment ? (Math.abs(adjustment) < 500 ? Math.round(adjustment * rate) : Math.round(adjustment)) : 0;
+  const prices: { label: string; value: number }[] = [];
+  if (editingProduct.direct_sale_price) {
+    prices.push({ label: 'مباشر', value: editingProduct.direct_sale_price + adjIqd });
+  }
+  if (editingProduct.sea_price) {
+    prices.push({ label: 'بحري', value: editingProduct.sea_price + adjIqd });
+  }
+  if (editingProduct.air_price) {
+    prices.push({ label: 'جوي', value: editingProduct.air_price + adjIqd });
+  }
+  // Fallback: if no prices computed, use price * rate
+  if (prices.length === 0 && editingProduct.price_usd) {
+    const base = Math.round(editingProduct.price_usd * rate);
+    prices.push({ label: 'تقريبي', value: base + adjIqd });
+  }
+  if (prices.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {prices.map(p => (
+        <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
+          👁 {p.label}: {p.value.toLocaleString()} د.ع
+        </span>
+      ))}
+    </div>
+  );
+};
+
+/** Inline price preview for colors */
+const ColorPricePreview = ({ color, editingProduct }: { color: any; editingProduct: any }) => {
+  const { data: ss } = useShippingSettings();
+  if (!ss || !editingProduct) return null;
+  const rate = ss.usd_to_iqd_rate || 1410;
+  const prices: { label: string; value: number }[] = [];
+  // Color can override direct_sale_price (IQD) or price (USD)
+  if (color.direct_sale_price) {
+    prices.push({ label: 'بيع مباشر', value: color.direct_sale_price });
+  } else if (color.price) {
+    const colorPriceIqd = Math.abs(color.price) < 500 ? Math.round(color.price * rate) : Math.round(color.price);
+    prices.push({ label: 'سعر اللون', value: colorPriceIqd });
+  } else {
+    // Falls back to product prices
+    if (editingProduct.direct_sale_price) {
+      prices.push({ label: 'مباشر (افتراضي)', value: editingProduct.direct_sale_price });
+    }
+    if (editingProduct.sea_price) {
+      prices.push({ label: 'بحري', value: editingProduct.sea_price });
+    }
+    if (editingProduct.air_price) {
+      prices.push({ label: 'جوي', value: editingProduct.air_price });
+    }
+  }
+  if (prices.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {prices.map(p => (
+        <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
+          👁 {p.label}: {p.value.toLocaleString()} د.ع
+        </span>
+      ))}
+    </div>
+  );
+};
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name_ar">الاسم بالعربي *</Label>
