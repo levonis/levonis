@@ -1144,7 +1144,7 @@ const Cart = () => {
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd);
+          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd));
 
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
