@@ -1,85 +1,78 @@
 
-الهدف: تحويل لعبة البرج إلى شكل حديث/سينمائي غير Pixel فعلاً، وإصلاح وضع الاختبار بحيث يبني البرج تلقائياً بالطوب الحقيقي بدل مجرد تغيير الخلفية.
 
-1) التشخيص الحالي
-- الرسوم داخل اللعبة ما زالت تبدو بدائية لأن المشهد يعتمد على أشكال أولية بسيطة جداً في `StackEnvironment.tsx` و`StackScene.tsx`.
-- واجهة لعبة البرج نفسها ما زالت تستخدم أنماط Pixel مثل `pixel-frame` و`pixel-header-bar` و`font-mono` داخل `StackGame.tsx`.
-- وضع الاختبار الحالي يعتمد على `debugScoreOverride` لتغيير المرحلة والصوت فقط، لكنه لا يبني البرج فعلياً.
-- اللعب التلقائي غير موثوق لأن منطق الحركة/التمركز الحالي مرتبط بإطار الرسم، والمكعب المتحرك يُعاد إعطاؤه `position={startPos}` من الرندر، ما قد يسبب إعادة ضبط موضعه ويمنع سلوك autoplay من الاستقرار.
+# Plan: Replace Tower Game Design with artginzburg/stack Style
 
-2) ما سأبنيه
-- إزالة الطابع Pixel من تجربة لعبة البرج نفسها:
-  - تحديث واجهة اللعب والقوائم والـ overlays إلى تصميم حديث Glass / Neon / Cinematic.
-  - استبدال الخط الأحادي والـ pixel classes في `StackGame.tsx` بعناصر أنعم وأكثر احترافية.
-- ترقية المشهد ثلاثي الأبعاد:
-  - تحسين قاعدة البرج والخامات والإضاءة والظلال.
-  - جعل البلوكات أقرب لمظهر AAA خفيف: خامات نظيفة، حواف ناعمة بصرياً، لمعان واقعي، وهج وإضاءات محيطية.
-  - تطوير الخلفيات إلى طبقات أغنى بصرياً مع انتقالات أكثر سلاسة بين المراحل.
-- إصلاح Debug الحقيقي:
-  - استبدال فكرة “تغيير السكور فقط” بفكرة “الهدف = عدد طوبات حقيقي”.
-  - إذا اختار الأدمن 20، النظام يضع 20 طوبة فعلاً ويُشغّل كل الأصوات والتأثيرات والكاميرا والفيزياء خلال البناء.
-  - إضافة Auto Build مستقر مع سرعات 1x/2x/3x/5x/10x.
+## Summary
+Replace the current "Glass/Neon" cyberpunk tower design with the clean, minimal design from the artginzburg/stack game: HSL color-cycling tiles on a black background, orthographic camera, proper shadows, white UI elements, and no environment stages (buildings, planets, etc.).
 
-3) الملفات التي سأعدلها
-- `src/components/games/stack-game/StackGame.tsx`
-  - إعادة تصميم UI الخاص باللعبة ووضع الاختبار.
-  - تحويل أدوات الاختبار إلى:
-    - Target blocks
-    - Auto build on/off
-    - Speed multiplier
-    - Presets تبني فعلياً حتى المرحلة المطلوبة
-- `src/components/games/stack-game/StackGameCanvas.tsx`
-  - تمرير props جديدة خاصة بالبناء التلقائي الحقيقي بدل `debugScoreOverride`.
-- `src/components/games/stack-game/StackScene.tsx`
-  - إصلاح منطق حركة القطعة المتحركة.
-  - إضافة state machine واضح للبناء التلقائي.
-  - فصل “السكور المعروض” عن “عدد الطوبات الحقيقي” وإلغاء override الوهمي.
-  - تطوير الخامات والإضاءة والمؤثرات البصرية.
-- `src/components/games/stack-game/StackEnvironment.tsx`
-  - رفع جودة البيئة بصرياً وإزالة الإحساس البدائي.
-  - تحسين كل مرحلة بعناصر أكثر احترافية وانتقالات متدرجة.
-- `src/components/games/stack-game/TowerAudioPro.ts`
-  - تحسين أصوات وضع الطوب والـ combo والـ fail لتصبح أدق وأثقل وأوضح.
-- `src/components/games/stack-game/StackStageAudio.ts`
-  - رفع جودة الأجواء المحيطية وربطها بسلاسة مع مراحل البناء الحقيقي.
+## What Changes
 
-4) منطق الإصلاح الأساسي
-```text
-Admin Debug
-  -> يحدد targetBlocks = 20
-  -> scene يبدأ autoplay
-  -> يحرك القطعة الحالية
-  -> عند الوصول لنقطة مناسبة: placeBlock()
-  -> يتحدث stack/score/camera/audio/effects
-  -> يكرر حتى score === targetBlocks
+### Visual Design Changes
+- **Background**: Solid black (#000) instead of dynamic gradient environments
+- **Tiles**: HSL color-cycling (hue increments by 5 per block, 50% saturation, 50% lightness) instead of neon palette array
+- **Camera**: Orthographic (isometric-like) instead of perspective, matching the original iOS game's feel
+- **Lighting**: Single directional light with proper shadow casting, clean ambient light
+- **Base tile**: Simple large box at the bottom (matching the tile color scheme) instead of hexagonal neon platform
+- **No environment stages**: Remove StackEnvironment entirely (no cities, clouds, space, planets, stars)
+- **Materials**: Simple MeshLambertMaterial/MeshStandardMaterial instead of MeshPhysicalMaterial with clearcoat
+- **Perfect effect**: White expanding border planes instead of particle explosions
+- **Score text**: White, clean, no outline glow
+
+### Files to Modify
+1. **`StackScene.tsx`** (major rewrite) - Core game rendering:
+   - Replace PALETTES array with HSL color function
+   - Switch to orthographic camera
+   - Remove neon platform, replace with simple colored base box
+   - Remove ring geometries, point lights around base
+   - Remove edge glow, ghost guide
+   - Simplify block materials (no clearcoat, no metalness)
+   - Replace particle system with simple white perfect-effect planes
+   - Simplify falling piece materials
+   - Remove StackEnvironment import and usage
+   - Clean score display (white text, no outline)
+
+2. **`StackGameCanvas.tsx`** - Canvas setup:
+   - Switch from perspective to orthographic camera
+   - Change background from `#0f0a1e` to `#000`
+   - Remove tone mapping (set to NoToneMapping)
+
+3. **`StackEnvironment.tsx`** - Will no longer be imported by StackScene (can keep file but won't be used, or remove import)
+
+### What Stays the Same
+- All game logic (cutting, scoring, combos, perfect detection)
+- StackGame.tsx (UI layer, backend integration, points, milestones)
+- Audio systems (TowerAudioPro, StackStageAudio)
+- onGameOver / onScoreUpdate callbacks
+- autoPlay and debug features
+- Speed multiplier logic
+- All database/backend functionality
+
+## Technical Details
+
+### Color System
+```typescript
+function getTileColor(index: number): string {
+  const hue = ((index + 1) * 5) % 360;
+  return `hsl(${hue}, 50%, 50%)`;
+}
+function getBackgroundColor(index: number): string {
+  return '#000';
+}
 ```
 
-5) التفاصيل التقنية
-- سأستبدل `debugScoreOverride` بنظامين:
-  - `debugTargetScore` أو `debugTargetBlocks`
-  - `debugAutoBuild`
-- موضع القطعة المتحركة لن يبقى محسوباً مباشرة داخل JSX في كل render، بل سيُدار عبر refs/effect عند spawn قطعة جديدة فقط.
-- autoplay سيعمل كـ state machine:
-  - `spawning`
-  - `moving`
-  - `aligning`
-  - `placing`
-  - `cooldown`
-- المرحلة البيئية ستُحسب من `score` الحقيقي فقط.
-- Presets مثل القمر/المشتري/الشمس ستضبط target مناسب، والنظام يبني البرج فعلياً حتى يصل إليه.
-- سأزيل العناصر/الأنماط ذات الطابع pixel من شاشة اللعبة نفسها، مع إبقاء بنية اللعبة الحالية بدون تغييرات على الباكند.
+### Camera (Orthographic)
+```typescript
+// In StackGameCanvas.tsx
+<Canvas orthographic camera={{ position: [2, 5, 2], zoom: 40 }} ...>
+```
+The orthographic camera gives the flat, isometric look matching the original Stack game.
 
-6) نتيجة التنفيذ المتوقعة
-- اللعبة ستظهر بمظهر حديث غير Pixel فعلاً.
-- البيئة ستتغير لأن البرج يرتفع فعلياً، لا لأن السكور مزور بصرياً.
-- الأدمن سيتمكن من اختبار:
-  - 20 طوبة = برج من 20 طوبة فعلاً
-  - 100 طوبة = الوصول للفضاء فعلياً
-  - تشغيل تلقائي مستقر مع تسريع
-- الأصوات والتأثيرات ستصبح مرتبطة بالبناء الحقيقي وليس مجرد تبديل خلفيات.
+### Simplified Materials
+```typescript
+// Tiles use basic standard material, no clearcoat/metalness
+<meshStandardMaterial color={tileColor} />
+```
 
-7) التحقق بعد التنفيذ
-- التأكد أن اختيار 20/50/100/200 يبني نفس العدد الحقيقي من الطوبات.
-- التأكد أن autoplay يعمل على كل السرعات حتى 10x.
-- التأكد أن البيئة والصوت ينتقلان مع السكور الحقيقي فقط.
-- التأكد أن واجهة اللعبة لم تعد تستخدم النمط Pixel داخل تجربة البرج.
+### Perfect Effect
+Instead of particle explosions, use expanding white border planes (4 thin planes forming a rectangle border around the tile that fade out), matching the reference's `PerfectEffect.tsx` / `PlaneBorder.tsx` approach.
+
