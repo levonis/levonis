@@ -323,22 +323,36 @@ export default function StackGame({ onBack }: Props) {
           )}
 
           {/* Rewards info */}
-          <div className="pixel-frame p-4 rounded-lg space-y-2 text-right">
+          <div className="pixel-frame p-4 rounded-lg space-y-3 text-right">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 justify-end">
               <Trophy className="h-4 w-4 text-primary" /> المكافآت
             </h3>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div className="flex justify-between">
-                <span>+{settings?.points_per_block ?? 1}</span>
-                <span className="flex items-center gap-1"><Star className="h-3 w-3" /> لكل قطعة</span>
+            <div className="text-xs space-y-2">
+              <div className="text-muted-foreground font-mono text-[10px] mb-1">🎮 نقاط اللعبة (السكور)</div>
+              <div className="space-y-1 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>+{(settings as any)?.game_points_per_block ?? 1}</span>
+                  <span className="flex items-center gap-1">لكل قطعة</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>+{(settings as any)?.game_perfect_bonus ?? 3}</span>
+                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> مثالية</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>+{settings?.perfect_bonus_points ?? 3}</span>
-                <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> مثالية</span>
-              </div>
-              <div className="flex justify-between">
-                <span>×{settings?.combo_bonus_multiplier ?? 0.5}</span>
-                <span>كومبو إضافي</span>
+              <div className="border-t border-border/20 pt-2 text-muted-foreground font-mono text-[10px] mb-1">⭐ نقاط الموقع</div>
+              <div className="space-y-1 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>+{settings?.points_per_block ?? 1}</span>
+                  <span className="flex items-center gap-1"><Star className="h-3 w-3" /> لكل قطعة</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>+{settings?.perfect_bonus_points ?? 3}</span>
+                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> مثالية</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>×{settings?.combo_bonus_multiplier ?? 0.5}</span>
+                  <span>كومبو إضافي</span>
+                </div>
               </div>
             </div>
           </div>
