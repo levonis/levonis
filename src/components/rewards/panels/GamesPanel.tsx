@@ -15,24 +15,6 @@ const PREVIEW_GAMES = [
 export default function GamesPanel() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
-
-  // Temporarily hidden for non-admin users
-  if (!isAdmin) {
-    return (
-      <div className="space-y-4 opacity-60">
-        <div className="flex items-center gap-2 mb-1">
-          <Gamepad2 className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-bold text-lg text-muted-foreground">{t('games_section_title')}</h3>
-        </div>
-        <div className="rounded-xl border border-border/40 bg-card/50 p-6 text-center">
-          <Lock className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground font-medium">قسم الألعاب قيد الصيانة</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">سيعود قريباً</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">
