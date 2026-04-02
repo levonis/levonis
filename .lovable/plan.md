@@ -1,78 +1,82 @@
 
 
-# Plan: Replace Tower Game Design with artginzburg/stack Style
+# خطة إصلاح نظام حماية وتأمين الطابعات
 
-## Summary
-Replace the current "Glass/Neon" cyberpunk tower design with the clean, minimal design from the artginzburg/stack game: HSL color-cycling tiles on a black background, orthographic camera, proper shadows, white UI elements, and no environment stages (buildings, planets, etc.).
+## المشاكل المحددة
 
-## What Changes
+1. **لا يمكن تعديل/حذف السيريال نمبر للطلبات** في لوحة الأدمن
+2. **لا يمكن للأدمن تحديد تاريخ بدء/انتهاء الضمان يدوياً**
+3. **المستخدم لا يرى تفاصيل الضمان** بعد مسح الباركود أو إدخال السيريال
+4. **شراء التأمين لا يعمل** رغم وجود رصيد كافٍ في المحفظة
+5. **خصومات التأمين على الأقسام والمنتجات لا تعمل** (الهوكس `useProtectionDiscount` و `useCartProtectionDiscount` موجودان لكن غير مستخدمين في أي مكان)
+6. **قسم الصيانة لا يظهر في المحادثات** عند وجود ضمان أو تأمين فعّال
 
-### Visual Design Changes
-- **Background**: Solid black (#000) instead of dynamic gradient environments
-- **Tiles**: HSL color-cycling (hue increments by 5 per block, 50% saturation, 50% lightness) instead of neon palette array
-- **Camera**: Orthographic (isometric-like) instead of perspective, matching the original iOS game's feel
-- **Lighting**: Single directional light with proper shadow casting, clean ambient light
-- **Base tile**: Simple large box at the bottom (matching the tile color scheme) instead of hexagonal neon platform
-- **No environment stages**: Remove StackEnvironment entirely (no cities, clouds, space, planets, stars)
-- **Materials**: Simple MeshLambertMaterial/MeshStandardMaterial instead of MeshPhysicalMaterial with clearcoat
-- **Perfect effect**: White expanding border planes instead of particle explosions
-- **Score text**: White, clean, no outline glow
+---
 
-### Files to Modify
-1. **`StackScene.tsx`** (major rewrite) - Core game rendering:
-   - Replace PALETTES array with HSL color function
-   - Switch to orthographic camera
-   - Remove neon platform, replace with simple colored base box
-   - Remove ring geometries, point lights around base
-   - Remove edge glow, ghost guide
-   - Simplify block materials (no clearcoat, no metalness)
-   - Replace particle system with simple white perfect-effect planes
-   - Simplify falling piece materials
-   - Remove StackEnvironment import and usage
-   - Clean score display (white text, no outline)
+## الخطوات
 
-2. **`StackGameCanvas.tsx`** - Canvas setup:
-   - Switch from perspective to orthographic camera
-   - Change background from `#0f0a1e` to `#000`
-   - Remove tone mapping (set to NoToneMapping)
+### 1. تعديل وحذف السيريال نمبر (AdminQRPrinterTab + AdminPrinterProtection)
 
-3. **`StackEnvironment.tsx`** - Will no longer be imported by StackScene (can keep file but won't be used, or remove import)
+- إضافة أزرار **تعديل** و**حذف** للسيريال في تبويب "إنشاء + QR" بجدول الطابعات
+- إنشاء dialog تعديل السيريال مع حقل إدخال جديد
+- عند الحذف: تحديث `store_printers` لإزالة `buyer_user_id`/`activation_date`/`expiry_date` وإعادة الحالة لـ `pending`
+- إضافة إمكانية تعديل السيريال في تبويب "طلبات الطابعات" أيضاً
+- تسجيل العمليات في `printer_protection_logs`
 
-### What Stays the Same
-- All game logic (cutting, scoring, combos, perfect detection)
-- StackGame.tsx (UI layer, backend integration, points, milestones)
-- Audio systems (TowerAudioPro, StackStageAudio)
-- onGameOver / onScoreUpdate callbacks
-- autoPlay and debug features
-- Speed multiplier logic
-- All database/backend functionality
+### 2. تحديد تاريخ الضمان يدوياً من الأدمن (AdminQRPrinterTab)
 
-## Technical Details
+- إضافة حقول **تاريخ بدء الضمان** و**تاريخ انتهاء الضمان** في dialog تعديل الطابعة
+- استخدام DatePicker لاختيار التواريخ
+- تحديث `store_printers.activation_date` و `expiry_date` مباشرة
+- إضافة زر "بدء الضمان" للطابعات غير المفعّلة يسمح بتحديد التاريخ يدوياً
 
-### Color System
-```typescript
-function getTileColor(index: number): string {
-  const hue = ((index + 1) * 5) % 360;
-  return `hsl(${hue}, 50%, 50%)`;
-}
-function getBackgroundColor(index: number): string {
-  return '#000';
-}
-```
+### 3. عرض تفاصيل الضمان للمستخدم (PrinterActivationPanel)
 
-### Camera (Orthographic)
-```typescript
-// In StackGameCanvas.tsx
-<Canvas orthographic camera={{ position: [2, 5, 2], zoom: 40 }} ...>
-```
-The orthographic camera gives the flat, isometric look matching the original Stack game.
+**المشكلة**: بعد التفعيل، يتم مسح `printerData` ولا يوجد عرض لحالة الضمان للطابعة المسجلة مسبقاً.
 
-### Simplified Materials
-```typescript
-// Tiles use basic standard material, no clearcoat/metalness
-<meshStandardMaterial color={tileColor} />
-```
+- تعديل `lookupSerial`: عند العثور على طابعة مسجلة للمستخدم الحالي (`buyer_user_id === user.id`)، عرض بطاقة معلومات الضمان بدلاً من رسالة الخطأ
+- عرض: اسم الطابعة، تاريخ بدء الضمان، تاريخ الانتهاء، الأيام المتبقية، حالة الضمان (نشط/منتهي)
+- إضافة شارة ملونة (أخضر=نشط، أحمر=منتهي)
 
-### Perfect Effect
-Instead of particle explosions, use expanding white border planes (4 thin planes forming a rectangle border around the tile that fade out), matching the reference's `PerfectEffect.tsx` / `PlaneBorder.tsx` approach.
+### 4. إصلاح شراء التأمين (purchase_printer_subscription RPC)
+
+**المشكلة**: الدالة `purchase_printer_subscription` تبدو صحيحة منطقياً. يجب التحقق من:
+- هل الـ RPC يُستدعى بشكل صحيح من الكود
+- هل هناك خطأ يُبتلع (swallowed) بدون عرضه
+- إضافة `console.log` تفصيلي لرسالة الخطأ في `subscribeMutation.onError`
+- التأكد من أن `walletBalance` يُحمّل بشكل صحيح ولا يُعرض كـ `0` خطأً
+- إضافة عرض رصيد المحفظة الحالي في dialog التأكيد حتى يرى المستخدم رصيده
+
+### 5. تفعيل خصومات التأمين على المنتجات
+
+**المشكلة**: الهوكس `useProtectionDiscount` و `useCartProtectionDiscount` مكتوبان لكن **غير مستخدمين** في أي صفحة.
+
+- دمج `useProtectionDiscount` في `ProductDetail.tsx`: عرض شارة "خصم حماية خاص" مع السعر بعد الخصم
+- دمج `useCartProtectionDiscount` في `Cart.tsx`: عرض سطر خصم التأمين في ملخص الطلب مع إجمالي الخصم
+- تسجيل استخدام الخصم في `plan_discount_usage` عند إتمام الطلب
+
+### 6. إظهار قسم الصيانة في المحادثات
+
+**المشكلة**: الكود موجود بالفعل في `ListingConversations.tsx` (سطر 1256) ويتحقق من `hasActiveWarranty`. استعلام التحقق (سطر 266-293) يبحث عن:
+- اشتراكات حماية نشطة (`printer_subscriptions` status=active)
+- طابعات مسجلة (`user_printers` مع `store_printers.status=active` و `expiry_date` لم ينتهِ)
+
+**الإصلاح**: 
+- الاستعلام يستخدم `!inner` join مع `store_printers` مما قد يفشل إذا لم يكن هناك `store_printer_id` صحيح
+- تصحيح الشرط ليشمل حالة وجود ضمان فقط (بدون تأمين) أو تأمين فقط (بدون ضمان)
+- إضافة debug logging لتحديد سبب عدم ظهور الزر
+
+---
+
+## الملفات المتأثرة
+
+| الملف | التعديل |
+|-------|---------|
+| `src/components/admin/AdminQRPrinterTab.tsx` | أزرار تعديل/حذف سيريال + تحديد تاريخ ضمان |
+| `src/components/rewards/panels/PrinterActivationPanel.tsx` | عرض الضمان بعد المسح/الإدخال |
+| `src/components/rewards/InsuranceSection.tsx` | عرض رصيد المحفظة + تحسين رسائل الخطأ |
+| `src/pages/ProductDetail.tsx` | دمج خصم الحماية |
+| `src/pages/Cart.tsx` | دمج خصم السلة + تسجيل الاستخدام |
+| `src/components/marketplace/ListingConversations.tsx` | إصلاح شرط عرض دعم الصيانة |
+| Migration SQL | (إذا لزم الأمر لتحديث RPC أو إضافة أعمدة) |
 
