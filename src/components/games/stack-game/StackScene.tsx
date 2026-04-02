@@ -66,7 +66,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const cameraTargetY = useRef(3);
   const hasPlaced = useRef(false);
   const time = useRef(0);
-  const autoPlayTimer = useRef(0);
+  
   const blockSpawned = useRef(false);
 
   // Audio systems
