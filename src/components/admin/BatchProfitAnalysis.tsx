@@ -83,6 +83,27 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     },
   });
 
+  // Fetch bundle_items to expand bundle sales into component products
+  const { data: allBundleItems = [] } = useQuery({
+    queryKey: ['batch-bundle-items'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('bundle_items')
+        .select('bundle_id, product_id, quantity');
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const bundlesById = useMemo(() => {
+    const map: Record<string, { product_id: string; quantity: number }[]> = {};
+    allBundleItems.forEach((bi: any) => {
+      if (!map[bi.bundle_id]) map[bi.bundle_id] = [];
+      map[bi.bundle_id].push({ product_id: bi.product_id, quantity: bi.quantity || 1 });
+    });
+    return map;
+  }, [allBundleItems]);
+
   // Fetch current stock for products that have batches
   const batchProductIds = useMemo(() => {
     return [...new Set(batches.filter((b: any) => b.product_id).map((b: any) => b.product_id))];
@@ -103,7 +124,6 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
         if (colors.length === 0) {
           map[p.id] = p.direct_stock != null ? Number(p.direct_stock) : 0;
         } else {
-          // Sum only colors that are available for direct sale
           let total = 0;
           colors.forEach((c: any) => {
             if (c.available_for_direct_sale === false) return;
