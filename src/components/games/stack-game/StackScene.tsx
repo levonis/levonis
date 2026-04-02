@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { Text, Float } from "@react-three/drei";
 import StackEnvironment, { getStage } from "./StackEnvironment";
 import { useStageAudio } from "./StackStageAudio";
+import { getTowerAudio, disposeTowerAudio } from "./TowerAudioPro";
 
 interface Block {
   position: [number, number, number];
@@ -30,22 +31,23 @@ interface Particle {
   life: number;
   maxLife: number;
   size: number;
+  type: "spark" | "ring" | "trail";
 }
 
-// Elegant color palette - gradient tower
+// Enhanced color palette with gradients
 const PALETTES = [
-  { color: "#6366f1", emissive: "#4f46e5" }, // Indigo
-  { color: "#8b5cf6", emissive: "#7c3aed" }, // Violet
-  { color: "#a78bfa", emissive: "#8b5cf6" }, // Purple
-  { color: "#c084fc", emissive: "#a855f7" }, // Fuchsia
-  { color: "#e879f9", emissive: "#d946ef" }, // Pink
-  { color: "#f472b6", emissive: "#ec4899" }, // Rose
-  { color: "#fb7185", emissive: "#f43f5e" }, // Red
-  { color: "#f97316", emissive: "#ea580c" }, // Orange
-  { color: "#fbbf24", emissive: "#f59e0b" }, // Amber
-  { color: "#34d399", emissive: "#10b981" }, // Emerald
-  { color: "#22d3ee", emissive: "#06b6d4" }, // Cyan
-  { color: "#60a5fa", emissive: "#3b82f6" }, // Blue
+  { color: "#6366f1", emissive: "#4f46e5", glow: "#818cf8" },
+  { color: "#8b5cf6", emissive: "#7c3aed", glow: "#a78bfa" },
+  { color: "#a78bfa", emissive: "#8b5cf6", glow: "#c4b5fd" },
+  { color: "#c084fc", emissive: "#a855f7", glow: "#d8b4fe" },
+  { color: "#e879f9", emissive: "#d946ef", glow: "#f0abfc" },
+  { color: "#f472b6", emissive: "#ec4899", glow: "#f9a8d4" },
+  { color: "#fb7185", emissive: "#f43f5e", glow: "#fda4af" },
+  { color: "#f97316", emissive: "#ea580c", glow: "#fb923c" },
+  { color: "#fbbf24", emissive: "#f59e0b", glow: "#fcd34d" },
+  { color: "#34d399", emissive: "#10b981", glow: "#6ee7b7" },
+  { color: "#22d3ee", emissive: "#06b6d4", glow: "#67e8f9" },
+  { color: "#60a5fa", emissive: "#3b82f6", glow: "#93c5fd" },
 ];
 
 const BLOCK_HEIGHT = 0.25;
@@ -60,150 +62,11 @@ interface Props {
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
   debugScoreOverride?: number | null;
   speedMultiplier?: number;
+  autoPlay?: boolean;
 }
 
-// Sound system
-class TowerAudio {
-  private ctx: AudioContext | null = null;
-  private musicOsc: OscillatorNode | null = null;
-  private musicGain: GainNode | null = null;
-  private musicPlaying = false;
-
-  private getCtx() {
-    if (!this.ctx || this.ctx.state === 'closed') {
-      this.ctx = new AudioContext();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
-    return this.ctx;
-  }
-
-  playPlace(perfect: boolean, combo: number) {
-    try {
-      const ctx = this.getCtx();
-      const now = ctx.currentTime;
-      
-      if (perfect) {
-        // Bright harmonious chime for perfect
-        const baseFreq = 523.25 + combo * 50; // C5 + escalating
-        [1, 1.5, 2].forEach((mult, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(baseFreq * mult, now);
-          gain.gain.setValueAtTime(0.08 / (i + 1), now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-          osc.connect(gain).connect(ctx.destination);
-          osc.start(now + i * 0.05);
-          osc.stop(now + 0.5);
-        });
-        // Sparkle
-        const noise = ctx.createOscillator();
-        const nGain = ctx.createGain();
-        noise.type = "sine";
-        noise.frequency.setValueAtTime(2000 + combo * 100, now);
-        noise.frequency.exponentialRampToValueAtTime(4000, now + 0.15);
-        nGain.gain.setValueAtTime(0.03, now);
-        nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-        noise.connect(nGain).connect(ctx.destination);
-        noise.start(now);
-        noise.stop(now + 0.2);
-      } else {
-        // Soft thud for regular placement
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(220, now);
-        osc.frequency.exponentialRampToValueAtTime(110, now + 0.1);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-      }
-    } catch {}
-  }
-
-  playGameOver() {
-    try {
-      const ctx = this.getCtx();
-      const now = ctx.currentTime;
-      // Descending sad chord
-      [440, 349.23, 293.66].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, now + i * 0.15);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, now + i * 0.15 + 0.8);
-        gain.gain.setValueAtTime(0.06, now + i * 0.15);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 1);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(now + i * 0.15);
-        osc.stop(now + i * 0.15 + 1);
-      });
-    } catch {}
-  }
-
-  startAmbient() {
-    if (this.musicPlaying) return;
-    try {
-      const ctx = this.getCtx();
-      this.musicPlaying = true;
-      
-      // Gentle ambient pad
-      const playPad = () => {
-        if (!this.musicPlaying) return;
-        const now = ctx.currentTime;
-        const chords = [
-          [261.63, 329.63, 392.00], // C maj
-          [293.66, 369.99, 440.00], // D maj  
-          [246.94, 311.13, 369.99], // B min
-          [220.00, 277.18, 329.63], // A min
-        ];
-        const chord = chords[Math.floor(Math.random() * chords.length)];
-        
-        chord.forEach(freq => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const filter = ctx.createBiquadFilter();
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(freq * 0.5, now);
-          filter.type = "lowpass";
-          filter.frequency.setValueAtTime(800, now);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(0.015, now + 1);
-          gain.gain.linearRampToValueAtTime(0, now + 4);
-          osc.connect(filter).connect(gain).connect(ctx.destination);
-          osc.start(now);
-          osc.stop(now + 4.5);
-        });
-        
-        if (this.musicPlaying) {
-          setTimeout(playPad, 3500);
-        }
-      };
-      playPad();
-    } catch {}
-  }
-
-  stopAmbient() {
-    this.musicPlaying = false;
-  }
-
-  dispose() {
-    this.stopAmbient();
-    if (this.ctx && this.ctx.state !== 'closed') {
-      this.ctx.close().catch(() => {});
-    }
-  }
-}
-
-const audioSystem = new TowerAudio();
-
-export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier = 1 }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier = 1, autoPlay = false }: Props) {
   const { camera } = useThree();
-  // Use ref to always have latest callback (avoids stale closure in R3F)
   const onGameOverRef = useRef(onGameOver);
   onGameOverRef.current = onGameOver;
   const [stack, setStack] = useState<Block[]>([
@@ -231,17 +94,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
   const perfectTextOpacity = useRef(0);
   const comboTextOpacity = useRef(0);
   const time = useRef(0);
+  const autoPlayTimer = useRef(0);
 
-  // Stage audio system
+  // Audio systems
+  const audioSystem = useMemo(() => getTowerAudio(), []);
   const { setStage: setAudioStage } = useStageAudio();
 
-  // Start ambient music + update stage audio based on score
   useEffect(() => {
     audioSystem.startAmbient();
     return () => {
       audioSystem.stopAmbient();
     };
-  }, []);
+  }, [audioSystem]);
 
   const effectiveScore = debugScoreOverride ?? score;
   useEffect(() => {
@@ -253,22 +117,49 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
   const currentY = stack.length * BLOCK_HEIGHT;
   const axis = currentAxis.current;
 
-  const spawnParticles = useCallback((pos: [number, number, number], color: string, count: number) => {
+  const spawnParticles = useCallback((pos: [number, number, number], color: string, count: number, type: "spark" | "ring" | "trail" = "spark") => {
     const newParticles: Particle[] = [];
     for (let i = 0; i < count; i++) {
-      newParticles.push({
-        id: particleIdCounter.current++,
-        position: [...pos],
-        velocity: [
-          (Math.random() - 0.5) * 4,
-          Math.random() * 3 + 1,
-          (Math.random() - 0.5) * 4,
-        ],
-        color,
-        life: 1,
-        maxLife: 1.0 + Math.random() * 0.8,
-        size: 0.04 + Math.random() * 0.07,
-      });
+      if (type === "ring") {
+        const angle = (i / count) * Math.PI * 2;
+        const ringSpeed = 3 + Math.random() * 2;
+        newParticles.push({
+          id: particleIdCounter.current++,
+          position: [...pos],
+          velocity: [Math.cos(angle) * ringSpeed, Math.random() * 1.5, Math.sin(angle) * ringSpeed],
+          color,
+          life: 1,
+          maxLife: 0.8 + Math.random() * 0.4,
+          size: 0.03 + Math.random() * 0.04,
+          type,
+        });
+      } else if (type === "trail") {
+        newParticles.push({
+          id: particleIdCounter.current++,
+          position: [pos[0] + (Math.random() - 0.5) * 2, pos[1], pos[2] + (Math.random() - 0.5) * 2],
+          velocity: [0, 2 + Math.random() * 3, 0],
+          color,
+          life: 1,
+          maxLife: 1.5 + Math.random() * 1,
+          size: 0.02 + Math.random() * 0.03,
+          type,
+        });
+      } else {
+        newParticles.push({
+          id: particleIdCounter.current++,
+          position: [...pos],
+          velocity: [
+            (Math.random() - 0.5) * 5,
+            Math.random() * 4 + 1.5,
+            (Math.random() - 0.5) * 5,
+          ],
+          color,
+          life: 1,
+          maxLife: 0.8 + Math.random() * 0.6,
+          size: 0.03 + Math.random() * 0.06,
+          type,
+        });
+      }
     }
     setParticles(prev => [...prev, ...newParticles]);
   }, []);
@@ -286,18 +177,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     const prevSize = prevBlock.size;
 
     const axisIdx = axis === "x" ? 0 : 2;
-
     const currentPos = axisIdx === 0 ? pos.x : pos.z;
     const prevCenter = prevPos[axisIdx];
     const currentSz = prevSize[axisIdx];
-
     const delta = currentPos - prevCenter;
     const overlap = currentSz - Math.abs(delta);
 
     if (overlap <= 0) {
       setGameOver(true);
       audioSystem.playGameOver();
-      setShakeIntensity(0.3);
+      setShakeIntensity(0.4);
+      // Explosion particles
+      spawnParticles([pos.x, currentY, pos.z], "#ff4444", 40, "spark");
       onGameOverRef.current(score, perfectCount, maxCombo);
       return;
     }
@@ -320,15 +211,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       newMaxCombo = Math.max(maxCombo, newCombo);
       setShowPerfect(true);
       perfectTextOpacity.current = 1;
-      
+
       if (newCombo >= 3) {
         setComboText(`${newCombo}x COMBO!`);
         comboTextOpacity.current = 1;
       }
-      
+
       setTimeout(() => setShowPerfect(false), 1500);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 30);
-      setShakeIntensity(0.05);
+      // Multi-layer particles for perfect
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.emissive, 20, "ring");
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.glow || palette.color, 15, "trail");
+      spawnParticles([newPos[0], currentY, newPos[2]], "#fbbf24", 25, "spark");
+      setShakeIntensity(0.06);
     } else {
       const newCenter = prevCenter + delta / 2;
       newSize[axisIdx] = overlap;
@@ -361,8 +255,8 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
           ],
         },
       ]);
-      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 12);
-      setShakeIntensity(0.1);
+      spawnParticles([newPos[0], currentY, newPos[2]], palette.color, 15, "spark");
+      setShakeIntensity(0.12);
     }
 
     audioSystem.playPlace(isPerfect, newCombo);
@@ -390,9 +284,10 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
-  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, spawnParticles]);
+  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, spawnParticles, audioSystem]);
 
   useEffect(() => {
+    if (autoPlay) return; // Don't bind manual controls in autoplay
     const handleClick = () => placeBlock();
     const handleKey = (e: KeyboardEvent) => {
       if (e.code === "Space") placeBlock();
@@ -403,15 +298,33 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       window.removeEventListener("pointerdown", handleClick);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [placeBlock]);
+  }, [placeBlock, autoPlay]);
 
   // Glow ring geometry (memoized)
   const ringGeo = useMemo(() => new THREE.RingGeometry(1.8, 2.2, 64), []);
+  const baseRingGeo = useMemo(() => new THREE.RingGeometry(2.6, 2.9, 64), []);
 
   useFrame((state, delta) => {
     time.current += delta;
-    
-    if (!gameOver) {
+
+    // Auto-play: place block near center for perfect placements
+    if (autoPlay && !gameOver && !hasPlaced.current) {
+      autoPlayTimer.current += delta * speedMultiplier;
+      const mesh = movingBlockRef.current;
+      if (mesh) {
+        const axisIdx = axis === "x" ? 0 : 2;
+        const prevCenter = topBlock.position[axisIdx];
+        const currentPos = axisIdx === 0 ? mesh.position.x : mesh.position.z;
+        // Place when near center (with slight randomness for realism)
+        const tolerance = 0.05 + Math.random() * 0.15;
+        if (Math.abs(currentPos - prevCenter) < tolerance && autoPlayTimer.current > 0.15) {
+          autoPlayTimer.current = 0;
+          placeBlock();
+        }
+      }
+    }
+
+    if (!gameOver && !autoPlay) {
       const mesh = movingBlockRef.current;
       if (mesh && !hasPlaced.current) {
         const range = 4;
@@ -427,17 +340,36 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       }
     }
 
-    // Camera with shake
+    // Auto-play also needs block movement
+    if (autoPlay && !gameOver) {
+      const mesh = movingBlockRef.current;
+      if (mesh && !hasPlaced.current) {
+        const range = 4;
+        const moveSpeed = speed.current * speedMultiplier;
+        if (axis === "x") {
+          mesh.position.x += movingDir.current * moveSpeed * delta;
+          if (mesh.position.x > range) movingDir.current = -1;
+          if (mesh.position.x < -range) movingDir.current = 1;
+        } else {
+          mesh.position.z += movingDir.current * moveSpeed * delta;
+          if (mesh.position.z > range) movingDir.current = -1;
+          if (mesh.position.z < -range) movingDir.current = 1;
+        }
+      }
+    }
+
+    // Camera with smooth shake
     const targetY = cameraTargetY.current;
-    const shake = shakeIntensity * Math.sin(time.current * 50);
+    const shakeX = shakeIntensity * Math.sin(time.current * 50) * Math.cos(time.current * 33);
+    const shakeZ = shakeIntensity * Math.cos(time.current * 47) * Math.sin(time.current * 29);
     camera.position.y += (targetY - camera.position.y + 4) * delta * 2.5;
-    camera.position.x = 3.5 + shake;
-    camera.position.z = 3.5 + shake * 0.5;
+    camera.position.x = 3.5 + shakeX;
+    camera.position.z = 3.5 + shakeZ;
     camera.lookAt(0, targetY - 2, 0);
-    
+
     // Decay shake
     if (shakeIntensity > 0.001) {
-      setShakeIntensity(prev => prev * 0.92);
+      setShakeIntensity(prev => prev * 0.9);
     }
 
     // Animate falling pieces
@@ -452,7 +384,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
           ] as [number, number, number],
           velocity: [
             p.velocity[0],
-            p.velocity[1] - 12 * delta,
+            p.velocity[1] - 15 * delta,
             p.velocity[2],
           ] as [number, number, number],
           rotation: [
@@ -475,9 +407,9 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
             p.position[2] + p.velocity[2] * delta,
           ] as [number, number, number],
           velocity: [
-            p.velocity[0] * 0.98,
-            p.velocity[1] - 5 * delta,
-            p.velocity[2] * 0.98,
+            p.velocity[0] * (p.type === "trail" ? 0.99 : 0.96),
+            p.velocity[1] - (p.type === "trail" ? 2 : 6) * delta,
+            p.velocity[2] * (p.type === "trail" ? 0.99 : 0.96),
           ] as [number, number, number],
           life: p.life - delta / p.maxLife,
         }))
@@ -504,50 +436,102 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     <>
       {/* Dynamic Environment */}
       <StackEnvironment score={effectiveScore} cameraY={cameraTargetY.current} />
-      
-      {/* Lighting */}
-      <directionalLight position={[5, 12, 5]} intensity={0.8} color="#ffffff" castShadow shadow-mapSize={2048} />
 
-      {/* Base platform - glass effect */}
-      <mesh position={[0, -0.3, 0]} receiveShadow>
-        <cylinderGeometry args={[2.5, 3, 0.6, 32]} />
-        <meshPhysicalMaterial
-          color="#1e1b4b"
-          metalness={0.8}
-          roughness={0.2}
-          transparent
-          opacity={0.9}
-        />
-      </mesh>
+      {/* Lighting - enhanced */}
+      <directionalLight position={[5, 12, 5]} intensity={0.9} color="#ffffff" castShadow shadow-mapSize={2048} />
+      <directionalLight position={[-3, 8, -3]} intensity={0.3} color="#6366f1" />
 
-      {/* Glow ring at base */}
-      <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <primitive object={ringGeo} />
-        <meshBasicMaterial color="#6366f1" transparent opacity={0.3 + Math.sin(time.current * 2) * 0.1} side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* Stacked blocks - with glass/metallic material */}
-      {stack.map((block, i) => (
-        <mesh key={i} position={block.position} castShadow receiveShadow>
-          <boxGeometry args={block.size} />
+      {/* Base platform - hexagonal with glow layers */}
+      <group>
+        {/* Main platform */}
+        <mesh position={[0, -0.35, 0]} receiveShadow>
+          <cylinderGeometry args={[2.8, 3.2, 0.7, 6]} />
           <meshPhysicalMaterial
-            color={block.color}
-            emissive={block.emissive}
-            emissiveIntensity={0.15}
-            metalness={0.4}
-            roughness={0.3}
-            clearcoat={0.8}
-            clearcoatRoughness={0.1}
+            color="#0f0a2e"
+            metalness={0.9}
+            roughness={0.15}
+            clearcoat={1}
+            clearcoatRoughness={0.05}
           />
         </mesh>
-      ))}
+        {/* Inner ring */}
+        <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <primitive object={ringGeo} />
+          <meshBasicMaterial
+            color="#6366f1"
+            transparent
+            opacity={0.4 + Math.sin(time.current * 2) * 0.15}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Outer ring pulse */}
+        <mesh position={[0, -0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <primitive object={baseRingGeo} />
+          <meshBasicMaterial
+            color="#8b5cf6"
+            transparent
+            opacity={0.2 + Math.sin(time.current * 3 + 1) * 0.1}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        {/* Bottom glow */}
+        <pointLight position={[0, -0.5, 0]} color="#6366f1" intensity={0.8} distance={5} />
+        {/* Edge lights */}
+        {[0, 1, 2, 3, 4, 5].map(i => {
+          const angle = (i / 6) * Math.PI * 2;
+          return (
+            <pointLight
+              key={i}
+              position={[Math.cos(angle) * 3, -0.1, Math.sin(angle) * 3]}
+              color="#4f46e5"
+              intensity={0.3 + Math.sin(time.current * 2 + i) * 0.1}
+              distance={3}
+            />
+          );
+        })}
+      </group>
+
+      {/* Stacked blocks - enhanced materials */}
+      {stack.map((block, i) => {
+        const isTop = i === stack.length - 1;
+        return (
+          <mesh key={i} position={block.position} castShadow receiveShadow>
+            <boxGeometry args={block.size} />
+            <meshPhysicalMaterial
+              color={block.color}
+              emissive={block.emissive}
+              emissiveIntensity={isTop ? 0.25 : 0.1}
+              metalness={0.5}
+              roughness={0.2}
+              clearcoat={1}
+              clearcoatRoughness={0.08}
+              envMapIntensity={1.2}
+            />
+          </mesh>
+        );
+      })}
 
       {/* Edge glow lines on top block */}
       {!gameOver && (
         <lineSegments position={[topBlock.position[0], topBlock.position[1] + BLOCK_HEIGHT / 2 + 0.005, topBlock.position[2]]}>
           <edgesGeometry args={[new THREE.BoxGeometry(topBlock.size[0], 0.01, topBlock.size[2])]} />
-          <lineBasicMaterial color={nextPalette.emissive} transparent opacity={0.5 + Math.sin(time.current * 4) * 0.3} />
+          <lineBasicMaterial color={nextPalette.emissive} transparent opacity={0.6 + Math.sin(time.current * 4) * 0.3} />
         </lineSegments>
+      )}
+
+      {/* Ghost guide on top block showing target zone */}
+      {!gameOver && !autoPlay && (
+        <mesh
+          position={[topBlock.position[0], currentY + 0.001, topBlock.position[2]]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={[topBlock.size[0], topBlock.size[2]]} />
+          <meshBasicMaterial
+            color={nextPalette.color}
+            transparent
+            opacity={0.08 + Math.sin(time.current * 3) * 0.04}
+          />
+        </mesh>
       )}
 
       {/* Moving block */}
@@ -557,14 +541,28 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
           <meshPhysicalMaterial
             color={nextPalette.color}
             emissive={nextPalette.emissive}
-            emissiveIntensity={0.3 + Math.sin(time.current * 6) * 0.1}
-            metalness={0.5}
-            roughness={0.2}
+            emissiveIntensity={0.35 + Math.sin(time.current * 6) * 0.1}
+            metalness={0.6}
+            roughness={0.15}
             clearcoat={1}
             clearcoatRoughness={0.05}
             transparent
-            opacity={0.85}
+            opacity={0.9}
           />
+        </mesh>
+      )}
+
+      {/* Trail behind moving block */}
+      {!gameOver && movingBlockRef.current && (
+        <mesh
+          position={[
+            movingBlockRef.current.position.x,
+            movingBlockRef.current.position.y,
+            movingBlockRef.current.position.z,
+          ]}
+        >
+          <boxGeometry args={[topBlock.size[0] * 1.05, BLOCK_HEIGHT * 0.5, topBlock.size[2] * 1.05]} />
+          <meshBasicMaterial color={nextPalette.glow || nextPalette.color} transparent opacity={0.08} />
         </mesh>
       )}
 
@@ -577,16 +575,24 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
             metalness={0.3}
             roughness={0.4}
             transparent
-            opacity={0.5}
+            opacity={0.6}
           />
         </mesh>
       ))}
 
-      {/* Particles */}
+      {/* Particles - multi-type */}
       {particles.map(p => (
-        <mesh key={p.id} position={p.position} scale={p.size * p.life}>
-          <sphereGeometry args={[1, 6, 6]} />
-          <meshBasicMaterial color={p.color} transparent opacity={p.life * 0.8} />
+        <mesh key={p.id} position={p.position} scale={p.size * p.life * (p.type === "ring" ? 1.5 : 1)}>
+          {p.type === "trail" ? (
+            <boxGeometry args={[1, 3, 1]} />
+          ) : (
+            <sphereGeometry args={[1, p.type === "ring" ? 8 : 6, p.type === "ring" ? 8 : 6]} />
+          )}
+          <meshBasicMaterial
+            color={p.color}
+            transparent
+            opacity={p.life * (p.type === "trail" ? 0.5 : 0.9)}
+          />
         </mesh>
       ))}
 
@@ -599,43 +605,47 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
           anchorX="center"
           anchorY="middle"
           font={undefined}
-          outlineWidth={0.02}
+          outlineWidth={0.03}
           outlineColor="#6366f1"
         >
-          {score}
+          {effectiveScore}
         </Text>
       </Float>
 
       {/* Perfect text */}
       {showPerfect && (
-        <Text
-          position={[0, currentY + 1, 0]}
-          fontSize={0.4}
-          color="#fbbf24"
-          anchorX="center"
-          anchorY="middle"
-          font={undefined}
-          outlineWidth={0.015}
-          outlineColor="#f59e0b"
-        >
-          ✦ PERFECT ✦
-        </Text>
+        <Float speed={3} floatIntensity={0.5}>
+          <Text
+            position={[0, currentY + 1, 0]}
+            fontSize={0.45}
+            color="#fbbf24"
+            anchorX="center"
+            anchorY="middle"
+            font={undefined}
+            outlineWidth={0.02}
+            outlineColor="#f59e0b"
+          >
+            ✦ PERFECT ✦
+          </Text>
+        </Float>
       )}
 
       {/* Combo text */}
       {comboText && comboTextOpacity.current > 0.1 && (
-        <Text
-          position={[0, currentY + 1.5, 0]}
-          fontSize={0.35}
-          color="#e879f9"
-          anchorX="center"
-          anchorY="middle"
-          font={undefined}
-          outlineWidth={0.01}
-          outlineColor="#d946ef"
-        >
-          {comboText}
-        </Text>
+        <Float speed={4} floatIntensity={0.4}>
+          <Text
+            position={[0, currentY + 1.6, 0]}
+            fontSize={0.4}
+            color="#e879f9"
+            anchorX="center"
+            anchorY="middle"
+            font={undefined}
+            outlineWidth={0.015}
+            outlineColor="#d946ef"
+          >
+            {comboText}
+          </Text>
+        </Float>
       )}
     </>
   );
