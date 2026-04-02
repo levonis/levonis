@@ -1381,46 +1381,7 @@ const Cart = () => {
                       : null;
                     
                     const isDirect = (item as any).sale_type === 'direct';
-                    let itemPrice = item.products 
-                      ? Number(item.products.price)
-                      : Number(item.custom_product_requests?.suggested_price || 0);
-                    
-                    if (item.products) {
-                      if (isDirect && item.products.direct_sale_price != null) {
-                        itemPrice = Number(item.products.direct_sale_price);
-                      } else if (!isDirect) {
-                        const shippingType = (item as any).shipping_type;
-                        if (shippingType === 'sea' && item.products.sea_price != null) {
-                          itemPrice = Number(item.products.sea_price);
-                        } else if (shippingType === 'air' && item.products.air_price != null) {
-                          itemPrice = Number(item.products.air_price);
-                        }
-                      }
-                    }
-                    
-                    if (colorData) {
-                      if (isDirect && colorData.direct_sale_price != null) {
-                        itemPrice = Number(colorData.direct_sale_price);
-                      } else if (colorData.price != null) {
-                        itemPrice = Number(colorData.price);
-                      }
-                    }
-                    
-                    if (itemOption?.price_adjustment) {
-                      itemPrice += Math.round(Number(itemOption.price_adjustment));
-                    }
-
-                    const shippingIndex = (item as any).shipping_option_index;
-                    const shippingOptions = item.products?.pre_order_shipping_options;
-                    if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-                      const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-                      itemPrice += shippingAdjustment;
-                    }
-                    
-                    // Round to nearest 250 if enabled
-                    if ((item.products as any)?.round_up_price === true) {
-                      itemPrice = Math.ceil(itemPrice / 250) * 250;
-                    }
+                    const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     
