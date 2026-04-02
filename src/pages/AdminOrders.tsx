@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Package, Truck, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle, Wallet } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
