@@ -199,22 +199,8 @@ export default function StackGame({ onBack }: Props) {
       }
 
       try { await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore }); } catch (e) { console.error("update_high_score error:", e); }
-      try {
-        const { data: milestoneResult, error: milestoneError } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id, p_score: gameScore, p_session_id: sessionId,
-        });
-        if (milestoneError) console.error("check_stack_milestone error:", milestoneError);
-        console.log("check_stack_milestone result:", JSON.stringify(milestoneResult));
-        if (milestoneResult && (milestoneResult as any).won) {
-          setMilestoneWin(milestoneResult);
-          if ((milestoneResult as any).milestone_id) {
-            try {
-              await supabase.rpc("claim_stack_prize_to_cart" as any, { p_milestone_id: (milestoneResult as any).milestone_id });
-              queryClient.invalidateQueries({ queryKey: ["cart"] });
-            } catch (e) { console.error("claim_prize error:", e); }
-          }
-        }
-      } catch (e) { console.error("check_milestone error:", e); }
+      // Skip game-over milestone check — milestones are already claimed mid-game in handleScoreUpdate
+      // This prevents double prize awarding
 
       queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
       queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
