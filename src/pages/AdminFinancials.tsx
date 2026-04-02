@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading } from '@/components/admin/AdminLayout';
+import BatchProfitAnalysis from '@/components/admin/BatchProfitAnalysis';
 
 interface EditingCell { orderId: string; field: string; value: number; }
 
@@ -492,6 +493,7 @@ const AdminFinancials = () => {
                   <TabsTrigger value="general">عام</TabsTrigger>
                   <TabsTrigger value="by-section">حسب القسم الرئيسي</TabsTrigger>
                   <TabsTrigger value="by-product">حسب المنتج</TabsTrigger>
+                  {tab === 'direct' && <TabsTrigger value="by-batch">حسب الوجبات</TabsTrigger>}
                 </TabsList>
 
                 <TabsContent value="general">
@@ -631,6 +633,15 @@ const AdminFinancials = () => {
                     </Table>
                   </div>
                 </TabsContent>
+
+                {tab === 'direct' && (
+                  <TabsContent value="by-batch">
+                    <BatchProfitAnalysis
+                      deliveredDirectOrders={tabFilteredOrders.filter(o => o.status === 'delivered')}
+                      usdToIqdRate={usdToIqdRate}
+                    />
+                  </TabsContent>
+                )}
               </Tabs>
             </TabsContent>
           ))}
