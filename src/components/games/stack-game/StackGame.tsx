@@ -25,6 +25,7 @@ export default function StackGame({ onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [milestoneWin, setMilestoneWin] = useState<any>(null);
   const [activeView, setActiveView] = useState<"main" | "leaderboard" | "winners">("main");
+  const [loadingResult, setLoadingResult] = useState(false);
   const [liveScore, setLiveScore] = useState(0);
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
@@ -161,9 +162,13 @@ export default function StackGame({ onBack }: Props) {
       setPerfectCount(perfects);
       setMaxCombo(combo);
       setGameState("gameover");
+      setLoadingResult(true);
 
       const token = sessionTokenRef.current;
-      if (!token || !user) return;
+      if (!token || !user) {
+        setLoadingResult(false);
+        return;
+      }
       
       let gameScore = finalScore;
       let sessionId: string | null = null;
@@ -175,33 +180,41 @@ export default function StackGame({ onBack }: Props) {
           p_perfect_count: perfects,
           p_max_combo: combo,
         });
-        if (rpcError) console.error("end_stack_game RPC error:", rpcError);
+        if (rpcError) {
+          console.error("end_stack_game RPC error:", rpcError);
+        }
         const result = data as any;
+        console.log("end_stack_game result:", JSON.stringify(result));
         if (result?.success) {
           setPointsAwarded(result.points_awarded || 0);
           gameScore = result.game_score || finalScore;
           sessionId = result.session_id || null;
           setScore(gameScore);
+        } else if (result) {
+          console.error("end_stack_game returned failure:", result.error);
+          // Still try to show something useful
+          setPointsAwarded(0);
         }
       } catch (e) {
         console.error("end_stack_game error:", e);
       }
 
-      try { await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore }); } catch {}
+      try { await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore }); } catch (e) { console.error("update_high_score error:", e); }
       try {
         const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
           p_user_id: user.id, p_score: gameScore, p_session_id: sessionId,
         });
+        console.log("check_stack_milestone result:", JSON.stringify(milestoneResult));
         if (milestoneResult && (milestoneResult as any).won) {
           setMilestoneWin(milestoneResult);
           if ((milestoneResult as any).milestone_id) {
             try {
               await supabase.rpc("claim_stack_prize_to_cart" as any, { p_milestone_id: (milestoneResult as any).milestone_id });
               queryClient.invalidateQueries({ queryKey: ["cart"] });
-            } catch {}
+            } catch (e) { console.error("claim_prize error:", e); }
           }
         }
-      } catch {}
+      } catch (e) { console.error("check_milestone error:", e); }
 
       queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
       queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
@@ -209,6 +222,7 @@ export default function StackGame({ onBack }: Props) {
       invalidateBalances();
       sessionTokenRef.current = null;
       setSessionToken(null);
+      setLoadingResult(false);
     },
     [user, queryClient, invalidateBalances]
   );
@@ -605,7 +619,7 @@ export default function StackGame({ onBack }: Props) {
               </div>
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center justify-center gap-2">
                 <Star className="h-4 w-4 text-primary" />
-                <span className="text-lg font-bold text-primary">+{pointsAwarded}</span>
+                <span className="text-lg font-bold text-primary">{loadingResult ? "..." : `+${pointsAwarded}`}</span>
                 <span className="text-[10px] text-muted-foreground">نقطة موقع</span>
               </div>
             </div>
