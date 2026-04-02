@@ -307,17 +307,19 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
   useFrame((state, delta) => {
     time.current += delta;
 
-    // Auto-play: place block near center for perfect placements
+    // Auto-play: place block when crossing near center
     if (autoPlay && !gameOver && !hasPlaced.current) {
-      autoPlayTimer.current += delta * speedMultiplier;
+      autoPlayTimer.current += delta;
       const mesh = movingBlockRef.current;
       if (mesh) {
         const axisIdx = axis === "x" ? 0 : 2;
         const prevCenter = topBlock.position[axisIdx];
         const currentPos = axisIdx === 0 ? mesh.position.x : mesh.position.z;
-        // Place when near center (with slight randomness for realism)
-        const tolerance = 0.05 + Math.random() * 0.15;
-        if (Math.abs(currentPos - prevCenter) < tolerance && autoPlayTimer.current > 0.15) {
+        const movePerFrame = speed.current * speedMultiplier * delta;
+        // Dynamic tolerance: scales with speed so we never overshoot
+        const tolerance = Math.max(0.15, movePerFrame * 2);
+        const distFromCenter = Math.abs(currentPos - prevCenter);
+        if (distFromCenter < tolerance && autoPlayTimer.current > 0.08) {
           autoPlayTimer.current = 0;
           placeBlock();
         }
