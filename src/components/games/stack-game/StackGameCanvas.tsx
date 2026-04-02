@@ -6,11 +6,9 @@ import * as THREE from "three";
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
-  speedMultiplier?: number;
-  autoPlay?: boolean;
 }
 
-export default function StackGameCanvas({ onGameOver, onScoreUpdate, speedMultiplier, autoPlay }: Props) {
+export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
   return (
     <Canvas
       shadows
@@ -25,8 +23,6 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate, speedMultip
         <StackScene
           onGameOver={onGameOver}
           onScoreUpdate={onScoreUpdate}
-          speedMultiplier={speedMultiplier}
-          autoPlay={autoPlay}
         />
       </Suspense>
     </Canvas>

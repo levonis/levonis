@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Bug } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2 } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
 import { getStage } from "./StackEnvironment";
 
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function StackGame({ onBack }: Props) {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [gameState, setGameState] = useState<"menu" | "playing" | "gameover">("menu");
   const [sessionToken, setSessionToken] = useState<string | null>(null);
@@ -30,10 +30,6 @@ export default function StackGame({ onBack }: Props) {
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
 
-  // Admin debug mode
-  const [debugMode, setDebugMode] = useState(false);
-  const [debugSpeed, setDebugSpeed] = useState(1);
-  const [autoPlay, setAutoPlay] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["stack-game-settings"],
@@ -242,8 +238,6 @@ export default function StackGame({ onBack }: Props) {
         <StackGameCanvas
           onGameOver={handleGameOver}
           onScoreUpdate={handleScoreUpdate}
-          speedMultiplier={debugMode ? debugSpeed : 1}
-          autoPlay={debugMode && autoPlay}
         />
         {/* Live Score Overlay - Modern Glass UI */}
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
@@ -272,74 +266,6 @@ export default function StackGame({ onBack }: Props) {
 
         {/* Stage indicator removed for clean design */}
 
-        {/* Admin Debug Toggle */}
-        {isAdmin && !debugMode && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setDebugMode(true); }}
-            className="absolute bottom-4 left-4 z-20 bg-black/60 backdrop-blur-xl rounded-full p-2.5 border border-white/10 pointer-events-auto hover:bg-white/10 transition-colors"
-          >
-            <Bug className="h-5 w-5 text-white/60" />
-          </button>
-        )}
-
-        {/* Admin Debug Panel - Modern Glass */}
-        {isAdmin && debugMode && (
-          <div
-            className="absolute bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-2xl border-t border-white/10 p-4 pointer-events-auto"
-            dir="rtl"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs text-white/80 font-semibold tracking-wide">🛠 وضع الاختبار</span>
-              <button onClick={() => { setDebugMode(false); setDebugSpeed(1); setAutoPlay(false); }} className="text-[10px] text-white/40 hover:text-white/80 transition-colors">
-                إغلاق ✕
-              </button>
-            </div>
-
-            {/* Stage info */}
-            <div className="text-[10px] text-white/40 mb-3">
-              المرحلة: <span className="text-white/80 font-semibold">{getStage(liveScore)}</span>
-              {" • "}السكور الحقيقي: <span className="text-white/80 font-semibold">{liveScore}</span>
-            </div>
-
-            {/* Speed multiplier */}
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] text-white/40">السرعة:</span>
-              {[1, 2, 3, 5, 10].map(s => (
-                <button
-                  key={s}
-                  onClick={() => setDebugSpeed(s)}
-                  className={`text-[10px] px-3 py-1.5 rounded-lg font-semibold border transition-all ${
-                    debugSpeed === s
-                      ? "bg-white/20 text-white border-white/30 shadow-lg"
-                      : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60"
-                  }`}
-                >
-                  {s}x
-                </button>
-              ))}
-            </div>
-
-            {/* Auto-play toggle */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setAutoPlay(!autoPlay)}
-                className={`text-[10px] px-4 py-2 rounded-xl font-semibold border transition-all flex items-center gap-2 ${
-                  autoPlay
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/30 shadow-lg shadow-emerald-500/10"
-                    : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10"
-                }`}
-              >
-                <Gamepad2 className="h-3.5 w-3.5" />
-                {autoPlay ? "⏸ إيقاف البناء التلقائي" : "▶ تشغيل البناء التلقائي"}
-              </button>
-              {autoPlay && (
-                <span className="text-[9px] text-emerald-400/80 animate-pulse">● يبني تلقائياً...</span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     );
   }

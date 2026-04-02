@@ -37,11 +37,9 @@ function getTileColor(index: number): string {
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
-  speedMultiplier?: number;
-  autoPlay?: boolean;
 }
 
-export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier = 1, autoPlay = false }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const { camera } = useThree();
   const onGameOverRef = useRef(onGameOver);
   onGameOverRef.current = onGameOver;
@@ -68,7 +66,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
   const cameraTargetY = useRef(3);
   const hasPlaced = useRef(false);
   const time = useRef(0);
-  const autoPlayTimer = useRef(0);
+  
   const blockSpawned = useRef(false);
 
   // Audio systems
@@ -197,7 +195,6 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
   }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, audioSystem]);
 
   useEffect(() => {
-    if (autoPlay) return;
     const handleClick = () => placeBlock();
     const handleKey = (e: KeyboardEvent) => { if (e.code === "Space") placeBlock(); };
     window.addEventListener("pointerdown", handleClick);
@@ -206,7 +203,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       window.removeEventListener("pointerdown", handleClick);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [placeBlock, autoPlay]);
+  }, [placeBlock]);
 
   useFrame((state, delta) => {
     time.current += delta;
@@ -227,7 +224,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
 
       const range = 5;
-      const moveSpeed = speed.current * speedMultiplier;
+      const moveSpeed = speed.current;
       const currentAxisVal = currentAxis.current;
       if (currentAxisVal === "x") {
         mesh.position.x += movingDir.current * moveSpeed * delta;
@@ -240,20 +237,6 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
     }
 
-    // Auto-play
-    if (autoPlay && !gameOver && !hasPlaced.current && mesh) {
-      autoPlayTimer.current += delta;
-      if (autoPlayTimer.current > 0.08) {
-        autoPlayTimer.current = 0;
-        const tb = stack[stack.length - 1];
-        if (currentAxis.current === "x") {
-          mesh.position.x = tb.position[0];
-        } else {
-          mesh.position.z = tb.position[2];
-        }
-        placeBlock();
-      }
-    }
 
     // Camera follow - match original Stack game: camera from bottom-left
     const targetY = cameraTargetY.current;
