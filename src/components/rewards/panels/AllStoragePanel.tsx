@@ -404,7 +404,7 @@ export default function AllStoragePanel() {
   };
 
   const isLoading = isLoadingOffers || isLoadingPrizes || isLoadingPurchased;
-  const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending;
+  const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending || requestPurchasedShippingMutation.isPending;
 
   if (!user) {
     return (
