@@ -819,7 +819,7 @@ const Cart = () => {
 
           const isDirect = (item as any).sale_type === 'direct';
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd);
+          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd));
 
           const productName = isCustomRequest 
             ? (item.custom_product_requests?.product_name || 'طلب مخصص')
