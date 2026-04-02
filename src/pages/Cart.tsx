@@ -965,30 +965,7 @@ const Cart = () => {
           const customRequest = item.custom_product_requests || 
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
-          let itemPrice = isCustomRequest
-            ? Number(customRequest?.suggested_price || 0)
-            : Number(item.products?.price || 0);
-          
-          if (colorData?.price != null) {
-            itemPrice = Number(colorData.price);
-          }
-          
-          if (itemOption?.price_adjustment) {
-            itemPrice += Math.round(Number(itemOption.price_adjustment));
-          }
-
-          // Add pre-order shipping adjustment (if chosen)
-          const shippingIndex = (item as any).shipping_option_index;
-          const shippingOptions = item.products?.pre_order_shipping_options;
-          if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-            const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-            itemPrice += shippingAdjustment;
-          }
-
-          // Round to nearest 250 if enabled
-          if ((item.products as any)?.round_up_price === true) {
-            itemPrice = Math.ceil(itemPrice / 250) * 250;
-          }
+          const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
 
           // Get product name - ensure it's never empty
           const productName = isCustomRequest 
