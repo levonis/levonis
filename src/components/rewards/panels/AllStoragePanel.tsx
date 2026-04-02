@@ -369,7 +369,7 @@ export default function AllStoragePanel() {
     }
   };
 
-  const isLoading = isLoadingOffers || isLoadingPrizes;
+  const isLoading = isLoadingOffers || isLoadingPrizes || isLoadingPurchased;
   const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending;
 
   if (!user) {
