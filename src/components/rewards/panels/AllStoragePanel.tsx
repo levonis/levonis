@@ -249,6 +249,7 @@ export default function AllStoragePanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage-competition-prizes'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
+      queryClient.invalidateQueries({ queryKey: ['user-storage-count'] });
       toast.success('تم تقديم طلب الشحن بنجاح!', {
         description: 'سيتم التواصل معك قريباً لتأكيد الشحن'
       });
