@@ -22,7 +22,7 @@ interface FallingPiece {
   rotVel: [number, number, number];
 }
 
-const BLOCK_HEIGHT = 0.2;
+const BLOCK_HEIGHT = 0.3;
 const INITIAL_SIZE: [number, number, number] = [3, BLOCK_HEIGHT, 3];
 const INITIAL_SPEED = 3;
 const SPEED_INCREMENT = 0.12;
@@ -335,7 +335,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
         const h = effect.size[1] * scale;
         const thickness = 0.04;
         return (
-          <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT / 2 + 0.01, 0]}>
+          <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT * 0.501, 0]}>
             {/* Top edge */}
             <mesh position={[0, 0, -h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[w, thickness]} />
