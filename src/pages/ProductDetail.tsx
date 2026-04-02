@@ -25,7 +25,7 @@ import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd } from '@/lib/priceGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamic icon map for features
@@ -471,7 +471,7 @@ const ProductDetail = () => {
   };
 
   const basePrice = getPrice();
-  const optionAdjustment = selectedOptionData ? Math.round(Number(selectedOptionData.price_adjustment) || 0) : 0;
+  const optionAdjustment = selectedOptionData ? ensureAdjustmentIqd(Number(selectedOptionData.price_adjustment) || 0, usdToIqd) : 0;
   let shippingAdjustment = 0;
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
@@ -942,7 +942,7 @@ const ProductDetail = () => {
                                   {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
                                 </div>
                                 {option.price_adjustment > 0 ? (
-                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(Math.round(option.price_adjustment))} د.ع</span>
+                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd))} د.ع</span>
                                 ) : (
                                   <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 h-4">{t('product_free')}</Badge>
                                 )}
@@ -1000,7 +1000,7 @@ const ProductDetail = () => {
                               <div className="flex items-center gap-1 shrink-0">
                                 {option.price_adjustment !== 0 && (
                                   <span className={cn("text-[10px] font-black", option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600')}>
-                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Math.round(option.price_adjustment))} د.ع
+                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd))} د.ع
                                   </span>
                                 )}
                                 {!option.isAvailable && (
