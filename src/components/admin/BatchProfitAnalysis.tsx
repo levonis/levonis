@@ -216,6 +216,20 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     onError: () => toast.error('حدث خطأ أثناء التحديث'),
   });
 
+  const updatePriceMutation = useMutation({
+    mutationFn: async ({ id, unit_price, quantity }: { id: string; unit_price: number; quantity: number }) => {
+      const total_price = unit_price * quantity;
+      const { error } = await supabase.from('order_items').update({ unit_price, total_price }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['batch-all-orders'] });
+      toast.success('تم تحديث السعر');
+      setEditingPriceId(null);
+    },
+    onError: () => toast.error('حدث خطأ أثناء التحديث'),
+  });
+
   // Build analysis: group batches by product/bundle, distribute sold items sequentially
   const productGroups = useMemo(() => {
     // 1. Collect sold items per product_id from DIRECT SALE orders only
