@@ -240,7 +240,7 @@ export default function StackGame({ onBack }: Props) {
     setLivePerfects(p);
 
     // Check if score just hit a milestone target
-    if (!user || !sessionTokenRef.current || checkingMilestoneRef.current) return;
+    if (!user || !sessionTokenRef.current || !sessionIdRef.current || checkingMilestoneRef.current) return;
     const hitMilestone = milestones.find((m: any) => {
       const remaining = m.stock - m.claimed_count;
       return s >= m.target_score && remaining > 0 && !claimedMilestonesRef.current.has(m.id);
