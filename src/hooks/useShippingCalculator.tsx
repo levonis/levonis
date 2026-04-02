@@ -28,12 +28,9 @@ type ShippingType = 'sea' | 'air';
 interface ShippingSettings {
   sea_cbm_price: number;
   sea_padding_cm: number;
-  air_usa_kg_price: number;
-  air_usa_weight_buffer_percent: number;
   air_china_volumetric_price: number;
   air_china_volumetric_divider: number;
   air_china_weight_safety_margin: number;
-  commission_fee: number;
   local_delivery_baghdad: number;
   local_delivery_provinces: number;
   usd_to_iqd_rate: number;
