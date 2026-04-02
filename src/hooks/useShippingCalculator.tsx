@@ -34,6 +34,7 @@ interface ShippingSettings {
   local_delivery_baghdad: number;
   local_delivery_provinces: number;
   usd_to_iqd_rate: number;
+  cny_to_usd_rate: number;
 }
 
 export const useShippingSettings = () => {
