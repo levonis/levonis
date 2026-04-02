@@ -213,22 +213,52 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
 
   // Build analysis: group batches by product/bundle, distribute sold items sequentially
   const productGroups = useMemo(() => {
-    // 1. Collect all sold items per product_id AND per bundle_id from delivered direct orders
+    // 1. Collect sold items per product_id from DIRECT SALE orders only
+    // Also expand bundle sales into component product quantities
     const soldByEntity: Record<string, SoldItem[]> = {};
     
-    allOrders.forEach((order: any) => {
+    const directOrders = allOrders.filter((order: any) => isDirectSaleLikeOrder(order));
+    
+    directOrders.forEach((order: any) => {
       order.order_items?.forEach((item: any) => {
-        // Track by bundle_id if present, otherwise by product_id
-        const key = item.bundle_id ? `bundle_${item.bundle_id}` : (item.product_id ? item.product_id : null);
-        if (!key) return;
-        if (!soldByEntity[key]) soldByEntity[key] = [];
-        soldByEntity[key].push({
-          username: order.profile?.full_name || order.profile?.username || 'غير معروف',
-          quantity: item.quantity || 1,
-          revenue: calcItemRevenue(item),
-          orderNumber: order.order_number,
-          date: order.created_at,
-        });
+        const username = order.profile?.full_name || order.profile?.username || 'غير معروف';
+        const orderDate = order.created_at;
+        const orderNumber = order.order_number;
+
+        // If this item is a bundle sale, expand into component products
+        if (item.bundle_id && bundlesById[item.bundle_id]) {
+          const components = bundlesById[item.bundle_id];
+          const bundleQty = item.quantity || 1;
+          const bundleRevenue = calcItemRevenue(item);
+          // Also track the bundle itself for bundle batches
+          const bundleKey = `bundle_${item.bundle_id}`;
+          if (!soldByEntity[bundleKey]) soldByEntity[bundleKey] = [];
+          soldByEntity[bundleKey].push({
+            username, quantity: bundleQty, revenue: bundleRevenue, orderNumber, date: orderDate,
+          });
+          // Expand into component products
+          components.forEach((comp) => {
+            const compKey = comp.product_id;
+            if (!soldByEntity[compKey]) soldByEntity[compKey] = [];
+            soldByEntity[compKey].push({
+              username,
+              quantity: bundleQty * comp.quantity,
+              revenue: 0, // Revenue attributed to bundle, not individual components
+              orderNumber,
+              date: orderDate,
+            });
+          });
+        } else if (item.product_id) {
+          // Direct product sale
+          if (!soldByEntity[item.product_id]) soldByEntity[item.product_id] = [];
+          soldByEntity[item.product_id].push({
+            username,
+            quantity: item.quantity || 1,
+            revenue: calcItemRevenue(item),
+            orderNumber,
+            date: orderDate,
+          });
+        }
       });
     });
 
