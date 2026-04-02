@@ -27,7 +27,7 @@ function ProductPicker({
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, colors").order("created_at", { ascending: false }).limit(20);
+      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
@@ -39,7 +39,7 @@ function ProductPicker({
     queryKey: ["admin-product-selected", value.product_id],
     queryFn: async () => {
       if (!value.product_id) return null;
-      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, colors").eq("id", value.product_id).single();
+      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
     enabled: !!value.product_id,
@@ -59,6 +59,16 @@ function ProductPicker({
   const hasColors = colors.length > 0;
   const hasOptions = options.length > 0;
 
+  const getStockDisplay = (p: any, opts?: any[]) => {
+    if (p.direct_stock != null && p.direct_stock > 0) return `مباشر: ${p.direct_stock}`;
+    if (p.pre_order_stock != null && p.pre_order_stock > 0) return `طلب مسبق: ${p.pre_order_stock}`;
+    if (opts && opts.length > 0) {
+      const totalOptStock = opts.reduce((sum: number, o: any) => sum + (o.stock_quantity || 0), 0);
+      if (totalOptStock > 0) return `خيارات: ${totalOptStock}`;
+    }
+    return "مخزون: —";
+  };
+
   if (!open && !value.product_id) {
     return (
       <Button variant="outline" size="sm" className="text-xs gap-1 w-full" onClick={() => setOpen(true)}>
@@ -77,7 +87,7 @@ function ProductPicker({
           {selected.image_url && <img src={selected.image_url} className="h-8 w-8 rounded object-cover" />}
           <div className="flex-1 min-w-0">
             <div className="truncate text-foreground font-medium">{selected.name_ar}</div>
-            <div className="text-muted-foreground">مخزون: {selected.direct_stock ?? 0}</div>
+            <div className="text-muted-foreground">{getStockDisplay(selected, options)}</div>
           </div>
           <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => onChange({ product_id: null, selected_color: null, selected_option_id: null })}>إزالة</Button>
         </div>
@@ -173,7 +183,7 @@ function ProductPicker({
             {p.image_url && <img src={p.image_url} className="h-7 w-7 rounded object-cover shrink-0" />}
             <div className="flex-1 min-w-0">
               <div className="truncate text-foreground">{p.name_ar}</div>
-              <div className="text-muted-foreground text-[10px]">مخزون: {p.direct_stock ?? 0}</div>
+              <div className="text-muted-foreground text-[10px]">{p.direct_stock != null && p.direct_stock > 0 ? `مباشر: ${p.direct_stock}` : p.pre_order_stock != null && p.pre_order_stock > 0 ? `طلب مسبق: ${p.pre_order_stock}` : "مخزون: —"}</div>
             </div>
           </button>
         ))}
