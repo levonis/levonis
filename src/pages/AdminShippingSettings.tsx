@@ -428,7 +428,7 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
                   </SelectContent>
                 </Select>
               </div>
-              {editBaseCatId && (
+              {effectiveCatId && (
                 <div className="w-24 space-y-1.5">
                   <Label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80">
                     قطع/توصيل
