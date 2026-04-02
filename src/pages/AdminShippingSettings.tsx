@@ -374,8 +374,9 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
 
   const isPickup = method.method_key === 'pickup';
 
+  const effectiveCatId = editBaseCatId === "__none__" ? null : editBaseCatId;
   const hasChanges = editPrice !== Number(method.base_price)
-    || (editBaseCatId || "") !== (method.base_price_category_id || "")
+    || (effectiveCatId || null) !== (method.base_price_category_id || null)
     || editBaseUnits !== (method.base_price_units_per_delivery || 1);
 
   return (
