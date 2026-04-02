@@ -270,12 +270,6 @@ export default function StackGame({ onBack }: Props) {
           </div>
         </div>
 
-        {/* Stage indicator */}
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="bg-black/40 backdrop-blur-xl rounded-full px-4 py-1 border border-white/5">
-            <span className="text-[10px] text-white/40 tracking-widest uppercase">{getStage(liveScore)}</span>
-          </div>
-        </div>
 
         {/* Admin Debug Toggle */}
         {isAdmin && !debugMode && (
