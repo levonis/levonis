@@ -1,14 +1,15 @@
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
-import StackScene from "./StackScene";
+import StackScene, { GameScoreSettings } from "./StackScene";
 import * as THREE from "three";
 
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
+  scoreSettings?: GameScoreSettings;
 }
 
-export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
+export default function StackGameCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
   return (
     <Canvas
       shadows
@@ -23,6 +24,7 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
         <StackScene
           onGameOver={onGameOver}
           onScoreUpdate={onScoreUpdate}
+          scoreSettings={scoreSettings}
         />
       </Suspense>
     </Canvas>

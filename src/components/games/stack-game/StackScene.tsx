@@ -1,10 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-// drei not needed for this clean design
-import { getStage } from "./StackEnvironment";
-import { useStageAudio } from "./StackStageAudio";
-import { getTowerAudio, disposeTowerAudio } from "./TowerAudioPro";
+import { getTowerAudio } from "./TowerAudioPro";
 
 interface Block {
   position: [number, number, number];
@@ -34,15 +31,26 @@ function getTileColor(index: number): string {
   return `hsl(${hue}, 50%, 50%)`;
 }
 
+export interface GameScoreSettings {
+  game_points_per_block: number;
+  game_perfect_bonus: number;
+  game_combo_multiplier: number;
+}
+
 interface Props {
   onGameOver: (score: number, perfects: number, maxCombo: number) => void;
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
+  scoreSettings?: GameScoreSettings;
 }
 
-export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
   const { camera } = useThree();
   const onGameOverRef = useRef(onGameOver);
   onGameOverRef.current = onGameOver;
+
+  const ppb = scoreSettings?.game_points_per_block ?? 1;
+  const perfectBonus = scoreSettings?.game_perfect_bonus ?? 2;
+  const comboMult = scoreSettings?.game_combo_multiplier ?? 1;
 
   const [stack, setStack] = useState<Block[]>([
     { position: [0, 0, 0], size: [...INITIAL_SIZE], color: getTileColor(0) },
@@ -69,9 +77,8 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   
   const blockSpawned = useRef(false);
 
-  // Audio systems
+  // Audio system
   const audioSystem = useMemo(() => getTowerAudio(), []);
-  const { setStage: setAudioStage } = useStageAudio();
 
   useEffect(() => {
     audioSystem.startAmbient();
@@ -79,10 +86,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       audioSystem.stopAmbient();
     };
   }, [audioSystem]);
-
-  useEffect(() => {
-    setAudioStage(getStage(score));
-  }, [score, setAudioStage]);
 
   const topBlock = stack[stack.length - 1];
   const currentY = stack.length * BLOCK_HEIGHT;
@@ -135,7 +138,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         setComboText(`${newCombo}x COMBO!`);
       }
       setTimeout(() => setShowPerfect(false), 1500);
-      // Add perfect border effect
       setPerfectEffects(prev => [...prev, {
         id: perfectEffectId.current++,
         y: currentY,
@@ -176,7 +178,17 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
     };
 
     setStack(prev => [...prev, newBlock]);
-    const newScore = score + 1;
+
+    // Calculate game score using admin settings
+    let blockPoints = ppb;
+    if (isPerfect) {
+      blockPoints += perfectBonus;
+    }
+    if (newCombo >= 2) {
+      blockPoints += Math.floor(newCombo * comboMult);
+    }
+    const newScore = score + Math.max(1, Math.round(blockPoints));
+
     setScore(newScore);
     setCombo(newCombo);
     setPerfectCount(newPerfects);
@@ -192,7 +204,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
-  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, audioSystem]);
+  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, audioSystem, ppb, perfectBonus, comboMult]);
 
   useEffect(() => {
     const handleClick = () => placeBlock();
@@ -237,8 +249,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       }
     }
 
-
-    // Camera follow - match original Stack game: camera from bottom-left
+    // Camera follow
     const targetY = cameraTargetY.current;
     camera.position.y += (targetY - camera.position.y + 2) * delta * 2.5;
     camera.position.x = -2;
@@ -269,7 +280,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
 
   return (
     <>
-      {/* Lighting - match original Stack game look */}
+      {/* Lighting */}
       <ambientLight intensity={0.45} color="#ffffff" />
       <directionalLight
         position={[1, 10, 1]}
@@ -279,7 +290,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         shadow-mapSize={1024}
       />
 
-      {/* Base tile - tall column extending below like original */}
+      {/* Base tile */}
       <mesh position={[0, -5, 0]} receiveShadow>
         <boxGeometry args={[INITIAL_SIZE[0], 10, INITIAL_SIZE[2]]} />
         <meshLambertMaterial color={getTileColor(0)} />
@@ -309,7 +320,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         </mesh>
       ))}
 
-      {/* Perfect border effects - white expanding planes */}
+      {/* Perfect border effects */}
       {perfectEffects.map(effect => {
         const progress = effect.time / 1.0;
         const scale = 1 + progress * 0.5;
@@ -319,22 +330,18 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         const thickness = 0.04;
         return (
           <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT / 2 + 0.001, 0]}>
-            {/* Top edge */}
             <mesh position={[0, 0, -h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[w, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
             </mesh>
-            {/* Bottom edge */}
             <mesh position={[0, 0, h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[w, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
             </mesh>
-            {/* Left edge */}
             <mesh position={[-w / 2, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
               <planeGeometry args={[h, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
             </mesh>
-            {/* Right edge */}
             <mesh position={[w / 2, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
               <planeGeometry args={[h, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
@@ -342,8 +349,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
           </group>
         );
       })}
-
-      {/* Score and text handled by HTML overlay in StackGame.tsx */}
     </>
   );
 }

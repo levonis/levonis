@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2 } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
-import { getStage } from "./StackEnvironment";
+import type { GameScoreSettings } from "./StackScene";
 
 interface Props {
   onBack: () => void;
@@ -282,6 +282,11 @@ export default function StackGame({ onBack }: Props) {
         <StackGameCanvas
           onGameOver={handleGameOver}
           onScoreUpdate={handleScoreUpdate}
+          scoreSettings={settings ? {
+            game_points_per_block: (settings as any).game_points_per_block ?? 1,
+            game_perfect_bonus: (settings as any).game_perfect_bonus ?? 2,
+            game_combo_multiplier: (settings as any).game_combo_multiplier ?? 1,
+          } : undefined}
         />
         {/* Live Score Overlay - Modern Glass UI */}
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
