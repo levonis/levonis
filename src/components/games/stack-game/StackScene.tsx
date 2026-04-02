@@ -296,9 +296,9 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
         shadow-mapSize={1024}
       />
 
-      {/* Base tile - large colored box */}
-      <mesh position={[0, -0.15, 0]} receiveShadow>
-        <boxGeometry args={[INITIAL_SIZE[0], 0.3, INITIAL_SIZE[2]]} />
+      {/* Base tile - tall column extending below like original */}
+      <mesh position={[0, -5, 0]} receiveShadow>
+        <boxGeometry args={[INITIAL_SIZE[0], 10, INITIAL_SIZE[2]]} />
         <meshLambertMaterial color={getTileColor(0)} />
       </mesh>
 
