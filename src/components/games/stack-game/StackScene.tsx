@@ -1,7 +1,9 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { Text, Float, Environment, Stars } from "@react-three/drei";
+import { Text, Float } from "@react-three/drei";
+import StackEnvironment, { getStage } from "./StackEnvironment";
+import { useStageAudio } from "./StackStageAudio";
 
 interface Block {
   position: [number, number, number];
