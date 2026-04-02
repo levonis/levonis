@@ -13,9 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
-  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight, FileSpreadsheet
+  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight, FileSpreadsheet, Search
 } from 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { formatPrice } from '@/lib/utils';
@@ -41,10 +42,26 @@ interface OrderWithDetails {
   order_items?: { id: string; product_name: string; product_name_ar: string; quantity: number; unit_price: number; total_price: number; cost_price?: number; product_id?: string; products?: any; }[];
 }
 
+interface ManualOrderProduct {
+  type: 'manual' | 'site';
+  name: string;
+  product_id?: string;
+  quantity: number;
+  unit_price: number;
+  cost_price: number;
+}
+
 interface ManualOrderForm {
-  customer_name: string; product_names: string; total_amount: number;
-  customer_paid_amount: number; admin_paid_amount: number; admin_product_cost: number;
-  tax_amount: number; financial_notes: string;
+  order_type: 'direct' | 'preorder';
+  customer_name: string;
+  products: ManualOrderProduct[];
+  total_amount: number;
+  customer_paid_amount: number;
+  remaining_amount: number;
+  admin_shipping_cost: number;
+  admin_product_cost: number;
+  status: string;
+  financial_notes: string;
 }
 
 const PAGE_SIZE = 50;
@@ -121,8 +138,21 @@ const AdminFinancials = () => {
   const [subTab, setSubTab] = useState('general');
   const [currentPage, setCurrentPage] = useState(1);
   const [manualOrderForm, setManualOrderForm] = useState<ManualOrderForm>({
-    customer_name: '', product_names: '', total_amount: 0, customer_paid_amount: 0,
-    admin_paid_amount: 0, admin_product_cost: 0, tax_amount: 0, financial_notes: '',
+    order_type: 'direct', customer_name: '', products: [{ type: 'manual', name: '', quantity: 1, unit_price: 0, cost_price: 0 }],
+    total_amount: 0, customer_paid_amount: 0, remaining_amount: 0, admin_shipping_cost: 0,
+    admin_product_cost: 0, status: 'delivered', financial_notes: '',
+  });
+  const [productSearch, setProductSearch] = useState('');
+
+  // Fetch site products for product selector
+  const { data: siteProducts } = useQuery({
+    queryKey: ['admin-products-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price').order('name_ar').limit(500);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isAdmin && isAddDialogOpen,
   });
 
   const applyQuickFilter = (filter: string) => {
@@ -214,31 +244,40 @@ const AdminFinancials = () => {
   const addManualOrderMutation = useMutation({
     mutationFn: async (form: ManualOrderForm) => {
       const orderNumber = `MAN-${Date.now()}`;
+      const totalProductCost = form.products.reduce((s, p) => s + (p.cost_price * p.quantity), 0);
       const { data: order, error: orderError } = await supabase.from('orders').insert({
         order_number: orderNumber, user_id: user?.id || '', total_amount: form.total_amount,
-        customer_paid_amount: form.customer_paid_amount, admin_paid_amount: form.admin_paid_amount,
-        admin_product_cost: form.admin_product_cost, admin_shipping_cost: 0, admin_other_costs: 0,
-        tax_amount: form.tax_amount, financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
-        remaining_amount: form.total_amount - form.customer_paid_amount, status: 'delivered',
+        customer_paid_amount: form.customer_paid_amount, admin_paid_amount: 0,
+        admin_product_cost: form.admin_product_cost || totalProductCost, admin_shipping_cost: form.admin_shipping_cost, admin_other_costs: 0,
+        tax_amount: 0, financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
+        remaining_amount: form.remaining_amount, status: form.status,
+        order_type: form.order_type,
         shipping_address: 'طلب يدوي', phone_number: '-', governorate: '-',
       }).select().single();
       if (orderError) throw orderError;
-      if (form.product_names.trim() && order) {
-        const productNames = form.product_names.split('\n').filter(n => n.trim());
-        const orderItems = productNames.map(name => ({
-          order_id: order.id, product_name: name.trim(), product_name_ar: name.trim(),
-          quantity: 1, unit_price: form.total_amount / productNames.length,
-          total_price: form.total_amount / productNames.length,
-        }));
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-        if (itemsError) throw itemsError;
+      if (order) {
+        const validProducts = form.products.filter(p => p.name.trim());
+        if (validProducts.length > 0) {
+          const orderItems = validProducts.map(p => ({
+            order_id: order.id, product_name: p.name, product_name_ar: p.name,
+            product_id: p.product_id || null,
+            quantity: p.quantity, unit_price: p.unit_price,
+            total_price: p.unit_price * p.quantity, cost_price: p.cost_price,
+          }));
+          const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+          if (itemsError) throw itemsError;
+        }
       }
       return order;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
       toast.success('تم إضافة الطلب بنجاح'); setIsAddDialogOpen(false);
-      setManualOrderForm({ customer_name: '', product_names: '', total_amount: 0, customer_paid_amount: 0, admin_paid_amount: 0, admin_product_cost: 0, tax_amount: 0, financial_notes: '' });
+      setManualOrderForm({
+        order_type: 'direct', customer_name: '', products: [{ type: 'manual', name: '', quantity: 1, unit_price: 0, cost_price: 0 }],
+        total_amount: 0, customer_paid_amount: 0, remaining_amount: 0, admin_shipping_cost: 0,
+        admin_product_cost: 0, status: 'delivered', financial_notes: '',
+      });
     },
     onError: () => { toast.error('حدث خطأ أثناء إضافة الطلب'); },
   });
@@ -397,16 +436,146 @@ const AdminFinancials = () => {
             <DialogTrigger asChild>
               <Button className="admin-btn-primary gap-2"><Plus className="h-4 w-4" /><span className="hidden sm:inline">إضافة طلب يدوي</span></Button>
             </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
             <DialogHeader><DialogTitle>إضافة طلب يدوي</DialogTitle></DialogHeader>
             <div className="admin-form space-y-4">
-              <div className="admin-form-group"><Label>اسم العميل</Label><Input value={manualOrderForm.customer_name} onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })} placeholder="اسم العميل" /></div>
-              <div className="admin-form-group"><Label>المنتجات (سطر لكل منتج)</Label><Textarea value={manualOrderForm.product_names} onChange={(e) => setManualOrderForm({ ...manualOrderForm, product_names: e.target.value })} placeholder="منتج 1&#10;منتج 2" rows={3} /></div>
+              {/* Order type & customer */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="admin-form-group"><Label>المبلغ الإجمالي</Label><Input type="number" value={manualOrderForm.total_amount} onChange={(e) => setManualOrderForm({ ...manualOrderForm, total_amount: parseFloat(e.target.value) || 0 })} /></div>
-                <div className="admin-form-group"><Label>دفع الزبون</Label><Input type="number" value={manualOrderForm.customer_paid_amount} onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_paid_amount: parseFloat(e.target.value) || 0 })} /></div>
+                <div className="admin-form-group">
+                  <Label>نوع البيع</Label>
+                  <Select value={manualOrderForm.order_type} onValueChange={(v: 'direct' | 'preorder') => setManualOrderForm({ ...manualOrderForm, order_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="direct">بيع مباشر</SelectItem>
+                      <SelectItem value="preorder">بيع مسبق</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="admin-form-group"><Label>اسم العميل</Label><Input value={manualOrderForm.customer_name} onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })} placeholder="اسم العميل" /></div>
               </div>
-              <Button onClick={() => addManualOrderMutation.mutate(manualOrderForm)} disabled={addManualOrderMutation.isPending} className="w-full">
+
+              {/* Status */}
+              <div className="admin-form-group">
+                <Label>الحالة</Label>
+                <Select value={manualOrderForm.status} onValueChange={(v) => setManualOrderForm({ ...manualOrderForm, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="delivered">مكتمل</SelectItem>
+                    <SelectItem value="pending">قيد الانتظار</SelectItem>
+                    <SelectItem value="confirmed">مؤكد</SelectItem>
+                    <SelectItem value="processing">قيد التجهيز</SelectItem>
+                    <SelectItem value="shipped">تم الشحن</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Products */}
+              <div className="admin-form-group">
+                <div className="flex items-center justify-between mb-2">
+                  <Label>المنتجات</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setManualOrderForm({ ...manualOrderForm, products: [...manualOrderForm.products, { type: 'manual', name: '', quantity: 1, unit_price: 0, cost_price: 0 }] })}>
+                    <Plus className="h-3 w-3 ml-1" /> إضافة منتج
+                  </Button>
+                </div>
+                {manualOrderForm.products.map((prod, idx) => (
+                  <div key={idx} className="border rounded-lg p-3 mb-2 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Select value={prod.type} onValueChange={(v: 'manual' | 'site') => {
+                        const updated = [...manualOrderForm.products];
+                        updated[idx] = { ...updated[idx], type: v, name: '', product_id: undefined, unit_price: 0, cost_price: 0 };
+                        setManualOrderForm({ ...manualOrderForm, products: updated });
+                      }}>
+                        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manual">إدخال يدوي</SelectItem>
+                          <SelectItem value="site">من الموقع</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {manualOrderForm.products.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
+                          const updated = manualOrderForm.products.filter((_, i) => i !== idx);
+                          setManualOrderForm({ ...manualOrderForm, products: updated });
+                        }}><Trash2 className="h-3 w-3" /></Button>
+                      )}
+                    </div>
+                    {prod.type === 'manual' ? (
+                      <Input value={prod.name} onChange={(e) => {
+                        const updated = [...manualOrderForm.products];
+                        updated[idx] = { ...updated[idx], name: e.target.value };
+                        setManualOrderForm({ ...manualOrderForm, products: updated });
+                      }} placeholder="اسم المنتج" />
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="relative">
+                          <Search className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input className="pr-8" placeholder="ابحث عن منتج..." value={prod.name && prod.product_id ? prod.name : productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            onFocus={() => setProductSearch('')}
+                          />
+                        </div>
+                        {(!prod.product_id || productSearch) && (siteProducts || []).filter(p => !productSearch || p.name_ar?.includes(productSearch)).slice(0, 8).map(sp => (
+                          <div key={sp.id} className="flex justify-between items-center p-2 hover:bg-muted rounded cursor-pointer text-sm" onClick={() => {
+                            const updated = [...manualOrderForm.products];
+                            updated[idx] = { ...updated[idx], name: sp.name_ar, product_id: sp.id, unit_price: sp.price || 0, cost_price: sp.cost_price || 0 };
+                            setManualOrderForm({ ...manualOrderForm, products: updated });
+                            setProductSearch('');
+                          }}>
+                            <span>{sp.name_ar}</span>
+                            <span className="text-muted-foreground">{formatPrice(sp.price || 0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div><Label className="text-xs">الكمية</Label><Input type="number" min={1} value={prod.quantity} onChange={(e) => {
+                        const updated = [...manualOrderForm.products];
+                        updated[idx] = { ...updated[idx], quantity: parseInt(e.target.value) || 1 };
+                        setManualOrderForm({ ...manualOrderForm, products: updated });
+                      }} /></div>
+                      <div><Label className="text-xs">سعر البيع</Label><Input type="number" value={prod.unit_price} onChange={(e) => {
+                        const updated = [...manualOrderForm.products];
+                        updated[idx] = { ...updated[idx], unit_price: parseFloat(e.target.value) || 0 };
+                        setManualOrderForm({ ...manualOrderForm, products: updated });
+                      }} /></div>
+                      <div><Label className="text-xs">تكلفة المنتج</Label><Input type="number" value={prod.cost_price} onChange={(e) => {
+                        const updated = [...manualOrderForm.products];
+                        updated[idx] = { ...updated[idx], cost_price: parseFloat(e.target.value) || 0 };
+                        setManualOrderForm({ ...manualOrderForm, products: updated });
+                      }} /></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Financial fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="admin-form-group"><Label>المبلغ الإجمالي</Label><Input type="number" value={manualOrderForm.total_amount} onChange={(e) => {
+                  const total = parseFloat(e.target.value) || 0;
+                  setManualOrderForm({ ...manualOrderForm, total_amount: total, remaining_amount: Math.max(0, total - manualOrderForm.customer_paid_amount - manualOrderForm.admin_shipping_cost) });
+                }} /></div>
+                <div className="admin-form-group"><Label>المدفوع مقدماً</Label><Input type="number" value={manualOrderForm.customer_paid_amount} onChange={(e) => {
+                  const paid = parseFloat(e.target.value) || 0;
+                  setManualOrderForm({ ...manualOrderForm, customer_paid_amount: paid, remaining_amount: Math.max(0, manualOrderForm.total_amount - paid - manualOrderForm.admin_shipping_cost) });
+                }} /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="admin-form-group"><Label>تكلفة التوصيل</Label><Input type="number" value={manualOrderForm.admin_shipping_cost} onChange={(e) => {
+                  const ship = parseFloat(e.target.value) || 0;
+                  setManualOrderForm({ ...manualOrderForm, admin_shipping_cost: ship, remaining_amount: Math.max(0, manualOrderForm.total_amount - manualOrderForm.customer_paid_amount - ship) });
+                }} /></div>
+                <div className="admin-form-group"><Label>المتبقي</Label><Input type="number" value={manualOrderForm.remaining_amount} onChange={(e) => setManualOrderForm({ ...manualOrderForm, remaining_amount: parseFloat(e.target.value) || 0 })} /></div>
+                <div className="admin-form-group"><Label>تكلفة المنتج (إجمالي)</Label><Input type="number" value={manualOrderForm.admin_product_cost} onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_product_cost: parseFloat(e.target.value) || 0 })} /></div>
+              </div>
+              {/* Auto commission preview */}
+              <div className="p-3 rounded-lg bg-muted/50 flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">العمولة (تلقائي)</span>
+                <span className={`font-bold ${(manualOrderForm.total_amount - (manualOrderForm.admin_product_cost || manualOrderForm.products.reduce((s, p) => s + p.cost_price * p.quantity, 0)) - manualOrderForm.admin_shipping_cost) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                  {formatPrice(manualOrderForm.total_amount - (manualOrderForm.admin_product_cost || manualOrderForm.products.reduce((s, p) => s + p.cost_price * p.quantity, 0)) - manualOrderForm.admin_shipping_cost)}
+                </span>
+              </div>
+              {/* Notes */}
+              <div className="admin-form-group"><Label>ملاحظات</Label><Textarea value={manualOrderForm.financial_notes} onChange={(e) => setManualOrderForm({ ...manualOrderForm, financial_notes: e.target.value })} rows={2} /></div>
+              <Button onClick={() => addManualOrderMutation.mutate(manualOrderForm)} disabled={addManualOrderMutation.isPending || !manualOrderForm.customer_name.trim()} className="w-full">
                 {addManualOrderMutation.isPending ? 'جاري الإضافة...' : 'إضافة الطلب'}
               </Button>
             </div>
