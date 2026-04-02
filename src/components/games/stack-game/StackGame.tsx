@@ -137,6 +137,7 @@ export default function StackGame({ onBack }: Props) {
         return;
       }
       setSessionToken(result.session_token);
+      claimedMilestonesRef.current = new Set();
       sessionTokenRef.current = result.session_token;
       setScore(0);
       setPerfectCount(0);
