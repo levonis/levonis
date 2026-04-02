@@ -317,7 +317,7 @@ export default function StackGame({ onBack }: Props) {
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-primary font-mono font-bold">🛠 وضع الاختبار</span>
-              <button onClick={() => { setDebugMode(false); setDebugScore(null); setDebugSpeed(1); }} className="text-[10px] text-muted-foreground hover:text-foreground">
+              <button onClick={() => { setDebugMode(false); setDebugScore(null); setDebugSpeed(1); setAutoPlay(false); }} className="text-[10px] text-muted-foreground hover:text-foreground">
                 إغلاق ✕
               </button>
             </div>
