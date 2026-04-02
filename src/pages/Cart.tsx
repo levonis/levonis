@@ -881,6 +881,7 @@ const Cart = () => {
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
+        delivery_method: selectedDeliveryMethod,
       };
 
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
