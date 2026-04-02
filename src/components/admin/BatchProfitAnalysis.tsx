@@ -50,6 +50,25 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     notes: '',
   });
 
+  // Fetch ALL non-cancelled orders independently (not filtered by date range)
+  const { data: allOrders = [] } = useQuery({
+    queryKey: ['batch-all-orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *, order_type,
+          profile:profiles!orders_user_id_fkey_profiles(username, full_name),
+          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id)
+        `)
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Fetch batches ordered by creation date ascending (oldest first for sequential counting)
   const { data: batches = [] } = useQuery({
     queryKey: ['product-batches'],
