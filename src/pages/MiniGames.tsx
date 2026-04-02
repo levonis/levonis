@@ -45,10 +45,6 @@ export default function MiniGames() {
     };
   }, []);
 
-  // Temporarily block non-admin users
-  if (!authLoading && !isAdmin) {
-    return <Navigate to="/rewards" replace />;
-  }
 
   // Fetch disabled game settings
   const { data: stackSettings } = useQuery({
