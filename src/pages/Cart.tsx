@@ -1128,12 +1128,11 @@ const Cart = () => {
       // Create order items
       const orderItems = items
         .filter((item) => {
-          // Include item if it has a product_id OR custom_request_id
-          return item.product_id || item.custom_request_id;
+          return item.product_id || item.custom_request_id || (item as any).bundle_id;
         })
         .map((item) => {
           const isCustomRequest = !!item.custom_request_id;
-          // Use product_options data directly from the cart item
+          const isBundle = !!(item as any).bundle_id;
           const itemOption = (item as any).product_options;
           
           const itemColor = (item as any).selected_color;
@@ -1141,23 +1140,23 @@ const Cart = () => {
             ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
             : null;
           
-          // Get custom request data from either the item or fetched data
           const customRequest = item.custom_product_requests || 
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
-          const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
+          const bundle = isBundle ? (item as any).product_bundles : null;
+          const itemPrice = isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd);
 
-          // Get product name - ensure it's never empty
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
-            : (item.products?.name || 'منتج');
+            : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name || 'منتج');
           const productNameAr = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
-            : (item.products?.name_ar || 'منتج');
+            : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name_ar || 'منتج');
 
           return {
             order_id: order.id,
-            product_id: isCustomRequest ? null : item.product_id,
+            product_id: isCustomRequest || isBundle ? null : item.product_id,
+            bundle_id: isBundle ? (item as any).bundle_id : null,
             custom_request_id: isCustomRequest ? item.custom_request_id : null,
             product_option_id: (item as any).product_option_id || null,
             quantity: item.quantity,
