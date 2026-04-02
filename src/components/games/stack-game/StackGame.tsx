@@ -17,6 +17,7 @@ export default function StackGame({ onBack }: Props) {
   const [gameState, setGameState] = useState<"menu" | "playing" | "gameover">("menu");
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const [score, setScore] = useState(0);
   const [perfectCount, setPerfectCount] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -139,6 +140,7 @@ export default function StackGame({ onBack }: Props) {
       setSessionToken(result.session_token);
       claimedMilestonesRef.current = new Set();
       sessionTokenRef.current = result.session_token;
+      sessionIdRef.current = result.session_id || null;
       setScore(0);
       setPerfectCount(0);
       setMaxCombo(0);
@@ -219,6 +221,7 @@ export default function StackGame({ onBack }: Props) {
       queryClient.invalidateQueries({ queryKey: ["stack-high-score"] });
       invalidateBalances();
       sessionTokenRef.current = null;
+      sessionIdRef.current = null;
       setSessionToken(null);
       setLoadingResult(false);
     },
@@ -238,7 +241,7 @@ export default function StackGame({ onBack }: Props) {
     setLivePerfects(p);
 
     // Check if score just hit a milestone target
-    if (!user || !sessionTokenRef.current || checkingMilestoneRef.current) return;
+    if (!user || !sessionTokenRef.current || !sessionIdRef.current || checkingMilestoneRef.current) return;
     const hitMilestone = milestones.find((m: any) => {
       const remaining = m.stock - m.claimed_count;
       return s >= m.target_score && remaining > 0 && !claimedMilestonesRef.current.has(m.id);
@@ -252,7 +255,7 @@ export default function StackGame({ onBack }: Props) {
     (async () => {
       try {
         const { data: milestoneResult, error: milestoneError } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id, p_score: s, p_session_id: sessionTokenRef.current,
+          p_user_id: user.id, p_score: s, p_session_id: sessionIdRef.current,
         });
         if (milestoneError) console.error("mid-game milestone error:", milestoneError);
         console.log("mid-game milestone result:", JSON.stringify(milestoneResult));
