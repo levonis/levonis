@@ -589,6 +589,7 @@ export default function StackGameTab() {
             <div>
               <label className="text-[10px] text-muted-foreground">المنتج (الجائزة) + اللون والخيار</label>
               <ProductPicker
+                requireStock
                 value={{ product_id: newMilestone.product_id, selected_color: newMilestone.selected_color, selected_option_id: newMilestone.selected_option_id }}
                 onChange={(val, name) => setNewMilestone(p => ({ 
                   ...p, 
