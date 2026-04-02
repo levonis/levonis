@@ -492,8 +492,9 @@ export default function StackGameTab() {
 
               <div className="bg-muted/30 rounded-md p-2 text-[10px] font-mono space-y-0.5">
                 <p className="font-bold mb-1">⭐ محاكاة نقاط الموقع:</p>
-                <p>10 قطع عادية = {10 * s.points_per_block} نقطة موقع</p>
-                <p>20 قطعة + 5 مثالي + كومبو 3 = {20 * s.points_per_block + 5 * s.perfect_bonus_points + Math.floor(3 * s.combo_bonus_multiplier)} نقطة موقع</p>
+                <p>10 قطع عادية = {Math.floor(10 * s.points_per_block)} نقطة موقع</p>
+                <p>20 قطعة + 5 مثالي + كومبو 3 = {Math.floor(20 * s.points_per_block + 5 * s.perfect_bonus_points + 3 * s.combo_bonus_multiplier)} نقطة موقع</p>
+                <p>50 قطعة + 20 مثالي + كومبو 10 = {Math.floor(50 * s.points_per_block + 20 * s.perfect_bonus_points + 10 * s.combo_bonus_multiplier)} نقطة موقع</p>
               </div>
             </div>
           </div>
