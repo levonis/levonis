@@ -2603,6 +2603,48 @@ export type Database = {
         }
         Relationships: []
       }
+      game_prizes: {
+        Row: {
+          created_at: string
+          game_name: string
+          how_won_ar: string | null
+          id: string
+          is_delivered: boolean
+          prize_image_url: string | null
+          prize_name_ar: string
+          prize_type: string
+          product_id: string | null
+          score_achieved: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_name: string
+          how_won_ar?: string | null
+          id?: string
+          is_delivered?: boolean
+          prize_image_url?: string | null
+          prize_name_ar: string
+          prize_type?: string
+          product_id?: string | null
+          score_achieved?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_name?: string
+          how_won_ar?: string | null
+          id?: string
+          is_delivered?: boolean
+          prize_image_url?: string | null
+          prize_name_ar?: string
+          prize_type?: string
+          product_id?: string | null
+          score_achieved?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_store_purchases: {
         Row: {
           created_at: string
@@ -9259,10 +9301,15 @@ export type Database = {
         }
         Returns: boolean
       }
-      check_stack_milestone: {
-        Args: { p_score: number; p_session_id: string; p_user_id: string }
-        Returns: Json
-      }
+      check_stack_milestone:
+        | {
+            Args: { p_score: number; p_session_id: string; p_user_id: string }
+            Returns: Json
+          }
+        | {
+            Args: { p_score: number; p_session_id: string; p_user_id: string }
+            Returns: Json
+          }
       check_username_available: {
         Args: { username_to_check: string }
         Returns: boolean
