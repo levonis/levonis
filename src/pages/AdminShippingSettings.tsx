@@ -771,56 +771,8 @@ export default function AdminShippingSettings() {
           </GlassCard>
         </div>
 
-        {/* ═══ Row 4: Local Delivery + Governorate Exceptions ═══ */}
-        <GlassCard gradient="linear-gradient(145deg, hsl(200 70% 50% / 0.08), hsl(220 60% 45% / 0.04), transparent)">
-          <GlassCardHeader
-            icon={<MapPin className="h-5 w-5 text-white" />}
-            iconBg="bg-gradient-to-br from-sky-500 to-blue-600"
-            title="التوصيل المحلي"
-            subtitle="أسعار التوصيل الافتراضية مع استثناءات لكل محافظة"
-          />
-          <div className="px-5 pb-4">
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <SettingField
-                label="بغداد"
-                icon={<MapPin className="h-3 w-3" />}
-                value={settings.local_delivery_baghdad}
-                onChange={(v) => updateSetting("local_delivery_baghdad", v)}
-                suffix="د.ع"
-              />
-              <SettingField
-                label="باقي المحافظات"
-                icon={<MapPin className="h-3 w-3" />}
-                value={settings.local_delivery_provinces}
-                onChange={(v) => updateSetting("local_delivery_provinces", v)}
-                suffix="د.ع"
-              />
-            </div>
-
-            {/* Governorate exceptions */}
-            <div className="border-t border-white/5 pt-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-sky-400" />
-                <h4 className="text-sm font-bold">استثناءات المحافظات</h4>
-                <span className="text-[10px] text-muted-foreground">(تجاوز السعر الافتراضي)</span>
-              </div>
-              <GovernorateExceptionsSection />
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* ═══ Row 5: Category Exceptions ═══ */}
-        <GlassCard gradient="linear-gradient(145deg, hsl(35 80% 50% / 0.08), hsl(45 70% 45% / 0.04), transparent)">
-          <GlassCardHeader
-            icon={<Tag className="h-5 w-5 text-white" />}
-            iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
-            title="استثناءات حسب القسم"
-            subtitle="أسعار توصيل مخصصة لأقسام معينة (مثل الطابعات)"
-          />
-          <div className="px-5 pb-5">
-            <CategoryExceptionsSection />
-          </div>
-        </GlassCard>
+        {/* ═══ Row 4: Delivery Methods ═══ */}
+        <DeliveryMethodsManager />
 
         {/* ═══ Row 6: Formulas ═══ */}
         <GlassCard gradient="linear-gradient(145deg, hsl(var(--muted) / 0.5), transparent)" className="border-white/5">
