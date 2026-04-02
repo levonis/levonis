@@ -164,7 +164,8 @@ const Cart = () => {
   // حساب سعر تقريبي لطريقة توصيل معينة (للعرض فقط)
   const getMethodPreviewPrice = (methodKey: string) => {
     if (methodKey === 'pickup') return 0;
-    if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
+    const hasOnlyGiftsPreview = items.length > 0 && items.every((item: any) => item.is_gift);
+    if (isDirectSaleCart && hasExistingDirectOrderToday && !hasOnlyGiftsPreview) return 0;
     const method = deliveryMethods.find((m: any) => m.method_key === methodKey);
     if (!method) return 0;
     const basePrice = Number(method.base_price) || 0;
