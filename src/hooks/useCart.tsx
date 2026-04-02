@@ -232,6 +232,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           shipping_option_index,
           shipping_option_name_ar,
           sale_type,
+          is_gift,
+          is_locked,
           products (
             id,
             name,
