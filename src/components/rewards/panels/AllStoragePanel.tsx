@@ -335,6 +335,8 @@ export default function AllStoragePanel() {
   const handleRequestShipping = (item: StorageItem) => {
     if (item.source === 'offer') {
       requestOfferShippingMutation.mutate([item.id]);
+    } else if (item.source === 'purchased') {
+      requestPurchasedShippingMutation.mutate([item.id]);
     } else {
       requestPrizeShippingMutation.mutate([item.id]);
     }
@@ -344,9 +346,11 @@ export default function AllStoragePanel() {
     const selectedItems = allItems.filter(item => selectedIds.has(item.id));
     const offerIds = selectedItems.filter(i => i.source === 'offer').map(i => i.id);
     const prizeIds = selectedItems.filter(i => i.source === 'competition').map(i => i.id);
+    const purchasedIds = selectedItems.filter(i => i.source === 'purchased').map(i => i.id);
     
     if (offerIds.length > 0) requestOfferShippingMutation.mutate(offerIds);
     if (prizeIds.length > 0) requestPrizeShippingMutation.mutate(prizeIds);
+    if (purchasedIds.length > 0) requestPurchasedShippingMutation.mutate(purchasedIds);
   };
 
   const toggleSelection = (id: string) => {
