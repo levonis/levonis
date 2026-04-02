@@ -1898,46 +1898,81 @@ const Cart = () => {
                   )}
 
                   {/* خيارات التوصيل */}
-                  <div className="py-4 px-4 rounded-lg bg-muted/30 border border-border/40">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Truck className="h-5 w-5 text-primary" />
-                      <span className="font-bold text-foreground">طريقة التوصيل</span>
-                    </div>
-                    <RadioGroup
-                      value={selectedDeliveryMethod}
-                      onValueChange={setSelectedDeliveryMethod}
-                      className="space-y-2"
-                    >
-                      {deliveryMethods.map((method: any) => {
-                        const iconMap: Record<string, React.ReactNode> = {
-                          warehouse: <Warehouse className="h-4 w-4" />,
-                          truck: <Truck className="h-4 w-4" />,
-                          user: <UserCheck className="h-4 w-4" />,
-                        };
-                        const methodFee = method.method_key === 'pickup' ? 0 : getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
-                        return (
-                          <div
-                            key={method.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                              selectedDeliveryMethod === method.method_key
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border/40 hover:border-primary/50'
-                            }`}
-                            onClick={() => setSelectedDeliveryMethod(method.method_key)}
-                          >
-                            <RadioGroupItem value={method.method_key} id={`dm-${method.method_key}`} />
-                            <div className="text-primary/70">{iconMap[method.icon] || <Package className="h-4 w-4" />}</div>
-                            <Label htmlFor={`dm-${method.method_key}`} className="flex-1 cursor-pointer">
-                              <div className="font-bold text-sm text-foreground">{method.name_ar}</div>
-                              {method.description_ar && <div className="text-[11px] text-muted-foreground">{method.description_ar}</div>}
-                            </Label>
-                            <span className={`text-sm font-bold ${method.method_key === 'pickup' ? 'text-green-500' : 'text-primary'}`}>
-                              {method.method_key === 'pickup' ? 'مجاناً' : `${formatPrice(methodFee)} د.ع`}
+                  <div className="rounded-lg bg-muted/30 border border-border/40 overflow-hidden">
+                    {/* Selected method header - always visible */}
+                    {(() => {
+                      const selectedMethod = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+                      const selectedFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
+                      const iconMap: Record<string, React.ReactNode> = {
+                        warehouse: <Warehouse className="h-4 w-4" />,
+                        truck: <Truck className="h-4 w-4" />,
+                        user: <UserCheck className="h-4 w-4" />,
+                      };
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryOptionsOpen(v => !v)}
+                          className="w-full flex items-center gap-2 py-3 px-4 text-right"
+                        >
+                          <Truck className="h-5 w-5 text-primary shrink-0" />
+                          <span className="font-bold text-foreground flex-1">طريقة التوصيل</span>
+                          {selectedMethod && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              {selectedMethod.name_ar} — {' '}
+                              <span className={`font-bold ${selectedDeliveryMethod === 'pickup' ? 'text-green-500' : 'text-primary'}`}>
+                                {selectedDeliveryMethod === 'pickup' ? 'مجاناً' : `${formatPrice(selectedFee)} د.ع`}
+                              </span>
                             </span>
-                          </div>
-                        );
-                      })}
-                    </RadioGroup>
+                          )}
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${deliveryOptionsOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      );
+                    })()}
+
+                    {/* Expandable options list */}
+                    <div className={`overflow-hidden transition-all duration-300 ${deliveryOptionsOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <RadioGroup
+                        value={selectedDeliveryMethod}
+                        onValueChange={(v) => {
+                          setSelectedDeliveryMethod(v);
+                          setDeliveryOptionsOpen(false);
+                        }}
+                        className="space-y-2 px-4 pb-4"
+                      >
+                        {deliveryMethods.map((method: any) => {
+                          const iconMap: Record<string, React.ReactNode> = {
+                            warehouse: <Warehouse className="h-4 w-4" />,
+                            truck: <Truck className="h-4 w-4" />,
+                            user: <UserCheck className="h-4 w-4" />,
+                          };
+                          const previewFee = getMethodPreviewPrice(method.method_key);
+                          return (
+                            <div
+                              key={method.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                                selectedDeliveryMethod === method.method_key
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border/40 hover:border-primary/50'
+                              }`}
+                              onClick={() => {
+                                setSelectedDeliveryMethod(method.method_key);
+                                setDeliveryOptionsOpen(false);
+                              }}
+                            >
+                              <RadioGroupItem value={method.method_key} id={`dm-${method.method_key}`} />
+                              <div className="text-primary/70">{iconMap[method.icon] || <Package className="h-4 w-4" />}</div>
+                              <Label htmlFor={`dm-${method.method_key}`} className="flex-1 cursor-pointer">
+                                <div className="font-bold text-sm text-foreground">{method.name_ar}</div>
+                                {method.description_ar && <div className="text-[11px] text-muted-foreground">{method.description_ar}</div>}
+                              </Label>
+                              <span className={`text-sm font-bold ${method.method_key === 'pickup' ? 'text-green-500' : 'text-primary'}`}>
+                                {method.method_key === 'pickup' ? 'مجاناً' : `${formatPrice(previewFee)} د.ع`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </RadioGroup>
+                    </div>
                   </div>
 
                   {/* خيارات الدفع للطلب المسبق */}
