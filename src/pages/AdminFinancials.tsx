@@ -470,7 +470,7 @@ const AdminFinancials = () => {
       {/* ===== 5. Main Tabs: Sale Type ===== */}
       <AdminSection title="تحليل الأرباح" className="mt-6">
         <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v); setSubTab('general'); setCurrentPage(1); }} className="w-full">
-          <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsList className="mb-4 w-full sm:w-auto text-muted bg-card">
             <TabsTrigger value="all">ربح عام</TabsTrigger>
             <TabsTrigger value="direct">بيع مباشر</TabsTrigger>
             <TabsTrigger value="preorder">بيع مسبق</TabsTrigger>
