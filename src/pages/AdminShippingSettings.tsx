@@ -204,12 +204,15 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
     },
   });
 
+  const isFollowGov = newGov === "__follow_gov__";
+
   const addException = useMutation({
     mutationFn: async () => {
-      if (!newCat || newPrice <= 0) throw new Error("أدخل القسم والسعر");
+      if (!newCat) throw new Error("أدخل القسم");
+      if (!isFollowGov && newPrice <= 0) throw new Error("أدخل السعر");
       const { error } = await supabase.from("delivery_category_exceptions").insert({
         category_id: newCat,
-        delivery_price: newPrice,
+        delivery_price: isFollowGov ? 0 : newPrice,
         governorate: newGov === "all" ? null : newGov,
         delivery_method_key: methodKey,
         units_per_delivery: newUnits || 1,
