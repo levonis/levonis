@@ -538,7 +538,7 @@ const AdminFinancials = () => {
                                 <TableCell>{renderEditableCell(order.id, 'remaining_amount', order.remaining_amount || 0, 'text-amber-600 font-medium')}</TableCell>
                               )}
                               {mainTab === 'preorder' && (
-                                <TableCell className="text-red-600 font-medium">{formatPrice((order.remaining_amount || 0) + calcDeliveryCost(order))}</TableCell>
+                                <TableCell className="text-red-600 font-medium">{formatPrice((order.remaining_amount || 0) + (order.admin_shipping_cost || 0))}</TableCell>
                               )}
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
@@ -576,11 +576,12 @@ const AdminFinancials = () => {
                             acc.totalAmount += order.total_amount || 0;
                             acc.customerPaid += order.customer_paid_amount || 0;
                             acc.remaining += order.remaining_amount || 0;
+                            acc.adminShipping += order.admin_shipping_cost || 0;
                             acc.shippingCost += calcDeliveryCost(order);
                             acc.productCost += calcProductCost(order, usdToIqdRate);
                             acc.profit += order.status === 'delivered' ? calcOrderProfit(order, usdToIqdRate) : 0;
                             return acc;
-                          }, { totalAmount: 0, customerPaid: 0, remaining: 0, shippingCost: 0, productCost: 0, profit: 0 });
+                          }, { totalAmount: 0, customerPaid: 0, remaining: 0, adminShipping: 0, shippingCost: 0, productCost: 0, profit: 0 });
                           return (
                             <TableRow className="bg-muted/40 font-bold border-t-2">
                               <TableCell>المجموع</TableCell>
@@ -589,7 +590,7 @@ const AdminFinancials = () => {
                               <TableCell className="text-green-600">{formatPrice(totals.totalAmount)}</TableCell>
                               {mainTab === 'preorder' && <TableCell className="text-blue-600">{formatPrice(totals.customerPaid)}</TableCell>}
                               {mainTab === 'preorder' && <TableCell className="text-amber-600">{formatPrice(totals.remaining)}</TableCell>}
-                              {mainTab === 'preorder' && <TableCell className="text-red-600">{formatPrice(totals.remaining + totals.shippingCost)}</TableCell>}
+                              {mainTab === 'preorder' && <TableCell className="text-red-600">{formatPrice(totals.remaining + totals.adminShipping)}</TableCell>}
                               <TableCell className="text-orange-500">{formatPrice(totals.shippingCost)}</TableCell>
                               <TableCell className="text-red-500">{formatPrice(totals.productCost)}</TableCell>
                               <TableCell className={totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}>{formatPrice(totals.profit)}</TableCell>
