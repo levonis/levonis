@@ -151,6 +151,24 @@ export default function AllStoragePanel() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Fetch user purchased products (from offer purchases via RPC)
+  const { data: purchasedProducts, isLoading: isLoadingPurchased } = useQuery({
+    queryKey: ['storage-purchased-products', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_purchased_products')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('order_status', ['not_ordered', 'shipping_requested', 'shipped', 'delivered'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
   // Fetch user addresses
   const { data: userAddresses } = useQuery({
     queryKey: ['user-addresses', user?.id],
