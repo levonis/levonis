@@ -344,7 +344,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
 function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: string, updates: Record<string, any>) => void }) {
   const [expanded, setExpanded] = useState(false);
   const [editPrice, setEditPrice] = useState(Number(method.base_price));
-  const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "");
+  const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "__none__");
   const [editBaseUnits, setEditBaseUnits] = useState<number>(method.base_price_units_per_delivery || 1);
 
   const { data: categories = [] } = useQuery({
@@ -374,8 +374,9 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
 
   const isPickup = method.method_key === 'pickup';
 
+  const effectiveCatId = editBaseCatId === "__none__" ? null : editBaseCatId;
   const hasChanges = editPrice !== Number(method.base_price)
-    || (editBaseCatId || "") !== (method.base_price_category_id || "")
+    || (effectiveCatId || null) !== (method.base_price_category_id || null)
     || editBaseUnits !== (method.base_price_units_per_delivery || 1);
 
   return (
@@ -420,14 +421,14 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
                     <SelectValue placeholder="كل الأقسام" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">كل الأقسام</SelectItem>
+                    <SelectItem value="__none__">كل الأقسام</SelectItem>
                     {categories.map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              {editBaseCatId && (
+              {effectiveCatId && (
                 <div className="w-24 space-y-1.5">
                   <Label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80">
                     قطع/توصيل
@@ -449,7 +450,7 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
               className="h-9 px-3 gap-1 text-xs"
               onClick={() => onUpdate(method.id, {
                 base_price: editPrice,
-                base_price_category_id: editBaseCatId || null,
+                base_price_category_id: effectiveCatId,
                 base_price_units_per_delivery: editBaseUnits,
               })}
             >
