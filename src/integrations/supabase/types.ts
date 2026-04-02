@@ -5928,6 +5928,50 @@ export type Database = {
           },
         ]
       }
+      product_batches: {
+        Row: {
+          batch_cost: number
+          batch_quantity: number
+          created_at: string
+          id: string
+          notes: string | null
+          product_id: string | null
+          product_name_ar: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_cost?: number
+          batch_quantity?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          product_name_ar: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_cost?: number
+          batch_quantity?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          product_name_ar?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_batches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_bookings: {
         Row: {
           booking_type: string
