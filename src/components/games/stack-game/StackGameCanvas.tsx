@@ -15,7 +15,7 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate, speedMultip
     <Canvas
       shadows
       orthographic
-      camera={{ position: [2, 5, 2], zoom: 40, near: -100, far: 200 }}
+      camera={{ position: [-2, 2, -2], zoom: 80, near: -500, far: 500 }}
       style={{ width: "100%", height: "100%", touchAction: "none" }}
       gl={{ antialias: true, alpha: false, toneMapping: THREE.NoToneMapping }}
       dpr={[1, 1.5]}
