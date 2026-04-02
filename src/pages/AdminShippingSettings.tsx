@@ -184,6 +184,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
   const [newCat, setNewCat] = useState("");
   const [newPrice, setNewPrice] = useState<number>(0);
   const [newGov, setNewGov] = useState<string>("all");
+  const [newUnits, setNewUnits] = useState<number>(1);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-list"],
