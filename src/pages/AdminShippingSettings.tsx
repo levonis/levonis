@@ -341,9 +341,21 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
 }
 
 // ─── Delivery Method Card ───
-function DeliveryMethodCard({ method, onUpdatePrice }: { method: any; onUpdatePrice: (id: string, price: number) => void }) {
+function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: string, updates: Record<string, any>) => void }) {
   const [expanded, setExpanded] = useState(false);
   const [editPrice, setEditPrice] = useState(Number(method.base_price));
+  const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "");
+  const [editBaseUnits, setEditBaseUnits] = useState<number>(method.base_price_units_per_delivery || 1);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("id, name_ar").order("name_ar");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const iconMap: Record<string, React.ReactNode> = {
     warehouse: <Warehouse className="h-5 w-5 text-white" />,
     truck: <Truck className="h-5 w-5 text-white" />,
@@ -361,6 +373,10 @@ function DeliveryMethodCard({ method, onUpdatePrice }: { method: any; onUpdatePr
   };
 
   const isPickup = method.method_key === 'pickup';
+
+  const hasChanges = editPrice !== Number(method.base_price)
+    || (editBaseCatId || "") !== (method.base_price_category_id || "")
+    || editBaseUnits !== (method.base_price_units_per_delivery || 1);
 
   return (
     <GlassCard gradient={cardGradientMap[method.method_key] || cardGradientMap.standard}>
@@ -381,9 +397,9 @@ function DeliveryMethodCard({ method, onUpdatePrice }: { method: any; onUpdatePr
       </div>
 
       <div className="px-5 pb-5">
-        {/* Base price */}
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
+        {/* Base price + category binding */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-40">
             <SettingField
               label="السعر الأساسي"
               icon={<DollarSign className="h-3 w-3" />}
@@ -392,11 +408,50 @@ function DeliveryMethodCard({ method, onUpdatePrice }: { method: any; onUpdatePr
               suffix="د.ع"
             />
           </div>
-          {editPrice !== Number(method.base_price) && (
+          {!isPickup && (
+            <>
+              <div className="w-40 space-y-1.5">
+                <Label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80">
+                  <Tag className="h-3 w-3" />
+                  القسم المرتبط (اختياري)
+                </Label>
+                <Select value={editBaseCatId} onValueChange={setEditBaseCatId}>
+                  <SelectTrigger className="h-9 text-xs bg-background/40 border-white/10">
+                    <SelectValue placeholder="كل الأقسام" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">كل الأقسام</SelectItem>
+                    {categories.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {editBaseCatId && (
+                <div className="w-24 space-y-1.5">
+                  <Label className="flex items-center gap-1.5 text-xs font-medium text-foreground/80">
+                    قطع/توصيل
+                  </Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={editBaseUnits}
+                    onChange={(e) => setEditBaseUnits(Number(e.target.value) || 1)}
+                    className="h-9 text-xs bg-background/40 border-white/10"
+                  />
+                </div>
+              )}
+            </>
+          )}
+          {hasChanges && (
             <Button
               size="sm"
               className="h-9 px-3 gap-1 text-xs"
-              onClick={() => onUpdatePrice(method.id, editPrice)}
+              onClick={() => onUpdate(method.id, {
+                base_price: editPrice,
+                base_price_category_id: editBaseCatId || null,
+                base_price_units_per_delivery: editBaseUnits,
+              })}
             >
               <Save className="h-3 w-3" />
               حفظ
