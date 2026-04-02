@@ -395,6 +395,12 @@ export default function StackGameTab() {
   const addLbPrize = useMutation({
     mutationFn: async () => {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
+      if (newLbPrize.product_id) {
+        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock").eq("id", newLbPrize.product_id).single();
+        if (prod && prod.direct_stock == null && prod.pre_order_stock == null) {
+          throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً");
+        }
+      }
       const { error } = await supabase.from("stack_game_leaderboard_prizes" as any).insert({
         position: newLbPrize.position,
         prize_name_ar: newLbPrize.prize_name_ar || "منتج",
