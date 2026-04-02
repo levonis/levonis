@@ -201,7 +201,7 @@ class TowerAudio {
 
 const audioSystem = new TowerAudio();
 
-export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
+export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier = 1 }: Props) {
   const { camera } = useThree();
   // Use ref to always have latest callback (avoids stale closure in R3F)
   const onGameOverRef = useRef(onGameOver);
