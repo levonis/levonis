@@ -232,14 +232,8 @@ export default function StackGame({ onBack }: Props) {
   const claimedMilestonesRef = useRef<Set<string>>(new Set());
   const checkingMilestoneRef = useRef(false);
 
-  const handleScoreUpdate = useCallback((blocks: number, c: number, p: number) => {
-    // Calculate game score using settings formula (same as server-side end_stack_game)
-    const gpb = (settings as any)?.game_points_per_block ?? 1;
-    const gpf = (settings as any)?.game_perfect_bonus ?? 2;
-    const gcm = (settings as any)?.game_combo_multiplier ?? 1;
-    const calculatedScore = blocks * gpb + p * gpf + Math.floor(c * gcm);
-    
-    setLiveScore(calculatedScore);
+  const handleScoreUpdate = useCallback((s: number, c: number, p: number) => {
+    setLiveScore(s);
     setLiveCombo(c);
     setLivePerfects(p);
 
@@ -247,22 +241,24 @@ export default function StackGame({ onBack }: Props) {
     if (!user || !sessionTokenRef.current || checkingMilestoneRef.current) return;
     const hitMilestone = milestones.find((m: any) => {
       const remaining = m.stock - m.claimed_count;
-      return calculatedScore >= m.target_score && remaining > 0 && !claimedMilestonesRef.current.has(m.id);
+      return s >= m.target_score && remaining > 0 && !claimedMilestonesRef.current.has(m.id);
     });
     if (!hitMilestone) return;
 
+    // Mark as checking to avoid duplicate calls
     checkingMilestoneRef.current = true;
     claimedMilestonesRef.current.add(hitMilestone.id);
 
     (async () => {
       try {
         const { data: milestoneResult, error: milestoneError } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id, p_score: calculatedScore, p_session_id: sessionTokenRef.current,
+          p_user_id: user.id, p_score: s, p_session_id: sessionTokenRef.current,
         });
         if (milestoneError) console.error("mid-game milestone error:", milestoneError);
         console.log("mid-game milestone result:", JSON.stringify(milestoneResult));
         if (milestoneResult && (milestoneResult as any).won) {
           setMidGamePrize(milestoneResult);
+          // Auto-hide after 4 seconds
           setTimeout(() => setMidGamePrize(null), 4000);
           if ((milestoneResult as any).milestone_id) {
             try {
@@ -278,7 +274,7 @@ export default function StackGame({ onBack }: Props) {
         checkingMilestoneRef.current = false;
       }
     })();
-  }, [user, milestones, queryClient, settings]);
+  }, [user, milestones, queryClient]);
 
   if (gameState === "playing") {
     return (

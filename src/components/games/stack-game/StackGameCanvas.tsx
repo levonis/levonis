@@ -15,10 +15,10 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
       orthographic
       camera={{ position: [-2, 2, -2], zoom: 80, near: -500, far: 500 }}
       style={{ width: "100%", height: "100%", touchAction: "none" }}
-      gl={{ antialias: true, alpha: true, toneMapping: THREE.NoToneMapping }}
+      gl={{ antialias: true, alpha: false, toneMapping: THREE.NoToneMapping }}
       dpr={[1, 1.5]}
     >
-      {/* Background handled by StackEnvironment */}
+      <color attach="background" args={["#000000"]} />
       <Suspense fallback={null}>
         <StackScene
           onGameOver={onGameOver}
