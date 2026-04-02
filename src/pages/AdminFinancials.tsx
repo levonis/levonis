@@ -633,6 +633,15 @@ const AdminFinancials = () => {
                     </Table>
                   </div>
                 </TabsContent>
+
+                {tab === 'direct' && (
+                  <TabsContent value="by-batch">
+                    <BatchProfitAnalysis
+                      deliveredDirectOrders={tabFilteredOrders.filter(o => o.status === 'delivered')}
+                      usdToIqdRate={usdToIqdRate}
+                    />
+                  </TabsContent>
+                )}
               </Tabs>
             </TabsContent>
           ))}
