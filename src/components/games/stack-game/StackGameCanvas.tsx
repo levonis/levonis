@@ -23,8 +23,6 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
         <StackScene
           onGameOver={onGameOver}
           onScoreUpdate={onScoreUpdate}
-          speedMultiplier={speedMultiplier}
-          autoPlay={autoPlay}
         />
       </Suspense>
     </Canvas>
