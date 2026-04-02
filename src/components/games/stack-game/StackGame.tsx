@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function StackGame({ onBack }: Props) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [gameState, setGameState] = useState<"menu" | "playing" | "gameover">("menu");
   const [sessionToken, setSessionToken] = useState<string | null>(null);
@@ -28,6 +28,11 @@ export default function StackGame({ onBack }: Props) {
   const [liveScore, setLiveScore] = useState(0);
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
+
+  // Admin debug mode
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugScore, setDebugScore] = useState<number | null>(null);
+  const [debugSpeed, setDebugSpeed] = useState(1);
 
   const { data: settings } = useQuery({
     queryKey: ["stack-game-settings"],
