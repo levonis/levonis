@@ -303,11 +303,15 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
             <DialogHeader><DialogTitle>إضافة وجبة جديدة</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>البحث عن منتج</Label>
+                <div className="flex gap-2 mb-2">
+                  <Button size="sm" variant={searchType === 'product' ? 'default' : 'outline'} onClick={() => { setSearchType('product'); setProductSearch(''); }}>منتج</Button>
+                  <Button size="sm" variant={searchType === 'bundle' ? 'default' : 'outline'} onClick={() => { setSearchType('bundle'); setProductSearch(''); }}>بندل</Button>
+                </div>
+                <Label>{searchType === 'bundle' ? 'البحث عن بندل' : 'البحث عن منتج'}</Label>
                 <Input
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder="ابحث عن المنتج (بغض النظر عن اللون والخيار)..."
+                  placeholder={searchType === 'bundle' ? 'ابحث عن البندل...' : 'ابحث عن المنتج (بغض النظر عن اللون والخيار)...'}
                 />
                 {searchResults.length > 0 && (
                   <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
@@ -316,20 +320,27 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                         key={p.id}
                         className="w-full text-right p-2 hover:bg-muted/50 flex items-center gap-2 text-sm"
                         onClick={() => {
-                          setForm({ ...form, product_id: p.id, product_name_ar: p.name_ar });
+                          if (p._type === 'bundle') {
+                            setForm({ ...form, product_id: '', bundle_id: p.id, product_name_ar: p.name_ar });
+                          } else {
+                            setForm({ ...form, product_id: p.id, bundle_id: '', product_name_ar: p.name_ar });
+                          }
                           setProductSearch('');
                         }}
                       >
                         {p.image_url && <img src={p.image_url} className="w-8 h-8 rounded object-cover" alt="" />}
                         <span>{p.name_ar}</span>
+                        {p._type === 'bundle' && <Badge variant="outline" className="text-[10px]">بندل</Badge>}
                       </button>
                     ))}
                   </div>
                 )}
                 {form.product_name_ar && (
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary">{form.product_name_ar}</Badge>
-                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setForm({ ...form, product_id: '', product_name_ar: '' })}>تغيير</Button>
+                    <Badge variant={form.bundle_id ? 'default' : 'secondary'}>
+                      {form.bundle_id ? '📦 ' : ''}{form.product_name_ar}
+                    </Badge>
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setForm({ ...form, product_id: '', bundle_id: '', product_name_ar: '' })}>تغيير</Button>
                   </div>
                 )}
               </div>
