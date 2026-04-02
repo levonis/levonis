@@ -7,9 +7,10 @@ interface Props {
   onScoreUpdate?: (score: number, combo: number, perfectCount: number) => void;
   debugScoreOverride?: number | null;
   speedMultiplier?: number;
+  autoPlay?: boolean;
 }
 
-export default function StackGameCanvas({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier }: Props) {
+export default function StackGameCanvas({ onGameOver, onScoreUpdate, debugScoreOverride, speedMultiplier, autoPlay }: Props) {
   return (
     <Canvas
       shadows
@@ -25,6 +26,7 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate, debugScoreO
           onScoreUpdate={onScoreUpdate}
           debugScoreOverride={debugScoreOverride}
           speedMultiplier={speedMultiplier}
+          autoPlay={autoPlay}
         />
       </Suspense>
     </Canvas>
