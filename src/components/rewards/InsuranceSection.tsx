@@ -572,6 +572,18 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                         {selectedPlan.monthly_price?.toLocaleString()} {t('common_iqd')}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
+                      <span>رصيد المحفظة الحالي</span>
+                      <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.monthly_price || 0) ? 'text-green-600' : 'text-destructive'}`}>
+                        {(walletBalance || 0).toLocaleString()} {t('common_iqd')}
+                      </span>
+                    </div>
+                    {(walletBalance || 0) < (selectedPlan.monthly_price || 0) && (
+                      <p className="text-xs text-destructive mt-2 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        رصيدك غير كافٍ. تحتاج {((selectedPlan.monthly_price || 0) - (walletBalance || 0)).toLocaleString()} {t('common_iqd')} إضافية
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
