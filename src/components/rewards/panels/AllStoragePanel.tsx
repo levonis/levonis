@@ -300,10 +300,29 @@ export default function AllStoragePanel() {
         delivered_at: prize.delivered_at,
       });
     });
+
+    purchasedProducts?.forEach((pp: any) => {
+      items.push({
+        id: pp.id,
+        title: pp.product_name_ar || pp.product_name || 'منتج',
+        image_url: pp.product_image,
+        quantity: 1,
+        status: pp.order_status === 'not_ordered' ? 'pending' : pp.order_status,
+        source: 'purchased',
+        source_type: pp.source_type,
+        created_at: pp.created_at,
+        shipping_requested_at: null,
+        shipped_at: pp.shipped_at,
+        delivered_at: pp.delivered_at,
+        unit_price: pp.product_price,
+        total_price: pp.product_price,
+        gift_tickets_awarded: pp.gift_tickets,
+      });
+    });
     
     items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return items;
-  }, [offerPurchases, competitionPrizes]);
+  }, [offerPurchases, competitionPrizes, purchasedProducts]);
 
   // Group items by status
   const groupedByStatus = useMemo(() => ({
