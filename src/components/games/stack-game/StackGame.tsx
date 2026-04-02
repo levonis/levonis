@@ -238,8 +238,7 @@ export default function StackGame({ onBack }: Props) {
         <StackGameCanvas
           onGameOver={handleGameOver}
           onScoreUpdate={handleScoreUpdate}
-          speedMultiplier={debugMode ? debugSpeed : 1}
-          autoPlay={debugMode && autoPlay}
+        />
         />
         {/* Live Score Overlay - Modern Glass UI */}
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
