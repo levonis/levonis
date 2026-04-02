@@ -68,12 +68,12 @@ export default function MyGamePrizes({ onBack }: Props) {
       // Find matching milestone to get proper option/color
       const { data: milestones } = await supabase
         .from("stack_game_milestones" as any)
-        .select("id, product_id, selected_option_id, selected_color")
+        .select("*")
         .eq("product_id", prize.product_id)
         .eq("is_active", true)
         .limit(1);
 
-      const milestone = milestones?.[0];
+      const milestone = (milestones as any)?.[0];
 
       // Insert with proper option/color from milestone config
       const { error } = await supabase.from("cart_items").insert({
