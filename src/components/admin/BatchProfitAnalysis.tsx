@@ -376,7 +376,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
               <Button
                 className="w-full"
                 onClick={() => {
-                  if (!form.product_name_ar) { toast.error('يرجى تحديد المنتج'); return; }
+                  if (!form.product_name_ar) { toast.error('يرجى تحديد المنتج أو البندل'); return; }
                   if (!form.batch_quantity) { toast.error('يرجى إدخال الكمية'); return; }
                   addBatchMutation.mutate(form);
                 }}
