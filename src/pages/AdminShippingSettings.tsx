@@ -420,7 +420,7 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
                     <SelectValue placeholder="كل الأقسام" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">كل الأقسام</SelectItem>
+                    <SelectItem value="__none__">كل الأقسام</SelectItem>
                     {categories.map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
                     ))}
