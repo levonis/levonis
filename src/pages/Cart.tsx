@@ -1637,7 +1637,8 @@ const Cart = () => {
                                 )}
                               </div>
 
-                              {/* Delete button */}
+                              {/* Delete button - hidden for locked gifts */}
+                              {!isLocked && (
                               <Button
                                 type="button"
                                 size="icon"
@@ -1652,14 +1653,28 @@ const Cart = () => {
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
+                              )}
                             </div>
+
+                            {/* Gift badge */}
+                            {isGift && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Gift className="h-3 w-3 text-primary" />
+                                <span className="text-[10px] font-bold text-primary">🎁 هدية مجانية</span>
+                              </div>
+                            )}
 
                             {/* Price + Quantity row */}
                             <div className="flex items-center justify-between mt-1.5">
+                              {isGift ? (
+                                <span className="text-sm sm:text-base font-black text-primary">مجاناً</span>
+                              ) : (
                               <span className="text-sm sm:text-base font-black text-primary">
                                 <AnimatedPrice value={itemPrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
                               </span>
+                              )}
                               
+                              {!isLocked && (
                               <div className="flex items-center gap-1 bg-muted/30 rounded-lg border border-border/40">
                                 <Button
                                   type="button"
@@ -1690,10 +1705,11 @@ const Cart = () => {
                                   <Plus className="h-3 w-3" />
                                 </Button>
                               </div>
+                              )}
                             </div>
 
                             {/* Total if quantity > 1 */}
-                            {item.quantity > 1 && (
+                            {!isGift && item.quantity > 1 && (
                               <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
                                 المجموع: <AnimatedPrice value={itemPrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
                               </div>
