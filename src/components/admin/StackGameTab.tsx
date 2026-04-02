@@ -348,6 +348,13 @@ export default function StackGameTab() {
   const addMilestone = useMutation({
     mutationFn: async () => {
       if (!newMilestone.prize_name_ar.trim() && !newMilestone.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
+      // Validate stock exists for product-based prizes
+      if (newMilestone.product_id) {
+        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock").eq("id", newMilestone.product_id).single();
+        if (prod && prod.direct_stock == null && prod.pre_order_stock == null) {
+          throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً من خلال زر 'تحديد مخزون يدوي للجوائز'");
+        }
+      }
       const { error } = await supabase.from("stack_game_milestones" as any).insert({
         target_score: newMilestone.target_score,
         prize_name_ar: newMilestone.prize_name_ar || "منتج",
