@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/hooks/useCart';
+import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
