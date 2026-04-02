@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -136,6 +136,30 @@ const Cart = () => {
       return data;
     },
   });
+
+  // فلترة طرق التوصيل: إخفاء الطرق المخصصة لقسم معين إذا لم يكن في السلة منتج من ذلك القسم
+  const visibleDeliveryMethods = useMemo(() => {
+    const cartCategoryIds = new Set<string>();
+    items.forEach(item => {
+      const catId = item.products?.category_id;
+      if (catId) cartCategoryIds.add(catId);
+    });
+
+    return deliveryMethods.filter((method: any) => {
+      // If method has base_price_category_id, only show if cart has items from that category
+      if (method.base_price_category_id) {
+        return cartCategoryIds.has(method.base_price_category_id);
+      }
+      return true;
+    });
+  }, [deliveryMethods, items]);
+
+  // Auto-reset selected method if it becomes unavailable
+  useMemo(() => {
+    if (visibleDeliveryMethods.length > 0 && !visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod)) {
+      setSelectedDeliveryMethod(visibleDeliveryMethods[0].method_key);
+    }
+  }, [visibleDeliveryMethods, selectedDeliveryMethod]);
 
   // حساب سعر تقريبي لطريقة توصيل معينة (للعرض فقط)
   const getMethodPreviewPrice = (methodKey: string) => {
@@ -1902,7 +1926,7 @@ const Cart = () => {
                   <div className="rounded-lg bg-muted/30 border border-border/40 overflow-hidden">
                     {/* Selected method header - always visible */}
                     {(() => {
-                      const selectedMethod = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+                      const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
                       const selectedFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
                       const iconMap: Record<string, React.ReactNode> = {
                         warehouse: <Warehouse className="h-4 w-4" />,
@@ -1940,7 +1964,7 @@ const Cart = () => {
                         }}
                         className="space-y-2 px-4 pb-4"
                       >
-                        {deliveryMethods.map((method: any) => {
+                        {visibleDeliveryMethods.map((method: any) => {
                           const iconMap: Record<string, React.ReactNode> = {
                             warehouse: <Warehouse className="h-4 w-4" />,
                             truck: <Truck className="h-4 w-4" />,
