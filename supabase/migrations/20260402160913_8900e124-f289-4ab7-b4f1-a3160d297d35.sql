@@ -1,0 +1,1 @@
+ALTER TABLE public.order_items DROP CONSTRAINT order_items_product_or_custom_or_bundle_check;
