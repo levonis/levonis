@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { Text, Float } from "@react-three/drei";
+// drei not needed for this clean design
 import { getStage } from "./StackEnvironment";
 import { useStageAudio } from "./StackStageAudio";
 import { getTowerAudio, disposeTowerAudio } from "./TowerAudioPro";
@@ -31,7 +31,7 @@ const PERFECT_THRESHOLD = 0.1;
 
 function getTileColor(index: number): string {
   const hue = ((index + 1) * 5) % 360;
-  return `hsl(${hue}, 50%, 50%)`;
+  return `hsl(${hue}, 65%, 65%)`;
 }
 
 interface Props {
@@ -255,12 +255,12 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
     }
 
-    // Camera follow
+    // Camera follow - match original Stack game: camera from bottom-left
     const targetY = cameraTargetY.current;
-    camera.position.y += (targetY - camera.position.y + 4) * delta * 2.5;
-    camera.position.x = 2;
-    camera.position.z = 2;
-    camera.lookAt(0, targetY - 2, 0);
+    camera.position.y += (targetY - camera.position.y + 2) * delta * 2.5;
+    camera.position.x = -2;
+    camera.position.z = -2;
+    camera.lookAt(0, targetY - 1.5, 0);
 
     // Falling pieces
     setFallingPieces(prev =>
@@ -286,19 +286,19 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
 
   return (
     <>
-      {/* Lighting - clean and simple */}
-      <ambientLight intensity={0.6} color="#ffffff" />
+      {/* Lighting - match original Stack game look */}
+      <ambientLight intensity={0.45} color="#ffffff" />
       <directionalLight
-        position={[5, 10, 5]}
-        intensity={0.8}
+        position={[1, 10, 1]}
+        intensity={1.4}
         color="#ffffff"
         castShadow
         shadow-mapSize={1024}
       />
 
-      {/* Base tile - large colored box */}
-      <mesh position={[0, -0.15, 0]} receiveShadow>
-        <boxGeometry args={[INITIAL_SIZE[0], 0.3, INITIAL_SIZE[2]]} />
+      {/* Base tile - tall column extending below like original */}
+      <mesh position={[0, -5, 0]} receiveShadow>
+        <boxGeometry args={[INITIAL_SIZE[0], 10, INITIAL_SIZE[2]]} />
         <meshLambertMaterial color={getTileColor(0)} />
       </mesh>
 
@@ -360,51 +360,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
         );
       })}
 
-      {/* Score */}
-      <Float speed={1} rotationIntensity={0} floatIntensity={0.2}>
-        <Text
-          position={[0, cameraTargetY.current + 2.5, 0]}
-          fontSize={0.8}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-          font={undefined}
-        >
-          {score}
-        </Text>
-      </Float>
-
-      {/* Perfect text */}
-      {showPerfect && (
-        <Float speed={2} floatIntensity={0.3}>
-          <Text
-            position={[0, currentY + 0.8, 0]}
-            fontSize={0.35}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            font={undefined}
-          >
-            PERFECT
-          </Text>
-        </Float>
-      )}
-
-      {/* Combo text */}
-      {comboText && combo >= 3 && (
-        <Float speed={3} floatIntensity={0.3}>
-          <Text
-            position={[0, currentY + 1.3, 0]}
-            fontSize={0.3}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            font={undefined}
-          >
-            {comboText}
-          </Text>
-        </Float>
-      )}
+      {/* Score and text handled by HTML overlay in StackGame.tsx */}
     </>
   );
 }
