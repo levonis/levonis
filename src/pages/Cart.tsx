@@ -1926,7 +1926,7 @@ const Cart = () => {
                   <div className="rounded-lg bg-muted/30 border border-border/40 overflow-hidden">
                     {/* Selected method header - always visible */}
                     {(() => {
-                      const selectedMethod = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+                      const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
                       const selectedFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
                       const iconMap: Record<string, React.ReactNode> = {
                         warehouse: <Warehouse className="h-4 w-4" />,
