@@ -29,7 +29,7 @@ import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { ensurePriceIqd, getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Warehouse, UserCheck } from 'lucide-react';
+import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
