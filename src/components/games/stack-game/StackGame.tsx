@@ -33,6 +33,7 @@ export default function StackGame({ onBack }: Props) {
   const [debugMode, setDebugMode] = useState(false);
   const [debugScore, setDebugScore] = useState<number | null>(null);
   const [debugSpeed, setDebugSpeed] = useState(1);
+  const [autoPlay, setAutoPlay] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["stack-game-settings"],
