@@ -1211,10 +1211,40 @@ const AdminOrders = () => {
                   <p className="font-medium">{editingOrder.governorate}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">المبلغ:</span>
+                  <span className="text-sm text-muted-foreground">المبلغ الكلي:</span>
                   <p className="font-medium">{formatPrice(editingOrder.total_amount)}</p>
                 </div>
               </div>
+
+              {/* Wallet / Payment breakdown for direct sale */}
+              {(() => {
+                const totalAmt = Number(editingOrder.total_amount) || 0;
+                const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
+                const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
+                if (walletPaid <= 0 && remainingAmt <= 0) return null;
+                return (
+                  <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 space-y-1.5">
+                    <h4 className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                      <Wallet className="h-3.5 w-3.5" />
+                      تفاصيل الدفع
+                    </h4>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground text-xs">المبلغ الكلي</span>
+                        <p className="font-bold">{formatPrice(totalAmt)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-xs">مدفوع (محفظة)</span>
+                        <p className="font-bold text-emerald-600">{formatPrice(walletPaid)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground text-xs">المتبقي عند الاستلام</span>
+                        <p className="font-bold text-amber-600">{formatPrice(remainingAmt)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Status */}
               {(() => {
