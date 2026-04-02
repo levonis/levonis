@@ -471,7 +471,7 @@ const ProductDetail = () => {
   };
 
   const basePrice = getPrice();
-  const optionAdjustment = selectedOptionData ? Math.round(Number(selectedOptionData.price_adjustment) || 0) : 0;
+  const optionAdjustment = selectedOptionData ? ensureAdjustmentIqd(Number(selectedOptionData.price_adjustment) || 0, usdToIqd) : 0;
   let shippingAdjustment = 0;
   if (activeSaleType === 'preorder' && selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
     shippingAdjustment = Number((product.pre_order_shipping_options[selectedShippingOption] as any).price_adjustment || 0);
