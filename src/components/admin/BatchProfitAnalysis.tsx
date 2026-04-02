@@ -416,6 +416,22 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                               )}
                             </div>
                             <div className="flex items-center gap-2">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (editingBatchId === batch.id) {
+                                    setEditingBatchId(null);
+                                  } else {
+                                    setEditingBatchId(batch.id);
+                                    setEditForm({ batch_quantity: batch.batch_quantity, batch_cost: Number(batch.batch_cost) });
+                                  }
+                                }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}>
@@ -436,6 +452,47 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                               {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                             </div>
                           </div>
+
+                          {/* Inline edit form */}
+                          {editingBatchId === batch.id && (
+                            <div className="flex items-end gap-3 mb-3 p-3 rounded-lg bg-muted/40 border" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex-1">
+                                <Label className="text-xs">عدد القطع</Label>
+                                <Input
+                                  type="number"
+                                  value={editForm.batch_quantity || ''}
+                                  onChange={(e) => setEditForm({ ...editForm, batch_quantity: parseInt(e.target.value) || 0 })}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <Label className="text-xs">التكلفة (د.ع)</Label>
+                                <Input
+                                  type="number"
+                                  value={editForm.batch_cost || ''}
+                                  onChange={(e) => setEditForm({ ...editForm, batch_cost: parseFloat(e.target.value) || 0 })}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <Button
+                                size="sm"
+                                className="h-8 gap-1"
+                                disabled={updateBatchMutation.isPending}
+                                onClick={() => updateBatchMutation.mutate({ id: batch.id, ...editForm })}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                                حفظ
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8"
+                                onClick={() => setEditingBatchId(null)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
 
                           {/* Batch stats */}
                           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-sm">
