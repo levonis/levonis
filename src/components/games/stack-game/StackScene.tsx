@@ -360,51 +360,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
         );
       })}
 
-      {/* Score */}
-      <Float speed={1} rotationIntensity={0} floatIntensity={0.2}>
-        <Text
-          position={[0, cameraTargetY.current + 2.5, 0]}
-          fontSize={0.8}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="middle"
-          font={undefined}
-        >
-          {score}
-        </Text>
-      </Float>
-
-      {/* Perfect text */}
-      {showPerfect && (
-        <Float speed={2} floatIntensity={0.3}>
-          <Text
-            position={[0, currentY + 0.8, 0]}
-            fontSize={0.35}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            font={undefined}
-          >
-            PERFECT
-          </Text>
-        </Float>
-      )}
-
-      {/* Combo text */}
-      {comboText && combo >= 3 && (
-        <Float speed={3} floatIntensity={0.3}>
-          <Text
-            position={[0, currentY + 1.3, 0]}
-            fontSize={0.3}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            font={undefined}
-          >
-            {comboText}
-          </Text>
-        </Float>
-      )}
+      {/* Score and text handled by HTML overlay in StackGame.tsx */}
     </>
   );
 }
