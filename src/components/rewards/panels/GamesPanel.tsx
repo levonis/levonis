@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Lock, Sparkles, Trophy, ArrowLeft } from "lucide-react";
+import { Gamepad2, Sparkles, Trophy, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
