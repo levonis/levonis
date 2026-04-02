@@ -30,7 +30,7 @@ export default function SpaceBlasterTab() {
   const save = useMutation({
     mutationFn: async () => {
       if (!s || !settings?.id) throw new Error("لا توجد إعدادات");
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("space_blaster_settings")
         .update({
           game_enabled: s.game_enabled,
@@ -40,12 +40,16 @@ export default function SpaceBlasterTab() {
           wave_bonus_points: s.wave_bonus_points,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", settings.id);
+        .eq("id", settings.id)
+        .select("id, game_enabled")
+        .single();
       if (error) throw error;
+      if (!data) throw new Error("لم يتم حفظ الإعدادات - تأكد من صلاحيات الأدمن");
     },
     onSuccess: () => {
       toast.success("تم حفظ الإعدادات");
       queryClient.invalidateQueries({ queryKey: ["admin-space-blaster-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["space-blaster-settings"] });
       setForm(null);
     },
     onError: (err: any) => toast.error(err?.message || "فشل الحفظ"),
@@ -77,7 +81,27 @@ export default function SpaceBlasterTab() {
           <span className="text-sm">تفعيل اللعبة</span>
           <Switch
             checked={s.game_enabled}
-            onCheckedChange={(v) => update("game_enabled", v)}
+            onCheckedChange={async (v) => {
+              update("game_enabled", v);
+              if (!settings?.id) return;
+
+              const { data, error } = await supabase
+                .from("space_blaster_settings")
+                .update({ game_enabled: v, updated_at: new Date().toISOString() })
+                .eq("id", settings.id)
+                .select("game_enabled")
+                .single();
+
+              if (error || !data) {
+                update("game_enabled", !v);
+                toast.error("فشل تحديث حالة اللعبة - تأكد من صلاحيات الأدمن");
+                return;
+              }
+
+              toast.success(v ? "تم تفعيل اللعبة" : "تم تعطيل اللعبة");
+              queryClient.invalidateQueries({ queryKey: ["admin-space-blaster-settings"] });
+              queryClient.invalidateQueries({ queryKey: ["space-blaster-settings"] });
+            }}
           />
         </div>
 
