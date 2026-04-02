@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import {} from "@react-three/drei";
+// drei not needed for this clean design
 import { getStage } from "./StackEnvironment";
 import { useStageAudio } from "./StackStageAudio";
 import { getTowerAudio, disposeTowerAudio } from "./TowerAudioPro";
