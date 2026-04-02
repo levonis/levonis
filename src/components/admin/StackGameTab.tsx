@@ -404,8 +404,16 @@ export default function StackGameTab() {
     mutationFn: async () => {
       if (!newLbPrize.prize_name_ar.trim() && !newLbPrize.product_id) throw new Error("أدخل اسم الجائزة أو اختر منتج");
       if (newLbPrize.product_id) {
-        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock").eq("id", newLbPrize.product_id).single();
-        if (prod && prod.direct_stock == null && prod.pre_order_stock == null) {
+        const { data: prod } = await supabase.from("products").select("direct_stock, pre_order_stock, colors").eq("id", newLbPrize.product_id).single();
+        const hasDirectStock = prod?.direct_stock != null && prod.direct_stock > 0;
+        const hasPreOrderStock = prod?.pre_order_stock != null && prod.pre_order_stock > 0;
+        const hasColorStock = Array.isArray(prod?.colors) && (prod.colors as any[]).some((c: any) => {
+          if (c.option_stocks && typeof c.option_stocks === 'object') {
+            return Object.values(c.option_stocks).some((v: any) => Number(v) > 0);
+          }
+          return false;
+        });
+        if (prod && !hasDirectStock && !hasPreOrderStock && !hasColorStock) {
           throw new Error("⚠️ هذا المنتج ليس لديه مخزون! حدد مخزون يدوي أولاً");
         }
       }
