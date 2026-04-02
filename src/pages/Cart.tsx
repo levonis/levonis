@@ -166,6 +166,7 @@ const Cart = () => {
   const getMethodPreviewPrice = (methodKey: string) => {
     if (methodKey === 'pickup') return 0;
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
+    if (isGiftOnlyCart) return 0;
     const method = deliveryMethods.find((m: any) => m.method_key === methodKey);
     if (!method) return 0;
     const basePrice = Number(method.base_price) || 0;
