@@ -137,6 +137,30 @@ const Cart = () => {
     },
   });
 
+  // فلترة طرق التوصيل: إخفاء الطرق المخصصة لقسم معين إذا لم يكن في السلة منتج من ذلك القسم
+  const visibleDeliveryMethods = useMemo(() => {
+    const cartCategoryIds = new Set<string>();
+    items.forEach(item => {
+      const catId = item.products?.category_id;
+      if (catId) cartCategoryIds.add(catId);
+    });
+
+    return deliveryMethods.filter((method: any) => {
+      // If method has base_price_category_id, only show if cart has items from that category
+      if (method.base_price_category_id) {
+        return cartCategoryIds.has(method.base_price_category_id);
+      }
+      return true;
+    });
+  }, [deliveryMethods, items]);
+
+  // Auto-reset selected method if it becomes unavailable
+  useMemo(() => {
+    if (visibleDeliveryMethods.length > 0 && !visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod)) {
+      setSelectedDeliveryMethod(visibleDeliveryMethods[0].method_key);
+    }
+  }, [visibleDeliveryMethods, selectedDeliveryMethod]);
+
   // حساب سعر تقريبي لطريقة توصيل معينة (للعرض فقط)
   const getMethodPreviewPrice = (methodKey: string) => {
     if (methodKey === 'pickup') return 0;
