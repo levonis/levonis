@@ -30,10 +30,6 @@ export default function StackGame({ onBack }: Props) {
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
 
-  // Admin debug mode
-  const [debugMode, setDebugMode] = useState(false);
-  const [debugSpeed, setDebugSpeed] = useState(1);
-  const [autoPlay, setAutoPlay] = useState(false);
 
   const { data: settings } = useQuery({
     queryKey: ["stack-game-settings"],
