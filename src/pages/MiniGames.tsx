@@ -146,14 +146,24 @@ export default function MiniGames() {
       {/* Balance Bar + Store Button */}
       <div className="max-w-2xl mx-auto px-4 py-2 relative z-10 flex items-center justify-between">
         <GameBalanceBar />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => { playClick(); setShowStore(true); }}
-          className="font-mono text-xs gap-1 pixel-frame"
-        >
-          <ShoppingBag className="h-3.5 w-3.5" /> المتجر
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { playClick(); setShowPrizes(true); }}
+            className="font-mono text-xs gap-1 pixel-frame"
+          >
+            <Gift className="h-3.5 w-3.5" /> جوائزي
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { playClick(); setShowStore(true); }}
+            className="font-mono text-xs gap-1 pixel-frame"
+          >
+            <ShoppingBag className="h-3.5 w-3.5" /> المتجر
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
