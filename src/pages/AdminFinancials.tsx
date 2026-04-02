@@ -148,7 +148,7 @@ const AdminFinancials = () => {
       let query = supabase.from('orders').select(`
         *, order_type,
         profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-        order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, shipping_option_name_ar, custom_request_id,
+        order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id,
           products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, category_id,
             categories!products_category_id_fkey(id, name_ar, main_section_id,
               main_sections!categories_main_section_id_fkey(id, name_ar)
