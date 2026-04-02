@@ -224,7 +224,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       }
 
       const range = 5;
-      const moveSpeed = speed.current * speedMultiplier;
+      const moveSpeed = speed.current;
       const currentAxisVal = currentAxis.current;
       if (currentAxisVal === "x") {
         mesh.position.x += movingDir.current * moveSpeed * delta;
