@@ -518,10 +518,17 @@ export default function StackGame({ onBack }: Props) {
               </div>
             </div>
 
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-center gap-2">
-              <Star className="h-5 w-5 text-primary" />
-              <span className="text-lg font-bold text-primary font-mono">+{pointsAwarded}</span>
-              <span className="text-sm text-muted-foreground">نقطة</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 flex items-center justify-center gap-2">
+                <Gamepad2 className="h-4 w-4 text-accent-foreground" />
+                <span className="text-lg font-bold text-accent-foreground font-mono">{score}</span>
+                <span className="text-[10px] text-muted-foreground">سكور</span>
+              </div>
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-center gap-2">
+                <Star className="h-4 w-4 text-primary" />
+                <span className="text-lg font-bold text-primary font-mono">+{pointsAwarded}</span>
+                <span className="text-[10px] text-muted-foreground">نقطة موقع</span>
+              </div>
             </div>
 
             <div className="flex gap-3">
