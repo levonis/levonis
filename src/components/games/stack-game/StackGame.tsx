@@ -71,6 +71,8 @@ export default function StackGame({ onBack }: Props) {
     },
     enabled: !!user,
   });
+
+  const { data: lbPrizes = [] } = useQuery({
     queryKey: ["stack-lb-prizes"],
     queryFn: async () => {
       const { data } = await supabase.from("stack_game_leaderboard_prizes" as any).select("*").eq("is_active", true).order("position", { ascending: true });
