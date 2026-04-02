@@ -254,7 +254,7 @@ export default function StackGame({ onBack }: Props) {
     (async () => {
       try {
         const { data: milestoneResult, error: milestoneError } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id, p_score: s, p_session_id: sessionTokenRef.current,
+          p_user_id: user.id, p_score: s, p_session_id: sessionIdRef.current,
         });
         if (milestoneError) console.error("mid-game milestone error:", milestoneError);
         console.log("mid-game milestone result:", JSON.stringify(milestoneResult));
