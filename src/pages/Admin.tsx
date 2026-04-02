@@ -2473,6 +2473,10 @@ const Admin = () => {
                                   <p className="text-xs text-muted-foreground">
                                     أدخل رقم موجب للإضافة أو سالب للخصم (بالدولار)
                                   </p>
+                                  <OptionPricePreview
+                                    adjustment={option.price_adjustment}
+                                    editingProduct={editingProduct}
+                                  />
                                 </div>
                                 
                                 <div className="space-y-2">
