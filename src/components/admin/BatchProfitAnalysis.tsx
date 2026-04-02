@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Package, TrendingUp, Trash2, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Plus, Package, Trash2, ChevronDown, ChevronUp, Users, AlertTriangle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -21,7 +21,15 @@ interface BatchProfitAnalysisProps {
   usdToIqdRate: number;
 }
 
-const calcItemRevenueExcludingDelivery = (item: any): number => {
+interface SoldItem {
+  username: string;
+  quantity: number;
+  revenue: number;
+  orderNumber: string;
+  date: string;
+}
+
+const calcItemRevenue = (item: any): number => {
   if (typeof item.total_price === 'number' && item.total_price > 0) return item.total_price;
   return (item.unit_price || 0) * (item.quantity || 1);
 };
@@ -39,14 +47,14 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     notes: '',
   });
 
-  // Fetch batches
+  // Fetch batches ordered by creation date ascending (oldest first for sequential counting)
   const { data: batches = [] } = useQuery({
     queryKey: ['product-batches'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_batches')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -100,49 +108,117 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     onError: () => toast.error('حدث خطأ أثناء الحذف'),
   });
 
-  // Build sold data per batch (matching by product_id)
-  const batchAnalysis = useMemo(() => {
-    return batches.map((batch: any) => {
-      // Find all order items for this product in delivered direct orders
-      const soldItems: { username: string; quantity: number; revenue: number; orderNumber: string; date: string }[] = [];
-      let totalSoldQty = 0;
-      let totalRevenue = 0;
-
-      deliveredDirectOrders.forEach((order: any) => {
-        order.order_items?.forEach((item: any) => {
-          const matchById = batch.product_id && item.product_id === batch.product_id;
-          const matchByName = !batch.product_id && (item.product_name_ar === batch.product_name_ar || item.product_name === batch.product_name_ar);
-          
-          if (matchById || matchByName) {
-            const qty = item.quantity || 1;
-            const revenue = calcItemRevenueExcludingDelivery(item);
-            totalSoldQty += qty;
-            totalRevenue += revenue;
-            
-            const username = order.profile?.full_name || order.profile?.username || 'غير معروف';
-            soldItems.push({
-              username,
-              quantity: qty,
-              revenue,
-              orderNumber: order.order_number,
-              date: order.created_at,
-            });
-          }
+  // Build analysis: group batches by product, distribute sold items sequentially
+  const productGroups = useMemo(() => {
+    // 1. Collect all sold items per product_id from delivered direct orders (sorted by date)
+    const soldByProduct: Record<string, SoldItem[]> = {};
+    
+    deliveredDirectOrders.forEach((order: any) => {
+      order.order_items?.forEach((item: any) => {
+        if (!item.product_id) return;
+        const pid = item.product_id;
+        if (!soldByProduct[pid]) soldByProduct[pid] = [];
+        soldByProduct[pid].push({
+          username: order.profile?.full_name || order.profile?.username || 'غير معروف',
+          quantity: item.quantity || 1,
+          revenue: calcItemRevenue(item),
+          orderNumber: order.order_number,
+          date: order.created_at,
         });
       });
+    });
 
-      const profit = totalRevenue - Number(batch.batch_cost);
-      const costPerUnit = batch.batch_quantity > 0 ? Number(batch.batch_cost) / batch.batch_quantity : 0;
-      const remainingQty = batch.batch_quantity - totalSoldQty;
+    // Sort sold items by date ascending for sequential distribution
+    Object.values(soldByProduct).forEach(items => {
+      items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    });
+
+    // 2. Group batches by product_id (ordered by created_at ascending already)
+    const groupMap: Record<string, { productId: string; productName: string; batches: any[] }> = {};
+    
+    batches.forEach((batch: any) => {
+      const key = batch.product_id || `manual_${batch.product_name_ar}`;
+      if (!groupMap[key]) {
+        groupMap[key] = {
+          productId: batch.product_id || '',
+          productName: batch.product_name_ar,
+          batches: [],
+        };
+      }
+      groupMap[key].batches.push(batch);
+    });
+
+    // 3. For each product group, distribute sold items sequentially across batches
+    return Object.entries(groupMap).map(([key, group]) => {
+      const allSold = soldByProduct[group.productId] || [];
+      const totalSoldQty = allSold.reduce((s, i) => s + i.quantity, 0);
+      const totalBatchQty = group.batches.reduce((s: number, b: any) => s + b.batch_quantity, 0);
+      const totalBatchCost = group.batches.reduce((s: number, b: any) => s + Number(b.batch_cost), 0);
+      
+      // Stock error: sold more than total batches
+      const hasStockError = totalSoldQty > totalBatchQty;
+
+      // Distribute sold items sequentially across batches
+      let remainingSoldQty = totalSoldQty;
+      let remainingSoldItems = [...allSold];
+      
+      const batchesWithData = group.batches.map((batch: any, batchIndex: number) => {
+        const batchQty = batch.batch_quantity;
+        
+        // How many items this batch absorbs
+        const soldInBatch = Math.min(remainingSoldQty, batchQty);
+        remainingSoldQty = Math.max(0, remainingSoldQty - batchQty);
+        
+        // Distribute actual sold items to this batch
+        const batchSoldItems: SoldItem[] = [];
+        let qtyToFill = soldInBatch;
+        
+        while (qtyToFill > 0 && remainingSoldItems.length > 0) {
+          const item = remainingSoldItems[0];
+          if (item.quantity <= qtyToFill) {
+            batchSoldItems.push(item);
+            qtyToFill -= item.quantity;
+            remainingSoldItems.shift();
+          } else {
+            // Split: part goes to this batch, rest stays
+            batchSoldItems.push({ ...item, quantity: qtyToFill, revenue: (item.revenue / item.quantity) * qtyToFill });
+            remainingSoldItems[0] = { ...item, quantity: item.quantity - qtyToFill, revenue: item.revenue - (item.revenue / item.quantity) * qtyToFill };
+            qtyToFill = 0;
+          }
+        }
+
+        const batchRevenue = batchSoldItems.reduce((s, i) => s + i.revenue, 0);
+        const batchCost = Number(batch.batch_cost);
+        const profit = batchRevenue - batchCost;
+        const costPerUnit = batchQty > 0 ? batchCost / batchQty : 0;
+        const remainingInBatch = batchQty - soldInBatch;
+        const isComplete = soldInBatch >= batchQty;
+        const progressPercent = batchCost > 0 ? Math.min((batchRevenue / batchCost) * 100, 150) : 0;
+
+        return {
+          ...batch,
+          soldInBatch,
+          batchSoldItems,
+          batchRevenue,
+          profit,
+          costPerUnit,
+          remainingInBatch,
+          isComplete,
+          progressPercent,
+        };
+      });
 
       return {
-        ...batch,
-        soldItems,
+        key,
+        productId: group.productId,
+        productName: group.productName,
+        batches: batchesWithData,
         totalSoldQty,
-        totalRevenue,
-        profit,
-        costPerUnit,
-        remainingQty,
+        totalBatchQty,
+        totalBatchCost,
+        totalRevenue: allSold.reduce((s, i) => s + i.revenue, 0),
+        hasStockError,
+        overflowQty: hasStockError ? totalSoldQty - totalBatchQty : 0,
       };
     });
   }, [batches, deliveredDirectOrders]);
@@ -167,7 +243,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                 <Input
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  placeholder="ابحث عن المنتج..."
+                  placeholder="ابحث عن المنتج (بغض النظر عن اللون والخيار)..."
                 />
                 {searchResults.length > 0 && (
                   <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
@@ -187,22 +263,15 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                   </div>
                 )}
                 {form.product_name_ar && (
-                  <Badge variant="secondary" className="mt-2">{form.product_name_ar}</Badge>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="secondary">{form.product_name_ar}</Badge>
+                    <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setForm({ ...form, product_id: '', product_name_ar: '' })}>تغيير</Button>
+                  </div>
                 )}
               </div>
-              {!form.product_id && (
-                <div>
-                  <Label>أو أدخل اسم المنتج يدوياً</Label>
-                  <Input
-                    value={form.product_name_ar}
-                    onChange={(e) => setForm({ ...form, product_name_ar: e.target.value })}
-                    placeholder="اسم المنتج"
-                  />
-                </div>
-              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>الكمية المستلمة</Label>
+                  <Label>عدد القطع المستلمة</Label>
                   <Input
                     type="number"
                     value={form.batch_quantity || ''}
@@ -245,188 +314,209 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
         </Dialog>
       </div>
 
-      {/* Batches list */}
-      {batchAnalysis.length === 0 ? (
+      {/* Product groups */}
+      {productGroups.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             لا توجد وجبات بعد. قم بإضافة وجبة لبدء تحليل الأرباح.
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {batchAnalysis.map((batch: any) => {
-            const isExpanded = expandedBatchId === batch.id;
-            const profitColor = batch.profit >= 0 ? 'text-green-600' : 'text-destructive';
-            const progressPercent = batch.batch_quantity > 0 
-              ? Math.min((batch.totalRevenue / Number(batch.batch_cost)) * 100, 100) 
-              : 0;
-
-            return (
-              <Card key={batch.id} className="overflow-hidden">
-                <CardContent className="p-0">
-                  {/* Batch header */}
-                  <div
-                    className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Package className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold">{batch.product_name_ar}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(batch.created_at), 'dd/MM/yyyy', { locale: ar })}
-                            {batch.notes && ` • ${batch.notes}`}
-                          </p>
-                        </div>
+        <div className="space-y-6">
+          {productGroups.map((group) => (
+            <Card key={group.key} className="overflow-hidden">
+              <CardContent className="p-0">
+                {/* Product header */}
+                <div className="p-4 border-b bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Package className="h-5 w-5 text-primary" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>حذف الوجبة</AlertDialogTitle>
-                              <AlertDialogDescription>هل أنت متأكد من حذف وجبة {batch.product_name_ar}؟</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground"
-                                onClick={() => deleteBatchMutation.mutate(batch.id)}
-                              >
-                                حذف
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                      <div>
+                        <h4 className="font-bold text-lg">{group.productName}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {group.batches.length} وجبة • إجمالي {group.totalBatchQty} قطعة • مباع {group.totalSoldQty} قطعة
+                        </p>
                       </div>
                     </div>
-
-                    {/* Stats grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                      <div className="bg-muted/50 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">الكمية المستلمة</p>
-                        <p className="font-bold">{batch.batch_quantity}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">التكلفة الإجمالية</p>
-                        <p className="font-bold text-red-500">{formatPrice(Number(batch.batch_cost))}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">القطع المباعة</p>
-                        <p className="font-bold text-blue-600">{batch.totalSoldQty}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
-                        <p className="font-bold text-green-600">{formatPrice(batch.totalRevenue)}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center">
-                        <p className="text-xs text-muted-foreground">الربح</p>
-                        <p className={`font-bold ${profitColor}`}>{formatPrice(batch.profit)}</p>
-                      </div>
-                    </div>
-
-                    {/* Progress bar - how close to breaking even */}
-                    <div className="mt-3">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>تقدم استرداد التكلفة</span>
-                        <span>{Math.round(progressPercent)}%</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${progressPercent >= 100 ? 'bg-green-500' : 'bg-primary'}`}
-                          style={{ width: `${Math.min(progressPercent, 100)}%` }}
-                        />
-                      </div>
-                    </div>
+                    {group.hasStockError && (
+                      <Badge variant="destructive" className="gap-1 animate-pulse">
+                        <AlertTriangle className="h-3 w-3" />
+                        خطأ في المخزون! ({group.overflowQty} قطعة زائدة)
+                      </Badge>
+                    )}
                   </div>
 
-                  {/* Expanded: sold items per customer */}
-                  {isExpanded && (
-                    <div className="border-t px-4 pb-4">
-                      <div className="flex items-center gap-2 py-3">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">تفاصيل المبيعات ({batch.soldItems.length} طلب)</span>
-                      </div>
-                      {batch.soldItems.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-4">لم يتم بيع أي قطعة بعد</p>
-                      ) : (
-                        <div className="rounded-lg border overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-right">رقم الطلب</TableHead>
-                                <TableHead className="text-right">المستخدم</TableHead>
-                                <TableHead className="text-right">الكمية</TableHead>
-                                <TableHead className="text-right">المبلغ (بدون توصيل)</TableHead>
-                                <TableHead className="text-right">التاريخ</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {batch.soldItems.map((item: any, idx: number) => (
-                                <TableRow key={idx}>
-                                  <TableCell className="font-mono text-sm">{item.orderNumber}</TableCell>
-                                  <TableCell className="font-medium">{item.username}</TableCell>
-                                  <TableCell>{item.quantity}</TableCell>
-                                  <TableCell className="text-green-600">{formatPrice(item.revenue)}</TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">
-                                    {format(new Date(item.date), 'dd/MM/yyyy', { locale: ar })}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                              {/* Totals row */}
-                              <TableRow className="bg-muted/30 font-bold">
-                                <TableCell colSpan={2}>المجموع</TableCell>
-                                <TableCell>{batch.totalSoldQty}</TableCell>
-                                <TableCell className="text-green-600">{formatPrice(batch.totalRevenue)}</TableCell>
-                                <TableCell />
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-
-                      {/* Summary */}
-                      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="rounded-lg border p-3 text-center">
-                          <p className="text-xs text-muted-foreground">تكلفة القطعة الواحدة</p>
-                          <p className="font-bold">{formatPrice(Math.round(batch.costPerUnit))}</p>
-                        </div>
-                        <div className="rounded-lg border p-3 text-center">
-                          <p className="text-xs text-muted-foreground">المتبقي في المخزن</p>
-                          <p className={`font-bold ${batch.remainingQty > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
-                            {Math.max(0, batch.remainingQty)} قطعة
-                          </p>
-                        </div>
-                        <div className="rounded-lg border p-3 text-center">
-                          <p className="text-xs text-muted-foreground">المبلغ المتبقي للربح</p>
-                          <p className={`font-bold ${batch.profit >= 0 ? 'text-green-600' : 'text-orange-500'}`}>
-                            {batch.profit < 0 ? formatPrice(Math.abs(batch.profit)) + ' متبقي' : 'تم تحقيق الربح ✓'}
-                          </p>
-                        </div>
-                        <div className="rounded-lg border p-3 text-center">
-                          <p className="text-xs text-muted-foreground">صافي الربح</p>
-                          <p className={`font-bold text-lg ${profitColor}`}>{formatPrice(batch.profit)}</p>
-                        </div>
-                      </div>
+                  {/* Product-level summary */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                    <div className="bg-background rounded-lg p-2 text-center border">
+                      <p className="text-xs text-muted-foreground">إجمالي التكلفة</p>
+                      <p className="font-bold text-destructive">{formatPrice(group.totalBatchCost)}</p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                    <div className="bg-background rounded-lg p-2 text-center border">
+                      <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
+                      <p className="font-bold text-green-600">{formatPrice(group.totalRevenue)}</p>
+                    </div>
+                    <div className="bg-background rounded-lg p-2 text-center border">
+                      <p className="text-xs text-muted-foreground">صافي الربح الكلي</p>
+                      <p className={`font-bold ${group.totalRevenue - group.totalBatchCost >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        {formatPrice(group.totalRevenue - group.totalBatchCost)}
+                      </p>
+                    </div>
+                    <div className="bg-background rounded-lg p-2 text-center border">
+                      <p className="text-xs text-muted-foreground">المتبقي</p>
+                      <p className={`font-bold ${group.totalBatchQty - group.totalSoldQty > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
+                        {Math.max(0, group.totalBatchQty - group.totalSoldQty)} قطعة
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Individual batches */}
+                <div className="divide-y">
+                  {group.batches.map((batch: any, batchIdx: number) => {
+                    const isExpanded = expandedBatchId === batch.id;
+                    const profitColor = batch.profit >= 0 ? 'text-green-600' : 'text-destructive';
+
+                    return (
+                      <div key={batch.id}>
+                        <div
+                          className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                          onClick={() => setExpandedBatchId(isExpanded ? null : batch.id)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={batch.isComplete ? 'default' : 'outline'} className="text-xs">
+                                وجبة {batchIdx + 1}
+                              </Badge>
+                              {batch.isComplete && (
+                                <Badge variant="secondary" className="text-xs">مكتملة ✓</Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(batch.created_at), 'dd/MM/yyyy', { locale: ar })}
+                              </span>
+                              {batch.notes && (
+                                <span className="text-xs text-muted-foreground">• {batch.notes}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(e) => e.stopPropagation()}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>حذف الوجبة</AlertDialogTitle>
+                                    <AlertDialogDescription>هل أنت متأكد من حذف الوجبة {batchIdx + 1} لـ {batch.product_name_ar}؟</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => deleteBatchMutation.mutate(batch.id)}>حذف</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                              {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            </div>
+                          </div>
+
+                          {/* Batch stats */}
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-sm">
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">الكمية</p>
+                              <p className="font-bold">{batch.batch_quantity}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">التكلفة</p>
+                              <p className="font-bold text-destructive">{formatPrice(Number(batch.batch_cost))}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">المباع</p>
+                              <p className="font-bold text-blue-600">{batch.soldInBatch} / {batch.batch_quantity}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">الإيرادات</p>
+                              <p className="font-bold text-green-600">{formatPrice(batch.batchRevenue)}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">تكلفة/قطعة</p>
+                              <p className="font-bold">{formatPrice(Math.round(batch.costPerUnit))}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">الربح</p>
+                              <p className={`font-bold ${profitColor}`}>{formatPrice(batch.profit)}</p>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="mt-2">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                              <span>{batch.soldInBatch} / {batch.batch_quantity} قطعة مباعة</span>
+                              <span>{Math.round(Math.min(batch.progressPercent, 100))}% استرداد التكلفة</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${batch.progressPercent >= 100 ? 'bg-green-500' : 'bg-primary'}`}
+                                style={{ width: `${Math.min(batch.progressPercent, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expanded: sold items */}
+                        {isExpanded && (
+                          <div className="border-t px-4 pb-4 bg-muted/10">
+                            <div className="flex items-center gap-2 py-3">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">تفاصيل مبيعات الوجبة ({batch.batchSoldItems.length} طلب)</span>
+                            </div>
+                            {batch.batchSoldItems.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4">لم يتم بيع أي قطعة من هذه الوجبة بعد</p>
+                            ) : (
+                              <div className="rounded-lg border overflow-x-auto bg-background">
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className="text-right">رقم الطلب</TableHead>
+                                      <TableHead className="text-right">المستخدم</TableHead>
+                                      <TableHead className="text-right">الكمية</TableHead>
+                                      <TableHead className="text-right">المبلغ (بدون توصيل)</TableHead>
+                                      <TableHead className="text-right">التاريخ</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {batch.batchSoldItems.map((item: any, idx: number) => (
+                                      <TableRow key={idx}>
+                                        <TableCell className="font-mono text-sm">{item.orderNumber}</TableCell>
+                                        <TableCell className="font-medium">{item.username}</TableCell>
+                                        <TableCell>{item.quantity}</TableCell>
+                                        <TableCell className="text-green-600">{formatPrice(item.revenue)}</TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">
+                                          {format(new Date(item.date), 'dd/MM/yyyy', { locale: ar })}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                    <TableRow className="bg-muted/30 font-bold">
+                                      <TableCell colSpan={2}>المجموع</TableCell>
+                                      <TableCell>{batch.soldInBatch}</TableCell>
+                                      <TableCell className="text-green-600">{formatPrice(batch.batchRevenue)}</TableCell>
+                                      <TableCell />
+                                    </TableRow>
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
