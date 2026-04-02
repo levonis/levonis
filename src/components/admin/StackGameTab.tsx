@@ -39,7 +39,7 @@ function ProductPicker({
     queryKey: ["admin-product-selected", value.product_id],
     queryFn: async () => {
       if (!value.product_id) return null;
-      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, colors").eq("id", value.product_id).single();
+      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
     enabled: !!value.product_id,
