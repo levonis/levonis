@@ -67,6 +67,59 @@ const mainSectionSchema = z.object({
   display_order: z.number().min(0, 'ترتيب العرض يجب أن يكون صفر أو أكبر'),
 });
 
+/** Inline price preview for product options */
+function OptionPricePreview({ adjustment, editingProduct }: { adjustment: number; editingProduct: any }) {
+  const { data: ss } = useShippingSettings();
+  if (!ss || !editingProduct) return null;
+  const rate = ss.usd_to_iqd_rate || 1410;
+  const adjIqd = adjustment ? (Math.abs(adjustment) < 500 ? Math.round(adjustment * rate) : Math.round(adjustment)) : 0;
+  const prices: { label: string; value: number }[] = [];
+  if (editingProduct.direct_sale_price) prices.push({ label: 'مباشر', value: editingProduct.direct_sale_price + adjIqd });
+  if (editingProduct.sea_price) prices.push({ label: 'بحري', value: editingProduct.sea_price + adjIqd });
+  if (editingProduct.air_price) prices.push({ label: 'جوي', value: editingProduct.air_price + adjIqd });
+  if (prices.length === 0 && editingProduct.price_usd) {
+    prices.push({ label: 'تقريبي', value: Math.round(editingProduct.price_usd * rate) + adjIqd });
+  }
+  if (prices.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {prices.map(p => (
+        <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
+          {'👁'} {p.label}: {p.value.toLocaleString()} د.ع
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Inline price preview for product colors */
+function ColorPricePreview({ color, editingProduct }: { color: any; editingProduct: any }) {
+  const { data: ss } = useShippingSettings();
+  if (!ss || !editingProduct) return null;
+  const rate = ss.usd_to_iqd_rate || 1410;
+  const prices: { label: string; value: number }[] = [];
+  if (color.direct_sale_price) {
+    prices.push({ label: 'بيع مباشر', value: color.direct_sale_price });
+  } else if (color.price) {
+    const v = Math.abs(color.price) < 500 ? Math.round(color.price * rate) : Math.round(color.price);
+    prices.push({ label: 'سعر اللون', value: v });
+  } else {
+    if (editingProduct.direct_sale_price) prices.push({ label: 'مباشر (افتراضي)', value: editingProduct.direct_sale_price });
+    if (editingProduct.sea_price) prices.push({ label: 'بحري', value: editingProduct.sea_price });
+    if (editingProduct.air_price) prices.push({ label: 'جوي', value: editingProduct.air_price });
+  }
+  if (prices.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {prices.map(p => (
+        <span key={p.label} className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary rounded px-1.5 py-0.5 font-medium">
+          {'👁'} {p.label}: {p.value.toLocaleString()} د.ع
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
