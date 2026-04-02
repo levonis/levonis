@@ -509,6 +509,7 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المبلغ</TableHead>
                           {mainTab === 'preorder' && <TableHead className="text-right">المدفوع مقدماً</TableHead>}
                           {mainTab === 'preorder' && <TableHead className="text-right">المتبقي</TableHead>}
+                          {mainTab === 'preorder' && <TableHead className="text-right">المتبقي + التوصيل</TableHead>}
                           <TableHead className="text-right">تكلفة التوصيل</TableHead>
                           <TableHead className="text-right">تكلفة المنتج</TableHead>
                           <TableHead className="text-right">العمولة</TableHead>
@@ -519,9 +520,9 @@ const AdminFinancials = () => {
                       </TableHeader>
                       <TableBody>
                         {isLoading ? (
-                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 12 : 10} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : 10} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
                         ) : paginatedOrders.length === 0 ? (
-                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 12 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
                           const profit = calcOrderProfit(order, usdToIqdRate);
                           return (
@@ -535,6 +536,9 @@ const AdminFinancials = () => {
                               )}
                               {mainTab === 'preorder' && (
                                 <TableCell>{renderEditableCell(order.id, 'remaining_amount', order.remaining_amount || 0, 'text-amber-600 font-medium')}</TableCell>
+                              )}
+                              {mainTab === 'preorder' && (
+                                <TableCell className="text-red-600 font-medium">{formatPrice((order.remaining_amount || 0) + calcDeliveryCost(order))}</TableCell>
                               )}
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
@@ -585,6 +589,7 @@ const AdminFinancials = () => {
                               <TableCell className="text-green-600">{formatPrice(totals.totalAmount)}</TableCell>
                               {mainTab === 'preorder' && <TableCell className="text-blue-600">{formatPrice(totals.customerPaid)}</TableCell>}
                               {mainTab === 'preorder' && <TableCell className="text-amber-600">{formatPrice(totals.remaining)}</TableCell>}
+                              {mainTab === 'preorder' && <TableCell className="text-red-600">{formatPrice(totals.remaining + totals.shippingCost)}</TableCell>}
                               <TableCell className="text-orange-500">{formatPrice(totals.shippingCost)}</TableCell>
                               <TableCell className="text-red-500">{formatPrice(totals.productCost)}</TableCell>
                               <TableCell className={totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}>{formatPrice(totals.profit)}</TableCell>
