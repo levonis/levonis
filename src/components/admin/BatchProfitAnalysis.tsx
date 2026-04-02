@@ -62,6 +62,43 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     },
   });
 
+  // Fetch current stock for products that have batches
+  const batchProductIds = useMemo(() => {
+    return [...new Set(batches.filter((b: any) => b.product_id).map((b: any) => b.product_id))];
+  }, [batches]);
+
+  const { data: productStocks = {} } = useQuery({
+    queryKey: ['batch-product-stocks', batchProductIds],
+    queryFn: async () => {
+      if (batchProductIds.length === 0) return {};
+      const { data } = await supabase
+        .from('products')
+        .select('id, direct_stock, colors')
+        .in('id', batchProductIds);
+      if (!data) return {};
+      const map: Record<string, number> = {};
+      data.forEach((p: any) => {
+        const colors = Array.isArray(p.colors) ? p.colors : [];
+        if (colors.length === 0) {
+          map[p.id] = p.direct_stock != null ? Number(p.direct_stock) : 0;
+        } else {
+          // Sum all color stocks
+          let total = 0;
+          colors.forEach((c: any) => {
+            if (c.option_stocks && typeof c.option_stocks === 'object') {
+              Object.values(c.option_stocks).forEach((v: any) => { total += Number(v) || 0; });
+            } else {
+              total += Number(c.direct_stock) || 0;
+            }
+          });
+          map[p.id] = total;
+        }
+      });
+      return map;
+    },
+    enabled: batchProductIds.length > 0,
+  });
+
   // Search products for picker
   const { data: searchResults = [] } = useQuery({
     queryKey: ['batch-product-search', productSearch],
@@ -352,6 +389,9 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                         <h4 className="font-bold text-lg">{group.productName}</h4>
                         <p className="text-xs text-muted-foreground">
                           {group.batches.length} وجبة • إجمالي {group.totalBatchQty} قطعة • مباع {group.totalSoldQty} قطعة
+                          {group.productId && productStocks[group.productId] !== undefined && (
+                            <span> • المخزون الحالي: <span className="font-bold text-foreground">{productStocks[group.productId]}</span> قطعة</span>
+                          )}
                         </p>
                       </div>
                     </div>
