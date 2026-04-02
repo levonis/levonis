@@ -790,6 +790,7 @@ const AdminFinancials = () => {
                               {mainTab === 'preorder' && <TableCell className="text-blue-600">{formatPrice(totals.customerPaid)}</TableCell>}
                               {mainTab === 'preorder' && <TableCell className="text-amber-600">{formatPrice(totals.remaining)}</TableCell>}
                               {mainTab === 'preorder' && <TableCell className="text-red-600">{formatPrice(totals.remaining + totals.adminShipping)}</TableCell>}
+                              {mainTab === 'direct' && <TableCell className="text-purple-600">{formatPrice(totals.totalAmount - totals.shippingCost)}</TableCell>}
                               <TableCell className="text-orange-500">{formatPrice(totals.shippingCost)}</TableCell>
                               <TableCell className="text-red-500">{formatPrice(totals.productCost)}</TableCell>
                               <TableCell className={totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}>{formatPrice(totals.profit)}</TableCell>
