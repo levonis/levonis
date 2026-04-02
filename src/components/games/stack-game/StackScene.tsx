@@ -237,20 +237,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       }
     }
 
-    // Auto-play
-    if (autoPlay && !gameOver && !hasPlaced.current && mesh) {
-      autoPlayTimer.current += delta;
-      if (autoPlayTimer.current > 0.08) {
-        autoPlayTimer.current = 0;
-        const tb = stack[stack.length - 1];
-        if (currentAxis.current === "x") {
-          mesh.position.x = tb.position[0];
-        } else {
-          mesh.position.z = tb.position[2];
-        }
-        placeBlock();
-      }
-    }
 
     // Camera follow - match original Stack game: camera from bottom-left
     const targetY = cameraTargetY.current;
