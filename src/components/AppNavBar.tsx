@@ -42,7 +42,8 @@ const AppNavBar = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { itemCount } = useCart();
+  const cartContext = useContext(CartContext);
+  const itemCount = cartContext?.itemCount ?? 0;
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
