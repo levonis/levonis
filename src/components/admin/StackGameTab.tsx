@@ -28,8 +28,6 @@ function ProductPicker({
   const [open, setOpen] = useState(false);
   const [settingStock, setSettingStock] = useState(false);
   const [manualStock, setManualStock] = useState(10);
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
