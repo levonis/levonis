@@ -537,6 +537,9 @@ const AdminFinancials = () => {
                               {mainTab === 'preorder' && (
                                 <TableCell>{renderEditableCell(order.id, 'remaining_amount', order.remaining_amount || 0, 'text-amber-600 font-medium')}</TableCell>
                               )}
+                              {mainTab === 'preorder' && (
+                                <TableCell className="text-red-600 font-medium">{formatPrice((order.remaining_amount || 0) + calcDeliveryCost(order))}</TableCell>
+                              )}
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
                               <TableCell className={order.status === 'delivered' ? (profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold') : 'text-muted-foreground'}>
