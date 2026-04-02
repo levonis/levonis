@@ -76,6 +76,7 @@ const Cart = () => {
 
   // Check cart sale type
   const isDirectSaleCart = cartSaleType === 'direct';
+  const isGiftOnlyCart = items.length > 0 && items.every((item: any) => item.is_gift);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = !isDirectSaleCart && items.some((item: any) => 
@@ -165,6 +166,7 @@ const Cart = () => {
   const getMethodPreviewPrice = (methodKey: string) => {
     if (methodKey === 'pickup') return 0;
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
+    if (isGiftOnlyCart) return 0;
     const method = deliveryMethods.find((m: any) => m.method_key === methodKey);
     if (!method) return 0;
     const basePrice = Number(method.base_price) || 0;
@@ -364,9 +366,12 @@ const Cart = () => {
     });
   })();
 
+
   const getDeliveryFee = (governorate: string | null) => {
     // Pickup = always free
     if (selectedDeliveryMethod === 'pickup') return 0;
+    // Gift-only cart = free delivery
+    if (isGiftOnlyCart) return 0;
     // Free delivery for 2nd+ direct sale orders before 5PM
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
 
