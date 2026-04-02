@@ -102,17 +102,25 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     enabled: batchProductIds.length > 0,
   });
 
-  // Search products for picker
+  // Search products/bundles for picker
   const { data: searchResults = [] } = useQuery({
-    queryKey: ['batch-product-search', productSearch],
+    queryKey: ['batch-product-search', productSearch, searchType],
     queryFn: async () => {
       if (!productSearch.trim()) return [];
+      if (searchType === 'bundle') {
+        const { data } = await supabase
+          .from('product_bundles')
+          .select('id, title_ar, image_url')
+          .ilike('title_ar', `%${productSearch}%`)
+          .limit(10);
+        return (data || []).map((b: any) => ({ id: b.id, name_ar: b.title_ar, image_url: b.image_url, _type: 'bundle' }));
+      }
       const { data } = await supabase
         .from('products')
         .select('id, name_ar, image_url')
         .ilike('name_ar', `%${productSearch}%`)
         .limit(10);
-      return data || [];
+      return (data || []).map((p: any) => ({ ...p, _type: 'product' }));
     },
     enabled: productSearch.length >= 2,
   });
