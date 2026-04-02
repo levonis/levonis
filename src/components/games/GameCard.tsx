@@ -27,7 +27,7 @@ export default function GameCard({ game, onPlay, onClickSound, disabled }: GameC
         )}
         {disabled && <h3 className="text-xs font-bold font-mono text-muted-foreground mb-2">{game.title}</h3>}
         <span className="pixel-badge-locked text-[11px] font-mono font-bold px-3 py-1 uppercase tracking-wider">
-          قريباً
+          SOON
         </span>
       </div>
     );

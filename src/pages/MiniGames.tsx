@@ -48,7 +48,7 @@ export default function MiniGames() {
   }, []);
 
 
-  // Fetch disabled game settings
+  // Fetch disabled game settings for all games
   const { data: stackSettings } = useQuery({
     queryKey: ["stack-game-enabled"],
     queryFn: async () => {
@@ -57,9 +57,31 @@ export default function MiniGames() {
     },
   });
 
+  const { data: spaceSettings } = useQuery({
+    queryKey: ["space-blaster-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("space_blaster_settings").select("game_enabled").limit(1).single();
+      return data as any;
+    },
+  });
+
+  const { data: mysterySettings } = useQuery({
+    queryKey: ["mystery-case-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("mystery_case_settings").select("game_enabled").limit(1).single();
+      return data as any;
+    },
+  });
+
   // Mark disabled games instead of filtering them out
   const gamesWithStatus = GAME_NODES.map(game => {
     if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
+      return { ...game, _disabled: true };
+    }
+    if (game.node_name === "space_blaster" && spaceSettings && !spaceSettings.game_enabled) {
+      return { ...game, _disabled: true };
+    }
+    if (game.node_name === "mystery_case" && mysterySettings && !mysterySettings.game_enabled) {
       return { ...game, _disabled: true };
     }
     return { ...game, _disabled: false };
