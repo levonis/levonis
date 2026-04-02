@@ -26,18 +26,8 @@ export function ensurePriceIqd(
   if (!priceIqd || priceIqd <= 0) return 0;
   if (!priceUsd || priceUsd <= 0 || !usdToIqd || usdToIqd <= 0) return priceIqd;
 
-  // If price is suspiciously equal to or close to the USD value, it wasn't converted
-  if (priceIqd <= priceUsd * 2) {
-    return Math.round(priceUsd * usdToIqd);
-  }
-
-  // If price is below minimum IQD threshold, likely in USD
-  if (priceIqd < MIN_IQD_THRESHOLD && priceUsd >= 1) {
-    return Math.round(priceUsd * usdToIqd);
-  }
-
-  // Price looks like valid IQD — return as-is
-  return priceIqd;
+  // ALWAYS use USD * rate when price_usd is available — deterministic conversion
+  return Math.round(priceUsd * usdToIqd);
 }
 
 /**
