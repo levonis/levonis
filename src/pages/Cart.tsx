@@ -807,9 +807,10 @@ const Cart = () => {
 
       // Create order items
       const orderItems = items
-        .filter(item => item.product_id || item.custom_request_id)
+        .filter(item => item.product_id || item.custom_request_id || (item as any).bundle_id)
         .map(item => {
           const isCustomRequest = !!item.custom_request_id;
+          const isBundle = !!(item as any).bundle_id;
           const itemOption = (item as any).product_options;
           const itemColor = (item as any).selected_color;
           const colorData = itemColor && item.products?.colors
@@ -817,11 +818,20 @@ const Cart = () => {
             : null;
 
           const isDirect = (item as any).sale_type === 'direct';
-          const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
+          const bundle = isBundle ? (item as any).product_bundles : null;
+          const itemPrice = isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd);
+
+          const productName = isCustomRequest 
+            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name || 'منتج');
+          const productNameAr = isCustomRequest 
+            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name_ar || 'منتج');
 
           return {
             order_id: orderResult.id,
-            product_id: isCustomRequest ? null : item.product_id,
+            product_id: isCustomRequest || isBundle ? null : item.product_id,
+            bundle_id: isBundle ? (item as any).bundle_id : null,
             custom_request_id: isCustomRequest ? item.custom_request_id : null,
             product_option_id: (item as any).product_option_id || null,
             quantity: item.quantity,
@@ -830,8 +840,8 @@ const Cart = () => {
             selected_color: itemColor || null,
             color_image_url: (item as any).color_image_url || null,
             selected_option: itemOption?.name_ar || null,
-            product_name: isCustomRequest ? (item.custom_product_requests?.product_name || 'طلب مخصص') : (item.products?.name || 'منتج'),
-            product_name_ar: isCustomRequest ? (item.custom_product_requests?.product_name || 'طلب مخصص') : (item.products?.name_ar || 'منتج'),
+            product_name: productName,
+            product_name_ar: productNameAr,
           };
         });
 
