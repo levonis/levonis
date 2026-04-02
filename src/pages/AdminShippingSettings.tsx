@@ -712,33 +712,6 @@ export default function AdminShippingSettings() {
             </div>
           </GlassCard>
 
-          {/* Air USA */}
-          <GlassCard gradient="linear-gradient(145deg, hsl(270 60% 55% / 0.08), hsl(300 50% 50% / 0.04), transparent)">
-            <GlassCardHeader
-              icon={<Plane className="h-5 w-5 text-white" />}
-              iconBg="bg-gradient-to-br from-purple-500 to-pink-500"
-              title="الجوي - أمريكا"
-              subtitle="بالكيلوغرام مع هامش الوزن"
-            />
-            <div className="px-5 pb-5 grid grid-cols-2 gap-4">
-              <SettingField
-                label="سعر الكيلو"
-                icon={<DollarSign className="h-3 w-3" />}
-                value={settings.air_usa_kg_price}
-                onChange={(v) => updateSetting("air_usa_kg_price", v)}
-                hint={`${settings.air_usa_kg_price.toLocaleString()} د.ع/كغ`}
-                suffix="د.ع"
-              />
-              <SettingField
-                label="نسبة الاحتياط"
-                icon={<Percent className="h-3 w-3" />}
-                value={settings.air_usa_weight_buffer_percent}
-                onChange={(v) => updateSetting("air_usa_weight_buffer_percent", v)}
-                hint={`+${settings.air_usa_weight_buffer_percent}% وزن إضافي`}
-                suffix="%"
-              />
-            </div>
-          </GlassCard>
         </div>
 
         {/* ═══ Row 2: Air China ═══ */}
