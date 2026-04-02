@@ -2163,6 +2163,7 @@ export type Database = {
           delivery_price: number
           governorate: string | null
           id: string
+          units_per_delivery: number
           updated_at: string
         }
         Insert: {
@@ -2172,6 +2173,7 @@ export type Database = {
           delivery_price?: number
           governorate?: string | null
           id?: string
+          units_per_delivery?: number
           updated_at?: string
         }
         Update: {
@@ -2181,6 +2183,7 @@ export type Database = {
           delivery_price?: number
           governorate?: string | null
           id?: string
+          units_per_delivery?: number
           updated_at?: string
         }
         Relationships: [
