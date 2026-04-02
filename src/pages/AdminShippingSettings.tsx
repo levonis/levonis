@@ -518,14 +518,14 @@ function DeliveryMethodsManager() {
     },
   });
 
-  const updatePrice = useMutation({
-    mutationFn: async ({ id, price }: { id: string; price: number }) => {
-      const { error } = await supabase.from("delivery_methods").update({ base_price: price }).eq("id", id);
+  const updateMethod = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+      const { error } = await supabase.from("delivery_methods").update(updates).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["delivery-methods"] });
-      toast.success("تم تحديث السعر");
+      toast.success("تم تحديث الإعدادات");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -540,7 +540,7 @@ function DeliveryMethodsManager() {
         <DeliveryMethodCard
           key={method.id}
           method={method}
-          onUpdatePrice={(id, price) => updatePrice.mutate({ id, price })}
+          onUpdate={(id, updates) => updateMethod.mutate({ id, updates })}
         />
       ))}
     </div>
