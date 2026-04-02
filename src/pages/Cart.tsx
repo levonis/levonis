@@ -42,28 +42,7 @@ const Cart = () => {
 
   // Simple item price getter for protection discount calculation
   const getCartItemPrice = (item: CartItem): number => {
-    if (!item.products) return 0;
-    const isDirect = (item as any).sale_type === 'direct';
-    const priceUsd = (item.products as any)?.price_usd ?? null;
-    let price = ensurePriceIqd(Number(item.products.price || 0), priceUsd, usdToIqd);
-    if (isDirect && item.products.direct_sale_price != null) {
-      price = ensurePriceIqd(Number(item.products.direct_sale_price), priceUsd, usdToIqd);
-    }
-    const colorData = (item as any).selected_color && item.products.colors
-      ? (item.products.colors as any[]).find((c: any) => c.name === (item as any).selected_color || c.name_ar === (item as any).selected_color)
-      : null;
-    if (colorData?.price != null) {
-      if (isDirect && colorData.direct_sale_price != null) {
-        price = ensurePriceIqd(Number(colorData.direct_sale_price), priceUsd, usdToIqd);
-      } else {
-        price = ensurePriceIqd(Number(colorData.price), priceUsd, usdToIqd);
-      }
-    }
-    if ((item as any).product_options?.price_adjustment) {
-      price += Math.round(Number((item as any).product_options.price_adjustment));
-    }
-    if ((item.products as any)?.round_up_price === true) price = Math.ceil(price / 250) * 250;
-    return price;
+    return getGuardedCartItemPrice(item as any, usdToIqd);
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
