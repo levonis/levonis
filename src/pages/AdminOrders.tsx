@@ -1243,7 +1243,7 @@ const AdminOrders = () => {
                 const deliveryCalc = subtotal > 0 ? Math.max(0, totalAmt - subtotal + discountAmt) : 0;
                 const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
                 const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
-                const couponCode = (editingOrder as any).coupon_code || null;
+                const couponCode = null;
 
                 return (
                   <div className="p-3 rounded-xl border border-border/60 bg-muted/20 space-y-2">
