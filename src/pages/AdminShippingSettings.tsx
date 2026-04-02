@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers } from "lucide-react";
+import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp } from "lucide-react";
 import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippingCalculator";
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
 import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
