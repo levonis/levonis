@@ -388,7 +388,7 @@ const AdminFinancials = () => {
       }
     >
       {/* ===== 1. Global Profit Bar ===== */}
-      <div className="rounded-xl border border-primary/30 bg-gradient-to-l from-primary/15 via-primary/10 to-transparent p-4 sm:p-5 mb-6">
+      <div className="rounded-xl border border-primary/30 from-primary/15 via-primary/10 to-transparent p-4 sm:p-5 mb-6 bg-sidebar-ring bg-[sidebar-accent-foreground]">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
@@ -470,7 +470,7 @@ const AdminFinancials = () => {
       {/* ===== 5. Main Tabs: Sale Type ===== */}
       <AdminSection title="تحليل الأرباح" className="mt-6">
         <Tabs value={mainTab} onValueChange={(v) => { setMainTab(v); setSubTab('general'); setCurrentPage(1); }} className="w-full">
-          <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsList className="mb-4 w-full sm:w-auto text-muted bg-card">
             <TabsTrigger value="all">ربح عام</TabsTrigger>
             <TabsTrigger value="direct">بيع مباشر</TabsTrigger>
             <TabsTrigger value="preorder">بيع مسبق</TabsTrigger>
