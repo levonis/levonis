@@ -192,17 +192,17 @@ export default function StackGame({ onBack }: Props) {
           setScore(gameScore);
         } else if (result) {
           console.error("end_stack_game returned failure:", result.error);
-          // Still try to show something useful
           setPointsAwarded(0);
         }
       } catch (e) {
         console.error("end_stack_game error:", e);
       }
 
-      try { await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore }); } catch (e) { console.error("update_high_score error:", e); }
+      // Use raw block count (finalScore) for high score & milestones, NOT inflated game_score
+      try { await supabase.rpc("update_stack_high_score" as any, { p_score: finalScore }); } catch (e) { console.error("update_high_score error:", e); }
       try {
         const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
-          p_user_id: user.id, p_score: gameScore, p_session_id: sessionId,
+          p_user_id: user.id, p_score: finalScore, p_session_id: sessionId,
         });
         console.log("check_stack_milestone result:", JSON.stringify(milestoneResult));
         if (milestoneResult && (milestoneResult as any).won) {
