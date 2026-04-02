@@ -493,6 +493,7 @@ const AdminFinancials = () => {
                   <TabsTrigger value="general">عام</TabsTrigger>
                   <TabsTrigger value="by-section">حسب القسم الرئيسي</TabsTrigger>
                   <TabsTrigger value="by-product">حسب المنتج</TabsTrigger>
+                  {tab === 'direct' && <TabsTrigger value="by-batch">حسب الوجبات</TabsTrigger>}
                 </TabsList>
 
                 <TabsContent value="general">
