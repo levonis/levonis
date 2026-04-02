@@ -308,18 +308,18 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
       }
     }
 
-    // Auto-play: place block when crossing near center
+    // Auto-play: snap block to perfect center then place
     if (autoPlay && !gameOver && !hasPlaced.current && mesh) {
       autoPlayTimer.current += delta;
-      const axisIdx = currentAxis.current === "x" ? 0 : 2;
-      const prevCenter = topBlock.position[axisIdx];
-      const currentPos = axisIdx === 0 ? mesh.position.x : mesh.position.z;
-      const movePerFrame = speed.current * speedMultiplier * delta;
-      const tolerance = Math.max(0.15, movePerFrame * 3);
-      const distFromCenter = Math.abs(currentPos - prevCenter);
-      // Only place if block is moving TOWARD center (crossed it)
-      if (distFromCenter < tolerance && autoPlayTimer.current > 0.1) {
+      if (autoPlayTimer.current > 0.08) {
         autoPlayTimer.current = 0;
+        const tb = stack[stack.length - 1];
+        // Snap to exact center of previous block for perfect placement
+        if (currentAxis.current === "x") {
+          mesh.position.x = tb.position[0];
+        } else {
+          mesh.position.z = tb.position[2];
+        }
         placeBlock();
       }
     }
