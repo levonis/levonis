@@ -75,15 +75,15 @@ function SettingField({ label, value, onChange, hint, icon, suffix }: {
 }
 
 // ─── Governorate Exceptions Section ───
-function GovernorateExceptionsSection() {
+function GovernorateExceptionsSection({ methodKey }: { methodKey: string }) {
   const queryClient = useQueryClient();
   const [newGov, setNewGov] = useState("");
   const [newPrice, setNewPrice] = useState<number>(0);
 
   const { data: exceptions = [] } = useQuery({
-    queryKey: ["delivery-gov-exceptions"],
+    queryKey: ["delivery-gov-exceptions", methodKey],
     queryFn: async () => {
-      const { data, error } = await supabase.from("delivery_governorate_exceptions").select("*").order("governorate");
+      const { data, error } = await supabase.from("delivery_governorate_exceptions").select("*").eq("delivery_method_key", methodKey).order("governorate");
       if (error) throw error;
       return data;
     },
@@ -92,11 +92,11 @@ function GovernorateExceptionsSection() {
   const addException = useMutation({
     mutationFn: async () => {
       if (!newGov || newPrice <= 0) throw new Error("أدخل المحافظة والسعر");
-      const { error } = await supabase.from("delivery_governorate_exceptions").insert({ governorate: newGov, delivery_price: newPrice });
+      const { error } = await supabase.from("delivery_governorate_exceptions").insert({ governorate: newGov, delivery_price: newPrice, delivery_method_key: methodKey });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions", methodKey] });
       setNewGov("");
       setNewPrice(0);
       toast.success("تمت إضافة الاستثناء");
@@ -110,7 +110,7 @@ function GovernorateExceptionsSection() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery-gov-exceptions", methodKey] });
       toast.success("تم حذف الاستثناء");
     },
   });
@@ -120,7 +120,6 @@ function GovernorateExceptionsSection() {
 
   return (
     <div className="space-y-3">
-      {/* Existing exceptions */}
       {exceptions.length > 0 && (
         <div className="space-y-2">
           {exceptions.map((exc: any) => (
@@ -141,7 +140,6 @@ function GovernorateExceptionsSection() {
         </div>
       )}
 
-      {/* Add new exception */}
       <div className="flex items-end gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10">
         <div className="flex-1 space-y-1">
           <Label className="text-[10px] text-muted-foreground">المحافظة</Label>
