@@ -9371,6 +9371,14 @@ export type Database = {
         | { Args: { p_product_id: string }; Returns: boolean }
         | {
             Args: {
+              p_color?: string
+              p_option_name?: string
+              p_product_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
               p_product_id: string
               p_selected_color?: string
               p_selected_option_id?: string
