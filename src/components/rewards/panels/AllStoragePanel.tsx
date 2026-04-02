@@ -264,6 +264,35 @@ export default function AllStoragePanel() {
     },
   });
 
+  const requestPurchasedShippingMutation = useMutation({
+    mutationFn: async (purchasedIds: string[]) => {
+      const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
+      if (!defaultAddress) throw new Error('يرجى إضافة عنوان للشحن أولاً');
+
+      const { data, error } = await supabase
+        .from('user_purchased_products')
+        .update({ order_status: 'shipping_requested' })
+        .in('id', purchasedIds)
+        .select();
+      
+      if (error) throw new Error('فشل في تقديم طلب الشحن: ' + error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage-purchased-products'] });
+      queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
+      queryClient.invalidateQueries({ queryKey: ['user-storage-count'] });
+      toast.success('تم تقديم طلب الشحن بنجاح!');
+      setShippingDialogOpen(false);
+      setBulkShippingDialogOpen(false);
+      setSelectedItem(null);
+      setSelectedIds(new Set());
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ في طلب الشحن');
+    },
+  });
+
   // Transform data to storage items
   const allItems = useMemo((): StorageItem[] => {
     const items: StorageItem[] = [];
