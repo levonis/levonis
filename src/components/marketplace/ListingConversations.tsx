@@ -267,8 +267,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryKey: ['user-active-warranty', user?.id],
     queryFn: async () => {
       if (!user || isAdmin) return false;
-      // Check for active printer subscriptions or active warranty (store_printers with active status)
-      const [{ data: subs }, { data: printers }] = await Promise.all([
+      // Check for active printer subscriptions OR active warranty (store_printers with active status)
+      // Use separate queries to avoid !inner join failures
+      const [{ data: subs }, { data: userPrinters }] = await Promise.all([
         supabase
           .from('printer_subscriptions')
           .select('id')
@@ -277,16 +278,32 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           .limit(1),
         supabase
           .from('user_printers')
-          .select('id, store_printers!inner(status, expiry_date)')
+          .select('id, store_printer_id')
           .eq('user_id', user.id)
-          .limit(1),
+          .limit(10),
       ]);
+      
       const hasActiveSub = (subs?.length || 0) > 0;
-      const hasActivePrinter = printers?.some((p: any) => 
-        p.store_printers?.status === 'active' && 
-        (!p.store_printers?.expiry_date || new Date(p.store_printers.expiry_date) > new Date())
-      );
-      return hasActiveSub || hasActivePrinter;
+      if (hasActiveSub) return true;
+      
+      // Check store_printers separately to avoid !inner join issues
+      if (userPrinters && userPrinters.length > 0) {
+        const printerIds = userPrinters.map((p: any) => p.store_printer_id).filter(Boolean);
+        if (printerIds.length > 0) {
+          const { data: storePrinters } = await supabase
+            .from('store_printers')
+            .select('id, status, expiry_date')
+            .in('id', printerIds)
+            .eq('status', 'active');
+          
+          const hasActivePrinter = storePrinters?.some((sp: any) => 
+            !sp.expiry_date || new Date(sp.expiry_date) > new Date()
+          );
+          if (hasActivePrinter) return true;
+        }
+      }
+      
+      return false;
     },
     enabled: !!user && open && !isAdmin,
     staleTime: 60_000,
