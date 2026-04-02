@@ -1240,7 +1240,7 @@ const AdminOrders = () => {
                 const totalAmt = Number(editingOrder.total_amount) || 0;
                 const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
                 const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
-                if (walletPaid <= 0 && remainingAmt <= 0) return null;
+                if (walletPaid <= 0) return null;
                 return (
                   <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 space-y-1.5">
                     <h4 className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
