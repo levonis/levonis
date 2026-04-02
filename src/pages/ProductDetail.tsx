@@ -1000,7 +1000,7 @@ const ProductDetail = () => {
                               <div className="flex items-center gap-1 shrink-0">
                                 {option.price_adjustment !== 0 && (
                                   <span className={cn("text-[10px] font-black", option.price_adjustment > 0 ? 'text-primary' : 'text-emerald-600')}>
-                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd))} د.ع
+                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd, (product as any).price_usd))} د.ع
                                   </span>
                                 )}
                                 {!option.isAvailable && (
