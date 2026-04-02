@@ -983,11 +983,21 @@ const AdminOrders = () => {
                         </div>
                         <div className="text-left whitespace-nowrap">
                           <span className="font-bold text-foreground">{formatPrice(order.total_amount)}</span>
-                          {(Number(order.paid_amount) > 0 || Number(order.customer_paid_amount) > 0) && Number(order.remaining_amount) > 0 && (
+                          {(Number(order.paid_amount) > 0 || Number(order.customer_paid_amount) > 0) && (
                             <div className="text-[10px] leading-tight">
                               <span className="text-emerald-600">محفظة: {formatPrice(Number(order.customer_paid_amount) || Number(order.paid_amount))}</span>
-                              <br />
-                              <span className="text-amber-600">متبقي: {formatPrice(order.remaining_amount)}</span>
+                              {Number(order.remaining_amount) > 0 && (
+                                <>
+                                  <br />
+                                  <span className="text-amber-600">متبقي: {formatPrice(order.remaining_amount)}</span>
+                                </>
+                              )}
+                              {Number(order.remaining_amount) <= 0 && (
+                                <>
+                                  <br />
+                                  <span className="text-emerald-600">مدفوع بالكامل ✓</span>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
