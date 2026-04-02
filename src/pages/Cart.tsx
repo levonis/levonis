@@ -367,8 +367,9 @@ const Cart = () => {
   const getDeliveryFee = (governorate: string | null) => {
     // Pickup = always free
     if (selectedDeliveryMethod === 'pickup') return 0;
-    // Free delivery for 2nd+ direct sale orders before 5PM
-    if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
+    // Free delivery for 2nd+ direct sale orders before 5PM (exclude gift-only carts)
+    const hasOnlyGifts = items.length > 0 && items.every((item: any) => item.is_gift);
+    if (isDirectSaleCart && hasExistingDirectOrderToday && !hasOnlyGifts) return 0;
 
     // Get base price from selected method
     const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
