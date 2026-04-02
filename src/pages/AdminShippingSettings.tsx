@@ -798,15 +798,6 @@ export default function AdminShippingSettings() {
               ]}
             />
             <FormulaCard
-              icon={<Plane className="h-3.5 w-3.5 text-purple-400" />}
-              title="جوي - أمريكا"
-              color="bg-purple-500/15"
-              formula={[
-                `Weight = W × (1 + ${settings.air_usa_weight_buffer_percent}%)`,
-                `Cost = Weight × ${settings.air_usa_kg_price.toLocaleString()} + ${settings.commission_fee.toLocaleString()}`,
-              ]}
-            />
-            <FormulaCard
               icon={<Plane className="h-3.5 w-3.5 text-orange-400" />}
               title="جوي - الصين"
               color="bg-orange-500/15"

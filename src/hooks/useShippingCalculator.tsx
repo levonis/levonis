@@ -148,12 +148,8 @@ export const calculateShippingCost = (
     }
   }
 
-  // Commission is separate - show it as "عمولتنا"
-  const commission = settings.commission_fee;
-  breakdown.push({ label: 'عمولتنا', value: commission });
-  
-  // Total = shipping cost + commission (but we keep them separate for display)
-  const totalCost = Math.round(shippingCost) + commission;
+  const commission = 0;
+  const totalCost = Math.round(shippingCost);
   breakdown.push({ label: 'إجمالي الشحن', value: totalCost });
 
   return {
