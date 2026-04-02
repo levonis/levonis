@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2 } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
 
 interface Props {
@@ -168,7 +168,8 @@ export default function StackGame({ onBack }: Props) {
         const result = data as any;
         if (result?.success) {
           setPointsAwarded(result.points_awarded || 0);
-          console.log("end_stack_game success, points:", result.points_awarded);
+          setScore(result.game_score || finalScore);
+          console.log("end_stack_game success, game_score:", result.game_score, "website_points:", result.points_awarded);
         } else {
           console.error("end_stack_game result not success:", result);
         }
@@ -323,22 +324,36 @@ export default function StackGame({ onBack }: Props) {
           )}
 
           {/* Rewards info */}
-          <div className="pixel-frame p-4 rounded-lg space-y-2 text-right">
+          <div className="pixel-frame p-4 rounded-lg space-y-3 text-right">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 justify-end">
               <Trophy className="h-4 w-4 text-primary" /> المكافآت
             </h3>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div className="flex justify-between">
-                <span>+{settings?.points_per_block ?? 1}</span>
-                <span className="flex items-center gap-1"><Star className="h-3 w-3" /> لكل قطعة</span>
+            <div className="text-xs space-y-2">
+              <div className="text-muted-foreground font-mono text-[10px] mb-1">🎮 نقاط اللعبة (السكور)</div>
+              <div className="space-y-1 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>+{(settings as any)?.game_points_per_block ?? 1}</span>
+                  <span className="flex items-center gap-1">لكل قطعة</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>+{(settings as any)?.game_perfect_bonus ?? 3}</span>
+                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> مثالية</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>+{settings?.perfect_bonus_points ?? 3}</span>
-                <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> مثالية</span>
-              </div>
-              <div className="flex justify-between">
-                <span>×{settings?.combo_bonus_multiplier ?? 0.5}</span>
-                <span>كومبو إضافي</span>
+              <div className="border-t border-border/20 pt-2 text-muted-foreground font-mono text-[10px] mb-1">⭐ نقاط الموقع</div>
+              <div className="space-y-1 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>+{settings?.points_per_block ?? 1}</span>
+                  <span className="flex items-center gap-1"><Star className="h-3 w-3" /> لكل قطعة</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>+{settings?.perfect_bonus_points ?? 3}</span>
+                  <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> مثالية</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>×{settings?.combo_bonus_multiplier ?? 0.5}</span>
+                  <span>كومبو إضافي</span>
+                </div>
               </div>
             </div>
           </div>
@@ -504,10 +519,17 @@ export default function StackGame({ onBack }: Props) {
               </div>
             </div>
 
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-center gap-2">
-              <Star className="h-5 w-5 text-primary" />
-              <span className="text-lg font-bold text-primary font-mono">+{pointsAwarded}</span>
-              <span className="text-sm text-muted-foreground">نقطة</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 flex items-center justify-center gap-2">
+                <Gamepad2 className="h-4 w-4 text-accent-foreground" />
+                <span className="text-lg font-bold text-accent-foreground font-mono">{score}</span>
+                <span className="text-[10px] text-muted-foreground">سكور</span>
+              </div>
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-center gap-2">
+                <Star className="h-4 w-4 text-primary" />
+                <span className="text-lg font-bold text-primary font-mono">+{pointsAwarded}</span>
+                <span className="text-[10px] text-muted-foreground">نقطة موقع</span>
+              </div>
             </div>
 
             <div className="flex gap-3">
