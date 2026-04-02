@@ -531,10 +531,10 @@ const AdminFinancials = () => {
                               <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>{getProductNames(order)}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}</TableCell>
                               {mainTab === 'preorder' && (
-                                <TableCell className="text-blue-600 font-medium">{formatPrice(order.customer_paid_amount || 0)}</TableCell>
+                                <TableCell>{renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-blue-600 font-medium')}</TableCell>
                               )}
                               {mainTab === 'preorder' && (
-                                <TableCell className="text-amber-600 font-medium">{formatPrice(order.remaining_amount || 0)}</TableCell>
+                                <TableCell>{renderEditableCell(order.id, 'remaining_amount', order.remaining_amount || 0, 'text-amber-600 font-medium')}</TableCell>
                               )}
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
