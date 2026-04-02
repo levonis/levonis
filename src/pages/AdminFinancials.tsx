@@ -13,9 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
-  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight, FileSpreadsheet
+  DollarSign, TrendingUp, Truck, CreditCard, Package, Check, X, Plus, Eye, Trash2, BarChart3, ChevronLeft, ChevronRight, FileSpreadsheet, Search
 } from 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { formatPrice } from '@/lib/utils';
@@ -41,10 +42,26 @@ interface OrderWithDetails {
   order_items?: { id: string; product_name: string; product_name_ar: string; quantity: number; unit_price: number; total_price: number; cost_price?: number; product_id?: string; products?: any; }[];
 }
 
+interface ManualOrderProduct {
+  type: 'manual' | 'site';
+  name: string;
+  product_id?: string;
+  quantity: number;
+  unit_price: number;
+  cost_price: number;
+}
+
 interface ManualOrderForm {
-  customer_name: string; product_names: string; total_amount: number;
-  customer_paid_amount: number; admin_paid_amount: number; admin_product_cost: number;
-  tax_amount: number; financial_notes: string;
+  order_type: 'direct' | 'preorder';
+  customer_name: string;
+  products: ManualOrderProduct[];
+  total_amount: number;
+  customer_paid_amount: number;
+  remaining_amount: number;
+  admin_shipping_cost: number;
+  admin_product_cost: number;
+  status: string;
+  financial_notes: string;
 }
 
 const PAGE_SIZE = 50;
