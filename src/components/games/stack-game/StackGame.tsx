@@ -62,6 +62,16 @@ export default function StackGame({ onBack }: Props) {
     },
   });
 
+  const { data: userHighScore } = useQuery({
+    queryKey: ["stack-high-score", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("stack_game_high_scores" as any).select("high_score").eq("user_id", user.id).maybeSingle();
+      return (data as any)?.high_score ?? 0;
+    },
+    enabled: !!user,
+  });
+
   const { data: lbPrizes = [] } = useQuery({
     queryKey: ["stack-lb-prizes"],
     queryFn: async () => {
@@ -152,6 +162,9 @@ export default function StackGame({ onBack }: Props) {
         return;
       }
       
+      let gameScore = finalScore;
+      let sessionId: string | null = null;
+
       try {
         console.log("end_stack_game calling with:", { token: token.substring(0, 8) + "...", finalScore, perfects, combo });
         const { data, error: rpcError } = await supabase.rpc("end_stack_game", {
@@ -168,51 +181,54 @@ export default function StackGame({ onBack }: Props) {
         const result = data as any;
         if (result?.success) {
           setPointsAwarded(result.points_awarded || 0);
-          setScore(result.game_score || finalScore);
-          console.log("end_stack_game success, game_score:", result.game_score, "website_points:", result.points_awarded);
+          gameScore = result.game_score || finalScore;
+          sessionId = result.session_id || null;
+          setScore(gameScore);
+          console.log("end_stack_game success, game_score:", gameScore, "website_points:", result.points_awarded);
         } else {
           console.error("end_stack_game result not success:", result);
         }
+      } catch (e) {
+        console.error("end_stack_game error:", e);
+      }
 
-        // Update high score
-        try {
-          await supabase.rpc("update_stack_high_score" as any, { p_score: finalScore });
-        } catch (e) {
-          console.error("update_stack_high_score error:", e);
-        }
+      // Update high score with GAME score (not raw blocks)
+      try {
+        await supabase.rpc("update_stack_high_score" as any, { p_score: gameScore });
+      } catch (e) {
+        console.error("update_stack_high_score error:", e);
+      }
 
-        // Check milestone
-        try {
-          const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
-            p_user_id: user.id,
-            p_score: finalScore,
-            p_session_id: null,
-          });
-          if (milestoneResult && (milestoneResult as any).won) {
-            setMilestoneWin(milestoneResult);
-            // Add prize to cart as gift
-            if ((milestoneResult as any).milestone_id) {
-              try {
-                await supabase.rpc("claim_stack_prize_to_cart" as any, {
-                  p_milestone_id: (milestoneResult as any).milestone_id,
-                });
-                queryClient.invalidateQueries({ queryKey: ["cart"] });
-              } catch (cartErr) {
-                console.error("claim_stack_prize_to_cart error:", cartErr);
-              }
+      // Check milestone with GAME score
+      try {
+        const { data: milestoneResult } = await supabase.rpc("check_stack_milestone" as any, {
+          p_user_id: user.id,
+          p_score: gameScore,
+          p_session_id: sessionId,
+        });
+        if (milestoneResult && (milestoneResult as any).won) {
+          setMilestoneWin(milestoneResult);
+          if ((milestoneResult as any).milestone_id) {
+            try {
+              await supabase.rpc("claim_stack_prize_to_cart" as any, {
+                p_milestone_id: (milestoneResult as any).milestone_id,
+              });
+              queryClient.invalidateQueries({ queryKey: ["cart"] });
+            } catch (cartErr) {
+              console.error("claim_stack_prize_to_cart error:", cartErr);
             }
           }
-        } catch (e) {
-          console.error("check_stack_milestone error:", e);
         }
-
-        // Refresh queries
-        queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
-        queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
-        invalidateBalances();
       } catch (e) {
-        console.error("handleGameOver error:", e);
+        console.error("check_stack_milestone error:", e);
       }
+
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ["stack-leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["stack-milestones"] });
+      queryClient.invalidateQueries({ queryKey: ["stack-high-score"] });
+      invalidateBalances();
+
       sessionTokenRef.current = null;
       setSessionToken(null);
     },
@@ -282,7 +298,14 @@ export default function StackGame({ onBack }: Props) {
           <h1 className="text-2xl font-bold text-foreground font-mono">البرج</h1>
           <p className="text-sm text-muted-foreground">ابنِ أعلى برج بدقة! كل طابق يتحرك وعليك إيقافه في الوقت المناسب.</p>
 
-          {/* Tickets */}
+          {/* User High Score */}
+          {userHighScore > 0 && (
+            <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+              <Trophy className="h-4 w-4 text-primary" />
+              <span className="text-xs text-muted-foreground">أعلى سكور:</span>
+              <span className="text-lg font-bold text-primary font-mono">{userHighScore}</span>
+            </div>
+          )}
           <div className="flex justify-center gap-4">
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
               <Ticket className="h-4 w-4 text-accent-foreground" />
