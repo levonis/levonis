@@ -416,11 +416,11 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
       if (mesh && !hasPlaced.current) {
         const range = 4;
         if (axis === "x") {
-          mesh.position.x += movingDir.current * speed.current * delta;
+          mesh.position.x += movingDir.current * speed.current * speedMultiplier * delta;
           if (mesh.position.x > range) movingDir.current = -1;
           if (mesh.position.x < -range) movingDir.current = 1;
         } else {
-          mesh.position.z += movingDir.current * speed.current * delta;
+          mesh.position.z += movingDir.current * speed.current * speedMultiplier * delta;
           if (mesh.position.z > range) movingDir.current = -1;
           if (mesh.position.z < -range) movingDir.current = 1;
         }
