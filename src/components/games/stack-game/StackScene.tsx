@@ -286,11 +286,11 @@ export default function StackScene({ onGameOver, onScoreUpdate, speedMultiplier 
 
   return (
     <>
-      {/* Lighting - match original Stack: strong directional for face distinction */}
-      <ambientLight intensity={0.7} color="#ffffff" />
+      {/* Lighting - bright top face, darker sides like original */}
+      <ambientLight intensity={0.5} color="#ffffff" />
       <directionalLight
-        position={[-2, 8, -2]}
-        intensity={1.0}
+        position={[0, 10, 0]}
+        intensity={1.2}
         color="#ffffff"
         castShadow
         shadow-mapSize={1024}
