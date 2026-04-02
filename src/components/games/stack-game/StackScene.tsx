@@ -1,10 +1,8 @@
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-// drei not needed for this clean design
-import { getStage } from "./StackEnvironment";
+import StackEnvironment, { getStage } from "./StackEnvironment";
 import { useStageAudio } from "./StackStageAudio";
-import { getTowerAudio, disposeTowerAudio } from "./TowerAudioPro";
 
 interface Block {
   position: [number, number, number];
@@ -53,8 +51,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const [maxCombo, setMaxCombo] = useState(0);
   const [perfectCount, setPerfectCount] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [showPerfect, setShowPerfect] = useState(false);
-  const [comboText, setComboText] = useState("");
   const [perfectEffects, setPerfectEffects] = useState<{ id: number; y: number; size: [number, number]; time: number }[]>([]);
 
   const movingBlockRef = useRef<THREE.Mesh>(null);
@@ -65,20 +61,11 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const perfectEffectId = useRef(0);
   const cameraTargetY = useRef(3);
   const hasPlaced = useRef(false);
-  const time = useRef(0);
-  
   const blockSpawned = useRef(false);
+  const cameraYSmooth = useRef(3);
 
-  // Audio systems
-  const audioSystem = useMemo(() => getTowerAudio(), []);
+  // Stage audio (new ambient system)
   const { setStage: setAudioStage } = useStageAudio();
-
-  useEffect(() => {
-    audioSystem.startAmbient();
-    return () => {
-      audioSystem.stopAmbient();
-    };
-  }, [audioSystem]);
 
   useEffect(() => {
     setAudioStage(getStage(score));
@@ -87,6 +74,109 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const topBlock = stack[stack.length - 1];
   const currentY = stack.length * BLOCK_HEIGHT;
   const axis = currentAxis.current;
+
+  // Simple placement sound using Web Audio
+  const playPlaceSound = useCallback((perfect: boolean, comboCount: number) => {
+    try {
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+
+      if (perfect) {
+        // Bright chord for perfect
+        const freqs = [523.25, 659.25, 783.99];
+        freqs.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq * (comboCount >= 5 ? 2 : 1), now + i * 0.02);
+          gain.gain.setValueAtTime(0.08, now + i * 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(now + i * 0.02);
+          osc.stop(now + 0.6);
+        });
+
+        // Sparkles for high combo
+        if (comboCount >= 3) {
+          for (let i = 0; i < Math.min(comboCount, 6); i++) {
+            const s = ctx.createOscillator();
+            const sg = ctx.createGain();
+            s.type = "sine";
+            s.frequency.setValueAtTime(2000 + Math.random() * 2000, now + 0.1 + i * 0.04);
+            sg.gain.setValueAtTime(0.03, now + 0.1 + i * 0.04);
+            sg.gain.exponentialRampToValueAtTime(0.001, now + 0.2 + i * 0.04);
+            s.connect(sg).connect(ctx.destination);
+            s.start(now + 0.1 + i * 0.04);
+            s.stop(now + 0.25 + i * 0.04);
+          }
+        }
+      } else {
+        // Simple thud for normal
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+
+        // Click
+        const click = ctx.createOscillator();
+        const cg = ctx.createGain();
+        click.type = "square";
+        click.frequency.setValueAtTime(1500, now);
+        click.frequency.exponentialRampToValueAtTime(500, now + 0.03);
+        cg.gain.setValueAtTime(0.03, now);
+        cg.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        click.connect(cg).connect(ctx.destination);
+        click.start(now);
+        click.stop(now + 0.05);
+      }
+
+      setTimeout(() => ctx.close().catch(() => {}), 2000);
+    } catch {}
+  }, []);
+
+  const playGameOverSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+
+      // Deep boom
+      const boom = ctx.createOscillator();
+      const bg = ctx.createGain();
+      boom.type = "sawtooth";
+      boom.frequency.setValueAtTime(80, now);
+      boom.frequency.exponentialRampToValueAtTime(20, now + 0.6);
+      bg.gain.setValueAtTime(0.15, now);
+      bg.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(200, now);
+      boom.connect(filter).connect(bg).connect(ctx.destination);
+      boom.start(now);
+      boom.stop(now + 0.9);
+
+      // Sad descending notes
+      [392, 349, 311, 262].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        const t = now + 0.2 + i * 0.15;
+        osc.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.05, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.connect(g).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.45);
+      });
+
+      setTimeout(() => ctx.close().catch(() => {}), 3000);
+    } catch {}
+  }, []);
 
   const placeBlock = useCallback(() => {
     if (gameOver || hasPlaced.current) return;
@@ -109,7 +199,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
 
     if (overlap <= 0) {
       setGameOver(true);
-      audioSystem.playGameOver();
+      playGameOverSound();
       onGameOverRef.current(score, perfectCount, maxCombo);
       return;
     }
@@ -130,12 +220,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       newCombo = combo + 1;
       newPerfects = perfectCount + 1;
       newMaxCombo = Math.max(maxCombo, newCombo);
-      setShowPerfect(true);
-      if (newCombo >= 3) {
-        setComboText(`${newCombo}x COMBO!`);
-      }
-      setTimeout(() => setShowPerfect(false), 1500);
-      // Add perfect border effect
       setPerfectEffects(prev => [...prev, {
         id: perfectEffectId.current++,
         y: currentY,
@@ -169,7 +253,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       ]);
     }
 
-    audioSystem.playPlace(isPerfect, newCombo);
+    playPlaceSound(isPerfect, newCombo);
 
     const newBlock: Block = {
       position: newPos, size: newSize, color: tileColor,
@@ -192,7 +276,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
     setTimeout(() => {
       hasPlaced.current = false;
     }, 50);
-  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, audioSystem]);
+  }, [stack, topBlock, axis, score, combo, perfectCount, maxCombo, gameOver, currentY, playPlaceSound, playGameOverSound]);
 
   useEffect(() => {
     const handleClick = () => placeBlock();
@@ -206,8 +290,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   }, [placeBlock]);
 
   useFrame((state, delta) => {
-    time.current += delta;
-
     const mesh = movingBlockRef.current;
     if (mesh && !gameOver && !hasPlaced.current) {
       if (!blockSpawned.current) {
@@ -237,13 +319,13 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
       }
     }
 
-
-    // Camera follow - match original Stack game: camera from bottom-left
+    // Camera follow
     const targetY = cameraTargetY.current;
-    camera.position.y += (targetY - camera.position.y + 2) * delta * 2.5;
+    cameraYSmooth.current += (targetY - cameraYSmooth.current) * delta * 2.5;
+    camera.position.y = cameraYSmooth.current + 2;
     camera.position.x = -2;
     camera.position.z = -2;
-    camera.lookAt(0, targetY - 1.5, 0);
+    camera.lookAt(0, cameraYSmooth.current - 1.5, 0);
 
     // Falling pieces
     setFallingPieces(prev =>
@@ -269,17 +351,19 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
 
   return (
     <>
-      {/* Lighting - match original Stack game look */}
-      <ambientLight intensity={0.45} color="#ffffff" />
+      {/* New Environment System */}
+      <StackEnvironment score={score} cameraY={cameraYSmooth.current} />
+
+      {/* Main directional light */}
       <directionalLight
         position={[1, 10, 1]}
-        intensity={1.4}
+        intensity={1.2}
         color="#ffffff"
         castShadow
         shadow-mapSize={1024}
       />
 
-      {/* Base tile - tall column extending below like original */}
+      {/* Base tile */}
       <mesh position={[0, -5, 0]} receiveShadow>
         <boxGeometry args={[INITIAL_SIZE[0], 10, INITIAL_SIZE[2]]} />
         <meshLambertMaterial color={getTileColor(0)} />
@@ -309,7 +393,7 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         </mesh>
       ))}
 
-      {/* Perfect border effects - white expanding planes */}
+      {/* Perfect border effects */}
       {perfectEffects.map(effect => {
         const progress = effect.time / 1.0;
         const scale = 1 + progress * 0.5;
@@ -319,22 +403,18 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
         const thickness = 0.04;
         return (
           <group key={effect.id} position={[0, effect.y + BLOCK_HEIGHT / 2 + 0.001, 0]}>
-            {/* Top edge */}
             <mesh position={[0, 0, -h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[w, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
             </mesh>
-            {/* Bottom edge */}
             <mesh position={[0, 0, h / 2]} rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[w, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
             </mesh>
-            {/* Left edge */}
             <mesh position={[-w / 2, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
               <planeGeometry args={[h, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
             </mesh>
-            {/* Right edge */}
             <mesh position={[w / 2, 0, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
               <planeGeometry args={[h, thickness]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={opacity} side={THREE.DoubleSide} />
@@ -342,8 +422,6 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
           </group>
         );
       })}
-
-      {/* Score and text handled by HTML overlay in StackGame.tsx */}
     </>
   );
 }
