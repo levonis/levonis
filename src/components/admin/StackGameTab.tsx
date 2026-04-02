@@ -159,7 +159,7 @@ function ProductPicker({
         )}
 
         {/* Stock warning for prizes */}
-        {requireStock && selected && selected.direct_stock == null && selected.pre_order_stock == null && (
+        {requireStock && selected && selected.direct_stock == null && selected.pre_order_stock == null && !(Array.isArray(selected.colors) && (selected.colors as any[]).some((c: any) => c.option_stocks && typeof c.option_stocks === 'object' && Object.values(c.option_stocks).some((v: any) => Number(v) > 0))) && (
           <div className="bg-destructive/10 border border-destructive/30 rounded-md p-2.5 space-y-2">
             <div className="text-[11px] text-destructive font-medium flex items-center gap-1">
               ⚠️ هذا المنتج ليس لديه مخزون! يجب تحديد مخزون للجوائز
