@@ -737,7 +737,7 @@ const AdminFinancials = () => {
                                 <TableCell className="text-red-600 font-medium">{formatPrice((order.remaining_amount || 0) + (order.admin_shipping_cost || 0))}</TableCell>
                               )}
                               {mainTab === 'direct' && (
-                                <TableCell className="text-purple-600 font-medium">{formatPrice((order.total_amount || 0) - calcDeliveryCost(order))}</TableCell>
+                                <TableCell className="text-gray-300 font-medium">{formatPrice((order.total_amount || 0) - calcDeliveryCost(order))}</TableCell>
                               )}
                               <TableCell>{renderEditableCell(order.id, 'admin_shipping_cost', calcDeliveryCost(order), 'text-orange-500')}</TableCell>
                               <TableCell>{renderEditableCell(order.id, 'admin_product_cost', calcProductCost(order, usdToIqdRate), 'text-red-500')}</TableCell>
@@ -790,7 +790,7 @@ const AdminFinancials = () => {
                               {mainTab === 'preorder' && <TableCell className="text-blue-600">{formatPrice(totals.customerPaid)}</TableCell>}
                               {mainTab === 'preorder' && <TableCell className="text-amber-600">{formatPrice(totals.remaining)}</TableCell>}
                               {mainTab === 'preorder' && <TableCell className="text-red-600">{formatPrice(totals.remaining + totals.adminShipping)}</TableCell>}
-                              {mainTab === 'direct' && <TableCell className="text-purple-600">{formatPrice(totals.totalAmount - totals.shippingCost)}</TableCell>}
+                              {mainTab === 'direct' && <TableCell className="text-gray-200">{formatPrice(totals.totalAmount - totals.shippingCost)}</TableCell>}
                               <TableCell className="text-orange-500">{formatPrice(totals.shippingCost)}</TableCell>
                               <TableCell className="text-red-500">{formatPrice(totals.productCost)}</TableCell>
                               <TableCell className={totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}>{formatPrice(totals.profit)}</TableCell>
