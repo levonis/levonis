@@ -647,36 +647,8 @@ const Cart = () => {
             ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
             : null;
 
-          let itemPrice = isCustomRequest
-            ? Number(item.custom_product_requests?.suggested_price || 0)
-            : Number(item.products?.price || 0);
-
           const isDirect = (item as any).sale_type === 'direct';
-
-          if (!isCustomRequest && isDirect && item.products?.direct_sale_price != null) {
-            itemPrice = Number(item.products.direct_sale_price);
-          } else if (!isCustomRequest && !isDirect) {
-            const shippingType = (item.products as any)?.shipping_type;
-            const seaPrice = (item.products as any)?.sea_price;
-            const airPrice = (item.products as any)?.air_price;
-            if (shippingType === 'sea' && seaPrice != null) itemPrice = Number(seaPrice);
-            else if (shippingType === 'air' && airPrice != null) itemPrice = Number(airPrice);
-            else if (shippingType === 'both' && seaPrice != null && airPrice != null) itemPrice = Math.min(Number(seaPrice), Number(airPrice));
-          }
-
-          if (colorData?.direct_sale_price != null && isDirect) {
-            itemPrice = Number(colorData.direct_sale_price);
-          } else if (colorData?.price != null) {
-            itemPrice = Number(colorData.price);
-          }
-          if (itemOption?.price_adjustment) {
-            itemPrice += Math.round(Number(itemOption.price_adjustment));
-          }
-
-          // Round to nearest 250 if enabled
-          if ((item.products as any)?.round_up_price === true) {
-            itemPrice = Math.ceil(itemPrice / 250) * 250;
-          }
+          const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
 
           return {
             order_id: orderResult.id,
