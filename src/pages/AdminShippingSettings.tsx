@@ -184,6 +184,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
   const [newCat, setNewCat] = useState("");
   const [newPrice, setNewPrice] = useState<number>(0);
   const [newGov, setNewGov] = useState<string>("all");
+  const [newUnits, setNewUnits] = useState<number>(1);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-list"],
@@ -211,6 +212,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
         delivery_price: newPrice,
         governorate: newGov === "all" ? null : newGov,
         delivery_method_key: methodKey,
+        units_per_delivery: newUnits || 1,
       });
       if (error) throw error;
     },
@@ -219,6 +221,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
       setNewCat("");
       setNewPrice(0);
       setNewGov("all");
+      setNewUnits(1);
       toast.success("تمت إضافة استثناء القسم");
     },
     onError: (e: any) => toast.error(e.message),
@@ -246,6 +249,7 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
                 {exc.categories?.name_ar || 'قسم محذوف'}
                 {exc.governorate && <span className="text-muted-foreground mr-1">({exc.governorate})</span>}
               </span>
+              <span className="text-[10px] text-muted-foreground">كل {exc.units_per_delivery || 1} قطعة</span>
               <span className="text-xs font-bold text-amber-500">{Number(exc.delivery_price).toLocaleString()} د.ع</span>
               <Button
                 variant="ghost"
@@ -296,6 +300,17 @@ function CategoryExceptionsSection({ methodKey }: { methodKey: string }) {
             onChange={(e) => setNewPrice(Number(e.target.value))}
             className="h-8 text-xs bg-background/50 border-white/10"
             placeholder="12000"
+          />
+        </div>
+        <div className="w-20 space-y-1">
+          <Label className="text-[10px] text-muted-foreground">قطع/توصيل</Label>
+          <Input
+            type="number"
+            min={1}
+            value={newUnits || ''}
+            onChange={(e) => setNewUnits(Number(e.target.value) || 1)}
+            className="h-8 text-xs bg-background/50 border-white/10"
+            placeholder="1"
           />
         </div>
         <Button
