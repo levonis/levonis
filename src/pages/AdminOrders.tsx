@@ -1230,36 +1230,73 @@ const AdminOrders = () => {
                   <p className="font-medium">{editingOrder.governorate}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">المبلغ الكلي:</span>
-                  <p className="font-medium">{formatPrice(editingOrder.total_amount)}</p>
+                  <span className="text-sm text-muted-foreground">رقم الطلب:</span>
+                  <p className="font-medium">{editingOrder.order_number}</p>
                 </div>
               </div>
 
-              {/* Wallet / Payment breakdown for direct sale */}
+              {/* Full Order Summary Breakdown */}
               {(() => {
+                const subtotal = Number(editingOrder.subtotal) || 0;
                 const totalAmt = Number(editingOrder.total_amount) || 0;
+                const discountAmt = Number(editingOrder.discount_amount) || 0;
+                const deliveryCalc = subtotal > 0 ? Math.max(0, totalAmt - subtotal + discountAmt) : 0;
                 const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
                 const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
-                if (walletPaid <= 0) return null;
+                const couponCode = null;
+
                 return (
-                  <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 space-y-1.5">
-                    <h4 className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
-                      <Wallet className="h-3.5 w-3.5" />
-                      تفاصيل الدفع
+                  <div className="p-3 rounded-xl border border-border/60 bg-muted/20 space-y-2">
+                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-2">
+                      <Wallet className="h-3.5 w-3.5 text-primary" />
+                      ملخص الطلب المالي
                     </h4>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground text-xs">المبلغ الكلي</span>
-                        <p className="font-bold">{formatPrice(totalAmt)}</p>
+
+                    <div className="space-y-1.5 text-sm">
+                      {/* Products subtotal */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">سعر المنتجات</span>
+                        <span className="font-medium">{formatPrice(subtotal || totalAmt)}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">مدفوع (محفظة)</span>
-                        <p className="font-bold text-emerald-600">{formatPrice(walletPaid)}</p>
+
+                      {/* Delivery */}
+                      {deliveryCalc > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">التوصيل</span>
+                          <span className="font-medium">{formatPrice(deliveryCalc)}</span>
+                        </div>
+                      )}
+
+                      {/* Coupon / Discount */}
+                      {discountAmt > 0 && (
+                        <div className="flex justify-between items-center text-red-500">
+                          <span>خصم {couponCode ? `(${couponCode})` : '(كوبون)'}</span>
+                          <span className="font-medium">- {formatPrice(discountAmt)}</span>
+                        </div>
+                      )}
+
+                      <div className="border-t border-border/40 my-1" />
+
+                      {/* Grand total */}
+                      <div className="flex justify-between items-center font-bold">
+                        <span>المجموع الكلي</span>
+                        <span>{formatPrice(totalAmt)}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">المتبقي عند الاستلام</span>
-                        <p className="font-bold text-amber-600">{formatPrice(remainingAmt)}</p>
-                      </div>
+
+                      {/* Wallet payment */}
+                      {walletPaid > 0 && (
+                        <>
+                          <div className="border-t border-border/40 my-1" />
+                          <div className="flex justify-between items-center text-emerald-600">
+                            <span>مدفوع من المحفظة</span>
+                            <span className="font-bold">- {formatPrice(walletPaid)}</span>
+                          </div>
+                          <div className="flex justify-between items-center font-bold text-amber-600">
+                            <span>المتبقي عند الاستلام</span>
+                            <span>{formatPrice(remainingAmt)}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
