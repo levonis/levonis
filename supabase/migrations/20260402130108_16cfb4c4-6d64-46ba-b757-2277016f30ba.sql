@@ -1,0 +1,2 @@
+ALTER TABLE public.order_items DROP CONSTRAINT order_items_product_or_custom_check;
+ALTER TABLE public.order_items ADD CONSTRAINT order_items_product_or_custom_or_bundle_check CHECK (product_id IS NOT NULL OR custom_request_id IS NOT NULL OR bundle_id IS NOT NULL);
