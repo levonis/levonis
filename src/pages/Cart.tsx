@@ -323,6 +323,8 @@ const Cart = () => {
     // Get base price from selected method
     const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
     const basePrice = method ? Number(method.base_price) : 5000;
+    const basePriceCatId = method?.base_price_category_id || null;
+    const basePriceUnits = method?.base_price_units_per_delivery || 1;
 
     // Group items by category_id and sum quantities
     const categoryQty: Record<string, number> = {};
@@ -362,6 +364,29 @@ const Cart = () => {
       const unitsPerDelivery = exc.units_per_delivery || 1;
       const deliveryCount = Math.ceil(qty / unitsPerDelivery);
       totalCatFee += Number(exc.delivery_price) * deliveryCount;
+    }
+
+    // Handle base price: if linked to a specific category, apply only to that category
+    if (basePriceCatId) {
+      // Base price applies only to the linked category (if not already handled by exceptions)
+      if (!handledCategories.has(basePriceCatId) && categoryQty[basePriceCatId]) {
+        handledCategories.add(basePriceCatId);
+        const qty = categoryQty[basePriceCatId];
+        const deliveryCount = Math.ceil(qty / basePriceUnits);
+        totalCatFee += basePrice * deliveryCount;
+      }
+
+      // Uncovered items get governorate or 0 (no generic base price)
+      const hasUncoveredItems = Object.keys(categoryQty).some(catId => !handledCategories.has(catId));
+      const hasNoCategoryItems = items.some(item => !item.products?.category_id);
+
+      if (hasUncoveredItems || hasNoCategoryItems) {
+        const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
+        if (matchingGovExc) {
+          totalCatFee += Number(matchingGovExc.delivery_price);
+        }
+      }
+      return totalCatFee;
     }
 
     // Check if there are items NOT covered by category exceptions
