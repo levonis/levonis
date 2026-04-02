@@ -499,15 +499,11 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
 
   return (
     <>
-      {/* Environment */}
-      <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
-      <fog attach="fog" args={["#0f0a1e", 8, 35]} />
+      {/* Dynamic Environment */}
+      <StackEnvironment score={score} cameraY={cameraTargetY.current} />
       
       {/* Lighting */}
-      <ambientLight intensity={0.4} color="#8b5cf6" />
       <directionalLight position={[5, 12, 5]} intensity={0.8} color="#ffffff" castShadow shadow-mapSize={2048} />
-      <pointLight position={[0, currentY + 2, 0]} intensity={0.6} color={nextPalette.emissive} distance={8} />
-      <pointLight position={[-3, currentY, 3]} intensity={0.3} color="#6366f1" distance={6} />
 
       {/* Base platform - glass effect */}
       <mesh position={[0, -0.3, 0]} receiveShadow>
