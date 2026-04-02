@@ -503,7 +503,7 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
   return (
     <>
       {/* Dynamic Environment */}
-      <StackEnvironment score={score} cameraY={cameraTargetY.current} />
+      <StackEnvironment score={effectiveScore} cameraY={cameraTargetY.current} />
       
       {/* Lighting */}
       <directionalLight position={[5, 12, 5]} intensity={0.8} color="#ffffff" castShadow shadow-mapSize={2048} />
