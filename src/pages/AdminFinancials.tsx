@@ -642,7 +642,6 @@ const AdminFinancials = () => {
                 {tab === 'direct' && (
                   <TabsContent value="by-batch">
                     <BatchProfitAnalysis
-                      deliveredDirectOrders={batchAnalysisOrders}
                       usdToIqdRate={usdToIqdRate}
                     />
                   </TabsContent>

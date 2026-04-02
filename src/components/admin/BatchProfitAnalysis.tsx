@@ -303,7 +303,7 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
         overflowQty: hasStockError ? totalSoldQty - totalBatchQty : 0,
       };
     });
-  }, [batches, deliveredDirectOrders]);
+  }, [batches, allOrders]);
 
   return (
     <div className="space-y-4">
