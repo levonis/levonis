@@ -9169,15 +9169,10 @@ export type Database = {
           }
       calculate_user_level: { Args: { points: number }; Returns: string }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
-      cancel_order:
-        | {
-            Args: { p_cancelled_by?: string; p_order_id: string }
-            Returns: Json
-          }
-        | {
-            Args: { p_cancelled_by?: string; p_order_id: string }
-            Returns: Json
-          }
+      cancel_order: {
+        Args: { p_cancelled_by?: string; p_order_id: string }
+        Returns: Json
+      }
       check_merchant_debt_suspension: {
         Args: { p_merchant_user_id: string }
         Returns: boolean
