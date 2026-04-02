@@ -27,6 +27,9 @@ interface SoldItem {
   revenue: number;
   orderNumber: string;
   date: string;
+  color?: string;
+  orderItemId?: string;
+  unitPrice?: number;
 }
 
 const calcItemRevenue = (item: any): number => {
