@@ -93,7 +93,7 @@ interface StorageItem {
   image_url: string | null;
   quantity: number;
   status: string;
-  source: 'offer' | 'competition';
+  source: 'offer' | 'competition' | 'purchased';
   source_type?: string;
   created_at: string;
   shipping_requested_at?: string | null;
