@@ -270,6 +270,7 @@ export default function StackGame({ onBack }: Props) {
           onScoreUpdate={handleScoreUpdate}
           debugScoreOverride={debugMode ? debugScore : null}
           speedMultiplier={debugMode ? debugSpeed : 1}
+          autoPlay={debugMode && autoPlay}
         />
         {/* Live Score Overlay */}
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
