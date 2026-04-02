@@ -9367,7 +9367,16 @@ export type Database = {
         Returns: string
       }
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
-      deduct_prize_stock: { Args: { p_product_id: string }; Returns: boolean }
+      deduct_prize_stock:
+        | { Args: { p_product_id: string }; Returns: boolean }
+        | {
+            Args: {
+              p_product_id: string
+              p_selected_color?: string
+              p_selected_option_id?: string
+            }
+            Returns: boolean
+          }
       deduct_user_points: {
         Args: {
           p_amount: number
