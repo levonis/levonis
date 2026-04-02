@@ -7687,7 +7687,10 @@ export type Database = {
           combo_bonus_multiplier: number
           created_at: string
           entry_fee_tickets: number
+          game_combo_multiplier: number
           game_enabled: boolean
+          game_perfect_bonus: number
+          game_points_per_block: number
           id: string
           max_daily_plays: number | null
           perfect_bonus_points: number
@@ -7700,7 +7703,10 @@ export type Database = {
           combo_bonus_multiplier?: number
           created_at?: string
           entry_fee_tickets?: number
+          game_combo_multiplier?: number
           game_enabled?: boolean
+          game_perfect_bonus?: number
+          game_points_per_block?: number
           id?: string
           max_daily_plays?: number | null
           perfect_bonus_points?: number
@@ -7713,7 +7719,10 @@ export type Database = {
           combo_bonus_multiplier?: number
           created_at?: string
           entry_fee_tickets?: number
+          game_combo_multiplier?: number
           game_enabled?: boolean
+          game_perfect_bonus?: number
+          game_points_per_block?: number
           id?: string
           max_daily_plays?: number | null
           perfect_bonus_points?: number
