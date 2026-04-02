@@ -1964,7 +1964,7 @@ const Cart = () => {
                         }}
                         className="space-y-2 px-4 pb-4"
                       >
-                        {deliveryMethods.map((method: any) => {
+                        {visibleDeliveryMethods.map((method: any) => {
                           const iconMap: Record<string, React.ReactNode> = {
                             warehouse: <Warehouse className="h-4 w-4" />,
                             truck: <Truck className="h-4 w-4" />,
