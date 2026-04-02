@@ -657,6 +657,7 @@ export default function StackGameTab() {
             <div>
               <label className="text-[10px] text-muted-foreground">المنتج (الجائزة) + اللون والخيار</label>
               <ProductPicker
+                requireStock
                 value={{ product_id: newLbPrize.product_id, selected_color: newLbPrize.selected_color, selected_option_id: newLbPrize.selected_option_id }}
                 onChange={(val, name) => setNewLbPrize(p => ({ 
                   ...p, 
