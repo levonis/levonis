@@ -774,25 +774,6 @@ export default function AdminShippingSettings() {
             </div>
           </GlassCard>
 
-          {/* Commission */}
-          <GlassCard gradient="linear-gradient(145deg, hsl(var(--primary) / 0.08), hsl(var(--primary) / 0.03), transparent)">
-            <GlassCardHeader
-              icon={<Package className="h-5 w-5 text-white" />}
-              iconBg="bg-gradient-to-br from-primary to-accent"
-              title="العمولة"
-              subtitle="تظهر منفصلة عن تكلفة الشحن"
-            />
-            <div className="px-5 pb-5">
-              <SettingField
-                label="عمولتنا"
-                icon={<DollarSign className="h-3 w-3" />}
-                value={settings.commission_fee}
-                onChange={(v) => updateSetting("commission_fee", v)}
-                hint="تظهر باسم 'عمولتنا' للزبون"
-                suffix="د.ع"
-              />
-            </div>
-          </GlassCard>
         </div>
 
         {/* ═══ Row 4: Delivery Methods ═══ */}
