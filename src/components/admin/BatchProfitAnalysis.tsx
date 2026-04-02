@@ -195,7 +195,7 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
     // 1. Collect all sold items per product_id AND per bundle_id from delivered direct orders
     const soldByEntity: Record<string, SoldItem[]> = {};
     
-    deliveredDirectOrders.forEach((order: any) => {
+    allOrders.forEach((order: any) => {
       order.order_items?.forEach((item: any) => {
         // Track by bundle_id if present, otherwise by product_id
         const key = item.bundle_id ? `bundle_${item.bundle_id}` : (item.product_id ? item.product_id : null);
