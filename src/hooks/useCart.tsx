@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
+import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { toast } from 'sonner';
 
 export interface CartItem {
