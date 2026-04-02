@@ -1560,7 +1560,9 @@ const Cart = () => {
                       : null;
                     
                     const isDirect = (item as any).sale_type === 'direct';
-                    const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
+                    const isGift = !!(item as any).is_gift;
+                    const isLocked = !!(item as any).is_locked;
+                    const itemPrice = isGift ? 0 : getGuardedCartItemPrice(item as any, usdToIqd);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     
