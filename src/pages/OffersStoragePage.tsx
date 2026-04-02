@@ -23,7 +23,7 @@ export default function OffersStoragePage() {
     queryKey: ['user-storage-count-page', user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      const [offerRes, prizeRes] = await Promise.all([
+      const [offerRes, prizeRes, purchasedRes] = await Promise.all([
         supabase
           .from('product_offer_purchases')
           .select('id', { count: 'exact', head: true })
@@ -34,9 +34,14 @@ export default function OffersStoragePage() {
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .eq('prize_type', 'physical')
-          .in('status', ['pending', 'shipping_requested', 'shipped'])
+          .in('status', ['pending', 'shipping_requested', 'shipped']),
+        supabase
+          .from('user_purchased_products')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .in('order_status', ['not_ordered', 'shipping_requested', 'shipped'])
       ]);
-      return (offerRes.count || 0) + (prizeRes.count || 0);
+      return (offerRes.count || 0) + (prizeRes.count || 0) + (purchasedRes.count || 0);
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,

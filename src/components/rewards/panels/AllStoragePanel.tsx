@@ -93,7 +93,7 @@ interface StorageItem {
   image_url: string | null;
   quantity: number;
   status: string;
-  source: 'offer' | 'competition';
+  source: 'offer' | 'competition' | 'purchased';
   source_type?: string;
   created_at: string;
   shipping_requested_at?: string | null;
@@ -143,6 +143,24 @@ export default function AllStoragePanel() {
         .eq('user_id', user.id)
         .eq('prize_type', 'physical')
         .in('status', ['pending', 'shipping_requested', 'shipped', 'delivered'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Fetch user purchased products (from offer purchases via RPC)
+  const { data: purchasedProducts, isLoading: isLoadingPurchased } = useQuery({
+    queryKey: ['storage-purchased-products', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_purchased_products')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('order_status', ['not_ordered', 'shipping_requested', 'shipped', 'delivered'])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -231,6 +249,7 @@ export default function AllStoragePanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage-competition-prizes'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
+      queryClient.invalidateQueries({ queryKey: ['user-storage-count'] });
       toast.success('تم تقديم طلب الشحن بنجاح!', {
         description: 'سيتم التواصل معك قريباً لتأكيد الشحن'
       });
@@ -241,6 +260,35 @@ export default function AllStoragePanel() {
     },
     onError: (error: any) => {
       console.error('Prize mutation error:', error);
+      toast.error(error.message || 'حدث خطأ في طلب الشحن');
+    },
+  });
+
+  const requestPurchasedShippingMutation = useMutation({
+    mutationFn: async (purchasedIds: string[]) => {
+      const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
+      if (!defaultAddress) throw new Error('يرجى إضافة عنوان للشحن أولاً');
+
+      const { data, error } = await supabase
+        .from('user_purchased_products')
+        .update({ order_status: 'shipping_requested' })
+        .in('id', purchasedIds)
+        .select();
+      
+      if (error) throw new Error('فشل في تقديم طلب الشحن: ' + error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage-purchased-products'] });
+      queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
+      queryClient.invalidateQueries({ queryKey: ['user-storage-count'] });
+      toast.success('تم تقديم طلب الشحن بنجاح!');
+      setShippingDialogOpen(false);
+      setBulkShippingDialogOpen(false);
+      setSelectedItem(null);
+      setSelectedIds(new Set());
+    },
+    onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ في طلب الشحن');
     },
   });
@@ -282,10 +330,29 @@ export default function AllStoragePanel() {
         delivered_at: prize.delivered_at,
       });
     });
+
+    purchasedProducts?.forEach((pp: any) => {
+      items.push({
+        id: pp.id,
+        title: pp.product_name_ar || pp.product_name || 'منتج',
+        image_url: pp.product_image,
+        quantity: 1,
+        status: pp.order_status === 'not_ordered' ? 'pending' : pp.order_status,
+        source: 'purchased',
+        source_type: pp.source_type,
+        created_at: pp.created_at,
+        shipping_requested_at: null,
+        shipped_at: pp.shipped_at,
+        delivered_at: pp.delivered_at,
+        unit_price: pp.product_price,
+        total_price: pp.product_price,
+        gift_tickets_awarded: pp.gift_tickets,
+      });
+    });
     
     items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return items;
-  }, [offerPurchases, competitionPrizes]);
+  }, [offerPurchases, competitionPrizes, purchasedProducts]);
 
   // Group items by status
   const groupedByStatus = useMemo(() => ({
@@ -297,6 +364,8 @@ export default function AllStoragePanel() {
   const handleRequestShipping = (item: StorageItem) => {
     if (item.source === 'offer') {
       requestOfferShippingMutation.mutate([item.id]);
+    } else if (item.source === 'purchased') {
+      requestPurchasedShippingMutation.mutate([item.id]);
     } else {
       requestPrizeShippingMutation.mutate([item.id]);
     }
@@ -306,9 +375,11 @@ export default function AllStoragePanel() {
     const selectedItems = allItems.filter(item => selectedIds.has(item.id));
     const offerIds = selectedItems.filter(i => i.source === 'offer').map(i => i.id);
     const prizeIds = selectedItems.filter(i => i.source === 'competition').map(i => i.id);
+    const purchasedIds = selectedItems.filter(i => i.source === 'purchased').map(i => i.id);
     
     if (offerIds.length > 0) requestOfferShippingMutation.mutate(offerIds);
     if (prizeIds.length > 0) requestPrizeShippingMutation.mutate(prizeIds);
+    if (purchasedIds.length > 0) requestPurchasedShippingMutation.mutate(purchasedIds);
   };
 
   const toggleSelection = (id: string) => {
@@ -332,8 +403,8 @@ export default function AllStoragePanel() {
     }
   };
 
-  const isLoading = isLoadingOffers || isLoadingPrizes;
-  const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending;
+  const isLoading = isLoadingOffers || isLoadingPrizes || isLoadingPurchased;
+  const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending || requestPurchasedShippingMutation.isPending;
 
   if (!user) {
     return (
