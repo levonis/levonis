@@ -217,26 +217,22 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
 
     // 3. For each product group, distribute sold items sequentially across batches
     return Object.entries(groupMap).map(([key, group]) => {
-      const allSold = soldByProduct[group.productId] || [];
+      const entityKey = group.bundleId ? `bundle_${group.bundleId}` : group.productId;
+      const allSold = soldByEntity[entityKey] || [];
       const totalSoldQty = allSold.reduce((s, i) => s + i.quantity, 0);
       const totalBatchQty = group.batches.reduce((s: number, b: any) => s + b.batch_quantity, 0);
       const totalBatchCost = group.batches.reduce((s: number, b: any) => s + Number(b.batch_cost), 0);
       
-      // Stock error: sold more than total batches
       const hasStockError = totalSoldQty > totalBatchQty;
 
-      // Distribute sold items sequentially across batches
       let remainingSoldQty = totalSoldQty;
       let remainingSoldItems = [...allSold];
       
       const batchesWithData = group.batches.map((batch: any, batchIndex: number) => {
         const batchQty = batch.batch_quantity;
-        
-        // How many items this batch absorbs
         const soldInBatch = Math.min(remainingSoldQty, batchQty);
         remainingSoldQty = Math.max(0, remainingSoldQty - batchQty);
         
-        // Distribute actual sold items to this batch
         const batchSoldItems: SoldItem[] = [];
         let qtyToFill = soldInBatch;
         
@@ -247,7 +243,6 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
             qtyToFill -= item.quantity;
             remainingSoldItems.shift();
           } else {
-            // Split: part goes to this batch, rest stays
             batchSoldItems.push({ ...item, quantity: qtyToFill, revenue: (item.revenue / item.quantity) * qtyToFill });
             remainingSoldItems[0] = { ...item, quantity: item.quantity - qtyToFill, revenue: item.revenue - (item.revenue / item.quantity) * qtyToFill };
             qtyToFill = 0;
@@ -278,6 +273,8 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
       return {
         key,
         productId: group.productId,
+        bundleId: group.bundleId,
+        isBundle: group.isBundle,
         productName: group.productName,
         batches: batchesWithData,
         totalSoldQty,
