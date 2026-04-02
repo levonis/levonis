@@ -258,14 +258,16 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
             orderItemId: item.id,
             unitPrice: item.unit_price,
           });
-          // Expand into component products
+          // Expand into component products - split revenue equally among components
+          const componentCount = components.length;
+          const revenuePerComponent = bundleRevenue / componentCount;
           components.forEach((comp) => {
             const compKey = comp.product_id;
             if (!soldByEntity[compKey]) soldByEntity[compKey] = [];
             soldByEntity[compKey].push({
               username,
               quantity: bundleQty * comp.quantity,
-              revenue: 0, // Revenue attributed to bundle, not individual components
+              revenue: revenuePerComponent * bundleQty,
               orderNumber,
               date: orderDate,
               color: item.selected_color || undefined,
