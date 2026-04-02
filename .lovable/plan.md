@@ -1,118 +1,85 @@
 
+الهدف: تحويل لعبة البرج إلى شكل حديث/سينمائي غير Pixel فعلاً، وإصلاح وضع الاختبار بحيث يبني البرج تلقائياً بالطوب الحقيقي بدل مجرد تغيير الخلفية.
 
-# تحديث نظام المخزون - مسودات الشراء وسير عمل الشحنات
+1) التشخيص الحالي
+- الرسوم داخل اللعبة ما زالت تبدو بدائية لأن المشهد يعتمد على أشكال أولية بسيطة جداً في `StackEnvironment.tsx` و`StackScene.tsx`.
+- واجهة لعبة البرج نفسها ما زالت تستخدم أنماط Pixel مثل `pixel-frame` و`pixel-header-bar` و`font-mono` داخل `StackGame.tsx`.
+- وضع الاختبار الحالي يعتمد على `debugScoreOverride` لتغيير المرحلة والصوت فقط، لكنه لا يبني البرج فعلياً.
+- اللعب التلقائي غير موثوق لأن منطق الحركة/التمركز الحالي مرتبط بإطار الرسم، والمكعب المتحرك يُعاد إعطاؤه `position={startPos}` من الرندر، ما قد يسبب إعادة ضبط موضعه ويمنع سلوك autoplay من الاستقرار.
 
-## ملخص
-تحويل نظام المخزون الحالي من نموذج "شحنة مباشرة" إلى سير عمل كامل: **مسودات شراء → شحنات معلقة → استلام ودمج في المخزون**، مع دعم الألوان/الخيارات في المسودات، وتصميم Glassmorphism ثلاثي الأبعاد مع sidebar عائم.
+2) ما سأبنيه
+- إزالة الطابع Pixel من تجربة لعبة البرج نفسها:
+  - تحديث واجهة اللعب والقوائم والـ overlays إلى تصميم حديث Glass / Neon / Cinematic.
+  - استبدال الخط الأحادي والـ pixel classes في `StackGame.tsx` بعناصر أنعم وأكثر احترافية.
+- ترقية المشهد ثلاثي الأبعاد:
+  - تحسين قاعدة البرج والخامات والإضاءة والظلال.
+  - جعل البلوكات أقرب لمظهر AAA خفيف: خامات نظيفة، حواف ناعمة بصرياً، لمعان واقعي، وهج وإضاءات محيطية.
+  - تطوير الخلفيات إلى طبقات أغنى بصرياً مع انتقالات أكثر سلاسة بين المراحل.
+- إصلاح Debug الحقيقي:
+  - استبدال فكرة “تغيير السكور فقط” بفكرة “الهدف = عدد طوبات حقيقي”.
+  - إذا اختار الأدمن 20، النظام يضع 20 طوبة فعلاً ويُشغّل كل الأصوات والتأثيرات والكاميرا والفيزياء خلال البناء.
+  - إضافة Auto Build مستقر مع سرعات 1x/2x/3x/5x/10x.
 
----
+3) الملفات التي سأعدلها
+- `src/components/games/stack-game/StackGame.tsx`
+  - إعادة تصميم UI الخاص باللعبة ووضع الاختبار.
+  - تحويل أدوات الاختبار إلى:
+    - Target blocks
+    - Auto build on/off
+    - Speed multiplier
+    - Presets تبني فعلياً حتى المرحلة المطلوبة
+- `src/components/games/stack-game/StackGameCanvas.tsx`
+  - تمرير props جديدة خاصة بالبناء التلقائي الحقيقي بدل `debugScoreOverride`.
+- `src/components/games/stack-game/StackScene.tsx`
+  - إصلاح منطق حركة القطعة المتحركة.
+  - إضافة state machine واضح للبناء التلقائي.
+  - فصل “السكور المعروض” عن “عدد الطوبات الحقيقي” وإلغاء override الوهمي.
+  - تطوير الخامات والإضاءة والمؤثرات البصرية.
+- `src/components/games/stack-game/StackEnvironment.tsx`
+  - رفع جودة البيئة بصرياً وإزالة الإحساس البدائي.
+  - تحسين كل مرحلة بعناصر أكثر احترافية وانتقالات متدرجة.
+- `src/components/games/stack-game/TowerAudioPro.ts`
+  - تحسين أصوات وضع الطوب والـ combo والـ fail لتصبح أدق وأثقل وأوضح.
+- `src/components/games/stack-game/StackStageAudio.ts`
+  - رفع جودة الأجواء المحيطية وربطها بسلاسة مع مراحل البناء الحقيقي.
 
-## قاعدة البيانات
-
-### جدول جديد: `purchase_drafts`
-```sql
-CREATE TABLE purchase_drafts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT,
-  status TEXT DEFAULT 'draft', -- 'draft' | 'converted'
-  items JSONB DEFAULT '[]',
-  -- items: [{product_id, product_name, color, option, quantity, unit_cost, line_total}]
-  total_value NUMERIC DEFAULT 0,
-  converted_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+4) منطق الإصلاح الأساسي
+```text
+Admin Debug
+  -> يحدد targetBlocks = 20
+  -> scene يبدأ autoplay
+  -> يحرك القطعة الحالية
+  -> عند الوصول لنقطة مناسبة: placeBlock()
+  -> يتحدث stack/score/camera/audio/effects
+  -> يكرر حتى score === targetBlocks
 ```
 
-### تعديل `future_shipments`
-إضافة عمود `draft_id` (اختياري) لربط الشحنة بالمسودة المصدرية، وعمود `items JSONB` لتخزين تفاصيل الألوان/الخيارات.
+5) التفاصيل التقنية
+- سأستبدل `debugScoreOverride` بنظامين:
+  - `debugTargetScore` أو `debugTargetBlocks`
+  - `debugAutoBuild`
+- موضع القطعة المتحركة لن يبقى محسوباً مباشرة داخل JSX في كل render، بل سيُدار عبر refs/effect عند spawn قطعة جديدة فقط.
+- autoplay سيعمل كـ state machine:
+  - `spawning`
+  - `moving`
+  - `aligning`
+  - `placing`
+  - `cooldown`
+- المرحلة البيئية ستُحسب من `score` الحقيقي فقط.
+- Presets مثل القمر/المشتري/الشمس ستضبط target مناسب، والنظام يبني البرج فعلياً حتى يصل إليه.
+- سأزيل العناصر/الأنماط ذات الطابع pixel من شاشة اللعبة نفسها، مع إبقاء بنية اللعبة الحالية بدون تغييرات على الباكند.
 
-```sql
-ALTER TABLE future_shipments 
-  ADD COLUMN draft_id UUID REFERENCES purchase_drafts(id),
-  ADD COLUMN items JSONB DEFAULT '[]';
-```
+6) نتيجة التنفيذ المتوقعة
+- اللعبة ستظهر بمظهر حديث غير Pixel فعلاً.
+- البيئة ستتغير لأن البرج يرتفع فعلياً، لا لأن السكور مزور بصرياً.
+- الأدمن سيتمكن من اختبار:
+  - 20 طوبة = برج من 20 طوبة فعلاً
+  - 100 طوبة = الوصول للفضاء فعلياً
+  - تشغيل تلقائي مستقر مع تسريع
+- الأصوات والتأثيرات ستصبح مرتبطة بالبناء الحقيقي وليس مجرد تبديل خلفيات.
 
----
-
-## الملفات
-
-### 1. إعادة كتابة `src/pages/AdminInventory.tsx` بالكامل
-
-**الهيكل الجديد:** بدلاً من Tabs، يستخدم sidebar عائم (بدون shadcn Sidebar - مبني يدوياً بتصميم glass) مع 4 أقسام:
-
-#### أ. Dashboard (لوحة التحكم)
-- نفس البطاقات الإحصائية الحالية + بطاقة "المسودات النشطة"
-- المخططات البيانية الحالية تبقى كما هي
-
-#### ب. Drafts (مسودات الشراء) - **جديد بالكامل**
-- زر "مسودة جديدة" يفتح نموذج إنشاء
-- كل مسودة تحتوي على:
-  - عنوان المسودة
-  - جدول عناصر ديناميكي: اختيار منتج → لون (اختياري) → خيار (اختياري) → تكلفة الوحدة → الكمية → المجموع التلقائي
-  - الألوان والخيارات تُجلب من بيانات المنتج (colors JSONB) عند اختياره
-  - Grand Total يتحدث تلقائياً
-  - زر **"تحويل لشحنة معلقة"** → ينشئ سجل في `future_shipments` بالعناصر ويغير حالة المسودة إلى `converted`
-
-#### ج. Shipments (الشحنات المستقبلية) - **تحديث**
-- نفس القائمة الحالية مع عرض تفاصيل العناصر (ألوان/خيارات)
-- زر **"تم الاستلام"** (بدلاً من "إضافة للمخزون"):
-  1. يضيف الكمية الإجمالية إلى `products.direct_stock`
-  2. يضيف التكلفة إلى إجمالي تكلفة المخزون (عبر inventory_movements)
-  3. يحسب متوسط تكلفة الوحدة الجديد = التكلفة الكلية / الكمية الكلية
-  4. يغير حالة الشحنة إلى `merged`
-
-#### د. Live Inventory (المخزون المباشر)
-- نفس جدول المنتجات الحالي مع التعديل المباشر
-
----
-
-## التصميم البصري
-
-### Floating Sidebar
-- عمود جانبي ثابت (w-16 مطوي / w-56 مفتوح) بتصميم glass
-- `backdrop-blur-2xl bg-white/[0.03] border-l border-white/10`
-- أيقونات مع labels تظهر عند التوسيع
-- تأثير hover بنيون على العنصر النشط
-
-### Framer Motion (إن كان متوفراً في المشروع)
-- `AnimatePresence` للتبديل بين الأقسام
-- تأثيرات scale/opacity على البطاقات
-- إن لم يكن متوفراً: استخدام CSS transitions بدلاً منه
-
-### ألوان نيون
-- Teal (`hsl(175 100% 45%)`) للأزرار الرئيسية
-- Purple (`hsl(270 100% 65%)`) للمسودات
-- Blue (`hsl(210 100% 60%)`) للشحنات
-- Emerald للمتوفر، Red للنفاذ
-
----
-
-## منطق الأعمال
-
-### تحويل مسودة → شحنة
-```
-Draft (items[]) → future_shipments (status: pending, items: draft.items, total_cost: sum)
-Draft.status → 'converted'
-```
-
-### استلام شحنة → تحديث المخزون
-```
-product.direct_stock += shipment.quantity
-log inventory_movement (inbound)
-shipment.status → 'merged'
-Average Unit Cost = Σ(all costs) / Σ(all stock)
-```
-
-### الإيرادات
-```
-Revenue = Σ orders.subtotal (where order_type in ['direct','auto'] and status != 'cancelled')
-// يستثني رسوم التوصيل
-```
-
----
-
-## الخطوات
-1. إنشاء migration: جدول `purchase_drafts` + تعديل `future_shipments`
-2. إعادة كتابة `AdminInventory.tsx` بالكامل مع sidebar + 4 أقسام
-3. تحديث types.ts تلقائياً بعد migration
-
+7) التحقق بعد التنفيذ
+- التأكد أن اختيار 20/50/100/200 يبني نفس العدد الحقيقي من الطوبات.
+- التأكد أن autoplay يعمل على كل السرعات حتى 10x.
+- التأكد أن البيئة والصوت ينتقلان مع السكور الحقيقي فقط.
+- التأكد أن واجهة اللعبة لم تعد تستخدم النمط Pixel داخل تجربة البرج.
