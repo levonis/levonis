@@ -666,6 +666,7 @@ const Cart = () => {
         status: 'confirmed',
         payment_status: codRemaining <= 0 ? 'paid' : 'cod',
         order_type: 'direct',
+        delivery_method: selectedDeliveryMethod,
       } as any;
 
       const { data: orderResult, error: orderError } = await supabase
