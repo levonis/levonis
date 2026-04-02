@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Bug } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
-import { getStage } from "./StackEnvironment";
+
 
 interface Props {
   onBack: () => void;
