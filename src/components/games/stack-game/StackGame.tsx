@@ -221,6 +221,7 @@ export default function StackGame({ onBack }: Props) {
       queryClient.invalidateQueries({ queryKey: ["stack-high-score"] });
       invalidateBalances();
       sessionTokenRef.current = null;
+      sessionIdRef.current = null;
       setSessionToken(null);
       setLoadingResult(false);
     },
