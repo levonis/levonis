@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2 } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
 import { getStage } from "./StackEnvironment";
 
