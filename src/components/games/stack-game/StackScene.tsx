@@ -22,7 +22,7 @@ interface FallingPiece {
   rotVel: [number, number, number];
 }
 
-const BLOCK_HEIGHT = 0.2;
+const BLOCK_HEIGHT = 0.3;
 const INITIAL_SIZE: [number, number, number] = [3, BLOCK_HEIGHT, 3];
 const INITIAL_SPEED = 3;
 const SPEED_INCREMENT = 0.12;
