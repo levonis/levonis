@@ -17,6 +17,7 @@ export default function StackGame({ onBack }: Props) {
   const [gameState, setGameState] = useState<"menu" | "playing" | "gameover">("menu");
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const [score, setScore] = useState(0);
   const [perfectCount, setPerfectCount] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
