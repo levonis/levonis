@@ -41,6 +41,29 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
+  
+  // CNY converter
+  const [showCnyInput, setShowCnyInput] = useState(false);
+  const [cnyValue, setCnyValue] = useState<string>('');
+  const [showCnyOrigInput, setShowCnyOrigInput] = useState(false);
+  const [cnyOrigValue, setCnyOrigValue] = useState<string>('');
+  
+  const cnyToUsdRate = shippingSettings?.cny_to_usd_rate || 6.7;
+  
+  const handleCnyConvert = (target: 'price' | 'original') => {
+    const val = target === 'price' ? Number(cnyValue) : Number(cnyOrigValue);
+    if (!val || val <= 0) return;
+    const usdVal = Math.round((val / cnyToUsdRate) * 100) / 100;
+    if (target === 'price') {
+      setPriceUsd(usdVal);
+      setCnyValue('');
+      setShowCnyInput(false);
+    } else {
+      setOriginalPriceUsd(usdVal);
+      setCnyOrigValue('');
+      setShowCnyOrigInput(false);
+    }
+  };
 
   useEffect(() => {
     if (editingProduct) {
