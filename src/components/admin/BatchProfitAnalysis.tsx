@@ -17,7 +17,6 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 interface BatchProfitAnalysisProps {
-  deliveredDirectOrders: any[];
   usdToIqdRate: number;
 }
 
@@ -34,7 +33,7 @@ const calcItemRevenue = (item: any): number => {
   return (item.unit_price || 0) * (item.quantity || 1);
 };
 
-const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfitAnalysisProps) => {
+const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
