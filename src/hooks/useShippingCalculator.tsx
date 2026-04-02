@@ -109,19 +109,7 @@ export const calculateShippingCost = (
     }
     notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
   } else if (shippingType === 'air') {
-    if (sourceCountry === 'usa') {
-      // Air shipping from USA - weight-based
-      if (weight) {
-        const bufferPercent = settings.air_usa_weight_buffer_percent / 100;
-        actualWeight = weight * (1 + bufferPercent);
-        shippingCost = actualWeight * settings.air_usa_kg_price;
-        
-        // Only show final weight with packaging
-        breakdown.push({ label: 'الوزن مع التغليف', value: `${actualWeight.toFixed(2)} كغ` });
-        breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
-      }
-      notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
-    } else if (sourceCountry === 'china') {
+    if (sourceCountry === 'china') {
       // Air shipping from China - use the GREATER of volumetric weight or actual weight
       const padding = settings.sea_padding_cm;
       
