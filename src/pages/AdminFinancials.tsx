@@ -167,7 +167,33 @@ const AdminFinancials = () => {
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
-      const { error } = await supabase.from('orders').update({ [field]: value }).eq('id', orderId);
+      const currentOrder = (orders || []).find(order => order.id === orderId);
+      if (!currentOrder) throw new Error('Order not found');
+
+      const currentTotal = currentOrder.total_amount || 0;
+      const currentPaid = currentOrder.customer_paid_amount || 0;
+      const currentShipping = currentOrder.admin_shipping_cost || 0;
+      const isPreorderOrder = (currentOrder as any).order_type === 'preorder';
+
+      const updates: Record<string, number> = { [field]: value };
+
+      if (isPreorderOrder) {
+        if (field === 'total_amount') {
+          updates.total_amount = value;
+          updates.remaining_amount = Math.max(0, value - currentPaid - currentShipping);
+        } else if (field === 'customer_paid_amount') {
+          updates.customer_paid_amount = value;
+          updates.remaining_amount = Math.max(0, currentTotal - value - currentShipping);
+        } else if (field === 'admin_shipping_cost') {
+          updates.admin_shipping_cost = value;
+          updates.remaining_amount = Math.max(0, currentTotal - currentPaid - value);
+        } else if (field === 'remaining_amount') {
+          updates.remaining_amount = value;
+          updates.customer_paid_amount = Math.max(0, currentTotal - currentShipping - value);
+        }
+      }
+
+      const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
       if (error) throw error;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-financials'] }); toast.success('تم تحديث البيانات'); setEditingCell(null); },
