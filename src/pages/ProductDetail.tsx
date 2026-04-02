@@ -942,7 +942,7 @@ const ProductDetail = () => {
                                   {option.description && <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>}
                                 </div>
                                 {option.price_adjustment > 0 ? (
-                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd))} د.ع</span>
+                                  <span className="text-[10px] font-black text-primary shrink-0">+{formatPrice(ensureAdjustmentIqd(option.price_adjustment, usdToIqd, (product as any).price_usd))} د.ع</span>
                                 ) : (
                                   <Badge variant="outline" className="text-[8px] shrink-0 px-1 py-0 h-4">{t('product_free')}</Badge>
                                 )}
