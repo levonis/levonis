@@ -389,6 +389,9 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
                         <h4 className="font-bold text-lg">{group.productName}</h4>
                         <p className="text-xs text-muted-foreground">
                           {group.batches.length} وجبة • إجمالي {group.totalBatchQty} قطعة • مباع {group.totalSoldQty} قطعة
+                          {group.productId && productStocks[group.productId] !== undefined && (
+                            <span> • المخزون الحالي: <span className="font-bold text-foreground">{productStocks[group.productId]}</span> قطعة</span>
+                          )}
                         </p>
                       </div>
                     </div>
