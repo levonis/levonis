@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap, ShoppingBag } from "lucide-react";
+import { ArrowRight, Gamepad2, Filter, Flame, Clock, Star, Zap, ShoppingBag, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PixelBackground from "@/components/games/PixelBackground";
 import PixelLoadingScreen from "@/components/games/PixelLoadingScreen";
