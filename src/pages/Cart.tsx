@@ -27,7 +27,7 @@ import CartRequestDialog from '@/components/CartRequestDialog';
 import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
-import { ensurePriceIqd } from '@/lib/priceGuard';
+import { ensurePriceIqd, getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Cart = () => {
