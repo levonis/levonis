@@ -18,7 +18,7 @@ export default function StackGameCanvas({ onGameOver, onScoreUpdate }: Props) {
       gl={{ antialias: true, alpha: true, toneMapping: THREE.NoToneMapping }}
       dpr={[1, 1.5]}
     >
-      <color attach="background" args={["#000000"]} />
+      {/* Background handled by StackEnvironment */}
       <Suspense fallback={null}>
         <StackScene
           onGameOver={onGameOver}
