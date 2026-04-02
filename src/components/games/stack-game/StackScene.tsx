@@ -243,9 +243,10 @@ export default function StackScene({ onGameOver, onScoreUpdate, debugScoreOverri
     };
   }, []);
 
+  const effectiveScore = debugScoreOverride ?? score;
   useEffect(() => {
-    setAudioStage(getStage(score));
-  }, [score, setAudioStage]);
+    setAudioStage(getStage(effectiveScore));
+  }, [effectiveScore, setAudioStage]);
 
   const getPalette = (index: number) => PALETTES[index % PALETTES.length];
   const topBlock = stack[stack.length - 1];
