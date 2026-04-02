@@ -65,7 +65,7 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
         .select(`
           *, order_type,
           profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id)
+          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, selected_color)
         `)
         .neq('status', 'cancelled')
         .order('created_at', { ascending: true });
