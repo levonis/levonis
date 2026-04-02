@@ -129,6 +129,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
     mutationFn: async (formData: typeof form) => {
       const { error } = await supabase.from('product_batches').insert({
         product_id: formData.product_id || null,
+        bundle_id: formData.bundle_id || null,
         product_name_ar: formData.product_name_ar,
         batch_quantity: formData.batch_quantity,
         batch_cost: formData.batch_cost,
@@ -140,7 +141,7 @@ const BatchProfitAnalysis = ({ deliveredDirectOrders, usdToIqdRate }: BatchProfi
       queryClient.invalidateQueries({ queryKey: ['product-batches'] });
       toast.success('تم إضافة الوجبة بنجاح');
       setIsAddOpen(false);
-      setForm({ product_id: '', product_name_ar: '', batch_quantity: 0, batch_cost: 0, notes: '' });
+      setForm({ product_id: '', bundle_id: '', product_name_ar: '', batch_quantity: 0, batch_cost: 0, notes: '' });
       setProductSearch('');
     },
     onError: () => toast.error('حدث خطأ أثناء الإضافة'),
