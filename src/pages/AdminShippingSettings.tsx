@@ -450,7 +450,7 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
               className="h-9 px-3 gap-1 text-xs"
               onClick={() => onUpdate(method.id, {
                 base_price: editPrice,
-                base_price_category_id: editBaseCatId || null,
+                base_price_category_id: effectiveCatId,
                 base_price_units_per_delivery: editBaseUnits,
               })}
             >
