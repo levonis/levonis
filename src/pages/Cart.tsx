@@ -364,9 +364,14 @@ const Cart = () => {
     });
   })();
 
+  // Check if cart contains only gift items (all items are gifts with price 0)
+  const isGiftOnlyCart = items.length > 0 && items.every((item: any) => item.is_gift);
+
   const getDeliveryFee = (governorate: string | null) => {
     // Pickup = always free
     if (selectedDeliveryMethod === 'pickup') return 0;
+    // Gift-only cart = free delivery
+    if (isGiftOnlyCart) return 0;
     // Free delivery for 2nd+ direct sale orders before 5PM
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
 
