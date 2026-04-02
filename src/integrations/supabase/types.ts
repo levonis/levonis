@@ -4843,6 +4843,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          bundle_id: string | null
           color_image_url: string | null
           cost_price: number | null
           created_at: string
@@ -4864,6 +4865,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          bundle_id?: string | null
           color_image_url?: string | null
           cost_price?: number | null
           created_at?: string
@@ -4885,6 +4887,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          bundle_id?: string | null
           color_image_url?: string | null
           cost_price?: number | null
           created_at?: string
@@ -4906,6 +4909,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "product_bundles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_custom_request_id_fkey"
             columns: ["custom_request_id"]
