@@ -509,6 +509,7 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">المبلغ</TableHead>
                           {mainTab === 'preorder' && <TableHead className="text-right">المدفوع مقدماً</TableHead>}
                           {mainTab === 'preorder' && <TableHead className="text-right">المتبقي</TableHead>}
+                          {mainTab === 'preorder' && <TableHead className="text-right">المتبقي + التوصيل</TableHead>}
                           <TableHead className="text-right">تكلفة التوصيل</TableHead>
                           <TableHead className="text-right">تكلفة المنتج</TableHead>
                           <TableHead className="text-right">العمولة</TableHead>
