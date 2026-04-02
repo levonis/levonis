@@ -31,7 +31,7 @@ const PERFECT_THRESHOLD = 0.1;
 
 function getTileColor(index: number): string {
   const hue = ((index + 1) * 5) % 360;
-  return `hsl(${hue}, 70%, 58%)`;
+  return `hsl(${hue}, 68%, 62%)`;
 }
 
 interface Props {
