@@ -230,13 +230,20 @@ export default function StackScene({ onGameOver, onScoreUpdate }: Props) {
   const comboTextOpacity = useRef(0);
   const time = useRef(0);
 
-  // Start ambient music
+  // Stage audio system
+  const { setStage: setAudioStage } = useStageAudio();
+
+  // Start ambient music + update stage audio based on score
   useEffect(() => {
     audioSystem.startAmbient();
     return () => {
       audioSystem.stopAmbient();
     };
   }, []);
+
+  useEffect(() => {
+    setAudioStage(getStage(score));
+  }, [score, setAudioStage]);
 
   const getPalette = (index: number) => PALETTES[index % PALETTES.length];
   const topBlock = stack[stack.length - 1];
