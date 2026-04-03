@@ -379,6 +379,7 @@ const AdminQRPrinterTab = () => {
                         setWarrantyPrinter(printer);
                         setWarrantyStartDate(printer.activation_date ? new Date(printer.activation_date) : new Date());
                         setWarrantyEndDate(printer.expiry_date ? new Date(printer.expiry_date) : undefined);
+                        setWarrantyPeriod(printer.expiry_date ? 'custom' : '6');
                         setWarrantyDialog(true);
                       }}>
                         <Shield className="w-4 h-4" />
