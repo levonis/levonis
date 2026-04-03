@@ -205,8 +205,8 @@ const AdminQRPrinterTab = () => {
       // Remove user_printers records first (FK dependency)
       await supabase.from('user_printers').delete().eq('store_printer_id', printer.id);
 
-      // Remove any subscription records referencing this printer
-      await supabase.from('printer_subscriptions').delete().eq('printer_id', printer.id);
+      // Remove any subscription records referencing this printer via user_printers
+      // (already handled by cascading from user_printers delete above)
 
       // Log the deletion before removing
       await supabase.from('printer_protection_logs').insert({
