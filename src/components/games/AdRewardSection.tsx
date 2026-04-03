@@ -95,16 +95,27 @@ export default function AdRewardSection() {
     setTimeAway(0);
     adTriggeredRef.current = true;
 
-    // Load the AdSterra script to trigger the real ad
+    // Load the Popunder ad script
     const script = document.createElement("script");
     script.src = AD_SCRIPT_URL;
     script.async = true;
     document.body.appendChild(script);
 
+    // Load the Social Bar ad script
+    const socialBarScript = document.createElement("script");
+    socialBarScript.src = SOCIAL_BAR_SCRIPT_URL;
+    socialBarScript.async = true;
+    document.body.appendChild(socialBarScript);
+
     script.onload = () => {
-      // Script loaded and should trigger an ad (popunder/interstitial)
       setTimeout(() => {
         try { document.body.removeChild(script); } catch {}
+      }, 3000);
+    };
+
+    socialBarScript.onload = () => {
+      setTimeout(() => {
+        try { document.body.removeChild(socialBarScript); } catch {}
       }, 3000);
     };
 
@@ -112,6 +123,10 @@ export default function AdRewardSection() {
       try { document.body.removeChild(script); } catch {}
       toast.error("تعذر تحميل الإعلان. حاول مرة أخرى.");
       setAdState("idle");
+    };
+
+    socialBarScript.onerror = () => {
+      try { document.body.removeChild(socialBarScript); } catch {}
     };
 
   };
