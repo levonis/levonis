@@ -595,12 +595,12 @@ const AdminQRPrinterTab = () => {
       <AlertDialog open={deleteConfirmDialog} onOpenChange={setDeleteConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>إعادة تعيين الطابعة</AlertDialogTitle>
+            <AlertDialogTitle>حذف السيريال نمبر</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم إلغاء ربط الطابعة "{deletingPrinter?.model_name_ar}" (السيريال: {deletingPrinter?.serial_number}) من المستخدم الحالي وإعادة حالتها إلى "معلّقة".
+              سيتم حذف الطابعة "{deletingPrinter?.model_name_ar}" (السيريال: {deletingPrinter?.serial_number}) نهائياً من النظام.
               {deletingPrinter?.buyer_user_id && (
                 <span className="block mt-2 text-destructive font-medium">
-                  ⚠️ هذا الإجراء سيزيل الطابعة من حساب المستخدم ويلغي الضمان.
+                  ⚠️ هذا الإجراء سيزيل الطابعة من حساب المستخدم ويلغي الضمان نهائياً.
                 </span>
               )}
             </AlertDialogDescription>
@@ -612,7 +612,7 @@ const AdminQRPrinterTab = () => {
               onClick={() => deletingPrinter && deletePrinterMutation.mutate(deletingPrinter)}
               disabled={deletePrinterMutation.isPending}
             >
-              {deletePrinterMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد الإعادة'}
+              {deletePrinterMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد الحذف'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
