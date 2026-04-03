@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const MIN_AD_VIEW_SECONDS = 10; // minimum seconds user must spend on ad
+const AD_VIEW_SECONDS = 15; // seconds user must wait while viewing ad
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
 
-const AD_SCRIPT_URL = "https://pl29046247.profitablecpmratenetwork.com/87/10/56/8710563ecddda67a01e4997f82c0a62c.js";
 const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
