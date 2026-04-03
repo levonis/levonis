@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const AD_VIEW_SECONDS = 15; // seconds user must wait while viewing ad
+const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
 
@@ -19,16 +19,14 @@ export default function AdRewardSection() {
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [watchCount, setWatchCount] = useState(0);
-  const [adState, setAdState] = useState<"idle" | "waiting" | "viewing" | "completing">("idle");
+  const [adState, setAdState] = useState<"idle" | "viewing" | "completing">("idle");
   const [ticketAwarded, setTicketAwarded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [timeAway, setTimeAway] = useState(0);
+  const [countdown, setCountdown] = useState(0);
 
-  const leftAtRef = useRef<number | null>(null);
-  const adTriggeredRef = useRef(false);
-  const waitingTimeoutRef = useRef<number | null>(null);
+  const countdownRef = useRef<number | null>(null);
+  const adContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch today's earned tickets from ads
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["ad-daily-earned", user?.id],
     queryFn: async () => {
@@ -48,13 +46,6 @@ export default function AdRewardSection() {
 
   const canEarnMore = isAdmin || dailyEarned < MAX_DAILY_TICKETS;
 
-  const clearWaitingTimeout = useCallback(() => {
-    if (waitingTimeoutRef.current) {
-      window.clearTimeout(waitingTimeoutRef.current);
-      waitingTimeoutRef.current = null;
-    }
-  }, []);
-
   const startNewSession = useCallback(() => {
     setSessionId(crypto.randomUUID());
     setWatchCount(0);
@@ -65,98 +56,50 @@ export default function AdRewardSection() {
     if (!sessionId) startNewSession();
   }, [sessionId, startNewSession]);
 
+  // Cleanup countdown on unmount
   useEffect(() => {
-    return () => clearWaitingTimeout();
-  }, [clearWaitingTimeout]);
-
-  // Track when user leaves/returns from ad tab
-  useEffect(() => {
-    if (adState !== "waiting" && adState !== "viewing") return;
-
-    const handleVisibility = () => {
-      if (document.hidden) {
-        clearWaitingTimeout();
-        leftAtRef.current = Date.now();
-        setAdState("viewing");
-      } else {
-        if (leftAtRef.current && adState === "viewing") {
-          const secondsAway = Math.floor((Date.now() - leftAtRef.current) / 1000);
-          setTimeAway(secondsAway);
-          leftAtRef.current = null;
-
-          if (secondsAway >= MIN_AD_VIEW_SECONDS) {
-            handleAdComplete();
-          } else {
-            toast.error(`يجب مشاهدة الإعلان لمدة ${MIN_AD_VIEW_SECONDS} ثوانٍ على الأقل. شاهدت ${secondsAway} ثانية فقط.`);
-            setAdState("idle");
-          }
-        }
-      }
+    return () => {
+      if (countdownRef.current) window.clearInterval(countdownRef.current);
     };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [adState, clearWaitingTimeout]);
+  }, []);
 
   const triggerAd = () => {
     if (!user || !canEarnMore || adState !== "idle") return;
 
-    clearWaitingTimeout();
-    setAdState("waiting");
-    setTimeAway(0);
-    adTriggeredRef.current = true;
+    setAdState("viewing");
+    setCountdown(AD_VIEW_SECONDS);
 
-    const popunderScript = document.createElement("script");
-    popunderScript.src = AD_SCRIPT_URL;
-    popunderScript.async = true;
-    document.body.appendChild(popunderScript);
+    // Inject ad script into the overlay container
+    if (adContainerRef.current) {
+      adContainerRef.current.innerHTML = "";
+      const script = document.createElement("script");
+      script.src = SOCIAL_BAR_SCRIPT_URL;
+      script.async = true;
+      adContainerRef.current.appendChild(script);
+    }
 
-    const socialBarScript = document.createElement("script");
-    socialBarScript.src = SOCIAL_BAR_SCRIPT_URL;
-    socialBarScript.async = true;
-    document.body.appendChild(socialBarScript);
-
-    const cleanupScript = (script: HTMLScriptElement) => {
-      window.setTimeout(() => {
-        try {
-          document.body.removeChild(script);
-        } catch {}
-      }, 3000);
-    };
-
-    popunderScript.onload = () => cleanupScript(popunderScript);
-    socialBarScript.onload = () => cleanupScript(socialBarScript);
-
-    popunderScript.onerror = () => {
-      try {
-        document.body.removeChild(popunderScript);
-      } catch {}
-      clearWaitingTimeout();
-      toast.error("تعذر تحميل الإعلان. حاول مرة أخرى.");
-      setAdState("idle");
-    };
-
-    socialBarScript.onerror = () => {
-      try {
-        document.body.removeChild(socialBarScript);
-      } catch {}
-    };
-
-    waitingTimeoutRef.current = window.setTimeout(() => {
-      if (document.visibilityState === "visible") {
-        adTriggeredRef.current = false;
-        setAdState("idle");
-        toast.error("لم يفتح الإعلان. تأكد من السماح بالنوافذ المنبثقة ثم أعد المحاولة.");
-      }
-    }, 5000);
+    // Start countdown
+    countdownRef.current = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) window.clearInterval(countdownRef.current);
+          countdownRef.current = null;
+          handleAdComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleAdComplete = async () => {
     if (!user || !sessionId) return;
     setAdState("completing");
     setLoading(true);
-    adTriggeredRef.current = false;
     const newCount = watchCount + 1;
+
+    // Clean up ad container
+    if (adContainerRef.current) adContainerRef.current.innerHTML = "";
 
     try {
       const { data, error } = await supabase.rpc("record_ad_watch_and_award", {
@@ -200,15 +143,18 @@ export default function AdRewardSection() {
   };
 
   const cancelAd = () => {
-    adTriggeredRef.current = false;
-    leftAtRef.current = null;
+    if (countdownRef.current) {
+      window.clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    if (adContainerRef.current) adContainerRef.current.innerHTML = "";
     setAdState("idle");
-    setTimeAway(0);
+    setCountdown(0);
   };
 
   if (!user) return null;
 
-  const isActive = adState !== "idle" && adState !== "completing";
+  const isActive = adState === "viewing";
 
   return (
     <div className="pixel-frame p-3 space-y-3">
@@ -250,9 +196,7 @@ export default function AdRewardSection() {
             ) : i === watchCount && isActive ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>
-                  {adState === "waiting" ? "افتح الإعلان..." : "شاهد الإعلان"}
-                </span>
+                <span>{countdown}s</span>
               </>
             ) : (
               <>
@@ -276,11 +220,30 @@ export default function AdRewardSection() {
         </div>
       </div>
 
-      {/* Status message during ad */}
+      {/* In-page ad overlay */}
       {isActive && (
-        <div className="text-center text-[10px] font-mono text-muted-foreground bg-muted/20 rounded p-2">
-          {adState === "waiting" && "⏳ جاري تحميل الإعلان... شاهده بالكامل ثم عد هنا"}
-          {adState === "viewing" && "📺 أنت تشاهد الإعلان الآن... عد بعد الانتهاء"}
+        <div className="relative rounded border border-border bg-background overflow-hidden">
+          <div className="flex items-center justify-between px-2 py-1 bg-muted/50 border-b border-border">
+            <span className="text-[10px] font-mono text-muted-foreground">
+              📺 الإعلان — انتظر {countdown} ثانية
+            </span>
+            <button onClick={cancelAd} className="text-muted-foreground hover:text-destructive transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div
+            ref={adContainerRef}
+            className="min-h-[200px] flex items-center justify-center bg-muted/10"
+          >
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+          {/* Progress bar */}
+          <div className="h-1 bg-muted/30">
+            <div
+              className="h-full bg-primary transition-all duration-1000 ease-linear"
+              style={{ width: `${((AD_VIEW_SECONDS - countdown) / AD_VIEW_SECONDS) * 100}%` }}
+            />
+          </div>
         </div>
       )}
 
