@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const AD_DURATION = 15; // seconds per ad
+const MIN_AD_VIEW_SECONDS = 10; // minimum seconds user must spend on ad
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
+
+const AD_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
   const { user } = useAuth();
@@ -17,11 +19,13 @@ export default function AdRewardSection() {
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [watchCount, setWatchCount] = useState(0);
-  const [isWatching, setIsWatching] = useState(false);
-  const [countdown, setCountdown] = useState(AD_DURATION);
+  const [adState, setAdState] = useState<"idle" | "waiting" | "viewing" | "completing">("idle");
   const [ticketAwarded, setTicketAwarded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [timeAway, setTimeAway] = useState(0);
+
+  const leftAtRef = useRef<number | null>(null);
+  const adTriggeredRef = useRef(false);
 
   // Fetch today's earned tickets from ads
   const { data: dailyEarned = 0 } = useQuery({
@@ -49,52 +53,80 @@ export default function AdRewardSection() {
     setTicketAwarded(false);
   }, []);
 
-  // Start a new session on mount or after ticket awarded
   useEffect(() => {
     if (!sessionId) startNewSession();
   }, [sessionId, startNewSession]);
 
-  const loadAdScript = useCallback(() => {
-    // Load the AdSterra script to trigger an ad
+  // Track when user leaves/returns from ad tab
+  useEffect(() => {
+    if (adState !== "waiting" && adState !== "viewing") return;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        // User left (went to ad tab)
+        leftAtRef.current = Date.now();
+        setAdState("viewing");
+      } else {
+        // User returned
+        if (leftAtRef.current && adState === "viewing") {
+          const secondsAway = Math.floor((Date.now() - leftAtRef.current) / 1000);
+          setTimeAway(secondsAway);
+          leftAtRef.current = null;
+
+          if (secondsAway >= MIN_AD_VIEW_SECONDS) {
+            // User spent enough time on ad
+            handleAdComplete();
+          } else {
+            toast.error(`يجب مشاهدة الإعلان لمدة ${MIN_AD_VIEW_SECONDS} ثوانٍ على الأقل. شاهدت ${secondsAway} ثانية فقط.`);
+            setAdState("idle");
+          }
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [adState]);
+
+  const triggerAd = () => {
+    if (!user || !canEarnMore || adState !== "idle") return;
+    setAdState("waiting");
+    setTimeAway(0);
+    adTriggeredRef.current = true;
+
+    // Load the AdSterra script to trigger the real ad
     const script = document.createElement("script");
-    script.src = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
+    script.src = AD_SCRIPT_URL;
     script.async = true;
     document.body.appendChild(script);
-    // Clean up after ad loads
+
     script.onload = () => {
+      // Script loaded and should trigger an ad (popunder/interstitial)
       setTimeout(() => {
         try { document.body.removeChild(script); } catch {}
-      }, 2000);
+      }, 3000);
     };
+
     script.onerror = () => {
       try { document.body.removeChild(script); } catch {}
+      toast.error("تعذر تحميل الإعلان. حاول مرة أخرى.");
+      setAdState("idle");
     };
-  }, []);
 
-  const startWatchingAd = () => {
-    if (!user || !canEarnMore || isWatching) return;
-    setIsWatching(true);
-    setCountdown(AD_DURATION);
-
-    // Trigger real ad
-    loadAdScript();
-
-    timerRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          timerRef.current = null;
-          handleAdComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // Timeout: if user doesn't leave within 30s, ad probably didn't show
+    setTimeout(() => {
+      if (adTriggeredRef.current && adState === "waiting") {
+        // Ad might have shown as overlay instead of new tab
+        // Allow manual confirmation
+      }
+    }, 30000);
   };
 
   const handleAdComplete = async () => {
     if (!user || !sessionId) return;
+    setAdState("completing");
     setLoading(true);
+    adTriggeredRef.current = false;
     const newCount = watchCount + 1;
 
     try {
@@ -109,7 +141,7 @@ export default function AdRewardSection() {
       const result = data as any;
       if (result?.error === "daily_limit_reached") {
         toast.info("وصلت للحد اليومي! عد غداً 🎟️");
-        setIsWatching(false);
+        setAdState("idle");
         setLoading(false);
         return;
       }
@@ -122,38 +154,32 @@ export default function AdRewardSection() {
         queryClient.invalidateQueries({ queryKey: ["user-tickets-game"] });
         queryClient.invalidateQueries({ queryKey: ["user-tickets"] });
         queryClient.invalidateQueries({ queryKey: ["ad-daily-earned"] });
-        // Reset for next round after delay
         setTimeout(() => {
           startNewSession();
+          setAdState("idle");
         }, 2000);
+      } else {
+        setAdState("idle");
       }
     } catch (err: any) {
       console.error("Ad watch error:", err);
       toast.error("حدث خطأ، حاول مرة أخرى");
+      setAdState("idle");
     }
 
-    setIsWatching(false);
     setLoading(false);
   };
 
   const cancelAd = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setIsWatching(false);
-    setCountdown(AD_DURATION);
+    adTriggeredRef.current = false;
+    leftAtRef.current = null;
+    setAdState("idle");
+    setTimeAway(0);
   };
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
 
   if (!user) return null;
 
-  const progress = ((AD_DURATION - countdown) / AD_DURATION) * 100;
+  const isActive = adState !== "idle" && adState !== "completing";
 
   return (
     <div className="pixel-frame p-3 space-y-3">
@@ -182,7 +208,7 @@ export default function AdRewardSection() {
               "flex-1 h-10 rounded flex items-center justify-center gap-1.5 border transition-all font-mono text-[10px]",
               i < watchCount
                 ? "bg-green-500/20 border-green-500/40 text-green-400"
-                : i === watchCount && isWatching
+                : i === watchCount && isActive
                 ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
                 : "bg-muted/30 border-border/50 text-muted-foreground"
             )}
@@ -192,10 +218,12 @@ export default function AdRewardSection() {
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>تم</span>
               </>
-            ) : i === watchCount && isWatching ? (
+            ) : i === watchCount && isActive ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>{countdown}s</span>
+                <span>
+                  {adState === "waiting" ? "افتح الإعلان..." : "شاهد الإعلان"}
+                </span>
               </>
             ) : (
               <>
@@ -219,19 +247,17 @@ export default function AdRewardSection() {
         </div>
       </div>
 
-      {/* Progress bar during ad */}
-      {isWatching && (
-        <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear"
-            style={{ width: `${progress}%` }}
-          />
+      {/* Status message during ad */}
+      {isActive && (
+        <div className="text-center text-[10px] font-mono text-muted-foreground bg-muted/20 rounded p-2">
+          {adState === "waiting" && "⏳ جاري تحميل الإعلان... شاهده بالكامل ثم عد هنا"}
+          {adState === "viewing" && "📺 أنت تشاهد الإعلان الآن... عد بعد الانتهاء"}
         </div>
       )}
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        {isWatching ? (
+        {isActive ? (
           <Button
             variant="outline"
             size="sm"
@@ -248,7 +274,7 @@ export default function AdRewardSection() {
         ) : (
           <Button
             size="sm"
-            onClick={startWatchingAd}
+            onClick={triggerAd}
             disabled={!canEarnMore || loading}
             className="flex-1 font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90"
           >
