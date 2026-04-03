@@ -39,12 +39,31 @@ const AdminPriceMatch = () => {
         .from('price_match_requests')
         .select(`
           *,
-          products:product_id (name_ar, price, image_url),
-          profiles:user_id (full_name, phone)
+          products:product_id (name_ar, price, image_url)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as unknown as PriceMatchRequest[];
+
+      // Fetch profiles separately since there's no FK
+      const userIds = [...new Set((data || []).map((r: any) => r.user_id))];
+      let profilesMap = new Map<string, { full_name: string | null; phone_number: string | null }>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, phone_number')
+          .in('id', userIds);
+        if (profiles) {
+          profiles.forEach((p: any) => profilesMap.set(p.id, p));
+        }
+      }
+
+      return (data || []).map((r: any) => {
+        const prof = profilesMap.get(r.user_id);
+        return {
+          ...r,
+          profiles: prof ? { full_name: prof.full_name, phone: prof.phone_number } : null,
+        };
+      }) as PriceMatchRequest[];
     },
   });
 
