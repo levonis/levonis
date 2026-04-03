@@ -48,6 +48,7 @@ const AdminQRPrinterTab = () => {
   const [warrantyPrinter, setWarrantyPrinter] = useState<any>(null);
   const [warrantyStartDate, setWarrantyStartDate] = useState<Date | undefined>();
   const [warrantyEndDate, setWarrantyEndDate] = useState<Date | undefined>();
+  const [warrantyPeriod, setWarrantyPeriod] = useState<string>('6'); // months or 'custom'
 
   const [newPrinter, setNewPrinter] = useState({
     serial_number: '',
