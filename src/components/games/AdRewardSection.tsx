@@ -10,9 +10,8 @@ import { cn } from "@/lib/utils";
 const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
-const AD_LOAD_TIMEOUT_MS = 6000;
 
-const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
+const AD_SMARTLINK_URL = "https://www.profitablecpmratenetwork.com/ywvuwywmv?key=02c371897e5f719a5867bb155a764826";
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
