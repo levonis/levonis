@@ -10,9 +10,8 @@ import { cn } from "@/lib/utils";
 const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
-const AD_LOAD_TIMEOUT_MS = 6000;
 
-const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
+const AD_SMARTLINK_URL = "https://www.profitablecpmratenetwork.com/ywvuwywmv?key=02c371897e5f719a5867bb155a764826";
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
@@ -26,9 +25,7 @@ export default function AdRewardSection() {
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
-  const loadTimeoutRef = useRef<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const messageHandlerRef = useRef<((e: MessageEvent) => void) | null>(null);
   const countdownStartedRef = useRef(false);
 
   const { data: dailyEarned = 0 } = useQuery({
@@ -72,16 +69,6 @@ export default function AdRewardSection() {
     if (countdownRef.current) {
       window.clearInterval(countdownRef.current);
       countdownRef.current = null;
-    }
-
-    if (loadTimeoutRef.current) {
-      window.clearTimeout(loadTimeoutRef.current);
-      loadTimeoutRef.current = null;
-    }
-
-    if (messageHandlerRef.current) {
-      window.removeEventListener("message", messageHandlerRef.current);
-      messageHandlerRef.current = null;
     }
 
     countdownStartedRef.current = false;
@@ -178,93 +165,20 @@ export default function AdRewardSection() {
     setCountdown(0);
     setAdState("loading");
 
-    messageHandlerRef.current = (event: MessageEvent) => {
-      if (event.data?.type === "AD_LOADED") {
-        if (loadTimeoutRef.current) {
-          window.clearTimeout(loadTimeoutRef.current);
-          loadTimeoutRef.current = null;
-        }
-        if (messageHandlerRef.current) {
-          window.removeEventListener("message", messageHandlerRef.current);
-          messageHandlerRef.current = null;
-        }
+    // Load the Smartlink URL directly in the iframe
+    const iframe = iframeRef.current;
+    if (iframe) {
+      iframe.src = AD_SMARTLINK_URL;
+      iframe.onload = () => {
         startCountdown();
-        return;
-      }
-
-      if (event.data?.type === "AD_BLOCKED") {
-        cleanup();
-        setAdState("idle");
-        setCountdown(0);
-        toast.error("Ad was blocked and did not load.");
-      }
-    };
-
-    window.addEventListener("message", messageHandlerRef.current);
-
-    loadTimeoutRef.current = window.setTimeout(() => {
-      if (!countdownStartedRef.current) {
-        cleanup();
-        setAdState("idle");
-        setCountdown(0);
-        toast.error("Ad did not load.");
-      }
-    }, AD_LOAD_TIMEOUT_MS);
-
-    window.setTimeout(() => {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) return;
-
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              background: #0a0a0a;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
-              overflow: hidden;
-              font-family: monospace;
-              color: #888;
-              direction: rtl;
-            }
-            .msg {
-              text-align: center;
-              font-size: 12px;
-              line-height: 1.8;
-            }
-            .blocked { color: #f87171; }
-          </style>
-        </head>
-        <body>
-          <div class="msg" id="ad-msg">جارِ تحميل الإعلان...</div>
-          <script>
-            var s = document.createElement('script');
-            s.src = "${SOCIAL_BAR_SCRIPT_URL}";
-            s.async = true;
-            s.onload = function() {
-              window.parent.postMessage({ type: 'AD_LOADED' }, '*');
-            };
-            s.onerror = function() {
-              document.getElementById('ad-msg').innerHTML = '⚠️ تم حظر الإعلان';
-              document.getElementById('ad-msg').className = 'msg blocked';
-              window.parent.postMessage({ type: 'AD_BLOCKED' }, '*');
-            };
-            document.body.appendChild(s);
-          <\/script>
-        </body>
-        </html>
-      `);
-      iframeDoc.close();
-    }, 100);
+      };
+      // Fallback: start countdown after 3s even if onload doesn't fire (cross-origin)
+      window.setTimeout(() => {
+        if (!countdownStartedRef.current) {
+          startCountdown();
+        }
+      }, 3000);
+    }
   }, [adState, canEarnMore, cleanup, startCountdown, user]);
 
   const cancelAd = () => {
