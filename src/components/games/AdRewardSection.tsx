@@ -11,8 +11,11 @@ const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
 
+// Ad sources - tries all, whichever loads will appear
 const AD_BANNER_KEY = "a1726696a5eb0fca2ce34179481ff13f";
-const AD_INVOKE_URL = `https://www.highperformanceformat.com/${AD_BANNER_KEY}/invoke.js`;
+const AD_BANNER_INVOKE_URL = `https://www.highperformanceformat.com/${AD_BANNER_KEY}/invoke.js`;
+const AD_SMARTLINK_URL = "https://www.profitablecpmratenetwork.com/ywvuwywmv?key=02c371897e5f719a5867bb155a764826";
+const AD_SOCIAL_BAR_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
