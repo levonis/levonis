@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Gift, Package, ChevronLeft, Ticket, Sparkles } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
+import {
+  OFFER_PURCHASE_STATUSES,
+  PRIZE_STATUSES,
+  PURCHASED_PRODUCT_STATUSES,
+} from "@/lib/storageStatusConstants";
 
 export default function OffersStorageSection() {
   const navigate = useNavigate();
@@ -41,18 +46,18 @@ export default function OffersStorageSection() {
           .from('product_offer_purchases')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .in('purchase_status', ['pending', 'purchased', 'shipping_requested', 'shipped']),
+          .in('purchase_status', [...OFFER_PURCHASE_STATUSES]),
         supabase
           .from('competition_prizes')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .eq('prize_type', 'physical')
-          .in('status', ['pending', 'shipping_requested', 'shipped']),
+          .in('status', [...PRIZE_STATUSES]),
         supabase
           .from('user_purchased_products')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .in('order_status', ['not_ordered', 'shipping_requested', 'shipped'])
+          .in('order_status', [...PURCHASED_PRODUCT_STATUSES])
       ]);
       
       return (offerRes.count || 0) + (prizeRes.count || 0) + (purchasedRes.count || 0);

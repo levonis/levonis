@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gift, Package, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
+import {
+  OFFER_PURCHASE_STATUSES,
+  PRIZE_STATUSES,
+  PURCHASED_PRODUCT_STATUSES,
+} from "@/lib/storageStatusConstants";
 
 // Lazy load panels
 const AllOffersPanel = lazy(() => import("@/components/rewards/panels/AllOffersPanel"));
@@ -28,18 +33,18 @@ export default function OffersStoragePage() {
           .from('product_offer_purchases')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .in('purchase_status', ['pending', 'purchased', 'shipping_requested', 'shipped']),
+          .in('purchase_status', [...OFFER_PURCHASE_STATUSES]),
         supabase
           .from('competition_prizes')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .eq('prize_type', 'physical')
-          .in('status', ['pending', 'shipping_requested', 'shipped']),
+          .in('status', [...PRIZE_STATUSES]),
         supabase
           .from('user_purchased_products')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .in('order_status', ['not_ordered', 'shipping_requested', 'shipped'])
+          .in('order_status', [...PURCHASED_PRODUCT_STATUSES])
       ]);
       return (offerRes.count || 0) + (prizeRes.count || 0) + (purchasedRes.count || 0);
     },

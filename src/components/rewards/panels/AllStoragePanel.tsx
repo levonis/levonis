@@ -38,6 +38,12 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
+import {
+  OFFER_PURCHASE_STATUSES,
+  PRIZE_STATUSES,
+  PURCHASED_PRODUCT_STATUSES,
+  normalizeStorageStatus,
+} from "@/lib/storageStatusConstants";
 
 // Professional status configuration with semantic colors
 const statusConfig: Record<string, { 
@@ -105,7 +111,7 @@ interface StorageItem {
 }
 
 export default function AllStoragePanel() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { addOfferPurchaseToCart } = useCart();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<StorageItem | null>(null);
@@ -123,7 +129,7 @@ export default function AllStoragePanel() {
         .from('product_offer_purchases')
         .select('*, product_offers(id, title_ar, image_url, images, description_ar, price, currency)')
         .eq('user_id', user.id)
-        .in('purchase_status', ['pending', 'purchased', 'shipping_requested', 'shipped', 'delivered'])
+        .in('purchase_status', [...OFFER_PURCHASE_STATUSES])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -142,7 +148,7 @@ export default function AllStoragePanel() {
         .select('*')
         .eq('user_id', user.id)
         .eq('prize_type', 'physical')
-        .in('status', ['pending', 'shipping_requested', 'shipped', 'delivered'])
+        .in('status', [...PRIZE_STATUSES])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -160,7 +166,7 @@ export default function AllStoragePanel() {
         .from('user_purchased_products')
         .select('*')
         .eq('user_id', user.id)
-        .in('order_status', ['not_ordered', 'shipping_requested', 'shipped', 'delivered'])
+        .in('order_status', [...PURCHASED_PRODUCT_STATUSES])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
@@ -303,7 +309,7 @@ export default function AllStoragePanel() {
         title: purchase.product_offers?.title_ar || 'منتج',
         image_url: purchase.product_offers?.image_url,
         quantity: purchase.quantity,
-        status: purchase.purchase_status === 'purchased' ? 'pending' : purchase.purchase_status,
+        status: normalizeStorageStatus(purchase.purchase_status),
         source: 'offer',
         created_at: purchase.created_at,
         shipping_requested_at: purchase.shipping_requested_at,
@@ -321,7 +327,7 @@ export default function AllStoragePanel() {
         title: prize.prize_name_ar,
         image_url: prize.prize_image_url,
         quantity: 1,
-        status: prize.status,
+        status: normalizeStorageStatus(prize.status),
         source: 'competition',
         source_type: prize.source_type,
         created_at: prize.created_at,
@@ -337,7 +343,7 @@ export default function AllStoragePanel() {
         title: pp.product_name_ar || pp.product_name || 'منتج',
         image_url: pp.product_image,
         quantity: 1,
-        status: pp.order_status === 'not_ordered' ? 'pending' : pp.order_status,
+        status: normalizeStorageStatus(pp.order_status),
         source: 'purchased',
         source_type: pp.source_type,
         created_at: pp.created_at,
@@ -406,13 +412,23 @@ export default function AllStoragePanel() {
   const isLoading = isLoadingOffers || isLoadingPrizes || isLoadingPurchased;
   const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending || requestPurchasedShippingMutation.isPending;
 
-  if (!user) {
+  if (!user || authLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-24 h-24 rounded-3xl bg-muted/50 flex items-center justify-center mb-5">
-          <Package className="h-12 w-12 text-muted-foreground/40" />
-        </div>
-        <p className="text-muted-foreground font-semibold text-lg">سجّل الدخول لعرض مخزنك</p>
+        {authLoading ? (
+          <div className="space-y-4 w-full">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="w-24 h-24 rounded-3xl bg-muted/50 flex items-center justify-center mb-5">
+              <Package className="h-12 w-12 text-muted-foreground/40" />
+            </div>
+            <p className="text-muted-foreground font-semibold text-lg">سجّل الدخول لعرض مخزنك</p>
+          </>
+        )}
       </div>
     );
   }
