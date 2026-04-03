@@ -8,8 +8,9 @@ const MysteryCaseTab = lazy(() => import("@/components/admin/MysteryCaseTab"));
 const SpaceBlasterTab = lazy(() => import("@/components/admin/SpaceBlasterTab"));
 const StackGameTab = lazy(() => import("@/components/admin/StackGameTab"));
 const GameStoreTab = lazy(() => import("@/components/admin/GameStoreTab"));
+const KnifeRainTab = lazy(() => import("@/components/admin/KnifeRainTab"));
 
-type TabId = "mystery-case" | "space-blaster" | "stack-tower" | "music" | "store";
+type TabId = "mystery-case" | "space-blaster" | "stack-tower" | "knife-rain" | "music" | "store";
 
 const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "mystery-case", label: "صندوق الغموض", icon: Gift },
