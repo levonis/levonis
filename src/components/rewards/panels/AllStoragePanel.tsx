@@ -327,7 +327,7 @@ export default function AllStoragePanel() {
         title: prize.prize_name_ar,
         image_url: prize.prize_image_url,
         quantity: 1,
-        status: prize.status,
+        status: normalizeStorageStatus(prize.status),
         source: 'competition',
         source_type: prize.source_type,
         created_at: prize.created_at,
