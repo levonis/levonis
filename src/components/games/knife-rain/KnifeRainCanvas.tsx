@@ -66,9 +66,9 @@ function buildStages(): StageConfig[] {
 const ALL_STAGES = buildStages();
 const KNIFE_COLLISION_ANGLE = 0.22; // ~12.6 degrees threshold
 const TARGET_RADIUS = 60;
-const KNIFE_LENGTH = 50;
-const KNIFE_WIDTH = 12;
-const KNIFE_SPEED = 900; // px per second
+const KNIFE_LENGTH = 90;
+const KNIFE_WIDTH = 28;
+const KNIFE_SPEED = 2200; // px per second
 
 interface StuckKnife {
   angle: number;
