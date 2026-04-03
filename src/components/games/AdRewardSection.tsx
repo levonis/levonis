@@ -101,8 +101,6 @@ export default function AdRewardSection() {
     setLoading(true);
     const newCount = watchCount + 1;
 
-    // Clean up ad container
-    if (adContainerRef.current) adContainerRef.current.innerHTML = "";
 
     try {
       const { data, error } = await supabase.rpc("record_ad_watch_and_award", {
