@@ -385,6 +385,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         if (knifeImgEl) {
           ctx.save();
           ctx.translate(0, -targetR - knifeLen * 0.35);
+          ctx.rotate(Math.PI); // flip so blade points toward center
           ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
           ctx.restore();
         } else {
