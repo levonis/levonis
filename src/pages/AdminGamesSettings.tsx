@@ -56,6 +56,7 @@ export default function AdminGamesSettings() {
         {activeTab === "mystery-case" && <MysteryCaseTab />}
         {activeTab === "space-blaster" && <SpaceBlasterTab />}
         {activeTab === "stack-tower" && <StackGameTab />}
+        {activeTab === "knife-rain" && <KnifeRainTab />}
         {activeTab === "store" && <GameStoreTab />}
         {activeTab === "music" && <GameMusicTab />}
       </Suspense>
