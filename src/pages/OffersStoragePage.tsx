@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gift, Package, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
+import {
+  OFFER_PURCHASE_STATUSES,
+  PRIZE_STATUSES,
+  PURCHASED_PRODUCT_STATUSES,
+} from "@/lib/storageStatusConstants";
 
 // Lazy load panels
 const AllOffersPanel = lazy(() => import("@/components/rewards/panels/AllOffersPanel"));
