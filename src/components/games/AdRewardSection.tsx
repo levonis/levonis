@@ -54,10 +54,30 @@ export default function AdRewardSection() {
     if (!sessionId) startNewSession();
   }, [sessionId, startNewSession]);
 
+  const loadAdScript = useCallback(() => {
+    // Load the AdSterra script to trigger an ad
+    const script = document.createElement("script");
+    script.src = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
+    script.async = true;
+    document.body.appendChild(script);
+    // Clean up after ad loads
+    script.onload = () => {
+      setTimeout(() => {
+        try { document.body.removeChild(script); } catch {}
+      }, 2000);
+    };
+    script.onerror = () => {
+      try { document.body.removeChild(script); } catch {}
+    };
+  }, []);
+
   const startWatchingAd = () => {
     if (!user || !canEarnMore || isWatching) return;
     setIsWatching(true);
     setCountdown(AD_DURATION);
+
+    // Trigger real ad
+    loadAdScript();
 
     timerRef.current = setInterval(() => {
       setCountdown(prev => {
