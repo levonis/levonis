@@ -232,12 +232,6 @@ export default function AdRewardSection() {
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div
-            ref={adContainerRef}
-            className="min-h-[200px] flex items-center justify-center bg-muted/10"
-          >
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
           {/* Progress bar */}
           <div className="h-1 bg-muted/30">
             <div
