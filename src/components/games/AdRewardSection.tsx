@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
+const AD_LOAD_TIMEOUT_MS = 6000;
 
 const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
@@ -25,7 +26,10 @@ export default function AdRewardSection() {
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
+  const loadTimeoutRef = useRef<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const messageHandlerRef = useRef<((e: MessageEvent) => void) | null>(null);
+  const countdownStartedRef = useRef(false);
 
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["ad-daily-earned", user?.id],
@@ -52,22 +56,50 @@ export default function AdRewardSection() {
     setTicketAwarded(false);
   }, []);
 
+  const clearIframe = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    iframeDoc.open();
+    iframeDoc.write("");
+    iframeDoc.close();
+  }, []);
+
+  const cleanup = useCallback((options?: { clearIframe?: boolean }) => {
+    if (countdownRef.current) {
+      window.clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+
+    if (loadTimeoutRef.current) {
+      window.clearTimeout(loadTimeoutRef.current);
+      loadTimeoutRef.current = null;
+    }
+
+    if (messageHandlerRef.current) {
+      window.removeEventListener("message", messageHandlerRef.current);
+      messageHandlerRef.current = null;
+    }
+
+    countdownStartedRef.current = false;
+
+    if (options?.clearIframe) {
+      clearIframe();
+    }
+  }, [clearIframe]);
+
   useEffect(() => {
     if (!sessionId) startNewSession();
   }, [sessionId, startNewSession]);
 
   useEffect(() => {
     return () => {
-      if (countdownRef.current) window.clearInterval(countdownRef.current);
+      cleanup({ clearIframe: true });
     };
-  }, []);
-
-  const cleanup = useCallback(() => {
-    if (countdownRef.current) {
-      window.clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-  }, []);
+  }, [cleanup]);
 
   const handleAdComplete = useCallback(async () => {
     if (!user || !sessionId) return;
@@ -118,6 +150,9 @@ export default function AdRewardSection() {
   }, [cleanup, queryClient, sessionId, startNewSession, user, watchCount]);
 
   const startCountdown = useCallback(() => {
+    if (countdownStartedRef.current) return;
+
+    countdownStartedRef.current = true;
     setAdState("viewing");
     setCountdown(AD_VIEW_SECONDS);
 
@@ -139,11 +174,44 @@ export default function AdRewardSection() {
   const triggerAd = useCallback(() => {
     if (!user || !canEarnMore || adState !== "idle") return;
 
-    cleanup();
+    cleanup({ clearIframe: true });
+    setCountdown(0);
     setAdState("loading");
 
-    // Write ad script into iframe so it renders inside our container
-    setTimeout(() => {
+    messageHandlerRef.current = (event: MessageEvent) => {
+      if (event.data?.type === "AD_LOADED") {
+        if (loadTimeoutRef.current) {
+          window.clearTimeout(loadTimeoutRef.current);
+          loadTimeoutRef.current = null;
+        }
+        if (messageHandlerRef.current) {
+          window.removeEventListener("message", messageHandlerRef.current);
+          messageHandlerRef.current = null;
+        }
+        startCountdown();
+        return;
+      }
+
+      if (event.data?.type === "AD_BLOCKED") {
+        cleanup();
+        setAdState("idle");
+        setCountdown(0);
+        toast.error("Ad was blocked and did not load.");
+      }
+    };
+
+    window.addEventListener("message", messageHandlerRef.current);
+
+    loadTimeoutRef.current = window.setTimeout(() => {
+      if (!countdownStartedRef.current) {
+        cleanup();
+        setAdState("idle");
+        setCountdown(0);
+        toast.error("Ad did not load.");
+      }
+    }, AD_LOAD_TIMEOUT_MS);
+
+    window.setTimeout(() => {
       const iframe = iframeRef.current;
       if (!iframe) return;
 
@@ -157,11 +225,11 @@ export default function AdRewardSection() {
         <head>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-              background: #0a0a0a; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
+            body {
+              background: #0a0a0a;
+              display: flex;
+              align-items: center;
+              justify-content: center;
               min-height: 100vh;
               overflow: hidden;
               font-family: monospace;
@@ -179,60 +247,28 @@ export default function AdRewardSection() {
         <body>
           <div class="msg" id="ad-msg">جارِ تحميل الإعلان...</div>
           <script>
-            var adLoaded = false;
             var s = document.createElement('script');
             s.src = "${SOCIAL_BAR_SCRIPT_URL}";
             s.async = true;
-            s.onload = function() { adLoaded = true; };
+            s.onload = function() {
+              window.parent.postMessage({ type: 'AD_LOADED' }, '*');
+            };
             s.onerror = function() {
-              document.getElementById('ad-msg').innerHTML = '⚠️ تم حظر الإعلان<br/>عطّل مانع الإعلانات ثم أعد المحاولة';
+              document.getElementById('ad-msg').innerHTML = '⚠️ تم حظر الإعلان';
               document.getElementById('ad-msg').className = 'msg blocked';
               window.parent.postMessage({ type: 'AD_BLOCKED' }, '*');
             };
             document.body.appendChild(s);
-            setTimeout(function() {
-              if (!adLoaded) {
-                document.getElementById('ad-msg').innerHTML = '⚠️ تم حظر الإعلان<br/>عطّل مانع الإعلانات ثم أعد المحاولة';
-                document.getElementById('ad-msg').className = 'msg blocked';
-                window.parent.postMessage({ type: 'AD_BLOCKED' }, '*');
-              }
-            }, 5000);
           <\/script>
         </body>
         </html>
       `);
       iframeDoc.close();
-
-      // Listen for ad blocked message from iframe
-      const handleMessage = (e: MessageEvent) => {
-        if (e.data?.type === "AD_BLOCKED") {
-          cleanup();
-          setAdState("idle");
-          toast.error("مانع الإعلانات يمنع تحميل الإعلان. عطّله ثم أعد المحاولة.");
-          window.removeEventListener("message", handleMessage);
-        }
-      };
-      window.addEventListener("message", handleMessage);
-
-      // Start countdown after delay to let ad load (if not cancelled/blocked)
-      setTimeout(() => {
-        startCountdown();
-      }, 3000);
     }, 100);
-  }, [user, canEarnMore, adState, cleanup, startCountdown]);
+  }, [adState, canEarnMore, cleanup, startCountdown, user]);
 
   const cancelAd = () => {
-    cleanup();
-    // Clear iframe content
-    const iframe = iframeRef.current;
-    if (iframe) {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write("");
-        iframeDoc.close();
-      }
-    }
+    cleanup({ clearIframe: true });
     setAdState("idle");
     setCountdown(0);
   };
