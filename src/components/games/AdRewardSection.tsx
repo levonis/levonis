@@ -10,8 +10,39 @@ import { cn } from "@/lib/utils";
 const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
-
+const AD_DETECTION_TIMEOUT_MS = 8000;
 const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
+
+const isVisibleElement = (element: Element | null) => {
+  if (!(element instanceof HTMLElement)) return false;
+  const style = window.getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+
+  return (
+    style.display !== "none" &&
+    style.visibility !== "hidden" &&
+    style.opacity !== "0" &&
+    rect.width > 24 &&
+    rect.height > 24
+  );
+};
+
+const hasVisibleAdOverlay = () => {
+  const selectors = [
+    'iframe[src*="profitablecpmratenetwork.com"]',
+    'script[src*="profitablecpmratenetwork.com"]',
+    '[id*="profit"] iframe',
+    '[class*="profit"] iframe',
+    '[style*="position: fixed"] iframe',
+    '[style*="z-index"] iframe',
+    '[id*="social"]',
+    '[class*="social"]',
+  ];
+
+  return selectors.some((selector) =>
+    Array.from(document.querySelectorAll(selector)).some((element) => isVisibleElement(element))
+  );
+};
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
@@ -19,12 +50,15 @@ export default function AdRewardSection() {
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [watchCount, setWatchCount] = useState(0);
-  const [adState, setAdState] = useState<"idle" | "viewing" | "completing">("idle");
+  const [adState, setAdState] = useState<"idle" | "loading" | "viewing" | "completing">("idle");
   const [ticketAwarded, setTicketAwarded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
+  const detectionTimeoutRef = useRef<number | null>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
+  const activeScriptRef = useRef<HTMLScriptElement | null>(null);
 
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["ad-daily-earned", user?.id],
@@ -51,56 +85,37 @@ export default function AdRewardSection() {
     setTicketAwarded(false);
   }, []);
 
-  useEffect(() => {
-    if (!sessionId) startNewSession();
-  }, [sessionId, startNewSession]);
+  const clearAdDetection = useCallback(() => {
+    if (countdownRef.current) {
+      window.clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
 
-  // Cleanup countdown on unmount
-  useEffect(() => {
-    return () => {
-      if (countdownRef.current) window.clearInterval(countdownRef.current);
-    };
+    if (detectionTimeoutRef.current) {
+      window.clearTimeout(detectionTimeoutRef.current);
+      detectionTimeoutRef.current = null;
+    }
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
+    if (activeScriptRef.current) {
+      try {
+        document.body.removeChild(activeScriptRef.current);
+      } catch {}
+      activeScriptRef.current = null;
+    }
   }, []);
 
-  const triggerAd = () => {
-    if (!user || !canEarnMore || adState !== "idle") return;
-
-    setAdState("viewing");
-    setCountdown(AD_VIEW_SECONDS);
-
-    // Inject ad script into document body (Social Bar renders as floating overlay on page)
-    const script = document.createElement("script");
-    script.src = SOCIAL_BAR_SCRIPT_URL;
-    script.async = true;
-    script.dataset.adReward = "true";
-    document.body.appendChild(script);
-    script.onload = () => {
-      try { document.body.removeChild(script); } catch {}
-    };
-    script.onerror = () => {
-      try { document.body.removeChild(script); } catch {}
-    };
-
-    // Start countdown
-    countdownRef.current = window.setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (countdownRef.current) window.clearInterval(countdownRef.current);
-          countdownRef.current = null;
-          handleAdComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleAdComplete = async () => {
+  const handleAdComplete = useCallback(async () => {
     if (!user || !sessionId) return;
+
+    clearAdDetection();
     setAdState("completing");
     setLoading(true);
     const newCount = watchCount + 1;
-
 
     try {
       const { data, error } = await supabase.rpc("record_ad_watch_and_award", {
@@ -141,25 +156,111 @@ export default function AdRewardSection() {
     }
 
     setLoading(false);
+  }, [clearAdDetection, queryClient, sessionId, startNewSession, user, watchCount]);
+
+  const startCountdown = useCallback(() => {
+    if (countdownRef.current) return;
+
+    setAdState("viewing");
+    setCountdown(AD_VIEW_SECONDS);
+
+    countdownRef.current = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) {
+            window.clearInterval(countdownRef.current);
+            countdownRef.current = null;
+          }
+          void handleAdComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [handleAdComplete]);
+
+  const triggerAd = () => {
+    if (!user || !canEarnMore || adState !== "idle") return;
+
+    clearAdDetection();
+    setCountdown(0);
+    setAdState("loading");
+
+    const script = document.createElement("script");
+    script.src = SOCIAL_BAR_SCRIPT_URL;
+    script.async = true;
+    script.dataset.adReward = "true";
+    activeScriptRef.current = script;
+
+    const detectAd = () => {
+      if (hasVisibleAdOverlay()) {
+        if (detectionTimeoutRef.current) {
+          window.clearTimeout(detectionTimeoutRef.current);
+          detectionTimeoutRef.current = null;
+        }
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+          observerRef.current = null;
+        }
+        startCountdown();
+      }
+    };
+
+    script.onload = () => {
+      detectAd();
+
+      observerRef.current = new MutationObserver(() => {
+        detectAd();
+      });
+
+      observerRef.current.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+    };
+
+    script.onerror = () => {
+      clearAdDetection();
+      setAdState("idle");
+      toast.error("تعذر تحميل الإعلان. حاول مرة أخرى.");
+    };
+
+    document.body.appendChild(script);
+
+    detectionTimeoutRef.current = window.setTimeout(() => {
+      if (!hasVisibleAdOverlay()) {
+        clearAdDetection();
+        setAdState("idle");
+        toast.error("الإعلان لم يظهر. تأكد من عدم حظره ثم أعد المحاولة.");
+      }
+    }, AD_DETECTION_TIMEOUT_MS);
   };
 
+  useEffect(() => {
+    if (!sessionId) startNewSession();
+  }, [sessionId, startNewSession]);
+
+  useEffect(() => {
+    return () => {
+      clearAdDetection();
+    };
+  }, [clearAdDetection]);
+
   const cancelAd = () => {
-    if (countdownRef.current) {
-      window.clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-    
+    clearAdDetection();
     setAdState("idle");
     setCountdown(0);
   };
 
   if (!user) return null;
 
-  const isActive = adState === "viewing";
+  const isLoadingAd = adState === "loading";
+  const isViewingAd = adState === "viewing";
+  const isActive = isLoadingAd || isViewingAd;
 
   return (
     <div className="pixel-frame p-3 space-y-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded bg-primary/20">
@@ -175,7 +276,6 @@ export default function AdRewardSection() {
         </div>
       </div>
 
-      {/* Ad Watching Progress */}
       <div className="flex items-center gap-2">
         {Array.from({ length: ADS_REQUIRED }).map((_, i) => (
           <div
@@ -185,8 +285,8 @@ export default function AdRewardSection() {
               i < watchCount
                 ? "bg-green-500/20 border-green-500/40 text-green-400"
                 : i === watchCount && isActive
-                ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
-                : "bg-muted/30 border-border/50 text-muted-foreground"
+                  ? "bg-primary/20 border-primary/40 text-primary animate-pulse"
+                  : "bg-muted/30 border-border/50 text-muted-foreground"
             )}
           >
             {i < watchCount ? (
@@ -194,7 +294,12 @@ export default function AdRewardSection() {
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>تم</span>
               </>
-            ) : i === watchCount && isActive ? (
+            ) : i === watchCount && isLoadingAd ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>تحميل الإعلان...</span>
+              </>
+            ) : i === watchCount && isViewingAd ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span>{countdown}s</span>
@@ -208,41 +313,37 @@ export default function AdRewardSection() {
           </div>
         ))}
 
-        <div className={cn(
-          "h-10 w-10 rounded flex items-center justify-center border transition-all",
-          ticketAwarded
-            ? "bg-yellow-500/20 border-yellow-500/40"
-            : "bg-muted/20 border-border/30"
-        )}>
-          <Ticket className={cn(
-            "h-4 w-4",
-            ticketAwarded ? "text-yellow-400" : "text-muted-foreground/40"
-          )} />
+        <div
+          className={cn(
+            "h-10 w-10 rounded flex items-center justify-center border transition-all",
+            ticketAwarded ? "bg-yellow-500/20 border-yellow-500/40" : "bg-muted/20 border-border/30"
+          )}
+        >
+          <Ticket
+            className={cn("h-4 w-4", ticketAwarded ? "text-yellow-400" : "text-muted-foreground/40")}
+          />
         </div>
       </div>
 
-      {/* In-page ad overlay */}
       {isActive && (
         <div className="relative rounded border border-border bg-background overflow-hidden">
           <div className="flex items-center justify-between px-2 py-1 bg-muted/50 border-b border-border">
             <span className="text-[10px] font-mono text-muted-foreground">
-              📺 الإعلان — انتظر {countdown} ثانية
+              {isLoadingAd ? "⏳ جارِ انتظار ظهور الإعلان داخل الصفحة" : `📺 الإعلان ظاهر — انتظر ${countdown} ثانية`}
             </span>
             <button onClick={cancelAd} className="text-muted-foreground hover:text-destructive transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          {/* Progress bar */}
           <div className="h-1 bg-muted/30">
             <div
               className="h-full bg-primary transition-all duration-1000 ease-linear"
-              style={{ width: `${((AD_VIEW_SECONDS - countdown) / AD_VIEW_SECONDS) * 100}%` }}
+              style={{ width: isViewingAd ? `${((AD_VIEW_SECONDS - countdown) / AD_VIEW_SECONDS) * 100}%` : "0%" }}
             />
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
       <div className="flex gap-2">
         {isActive ? (
           <Button
@@ -265,11 +366,7 @@ export default function AdRewardSection() {
             disabled={!canEarnMore || loading}
             className="flex-1 font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90 text-ring"
           >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             {!canEarnMore ? (isAdmin ? "شاهد الإعلان" : "الحد اليومي") : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
           </Button>
         )}
