@@ -8772,6 +8772,7 @@ export type Database = {
           id: string
           level: string | null
           redeemed_points: number
+          total_earned: number | null
           total_points: number
           total_xp: number
           updated_at: string
@@ -8783,6 +8784,7 @@ export type Database = {
           id?: string
           level?: string | null
           redeemed_points?: number
+          total_earned?: number | null
           total_points?: number
           total_xp?: number
           updated_at?: string
@@ -8794,6 +8796,7 @@ export type Database = {
           id?: string
           level?: string | null
           redeemed_points?: number
+          total_earned?: number | null
           total_points?: number
           total_xp?: number
           updated_at?: string

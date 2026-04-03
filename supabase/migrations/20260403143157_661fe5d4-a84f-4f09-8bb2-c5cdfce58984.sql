@@ -1,0 +1,1 @@
+ALTER TABLE public.user_points ADD COLUMN IF NOT EXISTS total_earned BIGINT DEFAULT 0;
