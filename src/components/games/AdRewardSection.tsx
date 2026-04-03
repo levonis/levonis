@@ -11,8 +11,11 @@ const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
 
+// Ad sources - tries all, whichever loads will appear
 const AD_BANNER_KEY = "a1726696a5eb0fca2ce34179481ff13f";
-const AD_INVOKE_URL = `https://www.highperformanceformat.com/${AD_BANNER_KEY}/invoke.js`;
+const AD_BANNER_INVOKE_URL = `https://www.highperformanceformat.com/${AD_BANNER_KEY}/invoke.js`;
+const AD_SMARTLINK_URL = "https://www.profitablecpmratenetwork.com/ywvuwywmv?key=02c371897e5f719a5867bb155a764826";
+const AD_SOCIAL_BAR_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
@@ -166,7 +169,7 @@ export default function AdRewardSection() {
     setCountdown(0);
     setAdState("loading");
 
-    // Load the banner ad inside the iframe
+    // Load all ad formats inside iframe - whichever is available will render
     const iframe = iframeRef.current;
     if (iframe) {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -182,14 +185,17 @@ export default function AdRewardSection() {
             body {
               background: #0a0a0a;
               display: flex;
+              flex-direction: column;
               align-items: center;
               justify-content: center;
               min-height: 100%;
               overflow: hidden;
+              gap: 8px;
             }
           </style>
         </head>
         <body>
+          <!-- Banner Ad -->
           <script>
             atOptions = {
               'key' : '${AD_BANNER_KEY}',
@@ -199,22 +205,55 @@ export default function AdRewardSection() {
               'params' : {}
             };
           <\/script>
-          <script src="${AD_INVOKE_URL}"><\/script>
+          <script src="${AD_BANNER_INVOKE_URL}"><\/script>
+
+          <!-- Smartlink (as clickable link fallback) -->
+          <a href="${AD_SMARTLINK_URL}" target="_blank" rel="noopener" style="display:none" id="smartlink">Ad</a>
+
+          <!-- Social Bar -->
+          <script src="${AD_SOCIAL_BAR_URL}" async><\/script>
+
+          <script>
+            // Notify parent that at least one ad source loaded
+            var notified = false;
+            function notifyLoaded() {
+              if (!notified) {
+                notified = true;
+                window.parent.postMessage({ type: 'AD_LOADED' }, '*');
+              }
+            }
+            // Check periodically if any ad element appeared
+            var checks = 0;
+            var checker = setInterval(function() {
+              checks++;
+              var hasContent = document.querySelector('iframe') || document.querySelector('[id*="adb"]') || document.body.children.length > 4;
+              if (hasContent || checks > 10) {
+                notifyLoaded();
+                clearInterval(checker);
+              }
+            }, 500);
+          <\/script>
         </body>
         </html>
       `);
       iframeDoc.close();
 
-      // Start countdown once iframe content loads
-      iframe.onload = () => {
-        startCountdown();
+      // Listen for AD_LOADED from iframe
+      const onMessage = (e: MessageEvent) => {
+        if (e.data?.type === "AD_LOADED") {
+          window.removeEventListener("message", onMessage);
+          startCountdown();
+        }
       };
-      // Fallback: start countdown after 3s (cross-origin may block onload)
+      window.addEventListener("message", onMessage);
+
+      // Fallback: start countdown after 6s regardless
       window.setTimeout(() => {
+        window.removeEventListener("message", onMessage);
         if (!countdownStartedRef.current) {
           startCountdown();
         }
-      }, 3000);
+      }, 6000);
     }
   }, [adState, canEarnMore, cleanup, startCountdown, user]);
 
