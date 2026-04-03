@@ -57,15 +57,29 @@ export function playHitKnife() {
 }
 
 export function playStageClear() {
-  const c = getCtx();
   [523, 659, 784, 1047].forEach((f, i) => {
     setTimeout(() => playTone(f, 0.2, "sine", 0.12), i * 80);
   });
 }
 
 export function playBossDefeat() {
-  const c = getCtx();
   [440, 554, 659, 880, 1047].forEach((f, i) => {
     setTimeout(() => playTone(f, 0.25, "triangle", 0.15), i * 100);
   });
+}
+
+export function playCoinCollect() {
+  playTone(1200, 0.1, "sine", 0.12);
+  setTimeout(() => playTone(1600, 0.15, "sine", 0.1), 60);
+}
+
+export function playShieldWarn() {
+  playTone(400, 0.15, "square", 0.08);
+  setTimeout(() => playTone(500, 0.15, "square", 0.08), 200);
+}
+
+export function playShieldBlock() {
+  playNoise(0.2, 0.15);
+  playTone(200, 0.3, "sawtooth", 0.12);
+  playTone(120, 0.4, "square", 0.08);
 }
