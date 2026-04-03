@@ -166,7 +166,7 @@ export default function AllStoragePanel() {
         .from('user_purchased_products')
         .select('*')
         .eq('user_id', user.id)
-        .in('order_status', ['not_ordered', 'shipping_requested', 'shipped', 'delivered'])
+        .in('order_status', [...PURCHASED_PRODUCT_STATUSES])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
