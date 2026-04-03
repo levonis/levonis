@@ -306,11 +306,11 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
             ctx.save();
             ctx.translate(fk.x, fk.y);
             ctx.rotate(Math.PI);
-            ctx.drawImage(knifeImgEl, -KNIFE_WIDTH / 2, -KNIFE_LENGTH / 2, KNIFE_WIDTH, KNIFE_LENGTH);
+            ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
             ctx.restore();
           } else {
             ctx.fillStyle = "#ccc";
-            ctx.fillRect(fk.x - 2, fk.y - KNIFE_LENGTH / 2, 4, KNIFE_LENGTH);
+            ctx.fillRect(fk.x - 3, fk.y - knifeLen / 2, 6, knifeLen);
           }
         }
       }
