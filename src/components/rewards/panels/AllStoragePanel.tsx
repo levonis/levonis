@@ -157,7 +157,7 @@ export default function AllStoragePanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Fetch user purchased products (from offer purchases via RPC)
+  // Fetch user purchased products (exclude offer-based ones to avoid duplicates with product_offer_purchases)
   const { data: purchasedProducts, isLoading: isLoadingPurchased } = useQuery({
     queryKey: ['storage-purchased-products', user?.id],
     queryFn: async () => {
@@ -166,6 +166,7 @@ export default function AllStoragePanel() {
         .from('user_purchased_products')
         .select('*')
         .eq('user_id', user.id)
+        .is('offer_id', null)
         .in('order_status', [...PURCHASED_PRODUCT_STATUSES])
         .order('created_at', { ascending: false });
       if (error) throw error;
