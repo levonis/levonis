@@ -2966,6 +2966,288 @@ export type Database = {
         }
         Relationships: []
       }
+      knife_rain_high_scores: {
+        Row: {
+          best_stage: number
+          high_score: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_stage?: number
+          high_score?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_stage?: number
+          high_score?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      knife_rain_leaderboard_prizes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          position: number
+          prize_name_ar: string
+          product_id: string | null
+          selected_color: string | null
+          selected_option_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          position: number
+          prize_name_ar?: string
+          product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          position?: number
+          prize_name_ar?: string
+          product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knife_rain_leaderboard_prizes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knife_rain_leaderboard_prizes_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knife_rain_milestone_claims: {
+        Row: {
+          created_at: string
+          id: string
+          milestone_id: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          milestone_id: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          milestone_id?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knife_rain_milestone_claims_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "knife_rain_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knife_rain_milestone_claims_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "knife_rain_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knife_rain_milestones: {
+        Row: {
+          claimed_count: number
+          created_at: string
+          id: string
+          is_active: boolean
+          prize_name_ar: string
+          product_id: string | null
+          selected_color: string | null
+          selected_option_id: string | null
+          stock: number
+          target_score: number
+        }
+        Insert: {
+          claimed_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          prize_name_ar?: string
+          product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
+          stock?: number
+          target_score: number
+        }
+        Update: {
+          claimed_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          prize_name_ar?: string
+          product_id?: string | null
+          selected_color?: string | null
+          selected_option_id?: string | null
+          stock?: number
+          target_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knife_rain_milestones_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knife_rain_milestones_selected_option_id_fkey"
+            columns: ["selected_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knife_rain_sessions: {
+        Row: {
+          ended_at: string | null
+          id: string
+          knives_thrown: number | null
+          points_awarded: number | null
+          score: number | null
+          session_token: string
+          stage_reached: number | null
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          knives_thrown?: number | null
+          points_awarded?: number | null
+          score?: number | null
+          session_token: string
+          stage_reached?: number | null
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          knives_thrown?: number | null
+          points_awarded?: number | null
+          score?: number | null
+          session_token?: string
+          stage_reached?: number | null
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      knife_rain_settings: {
+        Row: {
+          boss_bonus: number
+          created_at: string
+          entry_fee_tickets: number
+          game_combo_multiplier: number
+          game_enabled: boolean
+          game_points_per_knife: number
+          id: string
+          max_daily_plays: number | null
+          points_per_knife: number
+          stage_clear_bonus: number
+          total_plays: number
+          total_points_distributed: number
+          updated_at: string
+        }
+        Insert: {
+          boss_bonus?: number
+          created_at?: string
+          entry_fee_tickets?: number
+          game_combo_multiplier?: number
+          game_enabled?: boolean
+          game_points_per_knife?: number
+          id?: string
+          max_daily_plays?: number | null
+          points_per_knife?: number
+          stage_clear_bonus?: number
+          total_plays?: number
+          total_points_distributed?: number
+          updated_at?: string
+        }
+        Update: {
+          boss_bonus?: number
+          created_at?: string
+          entry_fee_tickets?: number
+          game_combo_multiplier?: number
+          game_enabled?: boolean
+          game_points_per_knife?: number
+          id?: string
+          max_daily_plays?: number | null
+          points_per_knife?: number
+          stage_clear_bonus?: number
+          total_plays?: number
+          total_points_distributed?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      knife_rain_winners: {
+        Row: {
+          awarded_at: string
+          id: string
+          position: number | null
+          prize_name_ar: string
+          prize_type: string
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          id?: string
+          position?: number | null
+          prize_name_ar?: string
+          prize_type?: string
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          id?: string
+          position?: number | null
+          prize_name_ar?: string
+          prize_type?: string
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       letter_prize_coupons: {
         Row: {
           competition_id: string | null
@@ -9304,6 +9586,7 @@ export type Database = {
         Args: { p_transaction_id: string }
         Returns: boolean
       }
+      admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
@@ -9316,6 +9599,10 @@ export type Database = {
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
       cancel_order: {
         Args: { p_cancelled_by?: string; p_order_id: string }
+        Returns: Json
+      }
+      check_knife_rain_milestone: {
+        Args: { p_score: number; p_session_id?: string; p_user_id: string }
         Returns: Json
       }
       check_merchant_debt_suspension: {
@@ -9350,6 +9637,10 @@ export type Database = {
       claim_assistance_gift: {
         Args: { p_gift_id: string; p_user_id: string }
         Returns: boolean
+      }
+      claim_knife_rain_prize_to_cart: {
+        Args: { p_milestone_id: string }
+        Returns: Json
       }
       claim_stack_prize_to_cart: {
         Args: { p_milestone_id: string }
@@ -9421,6 +9712,15 @@ export type Database = {
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
+      end_knife_rain: {
+        Args: {
+          p_knives?: number
+          p_score: number
+          p_session_token: string
+          p_stage?: number
+        }
+        Returns: Json
+      }
       end_stack_game: {
         Args: {
           p_max_combo: number
@@ -9637,12 +9937,17 @@ export type Database = {
         Returns: undefined
       }
       set_wallet_pin: { Args: { pin_code: string }; Returns: undefined }
+      start_knife_rain: { Args: never; Returns: Json }
       start_stack_game: { Args: never; Returns: Json }
       toggle_reel_interaction: {
         Args: { p_reel_id: string; p_type: string; p_user_id: string }
         Returns: boolean
       }
       trigger_badge_calculation: { Args: never; Returns: undefined }
+      update_knife_rain_high_score: {
+        Args: { p_score: number; p_stage?: number }
+        Returns: undefined
+      }
       update_stack_high_score: { Args: { p_score: number }; Returns: undefined }
       update_user_last_active: { Args: never; Returns: undefined }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }

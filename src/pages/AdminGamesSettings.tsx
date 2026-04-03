@@ -1,20 +1,22 @@
 import { useState, lazy, Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import { Gamepad2, Music, Gift, Swords, ShoppingBag } from "lucide-react";
+import { Gamepad2, Music, Gift, Swords, ShoppingBag, Crosshair } from "lucide-react";
 
 const GameMusicTab = lazy(() => import("@/components/admin/GameMusicTab"));
 const MysteryCaseTab = lazy(() => import("@/components/admin/MysteryCaseTab"));
 const SpaceBlasterTab = lazy(() => import("@/components/admin/SpaceBlasterTab"));
 const StackGameTab = lazy(() => import("@/components/admin/StackGameTab"));
 const GameStoreTab = lazy(() => import("@/components/admin/GameStoreTab"));
+const KnifeRainTab = lazy(() => import("@/components/admin/KnifeRainTab"));
 
-type TabId = "mystery-case" | "space-blaster" | "stack-tower" | "music" | "store";
+type TabId = "mystery-case" | "space-blaster" | "stack-tower" | "knife-rain" | "music" | "store";
 
 const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "mystery-case", label: "صندوق الغموض", icon: Gift },
   { id: "space-blaster", label: "حرب الفضاء", icon: Swords },
   { id: "stack-tower", label: "البرج", icon: Gamepad2 },
+  { id: "knife-rain", label: "أمطار السكاكين", icon: Crosshair },
   { id: "store", label: "متجر الألعاب", icon: ShoppingBag },
   { id: "music", label: "الموسيقى", icon: Music },
 ];
@@ -54,6 +56,7 @@ export default function AdminGamesSettings() {
         {activeTab === "mystery-case" && <MysteryCaseTab />}
         {activeTab === "space-blaster" && <SpaceBlasterTab />}
         {activeTab === "stack-tower" && <StackGameTab />}
+        {activeTab === "knife-rain" && <KnifeRainTab />}
         {activeTab === "store" && <GameStoreTab />}
         {activeTab === "music" && <GameMusicTab />}
       </Suspense>
