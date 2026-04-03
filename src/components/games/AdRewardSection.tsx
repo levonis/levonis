@@ -2,27 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ticket, Play, CheckCircle2, Tv, Loader2, Gift } from "lucide-react";
+import { Ticket, Play, CheckCircle2, Tv, Loader2, X, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+const AD_DURATION = 15; // seconds per ad
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
-
-// Ezoic Rewarded Ads global types
-declare global {
-  interface Window {
-    ezRewardedAds?: {
-      cmd: Array<() => void>;
-      requestAd: () => void;
-      onAdRequested?: (ad: { showAd: () => void } | null) => void;
-      onAdRewarded?: () => void;
-      onAdClosed?: () => void;
-      onAdError?: (error: any) => void;
-    };
-  }
-}
 
 export default function AdRewardSection() {
   const { user } = useAuth();
@@ -31,16 +18,10 @@ export default function AdRewardSection() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [watchCount, setWatchCount] = useState(0);
   const [isWatching, setIsWatching] = useState(false);
+  const [countdown, setCountdown] = useState(AD_DURATION);
   const [ticketAwarded, setTicketAwarded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [adReady, setAdReady] = useState(false);
-  const pendingAdRef = useRef<{ showAd: () => void } | null>(null);
-  const watchCountRef = useRef(0);
-  const sessionIdRef = useRef<string | null>(null);
-
-  // Keep refs in sync
-  useEffect(() => { watchCountRef.current = watchCount; }, [watchCount]);
-  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch today's earned tickets from ads
   const { data: dailyEarned = 0 } = useQuery({
@@ -63,28 +44,43 @@ export default function AdRewardSection() {
   const canEarnMore = dailyEarned < MAX_DAILY_TICKETS;
 
   const startNewSession = useCallback(() => {
-    const newId = crypto.randomUUID();
-    setSessionId(newId);
-    sessionIdRef.current = newId;
+    setSessionId(crypto.randomUUID());
     setWatchCount(0);
-    watchCountRef.current = 0;
     setTicketAwarded(false);
   }, []);
 
+  // Start a new session on mount or after ticket awarded
   useEffect(() => {
     if (!sessionId) startNewSession();
   }, [sessionId, startNewSession]);
 
-  // Record ad watch in database
-  const recordAdWatch = useCallback(async () => {
-    if (!user || !sessionIdRef.current) return;
+  const startWatchingAd = () => {
+    if (!user || !canEarnMore || isWatching) return;
+    setIsWatching(true);
+    setCountdown(AD_DURATION);
+
+    timerRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          handleAdComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleAdComplete = async () => {
+    if (!user || !sessionId) return;
     setLoading(true);
-    const newCount = watchCountRef.current + 1;
+    const newCount = watchCount + 1;
 
     try {
       const { data, error } = await supabase.rpc("record_ad_watch_and_award", {
         p_user_id: user.id,
-        p_session_id: sessionIdRef.current,
+        p_session_id: sessionId,
         p_watch_number: newCount,
       });
 
@@ -99,7 +95,6 @@ export default function AdRewardSection() {
       }
 
       setWatchCount(newCount);
-      watchCountRef.current = newCount;
 
       if (result?.ticket_awarded) {
         setTicketAwarded(true);
@@ -107,7 +102,10 @@ export default function AdRewardSection() {
         queryClient.invalidateQueries({ queryKey: ["user-tickets-game"] });
         queryClient.invalidateQueries({ queryKey: ["user-tickets"] });
         queryClient.invalidateQueries({ queryKey: ["ad-daily-earned"] });
-        setTimeout(() => startNewSession(), 2000);
+        // Reset for next round after delay
+        setTimeout(() => {
+          startNewSession();
+        }, 2000);
       }
     } catch (err: any) {
       console.error("Ad watch error:", err);
@@ -116,68 +114,26 @@ export default function AdRewardSection() {
 
     setIsWatching(false);
     setLoading(false);
-  }, [user, queryClient, startNewSession]);
-
-  // Setup Ezoic rewarded ad callbacks
-  useEffect(() => {
-    if (!window.ezRewardedAds) return;
-
-    window.ezRewardedAds.cmd.push(() => {
-      // Called when ad is fetched and ready to show
-      window.ezRewardedAds!.onAdRequested = (ad) => {
-        if (ad) {
-          pendingAdRef.current = ad;
-          setAdReady(true);
-          // Auto-show the ad immediately
-          ad.showAd();
-        } else {
-          toast.error("لا توجد إعلانات متاحة حالياً");
-          setIsWatching(false);
-          setLoading(false);
-        }
-      };
-
-      // Called when user earns the reward (watched the full ad)
-      window.ezRewardedAds!.onAdRewarded = () => {
-        recordAdWatch();
-      };
-
-      // Called when ad is closed (may or may not have been rewarded)
-      window.ezRewardedAds!.onAdClosed = () => {
-        setAdReady(false);
-        pendingAdRef.current = null;
-      };
-
-      // Called on ad error
-      window.ezRewardedAds!.onAdError = (error) => {
-        console.error("Ezoic ad error:", error);
-        toast.error("حدث خطأ في تحميل الإعلان");
-        setIsWatching(false);
-        setLoading(false);
-        setAdReady(false);
-      };
-    });
-  }, [recordAdWatch]);
-
-  const startWatchingAd = () => {
-    if (!user || !canEarnMore || isWatching) return;
-    setIsWatching(true);
-    setLoading(true);
-
-    // Request a rewarded ad from Ezoic
-    if (window.ezRewardedAds) {
-      window.ezRewardedAds.cmd.push(() => {
-        window.ezRewardedAds!.requestAd();
-      });
-    } else {
-      // Fallback: Ezoic not loaded yet
-      toast.error("نظام الإعلانات غير جاهز، حاول مرة أخرى");
-      setIsWatching(false);
-      setLoading(false);
-    }
   };
 
+  const cancelAd = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsWatching(false);
+    setCountdown(AD_DURATION);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
   if (!user) return null;
+
+  const progress = ((AD_DURATION - countdown) / AD_DURATION) * 100;
 
   return (
     <div className="pixel-frame p-3 space-y-3">
@@ -219,7 +175,7 @@ export default function AdRewardSection() {
             ) : i === watchCount && isWatching ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>جاري...</span>
+                <span>{countdown}s</span>
               </>
             ) : (
               <>
@@ -243,9 +199,28 @@ export default function AdRewardSection() {
         </div>
       </div>
 
+      {/* Progress bar during ad */}
+      {isWatching && (
+        <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex gap-2">
-        {ticketAwarded ? (
+        {isWatching ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={cancelAd}
+            className="flex-1 font-mono text-xs gap-1 pixel-frame"
+          >
+            <X className="h-3.5 w-3.5" /> إلغاء
+          </Button>
+        ) : ticketAwarded ? (
           <div className="flex-1 flex items-center justify-center gap-1.5 py-2 text-green-400 font-mono text-xs">
             <Gift className="h-4 w-4" />
             <span>تم الحصول على التذكرة!</span>
@@ -254,21 +229,15 @@ export default function AdRewardSection() {
           <Button
             size="sm"
             onClick={startWatchingAd}
-            disabled={!canEarnMore || isWatching || loading}
+            disabled={!canEarnMore || loading}
             className="flex-1 font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90"
           >
-            {isWatching || loading ? (
+            {loading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-            {!canEarnMore 
-              ? "الحد اليومي" 
-              : isWatching 
-              ? "جاري عرض الإعلان..." 
-              : watchCount === 0 
-              ? "شاهد الإعلان الأول" 
-              : "شاهد الإعلان الثاني"}
+            {!canEarnMore ? "الحد اليومي" : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
           </Button>
         )}
       </div>
