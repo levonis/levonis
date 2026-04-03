@@ -10,39 +10,8 @@ import { cn } from "@/lib/utils";
 const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
-const AD_DETECTION_TIMEOUT_MS = 8000;
+
 const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
-
-const isVisibleElement = (element: Element | null) => {
-  if (!(element instanceof HTMLElement)) return false;
-  const style = window.getComputedStyle(element);
-  const rect = element.getBoundingClientRect();
-
-  return (
-    style.display !== "none" &&
-    style.visibility !== "hidden" &&
-    style.opacity !== "0" &&
-    rect.width > 24 &&
-    rect.height > 24
-  );
-};
-
-const hasVisibleAdOverlay = () => {
-  const selectors = [
-    'iframe[src*="profitablecpmratenetwork.com"]',
-    'script[src*="profitablecpmratenetwork.com"]',
-    '[id*="profit"] iframe',
-    '[class*="profit"] iframe',
-    '[style*="position: fixed"] iframe',
-    '[style*="z-index"] iframe',
-    '[id*="social"]',
-    '[class*="social"]',
-  ];
-
-  return selectors.some((selector) =>
-    Array.from(document.querySelectorAll(selector)).some((element) => isVisibleElement(element))
-  );
-};
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
@@ -56,9 +25,7 @@ export default function AdRewardSection() {
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
-  const detectionTimeoutRef = useRef<number | null>(null);
-  const observerRef = useRef<MutationObserver | null>(null);
-  const activeScriptRef = useRef<HTMLScriptElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["ad-daily-earned", user?.id],
@@ -85,34 +52,26 @@ export default function AdRewardSection() {
     setTicketAwarded(false);
   }, []);
 
-  const clearAdDetection = useCallback(() => {
+  useEffect(() => {
+    if (!sessionId) startNewSession();
+  }, [sessionId, startNewSession]);
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) window.clearInterval(countdownRef.current);
+    };
+  }, []);
+
+  const cleanup = useCallback(() => {
     if (countdownRef.current) {
       window.clearInterval(countdownRef.current);
       countdownRef.current = null;
-    }
-
-    if (detectionTimeoutRef.current) {
-      window.clearTimeout(detectionTimeoutRef.current);
-      detectionTimeoutRef.current = null;
-    }
-
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-      observerRef.current = null;
-    }
-
-    if (activeScriptRef.current) {
-      try {
-        document.body.removeChild(activeScriptRef.current);
-      } catch {}
-      activeScriptRef.current = null;
     }
   }, []);
 
   const handleAdComplete = useCallback(async () => {
     if (!user || !sessionId) return;
-
-    clearAdDetection();
+    cleanup();
     setAdState("completing");
     setLoading(true);
     const newCount = watchCount + 1;
@@ -156,11 +115,9 @@ export default function AdRewardSection() {
     }
 
     setLoading(false);
-  }, [clearAdDetection, queryClient, sessionId, startNewSession, user, watchCount]);
+  }, [cleanup, queryClient, sessionId, startNewSession, user, watchCount]);
 
   const startCountdown = useCallback(() => {
-    if (countdownRef.current) return;
-
     setAdState("viewing");
     setCountdown(AD_VIEW_SECONDS);
 
@@ -179,76 +136,70 @@ export default function AdRewardSection() {
     }, 1000);
   }, [handleAdComplete]);
 
-  const triggerAd = () => {
+  const triggerAd = useCallback(() => {
     if (!user || !canEarnMore || adState !== "idle") return;
 
-    clearAdDetection();
-    setCountdown(0);
+    cleanup();
     setAdState("loading");
 
-    const script = document.createElement("script");
-    script.src = SOCIAL_BAR_SCRIPT_URL;
-    script.async = true;
-    script.dataset.adReward = "true";
-    activeScriptRef.current = script;
+    // Write ad script into iframe so it renders inside our container
+    setTimeout(() => {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
 
-    const detectAd = () => {
-      if (hasVisibleAdOverlay()) {
-        if (detectionTimeoutRef.current) {
-          window.clearTimeout(detectionTimeoutRef.current);
-          detectionTimeoutRef.current = null;
-        }
-        if (observerRef.current) {
-          observerRef.current.disconnect();
-          observerRef.current = null;
-        }
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              background: #0a0a0a; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              min-height: 100vh;
+              overflow: hidden;
+              font-family: monospace;
+              color: #888;
+            }
+            .loading-msg {
+              text-align: center;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="loading-msg">جارِ تحميل الإعلان...</div>
+          <script src="${SOCIAL_BAR_SCRIPT_URL}"><\/script>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Start countdown after a short delay to let ad load
+      setTimeout(() => {
         startCountdown();
-      }
-    };
-
-    script.onload = () => {
-      detectAd();
-
-      observerRef.current = new MutationObserver(() => {
-        detectAd();
-      });
-
-      observerRef.current.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-      });
-    };
-
-    script.onerror = () => {
-      clearAdDetection();
-      setAdState("idle");
-      toast.error("تعذر تحميل الإعلان. حاول مرة أخرى.");
-    };
-
-    document.body.appendChild(script);
-
-    detectionTimeoutRef.current = window.setTimeout(() => {
-      if (!hasVisibleAdOverlay()) {
-        clearAdDetection();
-        setAdState("idle");
-        toast.error("الإعلان لم يظهر. تأكد من عدم حظره ثم أعد المحاولة.");
-      }
-    }, AD_DETECTION_TIMEOUT_MS);
-  };
-
-  useEffect(() => {
-    if (!sessionId) startNewSession();
-  }, [sessionId, startNewSession]);
-
-  useEffect(() => {
-    return () => {
-      clearAdDetection();
-    };
-  }, [clearAdDetection]);
+      }, 2000);
+    }, 100);
+  }, [user, canEarnMore, adState, cleanup, startCountdown]);
 
   const cancelAd = () => {
-    clearAdDetection();
+    cleanup();
+    // Clear iframe content
+    const iframe = iframeRef.current;
+    if (iframe) {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write("");
+        iframeDoc.close();
+      }
+    }
     setAdState("idle");
     setCountdown(0);
   };
@@ -276,6 +227,7 @@ export default function AdRewardSection() {
         </div>
       </div>
 
+      {/* Progress indicators */}
       <div className="flex items-center gap-2">
         {Array.from({ length: ADS_REQUIRED }).map((_, i) => (
           <div
@@ -297,7 +249,7 @@ export default function AdRewardSection() {
             ) : i === watchCount && isLoadingAd ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>تحميل الإعلان...</span>
+                <span>تحميل...</span>
               </>
             ) : i === watchCount && isViewingAd ? (
               <>
@@ -313,29 +265,39 @@ export default function AdRewardSection() {
           </div>
         ))}
 
-        <div
-          className={cn(
-            "h-10 w-10 rounded flex items-center justify-center border transition-all",
-            ticketAwarded ? "bg-yellow-500/20 border-yellow-500/40" : "bg-muted/20 border-border/30"
-          )}
-        >
-          <Ticket
-            className={cn("h-4 w-4", ticketAwarded ? "text-yellow-400" : "text-muted-foreground/40")}
-          />
+        <div className={cn(
+          "h-10 w-10 rounded flex items-center justify-center border transition-all",
+          ticketAwarded ? "bg-yellow-500/20 border-yellow-500/40" : "bg-muted/20 border-border/30"
+        )}>
+          <Ticket className={cn("h-4 w-4", ticketAwarded ? "text-yellow-400" : "text-muted-foreground/40")} />
         </div>
       </div>
 
+      {/* In-page ad iframe container */}
       {isActive && (
         <div className="relative rounded border border-border bg-background overflow-hidden">
           <div className="flex items-center justify-between px-2 py-1 bg-muted/50 border-b border-border">
             <span className="text-[10px] font-mono text-muted-foreground">
-              {isLoadingAd ? "⏳ جارِ انتظار ظهور الإعلان داخل الصفحة" : `📺 الإعلان ظاهر — انتظر ${countdown} ثانية`}
+              {isLoadingAd
+                ? "⏳ جارِ تحميل الإعلان..."
+                : `📺 شاهد الإعلان — ${countdown} ثانية متبقية`}
             </span>
             <button onClick={cancelAd} className="text-muted-foreground hover:text-destructive transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="h-1 bg-muted/30">
+
+          {/* Ad renders inside this iframe */}
+          <iframe
+            ref={iframeRef}
+            title="ad-frame"
+            className="w-full border-0 bg-black/90"
+            style={{ height: "280px" }}
+            sandbox="allow-scripts allow-popups allow-same-origin allow-popups-to-escape-sandbox"
+          />
+
+          {/* Progress bar */}
+          <div className="h-1.5 bg-muted/30">
             <div
               className="h-full bg-primary transition-all duration-1000 ease-linear"
               style={{ width: isViewingAd ? `${((AD_VIEW_SECONDS - countdown) / AD_VIEW_SECONDS) * 100}%` : "0%" }}
@@ -344,6 +306,7 @@ export default function AdRewardSection() {
         </div>
       )}
 
+      {/* Action Buttons */}
       <div className="flex gap-2">
         {isActive ? (
           <Button
