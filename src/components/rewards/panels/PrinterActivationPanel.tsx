@@ -59,7 +59,8 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       return;
     }
 
-    if (data.status === 'active' && data.buyer_user_id) {
+    // If printer already has a buyer, only that buyer can view warranty
+    if (data.buyer_user_id) {
       if (data.buyer_user_id === user?.id) {
         // Show warranty info for user's own printer
         setWarrantyData(data);

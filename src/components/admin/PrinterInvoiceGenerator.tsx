@@ -245,6 +245,33 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         if (orderItem) subtotal = orderItem.total_price || 0;
       }
 
+      // Auto-link the serial number to this buyer
+      if (printer.id && buyer.userId) {
+        const { error: linkError } = await supabase
+          .from('store_printers')
+          .update({
+            buyer_user_id: buyer.userId,
+            is_registered: true,
+            status: 'active',
+            activation_date: new Date().toISOString(),
+            expiry_date: new Date(Date.now() + (printer.warranty_months || 6) * 30 * 24 * 60 * 60 * 1000).toISOString(),
+          })
+          .eq('id', printer.id);
+
+        if (linkError) {
+          console.error('Failed to link serial to buyer:', linkError);
+        } else {
+          // Also create user_printers record if not exists
+          await supabase
+            .from('user_printers')
+            .upsert({
+              user_id: buyer.userId,
+              store_printer_id: printer.id,
+            }, { onConflict: 'store_printer_id' })
+            .select();
+        }
+      }
+
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
       const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
       const parsedTax = parseFloat(manualFields.taxPercent);
