@@ -12,6 +12,7 @@ const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
 
 const AD_SCRIPT_URL = "https://pl29046247.profitablecpmratenetwork.com/87/10/56/8710563ecddda67a01e4997f82c0a62c.js";
+const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
   const { user } = useAuth();
