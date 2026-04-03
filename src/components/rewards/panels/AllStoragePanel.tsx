@@ -148,7 +148,7 @@ export default function AllStoragePanel() {
         .select('*')
         .eq('user_id', user.id)
         .eq('prize_type', 'physical')
-        .in('status', ['pending', 'shipping_requested', 'shipped', 'delivered'])
+        .in('status', [...PRIZE_STATUSES])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
