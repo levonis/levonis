@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ticket, Play, CheckCircle2, Tv, Loader2, X, Gift } from "lucide-react";
+import { Ticket, Play, CheckCircle2, Tv, Loader2, X, Gift, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -10,12 +10,15 @@ import { cn } from "@/lib/utils";
 const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
+const AD_LOAD_TIMEOUT_MS = 5000;
 
-// Ad sources - tries all, whichever loads will appear
 const AD_BANNER_KEY = "a1726696a5eb0fca2ce34179481ff13f";
 const AD_BANNER_INVOKE_URL = `https://www.highperformanceformat.com/${AD_BANNER_KEY}/invoke.js`;
 const AD_SMARTLINK_URL = "https://www.profitablecpmratenetwork.com/ywvuwywmv?key=02c371897e5f719a5867bb155a764826";
 const AD_SOCIAL_BAR_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
+
+type AdState = "idle" | "loading" | "viewing" | "completing";
+type AdType = "banner" | "social" | "smartlink" | null;
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
@@ -23,13 +26,18 @@ export default function AdRewardSection() {
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [watchCount, setWatchCount] = useState(0);
-  const [adState, setAdState] = useState<"idle" | "loading" | "viewing" | "completing">("idle");
+  const [adState, setAdState] = useState<AdState>("idle");
+  const [activeAdType, setActiveAdType] = useState<AdType>(null);
+  const [fallbackMode, setFallbackMode] = useState<"none" | "smartlink">("none");
   const [ticketAwarded, setTicketAwarded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const loadTimeoutRef = useRef<number | null>(null);
+  const adSlotRef = useRef<HTMLDivElement>(null);
+  const bannerScriptRef = useRef<HTMLScriptElement | null>(null);
+  const socialScriptRef = useRef<HTMLScriptElement | null>(null);
   const countdownStartedRef = useRef(false);
 
   const { data: dailyEarned = 0 } = useQuery({
@@ -57,30 +65,51 @@ export default function AdRewardSection() {
     setTicketAwarded(false);
   }, []);
 
-  const clearIframe = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
-
-    iframeDoc.open();
-    iframeDoc.write("");
-    iframeDoc.close();
+  const clearAdSlot = useCallback(() => {
+    if (adSlotRef.current) {
+      adSlotRef.current.innerHTML = "";
+    }
   }, []);
 
-  const cleanup = useCallback((options?: { clearIframe?: boolean }) => {
-    if (countdownRef.current) {
-      window.clearInterval(countdownRef.current);
-      countdownRef.current = null;
+  const removeInjectedScripts = useCallback(() => {
+    if (bannerScriptRef.current) {
+      try {
+        bannerScriptRef.current.remove();
+      } catch {}
+      bannerScriptRef.current = null;
     }
 
-    countdownStartedRef.current = false;
-
-    if (options?.clearIframe) {
-      clearIframe();
+    if (socialScriptRef.current) {
+      try {
+        socialScriptRef.current.remove();
+      } catch {}
+      socialScriptRef.current = null;
     }
-  }, [clearIframe]);
+  }, []);
+
+  const cleanup = useCallback(
+    (options?: { clearSlot?: boolean }) => {
+      if (countdownRef.current) {
+        window.clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+
+      if (loadTimeoutRef.current) {
+        window.clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
+
+      removeInjectedScripts();
+      countdownStartedRef.current = false;
+      setActiveAdType(null);
+      setFallbackMode("none");
+
+      if (options?.clearSlot !== false) {
+        clearAdSlot();
+      }
+    },
+    [clearAdSlot, removeInjectedScripts]
+  );
 
   useEffect(() => {
     if (!sessionId) startNewSession();
@@ -88,13 +117,14 @@ export default function AdRewardSection() {
 
   useEffect(() => {
     return () => {
-      cleanup({ clearIframe: true });
+      cleanup();
     };
   }, [cleanup]);
 
   const handleAdComplete = useCallback(async () => {
     if (!user || !sessionId) return;
-    cleanup();
+
+    cleanup({ clearSlot: false });
     setAdState("completing");
     setLoading(true);
     const newCount = watchCount + 1;
@@ -127,9 +157,11 @@ export default function AdRewardSection() {
         setTimeout(() => {
           startNewSession();
           setAdState("idle");
+          clearAdSlot();
         }, 2000);
       } else {
         setAdState("idle");
+        clearAdSlot();
       }
     } catch (err: any) {
       console.error("Ad watch error:", err);
@@ -138,127 +170,132 @@ export default function AdRewardSection() {
     }
 
     setLoading(false);
-  }, [cleanup, queryClient, sessionId, startNewSession, user, watchCount]);
+  }, [cleanup, clearAdSlot, queryClient, sessionId, startNewSession, user, watchCount]);
 
-  const startCountdown = useCallback(() => {
-    if (countdownStartedRef.current) return;
+  const startCountdown = useCallback(
+    (adType: Exclude<AdType, null>) => {
+      if (countdownStartedRef.current) return;
 
-    countdownStartedRef.current = true;
-    setAdState("viewing");
-    setCountdown(AD_VIEW_SECONDS);
+      if (loadTimeoutRef.current) {
+        window.clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
 
-    countdownRef.current = window.setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (countdownRef.current) {
-            window.clearInterval(countdownRef.current);
-            countdownRef.current = null;
+      countdownStartedRef.current = true;
+      setActiveAdType(adType);
+      setAdState("viewing");
+      setCountdown(AD_VIEW_SECONDS);
+
+      countdownRef.current = window.setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (countdownRef.current) {
+              window.clearInterval(countdownRef.current);
+              countdownRef.current = null;
+            }
+            void handleAdComplete();
+            return 0;
           }
-          void handleAdComplete();
-          return 0;
+          return prev - 1;
+        });
+      }, 1000);
+    },
+    [handleAdComplete]
+  );
+
+  const showSmartlinkFallback = useCallback(() => {
+    removeInjectedScripts();
+    clearAdSlot();
+    setFallbackMode("smartlink");
+  }, [clearAdSlot, removeInjectedScripts]);
+
+  const trySocialBarAd = useCallback(() => {
+    clearAdSlot();
+
+    if (adSlotRef.current) {
+      adSlotRef.current.innerHTML = `
+        <div style="min-height:280px;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;color:hsl(var(--muted-foreground));font-family:monospace;font-size:12px;">
+          Social Bar is opening on the page...
+        </div>
+      `;
+    }
+
+    const script = document.createElement("script");
+    script.src = AD_SOCIAL_BAR_URL;
+    script.async = true;
+    script.onload = () => {
+      startCountdown("social");
+    };
+    script.onerror = () => {
+      showSmartlinkFallback();
+    };
+
+    socialScriptRef.current = script;
+    document.body.appendChild(script);
+  }, [clearAdSlot, showSmartlinkFallback, startCountdown]);
+
+  const tryBannerAd = useCallback(() => {
+    const slot = adSlotRef.current;
+    if (!slot) {
+      trySocialBarAd();
+      return;
+    }
+
+    clearAdSlot();
+
+    (window as Window & { atOptions?: unknown }).atOptions = {
+      key: AD_BANNER_KEY,
+      format: "iframe",
+      height: 250,
+      width: 300,
+      params: {},
+    };
+
+    const script = document.createElement("script");
+    script.src = AD_BANNER_INVOKE_URL;
+    script.async = true;
+    script.onload = () => {
+      window.setTimeout(() => {
+        const hasBanner = !!slot.querySelector("iframe");
+        if (hasBanner) {
+          startCountdown("banner");
+          return;
         }
-        return prev - 1;
-      });
-    }, 1000);
-  }, [handleAdComplete]);
+        trySocialBarAd();
+      }, 1200);
+    };
+    script.onerror = () => {
+      trySocialBarAd();
+    };
+
+    bannerScriptRef.current = script;
+    slot.appendChild(script);
+  }, [clearAdSlot, startCountdown, trySocialBarAd]);
 
   const triggerAd = useCallback(() => {
     if (!user || !canEarnMore || adState !== "idle") return;
 
-    cleanup({ clearIframe: true });
+    cleanup();
     setCountdown(0);
     setAdState("loading");
 
-    // Load all ad formats inside iframe - whichever is available will render
-    const iframe = iframeRef.current;
-    if (iframe) {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) return;
+    loadTimeoutRef.current = window.setTimeout(() => {
+      if (!countdownStartedRef.current) {
+        showSmartlinkFallback();
+      }
+    }, AD_LOAD_TIMEOUT_MS);
 
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            * { margin: 0; padding: 0; }
-            body {
-              background: #0a0a0a;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              min-height: 100%;
-              overflow: hidden;
-              gap: 8px;
-            }
-          </style>
-        </head>
-        <body>
-          <!-- Banner Ad -->
-          <script>
-            atOptions = {
-              'key' : '${AD_BANNER_KEY}',
-              'format' : 'iframe',
-              'height' : 250,
-              'width' : 300,
-              'params' : {}
-            };
-          <\/script>
-          <script src="${AD_BANNER_INVOKE_URL}"><\/script>
+    tryBannerAd();
+  }, [adState, canEarnMore, cleanup, showSmartlinkFallback, tryBannerAd, user]);
 
-          <!-- Smartlink (as clickable link fallback) -->
-          <a href="${AD_SMARTLINK_URL}" target="_blank" rel="noopener" style="display:none" id="smartlink">Ad</a>
-
-          <!-- Social Bar -->
-          <script src="${AD_SOCIAL_BAR_URL}" async><\/script>
-
-          <script>
-            // Notify parent that at least one ad source loaded
-            var notified = false;
-            function notifyLoaded() {
-              if (!notified) {
-                notified = true;
-                window.parent.postMessage({ type: 'AD_LOADED' }, '*');
-              }
-            }
-            // Check periodically if any ad element appeared
-            var checks = 0;
-            var checker = setInterval(function() {
-              checks++;
-              var hasContent = document.querySelector('iframe') || document.querySelector('[id*="adb"]') || document.body.children.length > 4;
-              if (hasContent || checks > 10) {
-                notifyLoaded();
-                clearInterval(checker);
-              }
-            }, 500);
-          <\/script>
-        </body>
-        </html>
-      `);
-      iframeDoc.close();
-
-      // Listen for AD_LOADED from iframe
-      const onMessage = (e: MessageEvent) => {
-        if (e.data?.type === "AD_LOADED") {
-          window.removeEventListener("message", onMessage);
-          startCountdown();
-        }
-      };
-      window.addEventListener("message", onMessage);
-
-      // Fallback: start countdown after 6s regardless
-      window.setTimeout(() => {
-        window.removeEventListener("message", onMessage);
-        if (!countdownStartedRef.current) {
-          startCountdown();
-        }
-      }, 6000);
-    }
-  }, [adState, canEarnMore, cleanup, startCountdown, user]);
+  const handleSmartlinkOpen = () => {
+    window.open(AD_SMARTLINK_URL, "_blank", "noopener,noreferrer");
+    setFallbackMode("none");
+    startCountdown("smartlink");
+  };
 
   const cancelAd = () => {
-    cleanup({ clearIframe: true });
+    cleanup();
     setAdState("idle");
     setCountdown(0);
   };
@@ -268,6 +305,19 @@ export default function AdRewardSection() {
   const isLoadingAd = adState === "loading";
   const isViewingAd = adState === "viewing";
   const isActive = isLoadingAd || isViewingAd;
+
+  const statusText =
+    fallbackMode === "smartlink"
+      ? "Banner/Social Bar unavailable — open Smartlink instead"
+      : isLoadingAd
+        ? "Loading ad..."
+        : activeAdType === "banner"
+          ? `Banner ad is showing — ${countdown}s left`
+          : activeAdType === "social"
+            ? `Social Bar opened on the page — ${countdown}s left`
+            : activeAdType === "smartlink"
+              ? `Smartlink opened — ${countdown}s left`
+              : `Watch the ad — ${countdown}s left`;
 
   return (
     <div className="pixel-frame p-3 space-y-3">
@@ -286,7 +336,6 @@ export default function AdRewardSection() {
         </div>
       </div>
 
-      {/* Progress indicators */}
       <div className="flex items-center gap-2">
         {Array.from({ length: ADS_REQUIRED }).map((_, i) => (
           <div
@@ -305,15 +354,10 @@ export default function AdRewardSection() {
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>تم</span>
               </>
-            ) : i === watchCount && isLoadingAd ? (
+            ) : i === watchCount && isActive ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>تحميل...</span>
-              </>
-            ) : i === watchCount && isViewingAd ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>{countdown}s</span>
+                <span>{isLoadingAd ? "Loading..." : `${countdown}s`}</span>
               </>
             ) : (
               <>
@@ -324,38 +368,38 @@ export default function AdRewardSection() {
           </div>
         ))}
 
-        <div className={cn(
-          "h-10 w-10 rounded flex items-center justify-center border transition-all",
-          ticketAwarded ? "bg-yellow-500/20 border-yellow-500/40" : "bg-muted/20 border-border/30"
-        )}>
+        <div
+          className={cn(
+            "h-10 w-10 rounded flex items-center justify-center border transition-all",
+            ticketAwarded ? "bg-yellow-500/20 border-yellow-500/40" : "bg-muted/20 border-border/30"
+          )}
+        >
           <Ticket className={cn("h-4 w-4", ticketAwarded ? "text-yellow-400" : "text-muted-foreground/40")} />
         </div>
       </div>
 
-      {/* In-page ad iframe container */}
       {isActive && (
         <div className="relative rounded border border-border bg-background overflow-hidden">
           <div className="flex items-center justify-between px-2 py-1 bg-muted/50 border-b border-border">
-            <span className="text-[10px] font-mono text-muted-foreground">
-              {isLoadingAd
-                ? "⏳ جارِ تحميل الإعلان..."
-                : `📺 شاهد الإعلان — ${countdown} ثانية متبقية`}
-            </span>
+            <span className="text-[10px] font-mono text-muted-foreground">{statusText}</span>
             <button onClick={cancelAd} className="text-muted-foreground hover:text-destructive transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          {/* Ad renders inside this iframe */}
-          <iframe
-            ref={iframeRef}
-            title="ad-frame"
-            className="w-full border-0 bg-black/90"
-            style={{ height: "280px" }}
-            sandbox="allow-scripts allow-popups allow-same-origin allow-popups-to-escape-sandbox"
-          />
+          <div ref={adSlotRef} className="min-h-[280px] flex items-center justify-center bg-muted/10" />
 
-          {/* Progress bar */}
+          {fallbackMode === "smartlink" && (
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              <div className="pixel-frame bg-background/95 p-4 text-center space-y-3 max-w-xs">
+                <p className="text-xs font-mono text-muted-foreground">Banner and Social Bar did not load. Open Smartlink ad.</p>
+                <Button size="sm" onClick={handleSmartlinkOpen} className="font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90 text-ring">
+                  <ExternalLink className="h-3.5 w-3.5" /> Open Smartlink
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="h-1.5 bg-muted/30">
             <div
               className="h-full bg-primary transition-all duration-1000 ease-linear"
@@ -365,16 +409,10 @@ export default function AdRewardSection() {
         </div>
       )}
 
-      {/* Action Buttons */}
       <div className="flex gap-2">
         {isActive ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={cancelAd}
-            className="flex-1 font-mono text-xs gap-1 pixel-frame"
-          >
-            <X className="h-3.5 w-3.5" /> إلغاء
+          <Button variant="outline" size="sm" onClick={cancelAd} className="flex-1 font-mono text-xs gap-1 pixel-frame">
+            <X className="h-3.5 w-3.5" /> Cancel
           </Button>
         ) : ticketAwarded ? (
           <div className="flex-1 flex items-center justify-center gap-1.5 py-2 text-green-400 font-mono text-xs">
@@ -389,7 +427,7 @@ export default function AdRewardSection() {
             className="flex-1 font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90 text-ring"
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-            {!canEarnMore ? (isAdmin ? "شاهد الإعلان" : "الحد اليومي") : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
+            {!canEarnMore ? (isAdmin ? "Watch ad" : "Daily limit") : watchCount === 0 ? "Watch first ad" : "Watch second ad"}
           </Button>
         )}
       </div>
