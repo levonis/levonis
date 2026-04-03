@@ -267,7 +267,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
             .upsert({
               user_id: buyer.userId,
               store_printer_id: printer.id,
-            }, { onConflict: 'user_id,store_printer_id' })
+            }, { onConflict: 'store_printer_id' })
             .select();
         }
       }
