@@ -48,6 +48,7 @@ const AdminQRPrinterTab = () => {
   const [warrantyPrinter, setWarrantyPrinter] = useState<any>(null);
   const [warrantyStartDate, setWarrantyStartDate] = useState<Date | undefined>();
   const [warrantyEndDate, setWarrantyEndDate] = useState<Date | undefined>();
+  const [warrantyPeriod, setWarrantyPeriod] = useState<string>('6'); // months or 'custom'
 
   const [newPrinter, setNewPrinter] = useState({
     serial_number: '',
@@ -378,6 +379,7 @@ const AdminQRPrinterTab = () => {
                         setWarrantyPrinter(printer);
                         setWarrantyStartDate(printer.activation_date ? new Date(printer.activation_date) : new Date());
                         setWarrantyEndDate(printer.expiry_date ? new Date(printer.expiry_date) : undefined);
+                        setWarrantyPeriod(printer.expiry_date ? 'custom' : '6');
                         setWarrantyDialog(true);
                       }}>
                         <Shield className="w-4 h-4" />
@@ -627,6 +629,7 @@ const AdminQRPrinterTab = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Start Date - manual */}
             <div className="space-y-2">
               <Label>تاريخ بدء الضمان</Label>
               <Popover>
@@ -640,32 +643,83 @@ const AdminQRPrinterTab = () => {
                   <Calendar
                     mode="single"
                     selected={warrantyStartDate}
-                    onSelect={setWarrantyStartDate}
+                    onSelect={(d) => {
+                      setWarrantyStartDate(d);
+                      // Auto-calc end date if period is not custom
+                      if (d && warrantyPeriod !== 'custom') {
+                        const months = parseInt(warrantyPeriod);
+                        const end = new Date(d);
+                        end.setMonth(end.getMonth() + months);
+                        setWarrantyEndDate(end);
+                      }
+                    }}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
               </Popover>
             </div>
+
+            {/* Warranty Period Selection */}
             <div className="space-y-2">
-              <Label>تاريخ انتهاء الضمان</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !warrantyEndDate && "text-muted-foreground")}>
-                    <CalendarIcon className="ml-2 h-4 w-4" />
-                    {warrantyEndDate ? format(warrantyEndDate, 'dd/MM/yyyy') : 'اختر التاريخ'}
+              <Label>مدة الضمان</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: '3', label: '3 أشهر' },
+                  { value: '6', label: '6 أشهر' },
+                  { value: '12', label: 'سنة' },
+                  { value: '24', label: 'سنتين' },
+                  { value: 'custom', label: 'تاريخ مخصص' },
+                ].map(opt => (
+                  <Button
+                    key={opt.value}
+                    type="button"
+                    size="sm"
+                    variant={warrantyPeriod === opt.value ? 'default' : 'outline'}
+                    className="text-xs"
+                    onClick={() => {
+                      setWarrantyPeriod(opt.value);
+                      if (opt.value !== 'custom' && warrantyStartDate) {
+                        const months = parseInt(opt.value);
+                        const end = new Date(warrantyStartDate);
+                        end.setMonth(end.getMonth() + months);
+                        setWarrantyEndDate(end);
+                      }
+                    }}
+                  >
+                    {opt.label}
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={warrantyEndDate}
-                    onSelect={setWarrantyEndDate}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
+                ))}
+              </div>
+            </div>
+
+            {/* End Date */}
+            <div className="space-y-2">
+              <Label>تاريخ انتهاء الضمان {warrantyPeriod !== 'custom' && warrantyEndDate ? '(محسوب تلقائياً)' : ''}</Label>
+              {warrantyPeriod === 'custom' ? (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !warrantyEndDate && "text-muted-foreground")}>
+                      <CalendarIcon className="ml-2 h-4 w-4" />
+                      {warrantyEndDate ? format(warrantyEndDate, 'dd/MM/yyyy') : 'اختر التاريخ'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={warrantyEndDate}
+                      onSelect={setWarrantyEndDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg border bg-muted/30 text-sm">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  <span>{warrantyEndDate ? format(warrantyEndDate, 'dd/MM/yyyy') : 'حدد تاريخ البدء أولاً'}</span>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
