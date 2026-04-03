@@ -16,6 +16,7 @@ const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "mystery-case", label: "صندوق الغموض", icon: Gift },
   { id: "space-blaster", label: "حرب الفضاء", icon: Swords },
   { id: "stack-tower", label: "البرج", icon: Gamepad2 },
+  { id: "knife-rain", label: "أمطار السكاكين", icon: Crosshair },
   { id: "store", label: "متجر الألعاب", icon: ShoppingBag },
   { id: "music", label: "الموسيقى", icon: Music },
 ];
