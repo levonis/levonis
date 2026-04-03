@@ -223,7 +223,11 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         if (knifeImgEl) {
           const kw = KNIFE_WIDTH;
           const kh = KNIFE_LENGTH;
-          ctx.drawImage(knifeImgEl, -kw / 2, -targetR - kh + 8, kw, kh);
+          ctx.save();
+          ctx.translate(0, -targetR - kh / 2 + 8);
+          ctx.rotate(Math.PI);
+          ctx.drawImage(knifeImgEl, -kw / 2, -kh / 2, kw, kh);
+          ctx.restore();
         } else {
           ctx.fillStyle = "#ccc";
           ctx.fillRect(-2, -targetR - KNIFE_LENGTH + 8, 4, KNIFE_LENGTH);
