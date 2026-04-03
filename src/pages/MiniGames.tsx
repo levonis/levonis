@@ -18,6 +18,7 @@ const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCa
 const StackGame = lazy(() => import("@/components/games/stack-game/StackGame"));
 const GameStore = lazy(() => import("@/components/games/GameStore"));
 const MyGamePrizes = lazy(() => import("@/components/games/MyGamePrizes"));
+import AdRewardSection from "@/components/games/AdRewardSection";
 
 const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
@@ -207,6 +208,11 @@ export default function MiniGames() {
             );
           })}
         </div>
+      </div>
+
+      {/* Ad Reward Section */}
+      <div className="max-w-2xl mx-auto px-4 pt-2 relative z-10">
+        <AdRewardSection />
       </div>
 
       {/* Game Grid */}

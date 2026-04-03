@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_watch_log: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          ticket_awarded: boolean
+          user_id: string
+          watch_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          ticket_awarded?: boolean
+          user_id: string
+          watch_number?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          ticket_awarded?: boolean
+          user_id?: string
+          watch_number?: number
+        }
+        Relationships: []
+      }
       admin_telegram_context: {
         Row: {
           admin_telegram_chat_id: string
@@ -9559,6 +9586,14 @@ export type Database = {
           bonus_tickets: number
           price_per_ticket: number
           ticket_quantity: number
+        }
+        Returns: Json
+      }
+      record_ad_watch_and_award: {
+        Args: {
+          p_session_id: string
+          p_user_id: string
+          p_watch_number: number
         }
         Returns: Json
       }
