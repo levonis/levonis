@@ -46,7 +46,7 @@ export default function AdRewardSection() {
     enabled: !!user,
   });
 
-  const canEarnMore = dailyEarned < MAX_DAILY_TICKETS;
+  const canEarnMore = isAdmin || dailyEarned < MAX_DAILY_TICKETS;
 
   const startNewSession = useCallback(() => {
     setSessionId(crypto.randomUUID());
