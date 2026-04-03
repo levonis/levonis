@@ -292,7 +292,7 @@ export default function AdRewardSection() {
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-            {!canEarnMore ? "الحد اليومي" : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
+            {!canEarnMore ? (isAdmin ? "شاهد الإعلان" : "الحد اليومي") : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
           </Button>
         )}
       </div>
