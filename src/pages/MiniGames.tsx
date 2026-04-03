@@ -149,6 +149,9 @@ export default function MiniGames() {
             {activeGame === 'stack_tower' && (
               <StackGame onBack={() => setActiveGame(null)} />
             )}
+            {activeGame === 'knife_rain' && (
+              <KnifeRainGame onBack={() => setActiveGame(null)} />
+            )}
           </Suspense>
         </div>
         <PixelMusicRadio />
