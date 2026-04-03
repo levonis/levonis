@@ -309,7 +309,7 @@ export default function AllStoragePanel() {
         title: purchase.product_offers?.title_ar || 'منتج',
         image_url: purchase.product_offers?.image_url,
         quantity: purchase.quantity,
-        status: purchase.purchase_status === 'purchased' ? 'pending' : purchase.purchase_status,
+        status: normalizeStorageStatus(purchase.purchase_status),
         source: 'offer',
         created_at: purchase.created_at,
         shipping_requested_at: purchase.shipping_requested_at,
