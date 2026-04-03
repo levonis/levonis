@@ -152,8 +152,6 @@ export default function AdRewardSection() {
     }, 5000);
   };
 
-  };
-
   const handleAdComplete = async () => {
     if (!user || !sessionId) return;
     setAdState("completing");
