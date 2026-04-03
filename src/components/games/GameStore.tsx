@@ -84,11 +84,13 @@ export default function GameStore({ onBack }: { onBack: () => void }) {
     setBuying(reward.id);
     try {
       // Deduct points
-      await supabase.rpc("admin_adjust_points", {
+      const { error: deductError } = await supabase.rpc("deduct_user_points", {
         p_user_id: user.id,
-        p_amount: -reward.points_cost,
-        p_reason: `متجر الألعاب: ${reward.title_ar}`,
+        p_amount: reward.points_cost,
+        p_source: "game_store",
+        p_description: `متجر الألعاب: ${reward.title_ar}`,
       });
+      if (deductError) throw deductError;
 
       // If reward is tickets, add them
       if (reward.reward_type === "tickets" && reward.reward_value > 0) {
