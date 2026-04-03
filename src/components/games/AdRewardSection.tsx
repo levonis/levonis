@@ -166,25 +166,58 @@ export default function AdRewardSection() {
               overflow: hidden;
               font-family: monospace;
               color: #888;
+              direction: rtl;
             }
-            .loading-msg {
+            .msg {
               text-align: center;
               font-size: 12px;
+              line-height: 1.8;
             }
+            .blocked { color: #f87171; }
           </style>
         </head>
         <body>
-          <div class="loading-msg">جارِ تحميل الإعلان...</div>
-          <script src="${SOCIAL_BAR_SCRIPT_URL}"><\/script>
+          <div class="msg" id="ad-msg">جارِ تحميل الإعلان...</div>
+          <script>
+            var adLoaded = false;
+            var s = document.createElement('script');
+            s.src = "${SOCIAL_BAR_SCRIPT_URL}";
+            s.async = true;
+            s.onload = function() { adLoaded = true; };
+            s.onerror = function() {
+              document.getElementById('ad-msg').innerHTML = '⚠️ تم حظر الإعلان<br/>عطّل مانع الإعلانات ثم أعد المحاولة';
+              document.getElementById('ad-msg').className = 'msg blocked';
+              window.parent.postMessage({ type: 'AD_BLOCKED' }, '*');
+            };
+            document.body.appendChild(s);
+            setTimeout(function() {
+              if (!adLoaded) {
+                document.getElementById('ad-msg').innerHTML = '⚠️ تم حظر الإعلان<br/>عطّل مانع الإعلانات ثم أعد المحاولة';
+                document.getElementById('ad-msg').className = 'msg blocked';
+                window.parent.postMessage({ type: 'AD_BLOCKED' }, '*');
+              }
+            }, 5000);
+          <\/script>
         </body>
         </html>
       `);
       iframeDoc.close();
 
-      // Start countdown after a short delay to let ad load
+      // Listen for ad blocked message from iframe
+      const handleMessage = (e: MessageEvent) => {
+        if (e.data?.type === "AD_BLOCKED") {
+          cleanup();
+          setAdState("idle");
+          toast.error("مانع الإعلانات يمنع تحميل الإعلان. عطّله ثم أعد المحاولة.");
+          window.removeEventListener("message", handleMessage);
+        }
+      };
+      window.addEventListener("message", handleMessage);
+
+      // Start countdown after delay to let ad load (if not cancelled/blocked)
       setTimeout(() => {
         startCountdown();
-      }, 2000);
+      }, 3000);
     }, 100);
   }, [user, canEarnMore, adState, cleanup, startCountdown]);
 
