@@ -65,9 +65,6 @@ function buildStages(): StageConfig[] {
 
 const ALL_STAGES = buildStages();
 const KNIFE_COLLISION_ANGLE = 0.22; // ~12.6 degrees threshold
-const TARGET_RADIUS = 60;
-const KNIFE_LENGTH = 90;
-const KNIFE_WIDTH = 28;
 const KNIFE_SPEED = 2200; // px per second
 
 interface StuckKnife {
@@ -170,8 +167,10 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       const H = canvas.height;
       const stage = ALL_STAGES[Math.min(s.stage, ALL_STAGES.length - 1)];
       const cx = W / 2;
-      const cy = H * 0.35;
-      const targetR = Math.min(TARGET_RADIUS, W * 0.12);
+      const cy = H * 0.30;
+      const targetR = W * 0.28; // ~56% of screen width diameter
+      const knifeLen = W * 0.22;
+      const knifeW = knifeLen * 0.28;
 
       // Update rotation
       s.targetAngle += stage.rotationSpeed * dt;
@@ -221,16 +220,14 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         ctx.save();
         ctx.rotate(k.angle);
         if (knifeImgEl) {
-          const kw = KNIFE_WIDTH;
-          const kh = KNIFE_LENGTH;
           ctx.save();
-          ctx.translate(0, -targetR - kh / 2 + 8);
+          ctx.translate(0, -targetR - knifeLen * 0.35);
           ctx.rotate(Math.PI);
-          ctx.drawImage(knifeImgEl, -kw / 2, -kh / 2, kw, kh);
+          ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
           ctx.restore();
         } else {
           ctx.fillStyle = "#ccc";
-          ctx.fillRect(-2, -targetR - KNIFE_LENGTH + 8, 4, KNIFE_LENGTH);
+          ctx.fillRect(-3, -targetR - knifeLen + 8, 6, knifeLen);
         }
         ctx.restore();
       });
@@ -244,7 +241,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         // Check if knife reached the target
         const distToCenter = Math.sqrt((fk.x - cx) ** 2 + (fk.y - cy) ** 2);
         
-        if (distToCenter <= targetR + KNIFE_LENGTH * 0.3) {
+        if (distToCenter <= targetR + knifeLen * 0.3) {
           // Calculate the angle where the knife lands relative to target rotation
           const rawAngle = Math.atan2(fk.y - cy, fk.x - cx);
           const landingAngle = rawAngle - s.targetAngle + Math.PI / 2;
@@ -309,11 +306,11 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
             ctx.save();
             ctx.translate(fk.x, fk.y);
             ctx.rotate(Math.PI);
-            ctx.drawImage(knifeImgEl, -KNIFE_WIDTH / 2, -KNIFE_LENGTH / 2, KNIFE_WIDTH, KNIFE_LENGTH);
+            ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
             ctx.restore();
           } else {
             ctx.fillStyle = "#ccc";
-            ctx.fillRect(fk.x - 2, fk.y - KNIFE_LENGTH / 2, 4, KNIFE_LENGTH);
+            ctx.fillRect(fk.x - 3, fk.y - knifeLen / 2, 6, knifeLen);
           }
         }
       }
