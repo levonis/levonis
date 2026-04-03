@@ -241,7 +241,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         // Check if knife reached the target
         const distToCenter = Math.sqrt((fk.x - cx) ** 2 + (fk.y - cy) ** 2);
         
-        if (distToCenter <= targetR + KNIFE_LENGTH * 0.3) {
+        if (distToCenter <= targetR + knifeLen * 0.3) {
           // Calculate the angle where the knife lands relative to target rotation
           const rawAngle = Math.atan2(fk.y - cy, fk.x - cx);
           const landingAngle = rawAngle - s.targetAngle + Math.PI / 2;
