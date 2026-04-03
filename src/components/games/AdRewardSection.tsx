@@ -269,7 +269,7 @@ export default function AdRewardSection() {
             size="sm"
             onClick={triggerAd}
             disabled={!canEarnMore || loading}
-            className="flex-1 font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90"
+            className="flex-1 font-mono text-xs gap-1.5 pixel-frame bg-primary hover:bg-primary/90 text-ring"
           >
             {loading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
