@@ -27,6 +27,7 @@ export default function AdRewardSection() {
 
   const leftAtRef = useRef<number | null>(null);
   const adTriggeredRef = useRef(false);
+  const waitingTimeoutRef = useRef<number | null>(null);
 
   // Fetch today's earned tickets from ads
   const { data: dailyEarned = 0 } = useQuery({
@@ -48,6 +49,13 @@ export default function AdRewardSection() {
 
   const canEarnMore = isAdmin || dailyEarned < MAX_DAILY_TICKETS;
 
+  const clearWaitingTimeout = useCallback(() => {
+    if (waitingTimeoutRef.current) {
+      window.clearTimeout(waitingTimeoutRef.current);
+      waitingTimeoutRef.current = null;
+    }
+  }, []);
+
   const startNewSession = useCallback(() => {
     setSessionId(crypto.randomUUID());
     setWatchCount(0);
@@ -58,24 +66,26 @@ export default function AdRewardSection() {
     if (!sessionId) startNewSession();
   }, [sessionId, startNewSession]);
 
+  useEffect(() => {
+    return () => clearWaitingTimeout();
+  }, [clearWaitingTimeout]);
+
   // Track when user leaves/returns from ad tab
   useEffect(() => {
     if (adState !== "waiting" && adState !== "viewing") return;
 
     const handleVisibility = () => {
       if (document.hidden) {
-        // User left (went to ad tab)
+        clearWaitingTimeout();
         leftAtRef.current = Date.now();
         setAdState("viewing");
       } else {
-        // User returned
         if (leftAtRef.current && adState === "viewing") {
           const secondsAway = Math.floor((Date.now() - leftAtRef.current) / 1000);
           setTimeAway(secondsAway);
           leftAtRef.current = null;
 
           if (secondsAway >= MIN_AD_VIEW_SECONDS) {
-            // User spent enough time on ad
             handleAdComplete();
           } else {
             toast.error(`يجب مشاهدة الإعلان لمدة ${MIN_AD_VIEW_SECONDS} ثوانٍ على الأقل. شاهدت ${secondsAway} ثانية فقط.`);
@@ -87,47 +97,60 @@ export default function AdRewardSection() {
 
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [adState]);
+  }, [adState, clearWaitingTimeout]);
 
   const triggerAd = () => {
     if (!user || !canEarnMore || adState !== "idle") return;
+
+    clearWaitingTimeout();
     setAdState("waiting");
     setTimeAway(0);
     adTriggeredRef.current = true;
 
-    // Load the Popunder ad script
-    const script = document.createElement("script");
-    script.src = AD_SCRIPT_URL;
-    script.async = true;
-    document.body.appendChild(script);
+    const popunderScript = document.createElement("script");
+    popunderScript.src = AD_SCRIPT_URL;
+    popunderScript.async = true;
+    document.body.appendChild(popunderScript);
 
-    // Load the Social Bar ad script
     const socialBarScript = document.createElement("script");
     socialBarScript.src = SOCIAL_BAR_SCRIPT_URL;
     socialBarScript.async = true;
     document.body.appendChild(socialBarScript);
 
-    script.onload = () => {
-      setTimeout(() => {
-        try { document.body.removeChild(script); } catch {}
+    const cleanupScript = (script: HTMLScriptElement) => {
+      window.setTimeout(() => {
+        try {
+          document.body.removeChild(script);
+        } catch {}
       }, 3000);
     };
 
-    socialBarScript.onload = () => {
-      setTimeout(() => {
-        try { document.body.removeChild(socialBarScript); } catch {}
-      }, 3000);
-    };
+    popunderScript.onload = () => cleanupScript(popunderScript);
+    socialBarScript.onload = () => cleanupScript(socialBarScript);
 
-    script.onerror = () => {
-      try { document.body.removeChild(script); } catch {}
+    popunderScript.onerror = () => {
+      try {
+        document.body.removeChild(popunderScript);
+      } catch {}
+      clearWaitingTimeout();
       toast.error("تعذر تحميل الإعلان. حاول مرة أخرى.");
       setAdState("idle");
     };
 
     socialBarScript.onerror = () => {
-      try { document.body.removeChild(socialBarScript); } catch {}
+      try {
+        document.body.removeChild(socialBarScript);
+      } catch {}
     };
+
+    waitingTimeoutRef.current = window.setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        adTriggeredRef.current = false;
+        setAdState("idle");
+        toast.error("لم يفتح الإعلان. تأكد من السماح بالنوافذ المنبثقة ثم أعد المحاولة.");
+      }
+    }, 5000);
+  };
 
   };
 
