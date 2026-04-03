@@ -166,14 +166,50 @@ export default function AdRewardSection() {
     setCountdown(0);
     setAdState("loading");
 
-    // Load the Smartlink URL directly in the iframe
+    // Load the banner ad inside the iframe
     const iframe = iframeRef.current;
     if (iframe) {
-      iframe.src = AD_SMARTLINK_URL;
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; }
+            body {
+              background: #0a0a0a;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100%;
+              overflow: hidden;
+            }
+          </style>
+        </head>
+        <body>
+          <script>
+            atOptions = {
+              'key' : '${AD_BANNER_KEY}',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          <\/script>
+          <script src="${AD_INVOKE_URL}"><\/script>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Start countdown once iframe content loads
       iframe.onload = () => {
         startCountdown();
       };
-      // Fallback: start countdown after 3s even if onload doesn't fire (cross-origin)
+      // Fallback: start countdown after 3s (cross-origin may block onload)
       window.setTimeout(() => {
         if (!countdownStartedRef.current) {
           startCountdown();
