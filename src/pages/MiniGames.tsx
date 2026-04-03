@@ -94,6 +94,9 @@ export default function MiniGames() {
     if (game.node_name === "mystery_case" && mysterySettings && !mysterySettings.game_enabled) {
       return { ...game, _disabled: true };
     }
+    if (game.node_name === "knife_rain" && knifeRainSettings && !knifeRainSettings.game_enabled) {
+      return { ...game, _disabled: true };
+    }
     return { ...game, _disabled: false };
   });
 
