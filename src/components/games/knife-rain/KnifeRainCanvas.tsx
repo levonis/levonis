@@ -131,7 +131,7 @@ function buildStages(): StageConfig[] {
 const ALL_STAGES = buildStages();
 const KNIFE_COLLISION_ANGLE = 0.22;
 const OBSTACLE_COLLISION_ANGLE = 0.25;
-const KNIFE_SPEED = 2200;
+const KNIFE_SPEED = 3200;
 const COIN_COLLECT_ANGLE = 0.3;
 const MAX_GAME_W = 500;
 
@@ -281,7 +281,9 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       const stage = ALL_STAGES[Math.min(s.stage, ALL_STAGES.length - 1)];
       const cx = gx + gw / 2;
       const cy = H * 0.30;
-      const targetR = gw * 0.28;
+      // Bosses get a bigger target so knives embed properly
+      const isBossStage = stage.isBoss;
+      const targetR = isBossStage ? gw * 0.34 : gw * 0.28;
       const knifeLen = gw * 0.22;
       const knifeW = knifeLen * 0.28;
 
@@ -383,6 +385,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         if (knifeImgEl) {
           ctx.save();
           ctx.translate(0, -targetR - knifeLen * 0.35);
+          ctx.rotate(Math.PI); // flip so blade points toward center
           ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
           ctx.restore();
         } else {
