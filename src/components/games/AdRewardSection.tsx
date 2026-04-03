@@ -25,7 +25,6 @@ export default function AdRewardSection() {
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
-  const adContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["ad-daily-earned", user?.id],
