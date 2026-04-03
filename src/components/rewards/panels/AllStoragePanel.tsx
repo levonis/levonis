@@ -38,6 +38,12 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
+import {
+  OFFER_PURCHASE_STATUSES,
+  PRIZE_STATUSES,
+  PURCHASED_PRODUCT_STATUSES,
+  normalizeStorageStatus,
+} from "@/lib/storageStatusConstants";
 
 // Professional status configuration with semantic colors
 const statusConfig: Record<string, { 
