@@ -8914,8 +8914,8 @@ export type Database = {
           ordered_at: string | null
           product_id: string | null
           product_image: string | null
-          product_name: string
-          product_name_ar: string
+          product_name: string | null
+          product_name_ar: string | null
           product_price: number
           product_title: string | null
           purchase_id: string | null
@@ -8942,8 +8942,8 @@ export type Database = {
           ordered_at?: string | null
           product_id?: string | null
           product_image?: string | null
-          product_name: string
-          product_name_ar: string
+          product_name?: string | null
+          product_name_ar?: string | null
           product_price?: number
           product_title?: string | null
           purchase_id?: string | null
@@ -8970,8 +8970,8 @@ export type Database = {
           ordered_at?: string | null
           product_id?: string | null
           product_image?: string | null
-          product_name?: string
-          product_name_ar?: string
+          product_name?: string | null
+          product_name_ar?: string | null
           product_price?: number
           product_title?: string | null
           purchase_id?: string | null
