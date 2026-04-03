@@ -15,7 +15,7 @@ const AD_SCRIPT_URL = "https://pl29046247.profitablecpmratenetwork.com/87/10/56/
 const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
