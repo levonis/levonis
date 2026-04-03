@@ -25,9 +25,7 @@ export default function AdRewardSection() {
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
-  const loadTimeoutRef = useRef<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const messageHandlerRef = useRef<((e: MessageEvent) => void) | null>(null);
   const countdownStartedRef = useRef(false);
 
   const { data: dailyEarned = 0 } = useQuery({
