@@ -11,7 +11,8 @@ const AD_VIEW_SECONDS = 15;
 const ADS_REQUIRED = 2;
 const MAX_DAILY_TICKETS = 5;
 
-const AD_SMARTLINK_URL = "https://www.profitablecpmratenetwork.com/ywvuwywmv?key=02c371897e5f719a5867bb155a764826";
+const AD_BANNER_KEY = "a1726696a5eb0fca2ce34179481ff13f";
+const AD_INVOKE_URL = `https://www.highperformanceformat.com/${AD_BANNER_KEY}/invoke.js`;
 
 export default function AdRewardSection() {
   const { user, isAdmin } = useAuth();
@@ -165,14 +166,50 @@ export default function AdRewardSection() {
     setCountdown(0);
     setAdState("loading");
 
-    // Load the Smartlink URL directly in the iframe
+    // Load the banner ad inside the iframe
     const iframe = iframeRef.current;
     if (iframe) {
-      iframe.src = AD_SMARTLINK_URL;
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) return;
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; }
+            body {
+              background: #0a0a0a;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100%;
+              overflow: hidden;
+            }
+          </style>
+        </head>
+        <body>
+          <script>
+            atOptions = {
+              'key' : '${AD_BANNER_KEY}',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          <\/script>
+          <script src="${AD_INVOKE_URL}"><\/script>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Start countdown once iframe content loads
       iframe.onload = () => {
         startCountdown();
       };
-      // Fallback: start countdown after 3s even if onload doesn't fire (cross-origin)
+      // Fallback: start countdown after 3s (cross-origin may block onload)
       window.setTimeout(() => {
         if (!countdownStartedRef.current) {
           startCountdown();
