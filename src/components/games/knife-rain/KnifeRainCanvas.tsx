@@ -308,6 +308,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
           if (knifeImgEl) {
             ctx.save();
             ctx.translate(fk.x, fk.y);
+            ctx.rotate(Math.PI);
             ctx.drawImage(knifeImgEl, -KNIFE_WIDTH / 2, -KNIFE_LENGTH / 2, KNIFE_WIDTH, KNIFE_LENGTH);
             ctx.restore();
           } else {
