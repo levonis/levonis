@@ -204,7 +204,7 @@ export default function AdRewardSection() {
           </div>
         </div>
         <div className="text-[10px] font-mono text-muted-foreground px-2 py-0.5 rounded bg-muted/50">
-          {dailyEarned}/{MAX_DAILY_TICKETS} اليوم
+          {isAdmin ? "وضع الأدمن" : `${dailyEarned}/${MAX_DAILY_TICKETS} اليوم`}
         </div>
       </div>
 
