@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Gift, Package, ChevronLeft, Ticket, Sparkles } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
+import {
+  OFFER_PURCHASE_STATUSES,
+  PRIZE_STATUSES,
+  PURCHASED_PRODUCT_STATUSES,
+} from "@/lib/storageStatusConstants";
 
 export default function OffersStorageSection() {
   const navigate = useNavigate();
