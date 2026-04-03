@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"));
 const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCase"));
 const StackGame = lazy(() => import("@/components/games/stack-game/StackGame"));
+const KnifeRainGame = lazy(() => import("@/components/games/knife-rain/KnifeRainGame"));
 const GameStore = lazy(() => import("@/components/games/GameStore"));
 const MyGamePrizes = lazy(() => import("@/components/games/MyGamePrizes"));
 import AdRewardSection from "@/components/games/AdRewardSection";
