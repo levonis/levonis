@@ -8908,6 +8908,7 @@ export type Database = {
           id: string
           listed_in_marketplace: boolean | null
           marketplace_listing_id: string | null
+          offer_id: string | null
           order_id: string | null
           order_status: string
           ordered_at: string | null
@@ -8916,10 +8917,13 @@ export type Database = {
           product_name: string
           product_name_ar: string
           product_price: number
+          product_title: string | null
+          purchase_id: string | null
           purchased_at: string
           shipment_request_id: string | null
           shipped_at: string | null
           source_type: string
+          status: string | null
           updated_at: string
           user_id: string
         }
@@ -8932,6 +8936,7 @@ export type Database = {
           id?: string
           listed_in_marketplace?: boolean | null
           marketplace_listing_id?: string | null
+          offer_id?: string | null
           order_id?: string | null
           order_status?: string
           ordered_at?: string | null
@@ -8940,10 +8945,13 @@ export type Database = {
           product_name: string
           product_name_ar: string
           product_price?: number
+          product_title?: string | null
+          purchase_id?: string | null
           purchased_at?: string
           shipment_request_id?: string | null
           shipped_at?: string | null
           source_type?: string
+          status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -8956,6 +8964,7 @@ export type Database = {
           id?: string
           listed_in_marketplace?: boolean | null
           marketplace_listing_id?: string | null
+          offer_id?: string | null
           order_id?: string | null
           order_status?: string
           ordered_at?: string | null
@@ -8964,10 +8973,13 @@ export type Database = {
           product_name?: string
           product_name_ar?: string
           product_price?: number
+          product_title?: string | null
+          purchase_id?: string | null
           purchased_at?: string
           shipment_request_id?: string | null
           shipped_at?: string | null
           source_type?: string
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
