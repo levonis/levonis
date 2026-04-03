@@ -4,19 +4,19 @@ import {
   playBossDefeat, playCoinCollect, playShieldWarn, playShieldBlock,
 } from "./KnifeRainAudio";
 
-import knifeImg from "@/assets/knife-rain/Normal_Knif.png";
-import wood1 from "@/assets/knife-rain/Normal_Wood_1.png";
-import wood1hit from "@/assets/knife-rain/Wood_1-_1_Hit.png";
-import wood2hits from "@/assets/knife-rain/Wood_1_2Hits.png";
-import wood3hits from "@/assets/knife-rain/Wood_1_3Hits.png";
-import candy4 from "@/assets/knife-rain/Candy_4.png";
+import knifeImg from "@/assets/knife-rain/knife_new.png";
+import woodNew1 from "@/assets/knife-rain/wood_new_1.png";
+import woodNew2 from "@/assets/knife-rain/wood_new_2.png";
+import woodNew3 from "@/assets/knife-rain/wood_new_3.png";
 import back1 from "@/assets/knife-rain/Back_1.png";
 import back2 from "@/assets/knife-rain/Back_2.png";
-import bossIdle from "@/assets/knife-rain/boss_tomato_idle.png";
-import bossHit from "@/assets/knife-rain/boss_tomato_hit.png";
-import shieldWarn1 from "@/assets/knife-rain/boss_shield_warn1.png";
-import shieldWarn2 from "@/assets/knife-rain/boss_shield_warn2.png";
-import shieldActive from "@/assets/knife-rain/boss_shield_active.png";
+
+import bossApple from "@/assets/knife-rain/boss_apple.png";
+import bossRock1 from "@/assets/knife-rain/boss_rock_1.png";
+import bossRock2 from "@/assets/knife-rain/boss_rock_2.png";
+import bossRock3 from "@/assets/knife-rain/boss_rock_3.png";
+import bossRock4 from "@/assets/knife-rain/boss_rock_4.png";
+import mineralCrystal from "@/assets/knife-rain/mineral_crystal.png";
 
 interface Props {
   onGameOver: (score: number, stage: number, knivesThrown: number) => void;
@@ -29,6 +29,7 @@ interface Props {
 
 /* ─── Types ─── */
 type SpeedVariation = "none" | "accel" | "decel" | "wave";
+type BossType = "apple" | "rock" | "cake" | null;
 
 interface StageConfig {
   targetImg: string;
@@ -36,33 +37,46 @@ interface StageConfig {
   rotationSpeed: number;
   knivesNeeded: number;
   isBoss: boolean;
+  bossType: BossType;
   label: string;
   preplacedKnives: number;
   reverseRotation: boolean;
   speedVariation: SpeedVariation;
   hasShield: boolean;
   coinCount: number;
+  obstacleCount: number;
 }
 
 interface StuckKnife { angle: number }
 interface FlyingKnife { x: number; y: number; vy: number }
 interface Coin { angle: number; collected: boolean }
 interface CoinAnim { x: number; y: number; timer: number }
+interface Obstacle { angle: number; type: "branch" | "mineral" | "knife" }
 
 type ShieldPhase = "none" | "warn1" | "warn2" | "active";
+
+/* ─── Boss rotation ─── */
+const BOSS_ROTATION: BossType[] = ["apple", "rock", "cake", "rock", "apple", "rock"];
+const ROCK_IMGS = [bossRock1, bossRock2, bossRock3, bossRock4];
+
+function getBossTargetImg(bossType: BossType, roundIdx: number): string {
+  if (bossType === "apple") return bossApple;
+  if (bossType === "rock") return ROCK_IMGS[roundIdx % ROCK_IMGS.length];
+  return ""; // cake = canvas-drawn
+}
 
 /* ─── Stages ─── */
 function buildStages(): StageConfig[] {
   const stages: StageConfig[] = [];
-  const woodImgs = [wood1, wood1hit, wood2hits, wood3hits];
+  const woodImgs = [woodNew1, woodNew2, woodNew3];
   const bgs = [back1, back2];
 
   for (let round = 0; round < 10; round++) {
     const baseSpeed = 1.5 + round * 0.4;
     const baseKnives = 4 + round;
 
-    for (let i = 0; i < 4; i++) {
-      const stageIdx = round * 5 + i;
+    for (let i = 0; i < 3; i++) {
+      const stageIdx = round * 4 + i;
       let preplaced = 0;
       let reverse = false;
       let variation: SpeedVariation = "none";
@@ -77,28 +91,38 @@ function buildStages(): StageConfig[] {
         rotationSpeed: baseSpeed + i * 0.15,
         knivesNeeded: baseKnives + Math.floor(i / 2),
         isBoss: false,
+        bossType: null,
         label: `المرحلة ${stageIdx + 1}`,
         preplacedKnives: preplaced,
         reverseRotation: reverse,
         speedVariation: variation,
         hasShield: false,
         coinCount: Math.min(1 + Math.floor(stageIdx / 5), 3),
+        obstacleCount: 0,
       });
     }
 
     // Boss
+    const bt = BOSS_ROTATION[round % BOSS_ROTATION.length];
+    const obstCount = bt === "apple" ? 2 + Math.floor(round / 2)
+                    : bt === "rock" ? 2 + Math.floor(round / 2)
+                    : bt === "cake" ? 3 + Math.floor(round / 2)
+                    : 0;
+
     stages.push({
-      targetImg: bossIdle,
+      targetImg: getBossTargetImg(bt, round),
       bgImg: bgs[(round + 1) % 2],
       rotationSpeed: baseSpeed + 1.2,
       knivesNeeded: baseKnives + 3,
       isBoss: true,
-      label: `بوس ${round + 1} 🍅`,
-      preplacedKnives: Math.min(round, 4),
+      bossType: bt,
+      label: bt === "apple" ? `بوس التفاحة 🍎` : bt === "rock" ? `بوس الصخرة 🪨` : `بوس الكيكة 🎂`,
+      preplacedKnives: bt === "cake" ? 0 : Math.min(round, 4),
       reverseRotation: round >= 2,
       speedVariation: round >= 3 ? "wave" : round >= 1 ? "accel" : "none",
-      hasShield: true,
+      hasShield: bt === "apple",
       coinCount: 2,
+      obstacleCount: obstCount,
     });
   }
   return stages;
@@ -106,6 +130,7 @@ function buildStages(): StageConfig[] {
 
 const ALL_STAGES = buildStages();
 const KNIFE_COLLISION_ANGLE = 0.22;
+const OBSTACLE_COLLISION_ANGLE = 0.25;
 const KNIFE_SPEED = 2200;
 const COIN_COLLECT_ANGLE = 0.3;
 const MAX_GAME_W = 500;
@@ -127,14 +152,12 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
     lastTime: 0,
     stageCoins: [] as Coin[],
     coinAnims: [] as CoinAnim[],
-    // Shield
+    obstacles: [] as Obstacle[],
     shieldPhase: "none" as ShieldPhase,
     shieldTimer: 0,
     shieldCooldown: 5 + Math.random() * 5,
     shieldWarnPlayed: false,
-    // Boss hit flash
     bossHitTimer: 0,
-    // Time tracking for speed variation
     stageTime: 0,
     rotDir: 1,
   });
@@ -144,8 +167,8 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
 
   useEffect(() => {
     const srcs = [
-      knifeImg, wood1, wood1hit, wood2hits, wood3hits, candy4, back1, back2,
-      bossIdle, bossHit, shieldWarn1, shieldWarn2, shieldActive,
+      knifeImg, woodNew1, woodNew2, woodNew3, back1, back2,
+      bossApple, bossRock1, bossRock2, bossRock3, bossRock4, mineralCrystal,
     ];
     let loaded = 0;
     srcs.forEach(src => {
@@ -178,6 +201,19 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
     return knives;
   }, []);
 
+  const initObstacles = useCallback((stage: StageConfig) => {
+    const obs: Obstacle[] = [];
+    if (!stage.isBoss || stage.obstacleCount <= 0) return obs;
+    const type: Obstacle["type"] = stage.bossType === "apple" ? "branch"
+      : stage.bossType === "rock" ? "mineral"
+      : "knife";
+    const spacing = (Math.PI * 2) / Math.max(stage.obstacleCount + 2, 5);
+    for (let i = 0; i < stage.obstacleCount; i++) {
+      obs.push({ angle: spacing * i + Math.random() * 0.3 + 0.5, type });
+    }
+    return obs;
+  }, []);
+
   const throwKnife = useCallback(() => {
     const s = stateRef.current;
     if (s.gameOver || s.flyingKnife || !s.canThrow || s.stageClearAnim > 0) return;
@@ -204,9 +240,10 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
     const stage = ALL_STAGES[0];
     s.stuckKnives = initPreplacedKnives(stage.preplacedKnives);
     s.stageCoins = initStageCoins(stage);
+    s.obstacles = initObstacles(stage);
     s.rotDir = 1;
     s.stageTime = 0;
-  }, [initPreplacedKnives, initStageCoins]);
+  }, [initPreplacedKnives, initStageCoins, initObstacles]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -270,7 +307,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       }
       s.targetAngle += effSpeed * s.rotDir * dt;
 
-      // Shield logic (boss only)
+      // Shield logic (apple boss only)
       if (stage.hasShield && s.stageClearAnim <= 0) {
         if (s.shieldPhase === "none") {
           s.shieldCooldown -= dt;
@@ -321,7 +358,12 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         ctx.fillStyle = "#fff";
         ctx.font = `bold ${Math.min(32, gw * 0.06)}px monospace`;
         ctx.textAlign = "center";
-        ctx.fillText(stage.isBoss ? "🍅 تم هزيمة البوس!" : "✅ مرحلة مكتملة!", cx, cy);
+        const clearText = stage.isBoss
+          ? stage.bossType === "apple" ? "🍎 تم هزيمة التفاحة!"
+          : stage.bossType === "rock" ? "🪨 تم تحطيم الصخرة!"
+          : "🎂 تم تقطيع الكيكة!"
+          : "✅ مرحلة مكتملة!";
+        ctx.fillText(clearText, cx, cy);
         ctx.font = `${Math.min(20, gw * 0.04)}px monospace`;
         ctx.fillText(`المرحلة ${s.stage + 1}`, cx, cy + 35);
         animId = requestAnimationFrame(gameLoop);
@@ -341,7 +383,6 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         if (knifeImgEl) {
           ctx.save();
           ctx.translate(0, -targetR - knifeLen * 0.35);
-          ctx.rotate(Math.PI);
           ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
           ctx.restore();
         } else {
@@ -351,30 +392,93 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         ctx.restore();
       });
 
-      // 2) Target ON TOP
-      let targetSrc = stage.targetImg;
-      if (stage.isBoss) {
-        if (s.bossHitTimer > 0) targetSrc = bossHit;
-        else targetSrc = bossIdle;
-      }
-      const tImg = getImg(targetSrc);
-      if (tImg) {
-        const tSize = targetR * 2;
-        ctx.drawImage(tImg, -tSize / 2, -tSize / 2, tSize, tSize);
-      } else {
+      // 2) Obstacles (behind target too)
+      s.obstacles.forEach(obs => {
+        ctx.save();
+        ctx.rotate(obs.angle);
+        if (obs.type === "branch") {
+          // Green branch placeholder
+          ctx.translate(0, -targetR - 12);
+          ctx.fillStyle = "#2d7a2d";
+          ctx.fillRect(-4, -18, 8, 24);
+          ctx.fillStyle = "#3a9e3a";
+          ctx.beginPath();
+          ctx.ellipse(0, -18, 10, 6, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (obs.type === "mineral") {
+          const mImg = getImg(mineralCrystal);
+          ctx.translate(0, -targetR - 8);
+          if (mImg) {
+            ctx.drawImage(mImg, -14, -14, 28, 28);
+          } else {
+            ctx.fillStyle = "#4fc3f7";
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(10, 0);
+            ctx.lineTo(0, 14);
+            ctx.lineTo(-10, 0);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else if (obs.type === "knife") {
+          // Pre-placed knife obstacle (cake boss)
+          if (knifeImgEl) {
+            ctx.translate(0, -targetR - knifeLen * 0.35);
+            ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
+          } else {
+            ctx.fillStyle = "#ff4444";
+            ctx.fillRect(-3, -targetR - knifeLen + 8, 6, knifeLen);
+          }
+        }
+        ctx.restore();
+      });
+
+      // 3) Target ON TOP
+      if (stage.isBoss && stage.bossType === "cake") {
+        // Cake boss drawn on canvas
+        const cakeR = targetR;
+        // Base layers
+        ctx.fillStyle = "#f8c8dc";
         ctx.beginPath();
-        ctx.arc(0, 0, targetR, 0, Math.PI * 2);
-        ctx.fillStyle = "#8B4513";
+        ctx.ellipse(0, 10, cakeR, cakeR * 0.85, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = "#e8a0b8";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // Icing drips
+        ctx.fillStyle = "#fff";
+        for (let a = 0; a < Math.PI * 2; a += 0.5) {
+          const dripH = 8 + Math.sin(a * 3) * 6;
+          ctx.beginPath();
+          ctx.ellipse(Math.cos(a) * cakeR * 0.85, Math.sin(a) * cakeR * 0.75 + 10, 8, dripH, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Cherry on top
+        ctx.fillStyle = "#e53935";
+        ctx.beginPath();
+        ctx.arc(0, -cakeR * 0.6, cakeR * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#2e7d32";
+        ctx.fillRect(-2, -cakeR * 0.75, 4, 10);
+      } else {
+        const tImg = getImg(stage.targetImg);
+        if (tImg) {
+          const tSize = targetR * 2;
+          ctx.drawImage(tImg, -tSize / 2, -tSize / 2, tSize, tSize);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, targetR, 0, Math.PI * 2);
+          ctx.fillStyle = "#8B4513";
+          ctx.fill();
+        }
       }
 
-      // 3) Coins on target edge
+      // 4) Coins on target edge
       s.stageCoins.forEach(coin => {
         if (coin.collected) return;
         ctx.save();
         ctx.rotate(coin.angle);
         ctx.translate(0, -targetR * 0.7);
-        // Gold circle
         ctx.beginPath();
         ctx.arc(0, 0, gw * 0.025, 0, Math.PI * 2);
         ctx.fillStyle = "#FFD700";
@@ -382,7 +486,6 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         ctx.strokeStyle = "#B8860B";
         ctx.lineWidth = 2;
         ctx.stroke();
-        // $ symbol
         ctx.fillStyle = "#8B6914";
         ctx.font = `bold ${Math.max(10, gw * 0.025)}px monospace`;
         ctx.textAlign = "center";
@@ -391,21 +494,20 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         ctx.restore();
       });
 
-      // 4) Shield overlay (boss)
-      if (stage.isBoss && s.shieldPhase !== "none") {
-        let shieldSrc: string | null = null;
-        if (s.shieldPhase === "warn1") shieldSrc = shieldWarn1;
-        else if (s.shieldPhase === "warn2") shieldSrc = shieldWarn2;
-        else if (s.shieldPhase === "active") shieldSrc = shieldActive;
-        if (shieldSrc) {
-          const sImg = getImg(shieldSrc);
-          if (sImg) {
-            const sSize = targetR * 2.6;
-            ctx.globalAlpha = s.shieldPhase === "warn1" ? 0.5 : s.shieldPhase === "warn2" ? 0.75 : 1;
-            ctx.drawImage(sImg, -sSize / 2, -sSize / 2, sSize, sSize);
-            ctx.globalAlpha = 1;
-          }
+      // 5) Shield overlay (apple boss)
+      if (stage.isBoss && stage.bossType === "apple" && s.shieldPhase !== "none") {
+        const alpha = s.shieldPhase === "warn1" ? 0.4 : s.shieldPhase === "warn2" ? 0.7 : 1;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(0, 0, targetR * 1.2, 0, Math.PI * 2);
+        ctx.strokeStyle = s.shieldPhase === "active" ? "#ff0000" : "#ff9900";
+        ctx.lineWidth = s.shieldPhase === "active" ? 6 : 3;
+        ctx.stroke();
+        if (s.shieldPhase === "active") {
+          ctx.fillStyle = "rgba(255,0,0,0.15)";
+          ctx.fill();
         }
+        ctx.globalAlpha = 1;
       }
 
       ctx.restore(); // end target group
@@ -432,8 +534,8 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         const distToCenter = Math.sqrt((fk.x - cx) ** 2 + (fk.y - cy) ** 2);
 
         if (distToCenter <= targetR + knifeLen * 0.3) {
-          // Shield check
-          if (stage.isBoss && s.shieldPhase === "active") {
+          // Shield check (apple boss)
+          if (stage.isBoss && stage.bossType === "apple" && s.shieldPhase === "active") {
             playShieldBlock();
             s.gameOver = true;
             s.flyingKnife = null;
@@ -446,14 +548,23 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
           const landingAngle = rawAngle - s.targetAngle + Math.PI / 2;
           const normalizedAngle = ((landingAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
 
-          const collision = s.stuckKnives.some(k => {
+          // Check collision with stuck knives
+          const knifeCollision = s.stuckKnives.some(k => {
             const nk = ((k.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
             let diff = Math.abs(normalizedAngle - nk);
             if (diff > Math.PI) diff = Math.PI * 2 - diff;
             return diff < KNIFE_COLLISION_ANGLE;
           });
 
-          if (collision) {
+          // Check collision with obstacles
+          const obsCollision = s.obstacles.some(ob => {
+            const no = ((ob.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+            let diff = Math.abs(normalizedAngle - no);
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+            return diff < OBSTACLE_COLLISION_ANGLE;
+          });
+
+          if (knifeCollision || obsCollision) {
             playHitKnife();
             s.gameOver = true;
             s.flyingKnife = null;
@@ -480,7 +591,6 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
               s.coins++;
               s.score += 2;
               playCoinCollect();
-              // Coin anim at target edge
               const coinWorldAngle = coin.angle + s.targetAngle;
               s.coinAnims.push({
                 x: cx + Math.cos(coinWorldAngle - Math.PI / 2) * targetR * 0.7,
@@ -506,6 +616,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
               st.stuckKnives = initPreplacedKnives(nextStage.preplacedKnives);
               st.knivesRemaining = nextStage.knivesNeeded;
               st.stageCoins = initStageCoins(nextStage);
+              st.obstacles = initObstacles(nextStage);
               st.stageClearAnim = 0;
               st.canThrow = true;
               st.stageTime = 0;
@@ -519,11 +630,10 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
           s.flyingKnife = null;
           s.canThrow = true;
         } else {
-          // Draw flying knife (blade pointing UP = toward target)
+          // Draw flying knife (blade pointing UP toward target)
           if (knifeImgEl) {
             ctx.save();
             ctx.translate(fk.x, fk.y);
-            ctx.rotate(Math.PI);
             ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
             ctx.restore();
           } else {
@@ -538,7 +648,6 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         if (knifeImgEl) {
           ctx.save();
           ctx.translate(cx, H - 130);
-          ctx.rotate(Math.PI);
           ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
           ctx.restore();
         }
@@ -581,18 +690,18 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       ctx.textAlign = "left";
       ctx.fillText(`🪙 ${s.coins}`, gx + 12, H - 30);
 
-      // Shield warning text
-      if (stage.isBoss && s.shieldPhase === "warn1") {
+      // Shield warning text (apple boss)
+      if (stage.isBoss && stage.bossType === "apple" && s.shieldPhase === "warn1") {
         ctx.fillStyle = "#ff9900";
         ctx.font = `bold ${Math.min(18, gw * 0.04)}px monospace`;
         ctx.textAlign = "center";
         ctx.fillText("⚠️ درع قادم!", cx, cy + targetR + 40);
-      } else if (stage.isBoss && s.shieldPhase === "warn2") {
+      } else if (stage.isBoss && stage.bossType === "apple" && s.shieldPhase === "warn2") {
         ctx.fillStyle = "#ff4400";
         ctx.font = `bold ${Math.min(18, gw * 0.04)}px monospace`;
         ctx.textAlign = "center";
         ctx.fillText("🛡️ انتبه!", cx, cy + targetR + 40);
-      } else if (stage.isBoss && s.shieldPhase === "active") {
+      } else if (stage.isBoss && stage.bossType === "apple" && s.shieldPhase === "active") {
         ctx.fillStyle = "#ff0000";
         ctx.font = `bold ${Math.min(20, gw * 0.045)}px monospace`;
         ctx.textAlign = "center";
@@ -610,13 +719,13 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       canvas.removeEventListener("mousedown", handleInput);
       canvas.removeEventListener("touchstart", handleInput);
     };
-  }, [throwKnife, onGameOver, onScoreUpdate, scoreSettings, initPreplacedKnives, initStageCoins]);
+  }, [throwKnife, onGameOver, onScoreUpdate, scoreSettings, initPreplacedKnives, initStageCoins, initObstacles]);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full touch-none"
-      style={{ zIndex: 1 }}
+      style={{ zIndex: 10 }}
     />
   );
 }
