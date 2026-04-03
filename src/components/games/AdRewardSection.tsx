@@ -113,13 +113,6 @@ export default function AdRewardSection() {
       setAdState("idle");
     };
 
-    // Timeout: if user doesn't leave within 30s, ad probably didn't show
-    setTimeout(() => {
-      if (adTriggeredRef.current && adState === "waiting") {
-        // Ad might have shown as overlay instead of new tab
-        // Allow manual confirmation
-      }
-    }, 30000);
   };
 
   const handleAdComplete = async () => {
