@@ -300,7 +300,7 @@ export default function AdRewardSection() {
     setCountdown(0);
   };
 
-  if (!user) return null;
+  if (!user || !isAdmin) return null;
 
   const isLoadingAd = adState === "loading";
   const isViewingAd = adState === "viewing";
