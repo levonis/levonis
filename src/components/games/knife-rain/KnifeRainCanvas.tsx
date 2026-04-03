@@ -220,16 +220,14 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         ctx.save();
         ctx.rotate(k.angle);
         if (knifeImgEl) {
-          const kw = KNIFE_WIDTH;
-          const kh = KNIFE_LENGTH;
           ctx.save();
-          ctx.translate(0, -targetR - kh / 2 + 8);
+          ctx.translate(0, -targetR - knifeLen * 0.35);
           ctx.rotate(Math.PI);
-          ctx.drawImage(knifeImgEl, -kw / 2, -kh / 2, kw, kh);
+          ctx.drawImage(knifeImgEl, -knifeW / 2, -knifeLen / 2, knifeW, knifeLen);
           ctx.restore();
         } else {
           ctx.fillStyle = "#ccc";
-          ctx.fillRect(-2, -targetR - KNIFE_LENGTH + 8, 4, KNIFE_LENGTH);
+          ctx.fillRect(-3, -targetR - knifeLen + 8, 6, knifeLen);
         }
         ctx.restore();
       });
