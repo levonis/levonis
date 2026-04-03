@@ -167,8 +167,10 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       const H = canvas.height;
       const stage = ALL_STAGES[Math.min(s.stage, ALL_STAGES.length - 1)];
       const cx = W / 2;
-      const cy = H * 0.35;
-      const targetR = Math.min(TARGET_RADIUS, W * 0.12);
+      const cy = H * 0.30;
+      const targetR = W * 0.28; // ~56% of screen width diameter
+      const knifeLen = W * 0.22;
+      const knifeW = knifeLen * 0.28;
 
       // Update rotation
       s.targetAngle += stage.rotationSpeed * dt;
