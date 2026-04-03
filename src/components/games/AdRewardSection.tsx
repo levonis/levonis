@@ -15,7 +15,7 @@ const AD_SCRIPT_URL = "https://pl29046247.profitablecpmratenetwork.com/87/10/56/
 const SOCIAL_BAR_SCRIPT_URL = "https://pl29046248.profitablecpmratenetwork.com/d0/f2/b6/d0f2b62f2043abab1c57a0ceebbea3aa.js";
 
 export default function AdRewardSection() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export default function AdRewardSection() {
     enabled: !!user,
   });
 
-  const canEarnMore = dailyEarned < MAX_DAILY_TICKETS;
+  const canEarnMore = isAdmin || dailyEarned < MAX_DAILY_TICKETS;
 
   const startNewSession = useCallback(() => {
     setSessionId(crypto.randomUUID());
@@ -204,7 +204,7 @@ export default function AdRewardSection() {
           </div>
         </div>
         <div className="text-[10px] font-mono text-muted-foreground px-2 py-0.5 rounded bg-muted/50">
-          {dailyEarned}/{MAX_DAILY_TICKETS} اليوم
+          {isAdmin ? "وضع الأدمن" : `${dailyEarned}/${MAX_DAILY_TICKETS} اليوم`}
         </div>
       </div>
 
@@ -292,7 +292,7 @@ export default function AdRewardSection() {
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-            {!canEarnMore ? "الحد اليومي" : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
+            {!canEarnMore ? (isAdmin ? "شاهد الإعلان" : "الحد اليومي") : watchCount === 0 ? "شاهد الإعلان الأول" : "شاهد الإعلان الثاني"}
           </Button>
         )}
       </div>
