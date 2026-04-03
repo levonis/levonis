@@ -281,7 +281,9 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
       const stage = ALL_STAGES[Math.min(s.stage, ALL_STAGES.length - 1)];
       const cx = gx + gw / 2;
       const cy = H * 0.30;
-      const targetR = gw * 0.28;
+      // Bosses get a bigger target so knives embed properly
+      const isBossStage = stage.isBoss;
+      const targetR = isBossStage ? gw * 0.34 : gw * 0.28;
       const knifeLen = gw * 0.22;
       const knifeW = knifeLen * 0.28;
 
