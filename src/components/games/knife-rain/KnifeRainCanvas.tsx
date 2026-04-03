@@ -125,7 +125,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
     playThrow();
     s.flyingKnife = {
       x: canvas.width / 2,
-      y: canvas.height - 100,
+      y: canvas.height - 140,
       vy: -KNIFE_SPEED,
     };
     s.canThrow = false;
