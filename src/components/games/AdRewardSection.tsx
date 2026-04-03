@@ -71,16 +71,6 @@ export default function AdRewardSection() {
       countdownRef.current = null;
     }
 
-    if (loadTimeoutRef.current) {
-      window.clearTimeout(loadTimeoutRef.current);
-      loadTimeoutRef.current = null;
-    }
-
-    if (messageHandlerRef.current) {
-      window.removeEventListener("message", messageHandlerRef.current);
-      messageHandlerRef.current = null;
-    }
-
     countdownStartedRef.current = false;
 
     if (options?.clearIframe) {
