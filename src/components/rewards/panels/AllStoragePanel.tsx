@@ -412,13 +412,23 @@ export default function AllStoragePanel() {
   const isLoading = isLoadingOffers || isLoadingPrizes || isLoadingPurchased;
   const isPending = requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending || requestPurchasedShippingMutation.isPending;
 
-  if (!user) {
+  if (!user || authLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-24 h-24 rounded-3xl bg-muted/50 flex items-center justify-center mb-5">
-          <Package className="h-12 w-12 text-muted-foreground/40" />
-        </div>
-        <p className="text-muted-foreground font-semibold text-lg">سجّل الدخول لعرض مخزنك</p>
+        {authLoading ? (
+          <div className="space-y-4 w-full">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="w-24 h-24 rounded-3xl bg-muted/50 flex items-center justify-center mb-5">
+              <Package className="h-12 w-12 text-muted-foreground/40" />
+            </div>
+            <p className="text-muted-foreground font-semibold text-lg">سجّل الدخول لعرض مخزنك</p>
+          </>
+        )}
       </div>
     );
   }
