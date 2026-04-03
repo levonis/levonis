@@ -131,7 +131,7 @@ function buildStages(): StageConfig[] {
 const ALL_STAGES = buildStages();
 const KNIFE_COLLISION_ANGLE = 0.22;
 const OBSTACLE_COLLISION_ANGLE = 0.25;
-const KNIFE_SPEED = 2200;
+const KNIFE_SPEED = 3200;
 const COIN_COLLECT_ANGLE = 0.3;
 const MAX_GAME_W = 500;
 
