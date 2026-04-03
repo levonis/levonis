@@ -113,8 +113,16 @@ export default function GameStore({ onBack }: { onBack: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["user-points"] });
       queryClient.invalidateQueries({ queryKey: ["user-tickets"] });
       toast.success(`تم شراء ${reward.title_ar}!`);
-    } catch {
-      toast.error("حدث خطأ!");
+    } catch (err: any) {
+      const msg = err?.message || err?.details || "";
+      if (msg.includes("Insufficient points")) {
+        toast.error("رصيد النقاط غير كافٍ!");
+      } else if (msg.includes("not found")) {
+        toast.error("لا يوجد رصيد نقاط. اكسب نقاطاً أولاً!");
+      } else {
+        console.error("Game store purchase error:", err);
+        toast.error("حدث خطأ!");
+      }
     } finally {
       setBuying(null);
     }
