@@ -1,63 +1,74 @@
 
-المشكلة ما زالت على الأغلب من منطق الواجهة نفسه، وليس من وجود البيانات فقط. بعد مراجعة الملفات الحالية، وجدت 3 أسباب مرجحة لاختفاء عناصر المخزن في `/offers`:
 
-1. `AllStoragePanel.tsx` وعدادات `/offers` يعتمدون على فلاتر حالات غير متطابقة مع الحالات الفعلية المخزنة في الجداول.
-2. `user_purchased_products` يتحول غالباً إلى `ordered` عند طلب الشحن، لكن صفحة المخزن لا تجلب `ordered` أصلاً، لذلك العناصر تختفي.
-3. `competition_prizes` قد تبقى على حالة مثل `won` قبل الشحن، لكن الصفحة لا تعتبرها ضمن المخزن.
-4. الصفحة لا تنتظر `loading` من `useAuth`، لذلك قد تظهر كأن المخزن فارغ أثناء استرجاع الجلسة.
+# Knife Rain Game - Build Plan
 
-الخطة:
+A new 2D canvas game where players throw knives at a rotating wooden target. The target progresses through damage stages, with boss rounds featuring special targets (candy). Uses the uploaded assets for knife, wood stages, boss, and backgrounds.
 
-1. توحيد حالات المخزن في مكان واحد
-- إنشاء منطق موحد داخل الواجهة لتحديد ما الذي يعتبر “في المخزن” و”قيد المعالجة” لكل مصدر:
-  - `product_offer_purchases`
-  - `user_purchased_products`
-  - `competition_prizes`
+## Game Concept
+- A wooden log rotates in the center of the screen
+- Player taps to throw knives that stick into the log
+- Each knife stuck = points. Hit all required knives without hitting another knife = stage complete
+- Wood shows progressive damage (normal → 1 hit → 2 hits → 3 hits) across stages
+- Boss stages use the candy target (harder, faster rotation)
+- Backgrounds alternate between Back_1 (green) and Back_2 (orange)
+- Web Audio API sound effects (knife throw, stick, hit-knife fail, stage clear, boss defeat)
 
-2. إصلاح فلاتر الجلب في صفحة المخزن
-- تعديل `src/components/rewards/panels/AllStoragePanel.tsx` بحيث:
-  - يشمل `ordered` في `user_purchased_products`
-  - يشمل `won` في `competition_prizes` إذا كانت هذه الحالة مستخدمة قبل الشحن
-  - يحول الحالات القديمة/الداخلية إلى حالات عرض واضحة:
-    - `not_ordered` و/أو `purchased` و/أو `won` => `pending`
-    - `ordered` => `shipping_requested` أو `processing` حسب واجهة العرض الحالية
+## Implementation Steps
 
-3. إصلاح العداد في `/offers`
-- تعديل `src/pages/OffersStoragePage.tsx`
-- تعديل `src/components/OffersStorageSection.tsx`
-- جعل العداد يستخدم نفس منطق الحالات المستخدم في `AllStoragePanel` حتى لا يظهر العداد صفراً بينما البيانات موجودة.
+### 1. Copy Assets to Project
+Copy all 8 uploaded images into `src/assets/knife-rain/`:
+- `Normal_Knif.png`, `Normal_Wood_1.png`, `Wood_1-_1_Hit.png`, `Wood_1_2Hits.png`, `Wood_1_3Hits.png`, `Candy_4.png`, `Back_1.png`, `Back_2.png`
 
-4. إصلاح تحميل الجلسة قبل العرض
-- استخدام `{ user, loading }` من `useAuth` في:
-  - `OffersStoragePage.tsx`
-  - `AllStoragePanel.tsx`
-  - `OffersStorageSection.tsx`
-- عرض حالة تحميل بدلاً من إظهار “مخزنك فارغ” قبل اكتمال استرجاع المستخدم.
+### 2. Database Setup (Migration)
+Create tables mirroring the Stack Game pattern:
+- **`knife_rain_settings`** — game_enabled, entry_fee_tickets, points_per_knife, stage_clear_bonus, boss_bonus, game_points_per_knife, game_combo_multiplier, total_plays, total_points_distributed
+- **`knife_rain_sessions`** — user_id, session_token, status, score, started_at, ended_at
+- **`knife_rain_high_scores`** — user_id, high_score, best_stage
+- **`knife_rain_milestones`** — target_score, prize_name_ar, product_id, selected_color, selected_option_id, stock, claimed_count, is_active
+- **`knife_rain_leaderboard_prizes`** — position, prize_name_ar, product_id, etc., is_active
+- **`knife_rain_winners`** — user_id, prize_type, prize_name, awarded_at
+- RPC functions: `start_knife_rain`, `end_knife_rain`, `update_knife_rain_high_score`, `check_knife_rain_milestone`, `claim_knife_rain_prize_to_cart`
+- RLS policies following the same pattern as stack_game (public read settings, authenticated play, admin update)
 
-5. منع تكرار الخطأ مستقبلاً
-- استخراج ثوابت/دوال صغيرة مشتركة لحالات المخزن بدل تكرار القيم النصية في أكثر من ملف.
-- هذا يمنع تعارضات مثل وجود `ordered` في مكان وعدم احتسابه في مكان آخر.
+### 3. Build Game Component (`src/components/games/knife-rain/`)
+- **KnifeRainGame.tsx** — Main wrapper (menu / playing / gameover states), ticket logic, leaderboard, milestones, winners — mirrors StackGame.tsx structure
+- **KnifeRainCanvas.tsx** — HTML5 Canvas 2D game engine:
+  - Rotating target (wood/boss image) in center
+  - Knife throwing on tap/click from bottom
+  - Collision detection (knife hits target vs knife hits existing knife)
+  - Stage progression system with damage visuals
+  - Boss rounds every N stages
+  - Background image switching per stage group
+- **KnifeRainAudio.ts** — Web Audio API sounds (throw whoosh, stick thud, fail buzz, stage clear chime, boss defeat)
 
-6. مراجعة تدفق الشحن المرتبط بالمخزن
-- في `AllStoragePanel.tsx` سأراجع أيضاً ما إذا كان طلب الشحن يجب أن يمر عبر RPC الموجود أصلاً بدل تحديث الحالة مباشرة، لأن المنطق الحالي قد يكتب حالات تختلف عن الحالات التي تتوقعها باقي الصفحات.
+### 4. Admin Tab (`src/components/admin/KnifeRainTab.tsx`)
+Following SpaceBlasterTab/StackGameTab pattern:
+- Toggle game on/off
+- Entry fee (tickets), points per knife, stage bonus, boss bonus
+- Game score multipliers
+- Milestone prizes management (with ProductPicker)
+- Leaderboard prizes management
+- Stats display (total plays, total points distributed)
 
-الملفات المستهدفة:
-- `src/components/rewards/panels/AllStoragePanel.tsx`
-- `src/pages/OffersStoragePage.tsx`
-- `src/components/OffersStorageSection.tsx`
-- وقد أراجع أيضاً `src/hooks/useAuth.tsx` فقط للتكامل مع حالة `loading`
+### 5. Wire Into Existing Systems
+- **GamesData.ts** — Add `knife_rain` GameResource node (status: LIVE, category: STRATEGY)
+- **MiniGames.tsx** — Add lazy import for KnifeRainGame, add to activeGame render, add settings query for enabled check
+- **AdminGamesSettings.tsx** — Add KnifeRainTab to tabs array with a knife/target icon
+- **Route** — No new route needed (renders inline like other games)
 
-تفاصيل تقنية مختصرة:
-- السبب الأوضح حالياً: الواجهة تستثني `ordered` من `user_purchased_products` رغم أن دوال الشحن في المهاجرات تقوم بتحويل العناصر إلى `ordered`.
-- هناك أيضاً احتمال قوي أن `competition_prizes` بحالة `won` لا تظهر لأن الصفحة لا تعتبرها ضمن عناصر المخزن.
-- الحل الأفضل هو “تطبيع الحالات” في الواجهة بدلاً من الاعتماد على أسماء الحالات الخام كما هي من كل جدول.
+### 6. Leaderboard & Rewards
+- Same season-based leaderboard pattern as Stack Game
+- Mid-game milestone checks via RPC (prize popup during gameplay)
+- Game-over score submission and high score tracking
+- Points awarded to user's website points balance
 
-التحقق بعد التنفيذ:
-- تجربة مستخدم لديه عناصر `not_ordered`
-- تجربة مستخدم لديه عناصر `ordered`
-- تجربة مستخدم لديه جوائز `won`
-- التأكد أن:
-  - العداد يظهر بشكل صحيح
-  - تبويب “مخزني” لا يظهر فارغاً
-  - العناصر تظهر تحت القسم الصحيح
-  - حالة التحميل لا تعرض empty state بشكل خاطئ
+## Technical Details
+
+**Canvas approach**: HTML5 Canvas 2D (no Three.js needed — this is a 2D game). Uses `requestAnimationFrame` loop with image sprites for knife/target/background.
+
+**Stage system**: Array of stage configs defining target image, rotation speed, knives required, and whether it's a boss stage. Difficulty increases with faster rotation and more knives needed.
+
+**Collision**: Angular collision — each stuck knife occupies an angle on the circle. New knife fails if it lands within a threshold angle of any existing knife.
+
+**Files created**: ~6 new files, 4 files modified, 1 migration
+
