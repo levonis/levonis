@@ -75,6 +75,14 @@ export default function MiniGames() {
     },
   });
 
+  const { data: knifeRainSettings } = useQuery({
+    queryKey: ["knife-rain-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("knife_rain_settings").select("game_enabled").limit(1).single();
+      return data as any;
+    },
+  });
+
   // Mark disabled games instead of filtering them out
   const gamesWithStatus = GAME_NODES.map(game => {
     if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
