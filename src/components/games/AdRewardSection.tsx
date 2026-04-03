@@ -214,11 +214,9 @@ export default function AdRewardSection() {
       };
       window.addEventListener("message", handleMessage);
 
-      // Start countdown after delay to let ad load
+      // Start countdown after delay to let ad load (if not cancelled/blocked)
       setTimeout(() => {
-        if (adState === "loading") {
-          startCountdown();
-        }
+        startCountdown();
       }, 3000);
     }, 100);
   }, [user, canEarnMore, adState, cleanup, startCountdown]);
