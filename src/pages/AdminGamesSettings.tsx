@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import { Gamepad2, Music, Gift, Swords, ShoppingBag } from "lucide-react";
+import { Gamepad2, Music, Gift, Swords, ShoppingBag, Crosshair } from "lucide-react";
 
 const GameMusicTab = lazy(() => import("@/components/admin/GameMusicTab"));
 const MysteryCaseTab = lazy(() => import("@/components/admin/MysteryCaseTab"));
