@@ -25,7 +25,6 @@ export default function AdRewardSection() {
   const [countdown, setCountdown] = useState(0);
 
   const countdownRef = useRef<number | null>(null);
-  const adContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["ad-daily-earned", user?.id],
@@ -69,14 +68,18 @@ export default function AdRewardSection() {
     setAdState("viewing");
     setCountdown(AD_VIEW_SECONDS);
 
-    // Inject ad script into the overlay container
-    if (adContainerRef.current) {
-      adContainerRef.current.innerHTML = "";
-      const script = document.createElement("script");
-      script.src = SOCIAL_BAR_SCRIPT_URL;
-      script.async = true;
-      adContainerRef.current.appendChild(script);
-    }
+    // Inject ad script into document body (Social Bar renders as floating overlay on page)
+    const script = document.createElement("script");
+    script.src = SOCIAL_BAR_SCRIPT_URL;
+    script.async = true;
+    script.dataset.adReward = "true";
+    document.body.appendChild(script);
+    script.onload = () => {
+      try { document.body.removeChild(script); } catch {}
+    };
+    script.onerror = () => {
+      try { document.body.removeChild(script); } catch {}
+    };
 
     // Start countdown
     countdownRef.current = window.setInterval(() => {
@@ -98,8 +101,6 @@ export default function AdRewardSection() {
     setLoading(true);
     const newCount = watchCount + 1;
 
-    // Clean up ad container
-    if (adContainerRef.current) adContainerRef.current.innerHTML = "";
 
     try {
       const { data, error } = await supabase.rpc("record_ad_watch_and_award", {
@@ -147,7 +148,7 @@ export default function AdRewardSection() {
       window.clearInterval(countdownRef.current);
       countdownRef.current = null;
     }
-    if (adContainerRef.current) adContainerRef.current.innerHTML = "";
+    
     setAdState("idle");
     setCountdown(0);
   };
@@ -230,12 +231,6 @@ export default function AdRewardSection() {
             <button onClick={cancelAd} className="text-muted-foreground hover:text-destructive transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
-          </div>
-          <div
-            ref={adContainerRef}
-            className="min-h-[200px] flex items-center justify-center bg-muted/10"
-          >
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
           {/* Progress bar */}
           <div className="h-1 bg-muted/30">
