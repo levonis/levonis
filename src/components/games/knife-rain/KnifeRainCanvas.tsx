@@ -66,9 +66,9 @@ function buildStages(): StageConfig[] {
 const ALL_STAGES = buildStages();
 const KNIFE_COLLISION_ANGLE = 0.22; // ~12.6 degrees threshold
 const TARGET_RADIUS = 60;
-const KNIFE_LENGTH = 50;
-const KNIFE_WIDTH = 12;
-const KNIFE_SPEED = 900; // px per second
+const KNIFE_LENGTH = 90;
+const KNIFE_WIDTH = 28;
+const KNIFE_SPEED = 2200; // px per second
 
 interface StuckKnife {
   angle: number;
@@ -125,7 +125,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
     playThrow();
     s.flyingKnife = {
       x: canvas.width / 2,
-      y: canvas.height - 100,
+      y: canvas.height - 140,
       vy: -KNIFE_SPEED,
     };
     s.canThrow = false;
@@ -223,7 +223,11 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
         if (knifeImgEl) {
           const kw = KNIFE_WIDTH;
           const kh = KNIFE_LENGTH;
-          ctx.drawImage(knifeImgEl, -kw / 2, -targetR - kh + 8, kw, kh);
+          ctx.save();
+          ctx.translate(0, -targetR - kh / 2 + 8);
+          ctx.rotate(Math.PI);
+          ctx.drawImage(knifeImgEl, -kw / 2, -kh / 2, kw, kh);
+          ctx.restore();
         } else {
           ctx.fillStyle = "#ccc";
           ctx.fillRect(-2, -targetR - KNIFE_LENGTH + 8, 4, KNIFE_LENGTH);
@@ -304,6 +308,7 @@ export default function KnifeRainCanvas({ onGameOver, onScoreUpdate, scoreSettin
           if (knifeImgEl) {
             ctx.save();
             ctx.translate(fk.x, fk.y);
+            ctx.rotate(Math.PI);
             ctx.drawImage(knifeImgEl, -KNIFE_WIDTH / 2, -KNIFE_LENGTH / 2, KNIFE_WIDTH, KNIFE_LENGTH);
             ctx.restore();
           } else {
