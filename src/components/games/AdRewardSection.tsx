@@ -148,7 +148,7 @@ export default function AdRewardSection() {
       window.clearInterval(countdownRef.current);
       countdownRef.current = null;
     }
-    if (adContainerRef.current) adContainerRef.current.innerHTML = "";
+    
     setAdState("idle");
     setCountdown(0);
   };
