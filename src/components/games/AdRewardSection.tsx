@@ -69,14 +69,18 @@ export default function AdRewardSection() {
     setAdState("viewing");
     setCountdown(AD_VIEW_SECONDS);
 
-    // Inject ad script into the overlay container
-    if (adContainerRef.current) {
-      adContainerRef.current.innerHTML = "";
-      const script = document.createElement("script");
-      script.src = SOCIAL_BAR_SCRIPT_URL;
-      script.async = true;
-      adContainerRef.current.appendChild(script);
-    }
+    // Inject ad script into document body (Social Bar renders as floating overlay on page)
+    const script = document.createElement("script");
+    script.src = SOCIAL_BAR_SCRIPT_URL;
+    script.async = true;
+    script.dataset.adReward = "true";
+    document.body.appendChild(script);
+    script.onload = () => {
+      try { document.body.removeChild(script); } catch {}
+    };
+    script.onerror = () => {
+      try { document.body.removeChild(script); } catch {}
+    };
 
     // Start countdown
     countdownRef.current = window.setInterval(() => {
