@@ -199,41 +199,40 @@ const AdminQRPrinterTab = () => {
     },
   });
 
-  // Delete/reset printer mutation
+  // Delete printer mutation - fully removes the serial number record
   const deletePrinterMutation = useMutation({
     mutationFn: async (printer: any) => {
-      // Remove user_printers records
+      // Remove user_printers records first (FK dependency)
       await supabase.from('user_printers').delete().eq('store_printer_id', printer.id);
 
-      // Reset the printer
-      const { error } = await supabase
-        .from('store_printers')
-        .update({
-          buyer_user_id: null,
-          status: 'pending',
-          is_registered: false,
-          activation_date: null,
-          expiry_date: null,
-        })
-        .eq('id', printer.id);
-      if (error) throw error;
+      // Remove any subscription records referencing this printer via user_printers
+      // (already handled by cascading from user_printers delete above)
 
+      // Log the deletion before removing
       await supabase.from('printer_protection_logs').insert({
         admin_id: user?.id,
-        action: 'reset_printer',
+        action: 'delete_printer',
         entity_type: 'store_printer',
         entity_id: printer.id,
         details: { serial_number: printer.serial_number, previous_user: printer.buyer_user_id },
       });
+
+      // Actually delete the printer record
+      const { error } = await supabase
+        .from('store_printers')
+        .delete()
+        .eq('id', printer.id);
+      if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('تم إعادة تعيين الطابعة بنجاح');
+      toast.success('تم حذف السيريال نمبر بنجاح');
       queryClient.invalidateQueries({ queryKey: ['admin-qr-printers'] });
       setDeleteConfirmDialog(false);
       setDeletingPrinter(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      console.error('Delete printer error:', error);
+      toast.error(error.message || 'حدث خطأ في حذف السيريال');
     },
   });
 
@@ -596,12 +595,12 @@ const AdminQRPrinterTab = () => {
       <AlertDialog open={deleteConfirmDialog} onOpenChange={setDeleteConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>إعادة تعيين الطابعة</AlertDialogTitle>
+            <AlertDialogTitle>حذف السيريال نمبر</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم إلغاء ربط الطابعة "{deletingPrinter?.model_name_ar}" (السيريال: {deletingPrinter?.serial_number}) من المستخدم الحالي وإعادة حالتها إلى "معلّقة".
+              سيتم حذف الطابعة "{deletingPrinter?.model_name_ar}" (السيريال: {deletingPrinter?.serial_number}) نهائياً من النظام.
               {deletingPrinter?.buyer_user_id && (
                 <span className="block mt-2 text-destructive font-medium">
-                  ⚠️ هذا الإجراء سيزيل الطابعة من حساب المستخدم ويلغي الضمان.
+                  ⚠️ هذا الإجراء سيزيل الطابعة من حساب المستخدم ويلغي الضمان نهائياً.
                 </span>
               )}
             </AlertDialogDescription>
@@ -613,7 +612,7 @@ const AdminQRPrinterTab = () => {
               onClick={() => deletingPrinter && deletePrinterMutation.mutate(deletingPrinter)}
               disabled={deletePrinterMutation.isPending}
             >
-              {deletePrinterMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد الإعادة'}
+              {deletePrinterMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد الحذف'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
