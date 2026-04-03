@@ -210,6 +210,11 @@ export default function MiniGames() {
         </div>
       </div>
 
+      {/* Ad Reward Section */}
+      <div className="max-w-2xl mx-auto px-4 pt-2 relative z-10">
+        <AdRewardSection />
+      </div>
+
       {/* Game Grid */}
       <div className="max-w-2xl mx-auto px-4 py-4 relative z-10">
         <div className="grid grid-cols-2 gap-3">
