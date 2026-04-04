@@ -668,6 +668,34 @@ export default function AdminInventory() {
   const removeItemFromDraft = (index: number) => setDraftItems((prev) => prev.filter((_, i) => i !== index));
   const draftGrandTotal = useMemo(() => draftItems.reduce((s, i) => s + i.line_total, 0), [draftItems]);
 
+  // Helper: get available colors and options for a product
+  const getProductVariants = useCallback((productId: string, selectedColor?: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return { colors: [] as string[], options: [] as string[] };
+    const colorsArr: any[] = Array.isArray(product.colors) ? product.colors : [];
+    const colorNames = colorsArr.map((c: any) => c.color).filter(Boolean);
+    let optionNames: string[] = [];
+    if (selectedColor) {
+      const colorObj = colorsArr.find((c: any) => c.color === selectedColor);
+      if (colorObj?.option_stocks && typeof colorObj.option_stocks === 'object') {
+        optionNames = Object.keys(colorObj.option_stocks);
+      }
+      if (colorObj?.options && Array.isArray(colorObj.options)) {
+        optionNames = [...new Set([...optionNames, ...colorObj.options])];
+      }
+    } else {
+      colorsArr.forEach((c: any) => {
+        if (c.option_stocks && typeof c.option_stocks === 'object') {
+          optionNames = [...new Set([...optionNames, ...Object.keys(c.option_stocks)])];
+        }
+        if (c.options && Array.isArray(c.options)) {
+          optionNames = [...new Set([...optionNames, ...c.options])];
+        }
+      });
+    }
+    return { colors: colorNames, options: optionNames.filter(Boolean) };
+  }, [products]);
+
   // ====== COMPUTED ======
   const pendingShipments = useMemo(() => shipments.filter((s) => s.status === 'pending'), [shipments]);
   const mergedShipments = useMemo(() => shipments.filter((s) => s.status === 'merged'), [shipments]);
