@@ -591,6 +591,57 @@ export type Database = {
           },
         ]
       }
+      card_gifts: {
+        Row: {
+          amount_paid: number
+          card_id: string | null
+          created_at: string
+          gifter_id: string
+          id: string
+          level_id: string
+          message: string | null
+          payment_method: string
+          recipient_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          card_id?: string | null
+          created_at?: string
+          gifter_id: string
+          id?: string
+          level_id: string
+          message?: string | null
+          payment_method?: string
+          recipient_id: string
+        }
+        Update: {
+          amount_paid?: number
+          card_id?: string | null
+          created_at?: string
+          gifter_id?: string
+          id?: string
+          level_id?: string
+          message?: string | null
+          payment_method?: string
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_gifts_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_gifts_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cart_items: {
         Row: {
           bundle_id: string | null
@@ -9905,6 +9956,24 @@ export type Database = {
       }
       get_user_level: { Args: { p_user_id: string }; Returns: string }
       get_user_lock_key: { Args: { p_user_id: string }; Returns: number }
+      gift_card_with_points: {
+        Args: {
+          p_gifter_id: string
+          p_level_id: string
+          p_message?: string
+          p_recipient_id: string
+        }
+        Returns: Json
+      }
+      gift_card_with_wallet: {
+        Args: {
+          p_gifter_id: string
+          p_level_id: string
+          p_message?: string
+          p_recipient_id: string
+        }
+        Returns: Json
+      }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
@@ -10018,6 +10087,15 @@ export type Database = {
       request_product_delivery: {
         Args: { p_product_ids: string[] }
         Returns: Json
+      }
+      search_users_for_gift: {
+        Args: { p_query: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          username: string
+        }[]
       }
       send_general_notification: {
         Args: { _message: string; _title: string; _type?: string }
