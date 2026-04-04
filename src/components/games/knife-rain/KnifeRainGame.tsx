@@ -444,7 +444,7 @@ export default function KnifeRainGame({ onBack }: Props) {
                 const isUser = user && entry.user_id === user.id;
                 const posEmoji = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
                 return (
-                  <div key={entry.id} className={`flex items-center justify-between rounded-xl p-3 transition-all ${
+                  <div key={entry.id} onClick={() => navigate(`/profile/${entry.user_id}?tab=games`)} className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer hover:scale-[1.02] ${
                     i === 0 ? "bg-gradient-to-l from-yellow-500/10 to-transparent border-2 border-yellow-500/30"
                     : prize ? "bg-primary/5 border border-primary/20"
                     : isUser ? "bg-accent/10 border border-accent/20"
@@ -460,6 +460,13 @@ export default function KnifeRainGame({ onBack }: Props) {
                           {getProfileName(entry.user_id)} {isUser && "(أنت)"}
                         </div>
                       </div>
+                      {getProfileAvatar(entry.user_id) ? (
+                        <img src={getProfileAvatar(entry.user_id)!} alt="" className="w-7 h-7 rounded-full object-cover border border-border/40" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                          {getProfileName(entry.user_id)[0]}
+                        </div>
+                      )}
                       <span className="text-lg">{posEmoji}</span>
                     </div>
                   </div>

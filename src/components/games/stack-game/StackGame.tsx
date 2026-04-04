@@ -491,7 +491,8 @@ export default function StackGame({ onBack }: Props) {
                 return (
                   <div
                     key={entry.id}
-                    className={`flex items-center justify-between rounded-xl p-3 transition-all ${
+                    onClick={() => navigate(`/profile/${entry.user_id}?tab=games`)}
+                    className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer hover:scale-[1.02] ${
                       i === 0
                         ? "bg-gradient-to-l from-yellow-500/10 to-transparent border-2 border-yellow-500/30"
                         : prize
@@ -511,6 +512,13 @@ export default function StackGame({ onBack }: Props) {
                           {getProfileName(entry.user_id)} {isUser && "(أنت)"}
                         </div>
                       </div>
+                      {getProfileAvatar(entry.user_id) ? (
+                        <img src={getProfileAvatar(entry.user_id)!} alt="" className="w-7 h-7 rounded-full object-cover border border-border/40" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                          {getProfileName(entry.user_id)[0]}
+                        </div>
+                      )}
                       <span className="text-lg">{posEmoji}</span>
                     </div>
                   </div>
