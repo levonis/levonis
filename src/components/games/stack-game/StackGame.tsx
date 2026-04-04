@@ -34,6 +34,7 @@ export default function StackGame({ onBack }: Props) {
   const [liveScore, setLiveScore] = useState(0);
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
+  const [profileDialogUserId, setProfileDialogUserId] = useState<string | null>(null);
 
 
   const { data: settings } = useQuery({
