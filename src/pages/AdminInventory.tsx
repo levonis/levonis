@@ -1208,12 +1208,20 @@ export default function AdminInventory() {
                             </div>
                       }
 
-                          <Button className="w-full text-white border h-9 text-xs"
-                      style={{ background: `linear-gradient(135deg, ${NEON.emerald}25, ${NEON.emerald}10)`, borderColor: `${NEON.emerald}30` }}
-                      disabled={mergeShipmentMutation.isPending}
-                      onClick={() => mergeShipmentMutation.mutate(s)}>
-                            <CheckCircle2 className="h-3.5 w-3.5 ml-1" /> تم الاستلام — إضافة للمخزون
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button className="flex-1 text-white border h-9 text-xs"
+                        style={{ background: `linear-gradient(135deg, ${NEON.emerald}25, ${NEON.emerald}10)`, borderColor: `${NEON.emerald}30` }}
+                        disabled={mergeShipmentMutation.isPending || revertShipmentToDraftMutation.isPending}
+                        onClick={() => mergeShipmentMutation.mutate(s)}>
+                              <CheckCircle2 className="h-3.5 w-3.5 ml-1" /> تم الاستلام — إضافة للمخزون
+                            </Button>
+                            <Button className="text-white border h-9 text-xs px-3"
+                        style={{ background: `linear-gradient(135deg, ${NEON.amber}25, ${NEON.amber}10)`, borderColor: `${NEON.amber}30` }}
+                        disabled={revertShipmentToDraftMutation.isPending || mergeShipmentMutation.isPending}
+                        onClick={() => revertShipmentToDraftMutation.mutate(s)}>
+                              <Undo2 className="h-3.5 w-3.5 ml-1" /> إرجاع لمسودة
+                            </Button>
+                          </div>
                         </GlassCard>);
 
                 })}
