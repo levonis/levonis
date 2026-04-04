@@ -1898,11 +1898,29 @@ const Cart = () => {
                     </div>
                   )}
                   
+                  {/* خصم بطاقة الولاء */}
+                  {cardDiscountAmount > 0 && cardDiscount && (
+                    <div className="flex justify-between animate-fade-in">
+                      <span className="text-amber-600 text-sm flex items-center gap-1">
+                        💳 خصم {cardDiscount.levelName}
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> دينار عراقي
+                      </span>
+                    </div>
+                  )}
+                  
                   {/* الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل */}
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
+                    {cardFreeShippingApplied ? (
+                      <span className="font-bold text-emerald-600">
+                        مجاناً <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>
+                      </span>
+                    ) : (
+                      <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
+                    )}
                   </div>
                   
                   {/* Address selector for direct sale */}
