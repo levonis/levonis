@@ -1342,6 +1342,30 @@ const Cart = () => {
         });
       }
 
+      // Record card discount usage if applied
+      if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory) {
+        const categoryIds = Object.keys(cardDiscount.discountsByCategory);
+        for (const catId of categoryIds) {
+          const catInfo = cardDiscount.discountsByCategory[catId];
+          if (catInfo.limited) {
+            await supabase.rpc('use_card_discount', {
+              p_user_id: user!.id,
+              p_category_id: catId,
+              p_order_id: order.id,
+            });
+          }
+        }
+      }
+
+      // Update order with card discount info
+      if (cardDiscountAmount > 0) {
+        await supabase.from('orders').update({
+          card_discount_amount: cardDiscountAmount,
+          card_discount_level_name: cardDiscount?.levelName || null,
+          discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
+        }).eq('id', order.id);
+      }
+
       // Clear cart after successful order
       await clearCart();
 
