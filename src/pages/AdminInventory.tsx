@@ -15,7 +15,7 @@ import {
   Package, AlertTriangle, TrendingUp, ArrowDownCircle,
   Search, BarChart3, Boxes, DollarSign, ArrowRight, Truck,
   Plus, CheckCircle2, Clock, ShoppingCart, FileText, ChevronLeft,
-  ChevronRight, Trash2, X, Send, Palette, Settings2 } from
+  ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil } from
 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useNavigate } from 'react-router-dom';
