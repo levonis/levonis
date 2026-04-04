@@ -607,8 +607,8 @@ export default function StackGame({ onBack }: Props) {
               <Button variant="outline" onClick={() => { setGameState("menu"); setMilestoneWin(null); }} className="flex-1 rounded-xl">
                 رجوع
               </Button>
-              <Button onClick={startGame} disabled={starting || userTickets < entryCost} className="flex-1 rounded-xl">
-                {starting ? "..." : "أعد اللعب"}
+              <Button onClick={startGame} disabled={starting || (!hasVipFreePlay && userTickets < entryCost)} className="flex-1 rounded-xl">
+                {starting ? "..." : hasVipFreePlay ? "🌟 مجاناً" : "أعد اللعب"}
               </Button>
             </div>
           </div>
