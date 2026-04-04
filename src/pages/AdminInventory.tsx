@@ -1163,8 +1163,6 @@ export default function AdminInventory() {
                             <p className="text-[10px] text-white/30 mt-1">{format(new Date(draft.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {!isConverted &&
-                          <>
                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
                             style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}
                             onClick={() => {
@@ -1177,17 +1175,17 @@ export default function AdminInventory() {
                             }}>
                                   <Pencil className="h-3 w-3 ml-1" /> تعديل
                                 </Button>
+                            {!isConverted &&
                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
                             style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
                             disabled={convertDraftMutation.isPending}
                             onClick={() => convertDraftMutation.mutate(draft)}>
                                   <Send className="h-3 w-3 ml-1" /> تحويل لشحنة
                                 </Button>
+                            }
                                 <button onClick={() => deleteDraftMutation.mutate(draft.id)} className="p-1.5 rounded-lg hover:bg-red-500/15 transition-colors">
                                   <Trash2 className="h-3.5 w-3.5 text-red-400/50" />
                                 </button>
-                              </>
-                          }
                           </div>
                         </div>
 
