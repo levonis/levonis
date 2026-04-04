@@ -553,6 +553,12 @@ export default function KnifeRainGame({ onBack }: Props) {
           </div>
         </div>
       )}
+
+      <PlayerProfileDialog
+        open={!!profileDialogUserId}
+        onOpenChange={(open) => !open && setProfileDialogUserId(null)}
+        userId={profileDialogUserId}
+      />
     </div>
   );
 }
