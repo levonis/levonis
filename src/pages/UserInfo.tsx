@@ -20,6 +20,7 @@ const UserInfo = () => {
     username: '',
     email: '',
     avatar_url: '',
+    cover_image_url: '',
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
