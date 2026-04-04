@@ -112,6 +112,11 @@ export default function StackGame({ onBack }: Props) {
     return p?.full_name || p?.username || "لاعب";
   };
 
+  const getProfileAvatar = (userId: string) => {
+    const p = userProfiles.find((pr: any) => pr.id === userId);
+    return p?.avatar_url || null;
+  };
+
   const invalidateBalances = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["user-tickets-stack"] });
     queryClient.invalidateQueries({ queryKey: ["user-tickets-game"] });
