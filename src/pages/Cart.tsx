@@ -1011,20 +1011,25 @@ const Cart = () => {
       
       // Calculate payment info for pre-orders
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
-      const orderSubtotal = total - discount;
+      const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount;
       const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
       const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
       
+      const orderDeliveryFee = cardFreeShippingApplied ? 0 : getDeliveryFee(selectedAddress.governorate);
+      
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
-        total_amount: orderSubtotal + deliveryFee,
+        total_amount: orderSubtotal + orderDeliveryFee,
         subtotal: orderSubtotal,
-        paid_amount: paidNow + deliveryFee,
+        paid_amount: paidNow + orderDeliveryFee,
         remaining_amount: orderRemaining,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
         delivery_method: selectedDeliveryMethod,
+        discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
+        card_discount_amount: cardDiscountAmount,
+        card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
       };
 
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
