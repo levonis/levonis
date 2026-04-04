@@ -95,10 +95,10 @@ const PublicProfile = () => {
       if (!userId) return null;
       const { data } = await supabase
         .from('stack_game_high_scores')
-        .select('high_score, games_played, total_points_earned')
+        .select('high_score')
         .eq('user_id', userId)
         .maybeSingle();
-      return data;
+      return data as any;
     },
     enabled: !!userId,
   });
@@ -110,10 +110,10 @@ const PublicProfile = () => {
       if (!userId) return null;
       const { data } = await supabase
         .from('knife_rain_high_scores')
-        .select('high_score, games_played, total_points_earned')
+        .select('high_score')
         .eq('user_id', userId)
         .maybeSingle();
-      return data;
+      return data as any;
     },
     enabled: !!userId,
   });
