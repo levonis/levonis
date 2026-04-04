@@ -933,7 +933,21 @@ const Cart = () => {
         });
       }
 
-      await clearCart();
+      // Record card discount usage if applied (per category)
+      if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory) {
+        const categoryIds = Object.keys(cardDiscount.discountsByCategory);
+        for (const catId of categoryIds) {
+          const catInfo = cardDiscount.discountsByCategory[catId];
+          if (catInfo.limited) {
+            await supabase.rpc('use_card_discount', {
+              p_user_id: user.id,
+              p_category_id: catId,
+              p_order_id: orderResult.id,
+            });
+          }
+        }
+      }
+
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
       setShowOrderSuccess(true);
