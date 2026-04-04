@@ -841,7 +841,7 @@ export default function AdminInventory() {
                   <h2 className="text-lg font-bold text-white/85 flex items-center gap-2">
                     <FileText className="h-5 w-5" style={{ color: NEON.purple }} /> مسودات الشراء
                   </h2>
-                  <Button onClick={() => setShowDraftForm(true)} className="text-white border"
+                  <Button onClick={() => { setEditingDraftId(null); setDraftTitle(''); setDraftItems([]); setDraftNotes(''); setShowDraftForm(true); }} className="text-white border"
                 style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}>
                     <Plus className="h-4 w-4 ml-1" /> مسودة جديدة
                   </Button>
