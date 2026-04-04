@@ -89,7 +89,7 @@ export default function UserInfoProfileCard({
         )}
         <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-card to-transparent" />
         {/* Cover upload button */}
-        <label htmlFor="cover-upload" className="absolute top-2 left-2 h-7 px-2 rounded-lg bg-card/80 text-foreground flex items-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold border border-border/30 hover:bg-card">
+        <label htmlFor="cover-upload" className="absolute top-2 left-2 h-7 px-2 rounded-lg bg-card/80 text-foreground flex items-center gap-1 cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold border border-border/30 hover:bg-card">
           {uploadingCover ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
           تغيير الخلفية
           <Input id="cover-upload" type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
