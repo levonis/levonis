@@ -16,8 +16,7 @@ type ProfileState = {
   username: string;
   email: string;
   avatar_url: string;
-  cover_image_url?: string;
-  [key: string]: any;
+  cover_image_url: string;
 };
 
 export default function UserInfoProfileCard({
