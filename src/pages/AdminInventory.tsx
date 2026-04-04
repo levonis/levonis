@@ -1080,7 +1080,7 @@ export default function AdminInventory() {
                                       </TableCell>
                                       <TableCell>
                                         {(() => {
-                                          const variants = getProductVariants(item.product_id, item.color || undefined);
+                                          const variants = getDraftProductVariants(item.product_id, item.color || undefined);
                                           if (variants.options.length > 0) {
                                             return (
                                               <Select value={item.option || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: val === 'none' ? '' : val } : it))}>
