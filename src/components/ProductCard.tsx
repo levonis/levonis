@@ -2,12 +2,13 @@ import { memo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Heart } from 'lucide-react';
+import { Heart, CreditCard } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
+import { useProductCardDiscount } from '@/hooks/useProductCardDiscount';
 
 interface ProductCardProps {
   id: string;
