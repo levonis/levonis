@@ -162,6 +162,11 @@ export default {
             filter: "drop-shadow(0 0 16px hsl(187 100% 50% / 0.9)) brightness(1.15)",
           },
         },
+        "card-discount-shine": {
+          "0%": { backgroundPosition: "-200% 0", opacity: "0.7" },
+          "50%": { opacity: "1" },
+          "100%": { backgroundPosition: "200% 0", opacity: "0.7" },
+        },
         "avatar-frame-sparkle": {
           "0%, 100%": {
             filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.5))",
