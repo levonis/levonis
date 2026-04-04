@@ -1900,12 +1900,18 @@ const Cart = () => {
                   
                   {/* خصم بطاقة الولاء */}
                   {cardDiscountAmount > 0 && cardDiscount && (
-                    <div className="flex justify-between animate-fade-in">
-                      <span className="text-amber-600 text-sm flex items-center gap-1">
-                        💳 خصم {cardDiscount.levelName}
-                      </span>
-                      <span className="font-bold text-amber-600">
-                        -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> دينار عراقي
+                    <div className="flex justify-between items-center animate-fade-in rounded-xl p-2.5 border border-primary/20 bg-primary/5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                          <CreditCard className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-primary block">خصم {cardDiscount.levelName}</span>
+                          <span className="text-[9px] text-muted-foreground">بطاقة الولاء</span>
+                        </div>
+                      </div>
+                      <span className="font-black text-primary text-sm">
+                        -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> د.ع
                       </span>
                     </div>
                   )}

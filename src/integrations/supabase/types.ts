@@ -7043,6 +7043,7 @@ export type Database = {
           ban_reason: string | null
           bio: string | null
           birth_date: string | null
+          cover_image_url: string | null
           created_at: string | null
           email: string | null
           email_notifications_enabled: boolean | null
@@ -7072,6 +7073,7 @@ export type Database = {
           ban_reason?: string | null
           bio?: string | null
           birth_date?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           email?: string | null
           email_notifications_enabled?: boolean | null
@@ -7101,6 +7103,7 @@ export type Database = {
           ban_reason?: string | null
           bio?: string | null
           birth_date?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           email?: string | null
           email_notifications_enabled?: boolean | null

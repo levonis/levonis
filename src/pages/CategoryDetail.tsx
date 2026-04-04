@@ -45,7 +45,7 @@ const CategoryDetail = () => {
       
       let query = supabase
         .from('products')
-        .select('id, name, name_ar, description, description_ar, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at')
+        .select('id, name, name_ar, description, description_ar, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts')
         .eq('category_id', category.id)
         .eq('in_stock', true);
 
@@ -207,6 +207,7 @@ const CategoryDetail = () => {
                         slug={product.slug}
                         hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                         soldCount={product.sold_count ?? 0}
+                        cardDiscounts={(product as any).card_discounts}
                       />
                     ))}
                   </div>

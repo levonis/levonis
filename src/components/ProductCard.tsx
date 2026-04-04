@@ -2,12 +2,13 @@ import { memo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Heart } from 'lucide-react';
+import { Heart, CreditCard } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
+import { useProductCardDiscount } from '@/hooks/useProductCardDiscount';
 
 interface ProductCardProps {
   id: string;
@@ -25,6 +26,7 @@ interface ProductCardProps {
   hasDirectSale?: boolean;
   inStock?: boolean;
   soldCount?: number;
+  cardDiscounts?: Array<{ level_id: string; discount_amount: number }> | null;
 }
 
 const ProductCard = ({ 
@@ -42,12 +44,16 @@ const ProductCard = ({
   priority = false,
   inStock = true,
   hasDirectSale = false,
-  soldCount = 0
+  soldCount = 0,
+  cardDiscounts = null
 }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { getDiscount } = useProductCardDiscount();
+  const cardDiscountInfo = getDiscount(cardDiscounts);
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
+  const cardPrice = cardDiscountInfo ? price - cardDiscountInfo.discountAmount : null;
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
   // Compress image to 300px width with medium quality for cards
@@ -166,14 +172,42 @@ const ProductCard = ({
       <div className="flex items-center justify-between gap-1">
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-0.5">
-            <span className="text-sm font-bold text-primary whitespace-nowrap">
-              {formatPrice(price)}
-            </span>
-            <span className="text-[9px] text-muted-foreground">
-              {currency}
-            </span>
+            {cardDiscountInfo && cardPrice != null && cardPrice > 0 ? (
+              <>
+                <span className="text-sm font-bold text-primary whitespace-nowrap">
+                  {formatPrice(cardPrice)}
+                </span>
+                <span className="text-[9px] text-muted-foreground">
+                  {currency}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-bold text-primary whitespace-nowrap">
+                  {formatPrice(price)}
+                </span>
+                <span className="text-[9px] text-muted-foreground">
+                  {currency}
+                </span>
+              </>
+            )}
           </div>
-          {hasSale && (
+          {cardDiscountInfo && cardPrice != null && cardPrice > 0 && (
+            <div className="flex items-center gap-0.5 flex-wrap">
+              <span className="text-[10px] line-through text-muted-foreground/60 whitespace-nowrap">
+                {formatPrice(price)}
+              </span>
+              <span className="inline-flex items-center gap-0.5 text-[8px] px-1.5 py-0 rounded-full whitespace-nowrap font-bold text-primary-foreground animate-card-discount-shine"
+                style={{
+                  background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-glow)), hsl(var(--primary)))`,
+                  backgroundSize: '200% 100%',
+                }}>
+                <CreditCard className="h-2 w-2" />
+                {cardDiscountInfo.levelName}
+              </span>
+            </div>
+          )}
+          {hasSale && !cardDiscountInfo && (
             <div className="flex items-center gap-0.5 flex-wrap">
               <span className="text-[10px] line-through text-muted-foreground/60 whitespace-nowrap">
                 {formatPrice(originalPrice || 0)}

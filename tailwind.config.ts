@@ -162,6 +162,11 @@ export default {
             filter: "drop-shadow(0 0 16px hsl(187 100% 50% / 0.9)) brightness(1.15)",
           },
         },
+        "card-discount-shine": {
+          "0%": { backgroundPosition: "-200% 0", opacity: "0.7" },
+          "50%": { opacity: "1" },
+          "100%": { backgroundPosition: "200% 0", opacity: "0.7" },
+        },
         "avatar-frame-sparkle": {
           "0%, 100%": {
             filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.5))",
@@ -193,6 +198,7 @@ export default {
         "avatar-frame-rainbow": "avatar-frame-rainbow 4s ease-in-out infinite",
         "avatar-frame-glow-cyan": "avatar-frame-glow-cyan 2s ease-in-out infinite",
         "avatar-frame-sparkle": "avatar-frame-sparkle 1.5s ease-in-out infinite",
+        "card-discount-shine": "card-discount-shine 2.5s linear infinite",
       },
     },
   },
