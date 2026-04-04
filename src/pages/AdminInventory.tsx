@@ -503,6 +503,29 @@ export default function AdminInventory() {
     }
   });
 
+  const revertShipmentToDraftMutation = useMutation({
+    mutationFn: async (shipment: any) => {
+      const items = (shipment.items || []) as DraftItem[];
+      // Create a new draft from shipment data
+      const { error: draftErr } = await supabase.from('purchase_drafts').insert({
+        title: `${shipment.note || 'شحنة مرتجعة'} (مرتجعة)`,
+        items: items as any,
+        total_value: Number(shipment.total_cost) || 0,
+        status: 'draft'
+      });
+      if (draftErr) throw draftErr;
+      // Delete the shipment
+      const { error: delErr } = await supabase.from('future_shipments').delete().eq('id', shipment.id);
+      if (delErr) throw delErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['future-shipments'] });
+      toast.success('تم إرجاع الشحنة إلى مسودات الشراء');
+    },
+    onError: (err: any) => toast.error(err.message || 'خطأ في إرجاع الشحنة')
+  });
+
   const mergeShipmentMutation = useMutation({
     mutationFn: async (shipment: any) => {
       const items = (shipment.items || []) as DraftItem[];
