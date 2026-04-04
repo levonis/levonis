@@ -48,6 +48,13 @@ export default function AdminLoyaltyLevels() {
     early_access: false,
     exclusive_products: false,
     monthly_free_shipping: 0,
+    wallet_price: null as number | null,
+    is_vip_plus: false,
+    wholesale_discount_enabled: false,
+    free_daily_games: 0,
+    investment_enabled: false,
+    priority_packaging: false,
+    priority_support: false,
     special_name_style: { enabled: false, color: null as string | null, glow: false, badge_icon: null as string | null },
     profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
   });
@@ -276,6 +283,13 @@ export default function AdminLoyaltyLevels() {
       early_access: false,
       exclusive_products: false,
       monthly_free_shipping: 0,
+      wallet_price: null,
+      is_vip_plus: false,
+      wholesale_discount_enabled: false,
+      free_daily_games: 0,
+      investment_enabled: false,
+      priority_packaging: false,
+      priority_support: false,
       special_name_style: { enabled: false, color: null, glow: false, badge_icon: null },
       profile_effects: { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
     });
@@ -317,6 +331,13 @@ export default function AdminLoyaltyLevels() {
       early_access: level.early_access || false,
       exclusive_products: level.exclusive_products || false,
       monthly_free_shipping: level.monthly_free_shipping || 0,
+      wallet_price: level.wallet_price || null,
+      is_vip_plus: level.is_vip_plus || false,
+      wholesale_discount_enabled: level.wholesale_discount_enabled || false,
+      free_daily_games: level.free_daily_games || 0,
+      investment_enabled: level.investment_enabled || false,
+      priority_packaging: level.priority_packaging || false,
+      priority_support: level.priority_support || false,
       special_name_style: level.special_name_style || { enabled: false, color: null, glow: false, badge_icon: null },
       profile_effects: level.profile_effects || { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
     });
@@ -580,18 +601,29 @@ export default function AdminLoyaltyLevels() {
                             </div>
 
                             {formData.is_purchasable ? (
-                              <div className="admin-form-group">
-                                <Label>سعر البطاقة (نقاط)</Label>
-                                <Input
-                                  type="number"
-                                  value={formData.purchase_price_points}
-                                  onChange={(e) => setFormData({ ...formData, purchase_price_points: parseInt(e.target.value) })}
-                                  placeholder="1000"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  المستخدم يدفع هذا العدد من النقاط للحصول على البطاقة
-                                </p>
-                              </div>
+                              <>
+                                <div className="admin-form-group">
+                                  <Label>سعر البطاقة (نقاط)</Label>
+                                  <Input
+                                    type="number"
+                                    value={formData.purchase_price_points}
+                                    onChange={(e) => setFormData({ ...formData, purchase_price_points: parseInt(e.target.value) })}
+                                    placeholder="1000"
+                                  />
+                                </div>
+                                <div className="admin-form-group">
+                                  <Label>سعر المحفظة (د.ع) - اختياري</Label>
+                                  <Input
+                                    type="number"
+                                    value={formData.wallet_price || ''}
+                                    onChange={(e) => setFormData({ ...formData, wallet_price: e.target.value ? parseInt(e.target.value) : null })}
+                                    placeholder="مثلاً 50000"
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    اتركه فارغاً لتعطيل الشراء بالمحفظة
+                                  </p>
+                                </div>
+                              </>
                             ) : (
                               <div className="admin-form-group">
                                 <Label>الحد الأدنى من النقاط (تلقائي)</Label>
@@ -601,9 +633,6 @@ export default function AdminLoyaltyLevels() {
                                   onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
                                   placeholder="5000"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  عند وصول المستخدم لهذا العدد يحصل على البطاقة تلقائياً
-                                </p>
                               </div>
                             )}
                           </div>

@@ -3,9 +3,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2 } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
 import type { GameScoreSettings } from "./StackScene";
+import { useVipFreePlay } from "@/hooks/useVipPlus";
 
 interface Props {
   onBack: () => void;
@@ -216,6 +217,8 @@ export default function StackGame({ onBack }: Props) {
 
   const entryCost = settings?.entry_fee_tickets ?? 2;
   const userTickets = tickets?.ticket_count ?? 0;
+  const { data: vipFreePlay } = useVipFreePlay(user?.id, 'stack_game');
+  const hasVipFreePlay = vipFreePlay?.has_free_play === true;
 
   const [midGamePrize, setMidGamePrize] = useState<any>(null);
   const claimedMilestonesRef = useRef<Set<string>>(new Set());
@@ -435,8 +438,15 @@ export default function StackGame({ onBack }: Props) {
             <div className="text-sm text-destructive font-medium bg-destructive/10 rounded-xl p-3">{error}</div>
           )}
 
-          <Button onClick={startGame} disabled={starting || userTickets < entryCost} className="w-full h-12 text-base font-bold rounded-xl">
-            {starting ? "جاري البدء..." : userTickets < entryCost ? "تذاكر غير كافية" : "🚀 ابدأ اللعب"}
+          {hasVipFreePlay && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span className="text-amber-600 dark:text-amber-400 font-bold">VIP+ لعب مجاني متاح اليوم!</span>
+            </div>
+          )}
+
+          <Button onClick={startGame} disabled={starting || (!hasVipFreePlay && userTickets < entryCost)} className="w-full h-12 text-base font-bold rounded-xl">
+            {starting ? "جاري البدء..." : hasVipFreePlay ? "🌟 العب مجاناً (VIP+)" : userTickets < entryCost ? "تذاكر غير كافية" : "🚀 ابدأ اللعب"}
           </Button>
         </div>
       )}
@@ -597,8 +607,8 @@ export default function StackGame({ onBack }: Props) {
               <Button variant="outline" onClick={() => { setGameState("menu"); setMilestoneWin(null); }} className="flex-1 rounded-xl">
                 رجوع
               </Button>
-              <Button onClick={startGame} disabled={starting || userTickets < entryCost} className="flex-1 rounded-xl">
-                {starting ? "..." : "أعد اللعب"}
+              <Button onClick={startGame} disabled={starting || (!hasVipFreePlay && userTickets < entryCost)} className="flex-1 rounded-xl">
+                {starting ? "..." : hasVipFreePlay ? "🌟 مجاناً" : "أعد اللعب"}
               </Button>
             </div>
           </div>
