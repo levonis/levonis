@@ -538,6 +538,100 @@ export type Database = {
           },
         ]
       }
+      card_discount_limits: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          level_id: string
+          max_uses: number
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          level_id: string
+          max_uses?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          level_id?: string
+          max_uses?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_discount_limits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_discount_limits_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_discount_usage: {
+        Row: {
+          card_id: string
+          category_id: string
+          id: string
+          level_id: string
+          order_id: string | null
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          category_id: string
+          id?: string
+          level_id: string
+          order_id?: string | null
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          category_id?: string
+          id?: string
+          level_id?: string
+          order_id?: string | null
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_discount_usage_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_discount_usage_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "card_discount_usage_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       card_exclusive_offers: {
         Row: {
           created_at: string
@@ -9718,6 +9812,10 @@ export type Database = {
         Args: { p_cancelled_by?: string; p_order_id: string }
         Returns: Json
       }
+      check_card_discount: {
+        Args: { p_category_id: string; p_user_id: string }
+        Returns: Json
+      }
       check_knife_rain_milestone: {
         Args: { p_score: number; p_session_id?: string; p_user_id: string }
         Returns: Json
@@ -10115,6 +10213,10 @@ export type Database = {
       }
       update_stack_high_score: { Args: { p_score: number }; Returns: undefined }
       update_user_last_active: { Args: never; Returns: undefined }
+      use_card_discount: {
+        Args: { p_category_id: string; p_order_id?: string; p_user_id: string }
+        Returns: Json
+      }
       use_vip_free_play: {
         Args: { p_game_type: string; p_user_id: string }
         Returns: boolean
