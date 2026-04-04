@@ -539,6 +539,151 @@ export default function LoyaltyLevelsPanel() {
         </DialogContent>
       </Dialog>
 
+      {/* Gift Dialog */}
+      <Dialog open={giftDialog.open} onOpenChange={(open) => !gifting && setGiftDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-pink-500" />
+              إهداء بطاقة
+            </DialogTitle>
+            <DialogDescription>
+              إهداء بطاقة <strong>{giftDialog.level?.name_ar}</strong> لمستخدم آخر
+            </DialogDescription>
+          </DialogHeader>
+
+          {giftDialog.level && (
+            <div className="space-y-4">
+              {/* User search */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">البحث عن المستخدم</label>
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="اسم المستخدم أو الاسم الكامل..."
+                    value={giftSearch}
+                    onChange={(e) => {
+                      setGiftSearch(e.target.value);
+                      searchUsers(e.target.value);
+                    }}
+                    className="pr-9"
+                  />
+                </div>
+
+                {/* Search results */}
+                {searching && <p className="text-xs text-muted-foreground text-center">جاري البحث...</p>}
+                {searchResults.length > 0 && !selectedRecipient && (
+                  <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+                    {searchResults.map((u) => (
+                      <button
+                        key={u.id}
+                        className="w-full flex items-center gap-3 p-2.5 hover:bg-muted/50 transition-colors text-right"
+                        onClick={() => { setSelectedRecipient(u); setSearchResults([]); }}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={u.avatar_url} />
+                          <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{u.full_name || u.username || 'مستخدم'}</p>
+                          {u.username && <p className="text-xs text-muted-foreground">@{u.username}</p>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected recipient */}
+                {selectedRecipient && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-pink-500/10 border border-pink-500/20">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={selectedRecipient.avatar_url} />
+                      <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{selectedRecipient.full_name || selectedRecipient.username}</p>
+                      {selectedRecipient.username && <p className="text-xs text-muted-foreground">@{selectedRecipient.username}</p>}
+                    </div>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedRecipient(null)}>تغيير</Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Payment method toggle */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">طريقة الدفع</label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={giftDialog.method === 'points' ? 'default' : 'outline'}
+                    className="flex-1 gap-1 text-xs"
+                    onClick={() => setGiftDialog(prev => ({ ...prev, method: 'points' }))}
+                  >
+                    <Coins className="h-3 w-3" />
+                    نقاط ({(giftDialog.level?.purchase_price_points || 0).toLocaleString()})
+                  </Button>
+                  {giftDialog.level?.wallet_price > 0 && (
+                    <Button
+                      size="sm"
+                      variant={giftDialog.method === 'wallet' ? 'default' : 'outline'}
+                      className={`flex-1 gap-1 text-xs ${giftDialog.method === 'wallet' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+                      onClick={() => setGiftDialog(prev => ({ ...prev, method: 'wallet' }))}
+                    >
+                      <Wallet className="h-3 w-3" />
+                      محفظة ({giftDialog.level?.wallet_price?.toLocaleString()} د.ع)
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Message */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">رسالة (اختياري)</label>
+                <Textarea
+                  placeholder="أكتب رسالة للمستلم..."
+                  value={giftMessage}
+                  onChange={(e) => setGiftMessage(e.target.value)}
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+              </div>
+
+              {/* Summary */}
+              <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">البطاقة:</span>
+                  <span className="font-bold">{giftDialog.level.name_ar}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">التكلفة:</span>
+                  <span className="font-bold">
+                    {giftDialog.method === 'wallet'
+                      ? `${giftDialog.level.wallet_price?.toLocaleString()} د.ع`
+                      : `${(giftDialog.level.purchase_price_points || 0).toLocaleString()} نقطة`}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">رصيدك:</span>
+                  <span>{giftDialog.method === 'wallet' ? `${walletBalance.toLocaleString()} د.ع` : `${availablePoints.toLocaleString()} نقطة`}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setGiftDialog({ open: false, level: null, method: 'points' })} disabled={gifting}>إلغاء</Button>
+                <Button
+                  className="flex-1 gap-1 bg-pink-600 hover:bg-pink-700"
+                  onClick={handleGift}
+                  disabled={gifting || !selectedRecipient}
+                >
+                  {gifting ? <span className="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full" /> : <Send className="h-4 w-4" />}
+                  إهداء البطاقة
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Roadmap Modal */}
       <LevelRoadmapModal
         open={showRoadmap}
