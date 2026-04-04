@@ -9253,6 +9253,30 @@ export type Database = {
         }
         Relationships: []
       }
+      vip_free_game_plays: {
+        Row: {
+          created_at: string
+          game_type: string
+          id: string
+          played_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_type: string
+          id?: string
+          played_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_type?: string
+          id?: string
+          played_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           admin_notes: string | null
@@ -9668,6 +9692,10 @@ export type Database = {
         Args: { username_to_check: string }
         Returns: boolean
       }
+      check_vip_free_play: {
+        Args: { p_game_type: string; p_user_id: string }
+        Returns: Json
+      }
       claim_assistance_coupon: {
         Args: { p_coupon_id: string; p_user_id: string }
         Returns: string
@@ -10009,6 +10037,10 @@ export type Database = {
       }
       update_stack_high_score: { Args: { p_score: number }; Returns: undefined }
       update_user_last_active: { Args: never; Returns: undefined }
+      use_vip_free_play: {
+        Args: { p_game_type: string; p_user_id: string }
+        Returns: boolean
+      }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {
         Args: { coupon_code: string }
