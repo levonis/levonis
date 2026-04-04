@@ -1058,10 +1058,37 @@ export default function AdminInventory() {
                             <TableRow key={i} className="border-white/[0.04] hover:bg-white/[0.02]">
                                       <TableCell className="text-xs text-white/65">{item.product_name}</TableCell>
                                       <TableCell>
-                                        <Input value={item.color === 'none' ? '' : (item.color || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />
+                                        {(() => {
+                                          const variants = getProductVariants(item.product_id);
+                                          if (variants.colors.length > 0) {
+                                            return (
+                                              <Select value={item.color || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: val === 'none' ? '' : val, option: '' } : it))}>
+                                                <SelectTrigger className="h-7 w-24 text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="none">بدون لون</SelectItem>
+                                                  {variants.colors.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                                </SelectContent>
+                                              </Select>
+                                            );
+                                          }
+                                          return <Input value={item.color === 'none' ? '' : (item.color || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />;
+                                        })()}
                                       </TableCell>
                                       <TableCell>
-                                        <Input value={item.option === 'none' ? '' : (item.option || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />
+                                        {(() => {
+                                          const variants = getProductVariants(item.product_id, item.color || undefined);
+                                          if (variants.options.length > 0) {
+                                            return (
+                                              <Select value={item.option || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: val === 'none' ? '' : val } : it))}>
+                                                <SelectTrigger className="h-7 w-24 text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="none">بدون خيار</SelectItem>
+                                                  {variants.options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                </SelectContent>
+                                              </Select>
+                                            );
+                                          }
+                                          return <Input value={item.option === 'none' ? '' : (item.option || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />;
                                       </TableCell>
                                       <TableCell>
                                         <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-20 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
