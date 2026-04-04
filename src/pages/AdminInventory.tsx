@@ -351,8 +351,9 @@ export default function AdminInventory() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
 
-  // Draft creation state
+  // Draft creation/edit state
   const [showDraftForm, setShowDraftForm] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [draftNotes, setDraftNotes] = useState('');
