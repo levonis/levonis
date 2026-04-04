@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
+import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
@@ -47,6 +48,7 @@ const Cart = () => {
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
+  const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -466,7 +468,11 @@ const Cart = () => {
   };
 
   // Use selected address governorate first, fallback to profile governorate
-  const deliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
+  const rawDeliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
+  
+  // Apply card free shipping if eligible
+  const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
+  const deliveryFee = cardFreeShippingApplied ? 0 : rawDeliveryFee;
   
   // Calculate discount
   const calculateDiscount = () => {
@@ -482,7 +488,8 @@ const Cart = () => {
   
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
-  const subtotalAfterDiscount = total - discount - protectionDiscountAmount;
+  const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
+  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
@@ -926,7 +933,21 @@ const Cart = () => {
         });
       }
 
-      await clearCart();
+      // Record card discount usage if applied (per category)
+      if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory) {
+        const categoryIds = Object.keys(cardDiscount.discountsByCategory);
+        for (const catId of categoryIds) {
+          const catInfo = cardDiscount.discountsByCategory[catId];
+          if (catInfo.limited) {
+            await supabase.rpc('use_card_discount', {
+              p_user_id: user.id,
+              p_category_id: catId,
+              p_order_id: orderResult.id,
+            });
+          }
+        }
+      }
+
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
       setShowOrderSuccess(true);
@@ -1004,20 +1025,25 @@ const Cart = () => {
       
       // Calculate payment info for pre-orders
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
-      const orderSubtotal = total - discount;
+      const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount;
       const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
       const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
       
+      const orderDeliveryFee = cardFreeShippingApplied ? 0 : getDeliveryFee(selectedAddress.governorate);
+      
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
-        total_amount: orderSubtotal + deliveryFee,
+        total_amount: orderSubtotal + orderDeliveryFee,
         subtotal: orderSubtotal,
-        paid_amount: paidNow + deliveryFee,
+        paid_amount: paidNow + orderDeliveryFee,
         remaining_amount: orderRemaining,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
         delivery_method: selectedDeliveryMethod,
+        discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
+        card_discount_amount: cardDiscountAmount,
+        card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
       };
 
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
@@ -1314,6 +1340,30 @@ const Cart = () => {
           plan_id: protectionDiscount.planId,
           discount_amount: protectionDiscountAmount,
         });
+      }
+
+      // Record card discount usage if applied
+      if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory) {
+        const categoryIds = Object.keys(cardDiscount.discountsByCategory);
+        for (const catId of categoryIds) {
+          const catInfo = cardDiscount.discountsByCategory[catId];
+          if (catInfo.limited) {
+            await supabase.rpc('use_card_discount', {
+              p_user_id: user!.id,
+              p_category_id: catId,
+              p_order_id: order.id,
+            });
+          }
+        }
+      }
+
+      // Update order with card discount info
+      if (cardDiscountAmount > 0) {
+        await supabase.from('orders').update({
+          card_discount_amount: cardDiscountAmount,
+          card_discount_level_name: cardDiscount?.levelName || null,
+          discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
+        }).eq('id', order.id);
       }
 
       // Clear cart after successful order
@@ -1848,11 +1898,29 @@ const Cart = () => {
                     </div>
                   )}
                   
+                  {/* خصم بطاقة الولاء */}
+                  {cardDiscountAmount > 0 && cardDiscount && (
+                    <div className="flex justify-between animate-fade-in">
+                      <span className="text-amber-600 text-sm flex items-center gap-1">
+                        💳 خصم {cardDiscount.levelName}
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> دينار عراقي
+                      </span>
+                    </div>
+                  )}
+                  
                   {/* الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل */}
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
+                    {cardFreeShippingApplied ? (
+                      <span className="font-bold text-emerald-600">
+                        مجاناً <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>
+                      </span>
+                    ) : (
+                      <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
+                    )}
                   </div>
                   
                   {/* Address selector for direct sale */}

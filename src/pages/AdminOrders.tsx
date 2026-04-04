@@ -1322,6 +1322,16 @@ const AdminOrders = () => {
                         </div>
                       )}
 
+                      {/* Card loyalty discount */}
+                      {Number((editingOrder as any).card_discount_amount) > 0 && (
+                        <div className="flex justify-between items-center text-amber-600">
+                          <span className="flex items-center gap-1">
+                            💳 خصم بطاقة {(editingOrder as any).card_discount_level_name || 'ولاء'}
+                          </span>
+                          <span className="font-medium">- {formatPrice(Number((editingOrder as any).card_discount_amount))}</span>
+                        </div>
+                      )}
+
                       <div className="border-t border-border/40 my-1" />
 
                       {/* Grand total */}
