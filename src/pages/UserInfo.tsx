@@ -67,6 +67,7 @@ const UserInfo = () => {
         username: data.username || '',
         email: data.email || user?.email || '',
         avatar_url: data.avatar_url || '',
+        cover_image_url: (data as any).cover_image_url || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
