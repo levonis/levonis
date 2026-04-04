@@ -198,6 +198,7 @@ export default {
         "avatar-frame-rainbow": "avatar-frame-rainbow 4s ease-in-out infinite",
         "avatar-frame-glow-cyan": "avatar-frame-glow-cyan 2s ease-in-out infinite",
         "avatar-frame-sparkle": "avatar-frame-sparkle 1.5s ease-in-out infinite",
+        "card-discount-shine": "card-discount-shine 2.5s linear infinite",
       },
     },
   },
