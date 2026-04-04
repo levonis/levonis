@@ -97,7 +97,7 @@ export default function KnifeRainGame({ onBack }: Props) {
         ...recentWinners.map((w: any) => w.user_id),
       ])].filter(Boolean);
       if (ids.length === 0) return [];
-      const { data } = await supabase.from("profiles").select("id, full_name, username, avatar_url").in("id", ids);
+      const { data } = await supabase.rpc("get_public_profiles", { p_user_ids: ids } as any);
       return (data || []) as any[];
     },
     enabled: leaderboard.length > 0 || recentWinners.length > 0,
