@@ -339,10 +339,8 @@ const PublicProfile = () => {
                 </div>
               </div>
               {knifeStats ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   <StatBox label="أعلى سكور" value={knifeStats.high_score?.toLocaleString() || '0'} icon="🏆" />
-                  <StatBox label="مرات اللعب" value={knifeStats.games_played?.toLocaleString() || '0'} icon="🔪" />
-                  <StatBox label="نقاط مكتسبة" value={knifeStats.total_points_earned?.toLocaleString() || '0'} icon="⭐" />
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground text-center py-4">لم يلعب بعد</p>
