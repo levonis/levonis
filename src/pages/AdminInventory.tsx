@@ -668,6 +668,38 @@ export default function AdminInventory() {
   const removeItemFromDraft = (index: number) => setDraftItems((prev) => prev.filter((_, i) => i !== index));
   const draftGrandTotal = useMemo(() => draftItems.reduce((s, i) => s + i.line_total, 0), [draftItems]);
 
+  // Helper: get available colors and options for a draft item's product
+  const getDraftProductVariants = useCallback((productId: string, selectedColor?: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return { colors: [] as string[], options: [] as string[] };
+    let colorsRaw: any[] = [];
+    try {
+      const parsed = typeof product.colors === 'string' ? JSON.parse(product.colors as string) : product.colors;
+      if (Array.isArray(parsed)) colorsRaw = parsed;
+    } catch {}
+    const colorNames = colorsRaw.map((c: any) => c.color).filter(Boolean);
+    let optionNames: string[] = [];
+    if (selectedColor) {
+      const colorObj = colorsRaw.find((c: any) => c.color === selectedColor);
+      if (colorObj?.option_stocks && typeof colorObj.option_stocks === 'object') {
+        optionNames = Object.keys(colorObj.option_stocks);
+      }
+      if (colorObj?.options && Array.isArray(colorObj.options)) {
+        optionNames = [...new Set([...optionNames, ...colorObj.options])];
+      }
+    } else {
+      colorsRaw.forEach((c: any) => {
+        if (c.option_stocks && typeof c.option_stocks === 'object') {
+          optionNames = [...new Set([...optionNames, ...Object.keys(c.option_stocks)])];
+        }
+        if (c.options && Array.isArray(c.options)) {
+          optionNames = [...new Set([...optionNames, ...c.options])];
+        }
+      });
+    }
+    return { colors: colorNames, options: optionNames.filter(Boolean) };
+  }, [products]);
+
   // ====== COMPUTED ======
   const pendingShipments = useMemo(() => shipments.filter((s) => s.status === 'pending'), [shipments]);
   const mergedShipments = useMemo(() => shipments.filter((s) => s.status === 'merged'), [shipments]);
@@ -1030,10 +1062,38 @@ export default function AdminInventory() {
                             <TableRow key={i} className="border-white/[0.04] hover:bg-white/[0.02]">
                                       <TableCell className="text-xs text-white/65">{item.product_name}</TableCell>
                                       <TableCell>
-                                        <Input value={item.color === 'none' ? '' : (item.color || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />
+                                        {(() => {
+                                          const variants = getDraftProductVariants(item.product_id);
+                                          if (variants.colors.length > 0) {
+                                            return (
+                                              <Select value={item.color || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: val === 'none' ? '' : val, option: '' } : it))}>
+                                                <SelectTrigger className="h-7 w-24 text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="none">بدون لون</SelectItem>
+                                                  {variants.colors.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                                </SelectContent>
+                                              </Select>
+                                            );
+                                          }
+                                          return <Input value={item.color === 'none' ? '' : (item.color || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />;
+                                        })()}
                                       </TableCell>
                                       <TableCell>
-                                        <Input value={item.option === 'none' ? '' : (item.option || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />
+                                        {(() => {
+                                          const variants = getDraftProductVariants(item.product_id, item.color || undefined);
+                                          if (variants.options.length > 0) {
+                                            return (
+                                              <Select value={item.option || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: val === 'none' ? '' : val } : it))}>
+                                                <SelectTrigger className="h-7 w-24 text-xs bg-white/5 border-white/10 text-white/70"><SelectValue placeholder="—" /></SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="none">بدون خيار</SelectItem>
+                                                  {variants.options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                </SelectContent>
+                                              </Select>
+                                            );
+                                          }
+                                          return <Input value={item.option === 'none' ? '' : (item.option || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />;
+                                        })()}
                                       </TableCell>
                                       <TableCell>
                                         <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-20 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
