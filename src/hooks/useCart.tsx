@@ -251,6 +251,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             pre_order_shipping_options,
             shipping_type,
             category_id,
+            card_discounts,
             categories (
               id,
               tax_rate,
