@@ -1063,7 +1063,7 @@ export default function AdminInventory() {
                                       <TableCell className="text-xs text-white/65">{item.product_name}</TableCell>
                                       <TableCell>
                                         {(() => {
-                                          const variants = getProductVariants(item.product_id);
+                                          const variants = getDraftProductVariants(item.product_id);
                                           if (variants.colors.length > 0) {
                                             return (
                                               <Select value={item.color || 'none'} onValueChange={(val) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: val === 'none' ? '' : val, option: '' } : it))}>
