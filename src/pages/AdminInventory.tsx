@@ -431,23 +431,34 @@ export default function AdminInventory() {
   const createDraftMutation = useMutation({
     mutationFn: async () => {
       const totalValue = draftItems.reduce((s, i) => s + i.line_total, 0);
-      const { error } = await supabase.from('purchase_drafts').insert({
-        title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
-        items: draftItems as any,
-        total_value: totalValue,
-        notes: draftNotes
-      });
-      if (error) throw error;
+      if (editingDraftId) {
+        const { error } = await supabase.from('purchase_drafts').update({
+          title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
+          items: draftItems as any,
+          total_value: totalValue,
+          notes: draftNotes
+        }).eq('id', editingDraftId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('purchase_drafts').insert({
+          title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
+          items: draftItems as any,
+          total_value: totalValue,
+          notes: draftNotes
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-drafts'] });
-      toast.success('تم إنشاء المسودة بنجاح');
+      toast.success(editingDraftId ? 'تم تحديث المسودة بنجاح' : 'تم إنشاء المسودة بنجاح');
       setShowDraftForm(false);
+      setEditingDraftId(null);
       setDraftTitle('');
       setDraftItems([]);
       setDraftNotes('');
     },
-    onError: () => toast.error('خطأ في إنشاء المسودة')
+    onError: () => toast.error('خطأ في حفظ المسودة')
   });
 
   const convertDraftMutation = useMutation({
