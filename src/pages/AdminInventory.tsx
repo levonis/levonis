@@ -1089,6 +1089,7 @@ export default function AdminInventory() {
                                             );
                                           }
                                           return <Input value={item.option === 'none' ? '' : (item.option || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, option: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />;
+                                        })()}
                                       </TableCell>
                                       <TableCell>
                                         <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-20 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
