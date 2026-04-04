@@ -9798,6 +9798,15 @@ export type Database = {
         Args: { p_merchant_user_id: string }
         Returns: number
       }
+      get_public_profiles: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
       get_user_card_frame: {
         Args: { p_user_id: string }
         Returns: {
