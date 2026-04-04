@@ -1212,7 +1212,8 @@ const ProductDetail = () => {
                         price={Number(rp.price)} originalPrice={rp.original_price ? Number(rp.original_price) : undefined}
                         imageUrl={rp.image_url} images={rp.images}
                         currency={rp.currency || 'دينار عراقي'} slug={rp.slug}
-                        hasDirectSale={(rp.has_in_stock ?? false) && !isAllDirectStockDepleted(rp)} />
+                        hasDirectSale={(rp.has_in_stock ?? false) && !isAllDirectStockDepleted(rp)}
+                        cardDiscounts={rp.card_discounts} />
                     ))}
                   </div>
                 </div>

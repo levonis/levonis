@@ -207,6 +207,7 @@ const CategoryDetail = () => {
                         slug={product.slug}
                         hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                         soldCount={product.sold_count ?? 0}
+                        cardDiscounts={(product as any).card_discounts}
                       />
                     ))}
                   </div>
