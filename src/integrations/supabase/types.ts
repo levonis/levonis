@@ -5493,6 +5493,8 @@ export type Database = {
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
           cancelled_at: string | null
+          card_discount_amount: number | null
+          card_discount_level_name: string | null
           confirmed_at: string | null
           created_at: string
           currency: string
@@ -5549,6 +5551,8 @@ export type Database = {
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
           cancelled_at?: string | null
+          card_discount_amount?: number | null
+          card_discount_level_name?: string | null
           confirmed_at?: string | null
           created_at?: string
           currency?: string
@@ -5605,6 +5609,8 @@ export type Database = {
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
           cancelled_at?: string | null
+          card_discount_amount?: number | null
+          card_discount_level_name?: string | null
           confirmed_at?: string | null
           created_at?: string
           currency?: string
@@ -9426,7 +9432,9 @@ export type Database = {
         Row: {
           admin_notes: string | null
           amount: number
+          balance_after: number | null
           created_at: string
+          description: string | null
           id: string
           payment_method: string | null
           payment_proof_url: string | null
@@ -9439,7 +9447,9 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           amount: number
+          balance_after?: number | null
           created_at?: string
+          description?: string | null
           id?: string
           payment_method?: string | null
           payment_proof_url?: string | null
@@ -9452,7 +9462,9 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           amount?: number
+          balance_after?: number | null
           created_at?: string
+          description?: string | null
           id?: string
           payment_method?: string | null
           payment_proof_url?: string | null
