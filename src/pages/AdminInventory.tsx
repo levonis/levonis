@@ -853,7 +853,7 @@ export default function AdminInventory() {
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                       <GlassCard className="p-6" style={{ borderColor: `${NEON.purple}18` }}>
                         <div className="flex items-center justify-between mb-5">
-                          <h3 className="text-sm font-semibold text-white/75">إنشاء مسودة شراء جديدة</h3>
+                          <h3 className="text-sm font-semibold text-white/75">{editingDraftId ? 'تعديل المسودة' : 'إنشاء مسودة شراء جديدة'}</h3>
                           <button onClick={() => {setShowDraftForm(false);setEditingDraftId(null);setDraftItems([]);setDraftTitle('');setDraftNotes('');}} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
                             <X className="h-4 w-4 text-white/40" />
                           </button>
