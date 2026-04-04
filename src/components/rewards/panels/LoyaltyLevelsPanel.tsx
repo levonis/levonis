@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Coins, Star, Lock, Zap, CreditCard, Gift, Trophy, ShoppingCart, Wallet, Crown, Truck, Headphones, Package, Gamepad2, TrendingUp, Sparkles, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Coins, Star, Lock, Zap, CreditCard, Gift, Trophy, ShoppingCart, Wallet, Crown, Truck, Headphones, Package, Gamepad2, TrendingUp, Sparkles, Check, Search, User, Send } from "lucide-react";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
@@ -18,6 +21,51 @@ export default function LoyaltyLevelsPanel() {
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [purchaseDialog, setPurchaseDialog] = useState<{ open: boolean; level: any | null; method: 'points' | 'wallet' }>({ open: false, level: null, method: 'points' });
   const [purchasing, setPurchasing] = useState(false);
+  
+  // Gift state
+  const [giftDialog, setGiftDialog] = useState<{ open: boolean; level: any | null; method: 'points' | 'wallet' }>({ open: false, level: null, method: 'points' });
+  const [giftSearch, setGiftSearch] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [gifting, setGifting] = useState(false);
+
+  const searchUsers = useCallback(async (query: string) => {
+    if (query.length < 2) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const { data, error } = await supabase.rpc('search_users_for_gift', { p_query: query });
+      if (error) throw error;
+      setSearchResults((data || []).filter((u: any) => u.id !== user?.id));
+    } catch { setSearchResults([]); }
+    finally { setSearching(false); }
+  }, [user?.id]);
+
+  const handleGift = async () => {
+    if (!user || !giftDialog.level || !selectedRecipient) return;
+    setGifting(true);
+    try {
+      const rpcName = giftDialog.method === 'wallet' ? 'gift_card_with_wallet' : 'gift_card_with_points';
+      const { data, error } = await supabase.rpc(rpcName, {
+        p_gifter_id: user.id,
+        p_recipient_id: selectedRecipient.id,
+        p_level_id: giftDialog.level.id,
+        p_message: giftMessage || null,
+      });
+      if (error) throw error;
+      const result = data as any;
+      if (!result?.success) { toast.error(result?.error || 'حدث خطأ'); return; }
+      toast.success(`تم إهداء بطاقة ${giftDialog.level.name_ar} بنجاح! 🎁`);
+      setGiftDialog({ open: false, level: null, method: 'points' });
+      setSelectedRecipient(null); setGiftSearch(''); setGiftMessage(''); setSearchResults([]);
+      queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['user-points-loyalty'] });
+      queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['user-wallet-cards'] });
+    } catch (err: any) { toast.error(err.message || 'حدث خطأ في عملية الإهداء'); }
+    finally { setGifting(false); }
+  };
 
   const { data: userPointsData } = useQuery({
     queryKey: ['user-points-loyalty', user?.id],
