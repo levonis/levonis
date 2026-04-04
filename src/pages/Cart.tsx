@@ -48,6 +48,7 @@ const Cart = () => {
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
+  const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
