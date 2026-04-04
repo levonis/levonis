@@ -32,6 +32,7 @@ export default function KnifeRainGame({ onBack }: Props) {
   const [loadingResult, setLoadingResult] = useState(false);
   const [liveScore, setLiveScore] = useState(0);
   const [liveStage, setLiveStage] = useState(0);
+  const [profileDialogUserId, setProfileDialogUserId] = useState<string | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: ["knife-rain-settings"],
