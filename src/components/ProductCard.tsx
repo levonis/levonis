@@ -26,6 +26,7 @@ interface ProductCardProps {
   hasDirectSale?: boolean;
   inStock?: boolean;
   soldCount?: number;
+  cardDiscounts?: Array<{ level_id: string; discount_amount: number }> | null;
 }
 
 const ProductCard = ({ 
