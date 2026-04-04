@@ -1016,6 +1016,18 @@ export default function AdminInventory() {
                             {!isConverted &&
                           <>
                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
+                            style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}
+                            onClick={() => {
+                              const items = (draft.items || []) as DraftItem[];
+                              setEditingDraftId(draft.id);
+                              setDraftTitle(draft.title || '');
+                              setDraftItems(items);
+                              setDraftNotes(draft.notes || '');
+                              setShowDraftForm(true);
+                            }}>
+                                  <Pencil className="h-3 w-3 ml-1" /> تعديل
+                                </Button>
+                                <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
                             style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
                             disabled={convertDraftMutation.isPending}
                             onClick={() => convertDraftMutation.mutate(draft)}>
