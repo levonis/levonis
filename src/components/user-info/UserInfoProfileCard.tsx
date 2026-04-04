@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { Camera, Loader2, Mail, User, Sparkles, AtSign } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Camera, Loader2, Mail, User, Sparkles, AtSign, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,12 +7,16 @@ import LevelBadge from "@/components/LevelBadge";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import { useUserCardFrame } from "@/hooks/useUserCardFrame";
 import type { FrameAnimationType } from "@/components/merchant/AvatarWithFrame";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type ProfileState = {
   full_name: string;
   username: string;
   email: string;
   avatar_url: string;
+  cover_image_url?: string;
 };
 
 export default function UserInfoProfileCard({
@@ -34,6 +38,8 @@ export default function UserInfoProfileCard({
   uploadingAvatar: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const [uploadingCover, setUploadingCover] = useState(false);
+
   const objectUrl = useMemo(() => {
     if (!avatarFile) return null;
     return URL.createObjectURL(avatarFile);
@@ -48,12 +54,46 @@ export default function UserInfoProfileCard({
   const previewSrc = objectUrl || profile.avatar_url || undefined;
   const { data: cardFrame } = useUserCardFrame(userId);
 
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploadingCover(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${userId}/cover.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from('covers').upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from('covers').getPublicUrl(path);
+      const coverUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      await supabase.from('profiles').update({ cover_image_url: coverUrl }).eq('id', userId);
+      setProfile({ ...profile, cover_image_url: coverUrl });
+      toast.success('تم تحديث صورة الخلفية');
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل رفع صورة الخلفية');
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-border/30 bg-card overflow-hidden">
-      {/* Hero Banner */}
-      <div className="relative h-24 bg-gradient-to-bl from-primary/20 via-primary/10 to-accent/5">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_80%,hsl(var(--primary)/0.12),transparent_60%)]" />
+      {/* Hero Banner / Cover */}
+      <div className="relative h-28 overflow-hidden group">
+        {profile.cover_image_url ? (
+          <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-bl from-primary/20 via-primary/10 to-accent/5">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_80%,hsl(var(--primary)/0.12),transparent_60%)]" />
+          </div>
+        )}
         <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-card to-transparent" />
+        {/* Cover upload button */}
+        <label htmlFor="cover-upload" className="absolute top-2 left-2 h-7 px-2 rounded-lg bg-card/80 text-foreground flex items-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold border border-border/30 hover:bg-card">
+          {uploadingCover ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
+          تغيير الخلفية
+          <Input id="cover-upload" type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+        </label>
       </div>
 
       {/* Profile Section */}
@@ -137,10 +177,15 @@ export default function UserInfoProfileCard({
           <p className="text-[9px] text-muted-foreground/60">لا يمكن تغيير البريد الإلكتروني</p>
         </div>
 
+        {/* Theme Switcher */}
+        <div className="flex items-center justify-between pt-2 border-t border-border/20">
+          <ThemeSwitcher />
+        </div>
+
         <Button
           type="submit"
           className="w-full h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/15 hover:shadow-xl hover:shadow-primary/25 transition-all"
-          disabled={saving || uploadingAvatar}
+          disabled={saving || uploadingAvatar || uploadingCover}
         >
           {(saving || uploadingAvatar) && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
           {uploadingAvatar ? "جاري رفع الصورة..." : "حفظ التغييرات"}
