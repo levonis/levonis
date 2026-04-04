@@ -395,8 +395,15 @@ export default function KnifeRainGame({ onBack }: Props) {
             <div className="text-sm text-destructive font-medium bg-destructive/10 rounded-xl p-3">{error}</div>
           )}
 
-          <Button onClick={startGame} disabled={starting || userTickets < entryCost} className="w-full h-12 text-base font-bold rounded-xl">
-            {starting ? "جاري البدء..." : userTickets < entryCost ? "تذاكر غير كافية" : "🔪 ابدأ اللعب"}
+          {hasVipFreePlay && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span className="text-amber-600 dark:text-amber-400 font-bold">VIP+ لعب مجاني متاح اليوم!</span>
+            </div>
+          )}
+
+          <Button onClick={startGame} disabled={starting || (!hasVipFreePlay && userTickets < entryCost)} className="w-full h-12 text-base font-bold rounded-xl">
+            {starting ? "جاري البدء..." : hasVipFreePlay ? "🌟 العب مجاناً (VIP+)" : userTickets < entryCost ? "تذاكر غير كافية" : "🔪 ابدأ اللعب"}
           </Button>
         </div>
       )}
