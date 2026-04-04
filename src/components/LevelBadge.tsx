@@ -1,4 +1,4 @@
-import { Award, Star, Crown, Trophy } from "lucide-react";
+import { Award, Star, Crown, Trophy, Gem } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,12 @@ interface LevelBadgeProps {
   className?: string;
 }
 
-const getLevelIcon = (levelKey: string, size: number) => {
+const getLevelIcon = (levelKey: string, size: number, isVipPlus?: boolean) => {
   const iconProps = { size, className: "inline" };
+  
+  if (isVipPlus) {
+    return <img src="/frames/levo-vip-badge.png" alt="VIP+" width={size} height={size} className="inline" />;
+  }
   
   switch (levelKey) {
     case "bronze":
