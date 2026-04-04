@@ -436,6 +436,23 @@ export default function LoyaltyLevelsPanel() {
                         </Button>
                       )}
                     </div>
+                    {/* Gift button */}
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1 text-xs border-pink-500/30 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/20"
+                        disabled={!user || (!canAffordPoints && !canAffordWallet)}
+                        onClick={() => {
+                          const method = hasWalletPrice && canAffordWallet ? 'wallet' : 'points';
+                          setGiftDialog({ open: true, level, method });
+                          setSelectedRecipient(null); setGiftSearch(''); setGiftMessage(''); setSearchResults([]);
+                        }}
+                      >
+                        <Gift className="h-3 w-3" />
+                        إهداء لشخص آخر
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
