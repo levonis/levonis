@@ -172,14 +172,42 @@ const ProductCard = ({
       <div className="flex items-center justify-between gap-1">
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-0.5">
-            <span className="text-sm font-bold text-primary whitespace-nowrap">
-              {formatPrice(price)}
-            </span>
-            <span className="text-[9px] text-muted-foreground">
-              {currency}
-            </span>
+            {cardDiscountInfo && cardPrice != null && cardPrice > 0 ? (
+              <>
+                <span className="text-sm font-bold text-primary whitespace-nowrap">
+                  {formatPrice(cardPrice)}
+                </span>
+                <span className="text-[9px] text-muted-foreground">
+                  {currency}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-bold text-primary whitespace-nowrap">
+                  {formatPrice(price)}
+                </span>
+                <span className="text-[9px] text-muted-foreground">
+                  {currency}
+                </span>
+              </>
+            )}
           </div>
-          {hasSale && (
+          {cardDiscountInfo && cardPrice != null && cardPrice > 0 && (
+            <div className="flex items-center gap-0.5 flex-wrap">
+              <span className="text-[10px] line-through text-muted-foreground/60 whitespace-nowrap">
+                {formatPrice(price)}
+              </span>
+              <span className="inline-flex items-center gap-0.5 text-[8px] px-1.5 py-0 rounded-full whitespace-nowrap font-bold text-primary-foreground animate-card-discount-shine"
+                style={{
+                  background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-glow)), hsl(var(--primary)))`,
+                  backgroundSize: '200% 100%',
+                }}>
+                <CreditCard className="h-2 w-2" />
+                {cardDiscountInfo.levelName}
+              </span>
+            </div>
+          )}
+          {hasSale && !cardDiscountInfo && (
             <div className="flex items-center gap-0.5 flex-wrap">
               <span className="text-[10px] line-through text-muted-foreground/60 whitespace-nowrap">
                 {formatPrice(originalPrice || 0)}
