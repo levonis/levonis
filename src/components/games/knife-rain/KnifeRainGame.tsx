@@ -202,6 +202,8 @@ export default function KnifeRainGame({ onBack }: Props) {
 
   const entryCost = settings?.entry_fee_tickets ?? 2;
   const userTickets = tickets?.ticket_count ?? 0;
+  const { data: vipFreePlay } = useVipFreePlay(user?.id, 'knife_rain');
+  const hasVipFreePlay = vipFreePlay?.has_free_play === true;
 
   const [midGamePrize, setMidGamePrize] = useState<any>(null);
   const claimedMilestonesRef = useRef<Set<string>>(new Set());
