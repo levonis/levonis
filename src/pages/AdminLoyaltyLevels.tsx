@@ -48,6 +48,13 @@ export default function AdminLoyaltyLevels() {
     early_access: false,
     exclusive_products: false,
     monthly_free_shipping: 0,
+    wallet_price: null as number | null,
+    is_vip_plus: false,
+    wholesale_discount_enabled: false,
+    free_daily_games: 0,
+    investment_enabled: false,
+    priority_packaging: false,
+    priority_support: false,
     special_name_style: { enabled: false, color: null as string | null, glow: false, badge_icon: null as string | null },
     profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
   });
