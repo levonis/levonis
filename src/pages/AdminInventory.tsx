@@ -15,7 +15,7 @@ import {
   Package, AlertTriangle, TrendingUp, ArrowDownCircle,
   Search, BarChart3, Boxes, DollarSign, ArrowRight, Truck,
   Plus, CheckCircle2, Clock, ShoppingCart, FileText, ChevronLeft,
-  ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil } from
+  ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil, Undo2 } from
 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useNavigate } from 'react-router-dom';
@@ -501,6 +501,29 @@ export default function AdminInventory() {
       queryClient.invalidateQueries({ queryKey: ['purchase-drafts'] });
       toast.success('تم حذف المسودة');
     }
+  });
+
+  const revertShipmentToDraftMutation = useMutation({
+    mutationFn: async (shipment: any) => {
+      const items = (shipment.items || []) as DraftItem[];
+      // Create a new draft from shipment data
+      const { error: draftErr } = await supabase.from('purchase_drafts').insert({
+        title: `${shipment.note || 'شحنة مرتجعة'} (مرتجعة)`,
+        items: items as any,
+        total_value: Number(shipment.total_cost) || 0,
+        status: 'draft'
+      });
+      if (draftErr) throw draftErr;
+      // Delete the shipment
+      const { error: delErr } = await supabase.from('future_shipments').delete().eq('id', shipment.id);
+      if (delErr) throw delErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['future-shipments'] });
+      toast.success('تم إرجاع الشحنة إلى مسودات الشراء');
+    },
+    onError: (err: any) => toast.error(err.message || 'خطأ في إرجاع الشحنة')
   });
 
   const mergeShipmentMutation = useMutation({
@@ -1185,12 +1208,20 @@ export default function AdminInventory() {
                             </div>
                       }
 
-                          <Button className="w-full text-white border h-9 text-xs"
-                      style={{ background: `linear-gradient(135deg, ${NEON.emerald}25, ${NEON.emerald}10)`, borderColor: `${NEON.emerald}30` }}
-                      disabled={mergeShipmentMutation.isPending}
-                      onClick={() => mergeShipmentMutation.mutate(s)}>
-                            <CheckCircle2 className="h-3.5 w-3.5 ml-1" /> تم الاستلام — إضافة للمخزون
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button className="flex-1 text-white border h-9 text-xs"
+                        style={{ background: `linear-gradient(135deg, ${NEON.emerald}25, ${NEON.emerald}10)`, borderColor: `${NEON.emerald}30` }}
+                        disabled={mergeShipmentMutation.isPending || revertShipmentToDraftMutation.isPending}
+                        onClick={() => mergeShipmentMutation.mutate(s)}>
+                              <CheckCircle2 className="h-3.5 w-3.5 ml-1" /> تم الاستلام — إضافة للمخزون
+                            </Button>
+                            <Button className="text-white border h-9 text-xs px-3"
+                        style={{ background: `linear-gradient(135deg, ${NEON.amber}25, ${NEON.amber}10)`, borderColor: `${NEON.amber}30` }}
+                        disabled={revertShipmentToDraftMutation.isPending || mergeShipmentMutation.isPending}
+                        onClick={() => revertShipmentToDraftMutation.mutate(s)}>
+                              <Undo2 className="h-3.5 w-3.5 ml-1" /> إرجاع لمسودة
+                            </Button>
+                          </div>
                         </GlassCard>);
 
                 })}
