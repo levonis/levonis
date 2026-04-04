@@ -49,8 +49,11 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { getDiscount } = useProductCardDiscount();
+  const cardDiscountInfo = getDiscount(cardDiscounts);
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
+  const cardPrice = cardDiscountInfo ? price - cardDiscountInfo.discountAmount : null;
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
   // Compress image to 300px width with medium quality for cards
