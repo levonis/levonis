@@ -507,21 +507,80 @@ export default function AdminInventory() {
     mutationFn: async (shipment: any) => {
       const items = (shipment.items || []) as DraftItem[];
       if (items.length > 0) {
-        const productUpdates: Record<string, number> = {};
+        // Group items by product_id to batch updates
+        const byProduct: Record<string, DraftItem[]> = {};
         items.forEach((item: DraftItem) => {
-          productUpdates[item.product_id] = (productUpdates[item.product_id] || 0) + item.quantity;
+          if (!byProduct[item.product_id]) byProduct[item.product_id] = [];
+          byProduct[item.product_id].push(item);
         });
-        for (const [pid, qty] of Object.entries(productUpdates)) {
-          const product = products.find((p) => p.id === pid);
-          const currentStock = Number(product?.direct_stock) || 0;
-          const { error } = await supabase.from('products').update({ direct_stock: currentStock + qty }).eq('id', pid);
-          if (error) throw error;
-          await supabase.from('inventory_movements').insert({
-            product_id: pid, movement_type: 'inbound', quantity: qty, stock_field: 'direct_stock',
-            note: `استلام شحنة: ${shipment.note || ''}`
-          });
+
+        for (const [pid, pItems] of Object.entries(byProduct)) {
+          // Fetch fresh product data
+          const { data: product, error: fetchErr } = await supabase
+            .from('products')
+            .select('id, direct_stock, colors')
+            .eq('id', pid)
+            .single();
+          if (fetchErr || !product) throw new Error('المنتج غير موجود: ' + pid);
+
+          let colors = (product.colors || []) as any[];
+          let directStockAdd = 0;
+
+          for (const item of pItems) {
+            const hasColor = item.color && item.color !== 'none' && item.color !== '';
+            const hasOption = item.option && item.option !== 'none' && item.option !== '';
+
+            if (hasColor && hasOption) {
+              // Update option_stocks within the matching color
+              const colorIdx = colors.findIndex((c: any) => c.color === item.color);
+              if (colorIdx >= 0) {
+                const optStocks = colors[colorIdx].option_stocks || {};
+                optStocks[item.option] = (Number(optStocks[item.option]) || 0) + item.quantity;
+                colors[colorIdx].option_stocks = optStocks;
+              } else {
+                // Color not found in JSONB, add it
+                colors.push({
+                  color: item.color,
+                  image: '',
+                  option_stocks: { [item.option]: item.quantity }
+                });
+              }
+            } else if (hasColor && !hasOption) {
+              // Color only - update direct_stock on color level or add quantity to product direct_stock
+              const colorIdx = colors.findIndex((c: any) => c.color === item.color);
+              if (colorIdx >= 0) {
+                const optStocks = colors[colorIdx].option_stocks || {};
+                optStocks['_default'] = (Number(optStocks['_default']) || 0) + item.quantity;
+                colors[colorIdx].option_stocks = optStocks;
+              } else {
+                directStockAdd += item.quantity;
+              }
+            } else {
+              // No color, no option - just add to direct_stock
+              directStockAdd += item.quantity;
+            }
+
+            // Record inventory movement with details
+            await supabase.from('inventory_movements').insert({
+              product_id: pid,
+              movement_type: 'inbound',
+              quantity: item.quantity,
+              stock_field: (hasColor && hasOption) ? 'option_stocks' : 'direct_stock',
+              note: `استلام شحنة: ${shipment.note || ''} | لون: ${item.color || '-'} | خيار: ${item.option || '-'} | تكلفة: ${item.unit_cost}`
+            });
+          }
+
+          // Build update object
+          const updateObj: any = { colors };
+          if (directStockAdd > 0) {
+            updateObj.direct_stock = (Number(product.direct_stock) || 0) + directStockAdd;
+          }
+
+          const { error: updErr } = await supabase.from('products').update(updateObj).eq('id', pid);
+          if (updErr) throw updErr;
         }
       } else {
+        // Legacy fallback for shipments without items array
         const product = products.find((p) => p.id === shipment.product_id);
         if (!product) throw new Error('المنتج غير موجود');
         const currentStock = Number(product.direct_stock) || 0;
