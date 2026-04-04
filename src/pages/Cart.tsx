@@ -468,7 +468,11 @@ const Cart = () => {
   };
 
   // Use selected address governorate first, fallback to profile governorate
-  const deliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
+  const rawDeliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
+  
+  // Apply card free shipping if eligible
+  const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
+  const deliveryFee = cardFreeShippingApplied ? 0 : rawDeliveryFee;
   
   // Calculate discount
   const calculateDiscount = () => {
