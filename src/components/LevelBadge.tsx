@@ -66,7 +66,27 @@ export default function LevelBadge({
     enabled: !!userPoints?.level,
   });
 
+  // Check if user has active VIP Plus card
+  const { data: activeCard } = useQuery({
+    queryKey: ["user-active-card-badge", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_cards")
+        .select("level_id, loyalty_levels:level_id(is_vip_plus, special_name_style)")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   if (!levelInfo) return null;
+
+  const isVipPlus = (activeCard?.loyalty_levels as any)?.is_vip_plus === true;
+  const specialStyle = (activeCard?.loyalty_levels as any)?.special_name_style as any;
 
   const sizeMap = {
     sm: { badge: "text-[10px] px-1.5 py-0.5", icon: 12 },
@@ -75,19 +95,21 @@ export default function LevelBadge({
   };
 
   const badgeSize = sizeMap[size];
+  const badgeColor = isVipPlus && specialStyle?.enabled ? (specialStyle.color || '#FFD700') : levelInfo.color;
 
   return (
     <Badge
-      className={`${badgeSize.badge} font-bold border-2 ${className}`}
+      className={`${badgeSize.badge} font-bold border-2 ${isVipPlus ? 'animate-pulse' : ''} ${className}`}
       style={{
-        backgroundColor: `${levelInfo.color}15`,
-        borderColor: levelInfo.color,
-        color: levelInfo.color,
+        backgroundColor: `${badgeColor}15`,
+        borderColor: badgeColor,
+        color: badgeColor,
+        ...(isVipPlus && specialStyle?.glow ? { boxShadow: `0 0 8px ${badgeColor}40` } : {}),
       }}
     >
-      {getLevelIcon(levelInfo.level_key, badgeSize.icon)}
+      {getLevelIcon(levelInfo.level_key, badgeSize.icon, isVipPlus)}
       {showLabel && (
-        <span className="mr-1">{levelInfo.name_ar}</span>
+        <span className="mr-1">{isVipPlus ? 'VIP+' : levelInfo.name_ar}</span>
       )}
     </Badge>
   );
