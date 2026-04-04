@@ -1900,17 +1900,19 @@ const Cart = () => {
                   
                   {/* خصم بطاقة الولاء */}
                   {cardDiscountAmount > 0 && cardDiscount && (
-                    <div className="flex justify-between items-center animate-fade-in rounded-xl p-2.5 border border-primary/20 bg-primary/5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-                          <CreditCard className="h-3.5 w-3.5 text-primary" />
+                    <div className="flex justify-between items-center animate-fade-in rounded-xl p-3 border border-primary/30 bg-gradient-to-l from-primary/10 via-primary/5 to-transparent backdrop-blur-sm shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-inner">
+                          <CreditCard className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-primary block">خصم {cardDiscount.levelName}</span>
-                          <span className="text-[9px] text-muted-foreground">بطاقة الولاء</span>
+                          <span className="text-xs font-bold text-primary block flex items-center gap-1">
+                            ✨ خصم {cardDiscount.levelName}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground">خصم بطاقة الولاء الحصري</span>
                         </div>
                       </div>
-                      <span className="font-black text-primary text-sm">
+                      <span className="font-black text-primary text-sm animate-pulse">
                         -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> د.ع
                       </span>
                     </div>

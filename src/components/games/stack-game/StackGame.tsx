@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import PlayerProfileDialog from "@/components/games/PlayerProfileDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ export default function StackGame({ onBack }: Props) {
   const [liveScore, setLiveScore] = useState(0);
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
+  const [profileDialogUserId, setProfileDialogUserId] = useState<string | null>(null);
 
 
   const { data: settings } = useQuery({
@@ -491,7 +493,7 @@ export default function StackGame({ onBack }: Props) {
                 return (
                   <div
                     key={entry.id}
-                    onClick={() => navigate(`/profile/${entry.user_id}?tab=games`)}
+                    onClick={() => setProfileDialogUserId(entry.user_id)}
                     className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer hover:scale-[1.02] ${
                       i === 0
                         ? "bg-gradient-to-l from-yellow-500/10 to-transparent border-2 border-yellow-500/30"
@@ -629,6 +631,12 @@ export default function StackGame({ onBack }: Props) {
           </div>
         </div>
       )}
+
+      <PlayerProfileDialog
+        open={!!profileDialogUserId}
+        onOpenChange={(open) => !open && setProfileDialogUserId(null)}
+        userId={profileDialogUserId}
+      />
     </div>
   );
 }
