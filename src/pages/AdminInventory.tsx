@@ -949,8 +949,12 @@ export default function AdminInventory() {
                                       <TableCell className="text-xs text-white/65">{item.product_name}</TableCell>
                                       <TableCell className="text-xs text-white/40">{item.color && item.color !== 'none' ? item.color : '—'}</TableCell>
                                       <TableCell className="text-xs text-white/40">{item.option && item.option !== 'none' ? item.option : '—'}</TableCell>
-                                      <TableCell className="text-xs text-white/50 font-mono">{formatPrice(item.unit_cost)}</TableCell>
-                                      <TableCell className="text-xs text-white/65 font-mono">{item.quantity}</TableCell>
+                                      <TableCell>
+                                        <Input type="number" min={0} value={item.unit_cost} onChange={(e) => { const val = Number(e.target.value) || 0; setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, unit_cost: val, line_total: val * it.quantity } : it)); }} className="h-7 w-20 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Input type="number" min={1} value={item.quantity} onChange={(e) => { const val = Math.max(1, Number(e.target.value) || 1); setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, quantity: val, line_total: it.unit_cost * val } : it)); }} className="h-7 w-16 text-xs font-mono bg-white/5 border-white/10 text-white/70" />
+                                      </TableCell>
                                       <TableCell className="text-xs font-mono font-bold" style={{ color: NEON.purple }}>{formatPrice(item.line_total)}</TableCell>
                                       <TableCell>
                                         <button onClick={() => removeItemFromDraft(i)} className="p-1 rounded hover:bg-red-500/20 transition-colors">
