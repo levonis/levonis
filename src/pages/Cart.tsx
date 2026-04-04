@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
+import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
