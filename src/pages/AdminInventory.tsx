@@ -15,7 +15,7 @@ import {
   Package, AlertTriangle, TrendingUp, ArrowDownCircle,
   Search, BarChart3, Boxes, DollarSign, ArrowRight, Truck,
   Plus, CheckCircle2, Clock, ShoppingCart, FileText, ChevronLeft,
-  ChevronRight, Trash2, X, Send, Palette, Settings2 } from
+  ChevronRight, Trash2, X, Send, Palette, Settings2, Pencil } from
 'lucide-react';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useNavigate } from 'react-router-dom';
@@ -351,8 +351,9 @@ export default function AdminInventory() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
 
-  // Draft creation state
+  // Draft creation/edit state
   const [showDraftForm, setShowDraftForm] = useState(false);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [draftNotes, setDraftNotes] = useState('');
@@ -430,23 +431,34 @@ export default function AdminInventory() {
   const createDraftMutation = useMutation({
     mutationFn: async () => {
       const totalValue = draftItems.reduce((s, i) => s + i.line_total, 0);
-      const { error } = await supabase.from('purchase_drafts').insert({
-        title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
-        items: draftItems as any,
-        total_value: totalValue,
-        notes: draftNotes
-      });
-      if (error) throw error;
+      if (editingDraftId) {
+        const { error } = await supabase.from('purchase_drafts').update({
+          title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
+          items: draftItems as any,
+          total_value: totalValue,
+          notes: draftNotes
+        }).eq('id', editingDraftId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('purchase_drafts').insert({
+          title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
+          items: draftItems as any,
+          total_value: totalValue,
+          notes: draftNotes
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-drafts'] });
-      toast.success('تم إنشاء المسودة بنجاح');
+      toast.success(editingDraftId ? 'تم تحديث المسودة بنجاح' : 'تم إنشاء المسودة بنجاح');
       setShowDraftForm(false);
+      setEditingDraftId(null);
       setDraftTitle('');
       setDraftItems([]);
       setDraftNotes('');
     },
-    onError: () => toast.error('خطأ في إنشاء المسودة')
+    onError: () => toast.error('خطأ في حفظ المسودة')
   });
 
   const convertDraftMutation = useMutation({
@@ -829,7 +841,7 @@ export default function AdminInventory() {
                   <h2 className="text-lg font-bold text-white/85 flex items-center gap-2">
                     <FileText className="h-5 w-5" style={{ color: NEON.purple }} /> مسودات الشراء
                   </h2>
-                  <Button onClick={() => setShowDraftForm(true)} className="text-white border"
+                  <Button onClick={() => { setEditingDraftId(null); setDraftTitle(''); setDraftItems([]); setDraftNotes(''); setShowDraftForm(true); }} className="text-white border"
                 style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}>
                     <Plus className="h-4 w-4 ml-1" /> مسودة جديدة
                   </Button>
@@ -841,8 +853,8 @@ export default function AdminInventory() {
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                       <GlassCard className="p-6" style={{ borderColor: `${NEON.purple}18` }}>
                         <div className="flex items-center justify-between mb-5">
-                          <h3 className="text-sm font-semibold text-white/75">إنشاء مسودة شراء جديدة</h3>
-                          <button onClick={() => {setShowDraftForm(false);setDraftItems([]);setDraftTitle('');}} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                          <h3 className="text-sm font-semibold text-white/75">{editingDraftId ? 'تعديل المسودة' : 'إنشاء مسودة شراء جديدة'}</h3>
+                          <button onClick={() => {setShowDraftForm(false);setEditingDraftId(null);setDraftItems([]);setDraftTitle('');setDraftNotes('');}} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
                             <X className="h-4 w-4 text-white/40" />
                           </button>
                         </div>
@@ -966,7 +978,7 @@ export default function AdminInventory() {
                           style={{ background: `linear-gradient(135deg, ${NEON.purple}35, ${NEON.purple}15)`, borderColor: `${NEON.purple}30` }}
                           disabled={draftItems.length === 0 || createDraftMutation.isPending}
                           onClick={() => createDraftMutation.mutate()}>
-                                {createDraftMutation.isPending ? 'جاري...' : 'حفظ المسودة'}
+                                {createDraftMutation.isPending ? 'جاري...' : editingDraftId ? 'تحديث المسودة' : 'حفظ المسودة'}
                               </Button>
                             </div>
                           </div>
@@ -1003,6 +1015,18 @@ export default function AdminInventory() {
                           <div className="flex items-center gap-2">
                             {!isConverted &&
                           <>
+                                <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
+                            style={{ background: `linear-gradient(135deg, ${NEON.purple}25, ${NEON.purple}10)`, borderColor: `${NEON.purple}30` }}
+                            onClick={() => {
+                              const items = (draft.items || []) as DraftItem[];
+                              setEditingDraftId(draft.id);
+                              setDraftTitle(draft.title || '');
+                              setDraftItems(items);
+                              setDraftNotes(draft.notes || '');
+                              setShowDraftForm(true);
+                            }}>
+                                  <Pencil className="h-3 w-3 ml-1" /> تعديل
+                                </Button>
                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
                             style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
                             disabled={convertDraftMutation.isPending}
