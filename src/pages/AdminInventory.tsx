@@ -978,7 +978,7 @@ export default function AdminInventory() {
                           style={{ background: `linear-gradient(135deg, ${NEON.purple}35, ${NEON.purple}15)`, borderColor: `${NEON.purple}30` }}
                           disabled={draftItems.length === 0 || createDraftMutation.isPending}
                           onClick={() => createDraftMutation.mutate()}>
-                                {createDraftMutation.isPending ? 'جاري...' : 'حفظ المسودة'}
+                                {createDraftMutation.isPending ? 'جاري...' : editingDraftId ? 'تحديث المسودة' : 'حفظ المسودة'}
                               </Button>
                             </div>
                           </div>
