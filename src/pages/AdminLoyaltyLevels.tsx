@@ -601,30 +601,29 @@ export default function AdminLoyaltyLevels() {
                             </div>
 
                             {formData.is_purchasable ? (
-                              <div className="admin-form-group">
-                                <Label>سعر البطاقة (نقاط)</Label>
-                                <Input
-                                  type="number"
-                                  value={formData.purchase_price_points}
-                                  onChange={(e) => setFormData({ ...formData, purchase_price_points: parseInt(e.target.value) })}
-                                  placeholder="1000"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  المستخدم يدفع هذا العدد من النقاط للحصول على البطاقة
-                                </p>
-                              </div>
-                              <div className="admin-form-group">
-                                <Label>سعر المحفظة (د.ع) - اختياري</Label>
-                                <Input
-                                  type="number"
-                                  value={formData.wallet_price || ''}
-                                  onChange={(e) => setFormData({ ...formData, wallet_price: e.target.value ? parseInt(e.target.value) : null })}
-                                  placeholder="مثلاً 50000"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  سعر الشراء بالمحفظة (اتركه فارغاً لتعطيل الشراء بالمحفظة)
-                                </p>
-                              </div>
+                              <>
+                                <div className="admin-form-group">
+                                  <Label>سعر البطاقة (نقاط)</Label>
+                                  <Input
+                                    type="number"
+                                    value={formData.purchase_price_points}
+                                    onChange={(e) => setFormData({ ...formData, purchase_price_points: parseInt(e.target.value) })}
+                                    placeholder="1000"
+                                  />
+                                </div>
+                                <div className="admin-form-group">
+                                  <Label>سعر المحفظة (د.ع) - اختياري</Label>
+                                  <Input
+                                    type="number"
+                                    value={formData.wallet_price || ''}
+                                    onChange={(e) => setFormData({ ...formData, wallet_price: e.target.value ? parseInt(e.target.value) : null })}
+                                    placeholder="مثلاً 50000"
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    اتركه فارغاً لتعطيل الشراء بالمحفظة
+                                  </p>
+                                </div>
+                              </>
                             ) : (
                               <div className="admin-form-group">
                                 <Label>الحد الأدنى من النقاط (تلقائي)</Label>
@@ -634,9 +633,6 @@ export default function AdminLoyaltyLevels() {
                                   onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
                                   placeholder="5000"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  عند وصول المستخدم لهذا العدد يحصل على البطاقة تلقائياً
-                                </p>
                               </div>
                             )}
                           </div>
