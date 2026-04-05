@@ -70,6 +70,11 @@
     --sidebar-border: 44 30% 40%;
     --sidebar-ring: 44 51% 64%;
     
+    /* Premium editorial tokens */
+    --emerald-deep: 155 55% 8%;
+    --ivory-warm: 44 50% 93%;
+    --gold-muted: 44 35% 52%;
+
     --radius: 0.875rem;
     
     /* Gradients */
