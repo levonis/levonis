@@ -247,7 +247,13 @@ function VariantSelector({
   }, [product]);
 
   // Collect all unique options from all colors (handle both array and object formats)
-  const allOptions = useMemo(() => collectVariantOptionNames(productColors), [productColors]);
+  const allOptions = useMemo(() => {
+    let opts = collectVariantOptionNames(productColors);
+    if (opts.length === 0 && Array.isArray(product?.product_options)) {
+      opts = product.product_options.map((o: any) => o.name_ar || o.name || '').filter(Boolean);
+    }
+    return opts;
+  }, [productColors, product]);
 
   if (productColors.length === 0 && allOptions.length === 0) return null;
 
