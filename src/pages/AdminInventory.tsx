@@ -55,6 +55,56 @@ interface DraftItemFormState {
   unit_cost: number;
 }
 
+const parseProductColors = (rawColors: unknown): any[] => {
+  if (!rawColors) return [];
+  try {
+    const parsed = typeof rawColors === 'string' ? JSON.parse(rawColors) : rawColors;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const getVariantColorName = (color: any, fallback = ''): string =>
+  String(color?.color || color?.name || color?.name_ar || fallback || '').trim();
+
+const getVariantOptionName = (option: any): string => {
+  if (typeof option === 'string') return option.trim();
+  return String(option?.name || option?.option || option?.name_ar || option?.label || '').trim();
+};
+
+const collectVariantOptionNames = (colors: any[], selectedColor?: string): string[] => {
+  const optionSet = new Set<string>();
+  const relevantColors = selectedColor
+    ? colors.filter((color) => getVariantColorName(color) === selectedColor)
+    : colors;
+
+  relevantColors.forEach((color: any) => {
+    if (Array.isArray(color?.options)) {
+      color.options.forEach((option: any) => {
+        const name = getVariantOptionName(option);
+        if (name) optionSet.add(name);
+      });
+    }
+
+    if (Array.isArray(color?.linked_options)) {
+      color.linked_options.forEach((option: any) => {
+        const name = getVariantOptionName(option);
+        if (name) optionSet.add(name);
+      });
+    }
+
+    if (color?.option_stocks && typeof color.option_stocks === 'object' && !Array.isArray(color.option_stocks)) {
+      Object.keys(color.option_stocks).forEach((key) => {
+        const name = getVariantOptionName(key);
+        if (name) optionSet.add(name);
+      });
+    }
+  });
+
+  return Array.from(optionSet);
+};
+
 // ====== GLASS COMPONENTS ======
 const GlassCard = ({ children, className = '', style }: {children: React.ReactNode;className?: string;style?: React.CSSProperties;}) =>
 <div className={`relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 hover:border-white/[0.12] ${className}`} style={style}>
@@ -193,31 +243,11 @@ function VariantSelector({
   onOptionsChange
 }: {product: any; selectedColors: string[]; selectedOptions: string[]; onColorsChange: (c: string[]) => void; onOptionsChange: (o: string[]) => void;}) {
   const productColors = useMemo(() => {
-    if (!product?.colors) return [];
-    try {
-      const c = typeof product.colors === 'string' ? JSON.parse(product.colors) : product.colors;
-      return Array.isArray(c) ? c : [];
-    } catch {return [];}
+    return parseProductColors(product?.colors);
   }, [product]);
 
   // Collect all unique options from all colors (handle both array and object formats)
-  const allOptions = useMemo(() => {
-    const optionSet = new Set<string>();
-    productColors.forEach((c: any) => {
-      // Handle options array
-      if (Array.isArray(c.options)) {
-        c.options.forEach((o: any) => {
-          const name = o.name || o.option;
-          if (name) optionSet.add(name);
-        });
-      }
-      // Handle option_stocks object (key-value pairs like {"option_name": stock_qty})
-      if (c.option_stocks && typeof c.option_stocks === 'object' && !Array.isArray(c.option_stocks)) {
-        Object.keys(c.option_stocks).forEach((key) => optionSet.add(key));
-      }
-    });
-    return Array.from(optionSet);
-  }, [productColors]);
+  const allOptions = useMemo(() => collectVariantOptionNames(productColors), [productColors]);
 
   if (productColors.length === 0 && allOptions.length === 0) return null;
 
@@ -254,7 +284,7 @@ function VariantSelector({
   };
 
   const selectAllColors = () => {
-    const allNames = productColors.map((c: any) => c.name || c.color || '').filter(Boolean);
+    const allNames = productColors.map((c: any, i: number) => getVariantColorName(c, `color-${i}`)).filter(Boolean);
     onColorsChange(allNames);
   };
 
@@ -282,7 +312,7 @@ function VariantSelector({
           </div>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {productColors.map((c: any, i: number) => {
-              const name = c.name || c.color || `color-${i}`;
+              const name = getVariantColorName(c, `color-${i}`);
               const hint = getColorHint(name);
               const isActive = selectedColors.includes(name);
               return (
@@ -672,32 +702,10 @@ export default function AdminInventory() {
   const getDraftProductVariants = useCallback((productId: string, selectedColor?: string) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return { colors: [] as string[], options: [] as string[] };
-    let colorsRaw: any[] = [];
-    try {
-      const parsed = typeof product.colors === 'string' ? JSON.parse(product.colors as string) : product.colors;
-      if (Array.isArray(parsed)) colorsRaw = parsed;
-    } catch {}
-    const colorNames = colorsRaw.map((c: any) => c.color).filter(Boolean);
-    let optionNames: string[] = [];
-    if (selectedColor) {
-      const colorObj = colorsRaw.find((c: any) => c.color === selectedColor);
-      if (colorObj?.option_stocks && typeof colorObj.option_stocks === 'object') {
-        optionNames = Object.keys(colorObj.option_stocks);
-      }
-      if (colorObj?.options && Array.isArray(colorObj.options)) {
-        optionNames = [...new Set([...optionNames, ...colorObj.options])];
-      }
-    } else {
-      colorsRaw.forEach((c: any) => {
-        if (c.option_stocks && typeof c.option_stocks === 'object') {
-          optionNames = [...new Set([...optionNames, ...Object.keys(c.option_stocks)])];
-        }
-        if (c.options && Array.isArray(c.options)) {
-          optionNames = [...new Set([...optionNames, ...c.options])];
-        }
-      });
-    }
-    return { colors: colorNames, options: optionNames.filter(Boolean) };
+    const colorsRaw = parseProductColors(product.colors);
+    const colorNames = [...new Set(colorsRaw.map((c: any, i: number) => getVariantColorName(c, `color-${i}`)).filter(Boolean))];
+    const optionNames = collectVariantOptionNames(colorsRaw, selectedColor);
+    return { colors: colorNames, options: optionNames };
   }, [products]);
 
   // ====== COMPUTED ======
