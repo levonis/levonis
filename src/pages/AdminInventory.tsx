@@ -247,7 +247,13 @@ function VariantSelector({
   }, [product]);
 
   // Collect all unique options from all colors (handle both array and object formats)
-  const allOptions = useMemo(() => collectVariantOptionNames(productColors), [productColors]);
+  const allOptions = useMemo(() => {
+    let opts = collectVariantOptionNames(productColors);
+    if (opts.length === 0 && Array.isArray(product?.product_options)) {
+      opts = product.product_options.map((o: any) => o.name_ar || o.name || '').filter(Boolean);
+    }
+    return opts;
+  }, [productColors, product]);
 
   if (productColors.length === 0 && allOptions.length === 0) return null;
 
@@ -396,7 +402,7 @@ export default function AdminInventory() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['inventory-products'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar)').order('name_ar');
+      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
       if (error) throw error;
       return data || [];
     },
@@ -704,7 +710,13 @@ export default function AdminInventory() {
     if (!product) return { colors: [] as string[], options: [] as string[] };
     const colorsRaw = parseProductColors(product.colors);
     const colorNames = [...new Set(colorsRaw.map((c: any, i: number) => getVariantColorName(c, `color-${i}`)).filter(Boolean))];
-    const optionNames = collectVariantOptionNames(colorsRaw, selectedColor);
+    let optionNames = collectVariantOptionNames(colorsRaw, selectedColor);
+    // Also include options from product_options table if no inline options found
+    if (optionNames.length === 0 && Array.isArray((product as any).product_options)) {
+      optionNames = (product as any).product_options
+        .map((o: any) => o.name_ar || o.name || '')
+        .filter(Boolean);
+    }
     return { colors: colorNames, options: optionNames };
   }, [products]);
 
