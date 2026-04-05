@@ -17,7 +17,6 @@ interface ProductHeroCardProps {
 }
 
 const ProductHeroCard = ({ name_ar, description_ar, price, original_price, image_url, images, currency, slug }: ProductHeroCardProps) => {
-  const { t } = useLanguage();
   const displayImage = (images && images.length > 0) ? images[0] : image_url;
   const optimizedImage = resizeSupabaseImage(displayImage, 600, 85);
   const hasSale = original_price && original_price > price;
