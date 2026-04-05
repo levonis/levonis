@@ -29,9 +29,6 @@ export default {
         background: "hsl(var(--background))",
         "background-2": "hsl(var(--background-2))",
         foreground: "hsl(var(--foreground))",
-        "emerald-deep": "hsl(var(--emerald-deep))",
-        "ivory-warm": "hsl(var(--ivory-warm))",
-        "gold-muted": "hsl(var(--gold-muted))",
         whatsapp: "hsl(var(--whatsapp))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
