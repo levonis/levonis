@@ -704,7 +704,13 @@ export default function AdminInventory() {
     if (!product) return { colors: [] as string[], options: [] as string[] };
     const colorsRaw = parseProductColors(product.colors);
     const colorNames = [...new Set(colorsRaw.map((c: any, i: number) => getVariantColorName(c, `color-${i}`)).filter(Boolean))];
-    const optionNames = collectVariantOptionNames(colorsRaw, selectedColor);
+    let optionNames = collectVariantOptionNames(colorsRaw, selectedColor);
+    // Also include options from product_options table if no inline options found
+    if (optionNames.length === 0 && Array.isArray((product as any).product_options)) {
+      optionNames = (product as any).product_options
+        .map((o: any) => o.name_ar || o.name || '')
+        .filter(Boolean);
+    }
     return { colors: colorNames, options: optionNames };
   }, [products]);
 
