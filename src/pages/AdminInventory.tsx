@@ -1075,7 +1075,7 @@ export default function AdminInventory() {
                                               </Select>
                                             );
                                           }
-                                          return <Input value={item.color === 'none' ? '' : (item.color || '')} onChange={(e) => setDraftItems(prev => prev.map((it, idx) => idx === i ? { ...it, color: e.target.value || 'none' } : it))} placeholder="—" className="h-7 w-20 text-xs bg-white/5 border-white/10 text-white/70" />;
+                                          return <span className="text-muted-foreground text-xs text-center block">—</span>;
                                         })()}
                                       </TableCell>
                                       <TableCell>
