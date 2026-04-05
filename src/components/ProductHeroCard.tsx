@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatPrice } from '@/lib/utils';
-import { resizeSupabaseImage, IMAGE_QUALITY } from '@/lib/imageUtils';
-import { useLanguage } from '@/lib/i18n';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 import { Button } from './ui/button';
 import { ArrowLeft } from 'lucide-react';
 
