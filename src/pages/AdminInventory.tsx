@@ -508,7 +508,7 @@ export default function AdminInventory() {
       const items = (shipment.items || []) as DraftItem[];
       // Create a new draft from shipment data
       const { error: draftErr } = await supabase.from('purchase_drafts').insert({
-        title: `${shipment.note || 'شحنة مرتجعة'} (مرتجعة)`,
+        title: shipment.note || 'مسودة شراء',
         items: items as any,
         total_value: Number(shipment.total_cost) || 0,
         status: 'draft'
