@@ -396,7 +396,7 @@ export default function AdminInventory() {
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ['inventory-products'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar)').order('name_ar');
+      const { data, error } = await supabase.from('products').select('id, name_ar, price, cost_price, direct_stock, image_url, category_id, colors, categories!products_category_id_fkey(id, name_ar), product_options(id, name_ar)').order('name_ar');
       if (error) throw error;
       return data || [];
     },
