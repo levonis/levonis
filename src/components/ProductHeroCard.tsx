@@ -75,7 +75,7 @@ const ProductHeroCard = ({ name_ar, description_ar, price, original_price, image
               size="lg"
               className="mt-2 bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm rounded-xl px-8 gap-2 transition-all duration-300 hover:scale-105"
             >
-              {t('product_view') || 'عرض المنتج'}
+              عرض المنتج
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
