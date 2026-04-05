@@ -892,7 +892,7 @@ export default function AdminInventory() {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="relative z-10 transition-all duration-300 bg-[sidebar-primary-foreground] bg-slate-950" style={{ marginRight: sidebarOpen ? 236 : 80, padding: '24px' }}>
+      <main className="relative z-10 transition-all duration-300 bg-[sidebar-primary-foreground] bg-background" style={{ marginRight: sidebarOpen ? 236 : 80, padding: '24px' }}>
         <AnimatePresence mode="wait">
           <motion.div key={activeSection} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
 
