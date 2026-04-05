@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from 'react';
-import logoNew from '@/assets/new-logo.png';
+const logoNew = '/og-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Globe } from 'lucide-react';

@@ -1,4 +1,4 @@
-import logoNew from '@/assets/new-logo.png';
+const logoNew = '/og-logo.png';
 import { useLanguage } from '@/lib/i18n';
 
 const Footer = () => {

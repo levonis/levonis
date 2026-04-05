@@ -6,14 +6,14 @@
 import { useState, useEffect, useRef } from "react";
 import type { SpriteCoords, AnimatedSpriteCoords } from "./SpriteMap";
 
-import sheet00 from "@/assets/pixel-ui/00.png";
-import sheet01 from "@/assets/pixel-ui/01.png";
-import sheet02 from "@/assets/pixel-ui/02.png";
-import sheet03 from "@/assets/pixel-ui/03.png";
-import sheet04 from "@/assets/pixel-ui/04.png";
-import sheet05 from "@/assets/pixel-ui/05.png";
-import sheet06 from "@/assets/pixel-ui/06.png";
-import sheet07 from "@/assets/pixel-ui/07.png";
+const sheet00 = '';
+const sheet01 = '';
+const sheet02 = '';
+const sheet03 = '';
+const sheet04 = '';
+const sheet05 = '';
+const sheet06 = '';
+const sheet07 = '';
 
 const SHEETS: Record<string, string> = {
   "00": sheet00, "01": sheet01, "02": sheet02, "03": sheet03,

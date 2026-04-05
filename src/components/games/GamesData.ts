@@ -1,4 +1,4 @@
-import gameRpsImage from "@/assets/game-rps.png";
+const gameRpsImage = '/placeholder.svg';
 
 /**
  * ╔══════════════════════════════════════════════════════════════╗

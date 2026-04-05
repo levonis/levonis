@@ -6,9 +6,9 @@ import {
   SPRITE_FRAMES, SPRITE_SCROLLBARS,
   type SpriteCoords
 } from "./SpriteMap";
-import sheet00 from "@/assets/pixel-ui/00.png";
-import sheet01 from "@/assets/pixel-ui/01.png";
-import sheet03 from "@/assets/pixel-ui/03.png";
+const sheet00 = '';
+const sheet01 = '';
+const sheet03 = '';
 import { useEffect, useState } from "react";
 
 // Show raw sheet at 1x with hover coordinate display

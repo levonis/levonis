@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import healSheet from "@/assets/pixel-ui/03.png";
+const healSheet = '';
 
 const TOTAL_FRAMES = 11;
 
