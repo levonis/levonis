@@ -87,12 +87,12 @@ const CategoryDetail = () => {
                 {featuredProduct && (
                   <div className="flex flex-col md:flex-row-reverse items-center md:items-start gap-8 md:gap-16">
                     {/* Title & description — left side */}
-                    <div className="flex-1 text-center md:text-left pt-4 md:pt-12">
+                    <div className="flex-1 text-center md:text-right pt-4 md:pt-12">
                       <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-4 tracking-tight leading-tight">
                         {category.name_ar}
                       </h1>
                       {category.description_ar && (
-                        <p className="text-foreground/40 text-base md:text-lg max-w-md mx-auto md:mx-0 md:mr-0">
+                        <p className="text-foreground/40 text-base md:text-lg max-w-md mx-auto md:mx-0 md:ml-0">
                           {category.description_ar}
                         </p>
                       )}
@@ -115,19 +115,6 @@ const CategoryDetail = () => {
                   </div>
                 )}
 
-                {/* If no featured, show title alone */}
-                {!featuredProduct && (
-                  <div className="text-center mb-14">
-                    <h1 className="text-3xl md:text-5xl font-black text-foreground/90 mb-3 tracking-tight">
-                      {category.name_ar}
-                    </h1>
-                    {category.description_ar && (
-                      <p className="text-foreground/45 text-base md:text-lg max-w-xl mx-auto">
-                        {category.description_ar}
-                      </p>
-                    )}
-                  </div>
-                )}
 
                 {/* Staggered grid of product cards */}
                 {otherProducts.length > 0 && (
