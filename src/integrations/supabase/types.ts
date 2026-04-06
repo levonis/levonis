@@ -895,6 +895,7 @@ export type Database = {
           description_ar: string | null
           description_en: string | null
           description_ku: string | null
+          featured_product_id: string | null
           icon: string
           id: string
           main_section_id: string | null
@@ -910,6 +911,7 @@ export type Database = {
           description_ar?: string | null
           description_en?: string | null
           description_ku?: string | null
+          featured_product_id?: string | null
           icon: string
           id?: string
           main_section_id?: string | null
@@ -925,6 +927,7 @@ export type Database = {
           description_ar?: string | null
           description_en?: string | null
           description_ku?: string | null
+          featured_product_id?: string | null
           icon?: string
           id?: string
           main_section_id?: string | null
@@ -935,6 +938,13 @@ export type Database = {
           tax_rate?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_featured_product_id_fkey"
+            columns: ["featured_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categories_main_section_id_fkey"
             columns: ["main_section_id"]

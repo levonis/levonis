@@ -59,6 +59,7 @@ const categorySchema = z.object({
   description_ar: z.string().optional(),
   description: z.string().optional(),
   main_section_id: z.string().uuid().optional(),
+  featured_product_id: z.string().uuid().nullable().optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -1501,6 +1502,7 @@ const Admin = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
+      const featuredVal = formData.get('featured_product_id') as string;
       const values = categorySchema.parse({
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
@@ -1509,6 +1511,7 @@ const Admin = () => {
         description_ar: formData.get('description_ar') as string || undefined,
         description: formData.get('description') as string || undefined,
         main_section_id: formData.get('main_section_id') as string || undefined,
+        featured_product_id: featuredVal || null,
       });
 
       if (editingCategory) {
@@ -3479,6 +3482,25 @@ const Admin = () => {
                         ))}
                       </select>
                     </div>
+
+                    {editingCategory && (
+                      <div className="space-y-2">
+                        <Label htmlFor="featured_product_id">المنتج المميز</Label>
+                        <select
+                          id="featured_product_id"
+                          name="featured_product_id"
+                          defaultValue={editingCategory?.featured_product_id || ''}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="">تلقائي (أعلى سعر)</option>
+                          {products?.filter(p => p.category_id === editingCategory?.id).map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name_ar}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     <Button
                       type="submit" 

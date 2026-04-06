@@ -48,8 +48,15 @@ const CategoryDetail = () => {
     staleTime: 2 * 60 * 1000,
   });
 
-  const featuredProduct = products?.[0];
-  const otherProducts = products?.slice(1) || [];
+  const featuredProduct = (() => {
+    if (!products?.length) return undefined;
+    if (category?.featured_product_id) {
+      const found = products.find(p => p.id === category.featured_product_id);
+      if (found) return found;
+    }
+    return products[0];
+  })();
+  const otherProducts = products?.filter(p => p.id !== featuredProduct?.id) || [];
 
   // Split other products into 3 columns for staggered layout
   const columns: typeof otherProducts[] = [[], [], []];
