@@ -103,18 +103,6 @@ const FloatingProductCard = memo(({
   return (
     <Link to={`/product/${slug}`} className="block group">
       <div className="product-card-green relative">
-        {/* Discount badge */}
-        {discount > 0 && (
-          <div className="absolute top-3 right-3 z-20 px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold flex items-center gap-1">
-            -{discount}%
-            {originalPrice && (
-              <span className="line-through opacity-75 text-[10px]">
-                {originalPrice.toLocaleString()}
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Product image area */}
         <div className="relative h-40 md:h-48 flex items-end justify-center px-4 pt-4 pb-2">
           <img
@@ -129,7 +117,7 @@ const FloatingProductCard = memo(({
         <div className="mx-4 h-px bg-white/10" />
 
         {/* Product info */}
-        <div className="p-4 pt-3 text-center space-y-1">
+        <div className="p-4 pt-3 text-center space-y-1.5">
           <h3 className="text-sm md:text-base font-semibold text-foreground/85 leading-tight line-clamp-2">
             {nameAr}
           </h3>
@@ -141,6 +129,19 @@ const FloatingProductCard = memo(({
               {currency === 'IQD' ? 'د.ع' : currency}
             </span>
           </div>
+          {/* Discount badge — below price */}
+          {discount > 0 && (
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
+                -{discount}%
+              </span>
+              {originalPrice && (
+                <span className="line-through text-[11px] text-muted-foreground">
+                  {originalPrice.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Link>
