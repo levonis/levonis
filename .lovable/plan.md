@@ -1,14 +1,30 @@
 
 
-## التغييرات المطلوبة
+# إضافة اختيار منتج مميز للقسم الفرعي من لوحة الإدارة
 
-### 1. محاذاة نص المنتج (الاسم والوصف) إلى اليمين
-- تغيير `md:text-left` إلى `md:text-right` في div النص (سطر 90)
-- تغيير `md:mx-0 md:mr-0` إلى `md:mx-0 md:ml-0` في وصف المنتج (سطر 95)
+## الملخص
+إضافة عمود `featured_product_id` لجدول `categories` يسمح للأدمن باختيار منتج مميز واحد لكل قسم فرعي، يظهر على المنصة ثلاثية الأبعاد في صفحة القسم.
 
-### 2. حذف عنوان ووصف القسم الفرعي (Category title/description عندما لا يوجد منتج مميز)
-- حذف block الـ `{!featuredProduct && ...}` بالكامل (سطور 118-129) الذي يعرض اسم ووصف القسم بشكل مستقل
+## التغييرات
+
+### 1. Migration — إضافة عمود `featured_product_id`
+```sql
+ALTER TABLE public.categories 
+ADD COLUMN featured_product_id UUID REFERENCES public.products(id) ON DELETE SET NULL;
+```
+
+### 2. `src/pages/Admin.tsx` — إضافة حقل اختيار المنتج المميز في نموذج القسم
+- إضافة `<select>` في فورم القسم الفرعي يعرض منتجات القسم الحالي
+- تحديث `categorySchema` و `handleCategorySubmit` ليشمل `featured_product_id`
+- تحديث mutations (`createCategory` / `updateCategory`) لإرسال الحقل الجديد
+
+### 3. `src/pages/CategoryDetail.tsx` — استخدام المنتج المحدد
+- جلب `featured_product_id` من بيانات القسم
+- إذا كان محدداً: عرض المنتج المختار على المنصة، والباقي في الشبكة
+- إذا لم يكن محدداً: الاحتفاظ بالسلوك الحالي (أول منتج بالسعر)
 
 ### الملفات المتأثرة
-- `src/pages/CategoryDetail.tsx`
+1. **Migration SQL** — عمود جديد
+2. `src/pages/Admin.tsx` — حقل اختيار في فورم القسم
+3. `src/pages/CategoryDetail.tsx` — منطق عرض المنتج المميز
 
