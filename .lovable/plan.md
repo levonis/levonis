@@ -1,24 +1,23 @@
 
 
-## التغيير المطلوب
+## تحسين موضع صورة المنتج الرئيسي لتبدو واقفة على المنصة
 
-النص بجانب المنتج المميز حالياً يعرض **اسم ووصف القسم الفرعي** (`category.name_ar` و `category.description_ar`). المطلوب تغييره ليعرض **اسم ووصف المنتج** نفسه.
+### المشكلة
+الصورة حالياً تظهر "طافية" فوق المنصة ثلاثية الأبعاد بسبب وجود فجوة بين أسفل الصورة وأعلى المنصة (الظل والمسافات).
 
-## التعديل — `src/pages/CategoryDetail.tsx`
+### الحل — `src/components/FloatingProductCard.tsx`
 
-في السطور 98-105، استبدال:
-- `category.name_ar` → `featuredProduct.name_ar`
-- `category.description_ar` → `featuredProduct.description_ar`
+1. **إزالة الفجوة بين الصورة والمنصة**: تقليل/إزالة الـ margin السلبي للظل (contact shadow) وجعل الصورة تتداخل مع أعلى المنصة عبر margin سلبي أكبر على حاوية الصورة
+2. **تعديل حاوية الصورة**: إضافة `margin-bottom` سلبي (مثلاً `-mb-8`) لجعل أسفل الصورة يلامس سطح المنصة مباشرة
+3. **ضبط الظل**: تعديل الـ contact shadow ليكون أقرب للمنصة وأكثر انسجاماً مع وضعية "الوقوف"
 
-```tsx
-// قبل
-<h1 ...>{category.name_ar}</h1>
-{category.description_ar && <p ...>{category.description_ar}</p>}
+### التعديلات المحددة
 
-// بعد
-<h1 ...>{featuredProduct.name_ar}</h1>
-{featuredProduct.description_ar && <p ...>{featuredProduct.description_ar}</p>}
-```
+في الـ featured section من `FloatingProductCard.tsx`:
+- إضافة `style={{ marginBottom: '-2rem' }}` أو ما يعادله على div الصورة (سطر 41) لدفعها للأسفل
+- تعديل الظل (سطر 51) ليكون أقرب وأصغر ليتماشى مع المنصة
+- رفع z-index الصورة فوق المنصة
 
-ملف واحد فقط يتأثر، تغيير بسيط في سطرين.
+### الملفات المتأثرة
+- `src/components/FloatingProductCard.tsx` — تعديل الهيكل والمسافات
 
