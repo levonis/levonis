@@ -241,6 +241,79 @@ const Cart = () => {
     staleTime: 30_000,
   });
 
+  // ── Stock validation for direct sale items ──
+  const directProductIds = [...new Set(items.filter(i => (i as any).sale_type === 'direct' && i.product_id).map(i => i.product_id!))];
+  const { data: stockDataMap } = useQuery({
+    queryKey: ['cart-stock-check', directProductIds.join(',')],
+    queryFn: async () => {
+      if (directProductIds.length === 0) return {} as Record<string, any>;
+      const { data } = await supabase
+        .from('products')
+        .select('id, direct_stock, colors')
+        .in('id', directProductIds);
+      if (!data) return {};
+      return data.reduce((acc: Record<string, any>, p: any) => { acc[p.id] = p; return acc; }, {} as Record<string, any>);
+    },
+    enabled: directProductIds.length > 0,
+    staleTime: 10_000,
+    refetchOnMount: 'always',
+  });
+
+  const getItemAvailableStock = (item: CartItem): number | null => {
+    if ((item as any).sale_type !== 'direct' || !item.product_id) return null;
+    const product = stockDataMap?.[item.product_id];
+    if (!product) return null;
+    const colors = Array.isArray(product.colors) ? product.colors : [];
+    const selectedColor = (item as any).selected_color;
+    const optionId = (item as any).product_option_id;
+
+    if (colors.length === 0) {
+      return product.direct_stock != null ? Math.max(0, Number(product.direct_stock)) : 0;
+    }
+
+    if (selectedColor) {
+      const color = colors.find((c: any) => c.name === selectedColor || c.name_ar === selectedColor || c.hex_code === selectedColor);
+      if (!color) return 0;
+      if (color.available_for_direct_sale === false) return 0;
+      const stocks = color.option_stocks;
+      if (stocks && typeof stocks === 'object' && Object.keys(stocks).length > 0) {
+        if (optionId && stocks[optionId] != null) return Math.max(0, Number(stocks[optionId]));
+        return Object.values(stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v)), 0);
+      }
+      if (color.stock_quantity != null) return Math.max(0, Number(color.stock_quantity));
+      return 0;
+    }
+
+    // No color selected — sum all direct-sale-eligible colors
+    let total = 0;
+    for (const c of colors) {
+      if (c.available_for_direct_sale === false) continue;
+      const stocks = c.option_stocks;
+      if (stocks && typeof stocks === 'object') {
+        total += Object.values(stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v)), 0);
+      } else if (c.stock_quantity != null) {
+        total += Math.max(0, Number(c.stock_quantity));
+      }
+    }
+    return total;
+  };
+
+  const outOfStockItemIds = new Set<string>();
+  const lowStockItems = new Map<string, number>(); // itemId → available
+  items.forEach(item => {
+    const available = getItemAvailableStock(item);
+    if (available === null) return;
+    if (available <= 0) outOfStockItemIds.add(item.id);
+    else if (available < item.quantity) lowStockItems.set(item.id, available);
+  });
+  const hasOutOfStockItems = outOfStockItemIds.size > 0;
+
+  const removeOutOfStockItems = async () => {
+    for (const id of outOfStockItemIds) {
+      await removeFromCart(id);
+    }
+  };
+
   const { data: userAddresses } = useQuery({
     queryKey: ['user-addresses', user?.id],
     queryFn: async () => {
@@ -1630,13 +1703,31 @@ const Cart = () => {
                       }, 300);
                     };
 
+                    const itemAvailableStock = getItemAvailableStock(item);
+                    const isOutOfStock = itemAvailableStock !== null && itemAvailableStock <= 0;
+                    const isLowStock = itemAvailableStock !== null && itemAvailableStock > 0 && itemAvailableStock < item.quantity;
+
                     return (
                       <div 
                         key={item.id}
-                        className={`rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all duration-300 w-full max-w-full overflow-hidden ${
-                          isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0'
+                        className={`rounded-xl p-2.5 sm:p-4 border transition-all duration-300 w-full max-w-full overflow-hidden ${
+                          isOutOfStock ? 'border-destructive/50 bg-destructive/5 opacity-70' :
+                          isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : 'border-border/50 bg-card hover:border-primary/30 opacity-100 scale-100 translate-x-0'
                         }`}
                       >
+                        {isOutOfStock && (
+                          <div className="flex items-center justify-between gap-2 mb-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <span className="text-xs font-bold text-destructive">⚠️ انتهى من المخزون</span>
+                            <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => handleAnimatedRemove()}>
+                              <Trash2 className="h-3 w-3 ml-1" /> حذف
+                            </Button>
+                          </div>
+                        )}
+                        {isLowStock && (
+                          <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                            <span className="text-xs font-bold text-amber-600">⚠️ الكمية المتاحة: {itemAvailableStock} فقط</span>
+                          </div>
+                        )}
                         <div className="flex gap-2.5 sm:gap-4">
                           {/* Product Image - compact on mobile */}
                           {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
@@ -1781,10 +1872,23 @@ const Cart = () => {
                       updateQuantity={handleUpdateQuantity}
                       removeFromCart={handleRemoveFromCart}
                       formatPrice={formatPrice}
+                      outOfStockItemIds={outOfStockItemIds}
+                      lowStockItems={lowStockItems}
                     />
                   );
                 });
               })()}
+
+              {/* Out of Stock Warning */}
+              {hasOutOfStockItems && (
+                <div className="rounded-xl p-3 border border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-destructive">⚠️ يوجد منتجات غير متوفرة في السلة</span>
+                  <Button size="sm" variant="destructive" className="shrink-0" onClick={removeOutOfStockItems}>
+                    <Trash2 className="h-3.5 w-3.5 ml-1" />
+                    حذف الكل
+                  </Button>
+                </div>
+              )}
 
               {/* Cart Upsell Offers */}
               <CartUpsellOffers />
@@ -2253,12 +2357,17 @@ const Cart = () => {
                   className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
                   size="lg"
                   onClick={handleCheckoutClick}
-                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted}
+                  disabled={isCheckingOut || isDirectSaleProcessing || (!isDirectSaleCart && !hasEnoughBalance) || !termsAccepted || hasOutOfStockItems}
                 >
                   {isCheckingOut || isDirectSaleProcessing ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       {t('cart_processing')}
+                    </>
+                  ) : hasOutOfStockItems ? (
+                    <>
+                      <Trash2 className="ml-2 h-4 w-4" />
+                      يرجى حذف المنتجات غير المتوفرة
                     </>
                   ) : !termsAccepted ? (
                     <>
