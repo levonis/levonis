@@ -259,7 +259,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
                   )}
                 </TableBody>
               </Table>
-            </ScrollArea>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
