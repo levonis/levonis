@@ -183,7 +183,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
             </div>
 
             {/* Table */}
-            <ScrollArea className="flex-1 border rounded-lg h-[400px]">
+            <div className="flex-1 border rounded-lg overflow-y-auto min-h-0">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
