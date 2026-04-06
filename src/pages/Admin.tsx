@@ -3273,6 +3273,7 @@ const Admin = () => {
                               variant="outline"
                               onClick={() => {
                                 setEditingProduct(product);
+                                setProductFeatured(!!product.featured);
                                 setProductDialogOpen(true);
                               }}
                               title="تعديل"
