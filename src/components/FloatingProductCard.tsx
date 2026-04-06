@@ -66,13 +66,23 @@ const FloatingProductCard = memo(({
                 {price.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
               </span>
               {discount > 0 && (
-                <span className="text-xs font-bold tracking-wider"
-                  style={{
-                    color: 'hsl(155 50% 35% / 0.45)',
-                    textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
-                  }}>
-                  -{discount}%
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold tracking-wider"
+                    style={{
+                      color: 'hsl(155 50% 35% / 0.45)',
+                      textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
+                    }}>
+                    -{discount}%
+                  </span>
+                  {originalPrice && (
+                    <span className="text-[10px] line-through"
+                      style={{
+                        color: 'hsl(155 50% 35% / 0.35)',
+                      }}>
+                      {originalPrice.toLocaleString()}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
