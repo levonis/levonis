@@ -146,29 +146,21 @@ const CategoryDetail = () => {
                 )}
 
 
-                {/* Staggered grid of product cards */}
+                {/* Grid of product cards */}
                 {otherProducts.length > 0 && (
-                  <div className="hidden md:flex gap-6 items-start">
-                    {columns.map((col, colIdx) => (
-                      <div
-                        key={colIdx}
-                        className="flex-1 flex flex-col gap-6"
-                        style={{ marginTop: colIdx === 1 ? '3rem' : colIdx === 2 ? '1.5rem' : '0' }}
-                      >
-                        {col.map((product) => (
-                          <FloatingProductCard
-                            key={product.id}
-                            id={product.id}
-                            name={product.name}
-                            nameAr={product.name_ar}
-                            price={Number(product.price)}
-                            originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                            imageUrl={product.image_url || undefined}
-                            currency={product.currency || undefined}
-                            slug={product.slug}
-                          />
-                        ))}
-                      </div>
+                  <div className="hidden md:grid grid-cols-3 gap-6">
+                    {otherProducts.map((product) => (
+                      <FloatingProductCard
+                        key={product.id}
+                        id={product.id}
+                        name={product.name}
+                        nameAr={product.name_ar}
+                        price={Number(product.price)}
+                        originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                        imageUrl={product.image_url || undefined}
+                        currency={product.currency || undefined}
+                        slug={product.slug}
+                      />
                     ))}
                   </div>
                 )}
