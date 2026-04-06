@@ -2351,6 +2351,11 @@ const Cart = () => {
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       {t('cart_processing')}
                     </>
+                  ) : hasOutOfStockItems ? (
+                    <>
+                      <Trash2 className="ml-2 h-4 w-4" />
+                      يرجى حذف المنتجات غير المتوفرة
+                    </>
                   ) : !termsAccepted ? (
                     <>
                       <FileText className="ml-2 h-4 w-4" />
