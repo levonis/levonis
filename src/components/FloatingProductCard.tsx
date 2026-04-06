@@ -1,6 +1,5 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { useLanguage } from '@/lib/i18n';
 
 interface FloatingProductCardProps {
   id: string;
@@ -23,8 +22,6 @@ const FloatingProductCard = memo(({
   slug,
   featured = false,
 }: FloatingProductCardProps) => {
-  const { t } = useLanguage();
-
   const discount = originalPrice && originalPrice > price
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
@@ -32,57 +29,76 @@ const FloatingProductCard = memo(({
   return (
     <Link
       to={`/product/${slug}`}
-      className={`group block ${featured ? 'floating-card-featured' : 'floating-card'}`}
+      className="block"
     >
-      <div className={`relative ${featured ? 'p-8' : 'p-5'}`}>
-        {/* Discount badge */}
-        {discount > 0 && (
-          <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold backdrop-blur-sm">
-            -{discount}%
-          </div>
-        )}
+      <div className="flex flex-col items-center">
+        {/* Product image area */}
+        <div className={`relative mx-auto ${featured ? 'h-56 w-56 md:h-72 md:w-72' : 'h-36 w-36 md:h-44 md:w-44'}`}>
+          {/* Discount badge */}
+          {discount > 0 && (
+            <div className="absolute top-0 right-0 z-20 px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
+              -{discount}%
+            </div>
+          )}
 
-        {/* Floating product image */}
-        <div className={`relative mx-auto ${featured ? 'h-64 w-64 md:h-80 md:w-80' : 'h-40 w-40 md:h-48 md:w-48'}`}>
-          {/* Ellipse shadow under product */}
-          <div
-            className={`absolute bottom-0 left-1/2 -translate-x-1/2 rounded-[50%] bg-black/25 blur-xl transition-all duration-500 group-hover:bg-black/15 group-hover:blur-2xl group-hover:scale-90 ${
-              featured ? 'w-48 h-8 md:w-64 md:h-10' : 'w-28 h-5 md:w-36 md:h-6'
-            }`}
-          />
-
-          {/* Product image */}
+          {/* Product image — static, no animation */}
           <img
             src={imageUrl || '/placeholder.svg'}
             alt={nameAr}
             loading={featured ? 'eager' : 'lazy'}
-            className={`relative z-10 w-full h-full object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.3)] transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] group-hover:-translate-y-3 group-hover:scale-105 group-hover:drop-shadow-[0_30px_60px_rgba(0,0,0,0.4)] ${
-              featured ? 'animate-[product-float_4s_ease-in-out_infinite]' : ''
-            }`}
+            className="relative z-10 w-full h-full object-contain"
           />
         </div>
 
+        {/* Contact shadow — where product meets platform */}
+        <div
+          className={`mx-auto rounded-[50%] ${
+            featured
+              ? 'w-44 h-3 md:w-56 md:h-4 bg-black/30 blur-md'
+              : 'w-24 h-2 md:w-32 md:h-3 bg-black/25 blur-sm'
+          }`}
+          style={{ marginTop: '-6px' }}
+        />
+
+        {/* 3D Pedestal / Platform */}
+        <div className={`pedestal-wrapper ${featured ? 'pedestal-featured' : ''}`}>
+          {/* Top face */}
+          <div className={`pedestal-top ${featured ? 'pedestal-top-featured' : ''}`} />
+          {/* Front face */}
+          <div className={`pedestal-front ${featured ? 'pedestal-front-featured' : ''}`} />
+        </div>
+
+        {/* Ground shadow under pedestal */}
+        <div
+          className={`mx-auto rounded-[50%] ${
+            featured
+              ? 'w-52 h-3 md:w-64 md:h-4 bg-black/15 blur-lg'
+              : 'w-32 h-2 md:w-40 md:h-3 bg-black/10 blur-md'
+          }`}
+          style={{ marginTop: '-2px' }}
+        />
+
         {/* Product info */}
-        <div className={`mt-6 text-center space-y-2 ${featured ? 'mt-8' : ''}`}>
-          <h3 className={`font-bold text-foreground/90 leading-tight line-clamp-2 ${
-            featured ? 'text-xl md:text-2xl' : 'text-sm md:text-base'
+        <div className={`mt-4 text-center space-y-1.5 ${featured ? 'mt-6' : ''}`}>
+          <h3 className={`font-semibold text-foreground/85 leading-tight line-clamp-2 ${
+            featured ? 'text-lg md:text-xl' : 'text-sm md:text-base'
           }`}>
             {nameAr}
           </h3>
-          
-          <div className="flex items-center justify-center gap-2">
+
+          <div className="flex items-center justify-center gap-1.5">
             <span className={`font-black text-primary ${
-              featured ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl'
+              featured ? 'text-xl md:text-2xl' : 'text-base md:text-lg'
             }`}>
               {price.toLocaleString()}
             </span>
-            <span className={`text-primary/70 ${featured ? 'text-sm' : 'text-xs'}`}>
+            <span className={`text-primary/60 ${featured ? 'text-xs' : 'text-[10px]'}`}>
               {currency === 'IQD' ? 'د.ع' : currency}
             </span>
           </div>
 
           {originalPrice && originalPrice > price && (
-            <span className="text-muted-foreground/60 line-through text-sm">
+            <span className="text-muted-foreground/50 line-through text-xs">
               {originalPrice.toLocaleString()}
             </span>
           )}
