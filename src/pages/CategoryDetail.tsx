@@ -51,6 +51,12 @@ const CategoryDetail = () => {
   const featuredProduct = products?.[0];
   const otherProducts = products?.slice(1) || [];
 
+  // Split other products into 3 columns for staggered layout
+  const columns: typeof otherProducts[] = [[], [], []];
+  otherProducts.forEach((p, i) => {
+    columns[i % 3].push(p);
+  });
+
   return (
     <div className="min-h-screen category-luxury-bg">
       <main className="container mx-auto px-4 py-8 relative z-10">
@@ -71,28 +77,29 @@ const CategoryDetail = () => {
           </div>
         ) : category ? (
           <>
-            {/* Category Title */}
-            <div className="text-center mb-14">
-              <h1 className="text-3xl md:text-5xl font-black text-foreground/90 mb-3 tracking-tight">
-                {category.name_ar}
-              </h1>
-              {category.description_ar && (
-                <p className="text-foreground/45 text-base md:text-lg max-w-xl mx-auto">
-                  {category.description_ar}
-                </p>
-              )}
-            </div>
-
             {productsLoading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
               </div>
             ) : products && products.length > 0 ? (
               <div className="space-y-16">
-                {/* Featured Product — large pedestal */}
+                {/* Hero section: Title + Featured product side by side */}
                 {featuredProduct && (
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-sm">
+                  <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16">
+                    {/* Title & description — right side in RTL */}
+                    <div className="flex-1 text-center md:text-right pt-4 md:pt-12">
+                      <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-4 tracking-tight leading-tight">
+                        {category.name_ar}
+                      </h1>
+                      {category.description_ar && (
+                        <p className="text-foreground/40 text-base md:text-lg max-w-md mx-auto md:mx-0 md:mr-0">
+                          {category.description_ar}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Featured product on 3D block */}
+                    <div className="flex-shrink-0 w-full max-w-sm">
                       <FloatingProductCard
                         id={featuredProduct.id}
                         name={featuredProduct.name}
@@ -108,9 +115,50 @@ const CategoryDetail = () => {
                   </div>
                 )}
 
-                {/* Other products grid — smaller pedestals */}
+                {/* If no featured, show title alone */}
+                {!featuredProduct && (
+                  <div className="text-center mb-14">
+                    <h1 className="text-3xl md:text-5xl font-black text-foreground/90 mb-3 tracking-tight">
+                      {category.name_ar}
+                    </h1>
+                    {category.description_ar && (
+                      <p className="text-foreground/45 text-base md:text-lg max-w-xl mx-auto">
+                        {category.description_ar}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Staggered grid of product cards */}
                 {otherProducts.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                  <div className="hidden md:flex gap-6 items-start">
+                    {columns.map((col, colIdx) => (
+                      <div
+                        key={colIdx}
+                        className="flex-1 flex flex-col gap-6"
+                        style={{ marginTop: colIdx === 1 ? '3rem' : colIdx === 2 ? '1.5rem' : '0' }}
+                      >
+                        {col.map((product) => (
+                          <FloatingProductCard
+                            key={product.id}
+                            id={product.id}
+                            name={product.name}
+                            nameAr={product.name_ar}
+                            price={Number(product.price)}
+                            originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                            imageUrl={product.image_url || undefined}
+                            currency={product.currency || undefined}
+                            slug={product.slug}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mobile: simple 2-column grid */}
+                {otherProducts.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4 md:hidden">
                     {otherProducts.map((product) => (
                       <FloatingProductCard
                         key={product.id}
