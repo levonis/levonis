@@ -1703,13 +1703,31 @@ const Cart = () => {
                       }, 300);
                     };
 
+                    const itemAvailableStock = getItemAvailableStock(item);
+                    const isOutOfStock = itemAvailableStock !== null && itemAvailableStock <= 0;
+                    const isLowStock = itemAvailableStock !== null && itemAvailableStock > 0 && itemAvailableStock < item.quantity;
+
                     return (
                       <div 
                         key={item.id}
-                        className={`rounded-xl p-2.5 sm:p-4 border border-border/50 bg-card hover:border-primary/30 transition-all duration-300 w-full max-w-full overflow-hidden ${
-                          isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0'
+                        className={`rounded-xl p-2.5 sm:p-4 border transition-all duration-300 w-full max-w-full overflow-hidden ${
+                          isOutOfStock ? 'border-destructive/50 bg-destructive/5 opacity-70' :
+                          isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !my-0 overflow-hidden' : 'border-border/50 bg-card hover:border-primary/30 opacity-100 scale-100 translate-x-0'
                         }`}
                       >
+                        {isOutOfStock && (
+                          <div className="flex items-center justify-between gap-2 mb-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <span className="text-xs font-bold text-destructive">⚠️ انتهى من المخزون</span>
+                            <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => handleAnimatedRemove()}>
+                              <Trash2 className="h-3 w-3 ml-1" /> حذف
+                            </Button>
+                          </div>
+                        )}
+                        {isLowStock && (
+                          <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                            <span className="text-xs font-bold text-amber-600">⚠️ الكمية المتاحة: {itemAvailableStock} فقط</span>
+                          </div>
+                        )}
                         <div className="flex gap-2.5 sm:gap-4">
                           {/* Product Image - compact on mobile */}
                           {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
