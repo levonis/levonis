@@ -153,7 +153,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+          <div className="flex flex-col gap-4 h-full overflow-hidden">
             {/* Stats */}
             <div className="flex flex-wrap gap-4">
               <Badge variant="outline" className="text-base px-4 py-2">
