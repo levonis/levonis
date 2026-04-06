@@ -96,11 +96,11 @@ const CategoryDetail = () => {
                     {/* Title & description — left side */}
                     <div className="flex-1 text-center md:text-right pt-4 md:pt-12">
                       <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-4 tracking-tight leading-tight">
-                        {category.name_ar}
+                        {featuredProduct.name_ar}
                       </h1>
-                      {category.description_ar && (
+                      {featuredProduct.description_ar && (
                         <p className="text-foreground/40 text-base md:text-lg max-w-md mx-auto md:mx-0 md:ml-0">
-                          {category.description_ar}
+                          {featuredProduct.description_ar}
                         </p>
                       )}
                     </div>
