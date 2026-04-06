@@ -1499,7 +1499,9 @@ const Admin = () => {
             k[0] === 'category-products' ||
             k[0] === 'product' ||
             k[0] === 'product-options' ||
-            k[0] === 'admin-products'
+            k[0] === 'admin-products' ||
+            k[0] === 'categories' ||
+            k[0] === 'category'
           );
         },
       });
