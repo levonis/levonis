@@ -122,6 +122,19 @@ const GroupedCartItem = ({
                     isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
                   }`}
                 >
+                  {isItemOOS && (
+                    <div className="flex items-center justify-between gap-1 mb-1 p-1 rounded bg-destructive/10">
+                      <span className="text-[10px] font-bold text-destructive">⚠️ انتهى من المخزون</span>
+                      <Button size="icon" variant="ghost" className="h-5 w-5 text-destructive" onClick={() => handleRemove(item.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {itemLowStock !== undefined && (
+                    <div className="mb-1 p-1 rounded bg-amber-500/10">
+                      <span className="text-[10px] font-bold text-amber-600">⚠️ الكمية المتاحة: {itemLowStock} فقط</span>
+                    </div>
+                  )}
                   {isGift && (
                     <div className="flex items-center gap-1 mb-1">
                       <Gift className="h-3 w-3 text-primary" />
