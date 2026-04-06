@@ -1683,155 +1683,215 @@
 
 /* Top highlight edge — luminous rim */
 .cube-top-highlight {
-  width: 270px;
+  width: 260px;
   height: 4px;
-  margin: 0 auto -1px;
+  margin: 0 auto -2px;
   border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    transparent 5%,
-    hsl(155 65% 55% / 0.5) 20%,
-    hsl(155 75% 60% / 0.9) 40%,
-    hsl(150 80% 65% / 1) 50%,
-    hsl(155 75% 60% / 0.9) 60%,
-    hsl(155 65% 55% / 0.5) 80%,
-    transparent 95%
+  background: linear-gradient(90deg,
+    transparent 0%,
+    hsl(155 75% 60% / 0.8) 20%,
+    hsl(155 65% 55% / 0.9) 50%,
+    hsl(155 75% 60% / 0.8) 80%,
+    transparent 100%
   );
-  filter: blur(1.5px);
+  filter: blur(1px);
   position: relative;
   z-index: 2;
 }
 
-/* Top face — wider, deeper multi-stop gradient with specular highlight */
+/* Top face — 3D tilted rectangular platform surface */
 .cube-top-featured {
-  width: 310px;
-  height: 38px;
+  width: 260px;
+  height: 28px;
   margin: 0 auto;
-  border-radius: 10px;
+  border-radius: 8px;
   background:
-    radial-gradient(ellipse at 50% 20%, hsl(155 50% 32% / 0.4) 0%, transparent 60%),
     linear-gradient(
       180deg,
       hsl(155 40% 28%) 0%,
-      hsl(157 37% 24%) 20%,
-      hsl(158 35% 20%) 45%,
-      hsl(160 30% 16%) 70%,
-      hsl(162 28% 12%) 100%
+      hsl(157 37% 22%) 40%,
+      hsl(160 30% 16%) 100%
     );
   box-shadow:
-    inset 0 5px 14px hsl(155 55% 40% / 0.45),
-    inset 0 -5px 10px hsl(160 20% 4% / 0.8),
-    inset 2px 0 6px hsl(155 30% 20% / 0.15),
-    inset -2px 0 6px hsl(155 30% 20% / 0.15),
-    0 0 20px hsl(155 45% 25% / 0.3);
-  transform: perspective(600px) rotateX(28deg);
+    inset 0 4px 10px hsl(155 55% 40% / 0.4),
+    inset 0 -3px 8px hsl(160 20% 4% / 0.6),
+    0 0 16px hsl(155 45% 25% / 0.3);
+  transform: perspective(800px) rotateX(25deg);
+  position: relative;
+  z-index: 1;
 }
 
-/* Mid section — extra thickness layer with side bevels */
+/* Mid section — thin separator between top and front */
 .cube-mid-featured {
-  width: 280px;
-  height: 18px;
+  width: 260px;
+  height: 5px;
   margin: -4px auto 0;
+  border-radius: 0;
   background: linear-gradient(
     180deg,
     hsl(160 28% 16%) 0%,
-    hsl(160 24% 12%) 50%,
-    hsl(160 22% 10%) 100%
+    hsl(160 24% 11%) 50%,
+    hsl(160 22% 8%) 100%
   );
   box-shadow:
-    inset 0 1px 0 hsl(155 35% 22% / 0.4),
-    inset 0 -1px 0 hsl(160 20% 5% / 0.6),
-    inset 4px 0 8px hsl(160 15% 5% / 0.3),
-    inset -4px 0 8px hsl(160 15% 5% / 0.3);
+    inset 4px 0 8px hsl(160 15% 4% / 0.4),
+    inset -4px 0 8px hsl(160 15% 4% / 0.4);
 }
 
-/* Front face — taller with vertical gradient + subtle texture lines */
+/* Front face — body of the pedestal with price/discount */
 .cube-front-featured {
-  width: 280px;
-  height: 58px;
-  margin: 0 auto;
-  border-radius: 0 0 12px 12px;
+  width: 260px;
+  height: 55px;
+  margin: 0 auto 0;
+  border-radius: 0 0 8px 8px;
   background:
-    repeating-linear-gradient(90deg, transparent 0px, transparent 18px, hsl(160 15% 10% / 0.15) 18px, hsl(160 15% 10% / 0.15) 19px),
     linear-gradient(
       180deg,
-      hsl(160 24% 13%) 0%,
-      hsl(160 22% 10%) 30%,
-      hsl(160 20% 7%) 65%,
-      hsl(160 18% 5%) 85%,
-      hsl(160 15% 3%) 100%
+      hsl(160 24% 11%) 0%,
+      hsl(160 22% 8%) 35%,
+      hsl(160 20% 6%) 70%,
+      hsl(160 18% 4%) 100%
     );
   box-shadow:
-    inset 0 1px 0 hsl(160 30% 18% / 0.5),
-    inset 4px 0 10px hsl(160 15% 4% / 0.4),
-    inset -4px 0 10px hsl(160 15% 4% / 0.4),
-    0 14px 40px hsl(160 30% 3% / 0.85);
+    inset 5px 0 12px hsl(160 15% 3% / 0.5),
+    inset -5px 0 12px hsl(160 15% 3% / 0.5),
+    0 10px 30px hsl(160 30% 3% / 0.7);
 }
 
-/* Bottom edge — wider metallic accent with center glow */
+/* Bottom edge — rectangular metallic accent */
 .cube-bottom-edge {
-  width: 272px;
-  height: 5px;
-  margin: 0 auto;
+  width: 250px;
+  height: 6px;
+  margin: -2px auto 0;
   border-radius: 0 0 8px 8px;
-  background: linear-gradient(
-    90deg,
-    transparent 3%,
-    hsl(155 40% 25% / 0.4) 20%,
-    hsl(155 50% 35% / 0.7) 40%,
-    hsl(155 55% 40% / 0.85) 50%,
-    hsl(155 50% 35% / 0.7) 60%,
-    hsl(155 40% 25% / 0.4) 80%,
-    transparent 97%
+  background: linear-gradient(90deg,
+    transparent 0%,
+    hsl(155 55% 40% / 0.5) 20%,
+    hsl(155 40% 25% / 0.6) 50%,
+    hsl(155 55% 40% / 0.5) 80%,
+    transparent 100%
   );
 }
 
-/* Bottom reflection strip */
+/* Bottom reflection strip — rectangular glow */
 .cube-bottom-reflection {
   width: 240px;
-  height: 8px;
+  height: 10px;
   margin: 2px auto 0;
-  border-radius: 50%;
+  border-radius: 8px;
   background: radial-gradient(ellipse, hsl(155 40% 20% / 0.25), transparent 70%);
-  filter: blur(3px);
+  filter: blur(4px);
 }
 
 @media (min-width: 768px) {
-  .cube-ambient-glow { width: 440px; height: 28px; }
-  .cube-glow-ring { width: 400px; height: 20px; }
-  .cube-top-highlight { width: 370px; height: 5px; }
-  .cube-top-featured { width: 420px; height: 46px; border-radius: 12px; }
-  .cube-mid-featured { width: 380px; height: 22px; }
-  .cube-front-featured { width: 380px; height: 74px; border-radius: 0 0 14px 14px; }
-  .cube-bottom-edge { width: 368px; height: 6px; }
-  .cube-bottom-reflection { width: 320px; height: 10px; }
+  .cube-ambient-glow { width: 400px; height: 24px; }
+  .cube-glow-ring { width: 360px; height: 16px; }
+  .cube-top-highlight { width: 360px; height: 5px; }
+  .cube-top-featured { width: 360px; height: 34px; }
+  .cube-mid-featured { width: 360px; height: 6px; }
+  .cube-front-featured { width: 360px; height: 68px; }
+  .cube-bottom-edge { width: 350px; height: 8px; }
+  .cube-bottom-reflection { width: 340px; height: 12px; }
 }
 
-/* ── Product Card — Green gradient ── */
+/* ── Product Card — Glassmorphism 3D ── */
 .product-card-green {
   position: relative;
   border-radius: 1.25rem;
   overflow: hidden;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
   background: linear-gradient(
     170deg,
-    hsl(160 35% 14% / 0.75) 0%,
-    hsl(160 30% 10% / 0.88) 50%,
-    hsl(160 25% 8% / 0.92) 100%
+    hsl(160 35% 14% / 0.35) 0%,
+    hsl(160 30% 10% / 0.45) 50%,
+    hsl(160 25% 8% / 0.5) 100%
   );
-  border: 1px solid hsl(160 30% 22% / 0.3);
+  border: 1px solid hsl(160 40% 35% / 0.2);
   box-shadow:
-    0 4px 20px hsl(160 30% 4% / 0.35),
-    inset 0 1px 0 hsl(155 40% 30% / 0.12);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+    0 4px 24px hsl(160 30% 4% / 0.4),
+    0 1px 3px hsl(160 30% 4% / 0.3),
+    inset 0 1px 0 hsl(155 60% 50% / 0.15),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.3);
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+  transform: perspective(800px) rotateX(1deg);
+  transform-style: preserve-3d;
+}
+
+.product-card-green::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -20%;
+  width: 60%;
+  height: 45%;
+  background: linear-gradient(
+    135deg,
+    hsl(155 50% 60% / 0.12) 0%,
+    transparent 60%
+  );
+  border-radius: 0 0 50% 0;
+  pointer-events: none;
+  z-index: 15;
 }
 
 .product-card-green:hover {
   box-shadow:
-    0 8px 32px hsl(160 30% 4% / 0.55),
-    inset 0 1px 0 hsl(155 40% 30% / 0.15);
-  transform: translateY(-2px);
+    0 12px 40px hsl(160 40% 8% / 0.55),
+    0 2px 6px hsl(160 30% 4% / 0.35),
+    inset 0 1px 0 hsl(155 60% 50% / 0.25),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.3),
+    0 0 20px hsl(155 50% 30% / 0.15);
+  transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
+}
+
+/* Glass card for ProductCard (main store) */
+.product-card-glass {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background: linear-gradient(
+    170deg,
+    hsl(160 35% 14% / 0.3) 0%,
+    hsl(160 30% 10% / 0.4) 50%,
+    hsl(160 25% 8% / 0.5) 100%
+  );
+  border: 1px solid hsl(160 40% 35% / 0.18);
+  box-shadow:
+    0 4px 20px hsl(160 30% 4% / 0.35),
+    inset 0 1px 0 hsl(155 60% 50% / 0.12),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.25);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transform: perspective(800px) rotateX(0.8deg);
+  transform-style: preserve-3d;
+}
+
+.product-card-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -15%;
+  width: 55%;
+  height: 40%;
+  background: linear-gradient(
+    135deg,
+    hsl(155 50% 60% / 0.1) 0%,
+    transparent 55%
+  );
+  border-radius: 0 0 50% 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.product-card-glass:hover {
+  box-shadow:
+    0 8px 32px hsl(160 40% 8% / 0.5),
+    inset 0 1px 0 hsl(155 60% 50% / 0.2),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.25),
+    0 0 16px hsl(155 50% 30% / 0.12);
+  transform: perspective(800px) rotateX(0.4deg) translateY(-2px);
 }
 
 /* Telegram Mini App viewport fix */

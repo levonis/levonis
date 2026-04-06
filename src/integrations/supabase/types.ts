@@ -9974,9 +9974,10 @@ export type Database = {
         }
         Returns: Json
       }
-      enter_collect_letters_competition:
-        | { Args: { comp_id: string }; Returns: Json }
-        | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      enter_collect_letters_competition: {
+        Args: { comp_id: string; quantity?: number }
+        Returns: Json
+      }
       enter_competition: {
         Args: {
           p_competition_id: string

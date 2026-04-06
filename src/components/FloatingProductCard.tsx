@@ -66,13 +66,23 @@ const FloatingProductCard = memo(({
                 {price.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
               </span>
               {discount > 0 && (
-                <span className="text-xs font-bold tracking-wider"
-                  style={{
-                    color: 'hsl(155 50% 35% / 0.45)',
-                    textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
-                  }}>
-                  -{discount}%
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold tracking-wider"
+                    style={{
+                      color: 'hsl(155 50% 35% / 0.45)',
+                      textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
+                    }}>
+                    -{discount}%
+                  </span>
+                  {originalPrice && (
+                    <span className="text-[10px] line-through"
+                      style={{
+                        color: 'hsl(155 50% 35% / 0.35)',
+                      }}>
+                      {originalPrice.toLocaleString()}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -92,14 +102,7 @@ const FloatingProductCard = memo(({
   // Standard product — green gradient card
   return (
     <Link to={`/product/${slug}`} className="block group">
-      <div className="product-card-green">
-        {/* Discount badge */}
-        {discount > 0 && (
-          <div className="absolute top-3 right-3 z-20 px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
-            -{discount}%
-          </div>
-        )}
-
+      <div className="product-card-green relative">
         {/* Product image area */}
         <div className="relative h-40 md:h-48 flex items-end justify-center px-4 pt-4 pb-2">
           <img
@@ -114,7 +117,7 @@ const FloatingProductCard = memo(({
         <div className="mx-4 h-px bg-white/10" />
 
         {/* Product info */}
-        <div className="p-4 pt-3 text-center space-y-1">
+        <div className="p-4 pt-3 text-center space-y-1.5">
           <h3 className="text-sm md:text-base font-semibold text-foreground/85 leading-tight line-clamp-2">
             {nameAr}
           </h3>
@@ -126,10 +129,18 @@ const FloatingProductCard = memo(({
               {currency === 'IQD' ? 'د.ع' : currency}
             </span>
           </div>
-          {originalPrice && originalPrice > price && (
-            <span className="text-muted-foreground/50 line-through text-xs">
-              {originalPrice.toLocaleString()}
-            </span>
+          {/* Discount badge — below price */}
+          {discount > 0 && (
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
+                -{discount}%
+              </span>
+              {originalPrice && (
+                <span className="line-through text-[11px] text-muted-foreground">
+                  {originalPrice.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
