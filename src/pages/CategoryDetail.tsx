@@ -102,15 +102,15 @@ const CategoryDetail = () => {
                       </h1>
                       {featuredProduct.description_ar && (
                         <div>
-                          <p className={`text-foreground/40 text-base md:text-lg max-w-md mr-0 ml-auto ${!showFullDesc ? 'line-clamp-2' : ''}`}>
+                          <p className="text-foreground/40 text-base md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
                             {featuredProduct.description_ar}
                           </p>
-                          <button
-                            onClick={() => setShowFullDesc(!showFullDesc)}
-                            className="text-primary text-sm mt-2 hover:underline"
+                          <Link
+                            to={`/product/${featuredProduct.slug}`}
+                            className="text-primary text-sm mt-2 hover:underline inline-block"
                           >
-                            {showFullDesc ? 'عرض أقل' : 'عرض المزيد'}
-                          </button>
+                            عرض المزيد
+                          </Link>
                         </div>
                       )}
                     </div>

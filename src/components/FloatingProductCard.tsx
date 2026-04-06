@@ -141,11 +141,6 @@ const FloatingProductCard = memo(({
               {currency === 'IQD' ? 'د.ع' : currency}
             </span>
           </div>
-          {originalPrice && originalPrice > price && (
-            <span className="text-muted-foreground/50 line-through text-xs">
-              {originalPrice.toLocaleString()}
-            </span>
-          )}
         </div>
       </div>
     </Link>
