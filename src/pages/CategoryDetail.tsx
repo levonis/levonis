@@ -72,12 +72,12 @@ const CategoryDetail = () => {
         ) : category ? (
           <>
             {/* Category Title */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-black text-foreground/95 mb-3">
+            <div className="text-center mb-14">
+              <h1 className="text-3xl md:text-5xl font-black text-foreground/90 mb-3 tracking-tight">
                 {category.name_ar}
               </h1>
               {category.description_ar && (
-                <p className="text-foreground/50 text-lg max-w-xl mx-auto">
+                <p className="text-foreground/45 text-base md:text-lg max-w-xl mx-auto">
                   {category.description_ar}
                 </p>
               )}
@@ -88,11 +88,11 @@ const CategoryDetail = () => {
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
               </div>
             ) : products && products.length > 0 ? (
-              <div className="space-y-12">
-                {/* Featured Product */}
+              <div className="space-y-16">
+                {/* Featured Product — large pedestal */}
                 {featuredProduct && (
                   <div className="flex justify-center">
-                    <div className="w-full max-w-md">
+                    <div className="w-full max-w-sm">
                       <FloatingProductCard
                         id={featuredProduct.id}
                         name={featuredProduct.name}
@@ -108,26 +108,21 @@ const CategoryDetail = () => {
                   </div>
                 )}
 
-                {/* Products Grid */}
+                {/* Other products grid — smaller pedestals */}
                 {otherProducts.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {otherProducts.map((product, i) => (
-                      <div
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                    {otherProducts.map((product) => (
+                      <FloatingProductCard
                         key={product.id}
-                        className="animate-[stagger-in_0.4s_ease-out_forwards]"
-                        style={{ animationDelay: `${i * 80}ms`, opacity: 0 }}
-                      >
-                        <FloatingProductCard
-                          id={product.id}
-                          name={product.name}
-                          nameAr={product.name_ar}
-                          price={Number(product.price)}
-                          originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                          imageUrl={product.image_url || undefined}
-                          currency={product.currency || undefined}
-                          slug={product.slug}
-                        />
-                      </div>
+                        id={product.id}
+                        name={product.name}
+                        nameAr={product.name_ar}
+                        price={Number(product.price)}
+                        originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                        imageUrl={product.image_url || undefined}
+                        currency={product.currency || undefined}
+                        slug={product.slug}
+                      />
                     ))}
                   </div>
                 )}
