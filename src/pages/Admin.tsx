@@ -2296,7 +2296,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
-                        <input id="featured" name="featured" type="checkbox" defaultChecked={editingProduct?.featured ?? defaultSettings?.featured ?? false} />
+                        <input id="featured" name="featured" type="checkbox" checked={productFeatured} onChange={(e) => setProductFeatured(e.target.checked)} />
                         <Label htmlFor="featured">مميز (يظهر في الرئيسية)</Label>
                       </div>
                       <div className="flex items-center gap-2">
