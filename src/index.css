@@ -1840,23 +1840,23 @@
   position: relative;
   border-radius: 1.25rem;
   overflow: hidden;
-  backdrop-filter: blur(40px) saturate(1.4);
-  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  backdrop-filter: blur(60px) saturate(1.6) brightness(1.1);
+  -webkit-backdrop-filter: blur(60px) saturate(1.6) brightness(1.1);
   background: linear-gradient(
     170deg,
-    hsl(0 0% 100% / 0.1) 0%,
-    hsl(0 0% 100% / 0.05) 50%,
-    hsl(0 0% 100% / 0.02) 100%
+    hsl(200 60% 70% / 0.08) 0%,
+    hsl(210 50% 60% / 0.04) 50%,
+    hsl(220 40% 50% / 0.02) 100%
   );
-  border-top: 1px solid hsl(0 0% 100% / 0.4);
-  border-left: 1px solid hsl(0 0% 100% / 0.28);
-  border-right: 1px solid hsl(0 0% 100% / 0.1);
-  border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+  border-top: 1px solid hsl(200 80% 85% / 0.4);
+  border-left: 1px solid hsl(200 70% 80% / 0.25);
+  border-right: 1px solid hsl(210 40% 60% / 0.08);
+  border-bottom: 1px solid hsl(220 30% 40% / 0.05);
   box-shadow:
-    0 8px 32px hsl(0 0% 0% / 0.2),
-    0 2px 8px hsl(0 0% 0% / 0.12),
-    inset 0 1px 0 hsl(0 0% 100% / 0.45),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.08);
+    0 8px 32px hsl(220 30% 10% / 0.22),
+    0 2px 8px hsl(220 20% 10% / 0.14),
+    inset 0 1px 0 hsl(200 80% 90% / 0.5),
+    inset 0 -1px 0 hsl(220 20% 10% / 0.08);
   transition: box-shadow 0.35s ease, transform 0.35s ease;
   transform: perspective(800px) rotateX(1deg);
   transform-style: preserve-3d;
@@ -1871,11 +1871,11 @@
   height: 100%;
   background: linear-gradient(
     125deg,
-    transparent 20%,
-    hsl(0 0% 100% / 0.06) 35%,
-    hsl(0 0% 100% / 0.15) 48%,
-    hsl(0 0% 100% / 0.06) 62%,
-    transparent 80%
+    transparent 15%,
+    hsl(200 70% 90% / 0.05) 30%,
+    hsl(200 80% 95% / 0.2) 46%,
+    hsl(200 70% 90% / 0.05) 62%,
+    transparent 85%
   );
   pointer-events: none;
   z-index: 15;
@@ -1884,15 +1884,15 @@
 .product-card-green:hover {
   background: linear-gradient(
     170deg,
-    hsl(0 0% 100% / 0.14) 0%,
-    hsl(0 0% 100% / 0.07) 50%,
-    hsl(0 0% 100% / 0.03) 100%
+    hsl(200 60% 70% / 0.12) 0%,
+    hsl(210 50% 60% / 0.06) 50%,
+    hsl(220 40% 50% / 0.03) 100%
   );
   box-shadow:
-    0 16px 48px hsl(0 0% 0% / 0.25),
-    0 4px 12px hsl(0 0% 0% / 0.15),
-    inset 0 1px 0 hsl(0 0% 100% / 0.5),
-    0 0 40px hsl(0 0% 100% / 0.06);
+    0 16px 48px hsl(220 30% 10% / 0.28),
+    0 4px 12px hsl(220 20% 10% / 0.16),
+    inset 0 1px 0 hsl(200 80% 90% / 0.55),
+    0 0 40px hsl(200 70% 80% / 0.08);
   transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
 }
 
