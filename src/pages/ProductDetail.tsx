@@ -85,7 +85,7 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories(name_ar, name)')
+        .select('*, categories!products_category_id_fkey(name_ar, name)')
         .eq('slug', slug)
         .maybeSingle();
       if (data && !data.is_pricing_updated && !isAdmin) throw new Error('Product not found');
