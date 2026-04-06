@@ -55,19 +55,26 @@ const FloatingProductCard = memo(({
           <div className="cube-top-featured" />
           {/* 3D Block — mid section */}
           <div className="cube-mid-featured" />
-          {/* 3D Block — front face with engraved discount */}
+          {/* 3D Block — front face with engraved price & discount */}
           <div className="cube-front-featured relative overflow-hidden">
-            {discount > 0 && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <span className="text-lg md:text-xl font-black tracking-wider"
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-0.5">
+              <span className="text-base md:text-lg font-black tracking-wide"
+                style={{
+                  color: 'hsl(155 50% 35% / 0.55)',
+                  textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
+                }}>
+                {price.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
+              </span>
+              {discount > 0 && (
+                <span className="text-xs font-bold tracking-wider"
                   style={{
-                    color: 'hsl(155 50% 35% / 0.55)',
+                    color: 'hsl(155 50% 35% / 0.45)',
                     textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
                   }}>
                   -{discount}%
                 </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
           {/* 3D Block — bottom edge highlight */}
           <div className="cube-bottom-edge" />
