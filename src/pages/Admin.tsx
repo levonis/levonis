@@ -1502,7 +1502,8 @@ const Admin = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
-      const featuredVal = formData.get('featured_product_id') as string;
+      const featuredVal = editingCategory?.featured_product_id || '';
+      const mainSectionVal = formData.get('main_section_id') as string;
       const values = categorySchema.parse({
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
@@ -1510,7 +1511,7 @@ const Admin = () => {
         icon: formData.get('icon') as string,
         description_ar: formData.get('description_ar') as string || undefined,
         description: formData.get('description') as string || undefined,
-        main_section_id: formData.get('main_section_id') as string || undefined,
+        main_section_id: mainSectionVal || undefined,
         featured_product_id: featuredVal || null,
       });
 
@@ -1522,6 +1523,7 @@ const Admin = () => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
+        console.error('Category validation error:', error.errors);
       }
     }
   };
