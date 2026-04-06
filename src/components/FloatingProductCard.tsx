@@ -117,7 +117,7 @@ const FloatingProductCard = memo(({
         <div className="mx-4 h-px bg-white/10" />
 
         {/* Product info */}
-        <div className="p-4 pt-3 text-center space-y-1.5">
+        <div className="p-4 pt-3 text-center space-y-1.5 flex-1 flex flex-col justify-center">
           <h3 className="text-sm md:text-base font-semibold text-foreground/85 leading-tight line-clamp-2">
             {nameAr}
           </h3>
