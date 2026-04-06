@@ -1658,66 +1658,99 @@
 
 /* ── 3D Cube for Featured Product ── */
 
-/* Glow ring above platform */
+/* Glow ring above platform — dual layer */
 .cube-glow-ring {
-  width: 220px;
-  height: 10px;
-  margin: 0 auto -3px;
+  width: 280px;
+  height: 14px;
+  margin: 0 auto -4px;
   border-radius: 50%;
-  background: radial-gradient(ellipse, hsl(155 60% 35% / 0.35), transparent 70%);
-  filter: blur(4px);
+  background:
+    radial-gradient(ellipse, hsl(155 70% 40% / 0.45), transparent 60%),
+    radial-gradient(ellipse at 50% 80%, hsl(155 50% 30% / 0.25), transparent 80%);
+  filter: blur(6px);
 }
 
-/* Top face — wider, thicker, premium feel */
-.cube-top-featured {
-  width: 240px;
-  height: 28px;
-  margin: 0 auto;
+/* Top highlight edge — luminous rim */
+.cube-top-highlight {
+  width: 260px;
+  height: 3px;
+  margin: 0 auto -1px;
   border-radius: 6px;
+  background: linear-gradient(90deg, transparent 8%, hsl(155 60% 50% / 0.6) 30%, hsl(155 70% 55% / 0.8) 50%, hsl(155 60% 50% / 0.6) 70%, transparent 92%);
+  filter: blur(1px);
+  position: relative;
+  z-index: 2;
+}
+
+/* Top face — wider, deeper gradient */
+.cube-top-featured {
+  width: 300px;
+  height: 34px;
+  margin: 0 auto;
+  border-radius: 8px;
   background: linear-gradient(
     180deg,
-    hsl(158 35% 24%) 0%,
-    hsl(160 30% 18%) 40%,
-    hsl(162 28% 14%) 100%
+    hsl(155 38% 26%) 0%,
+    hsl(158 35% 22%) 25%,
+    hsl(160 30% 17%) 60%,
+    hsl(162 28% 13%) 100%
   );
   box-shadow:
-    inset 0 3px 8px hsl(155 50% 35% / 0.35),
-    inset 0 -3px 6px hsl(160 20% 6% / 0.6),
-    0 0 12px hsl(155 40% 20% / 0.2);
+    inset 0 4px 10px hsl(155 55% 38% / 0.4),
+    inset 0 -4px 8px hsl(160 20% 5% / 0.7),
+    0 0 16px hsl(155 40% 22% / 0.25);
   transform: perspective(600px) rotateX(28deg);
 }
 
-/* Front face — taller with subtle vertical gradient stripes */
-.cube-front-featured {
-  width: 216px;
-  height: 44px;
-  margin: -6px auto 0;
-  border-radius: 0 0 8px 8px;
+/* Mid section — extra thickness layer */
+.cube-mid-featured {
+  width: 272px;
+  height: 16px;
+  margin: -4px auto 0;
   background: linear-gradient(
     180deg,
-    hsl(160 24% 13%) 0%,
-    hsl(160 20% 9%) 60%,
-    hsl(160 18% 6%) 100%
+    hsl(160 26% 15%) 0%,
+    hsl(160 22% 11%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(155 30% 20% / 0.3),
+    inset 0 -1px 0 hsl(160 20% 6% / 0.5);
+}
+
+/* Front face — taller with richer gradient */
+.cube-front-featured {
+  width: 272px;
+  height: 54px;
+  margin: 0 auto;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(
+    180deg,
+    hsl(160 24% 12%) 0%,
+    hsl(160 22% 9%) 40%,
+    hsl(160 20% 7%) 70%,
+    hsl(160 18% 5%) 100%
   );
   box-shadow:
     inset 0 1px 0 hsl(160 30% 18% / 0.4),
-    0 10px 30px hsl(160 30% 3% / 0.7);
+    0 12px 36px hsl(160 30% 3% / 0.8);
 }
 
 /* Bottom edge — thin metallic accent */
 .cube-bottom-edge {
-  width: 210px;
-  height: 3px;
+  width: 264px;
+  height: 4px;
   margin: 0 auto;
-  border-radius: 0 0 4px 4px;
-  background: linear-gradient(90deg, transparent 5%, hsl(155 40% 28% / 0.5) 50%, transparent 95%);
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, transparent 5%, hsl(155 45% 30% / 0.55) 35%, hsl(155 50% 35% / 0.7) 50%, hsl(155 45% 30% / 0.55) 65%, transparent 95%);
 }
 
 @media (min-width: 768px) {
-  .cube-glow-ring { width: 300px; height: 14px; }
-  .cube-top-featured { width: 320px; height: 34px; border-radius: 8px; }
-  .cube-front-featured { width: 288px; height: 54px; border-radius: 0 0 10px 10px; }
-  .cube-bottom-edge { width: 280px; height: 4px; }
+  .cube-glow-ring { width: 380px; height: 18px; }
+  .cube-top-highlight { width: 350px; height: 4px; }
+  .cube-top-featured { width: 400px; height: 42px; border-radius: 10px; }
+  .cube-mid-featured { width: 362px; height: 20px; }
+  .cube-front-featured { width: 362px; height: 68px; border-radius: 0 0 12px 12px; }
+  .cube-bottom-edge { width: 352px; height: 5px; }
 }
 
 /* ── Product Card — Green gradient ── */

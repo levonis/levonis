@@ -47,21 +47,26 @@ const FloatingProductCard = memo(({
             />
           </div>
 
-          {/* Contact shadow — product base */}
-          <div className="w-44 h-4 md:w-56 md:h-5 mx-auto rounded-[50%] bg-black/40 blur-lg" style={{ marginTop: '-10px' }} />
+          {/* Contact shadow — product base (denser) */}
+          <div className="w-52 h-5 md:w-64 md:h-6 mx-auto rounded-[50%] bg-black/50 blur-lg" style={{ marginTop: '-12px' }} />
 
           {/* Glow ring on platform */}
           <div className="cube-glow-ring" />
 
-          {/* 3D Block — top face (wider, thicker) */}
+          {/* Top highlight edge */}
+          <div className="cube-top-highlight" />
+
+          {/* 3D Block — top face */}
           <div className="cube-top-featured" />
-          {/* 3D Block — front face (taller, layered) */}
+          {/* 3D Block — mid section */}
+          <div className="cube-mid-featured" />
+          {/* 3D Block — front face */}
           <div className="cube-front-featured" />
           {/* 3D Block — bottom edge highlight */}
           <div className="cube-bottom-edge" />
 
-          {/* Ground reflection */}
-          <div className="w-64 h-5 md:w-80 md:h-6 mx-auto rounded-[50%] blur-xl" style={{ marginTop: '-4px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.35), transparent 70%)' }} />
+          {/* Ground reflection (larger) */}
+          <div className="w-72 h-6 md:w-96 md:h-8 mx-auto rounded-[50%] blur-xl" style={{ marginTop: '-4px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.4), transparent 65%)' }} />
 
           {/* Product info */}
           <div className="mt-6 text-center space-y-1.5">
