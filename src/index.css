@@ -1681,130 +1681,117 @@
   filter: blur(5px);
 }
 
-/* Top highlight edge — luminous rim */
+/* Top highlight edge — luminous rim on elliptical surface */
 .cube-top-highlight {
-  width: 270px;
-  height: 4px;
-  margin: 0 auto -1px;
-  border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    transparent 5%,
-    hsl(155 65% 55% / 0.5) 20%,
-    hsl(155 75% 60% / 0.9) 40%,
-    hsl(150 80% 65% / 1) 50%,
-    hsl(155 75% 60% / 0.9) 60%,
-    hsl(155 65% 55% / 0.5) 80%,
-    transparent 95%
+  width: 290px;
+  height: 6px;
+  margin: 0 auto -3px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%,
+    hsl(155 75% 60% / 0.9) 0%,
+    hsl(155 65% 55% / 0.5) 40%,
+    transparent 80%
   );
-  filter: blur(1.5px);
+  filter: blur(2px);
   position: relative;
   z-index: 2;
 }
 
-/* Top face — wider, deeper multi-stop gradient with specular highlight */
+/* Top face — 3D elliptical tilted platform surface */
 .cube-top-featured {
-  width: 310px;
-  height: 38px;
+  width: 320px;
+  height: 50px;
   margin: 0 auto;
-  border-radius: 10px;
+  border-radius: 50%;
   background:
-    radial-gradient(ellipse at 50% 20%, hsl(155 50% 32% / 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 30%, hsl(155 50% 35% / 0.5) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 70%, hsl(160 20% 6% / 0.8) 0%, transparent 60%),
     linear-gradient(
       180deg,
       hsl(155 40% 28%) 0%,
-      hsl(157 37% 24%) 20%,
-      hsl(158 35% 20%) 45%,
-      hsl(160 30% 16%) 70%,
-      hsl(162 28% 12%) 100%
+      hsl(157 37% 22%) 40%,
+      hsl(160 30% 16%) 100%
     );
   box-shadow:
-    inset 0 5px 14px hsl(155 55% 40% / 0.45),
-    inset 0 -5px 10px hsl(160 20% 4% / 0.8),
-    inset 2px 0 6px hsl(155 30% 20% / 0.15),
-    inset -2px 0 6px hsl(155 30% 20% / 0.15),
-    0 0 20px hsl(155 45% 25% / 0.3);
-  transform: perspective(600px) rotateX(28deg);
+    inset 0 6px 16px hsl(155 55% 40% / 0.5),
+    inset 0 -4px 10px hsl(160 20% 4% / 0.7),
+    0 0 24px hsl(155 45% 25% / 0.35);
+  transform: perspective(800px) rotateX(38deg);
+  position: relative;
+  z-index: 1;
 }
 
-/* Mid section — extra thickness layer with side bevels */
+/* Mid section — cylindrical body connecting top ellipse to front */
 .cube-mid-featured {
-  width: 280px;
-  height: 18px;
-  margin: -4px auto 0;
+  width: 260px;
+  height: 20px;
+  margin: -6px auto 0;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
   background: linear-gradient(
     180deg,
     hsl(160 28% 16%) 0%,
-    hsl(160 24% 12%) 50%,
-    hsl(160 22% 10%) 100%
+    hsl(160 24% 11%) 40%,
+    hsl(160 22% 8%) 100%
   );
   box-shadow:
-    inset 0 1px 0 hsl(155 35% 22% / 0.4),
-    inset 0 -1px 0 hsl(160 20% 5% / 0.6),
-    inset 4px 0 8px hsl(160 15% 5% / 0.3),
-    inset -4px 0 8px hsl(160 15% 5% / 0.3);
+    inset 6px 0 12px hsl(160 15% 4% / 0.5),
+    inset -6px 0 12px hsl(160 15% 4% / 0.5),
+    inset 0 -2px 4px hsl(160 20% 5% / 0.6);
 }
 
-/* Front face — taller with vertical gradient + subtle texture lines */
+/* Front face — body of the pedestal with price/discount */
 .cube-front-featured {
-  width: 280px;
-  height: 58px;
-  margin: 0 auto;
-  border-radius: 0 0 12px 12px;
+  width: 260px;
+  height: 55px;
+  margin: -2px auto 0;
+  border-radius: 0 0 50% 50% / 0 0 40% 40%;
   background:
-    repeating-linear-gradient(90deg, transparent 0px, transparent 18px, hsl(160 15% 10% / 0.15) 18px, hsl(160 15% 10% / 0.15) 19px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 20px, hsl(160 15% 10% / 0.1) 20px, hsl(160 15% 10% / 0.1) 21px),
     linear-gradient(
       180deg,
-      hsl(160 24% 13%) 0%,
-      hsl(160 22% 10%) 30%,
-      hsl(160 20% 7%) 65%,
-      hsl(160 18% 5%) 85%,
-      hsl(160 15% 3%) 100%
+      hsl(160 24% 11%) 0%,
+      hsl(160 22% 8%) 35%,
+      hsl(160 20% 6%) 70%,
+      hsl(160 18% 4%) 100%
     );
   box-shadow:
-    inset 0 1px 0 hsl(160 30% 18% / 0.5),
-    inset 4px 0 10px hsl(160 15% 4% / 0.4),
-    inset -4px 0 10px hsl(160 15% 4% / 0.4),
-    0 14px 40px hsl(160 30% 3% / 0.85);
+    inset 6px 0 14px hsl(160 15% 3% / 0.5),
+    inset -6px 0 14px hsl(160 15% 3% / 0.5),
+    0 12px 35px hsl(160 30% 3% / 0.8);
 }
 
-/* Bottom edge — wider metallic accent with center glow */
+/* Bottom edge — elliptical metallic accent */
 .cube-bottom-edge {
-  width: 272px;
-  height: 5px;
-  margin: 0 auto;
-  border-radius: 0 0 8px 8px;
-  background: linear-gradient(
-    90deg,
-    transparent 3%,
-    hsl(155 40% 25% / 0.4) 20%,
-    hsl(155 50% 35% / 0.7) 40%,
-    hsl(155 55% 40% / 0.85) 50%,
-    hsl(155 50% 35% / 0.7) 60%,
-    hsl(155 40% 25% / 0.4) 80%,
-    transparent 97%
+  width: 250px;
+  height: 8px;
+  margin: -2px auto 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%,
+    hsl(155 55% 40% / 0.7) 0%,
+    hsl(155 40% 25% / 0.4) 50%,
+    transparent 85%
   );
 }
 
-/* Bottom reflection strip */
+/* Bottom reflection strip — elliptical glow */
 .cube-bottom-reflection {
-  width: 240px;
-  height: 8px;
-  margin: 2px auto 0;
+  width: 260px;
+  height: 12px;
+  margin: 0 auto;
   border-radius: 50%;
-  background: radial-gradient(ellipse, hsl(155 40% 20% / 0.25), transparent 70%);
-  filter: blur(3px);
+  background: radial-gradient(ellipse, hsl(155 40% 20% / 0.3), transparent 70%);
+  filter: blur(4px);
 }
 
 @media (min-width: 768px) {
   .cube-ambient-glow { width: 440px; height: 28px; }
   .cube-glow-ring { width: 400px; height: 20px; }
-  .cube-top-highlight { width: 370px; height: 5px; }
-  .cube-top-featured { width: 420px; height: 46px; border-radius: 12px; }
-  .cube-mid-featured { width: 380px; height: 22px; }
-  .cube-front-featured { width: 380px; height: 74px; border-radius: 0 0 14px 14px; }
-  .cube-bottom-edge { width: 368px; height: 6px; }
-  .cube-bottom-reflection { width: 320px; height: 10px; }
+  .cube-top-highlight { width: 400px; height: 8px; }
+  .cube-top-featured { width: 440px; height: 60px; }
+  .cube-mid-featured { width: 360px; height: 24px; }
+  .cube-front-featured { width: 360px; height: 68px; }
+  .cube-bottom-edge { width: 340px; height: 10px; }
+  .cube-bottom-reflection { width: 350px; height: 14px; }
 }
 
 /* ── Product Card — Glassmorphism 3D ── */
