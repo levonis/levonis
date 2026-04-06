@@ -45,6 +45,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
       const { data, error } = await supabase
         .from('user_tickets')
         .select('user_id, ticket_count, updated_at')
+        .gt('ticket_count', 0)
         .order('ticket_count', { ascending: false });
 
       if (error) throw error;
@@ -144,7 +145,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl" style={{ overflow: "hidden", maxHeight: "none", height: "85vh" }}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Ticket className="h-5 w-5" />
@@ -152,7 +153,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+          <div className="flex flex-col gap-4 h-full overflow-hidden">
             {/* Stats */}
             <div className="flex flex-wrap gap-4">
               <Badge variant="outline" className="text-base px-4 py-2">
@@ -182,7 +183,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
             </div>
 
             {/* Table */}
-            <ScrollArea className="flex-1 border rounded-lg h-[400px]">
+            <div className="flex-1 border rounded-lg overflow-y-auto min-h-0">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
@@ -258,13 +259,13 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
                   )}
                 </TableBody>
               </Table>
-            </ScrollArea>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Tickets Dialog */}
-      <Dialog open={addTicketDialogOpen} onOpenChange={setAddTicketDialogOpen}>
+      <Dialog open={addTicketDialogOpen} onOpenChange={setAddTicketDialogOpen} modal={false}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>إضافة تذاكر لمستخدم</DialogTitle>
