@@ -115,19 +115,6 @@ const CategoryDetail = () => {
                   </div>
                 )}
 
-                {/* If no featured, show title alone */}
-                {!featuredProduct && (
-                  <div className="text-center mb-14">
-                    <h1 className="text-3xl md:text-5xl font-black text-foreground/90 mb-3 tracking-tight">
-                      {category.name_ar}
-                    </h1>
-                    {category.description_ar && (
-                      <p className="text-foreground/45 text-base md:text-lg max-w-xl mx-auto">
-                        {category.description_ar}
-                      </p>
-                    )}
-                  </div>
-                )}
 
                 {/* Staggered grid of product cards */}
                 {otherProducts.length > 0 && (
