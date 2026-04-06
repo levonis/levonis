@@ -92,7 +92,7 @@ const FloatingProductCard = memo(({
   // Standard product — green gradient card
   return (
     <Link to={`/product/${slug}`} className="block group">
-      <div className="product-card-green">
+      <div className="product-card-green relative">
         {/* Discount badge */}
         {discount > 0 && (
           <div className="absolute top-3 right-3 z-20 px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
