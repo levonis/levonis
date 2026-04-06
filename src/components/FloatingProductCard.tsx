@@ -101,10 +101,10 @@ const FloatingProductCard = memo(({
 
   // Standard product — green gradient card
   return (
-    <Link to={`/product/${slug}`} className="block group">
-      <div className="product-card-green relative">
+    <Link to={`/product/${slug}`} className="block group h-full">
+      <div className="product-card-green relative h-full flex flex-col">
         {/* Product image area */}
-        <div className="relative h-40 md:h-48 flex items-end justify-center px-4 pt-4 pb-2">
+        <div className="relative h-40 md:h-48 flex items-end justify-center px-4 pt-4 pb-2 flex-shrink-0">
           <img
             src={imageUrl || '/placeholder.svg'}
             alt={nameAr}
