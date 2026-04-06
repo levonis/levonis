@@ -23,7 +23,9 @@ const GroupedCartItem = ({
   items, 
   updateQuantity, 
   removeFromCart, 
-  formatPrice 
+  formatPrice,
+  outOfStockItemIds = new Set(),
+  lowStockItems = new Map(),
 }: GroupedCartItemProps) => {
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const firstItem = items[0];
