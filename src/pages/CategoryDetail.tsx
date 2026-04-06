@@ -97,9 +97,22 @@ const CategoryDetail = () => {
                   <div className="flex flex-col-reverse md:flex-row items-center md:items-start gap-8 md:gap-16">
                     {/* Title & description — left side */}
                     <div className="flex-1 text-right pt-4 md:pt-12">
-                      <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-4 tracking-tight leading-tight">
+                      <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-2 tracking-tight leading-tight">
                         {featuredProduct.name_ar}
                       </h1>
+                      <div className="flex items-center justify-end gap-2 mb-4">
+                        <span className="text-2xl md:text-3xl font-black text-primary">
+                          {Number(featuredProduct.price).toLocaleString()}
+                        </span>
+                        <span className="text-sm text-primary/60">
+                          {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
+                        </span>
+                        {featuredProduct.original_price && Number(featuredProduct.original_price) > Number(featuredProduct.price) && (
+                          <span className="text-muted-foreground/50 line-through text-sm">
+                            {Number(featuredProduct.original_price).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
                       {featuredProduct.description_ar && (
                         <div>
                           <p className={`text-foreground/40 text-base md:text-lg max-w-md mr-0 ml-auto ${!showFullDesc ? 'line-clamp-2' : ''}`}>

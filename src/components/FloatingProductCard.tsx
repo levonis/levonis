@@ -55,19 +55,26 @@ const FloatingProductCard = memo(({
           <div className="cube-top-featured" />
           {/* 3D Block — mid section */}
           <div className="cube-mid-featured" />
-          {/* 3D Block — front face with engraved discount */}
+          {/* 3D Block — front face with engraved price & discount */}
           <div className="cube-front-featured relative overflow-hidden">
-            {discount > 0 && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <span className="text-lg md:text-xl font-black tracking-wider"
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-0.5">
+              <span className="text-base md:text-lg font-black tracking-wide"
+                style={{
+                  color: 'hsl(155 50% 35% / 0.55)',
+                  textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
+                }}>
+                {price.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
+              </span>
+              {discount > 0 && (
+                <span className="text-xs font-bold tracking-wider"
                   style={{
-                    color: 'hsl(155 50% 35% / 0.55)',
+                    color: 'hsl(155 50% 35% / 0.45)',
                     textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
                   }}>
                   -{discount}%
                 </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
           {/* 3D Block — bottom edge highlight */}
           <div className="cube-bottom-edge" />
@@ -77,25 +84,6 @@ const FloatingProductCard = memo(({
           {/* Ground reflection (larger) */}
           <div className="w-80 h-7 md:w-[26rem] md:h-9 mx-auto rounded-[50%] blur-2xl" style={{ marginTop: '-2px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.45), transparent 60%)' }} />
 
-          {/* Product info */}
-          <div className="mt-6 text-center space-y-1.5">
-            <h3 className="text-lg md:text-xl font-semibold text-foreground/85 leading-tight line-clamp-2">
-              {nameAr}
-            </h3>
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="text-xl md:text-2xl font-black text-primary">
-                {price.toLocaleString()}
-              </span>
-              <span className="text-xs text-primary/60">
-                {currency === 'IQD' ? 'د.ع' : currency}
-              </span>
-            </div>
-            {originalPrice && originalPrice > price && (
-              <span className="text-muted-foreground/50 line-through text-xs">
-                {originalPrice.toLocaleString()}
-              </span>
-            )}
-          </div>
         </div>
       </Link>
     );

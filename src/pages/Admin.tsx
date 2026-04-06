@@ -3489,7 +3489,12 @@ const Admin = () => {
                         <select
                           id="featured_product_id"
                           name="featured_product_id"
-                          defaultValue={editingCategory?.featured_product_id || ''}
+                          value={editingCategory?.featured_product_id || ''}
+                          onChange={(e) => {
+                            if (editingCategory) {
+                              setEditingCategory({ ...editingCategory, featured_product_id: e.target.value || null });
+                            }
+                          }}
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <option value="">تلقائي (أعلى سعر)</option>
