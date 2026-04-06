@@ -1658,99 +1658,153 @@
 
 /* ── 3D Cube for Featured Product ── */
 
-/* Glow ring above platform — dual layer */
+/* Outer ambient glow — soft wide halo */
+.cube-ambient-glow {
+  width: 320px;
+  height: 20px;
+  margin: 0 auto -8px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, hsl(155 60% 35% / 0.2), transparent 70%);
+  filter: blur(12px);
+}
+
+/* Glow ring above platform — triple layer */
 .cube-glow-ring {
-  width: 280px;
-  height: 14px;
-  margin: 0 auto -4px;
+  width: 290px;
+  height: 16px;
+  margin: 0 auto -5px;
   border-radius: 50%;
   background:
-    radial-gradient(ellipse, hsl(155 70% 40% / 0.45), transparent 60%),
-    radial-gradient(ellipse at 50% 80%, hsl(155 50% 30% / 0.25), transparent 80%);
-  filter: blur(6px);
+    radial-gradient(ellipse, hsl(155 80% 45% / 0.5), transparent 55%),
+    radial-gradient(ellipse at 50% 60%, hsl(155 60% 35% / 0.3), transparent 75%),
+    radial-gradient(ellipse at 50% 100%, hsl(155 40% 25% / 0.2), transparent 85%);
+  filter: blur(5px);
 }
 
 /* Top highlight edge — luminous rim */
 .cube-top-highlight {
-  width: 260px;
-  height: 3px;
+  width: 270px;
+  height: 4px;
   margin: 0 auto -1px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, transparent 8%, hsl(155 60% 50% / 0.6) 30%, hsl(155 70% 55% / 0.8) 50%, hsl(155 60% 50% / 0.6) 70%, transparent 92%);
-  filter: blur(1px);
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    hsl(155 65% 55% / 0.5) 20%,
+    hsl(155 75% 60% / 0.9) 40%,
+    hsl(150 80% 65% / 1) 50%,
+    hsl(155 75% 60% / 0.9) 60%,
+    hsl(155 65% 55% / 0.5) 80%,
+    transparent 95%
+  );
+  filter: blur(1.5px);
   position: relative;
   z-index: 2;
 }
 
-/* Top face — wider, deeper gradient */
+/* Top face — wider, deeper multi-stop gradient with specular highlight */
 .cube-top-featured {
-  width: 300px;
-  height: 34px;
+  width: 310px;
+  height: 38px;
   margin: 0 auto;
-  border-radius: 8px;
-  background: linear-gradient(
-    180deg,
-    hsl(155 38% 26%) 0%,
-    hsl(158 35% 22%) 25%,
-    hsl(160 30% 17%) 60%,
-    hsl(162 28% 13%) 100%
-  );
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse at 50% 20%, hsl(155 50% 32% / 0.4) 0%, transparent 60%),
+    linear-gradient(
+      180deg,
+      hsl(155 40% 28%) 0%,
+      hsl(157 37% 24%) 20%,
+      hsl(158 35% 20%) 45%,
+      hsl(160 30% 16%) 70%,
+      hsl(162 28% 12%) 100%
+    );
   box-shadow:
-    inset 0 4px 10px hsl(155 55% 38% / 0.4),
-    inset 0 -4px 8px hsl(160 20% 5% / 0.7),
-    0 0 16px hsl(155 40% 22% / 0.25);
+    inset 0 5px 14px hsl(155 55% 40% / 0.45),
+    inset 0 -5px 10px hsl(160 20% 4% / 0.8),
+    inset 2px 0 6px hsl(155 30% 20% / 0.15),
+    inset -2px 0 6px hsl(155 30% 20% / 0.15),
+    0 0 20px hsl(155 45% 25% / 0.3);
   transform: perspective(600px) rotateX(28deg);
 }
 
-/* Mid section — extra thickness layer */
+/* Mid section — extra thickness layer with side bevels */
 .cube-mid-featured {
-  width: 272px;
-  height: 16px;
+  width: 280px;
+  height: 18px;
   margin: -4px auto 0;
   background: linear-gradient(
     180deg,
-    hsl(160 26% 15%) 0%,
-    hsl(160 22% 11%) 100%
+    hsl(160 28% 16%) 0%,
+    hsl(160 24% 12%) 50%,
+    hsl(160 22% 10%) 100%
   );
   box-shadow:
-    inset 0 1px 0 hsl(155 30% 20% / 0.3),
-    inset 0 -1px 0 hsl(160 20% 6% / 0.5);
+    inset 0 1px 0 hsl(155 35% 22% / 0.4),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.6),
+    inset 4px 0 8px hsl(160 15% 5% / 0.3),
+    inset -4px 0 8px hsl(160 15% 5% / 0.3);
 }
 
-/* Front face — taller with richer gradient */
+/* Front face — taller with vertical gradient + subtle texture lines */
 .cube-front-featured {
-  width: 272px;
-  height: 54px;
+  width: 280px;
+  height: 58px;
   margin: 0 auto;
-  border-radius: 0 0 10px 10px;
-  background: linear-gradient(
-    180deg,
-    hsl(160 24% 12%) 0%,
-    hsl(160 22% 9%) 40%,
-    hsl(160 20% 7%) 70%,
-    hsl(160 18% 5%) 100%
-  );
+  border-radius: 0 0 12px 12px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0px, transparent 18px, hsl(160 15% 10% / 0.15) 18px, hsl(160 15% 10% / 0.15) 19px),
+    linear-gradient(
+      180deg,
+      hsl(160 24% 13%) 0%,
+      hsl(160 22% 10%) 30%,
+      hsl(160 20% 7%) 65%,
+      hsl(160 18% 5%) 85%,
+      hsl(160 15% 3%) 100%
+    );
   box-shadow:
-    inset 0 1px 0 hsl(160 30% 18% / 0.4),
-    0 12px 36px hsl(160 30% 3% / 0.8);
+    inset 0 1px 0 hsl(160 30% 18% / 0.5),
+    inset 4px 0 10px hsl(160 15% 4% / 0.4),
+    inset -4px 0 10px hsl(160 15% 4% / 0.4),
+    0 14px 40px hsl(160 30% 3% / 0.85);
 }
 
-/* Bottom edge — thin metallic accent */
+/* Bottom edge — wider metallic accent with center glow */
 .cube-bottom-edge {
-  width: 264px;
-  height: 4px;
+  width: 272px;
+  height: 5px;
   margin: 0 auto;
-  border-radius: 0 0 6px 6px;
-  background: linear-gradient(90deg, transparent 5%, hsl(155 45% 30% / 0.55) 35%, hsl(155 50% 35% / 0.7) 50%, hsl(155 45% 30% / 0.55) 65%, transparent 95%);
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(
+    90deg,
+    transparent 3%,
+    hsl(155 40% 25% / 0.4) 20%,
+    hsl(155 50% 35% / 0.7) 40%,
+    hsl(155 55% 40% / 0.85) 50%,
+    hsl(155 50% 35% / 0.7) 60%,
+    hsl(155 40% 25% / 0.4) 80%,
+    transparent 97%
+  );
+}
+
+/* Bottom reflection strip */
+.cube-bottom-reflection {
+  width: 240px;
+  height: 8px;
+  margin: 2px auto 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, hsl(155 40% 20% / 0.25), transparent 70%);
+  filter: blur(3px);
 }
 
 @media (min-width: 768px) {
-  .cube-glow-ring { width: 380px; height: 18px; }
-  .cube-top-highlight { width: 350px; height: 4px; }
-  .cube-top-featured { width: 400px; height: 42px; border-radius: 10px; }
-  .cube-mid-featured { width: 362px; height: 20px; }
-  .cube-front-featured { width: 362px; height: 68px; border-radius: 0 0 12px 12px; }
-  .cube-bottom-edge { width: 352px; height: 5px; }
+  .cube-ambient-glow { width: 440px; height: 28px; }
+  .cube-glow-ring { width: 400px; height: 20px; }
+  .cube-top-highlight { width: 370px; height: 5px; }
+  .cube-top-featured { width: 420px; height: 46px; border-radius: 12px; }
+  .cube-mid-featured { width: 380px; height: 22px; }
+  .cube-front-featured { width: 380px; height: 74px; border-radius: 0 0 14px 14px; }
+  .cube-bottom-edge { width: 368px; height: 6px; }
+  .cube-bottom-reflection { width: 320px; height: 10px; }
 }
 
 /* ── Product Card — Green gradient ── */
