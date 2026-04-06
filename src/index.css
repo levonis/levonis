@@ -513,15 +513,16 @@
   /* Card frame for products, merchants, etc */
   .levo-card-frame {
     position: relative;
-    background: hsl(0 0% 100% / 0.08);
-    backdrop-filter: blur(28px) saturate(1.2);
-    -webkit-backdrop-filter: blur(28px) saturate(1.2);
-    border: 1px solid hsl(0 0% 100% / 0.15);
+    background: hsl(0 0% 100% / 0.22);
+    backdrop-filter: blur(40px) saturate(1.4);
+    -webkit-backdrop-filter: blur(40px) saturate(1.4);
+    border: 1px solid hsl(0 0% 100% / 0.35);
     border-radius: 1rem;
     overflow: hidden;
     box-shadow: 
-      0 2px 8px hsl(0 0% 0% / 0.08),
-      inset 0 1px 0 hsl(0 0% 100% / 0.12);
+      0 4px 16px hsl(0 0% 0% / 0.12),
+      inset 0 1px 0 hsl(0 0% 100% / 0.3),
+      inset 0 0 20px hsl(0 0% 100% / 0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
