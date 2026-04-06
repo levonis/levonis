@@ -1877,6 +1877,17 @@ const Cart = () => {
                 });
               })()}
 
+              {/* Out of Stock Warning */}
+              {hasOutOfStockItems && (
+                <div className="rounded-xl p-3 border border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold text-destructive">⚠️ يوجد منتجات غير متوفرة في السلة</span>
+                  <Button size="sm" variant="destructive" className="shrink-0" onClick={removeOutOfStockItems}>
+                    <Trash2 className="h-3.5 w-3.5 ml-1" />
+                    حذف الكل
+                  </Button>
+                </div>
+              )}
+
               {/* Cart Upsell Offers */}
               <CartUpsellOffers />
 
