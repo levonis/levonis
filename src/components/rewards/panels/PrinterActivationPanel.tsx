@@ -166,6 +166,28 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const scanner = new Html5Qrcode('qr-file-scanner-temp');
+      const result = await scanner.scanFile(file, true);
+      let serial = result;
+      try {
+        const url = new URL(result);
+        serial = url.searchParams.get('serial') || result;
+      } catch {}
+      setSerialInput(serial);
+      lookupSerial(serial);
+      toast.success('تم قراءة الباركود بنجاح');
+    } catch (err) {
+      console.error('QR scan from image failed:', err);
+      toast.error('لم يتم العثور على باركود في الصورة');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const stopScanner = async () => {
     if (scannerRef.current) {
       try { await scannerRef.current.stop(); } catch {}
