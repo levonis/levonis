@@ -47,8 +47,11 @@ const FloatingProductCard = memo(({
             />
           </div>
 
-          {/* Contact shadow — product base (denser) */}
-          <div className="w-52 h-5 md:w-64 md:h-6 mx-auto rounded-[50%] bg-black/50 blur-lg" style={{ marginTop: '-12px' }} />
+          {/* Contact shadow — product base (dense ellipse) */}
+          <div className="w-56 h-6 md:w-72 md:h-7 mx-auto rounded-[50%] bg-black/55 blur-lg" style={{ marginTop: '-14px' }} />
+
+          {/* Ambient glow — outer halo */}
+          <div className="cube-ambient-glow" />
 
           {/* Glow ring on platform */}
           <div className="cube-glow-ring" />
@@ -64,9 +67,11 @@ const FloatingProductCard = memo(({
           <div className="cube-front-featured" />
           {/* 3D Block — bottom edge highlight */}
           <div className="cube-bottom-edge" />
+          {/* Bottom reflection strip */}
+          <div className="cube-bottom-reflection" />
 
           {/* Ground reflection (larger) */}
-          <div className="w-72 h-6 md:w-96 md:h-8 mx-auto rounded-[50%] blur-xl" style={{ marginTop: '-4px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.4), transparent 65%)' }} />
+          <div className="w-80 h-7 md:w-[26rem] md:h-9 mx-auto rounded-[50%] blur-2xl" style={{ marginTop: '-2px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.45), transparent 60%)' }} />
 
           {/* Product info */}
           <div className="mt-6 text-center space-y-1.5">
