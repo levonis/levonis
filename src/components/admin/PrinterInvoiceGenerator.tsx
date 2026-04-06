@@ -545,10 +545,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 if (!invoiceRef.current) return;
                 try {
                   const invoiceHtml = invoiceRef.current.innerHTML;
-                  if (!selectedOrderId) {
-                    toast.error('لا يمكن حفظ الفاتورة بدون طلب مرتبط');
-                    return;
-                  }
                   const warrantyMonths = printer.warranty_months || 12;
                   const warrantyExpiresAt = new Date(invoiceData.date);
                   warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
