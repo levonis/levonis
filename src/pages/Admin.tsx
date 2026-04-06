@@ -3341,7 +3341,7 @@ const Admin = () => {
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleReExtractImages(product)} disabled={reExtractingImages === product.id} title="إعادة استخراج الصور">
                         {reExtractingImages === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductDialogOpen(true); }} title="تعديل">
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductFeatured(!!product.featured); setProductDialogOpen(true); }} title="تعديل">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleDuplicateProduct(product)} title="تكرار">
