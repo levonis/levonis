@@ -1812,19 +1812,26 @@
   position: relative;
   border-radius: 1.25rem;
   overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   background: linear-gradient(
     170deg,
-    hsl(160 35% 14% / 0.7) 0%,
-    hsl(160 30% 10% / 0.85) 50%,
-    hsl(160 25% 8% / 0.9) 100%
+    hsl(160 35% 14% / 0.75) 0%,
+    hsl(160 30% 10% / 0.88) 50%,
+    hsl(160 25% 8% / 0.92) 100%
   );
-  border: 1px solid hsl(160 30% 20% / 0.25);
-  box-shadow: 0 4px 20px hsl(160 30% 4% / 0.3);
-  transition: box-shadow 0.3s ease;
+  border: 1px solid hsl(160 30% 22% / 0.3);
+  box-shadow:
+    0 4px 20px hsl(160 30% 4% / 0.35),
+    inset 0 1px 0 hsl(155 40% 30% / 0.12);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .product-card-green:hover {
-  box-shadow: 0 8px 30px hsl(160 30% 4% / 0.5);
+  box-shadow:
+    0 8px 32px hsl(160 30% 4% / 0.55),
+    inset 0 1px 0 hsl(155 40% 30% / 0.15);
+  transform: translateY(-2px);
 }
 
 /* Telegram Mini App viewport fix */

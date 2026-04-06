@@ -30,13 +30,6 @@ const FloatingProductCard = memo(({
     return (
       <Link to={`/product/${slug}`} className="block">
         <div className="flex flex-col items-center">
-          {/* Discount badge */}
-          {discount > 0 && (
-            <div className="mb-2 px-3 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
-              -{discount}%
-            </div>
-          )}
-
           {/* Product image */}
           <div className="relative h-64 w-64 md:h-80 md:w-80 z-20" style={{ marginBottom: '-2.5rem' }}>
             <img
@@ -62,8 +55,20 @@ const FloatingProductCard = memo(({
           <div className="cube-top-featured" />
           {/* 3D Block — mid section */}
           <div className="cube-mid-featured" />
-          {/* 3D Block — front face */}
-          <div className="cube-front-featured" />
+          {/* 3D Block — front face with engraved discount */}
+          <div className="cube-front-featured relative overflow-hidden">
+            {discount > 0 && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <span className="text-lg md:text-xl font-black tracking-wider"
+                  style={{
+                    color: 'hsl(155 50% 35% / 0.55)',
+                    textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
+                  }}>
+                  -{discount}%
+                </span>
+              </div>
+            )}
+          </div>
           {/* 3D Block — bottom edge highlight */}
           <div className="cube-bottom-edge" />
           {/* Bottom reflection strip */}
