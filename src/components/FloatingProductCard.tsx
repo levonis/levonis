@@ -30,13 +30,6 @@ const FloatingProductCard = memo(({
     return (
       <Link to={`/product/${slug}`} className="block">
         <div className="flex flex-col items-center">
-          {/* Discount badge */}
-          {discount > 0 && (
-            <div className="mb-2 px-3 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
-              -{discount}%
-            </div>
-          )}
-
           {/* Product image */}
           <div className="relative h-64 w-64 md:h-80 md:w-80 z-20" style={{ marginBottom: '-2.5rem' }}>
             <img
