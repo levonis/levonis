@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertTriangle, Search, Clock } from 'lucide-react';
+import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertTriangle, Search, Clock, Upload } from 'lucide-react';
 import { addMonths, format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
