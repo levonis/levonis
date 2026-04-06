@@ -189,6 +189,7 @@ const Admin = () => {
   const [productAvailabilityTypeFilter, setProductAvailabilityTypeFilter] = useState<string>('all');
   const [productOptionsStockFilter, setProductOptionsStockFilter] = useState<string>('all');
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+  const [productFeatured, setProductFeatured] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
@@ -1223,7 +1224,7 @@ const Admin = () => {
         images: finalImages.length > 0 ? finalImages : [],
         image_url: finalImages[0] || null,
         category_id: formData.get('category_id') as string,
-        featured: (formData.get('featured') as string) === 'on',
+        featured: productFeatured,
         in_stock: (formData.get('in_stock') as string) === 'on',
         availability_type: availabilityType,
         has_in_stock: hasInStock,
@@ -1812,6 +1813,7 @@ const Admin = () => {
                 onClick={() => {
                   setActiveTab('products');
                   setEditingProduct(null);
+                  setProductFeatured(defaultSettings?.featured ?? false);
                   setUploadedImages([]);
                   setProductOptions([]);
                   setProductColors([]);
@@ -2295,7 +2297,7 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
-                        <input id="featured" name="featured" type="checkbox" defaultChecked={editingProduct?.featured ?? defaultSettings?.featured ?? false} />
+                        <input id="featured" name="featured" type="checkbox" checked={productFeatured} onChange={(e) => setProductFeatured(e.target.checked)} />
                         <Label htmlFor="featured">مميز (يظهر في الرئيسية)</Label>
                       </div>
                       <div className="flex items-center gap-2">
@@ -3272,6 +3274,7 @@ const Admin = () => {
                               variant="outline"
                               onClick={() => {
                                 setEditingProduct(product);
+                                setProductFeatured(!!product.featured);
                                 setProductDialogOpen(true);
                               }}
                               title="تعديل"
@@ -3339,7 +3342,7 @@ const Admin = () => {
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleReExtractImages(product)} disabled={reExtractingImages === product.id} title="إعادة استخراج الصور">
                         {reExtractingImages === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
                       </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductDialogOpen(true); }} title="تعديل">
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductFeatured(!!product.featured); setProductDialogOpen(true); }} title="تعديل">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleDuplicateProduct(product)} title="تكرار">
