@@ -27,6 +27,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
   const [lookupError, setLookupError] = useState('');
   const [scannerActive, setScannerActive] = useState(false);
   const scannerRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scannerContainerId = 'qr-scanner-rewards';
 
   useEffect(() => {
