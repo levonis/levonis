@@ -105,8 +105,13 @@ const FloatingProductCard = memo(({
       <div className="product-card-green relative">
         {/* Discount badge */}
         {discount > 0 && (
-          <div className="absolute top-3 right-3 z-20 px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
+          <div className="absolute top-3 right-3 z-20 px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold flex items-center gap-1">
             -{discount}%
+            {originalPrice && (
+              <span className="line-through opacity-75 text-[10px]">
+                {originalPrice.toLocaleString()}
+              </span>
+            )}
           </div>
         )}
 
