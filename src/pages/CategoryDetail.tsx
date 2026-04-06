@@ -85,9 +85,9 @@ const CategoryDetail = () => {
               <div className="space-y-16">
                 {/* Hero section: Title + Featured product side by side */}
                 {featuredProduct && (
-                  <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16">
-                    {/* Title & description — right side in RTL */}
-                    <div className="flex-1 text-center md:text-right pt-4 md:pt-12">
+                  <div className="flex flex-col md:flex-row-reverse items-center md:items-start gap-8 md:gap-16">
+                    {/* Title & description — left side */}
+                    <div className="flex-1 text-center md:text-left pt-4 md:pt-12">
                       <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-4 tracking-tight leading-tight">
                         {category.name_ar}
                       </h1>
