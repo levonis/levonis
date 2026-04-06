@@ -1841,11 +1841,11 @@
 
 .product-card-green:hover {
   box-shadow:
-    0 12px 40px hsl(160 40% 8% / 0.4),
-    0 2px 6px hsl(160 30% 4% / 0.25),
-    inset 0 1px 0 hsl(155 60% 60% / 0.18),
-    inset 0 -1px 0 hsl(160 20% 5% / 0.2),
-    0 0 20px hsl(155 50% 30% / 0.1);
+    0 12px 40px hsl(0 0% 0% / 0.15),
+    0 2px 6px hsl(0 0% 0% / 0.1),
+    inset 0 1px 0 hsl(0 0% 100% / 0.2),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.05),
+    0 0 20px hsl(0 0% 100% / 0.05);
   transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
 }
 
