@@ -10,6 +10,7 @@ import { useLanguage } from '@/lib/i18n';
 
 const CategoryDetail = () => {
   const { t } = useLanguage();
+  const [showFullDesc, setShowFullDesc] = useState(false);
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
 
