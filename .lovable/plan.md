@@ -1,62 +1,70 @@
 
 
-# إعادة تصميم صفحة الأقسام - منصات ثلاثية الأبعاد (Pedestals)
+# تصميم صفحة الأقسام مطابقاً للصورة المرجعية
 
 ## الملخص
-تحويل صفحة الأقسام من تصميم "المنتجات الطافية" إلى تصميم "منصات عرض واقعية" حيث يقف كل منتج على قاعدة (Podium) بارتفاعات مختلفة، بدون أي حركة أو أنيميشن.
+إعادة تصميم الصفحة لتطابق الصورة المرجعية: منتج مميز على مكعب/بلوك ثلاثي الأبعاد كبير، وباقي المنتجات داخل بطاقات مستديرة بخلفية خضراء متدرجة مرتبة بشكل متدرج (staggered).
 
-## التغييرات
+## التغييرات الرئيسية
 
-### 1. إعادة كتابة `FloatingProductCard.tsx` → تصميم Pedestal
-- إزالة كل تأثيرات الطفو والـ hover animations
-- إضافة قاعدة/منصة ثلاثية الأبعاد أسفل المنتج باستخدام CSS perspective + transforms
-- المنصة: شكل بيضاوي أو مستطيل مع تدرج أخضر متناسق مع الخلفية
-- ظل تلامس واقعي (contact shadow) حيث يلمس المنتج المنصة
-- المنتج المميز: منصة أكبر وأعلى مع إضاءة أقوى (gradient highlight)
-- بدون borders، بدون card outlines، بدون خلفية بطاقة
-- تخطيط ثابت تماماً (static) بدون hover effects
+### 1. `FloatingProductCard.tsx` — إعادة كتابة كاملة
 
-### 2. تحديث `CategoryDetail.tsx`
-- تغيير الشبكة لتدعم منصات بارتفاعات مختلفة (staggered heights)
-- المنتج المميز centered في الأعلى على منصة كبيرة
-- باقي المنتجات على منصات أصغر في grid متوازن
-- إبقاء الـ breadcrumb والعنوان والحالات (loading, empty)
+**المنتج المميز (featured):**
+- بلوك/مكعب مستطيل ثلاثي الأبعاد (ليس بيضاوي) — وجه علوي + وجه أمامي بـ CSS
+- المنتج يقف فوق المكعب مباشرة
+- ظل تلامس بين المنتج والمكعب
+- بدون بطاقة أو إطار حول المنتج
 
-### 3. تحديث CSS في `index.css`
-- إزالة `.floating-card`, `.floating-card-featured`, `@keyframes product-float`
-- إضافة `.pedestal-platform` — القاعدة ثلاثية الأبعاد بـ CSS transforms
-- إضافة `.pedestal-shadow` — ظل التلامس
-- إضافة `.pedestal-featured` — نسخة أكبر مع highlight
-- تحديث `.category-luxury-bg` لتشمل إضاءة شعاعية خفيفة (radial gradient)
+**المنتجات العادية:**
+- بطاقة مستديرة الزوايا (`rounded-2xl`) بخلفية خضراء متدرجة شبه شفافة
+- المنتج داخل البطاقة يقف على "أرضية" خضراء فاتحة
+- الاسم والسعر أسفل البطاقة
+- بدون pedestal — مجرد بطاقة بسيطة أنيقة
+
+### 2. `CategoryDetail.tsx` — تحديث التخطيط
+
+- العنوان والوصف على اليمين (RTL) بخط كبير عريض
+- المنتج المميز على اليسار بجانب العنوان (layout مقسم)
+- باقي المنتجات في grid متدرج الارتفاعات (staggered) — 3 أعمدة desktop، 2 mobile
+- بعض البطاقات أطول من غيرها لخلق تنوع بصري
+
+### 3. `index.css` — تحديث الأنماط
+
+- استبدال pedestal البيضاوي بمكعب مستطيل (وجه علوي مسطح + وجه أمامي)
+- إضافة `.product-card-green` — بطاقة بخلفية خضراء متدرجة
+- تحديث `.category-luxury-bg` لتطابق التدرج الأخضر العميق في الصورة
 
 ## التفاصيل التقنية
 
 ```text
-Product on Pedestal (CSS 3D):
-┌─────────────────┐
-│                  │
-│   [Product PNG]  │  ← object-contain, no border
-│                  │
-│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│  ← contact shadow (blur ellipse)
-│  ╔════════════╗  │  ← platform top face (perspective transform)
-│  ║  PLATFORM  ║  │  ← platform front face (darker gradient)
-│  ╚════════════╝  │
-│    ░░░░░░░░░░    │  ← ground shadow
-└─────────────────┘
+Layout (Desktop):
+┌──────────────────────────────────────┐
+│  [Title]          ┌──────────┐       │
+│  "الأكثر مبيعاً"    │ Featured │       │
+│  description      │ on CUBE  │       │
+│                   └──────────┘       │
+├──────────┬─────────┬─────────────────┤
+│ ┌──────┐ │┌──────┐ │ ┌──────┐        │
+│ │Card  │ ││Card  │ │ │Card  │        │
+│ │green │ ││green │ │ │green │        │
+│ │bg    │ ││bg    │ │ │bg    │        │
+│ └──────┘ │└──────┘ │ └──────┘        │
+│ ┌──────┐ │┌──────┐ │ ┌──────┐        │
+│ │Card  │ ││Card  │ │ │Card  │        │
+│ └──────┘ │└──────┘ │ └──────┘        │
+└──────────┴─────────┴─────────────────┘
 
-Platform CSS approach:
-- Top face: rotateX(60deg) with green gradient
-- Front face: pseudo-element with darker shade
-- Contact shadow: radial-gradient ellipse at base
+Featured = 3D rectangular block (top face + front face)
+Cards = rounded-2xl with green gradient background
+Staggered = columns offset vertically
 ```
 
-- المنصة تُبنى بـ CSS فقط (بدون Three.js/Canvas)
-- `perspective` على الحاوية لإعطاء عمق ثلاثي الأبعاد
-- المنصة تتناسق مع الخلفية باستخدام نفس توكنات الألوان
-- ارتفاعات مختلفة للمنصات تُحدد بـ CSS classes
+- المكعب المميز: `perspective` + وجه علوي (`skewX/rotateX`) + وجه أمامي (مستطيل أغمق)
+- البطاقات العادية: `bg-gradient` أخضر + `rounded-2xl` + ظل خفيف
+- Staggered layout: أعمدة مع `mt` مختلف لكل عمود
 
 ## الملفات المتأثرة
-1. `src/components/FloatingProductCard.tsx` — إعادة كتابة كاملة
-2. `src/pages/CategoryDetail.tsx` — تحديث الشبكة
-3. `src/index.css` — استبدال floating styles بـ pedestal styles
+1. `src/components/FloatingProductCard.tsx` — إعادة كتابة
+2. `src/pages/CategoryDetail.tsx` — تحديث التخطيط
+3. `src/index.css` — تحديث الأنماط
 
