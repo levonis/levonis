@@ -550,7 +550,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
                   
                   const { error } = await supabase.from('saved_invoices').insert({
-                    order_id: selectedOrderId,
+                    order_id: selectedOrderId || null,
                     invoice_html: invoiceHtml,
                     warranty_expires_at: warrantyExpiresAt.toISOString(),
                     notes: `طابعة: ${invoiceData.printerModel} - رقم تسلسلي: ${invoiceData.serialNumber}`,
