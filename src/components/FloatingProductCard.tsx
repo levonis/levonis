@@ -38,17 +38,16 @@ const FloatingProductCard = memo(({
           )}
 
           {/* Product image */}
-          <div className="relative h-64 w-64 md:h-80 md:w-80">
+          <div className="relative h-64 w-64 md:h-80 md:w-80 z-20" style={{ marginBottom: '-2.5rem' }}>
             <img
               src={imageUrl || '/placeholder.svg'}
               alt={nameAr}
               loading="eager"
               className="w-full h-full object-contain relative z-10"
             />
+            {/* Contact shadow — tight at product base */}
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-48 h-4 md:w-60 md:h-5 rounded-[50%] bg-black/50 blur-md" />
           </div>
-
-          {/* Contact shadow — product base (dense ellipse) */}
-          <div className="w-56 h-6 md:w-72 md:h-7 mx-auto rounded-[50%] bg-black/55 blur-lg" style={{ marginTop: '-14px' }} />
 
           {/* Ambient glow — outer halo */}
           <div className="cube-ambient-glow" />
