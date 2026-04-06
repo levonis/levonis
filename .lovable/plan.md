@@ -1,20 +1,49 @@
 
 
-## إصلاح اختفاء المنتجات في لوحة الإدارة
+## تحسين قسم المنتج المميز — وصف مختصر + تخطيط ثابت
 
-### السبب
-إضافة عمود `featured_product_id` في جدول `categories` أنشأ علاقة ثانية (FK) بين `products` و `categories`. الآن PostgREST لا يستطيع تحديد أي علاقة يستخدم عند كتابة `categories(name_ar)` في الاستعلام، فيرجع خطأ **PGRST201** بدلاً من البيانات.
+### المشكلة
+1. الوصف يظهر كاملاً بدون تحديد — المطلوب سطرين كحد أقصى مع زر "عرض المزيد"
+2. التخطيط يتغير حسب حجم الشاشة — المطلوب الصورة/المنصة دائماً على **اليمين** والنص على **اليسار**
 
-### الحل — `src/pages/Admin.tsx`
-تعديل سطر 296 لتحديد العلاقة الصحيحة بشكل صريح:
+### التعديلات — `src/pages/CategoryDetail.tsx`
 
-```typescript
-// قبل
-.select('*, categories(name_ar), product_options(...)')
+**1. تخطيط ثابت (صورة يمين، نص يسار) لجميع الأجهزة:**
+- تغيير `flex-col md:flex-row-reverse` إلى `flex-col-reverse md:flex-row` بحيث:
+  - على الموبايل: النص فوق والصورة تحت (أفضل تجربة)
+  - على الشاشات الكبيرة: الصورة يمين والنص يسار
+- ضبط محاذاة النص لتكون `text-right` دائماً بدل `text-center md:text-right`
 
-// بعد  
-.select('*, categories!products_category_id_fkey(name_ar), product_options(...)')
+**2. وصف مختصر مع "عرض المزيد":**
+- إضافة state: `const [showFullDesc, setShowFullDesc] = useState(false)`
+- تطبيق `line-clamp-2` على الوصف عندما `!showFullDesc`
+- إضافة زر "عرض المزيد" / "عرض أقل" أسفل الوصف
+
+```tsx
+// الشكل المقترح
+<div className="flex flex-col-reverse md:flex-row items-center md:items-start gap-8 md:gap-16">
+  {/* النص — يسار */}
+  <div className="flex-1 text-right pt-4 md:pt-12">
+    <h1 className="...">{featuredProduct.name_ar}</h1>
+    {featuredProduct.description_ar && (
+      <div>
+        <p className={`... ${!showFullDesc ? 'line-clamp-2' : ''}`}>
+          {featuredProduct.description_ar}
+        </p>
+        <button onClick={() => setShowFullDesc(!showFullDesc)}>
+          {showFullDesc ? 'عرض أقل' : 'عرض المزيد'}
+        </button>
+      </div>
+    )}
+  </div>
+
+  {/* الصورة — يمين */}
+  <div className="flex-shrink-0 w-full max-w-sm">
+    <FloatingProductCard ... featured />
+  </div>
+</div>
 ```
 
-تغيير سطر واحد فقط. باقي الاستعلامات في المشروع إما لا تتأثر أو مُحدَّدة مسبقاً (مثل `AdminInventory.tsx`).
+### الملفات المتأثرة
+- `src/pages/CategoryDetail.tsx` — ملف واحد فقط
 
