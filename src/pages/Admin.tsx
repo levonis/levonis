@@ -1464,6 +1464,31 @@ const Admin = () => {
         }
       }
 
+      // Sync featured product with category
+      if (productId && values.category_id) {
+        if (values.featured) {
+          // Set this product as the category's featured product
+          await supabase
+            .from('categories')
+            .update({ featured_product_id: productId })
+            .eq('id', values.category_id);
+          // Unfeature other products in the same category
+          await supabase
+            .from('products')
+            .update({ featured: false })
+            .eq('category_id', values.category_id)
+            .neq('id', productId)
+            .eq('featured', true);
+        } else {
+          // If this product was the featured one, clear it
+          await supabase
+            .from('categories')
+            .update({ featured_product_id: null })
+            .eq('id', values.category_id)
+            .eq('featured_product_id', productId);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
@@ -1474,7 +1499,9 @@ const Admin = () => {
             k[0] === 'category-products' ||
             k[0] === 'product' ||
             k[0] === 'product-options' ||
-            k[0] === 'admin-products'
+            k[0] === 'admin-products' ||
+            k[0] === 'categories' ||
+            k[0] === 'category'
           );
         },
       });
