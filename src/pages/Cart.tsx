@@ -1872,6 +1872,8 @@ const Cart = () => {
                       updateQuantity={handleUpdateQuantity}
                       removeFromCart={handleRemoveFromCart}
                       formatPrice={formatPrice}
+                      outOfStockItemIds={outOfStockItemIds}
+                      lowStockItems={lowStockItems}
                     />
                   );
                 });

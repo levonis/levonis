@@ -14,6 +14,8 @@ interface GroupedCartItemProps {
   updateQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   formatPrice: (price: number) => string;
+  outOfStockItemIds?: Set<string>;
+  lowStockItems?: Map<string, number>;
 }
 
 const GroupedCartItem = ({ 
