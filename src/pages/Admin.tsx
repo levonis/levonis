@@ -1813,6 +1813,7 @@ const Admin = () => {
                 onClick={() => {
                   setActiveTab('products');
                   setEditingProduct(null);
+                  setProductFeatured(defaultSettings?.featured ?? false);
                   setUploadedImages([]);
                   setProductOptions([]);
                   setProductColors([]);
