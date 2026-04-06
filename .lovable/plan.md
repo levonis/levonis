@@ -1,49 +1,42 @@
 
 
-## تحسين قسم المنتج المميز — وصف مختصر + تخطيط ثابت
+## تحسين بطاقات المنتجات + نقل شارة الخصم للمنصة
 
-### المشكلة
-1. الوصف يظهر كاملاً بدون تحديد — المطلوب سطرين كحد أقصى مع زر "عرض المزيد"
-2. التخطيط يتغير حسب حجم الشاشة — المطلوب الصورة/المنصة دائماً على **اليمين** والنص على **اليسار**
+### الملف: `src/components/FloatingProductCard.tsx`
 
-### التعديلات — `src/pages/CategoryDetail.tsx`
-
-**1. تخطيط ثابت (صورة يمين، نص يسار) لجميع الأجهزة:**
-- تغيير `flex-col md:flex-row-reverse` إلى `flex-col-reverse md:flex-row` بحيث:
-  - على الموبايل: النص فوق والصورة تحت (أفضل تجربة)
-  - على الشاشات الكبيرة: الصورة يمين والنص يسار
-- ضبط محاذاة النص لتكون `text-right` دائماً بدل `text-center md:text-right`
-
-**2. وصف مختصر مع "عرض المزيد":**
-- إضافة state: `const [showFullDesc, setShowFullDesc] = useState(false)`
-- تطبيق `line-clamp-2` على الوصف عندما `!showFullDesc`
-- إضافة زر "عرض المزيد" / "عرض أقل" أسفل الوصف
+**1. المنتج المميز (featured) — نقل شارة الخصم إلى المنصة:**
+- إزالة شارة الخصم من أعلى الصورة (سطر 34-37)
+- إضافة شارة الخصم داخل الواجهة الأمامية للمنصة (`cube-front-featured`) بحيث تظهر محفورة في المنصة
+- الشارة ستكون بتصميم "محفور" باستخدام `text-shadow` داخلي وشفافية لتبدو جزءاً من سطح المنصة
+- وضعها في div جديد يلف `cube-front-featured` مع `position: relative` والنص بداخله `absolute` في المنتصف
 
 ```tsx
-// الشكل المقترح
-<div className="flex flex-col-reverse md:flex-row items-center md:items-start gap-8 md:gap-16">
-  {/* النص — يسار */}
-  <div className="flex-1 text-right pt-4 md:pt-12">
-    <h1 className="...">{featuredProduct.name_ar}</h1>
-    {featuredProduct.description_ar && (
-      <div>
-        <p className={`... ${!showFullDesc ? 'line-clamp-2' : ''}`}>
-          {featuredProduct.description_ar}
-        </p>
-        <button onClick={() => setShowFullDesc(!showFullDesc)}>
-          {showFullDesc ? 'عرض أقل' : 'عرض المزيد'}
-        </button>
-      </div>
-    )}
-  </div>
-
-  {/* الصورة — يمين */}
-  <div className="flex-shrink-0 w-full max-w-sm">
-    <FloatingProductCard ... featured />
-  </div>
+{/* Front face with engraved discount */}
+<div className="cube-front-featured relative">
+  {discount > 0 && (
+    <div className="absolute inset-0 flex items-center justify-center z-10">
+      <span className="text-lg md:text-xl font-black tracking-wider"
+        style={{
+          color: 'hsl(155 50% 35% / 0.6)',
+          textShadow: '0 1px 2px hsl(160 20% 5% / 0.8), 0 -1px 1px hsl(155 40% 30% / 0.3)',
+        }}>
+        -{discount}%
+      </span>
+    </div>
+  )}
 </div>
 ```
 
+**2. البطاقات العادية (product-card-green) — تحسينات بصرية:**
+- إضافة تأثير `backdrop-blur` خفيف للبطاقة
+- تحسين ظل الصورة الداخلي لإضافة عمق
+- إضافة خط فاصل متدرج أفضل بين الصورة والمعلومات
+- تكبير حجم الخط للسعر قليلاً لوضوح أكبر
+
+### الملف: `src/index.css`
+- تعديل `.cube-front-featured` لإضافة `position: relative` و `overflow: hidden` لدعم النص المحفور بداخله
+
 ### الملفات المتأثرة
-- `src/pages/CategoryDetail.tsx` — ملف واحد فقط
+- `src/components/FloatingProductCard.tsx`
+- `src/index.css`
 
