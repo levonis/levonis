@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { Loader2, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n';
 
