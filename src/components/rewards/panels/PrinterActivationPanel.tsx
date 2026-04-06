@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertTriangle, Search, Clock } from 'lucide-react';
+import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertTriangle, Search, Clock, Upload } from 'lucide-react';
 import { addMonths, format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -27,6 +27,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
   const [lookupError, setLookupError] = useState('');
   const [scannerActive, setScannerActive] = useState(false);
   const scannerRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scannerContainerId = 'qr-scanner-rewards';
 
   useEffect(() => {
@@ -165,6 +166,28 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const scanner = new Html5Qrcode('qr-file-scanner-temp');
+      const result = await scanner.scanFile(file, true);
+      let serial = result;
+      try {
+        const url = new URL(result);
+        serial = url.searchParams.get('serial') || result;
+      } catch {}
+      setSerialInput(serial);
+      lookupSerial(serial);
+      toast.success('تم قراءة الباركود بنجاح');
+    } catch (err) {
+      console.error('QR scan from image failed:', err);
+      toast.error('لم يتم العثور على باركود في الصورة');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const stopScanner = async () => {
     if (scannerRef.current) {
       try { await scannerRef.current.stop(); } catch {}
@@ -210,11 +233,25 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       {/* Scanner + Input */}
       <Card>
         <CardContent className="p-4 space-y-4">
+          <div id="qr-file-scanner-temp" style={{ display: 'none' }} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
           {!scannerActive ? (
-            <Button variant="outline" className="w-full h-28 flex-col gap-2" onClick={startScanner}>
-              <Camera className="w-7 h-7 text-muted-foreground" />
-              <span className="text-sm">فتح الكاميرا لمسح QR</span>
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="h-28 flex-col gap-2" onClick={startScanner}>
+                <Camera className="w-7 h-7 text-muted-foreground" />
+                <span className="text-sm">فتح الكاميرا</span>
+              </Button>
+              <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="w-7 h-7 text-muted-foreground" />
+                <span className="text-sm">رفع صورة QR</span>
+              </Button>
+            </div>
           ) : (
             <div className="space-y-2">
               <div id={scannerContainerId} className="rounded-lg overflow-hidden" />

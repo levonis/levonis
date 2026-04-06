@@ -545,16 +545,12 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 if (!invoiceRef.current) return;
                 try {
                   const invoiceHtml = invoiceRef.current.innerHTML;
-                  if (!selectedOrderId) {
-                    toast.error('لا يمكن حفظ الفاتورة بدون طلب مرتبط');
-                    return;
-                  }
                   const warrantyMonths = printer.warranty_months || 12;
                   const warrantyExpiresAt = new Date(invoiceData.date);
                   warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
                   
                   const { error } = await supabase.from('saved_invoices').insert({
-                    order_id: selectedOrderId,
+                    order_id: selectedOrderId || null,
                     invoice_html: invoiceHtml,
                     warranty_expires_at: warrantyExpiresAt.toISOString(),
                     notes: `طابعة: ${invoiceData.printerModel} - رقم تسلسلي: ${invoiceData.serialNumber}`,
@@ -569,14 +565,40 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 <Save className="w-4 h-4 ml-2" />
                 حفظ الفاتورة
               </Button>
-              <Button onClick={() => {
+              <Button onClick={async () => {
                 if (!invoiceRef.current) return;
-                import('react-to-pdf').then(({ default: generatePDF }) => {
-                  generatePDF(() => invoiceRef.current!, {
-                    filename: `invoice-${invoiceData.invoiceNo}.pdf`,
-                    page: { margin: 0, format: 'A4' },
-                  });
-                });
+                try {
+                  const html2canvas = (await import('html2canvas')).default;
+                  const { jsPDF } = await import('jspdf');
+                  const canvas = await html2canvas(invoiceRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+                  const imgData = canvas.toDataURL('image/png');
+                  const pdf = new jsPDF('p', 'mm', 'a4');
+                  const pdfWidth = 210;
+                  const pdfHeight = 297;
+                  const margin = 5;
+                  const contentWidth = pdfWidth - margin * 2;
+                  const contentHeight = (canvas.height * contentWidth) / canvas.width;
+                  
+                  if (contentHeight <= pdfHeight - margin * 2) {
+                    pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+                  } else {
+                    // Multi-page
+                    let remainingHeight = contentHeight;
+                    let position = margin;
+                    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+                    remainingHeight -= (pdfHeight - margin * 2);
+                    while (remainingHeight > 0) {
+                      pdf.addPage();
+                      position = margin - (contentHeight - remainingHeight);
+                      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+                      remainingHeight -= (pdfHeight - margin * 2);
+                    }
+                  }
+                  pdf.save(`invoice-${invoiceData.invoiceNo}.pdf`);
+                } catch (err) {
+                  console.error('PDF generation error:', err);
+                  toast.error('حدث خطأ أثناء توليد PDF');
+                }
               }} variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-2" />
                 تنزيل PDF
@@ -586,8 +608,10 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
               </Button>
             </div>
             <div className="p-4 overflow-auto bg-white">
-              <div ref={invoiceRef}>
-                <InvoiceTemplate data={invoiceData} logoSrc={logoImg} />
+              <div style={{ transform: 'scale(0.55)', transformOrigin: 'top center', width: '210mm', margin: '0 auto' }}>
+                <div ref={invoiceRef}>
+                  <InvoiceTemplate data={invoiceData} logoSrc={logoImg} />
+                </div>
               </div>
             </div>
           </>
@@ -735,7 +759,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             وتفعيل التأمين والاستفاده من الخصومات :
           </div>
           {data.qrCodeData && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
               <QRCodeSVG value={data.qrCodeData} size={120} level="H" />
             </div>
           )}
