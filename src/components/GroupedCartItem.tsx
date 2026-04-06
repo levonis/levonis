@@ -109,11 +109,14 @@ const GroupedCartItem = ({
               const isLocked = !!(item as any).is_locked;
               const itemPrice = isGift ? 0 : calculateItemPrice(item);
               const isRemoving = removingIds.has(item.id);
+              const isItemOOS = outOfStockItemIds.has(item.id);
+              const itemLowStock = lowStockItems.get(item.id);
               
               return (
                 <div 
                   key={item.id} 
                   className={`bg-card rounded-lg p-2 border transition-all duration-300 max-w-full overflow-hidden ${
+                    isItemOOS ? 'border-destructive/40 bg-destructive/5 opacity-70' :
                     isGift ? 'border-primary/40 bg-primary/5' : 'border-border/30'
                   } ${
                     isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
