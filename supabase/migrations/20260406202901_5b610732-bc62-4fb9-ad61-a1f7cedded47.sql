@@ -1,0 +1,1 @@
+ALTER TABLE public.categories ADD COLUMN featured_product_id UUID REFERENCES public.products(id) ON DELETE SET NULL;
