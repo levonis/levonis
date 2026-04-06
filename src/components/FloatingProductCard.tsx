@@ -84,25 +84,6 @@ const FloatingProductCard = memo(({
           {/* Ground reflection (larger) */}
           <div className="w-80 h-7 md:w-[26rem] md:h-9 mx-auto rounded-[50%] blur-2xl" style={{ marginTop: '-2px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.45), transparent 60%)' }} />
 
-          {/* Product info */}
-          <div className="mt-6 text-center space-y-1.5">
-            <h3 className="text-lg md:text-xl font-semibold text-foreground/85 leading-tight line-clamp-2">
-              {nameAr}
-            </h3>
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="text-xl md:text-2xl font-black text-primary">
-                {price.toLocaleString()}
-              </span>
-              <span className="text-xs text-primary/60">
-                {currency === 'IQD' ? 'د.ع' : currency}
-              </span>
-            </div>
-            {originalPrice && originalPrice > price && (
-              <span className="text-muted-foreground/50 line-through text-xs">
-                {originalPrice.toLocaleString()}
-              </span>
-            )}
-          </div>
         </div>
       </Link>
     );
