@@ -92,7 +92,7 @@ const CategoryDetail = () => {
                         {category.name_ar}
                       </h1>
                       {category.description_ar && (
-                        <p className="text-foreground/40 text-base md:text-lg max-w-md mx-auto md:mx-0 md:mr-0">
+                        <p className="text-foreground/40 text-base md:text-lg max-w-md mx-auto md:mx-0 md:ml-0">
                           {category.description_ar}
                         </p>
                       )}
