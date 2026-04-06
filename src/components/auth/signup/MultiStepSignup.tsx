@@ -79,12 +79,44 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
     }
   };
 
-  // Create account ONLY at final step (Step 4)
-  const handleFinalSubmit = async () => {
+  const uploadAvatarIfNeeded = async (userId: string, avatarUrl: string): Promise<string | null> => {
+    if (!avatarUrl || !avatarUrl.startsWith('data:')) {
+      return avatarUrl || null;
+    }
+    try {
+      const response = await fetch(avatarUrl);
+      const blob = await response.blob();
+      const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+      const filePath = `${userId}/avatar.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, blob, { upsert: true, contentType: blob.type });
 
+      if (uploadError) {
+        console.error('Avatar upload error:', uploadError);
+        return null;
+      }
+
+      const { data: publicData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      return publicData.publicUrl;
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      return null;
+    }
+  };
+
+  // Create account ONLY at final step
+  const handleFinalSubmit = async () => {
     setSubmitting(true);
     try {
-      // NOW create the account at the final step
+      // Prepare avatar: don't send base64 in metadata
+      const isBase64Avatar = formData.avatarUrl?.startsWith('data:');
+      const metadataAvatar = isBase64Avatar ? '' : formData.avatarUrl;
+
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -92,7 +124,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
           data: {
             full_name: formData.fullName,
             username: formData.username,
-            avatar_url: formData.avatarUrl,
+            avatar_url: metadataAvatar,
             email_verified: true,
           },
           emailRedirectTo: `${window.location.origin}/`
@@ -116,13 +148,36 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
 
       const userId = data.user.id;
 
-      // Update profile with email verified status
-      await supabase
+      // Ensure we have a session for RLS-protected operations
+      if (!data.session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        if (signInError) {
+          console.error('Auto sign-in failed:', signInError);
+          toast.error('تم إنشاء الحساب لكن فشل تسجيل الدخول التلقائي. يرجى تسجيل الدخول يدوياً.');
+          navigate('/');
+          return;
+        }
+      }
+
+      // Upload avatar if base64
+      if (isBase64Avatar && formData.avatarUrl) {
+        const publicUrl = await uploadAvatarIfNeeded(userId, formData.avatarUrl);
+        if (publicUrl) {
+          await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
+        }
+      }
+
+      // Update profile
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ email_verified: true })
         .eq('id', userId);
+      if (profileError) console.error('Profile update error:', profileError);
 
-      // Update profile with additional info
+      // Update optional info
       const updateData: any = {
         phone: formData.phone || null,
         instagram_handle: formData.socialLinks.instagram || null,
@@ -132,15 +187,16 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
 
       const hasData = Object.values(updateData).some(v => v !== null);
       if (hasData) {
-        await supabase
+        const { error: optionalError } = await supabase
           .from('profiles')
           .update(updateData)
           .eq('id', userId);
+        if (optionalError) console.error('Optional info update error:', optionalError);
       }
 
       // Create address if provided
       if (formData.address.governorate) {
-        await supabase
+        const { error: addressError } = await supabase
           .from('user_addresses')
           .insert({
             user_id: userId,
@@ -151,9 +207,10 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
             nearest_landmark: formData.address.nearestLandmark || '',
             is_default: true,
           });
+        if (addressError) console.error('Address insert error:', addressError);
       }
 
-      // Process referral code if provided
+      // Process referral code
       if (formData.referralCode) {
         try {
           const { data: referralData } = await supabase
@@ -173,8 +230,8 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
               })
               .eq('id', referralData.id);
           }
-        } catch (error) {
-          console.error('Error processing referral:', error);
+        } catch (err) {
+          console.error('Error processing referral:', err);
         }
       }
 
