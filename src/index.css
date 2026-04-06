@@ -1642,6 +1642,57 @@
   animation: pixel-twinkle 2s ease-in-out infinite;
 }
 
+/* ── Category Luxury Page ── */
+.category-luxury-bg {
+  background: linear-gradient(
+    165deg,
+    hsl(var(--background-2)) 0%,
+    hsl(var(--background)) 40%,
+    hsl(160 50% 12%) 70%,
+    hsl(var(--background-2)) 100%
+  );
+}
+
+/* Floating card base */
+.floating-card {
+  background: hsl(var(--card) / 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--ring) / 0.08);
+  border-radius: 1.25rem;
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              box-shadow 0.45s ease,
+              border-color 0.3s ease;
+}
+.floating-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 24px 48px -12px hsl(var(--background-2) / 0.5);
+  border-color: hsl(var(--ring) / 0.2);
+}
+
+/* Featured floating card */
+.floating-card-featured {
+  background: hsl(var(--card) / 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsl(var(--primary) / 0.15);
+  border-radius: 1.5rem;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              box-shadow 0.5s ease,
+              border-color 0.3s ease;
+}
+.floating-card-featured:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 32px 64px -16px hsl(var(--primary) / 0.15),
+              0 16px 32px -8px hsl(var(--background-2) / 0.4);
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+@keyframes product-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 /* Telegram Mini App viewport fix */
 html, body, #root {
   min-height: 100vh;
