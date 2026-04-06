@@ -1844,17 +1844,19 @@
   -webkit-backdrop-filter: blur(40px) saturate(1.4);
   background: linear-gradient(
     170deg,
-    hsl(0 0% 100% / 0.28) 0%,
-    hsl(0 0% 100% / 0.18) 50%,
-    hsl(0 0% 100% / 0.12) 100%
+    hsl(0 0% 100% / 0.1) 0%,
+    hsl(0 0% 100% / 0.05) 50%,
+    hsl(0 0% 100% / 0.02) 100%
   );
-  border: 1px solid hsl(0 0% 100% / 0.35);
+  border-top: 1px solid hsl(0 0% 100% / 0.4);
+  border-left: 1px solid hsl(0 0% 100% / 0.28);
+  border-right: 1px solid hsl(0 0% 100% / 0.1);
+  border-bottom: 1px solid hsl(0 0% 100% / 0.06);
   box-shadow:
-    0 4px 24px hsl(0 0% 0% / 0.12),
-    0 1px 3px hsl(0 0% 0% / 0.08),
-    inset 0 1px 0 hsl(0 0% 100% / 0.35),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.05),
-    inset 0 0 30px hsl(0 0% 100% / 0.06);
+    0 8px 32px hsl(0 0% 0% / 0.2),
+    0 2px 8px hsl(0 0% 0% / 0.12),
+    inset 0 1px 0 hsl(0 0% 100% / 0.45),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.08);
   transition: box-shadow 0.35s ease, transform 0.35s ease;
   transform: perspective(800px) rotateX(1deg);
   transform-style: preserve-3d;
@@ -1864,26 +1866,33 @@
   content: '';
   position: absolute;
   top: 0;
-  left: -20%;
-  width: 60%;
-  height: 45%;
+  left: -30%;
+  width: 130%;
+  height: 100%;
   background: linear-gradient(
-    135deg,
-    hsl(0 0% 100% / 0.1) 0%,
-    transparent 60%
+    125deg,
+    transparent 20%,
+    hsl(0 0% 100% / 0.06) 35%,
+    hsl(0 0% 100% / 0.15) 48%,
+    hsl(0 0% 100% / 0.06) 62%,
+    transparent 80%
   );
-  border-radius: 0 0 50% 0;
   pointer-events: none;
   z-index: 15;
 }
 
 .product-card-green:hover {
+  background: linear-gradient(
+    170deg,
+    hsl(0 0% 100% / 0.14) 0%,
+    hsl(0 0% 100% / 0.07) 50%,
+    hsl(0 0% 100% / 0.03) 100%
+  );
   box-shadow:
-    0 12px 40px hsl(0 0% 0% / 0.15),
-    0 2px 6px hsl(0 0% 0% / 0.1),
-    inset 0 1px 0 hsl(0 0% 100% / 0.2),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.05),
-    0 0 20px hsl(0 0% 100% / 0.05);
+    0 16px 48px hsl(0 0% 0% / 0.25),
+    0 4px 12px hsl(0 0% 0% / 0.15),
+    inset 0 1px 0 hsl(0 0% 100% / 0.5),
+    0 0 40px hsl(0 0% 100% / 0.06);
   transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
 }
 
