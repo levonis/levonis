@@ -7708,7 +7708,7 @@ export type Database = {
           id: string
           invoice_html: string
           notes: string | null
-          order_id: string
+          order_id: string | null
           template_id: string | null
           updated_at: string
           warranty_expires_at: string | null
@@ -7719,7 +7719,7 @@ export type Database = {
           id?: string
           invoice_html: string
           notes?: string | null
-          order_id: string
+          order_id?: string | null
           template_id?: string | null
           updated_at?: string
           warranty_expires_at?: string | null
@@ -7730,7 +7730,7 @@ export type Database = {
           id?: string
           invoice_html?: string
           notes?: string | null
-          order_id?: string
+          order_id?: string | null
           template_id?: string | null
           updated_at?: string
           warranty_expires_at?: string | null
