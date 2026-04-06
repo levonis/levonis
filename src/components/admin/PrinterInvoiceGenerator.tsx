@@ -608,8 +608,10 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
               </Button>
             </div>
             <div className="p-4 overflow-auto bg-white">
-              <div ref={invoiceRef}>
-                <InvoiceTemplate data={invoiceData} logoSrc={logoImg} />
+              <div style={{ transform: 'scale(0.55)', transformOrigin: 'top center', width: '210mm', margin: '0 auto' }}>
+                <div ref={invoiceRef}>
+                  <InvoiceTemplate data={invoiceData} logoSrc={logoImg} />
+                </div>
               </div>
             </div>
           </>
