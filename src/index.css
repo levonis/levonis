@@ -513,24 +513,60 @@
   /* Card frame for products, merchants, etc */
   .levo-card-frame {
     position: relative;
-    background: hsl(0 0% 100% / 0.22);
+    background: linear-gradient(
+      170deg,
+      hsl(0 0% 100% / 0.12) 0%,
+      hsl(0 0% 100% / 0.06) 50%,
+      hsl(0 0% 100% / 0.03) 100%
+    );
     backdrop-filter: blur(40px) saturate(1.4);
     -webkit-backdrop-filter: blur(40px) saturate(1.4);
-    border: 1px solid hsl(0 0% 100% / 0.35);
+    border-top: 1px solid hsl(0 0% 100% / 0.35);
+    border-left: 1px solid hsl(0 0% 100% / 0.25);
+    border-right: 1px solid hsl(0 0% 100% / 0.1);
+    border-bottom: 1px solid hsl(0 0% 100% / 0.08);
     border-radius: 1rem;
     overflow: hidden;
     box-shadow: 
-      0 4px 16px hsl(0 0% 0% / 0.12),
-      inset 0 1px 0 hsl(0 0% 100% / 0.3),
-      inset 0 0 20px hsl(0 0% 100% / 0.05);
+      0 8px 32px hsl(0 0% 0% / 0.18),
+      0 2px 8px hsl(0 0% 0% / 0.1),
+      inset 0 1px 0 hsl(0 0% 100% / 0.4),
+      inset 0 -1px 0 hsl(0 0% 0% / 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .levo-card-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -30%;
+    width: 130%;
+    height: 100%;
+    background: linear-gradient(
+      125deg,
+      transparent 25%,
+      hsl(0 0% 100% / 0.08) 40%,
+      hsl(0 0% 100% / 0.15) 50%,
+      hsl(0 0% 100% / 0.08) 60%,
+      transparent 75%
+    );
+    pointer-events: none;
+    z-index: 1;
   }
   
   .levo-card-frame:hover {
-    border-color: hsl(0 0% 100% / 0.25);
+    border-top-color: hsl(0 0% 100% / 0.45);
+    background: linear-gradient(
+      170deg,
+      hsl(0 0% 100% / 0.16) 0%,
+      hsl(0 0% 100% / 0.08) 50%,
+      hsl(0 0% 100% / 0.04) 100%
+    );
     box-shadow: 
-      0 4px 16px hsl(0 0% 0% / 0.12),
-      inset 0 1px 0 hsl(0 0% 100% / 0.18);
+      0 12px 40px hsl(0 0% 0% / 0.22),
+      0 2px 8px hsl(0 0% 0% / 0.12),
+      inset 0 1px 0 hsl(0 0% 100% / 0.45),
+      0 0 30px hsl(0 0% 100% / 0.06);
     transform: translateY(-2px);
   }
 
