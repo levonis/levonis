@@ -45,6 +45,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
       const { data, error } = await supabase
         .from('user_tickets')
         .select('user_id, ticket_count, updated_at')
+        .gt('ticket_count', 0)
         .order('ticket_count', { ascending: false });
 
       if (error) throw error;
