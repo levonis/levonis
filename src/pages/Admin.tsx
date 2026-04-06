@@ -59,6 +59,7 @@ const categorySchema = z.object({
   description_ar: z.string().optional(),
   description: z.string().optional(),
   main_section_id: z.string().uuid().optional(),
+  featured_product_id: z.string().uuid().nullable().optional(),
 });
 
 const mainSectionSchema = z.object({
