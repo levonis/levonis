@@ -1525,7 +1525,6 @@ const Admin = () => {
         toast.error(error.errors[0].message);
         console.error('Category validation error:', error.errors);
       }
-      }
     }
   };
 
