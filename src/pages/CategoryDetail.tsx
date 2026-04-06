@@ -4,13 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { Loader2, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n';
 
 const CategoryDetail = () => {
   const { t } = useLanguage();
-  const [showFullDesc, setShowFullDesc] = useState(false);
+  
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
 
@@ -100,30 +100,17 @@ const CategoryDetail = () => {
                       <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-2 tracking-tight leading-tight">
                         {featuredProduct.name_ar}
                       </h1>
-                      <div className="flex items-center justify-end gap-2 mb-4">
-                        <span className="text-2xl md:text-3xl font-black text-primary">
-                          {Number(featuredProduct.price).toLocaleString()}
-                        </span>
-                        <span className="text-sm text-primary/60">
-                          {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
-                        </span>
-                        {featuredProduct.original_price && Number(featuredProduct.original_price) > Number(featuredProduct.price) && (
-                          <span className="text-muted-foreground/50 line-through text-sm">
-                            {Number(featuredProduct.original_price).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
                       {featuredProduct.description_ar && (
                         <div>
-                          <p className={`text-foreground/40 text-base md:text-lg max-w-md mr-0 ml-auto ${!showFullDesc ? 'line-clamp-2' : ''}`}>
+                          <p className="text-foreground/40 text-base md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
                             {featuredProduct.description_ar}
                           </p>
-                          <button
-                            onClick={() => setShowFullDesc(!showFullDesc)}
-                            className="text-primary text-sm mt-2 hover:underline"
+                          <Link
+                            to={`/product/${featuredProduct.slug}`}
+                            className="text-primary text-sm mt-2 hover:underline inline-block"
                           >
-                            {showFullDesc ? 'عرض أقل' : 'عرض المزيد'}
-                          </button>
+                            عرض المزيد
+                          </Link>
                         </div>
                       )}
                     </div>
