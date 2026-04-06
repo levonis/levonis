@@ -1224,7 +1224,7 @@ const Admin = () => {
         images: finalImages.length > 0 ? finalImages : [],
         image_url: finalImages[0] || null,
         category_id: formData.get('category_id') as string,
-        featured: (formData.get('featured') as string) === 'on',
+        featured: productFeatured,
         in_stock: (formData.get('in_stock') as string) === 'on',
         availability_type: availabilityType,
         has_in_stock: hasInStock,
