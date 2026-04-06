@@ -1835,66 +1835,52 @@
   .cube-bottom-reflection { width: 340px; height: 12px; }
 }
 
-/* ── Product Card — Glassmorphism 3D ── */
+/* ── Product Card — Frosted Glass (thick, static) ── */
 .product-card-green {
   position: relative;
   border-radius: 1.25rem;
   overflow: hidden;
-  backdrop-filter: blur(40px) saturate(1.3) brightness(1.05);
-  -webkit-backdrop-filter: blur(40px) saturate(1.3) brightness(1.05);
+  backdrop-filter: blur(50px) saturate(1.2);
+  -webkit-backdrop-filter: blur(50px) saturate(1.2);
   background: linear-gradient(
     170deg,
-    hsl(30 10% 70% / 0.06) 0%,
-    hsl(25 8% 60% / 0.03) 50%,
-    hsl(20 6% 50% / 0.02) 100%
+    hsl(30 10% 75% / 0.22) 0%,
+    hsl(25 8% 70% / 0.18) 50%,
+    hsl(20 6% 65% / 0.15) 100%
   );
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
-    0 8px 32px hsl(0 0% 0% / 0.18),
-    0 2px 8px hsl(0 0% 0% / 0.1),
-    inset 0 1px 0 hsl(0 0% 100% / 0.3),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.06);
-  transition: box-shadow 0.35s ease, transform 0.35s ease;
-  transform: perspective(800px) rotateX(1deg);
-  transform-style: preserve-3d;
+    0 12px 40px hsl(0 0% 0% / 0.2),
+    0 4px 16px hsl(0 0% 0% / 0.1),
+    inset 0 1px 0 hsl(0 0% 100% / 0.35),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.05);
 }
 
 .product-card-green::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -20%;
+  left: -10%;
   width: 120%;
   height: 100%;
   background:
+    radial-gradient(ellipse at 20% 15%, hsl(40 15% 95% / 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 75%, hsl(30 10% 90% / 0.1) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 45%, hsl(35 12% 92% / 0.08) 0%, transparent 55%),
     linear-gradient(
       125deg,
-      transparent 15%,
-      hsl(40 20% 90% / 0.04) 30%,
-      hsl(35 15% 95% / 0.18) 46%,
-      hsl(30 20% 90% / 0.04) 62%,
-      transparent 85%
-    ),
-    radial-gradient(ellipse at 25% 15%, hsl(40 15% 90% / 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 75% 85%, hsl(30 10% 85% / 0.06) 0%, transparent 40%);
+      transparent 20%,
+      hsl(40 20% 95% / 0.12) 40%,
+      hsl(35 15% 98% / 0.2) 50%,
+      hsl(30 20% 95% / 0.12) 60%,
+      transparent 80%
+    );
   pointer-events: none;
   z-index: 15;
 }
 
 .product-card-green:hover {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: linear-gradient(
-    170deg,
-    hsl(30 10% 70% / 0.09) 0%,
-    hsl(25 8% 60% / 0.05) 50%,
-    hsl(20 6% 50% / 0.03) 100%
-  );
-  box-shadow:
-    0 16px 48px hsl(0 0% 0% / 0.24),
-    0 4px 12px hsl(0 0% 0% / 0.14),
-    inset 0 1px 0 hsl(0 0% 100% / 0.4),
-    0 0 40px hsl(0 0% 100% / 0.05);
-  transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Glass card for ProductCard (main store) */
