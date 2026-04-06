@@ -759,7 +759,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
             وتفعيل التأمين والاستفاده من الخصومات :
           </div>
           {data.qrCodeData && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
               <QRCodeSVG value={data.qrCodeData} size={120} level="H" />
             </div>
           )}

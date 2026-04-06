@@ -233,11 +233,25 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       {/* Scanner + Input */}
       <Card>
         <CardContent className="p-4 space-y-4">
+          <div id="qr-file-scanner-temp" style={{ display: 'none' }} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
           {!scannerActive ? (
-            <Button variant="outline" className="w-full h-28 flex-col gap-2" onClick={startScanner}>
-              <Camera className="w-7 h-7 text-muted-foreground" />
-              <span className="text-sm">فتح الكاميرا لمسح QR</span>
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="h-28 flex-col gap-2" onClick={startScanner}>
+                <Camera className="w-7 h-7 text-muted-foreground" />
+                <span className="text-sm">فتح الكاميرا</span>
+              </Button>
+              <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="w-7 h-7 text-muted-foreground" />
+                <span className="text-sm">رفع صورة QR</span>
+              </Button>
+            </div>
           ) : (
             <div className="space-y-2">
               <div id={scannerContainerId} className="rounded-lg overflow-hidden" />
