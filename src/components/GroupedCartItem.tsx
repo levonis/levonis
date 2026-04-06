@@ -14,6 +14,8 @@ interface GroupedCartItemProps {
   updateQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   formatPrice: (price: number) => string;
+  outOfStockItemIds?: Set<string>;
+  lowStockItems?: Map<string, number>;
 }
 
 const GroupedCartItem = ({ 
@@ -21,7 +23,9 @@ const GroupedCartItem = ({
   items, 
   updateQuantity, 
   removeFromCart, 
-  formatPrice 
+  formatPrice,
+  outOfStockItemIds = new Set(),
+  lowStockItems = new Map(),
 }: GroupedCartItemProps) => {
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const firstItem = items[0];
@@ -105,16 +109,32 @@ const GroupedCartItem = ({
               const isLocked = !!(item as any).is_locked;
               const itemPrice = isGift ? 0 : calculateItemPrice(item);
               const isRemoving = removingIds.has(item.id);
+              const isItemOOS = outOfStockItemIds.has(item.id);
+              const itemLowStock = lowStockItems.get(item.id);
               
               return (
                 <div 
                   key={item.id} 
                   className={`bg-card rounded-lg p-2 border transition-all duration-300 max-w-full overflow-hidden ${
+                    isItemOOS ? 'border-destructive/40 bg-destructive/5 opacity-70' :
                     isGift ? 'border-primary/40 bg-primary/5' : 'border-border/30'
                   } ${
                     isRemoving ? 'opacity-0 scale-95 -translate-x-4 max-h-0 !p-0 !m-0 overflow-hidden' : 'opacity-100 scale-100 translate-x-0 max-h-40'
                   }`}
                 >
+                  {isItemOOS && (
+                    <div className="flex items-center justify-between gap-1 mb-1 p-1 rounded bg-destructive/10">
+                      <span className="text-[10px] font-bold text-destructive">⚠️ انتهى من المخزون</span>
+                      <Button size="icon" variant="ghost" className="h-5 w-5 text-destructive" onClick={() => handleRemove(item.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {itemLowStock !== undefined && (
+                    <div className="mb-1 p-1 rounded bg-amber-500/10">
+                      <span className="text-[10px] font-bold text-amber-600">⚠️ الكمية المتاحة: {itemLowStock} فقط</span>
+                    </div>
+                  )}
                   {isGift && (
                     <div className="flex items-center gap-1 mb-1">
                       <Gift className="h-3 w-3 text-primary" />
