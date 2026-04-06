@@ -55,8 +55,20 @@ const FloatingProductCard = memo(({
           <div className="cube-top-featured" />
           {/* 3D Block — mid section */}
           <div className="cube-mid-featured" />
-          {/* 3D Block — front face */}
-          <div className="cube-front-featured" />
+          {/* 3D Block — front face with engraved discount */}
+          <div className="cube-front-featured relative overflow-hidden">
+            {discount > 0 && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <span className="text-lg md:text-xl font-black tracking-wider"
+                  style={{
+                    color: 'hsl(155 50% 35% / 0.55)',
+                    textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
+                  }}>
+                  -{discount}%
+                </span>
+              </div>
+            )}
+          </div>
           {/* 3D Block — bottom edge highlight */}
           <div className="cube-bottom-edge" />
           {/* Bottom reflection strip */}
