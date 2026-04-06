@@ -3483,6 +3483,25 @@ const Admin = () => {
                       </select>
                     </div>
 
+                    {editingCategory && (
+                      <div className="space-y-2">
+                        <Label htmlFor="featured_product_id">المنتج المميز</Label>
+                        <select
+                          id="featured_product_id"
+                          name="featured_product_id"
+                          defaultValue={editingCategory?.featured_product_id || ''}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <option value="">تلقائي (أعلى سعر)</option>
+                          {products?.filter(p => p.category_id === editingCategory?.id).map((product) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name_ar}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <Button
                       type="submit" 
                       className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
