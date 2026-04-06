@@ -1,42 +1,52 @@
 
 
-## تحسين بطاقات المنتجات + نقل شارة الخصم للمنصة
+## إصلاح 3 مشاكل في صفحة القسم والمنتج المميز
 
-### الملف: `src/components/FloatingProductCard.tsx`
+### المشاكل المُحددة
 
-**1. المنتج المميز (featured) — نقل شارة الخصم إلى المنصة:**
-- إزالة شارة الخصم من أعلى الصورة (سطر 34-37)
-- إضافة شارة الخصم داخل الواجهة الأمامية للمنصة (`cube-front-featured`) بحيث تظهر محفورة في المنصة
-- الشارة ستكون بتصميم "محفور" باستخدام `text-shadow` داخلي وشفافية لتبدو جزءاً من سطح المنصة
-- وضعها في div جديد يلف `cube-front-featured` مع `position: relative` والنص بداخله `absolute` في المنتصف
+1. **اسم المنتج مكرر**: المنتج المميز يعرض الاسم والسعر في `FloatingProductCard` (سطر 81-97) **وأيضاً** الاسم والوصف في `CategoryDetail.tsx` (سطر 99-116) — يجب إزالة الاسم والسعر من البطاقة المميزة ونقل السعر للمنصة
+2. **السعر يجب أن يكون محفوراً في المنصة**: بدل عرض السعر تحت المنصة، يُعرض السعر (مع الخصم إن وجد) محفوراً في الواجهة الأمامية للمنصة بجانب نسبة الخصم
+3. **اختيار المنتج المميز لا يُحفظ**: `select` يستخدم `defaultValue` وهو لا يتغير عند تغيير `editingCategory` — يجب تحويله لمكوّن مُتحكَّم (controlled)
+
+---
+
+### التعديلات
+
+#### 1. `FloatingProductCard.tsx` — المنتج المميز
+- **إزالة** قسم معلومات المنتج (الاسم + السعر) من أسفل المنصة (سطر 80-98)
+- **تعديل** الواجهة الأمامية (`cube-front-featured`) لعرض السعر محفوراً:
+  - إذا يوجد خصم: عرض السعر بعد الخصم + نسبة الخصم
+  - إذا لا يوجد خصم: عرض السعر فقط
+  - نفس تأثير الحفر الموجود (text-shadow)
 
 ```tsx
-{/* Front face with engraved discount */}
-<div className="cube-front-featured relative">
-  {discount > 0 && (
-    <div className="absolute inset-0 flex items-center justify-center z-10">
-      <span className="text-lg md:text-xl font-black tracking-wider"
-        style={{
-          color: 'hsl(155 50% 35% / 0.6)',
-          textShadow: '0 1px 2px hsl(160 20% 5% / 0.8), 0 -1px 1px hsl(155 40% 30% / 0.3)',
-        }}>
+<div className="cube-front-featured relative overflow-hidden">
+  <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+    <span className="text-base md:text-lg font-black" style={{/* engraved style */}}>
+      {price.toLocaleString()} د.ع
+    </span>
+    {discount > 0 && (
+      <span className="text-xs font-bold" style={{/* engraved style */}}>
         -{discount}%
       </span>
-    </div>
-  )}
+    )}
+  </div>
 </div>
 ```
 
-**2. البطاقات العادية (product-card-green) — تحسينات بصرية:**
-- إضافة تأثير `backdrop-blur` خفيف للبطاقة
-- تحسين ظل الصورة الداخلي لإضافة عمق
-- إضافة خط فاصل متدرج أفضل بين الصورة والمعلومات
-- تكبير حجم الخط للسعر قليلاً لوضوح أكبر
+#### 2. `CategoryDetail.tsx` — إضافة السعر بجانب الاسم
+- بما أن السعر أُزيل من البطاقة، يُضاف السعر في قسم النص (يسار) بعد اسم المنتج وقبل الوصف
 
-### الملف: `src/index.css`
-- تعديل `.cube-front-featured` لإضافة `position: relative` و `overflow: hidden` لدعم النص المحفور بداخله
+#### 3. `Admin.tsx` — إصلاح حفظ المنتج المميز
+- تحويل `select` من `defaultValue` (uncontrolled) إلى `value` + `onChange` مع state:
+  - إضافة state: `const [selectedFeaturedProduct, setSelectedFeaturedProduct] = useState('')`
+  - تحديث القيمة عند فتح dialog التعديل
+  - استخدام `value={selectedFeaturedProduct}` بدل `defaultValue`
+  - إضافة `onChange` handler
+  - قراءة القيمة من الـ state بدل `formData.get('featured_product_id')`
 
 ### الملفات المتأثرة
 - `src/components/FloatingProductCard.tsx`
-- `src/index.css`
+- `src/pages/CategoryDetail.tsx`
+- `src/pages/Admin.tsx`
 
