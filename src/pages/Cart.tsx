@@ -241,6 +241,79 @@ const Cart = () => {
     staleTime: 30_000,
   });
 
+  // ── Stock validation for direct sale items ──
+  const directProductIds = [...new Set(items.filter(i => (i as any).sale_type === 'direct' && i.product_id).map(i => i.product_id!))];
+  const { data: stockDataMap } = useQuery({
+    queryKey: ['cart-stock-check', directProductIds.join(',')],
+    queryFn: async () => {
+      if (directProductIds.length === 0) return {} as Record<string, any>;
+      const { data } = await supabase
+        .from('products')
+        .select('id, direct_stock, colors')
+        .in('id', directProductIds);
+      if (!data) return {};
+      return data.reduce((acc: Record<string, any>, p: any) => { acc[p.id] = p; return acc; }, {} as Record<string, any>);
+    },
+    enabled: directProductIds.length > 0,
+    staleTime: 10_000,
+    refetchOnMount: 'always',
+  });
+
+  const getItemAvailableStock = (item: CartItem): number | null => {
+    if ((item as any).sale_type !== 'direct' || !item.product_id) return null;
+    const product = stockDataMap?.[item.product_id];
+    if (!product) return null;
+    const colors = Array.isArray(product.colors) ? product.colors : [];
+    const selectedColor = (item as any).selected_color;
+    const optionId = (item as any).product_option_id;
+
+    if (colors.length === 0) {
+      return product.direct_stock != null ? Math.max(0, Number(product.direct_stock)) : 0;
+    }
+
+    if (selectedColor) {
+      const color = colors.find((c: any) => c.name === selectedColor || c.name_ar === selectedColor || c.hex_code === selectedColor);
+      if (!color) return 0;
+      if (color.available_for_direct_sale === false) return 0;
+      const stocks = color.option_stocks;
+      if (stocks && typeof stocks === 'object' && Object.keys(stocks).length > 0) {
+        if (optionId && stocks[optionId] != null) return Math.max(0, Number(stocks[optionId]));
+        return Object.values(stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v)), 0);
+      }
+      if (color.stock_quantity != null) return Math.max(0, Number(color.stock_quantity));
+      return 0;
+    }
+
+    // No color selected — sum all direct-sale-eligible colors
+    let total = 0;
+    for (const c of colors) {
+      if (c.available_for_direct_sale === false) continue;
+      const stocks = c.option_stocks;
+      if (stocks && typeof stocks === 'object') {
+        total += Object.values(stocks).reduce<number>((s, v: any) => s + Math.max(0, Number(v)), 0);
+      } else if (c.stock_quantity != null) {
+        total += Math.max(0, Number(c.stock_quantity));
+      }
+    }
+    return total;
+  };
+
+  const outOfStockItemIds = new Set<string>();
+  const lowStockItems = new Map<string, number>(); // itemId → available
+  items.forEach(item => {
+    const available = getItemAvailableStock(item);
+    if (available === null) return;
+    if (available <= 0) outOfStockItemIds.add(item.id);
+    else if (available < item.quantity) lowStockItems.set(item.id, available);
+  });
+  const hasOutOfStockItems = outOfStockItemIds.size > 0;
+
+  const removeOutOfStockItems = async () => {
+    for (const id of outOfStockItemIds) {
+      await removeFromCart(id);
+    }
+  };
+
   const { data: userAddresses } = useQuery({
     queryKey: ['user-addresses', user?.id],
     queryFn: async () => {
