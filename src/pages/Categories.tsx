@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import CategoryCard from '@/components/CategoryCard';
-import { Loader2 } from 'lucide-react';
+import { GridCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { useLanguage } from '@/lib/i18n';
 import { useMemo } from 'react';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
@@ -60,9 +60,7 @@ const Categories = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <GridCardsSkeleton count={12} cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3">
             {categories?.map((category) => (

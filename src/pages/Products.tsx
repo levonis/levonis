@@ -6,7 +6,8 @@ import { useState } from 'react';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import ProductListItem from '@/components/ProductListItem';
-import { Loader2, Grid3x3, List } from 'lucide-react';
+import { Grid3x3, List } from 'lucide-react';
+import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 import { Button } from '@/components/ui/button';
 import { z } from 'zod';
 import { useLanguage } from '@/lib/i18n';
@@ -267,9 +268,7 @@ const Products = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
+          <ProductGridSkeleton count={12} />
         ) : products && products.length > 0 ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">
