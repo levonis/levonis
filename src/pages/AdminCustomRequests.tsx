@@ -87,8 +87,8 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <div className="rounded-lg border overflow-hidden"><div className="bg-muted/50 p-3 flex gap-4">{[1,2,3,4,5].map(i=><div key={i} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>{[1,2,3,4,5].map(i=><div key={i} className="p-3 flex gap-4 border-t">{[1,2,3,4,5].map(j=><div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>)}</div>
       </div>
     );
   }

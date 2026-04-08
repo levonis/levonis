@@ -180,9 +180,7 @@ export default function AdminWishes() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
+          <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-4 space-y-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-muted animate-pulse" /><div className="flex-1 space-y-1"><div className="h-4 w-32 rounded bg-muted animate-pulse" /><div className="h-3 w-48 rounded bg-muted animate-pulse" /></div></div><div className="h-16 w-full rounded bg-muted animate-pulse" /></div>)}</div>
         ) : wishes && wishes.length > 0 ? (
           <div className="space-y-3">
             {wishes.map((wish: any) => (
