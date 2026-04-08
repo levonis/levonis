@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Package, ArrowRight, Sparkles } from 'lucide-react';
+import { Package, ArrowRight, Sparkles } from 'lucide-react';
+import { ListCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { formatPrice } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -40,9 +41,7 @@ const ProductBundles = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <ListCardsSkeleton count={4} />
         ) : !bundles?.length ? (
           <div className="text-center py-20 space-y-3">
             <Package className="h-12 w-12 mx-auto text-muted-foreground/30" />

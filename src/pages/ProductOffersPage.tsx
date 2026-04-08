@@ -291,7 +291,7 @@ export default function ProductOffersPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[1,2,3,4,5,6].map(i=><div key={i} className="rounded-lg border bg-card p-2"><div className="aspect-square rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-3/4 rounded bg-muted animate-pulse mb-1" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div>)}</div>
         ) : offers?.length === 0 ? (
           <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">لا توجد عروض متاحة حالياً</p></CardContent></Card>
         ) : (

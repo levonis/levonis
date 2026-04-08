@@ -122,11 +122,16 @@ export default function OffersStoragePage() {
       {/* Content - with padding for fixed header */}
       <main className="flex-1 px-4 py-5">
         <Suspense fallback={
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-            <p className="text-sm text-muted-foreground font-medium">جاري التحميل...</p>
+          <div className="space-y-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="rounded-lg border bg-card p-3 flex items-center gap-3">
+                <div className="w-16 h-16 rounded-lg bg-muted animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         }>
           {activeTab === 'offers' && <AllOffersPanel />}
