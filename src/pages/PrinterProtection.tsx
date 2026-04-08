@@ -347,8 +347,11 @@ const PrinterProtection = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="h-8 w-48 rounded bg-muted animate-pulse mb-4" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-4 space-y-3"><div className="h-6 w-24 rounded bg-muted animate-pulse" /><div className="h-8 w-20 rounded bg-muted animate-pulse" /><div className="h-3 w-full rounded bg-muted animate-pulse" /><div className="h-10 w-full rounded-lg bg-muted animate-pulse" /></div>)}</div>
+        </div>
       </div>
     );
   }
