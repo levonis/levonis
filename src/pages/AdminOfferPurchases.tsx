@@ -244,9 +244,7 @@ export default function AdminOfferPurchases() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <div className="rounded-lg border overflow-hidden"><div className="bg-muted/50 p-3 flex gap-4">{[1,2,3,4,5].map(i=><div key={i} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>{[1,2,3,4].map(i=><div key={i} className="p-3 flex gap-4 border-t">{[1,2,3,4,5].map(j=><div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>)}</div>
             ) : filteredPurchases?.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <ShoppingBag className="h-12 w-12 mx-auto mb-2 opacity-50" />

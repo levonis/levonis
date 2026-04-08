@@ -716,7 +716,7 @@ const AdminFinancials = () => {
                       </TableHeader>
                       <TableBody>
                          {isLoading ? (
-                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto" /></TableCell></TableRow>
+                          <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-4"><div className="space-y-3">{[1,2,3].map(i=><div key={i} className="flex gap-4">{[1,2,3,4,5].map(j=><div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>)}</div></TableCell></TableRow>
                          ) : paginatedOrders.length === 0 ? (
                           <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
