@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ShoppingBag, Gift, Loader2, Wallet, Info, Package, Ticket, History } from "lucide-react";
+import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 import { toast } from "sonner";
 import ProductWithGiftCard from "@/components/ProductWithGiftCard";
 
