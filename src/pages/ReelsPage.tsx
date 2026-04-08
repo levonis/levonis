@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { lazy, Suspense } from 'react';
 
 const ReelsFeed = lazy(() => import('@/components/reels/ReelsFeed'));
 
