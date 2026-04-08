@@ -35,6 +35,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
   const [addTicketDialogOpen, setAddTicketDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithTickets | null>(null);
   const [ticketAmount, setTicketAmount] = useState("");
+  const [ticketReason, setTicketReason] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const queryClient = useQueryClient();
 
@@ -101,13 +102,13 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
 
   // Mutation to update tickets using secure admin function
   const updateTicketsMutation = useMutation({
-    mutationFn: async ({ userId, amount, isAdd }: { userId: string; amount: number; isAdd: boolean }) => {
+    mutationFn: async ({ userId, amount, isAdd, reason }: { userId: string; amount: number; isAdd: boolean; reason?: string }) => {
       const adjustAmount = isAdd ? amount : -amount;
       
       const { error } = await supabase.rpc('admin_adjust_tickets', {
         p_user_id: userId,
         p_amount: adjustAmount,
-        p_source: 'admin'
+        p_source: reason || 'admin'
       });
       
       if (error) throw error;
@@ -127,6 +128,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
       setAddTicketDialogOpen(false);
       setSelectedUser(null);
       setTicketAmount("");
+      setTicketReason("");
     },
     onError: (error) => {
       toast.error('خطأ في تحديث التذاكر: ' + error.message);
@@ -317,9 +319,25 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
                   <Input
                     type="number"
                     min="1"
+                    max="100"
                     value={ticketAmount}
                     onChange={(e) => setTicketAmount(e.target.value)}
-                    placeholder="أدخل عدد التذاكر"
+                    placeholder="أدخل عدد التذاكر (أقصى 100)"
+                  />
+                  {parseInt(ticketAmount) > 50 && (
+                    <p className="text-xs text-yellow-600 font-medium">⚠️ تنبيه: أنت تضيف أكثر من 50 تذكرة</p>
+                  )}
+                  {parseInt(ticketAmount) > 100 && (
+                    <p className="text-xs text-destructive font-medium">🚫 الحد الأقصى هو 100 تذكرة في العملية الواحدة</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>سبب الإضافة <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={ticketReason}
+                    onChange={(e) => setTicketReason(e.target.value)}
+                    placeholder="مثال: تعويض عن مشكلة، مكافأة..."
                   />
                 </div>
                 
@@ -329,9 +347,10 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
                     onClick={() => updateTicketsMutation.mutate({
                       userId: selectedUser.user_id,
                       amount: parseInt(ticketAmount) || 0,
-                      isAdd: true
+                      isAdd: true,
+                      reason: ticketReason
                     })}
-                    disabled={!ticketAmount || updateTicketsMutation.isPending}
+                    disabled={!ticketAmount || !ticketReason.trim() || parseInt(ticketAmount) > 100 || updateTicketsMutation.isPending}
                   >
                     {updateTicketsMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                     <Plus className="h-4 w-4 ml-1" />
