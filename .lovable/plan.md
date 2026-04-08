@@ -1,39 +1,55 @@
 
 
-## خطة تنظيف التذاكر غير النظامية ومنع الاحتيال
+## إضافة Skeleton Loading لجميع الصفحات
 
-### نتائج التحقيق
+### النطاق
+يوجد **59 صفحة** تستخدم حالياً `Loader2` spinner بدلاً من Skeleton loading. سيتم تحويلها جميعاً لاستخدام Skeleton components مناسبة لمحتوى كل صفحة.
 
-**المصادر غير النظامية المكتشفة:**
-- تذاكر أُضيفت عبر `postgrest` (إدراج مباشر بدون RPC) بأعداد ضخمة: 151، 134، 100، 90 تذكرة دفعة واحدة
-- مستخدم واحد (`1d1c3eaa`) لديه 201 تذكرة بدون أي سجل تدقيق (audit) — تم التلاعب بالجدول مباشرة
-- 4 مستخدمين لديهم تذاكر بدون أي أثر في سجل التدقيق
+### الاستراتيجية
 
-**التذاكر المستخدمة في المسابقات/الألعاب:**
-- إجمالي تذاكر مسابقات مشتراة من هؤلاء المستخدمين: ~25 تذكرة مسابقة فقط
-- مستخدم واحد (`2ae7972f`) فاز بمسابقة وهو ممن أُضيفت لهم تذاكر يدوياً
-- Mystery Case: لم يستخدمها أي من المستخدمين المشبوهين
+**إنشاء مكونات Skeleton قابلة لإعادة الاستخدام** في ملف مركزي جديد، ثم استبدال كل spinner في كل صفحة.
 
----
+#### 1. إنشاء `src/components/ui/PageSkeletons.tsx`
+مكونات Skeleton عامة قابلة لإعادة الاستخدام:
+- `HeaderSkeleton` — عنوان + وصف
+- `GridCardsSkeleton` — شبكة بطاقات (2-4 أعمدة)
+- `ListCardsSkeleton` — قائمة بطاقات عمودية
+- `TableSkeleton` — جدول بيانات (للصفحات الإدارية)
+- `FormSkeleton` — نموذج إعدادات
+- `ChatSkeleton` — واجهة محادثة
+- `DetailPageSkeleton` — صفحة تفاصيل منتج/طلب
+- `StatsGridSkeleton` — شبكة إحصائيات
+- `NotificationsSkeleton` — قائمة إشعارات
+- `ProductGridSkeleton` — شبكة منتجات
 
-### التنفيذ
+#### 2. تحديث الصفحات العامة (الأولوية العالية — 20 صفحة)
+الصفحات التي يراها المستخدم العادي:
+- `Home.tsx` — skeleton للبانر + الأقسام + المنتجات
+- `Categories.tsx` — شبكة skeleton للفئات
+- `Products.tsx`, `ProductShop.tsx` — شبكة منتجات
+- `Cart.tsx` — قائمة عناصر السلة
+- `Competitions.tsx`, `CompetitionHistory.tsx` — بطاقات مسابقات
+- `Notifications.tsx`, `NotificationSettings.tsx` — قائمة إشعارات
+- `ProfileSettings.tsx`, `UserInfo.tsx` — نماذج إعدادات
+- `MyOrders.tsx`, `OrderDetail.tsx` — قائمة/تفاصيل طلبات
+- `BundleDetail.tsx`, `ProductBundles.tsx` — حزم المنتجات
+- `ProductOffersPage.tsx`, `OffersStoragePage.tsx` — عروض
+- `MyCustomRequests.tsx`, `MyOfferPurchases.tsx`, `MyPurchasedProducts.tsx`
+- `PublicProfile.tsx`, `ReelsPage.tsx`, `WarrantyDashboard.tsx`
 
-#### 1. تصفير أرصدة التذاكر غير النظامية — Data Operation (INSERT tool)
-- تصفير رصيد جميع المستخدمين الذين حصلوا على تذاكر عبر إدراج مباشر (بدون RPC شرعي)
-- المستخدمون المستهدفون: الذين حصلوا على ≥50 تذكرة دفعة واحدة عبر `postgrest` أو بدون audit trail
-- حذف تذاكر المسابقات المشتراة بتذاكر غير نظامية + حروف مجمّعة منها
-- إلغاء فوز المستخدم `2ae7972f` إذا فاز بتذاكر غير نظامية
+#### 3. تحديث صفحات المجتمع (8 صفحات)
+- `CommunityMessages.tsx` — ChatSkeleton
+- `ChatOrderCheckout.tsx` — FormSkeleton
 
-#### 2. منع التلاعب المباشر بالجدول — Migration
-- إضافة Trigger على جدول `user_tickets` يمنع أي `INSERT` أو `UPDATE` مباشر (بدون RPC)
-- السماح فقط للدوال المعتمدة: `add_user_tickets`, `deduct_user_tickets`, `admin_adjust_tickets`, `purchase_tickets_with_bonus`, `purchase_product_offer`
-- هذا يسد الثغرة الأساسية التي سمحت بالتلاعب
+#### 4. تحديث الصفحات الإدارية (31 صفحة)
+جميع صفحات `Admin*.tsx` — استخدام `TableSkeleton` أو `ListCardsSkeleton` حسب المحتوى
 
-#### 3. إزالة `bonus_tickets` من الكود العميل — `Competitions.tsx`
-- إزالة إرسال `bonus_tickets` من `purchaseBundleMutation` (الخادم يحسبها تلقائياً بعد migration السابق)
+### التنفيذ لكل صفحة
+1. استيراد Skeleton المناسب من `PageSkeletons.tsx`
+2. استبدال `<Loader2 className="animate-spin" />` بمكون Skeleton مطابق لتخطيط الصفحة
+3. إزالة استيراد `Loader2` إذا لم يعد مستخدماً في مكان آخر
 
 ### الملفات المتأثرة
-- Data operations: `user_tickets`, `competition_tickets`, `user_collected_letters`
-- Migration جديد: Trigger لحماية `user_tickets`
-- `src/pages/Competitions.tsx`: إزالة `bonus_tickets` من العميل
+- **ملف جديد**: `src/components/ui/PageSkeletons.tsx`
+- **59 صفحة**: جميع الصفحات المذكورة أعلاه في `src/pages/`
 
