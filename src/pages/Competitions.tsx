@@ -452,7 +452,7 @@ export default function Competitions() {
       const pricePerTicket = bundle.price / bundle.quantity;
       const { data, error } = await supabase.rpc('purchase_tickets_with_bonus', {
         ticket_quantity: bundle.quantity,
-        bonus_tickets: bundle.bonusTickets,
+        bonus_tickets: 0,
         price_per_ticket: pricePerTicket
       });
       if (error) throw error;
