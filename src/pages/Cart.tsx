@@ -1469,8 +1469,27 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container mx-auto px-4 max-w-4xl py-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="rounded-lg border bg-card p-3 flex gap-3">
+                <div className="w-20 h-20 rounded-lg bg-muted animate-pulse shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
+                  <div className="flex items-center justify-between">
+                    <div className="h-5 w-20 rounded bg-muted animate-pulse" />
+                    <div className="h-8 w-24 rounded-md bg-muted animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+              <div className="h-10 w-full rounded-lg bg-muted animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     );
