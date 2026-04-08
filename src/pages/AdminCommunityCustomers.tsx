@@ -279,8 +279,6 @@ function CustomersContent() {
 
       {/* Customers Grid */}
       {isLoading ? (
-        <div className="space-y-6 p-2"><div className="rounded-lg border overflow-hidden"><div className="bg-muted/50 p-3 flex gap-4">{[1,2,3,4,5].map(i=><div key={i} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>{[1,2,3,4,5].map(i=><div key={i} className="p-3 flex gap-4 border-t">{[1,2,3,4,5].map(j=><div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>)}</div></div>
-      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
