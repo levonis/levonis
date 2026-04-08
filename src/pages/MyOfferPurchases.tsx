@@ -381,9 +381,7 @@ export default function MyOfferPurchases() {
 
           <TabsContent value={activeTab}>
             {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-4 flex items-center gap-3"><div className="w-14 h-14 rounded-lg bg-muted animate-pulse shrink-0" /><div className="flex-1 space-y-2"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-3 w-1/2 rounded bg-muted animate-pulse" /></div><div className="h-5 w-16 rounded-full bg-muted animate-pulse" /></div>)}</div>
             ) : filteredGroups.length === 0 ? (
               <Card className="text-center py-8">
                 <CardContent className="pt-6">

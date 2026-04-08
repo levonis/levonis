@@ -168,8 +168,15 @@ const PublicProfile = () => {
   if (loadingProfile) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container mx-auto px-4 max-w-2xl py-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-20 h-20 rounded-full bg-muted animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-6 w-32 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-4"><div className="h-3 w-16 rounded bg-muted animate-pulse mb-2" /><div className="h-7 w-20 rounded bg-muted animate-pulse" /></div>)}</div>
         </div>
       </div>
     );
