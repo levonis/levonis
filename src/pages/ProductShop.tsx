@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ShoppingBag, Gift, Loader2, Wallet, Info, Package, Ticket, History } from "lucide-react";
+import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 import { toast } from "sonner";
 import ProductWithGiftCard from "@/components/ProductWithGiftCard";
 
@@ -308,9 +309,7 @@ export default function ProductShop() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <ProductGridSkeleton count={8} />
         ) : products?.length === 0 ? (
           <Card className="text-center py-8 max-w-sm mx-auto">
             <CardContent className="pt-6">

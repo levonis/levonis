@@ -108,9 +108,17 @@ export default function TelegramSettings() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#0088cc]/30 to-[#0088cc]/10 backdrop-blur-xl flex items-center justify-center border border-[#0088cc]/20">
-          <Loader2 className="h-7 w-7 animate-spin text-[#0088cc]" />
+      <div className="min-h-screen bg-background pt-6">
+        <div className="container mx-auto px-4 max-w-2xl py-8">
+          <div className="rounded-lg border bg-card p-6 space-y-4">
+            <div className="h-6 w-40 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-64 rounded bg-muted animate-pulse" />
+            <div className="space-y-3">
+              <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+              <div className="h-10 w-full rounded-md bg-muted animate-pulse" />
+            </div>
+            <div className="h-10 w-32 rounded-md bg-muted animate-pulse" />
+          </div>
         </div>
       </div>
     );

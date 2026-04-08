@@ -818,9 +818,11 @@ export default function AdminInventory() {
   if (authLoading || productsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(225 30% 6%), hsl(235 25% 10%), hsl(225 30% 6%))' }}>
-        <div className="h-10 w-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: `${NEON.cyan} transparent ${NEON.cyan}33 transparent` }} />
+        <div className="w-full max-w-4xl px-4 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[1,2,3,4].map(i=><div key={i} className="rounded-lg border border-white/10 p-4 bg-white/5"><div className="h-3 w-16 rounded bg-white/10 animate-pulse mb-2" /><div className="h-6 w-20 rounded bg-white/10 animate-pulse" /></div>)}</div>
+          <div className="rounded-lg border border-white/10 overflow-hidden bg-white/5"><div className="p-3 flex gap-4">{[1,2,3,4,5].map(i=><div key={i} className="h-4 flex-1 rounded bg-white/10 animate-pulse" />)}</div>{[1,2,3,4].map(i=><div key={i} className="p-3 flex gap-4 border-t border-white/5">{[1,2,3,4,5].map(j=><div key={j} className="h-4 flex-1 rounded bg-white/10 animate-pulse" />)}</div>)}</div>
+        </div>
       </div>);
-
   }
 
   return (

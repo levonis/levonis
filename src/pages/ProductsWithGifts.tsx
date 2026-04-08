@@ -251,9 +251,7 @@ export default function ProductsWithGifts() {
 
         {/* Products Grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i=><div key={i} className="rounded-lg border bg-card p-3"><div className="aspect-video rounded bg-muted animate-pulse mb-3" /><div className="h-4 w-3/4 rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-1/2 rounded bg-muted animate-pulse" /></div>)}</div>
         ) : products && products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product) => (

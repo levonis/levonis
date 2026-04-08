@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { ProfileSkeleton } from '@/components/ui/PageSkeletons';
 import { toast } from 'sonner';
 import UserInfoPageHeader from '@/components/user-info/UserInfoPageHeader';
 import UserInfoProfileCard from '@/components/user-info/UserInfoProfileCard';
@@ -201,8 +201,8 @@ const UserInfo = () => {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="container mx-auto px-4 max-w-2xl py-8">
+          <ProfileSkeleton />
         </div>
       </div>
     );

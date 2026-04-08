@@ -238,7 +238,7 @@ const Home = () => {
           )}
         </section>
 
-        <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<div className="h-32 flex items-center justify-center"><div className="w-full max-w-md space-y-2 px-4"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div></div>}>
           <OffersStorageSection />
         </Suspense>
 
@@ -246,7 +246,7 @@ const Home = () => {
           <AnimatedDivider className="my-4 md:my-6 opacity-90" />
         </div>
 
-        <Suspense fallback={<div className="h-32 md:h-64 flex items-center justify-center"><Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<div className="h-32 md:h-64 px-4"><div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-3"><div className="h-20 rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-2/3 rounded bg-muted animate-pulse" /></div>)}</div></div>}>
           <ErrorBoundaryFallback>
             <CommunitySection />
           </ErrorBoundaryFallback>

@@ -248,7 +248,7 @@ function StoriesManager() {
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-muted-foreground mb-2">الأقسام ({sections.length})</h3>
           {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="animate-spin text-primary" /></div>
+            <div className="space-y-2">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-3"><div className="h-4 w-32 rounded bg-muted animate-pulse mb-1" /><div className="h-3 w-20 rounded bg-muted animate-pulse" /></div>)}</div>
           ) : sections.length === 0 ? (
             <Card className="border-dashed"><CardContent className="py-8 text-center text-muted-foreground text-sm">لا توجد أقسام بعد</CardContent></Card>
           ) : (

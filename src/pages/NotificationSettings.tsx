@@ -100,9 +100,20 @@ const NotificationSettings = () => {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background pt-6 flex items-center justify-center">
-        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 backdrop-blur-xl flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/10">
-          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+      <div className="min-h-screen bg-background pt-6">
+        <div className="container mx-auto px-4 max-w-2xl py-8">
+          <div className="h-6 w-40 rounded bg-muted animate-pulse mb-6" />
+          <div className="rounded-lg border bg-card p-4 space-y-4">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-5 w-5 rounded bg-muted animate-pulse" />
+                <div className="flex-1 space-y-1">
+                  <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-48 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

@@ -281,11 +281,14 @@ export default function CommunityMessages() {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-0 pt-16 max-w-6xl h-screen">
         {(loading || creatingConversation) && (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">
-              {creatingConversation ? 'جاري إنشاء المحادثة...' : 'جاري التحميل...'}
-            </p>
+          <div className="space-y-3 px-4 py-6">
+            {[1,2,3].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-muted animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5"><div className="h-4 w-32 rounded bg-muted animate-pulse" /><div className="h-3 w-48 rounded bg-muted animate-pulse" /></div>
+                <div className="h-3 w-10 rounded bg-muted animate-pulse" />
+              </div>
+            ))}
           </div>
         )}
 

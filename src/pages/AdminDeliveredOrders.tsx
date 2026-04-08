@@ -271,9 +271,7 @@ export default function AdminDeliveredOrders() {
 
           <TabsContent value={activeTab} className="mt-4">
             {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <div className="rounded-lg border overflow-hidden"><div className="bg-muted/50 p-3 flex gap-4">{[1,2,3,4,5,6].map(i=><div key={i} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>{[1,2,3,4,5].map(i=><div key={i} className="p-3 flex gap-4 border-t">{[1,2,3,4,5,6].map(j=><div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>)}</div>
             ) : filtered.length === 0 ? (
               <Card className="text-center py-12">
                 <CardContent>

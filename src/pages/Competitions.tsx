@@ -943,8 +943,8 @@ export default function Competitions() {
             </div>
             
             {isLoadingOffers ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                {[1,2,3,4,5,6].map(i => <div key={i} className="rounded-lg border bg-card p-2"><div className="aspect-square rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-3/4 rounded bg-muted animate-pulse mb-1" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div>)}
               </div>
             ) : productOffers && productOffers.length > 0 ? (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
@@ -974,8 +974,8 @@ export default function Competitions() {
           /* Competitions Section - default view */
           <>
             {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="grid grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => <div key={i} className="rounded-lg border bg-card overflow-hidden"><div className="aspect-video bg-muted animate-pulse" /><div className="p-3 space-y-2"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-3 w-1/2 rounded bg-muted animate-pulse" /><div className="flex justify-between"><div className="h-5 w-16 rounded bg-muted animate-pulse" /><div className="h-7 w-20 rounded-md bg-muted animate-pulse" /></div></div></div>)}
               </div>
             ) : competitions?.length === 0 ? (
               <Card className="text-center py-10 max-w-sm mx-auto border-dashed">

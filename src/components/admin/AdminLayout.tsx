@@ -230,8 +230,32 @@ export function AdminEmptyState({
 
 export function AdminLoading() {
   return (
-    <div className="admin-loading">
-      <div className="admin-loading-spinner" />
+    <div className="space-y-6 p-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="rounded-lg border bg-card p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+              <div className="h-3 w-16 rounded bg-muted animate-pulse" />
+            </div>
+            <div className="h-7 w-20 rounded bg-muted animate-pulse" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border overflow-hidden">
+        <div className="bg-muted/50 p-3 flex gap-4">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-4 flex-1 rounded bg-muted animate-pulse" />
+          ))}
+        </div>
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="p-3 flex gap-4 border-t">
+            {[1, 2, 3, 4, 5].map(j => (
+              <div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

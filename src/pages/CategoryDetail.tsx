@@ -3,7 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
 import FloatingProductCard from '@/components/FloatingProductCard';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/lib/i18n';
@@ -81,15 +82,11 @@ const CategoryDetail = () => {
         </div>
 
         {categoryLoading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
+          <ProductGridSkeleton count={8} />
         ) : category ? (
           <>
             {productsLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              </div>
+              <ProductGridSkeleton count={8} />
             ) : products && products.length > 0 ? (
               <div className="space-y-16">
                 {/* Hero section: Title + Featured product side by side */}

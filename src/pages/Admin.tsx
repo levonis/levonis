@@ -1628,8 +1628,11 @@ const Admin = () => {
 
   if (authLoading || !isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[1,2,3,4].map(i=><div key={i} className="rounded-lg border bg-card p-4"><div className="h-3 w-16 rounded bg-muted animate-pulse mb-2" /><div className="h-7 w-20 rounded bg-muted animate-pulse" /></div>)}</div>
+          <div className="rounded-lg border overflow-hidden"><div className="bg-muted/50 p-3 flex gap-4">{[1,2,3,4,5,6].map(i=><div key={i} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>{[1,2,3,4,5].map(i=><div key={i} className="p-3 flex gap-4 border-t">{[1,2,3,4,5,6].map(j=><div key={j} className="h-4 flex-1 rounded bg-muted animate-pulse" />)}</div>)}</div>
+        </div>
       </div>
     );
   }

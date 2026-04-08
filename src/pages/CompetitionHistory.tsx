@@ -171,8 +171,8 @@ export default function CompetitionHistory() {
         )}
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="grid grid-cols-2 gap-3">
+            {[1,2,3,4].map(i => <div key={i} className="rounded-lg border bg-card overflow-hidden"><div className="aspect-video bg-muted animate-pulse" /><div className="p-3 space-y-2"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-3 w-1/2 rounded bg-muted animate-pulse" /></div></div>)}
           </div>
         ) : !competitions?.length ? (
           <Card className="text-center py-16">

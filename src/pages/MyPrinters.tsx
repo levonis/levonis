@@ -561,8 +561,11 @@ const MyPrinters = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="min-h-screen p-4">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <div className="h-8 w-32 rounded bg-muted animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{[1,2].map(i=><div key={i} className="rounded-lg border bg-card p-4 space-y-3"><div className="flex items-center gap-3"><div className="w-12 h-12 rounded-full bg-muted animate-pulse" /><div className="flex-1 space-y-2"><div className="h-4 w-32 rounded bg-muted animate-pulse" /><div className="h-3 w-48 rounded bg-muted animate-pulse" /></div></div><div className="h-3 w-full rounded bg-muted animate-pulse" /></div>)}</div>
+        </div>
       </div>
     );
   }

@@ -137,8 +137,14 @@ const BundleDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="h-64 w-full rounded-lg bg-muted animate-pulse" />
+          <div className="h-7 w-3/4 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+          <div className="grid grid-cols-2 gap-3">{[1,2,3,4].map(i=><div key={i} className="rounded-lg border bg-card p-3"><div className="h-20 rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-2/3 rounded bg-muted animate-pulse" /></div>)}</div>
+          <div className="h-12 w-full rounded-lg bg-muted animate-pulse" />
+        </div>
       </div>
     );
   }

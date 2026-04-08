@@ -247,9 +247,7 @@ const AdminReviews = () => {
         {['pending', 'approved', 'rejected'].map(tab => (
           <TabsContent key={tab} value={tab}>
             {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
+              <div className="space-y-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-4 space-y-2"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-muted animate-pulse" /><div className="h-4 w-24 rounded bg-muted animate-pulse" /></div><div className="h-3 w-full rounded bg-muted animate-pulse" /><div className="h-3 w-2/3 rounded bg-muted animate-pulse" /></div>)}</div>
             ) : reviews.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 لا توجد تقييمات
