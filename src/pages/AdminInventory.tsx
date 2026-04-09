@@ -515,10 +515,7 @@ export default function AdminInventory() {
       });
       if (shipErr) throw shipErr;
 
-      const { error: draftErr } = await supabase.from('purchase_drafts').update({
-        status: 'converted',
-        converted_at: new Date().toISOString()
-      }).eq('id', draft.id);
+      const { error: draftErr } = await supabase.from('purchase_drafts').delete().eq('id', draft.id);
       if (draftErr) throw draftErr;
     },
     onSuccess: () => {
@@ -548,8 +545,7 @@ export default function AdminInventory() {
         title: shipment.note || 'مسودة شراء',
         items: items as any,
         total_value: Number(shipment.total_cost) || 0,
-        status: 'draft',
-        reverted_from_shipment: true
+        status: 'draft'
       });
       if (draftErr) throw draftErr;
       // Delete the shipment
@@ -1199,7 +1195,7 @@ export default function AdminInventory() {
                             }}>
                                   <Pencil className="h-3 w-3 ml-1" /> تعديل
                                 </Button>
-                            {!isConverted && !draft.reverted_from_shipment &&
+                            {!isConverted &&
                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
                             style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
                             disabled={convertDraftMutation.isPending}
