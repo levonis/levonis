@@ -17,6 +17,7 @@ const SpaceBlasterGame = lazy(() => import("@/components/games/SpaceBlasterGame"
 const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCase"));
 const StackGame = lazy(() => import("@/components/games/stack-game/StackGame"));
 const KnifeRainGame = lazy(() => import("@/components/games/knife-rain/KnifeRainGame"));
+const CrossyRoadGame = lazy(() => import("@/components/games/crossy-road/CrossyRoadGame"));
 const GameStore = lazy(() => import("@/components/games/GameStore"));
 const MyGamePrizes = lazy(() => import("@/components/games/MyGamePrizes"));
 import AdRewardSection from "@/components/games/AdRewardSection";
@@ -83,6 +84,14 @@ export default function MiniGames() {
     },
   });
 
+  const { data: crossyRoadSettings } = useQuery({
+    queryKey: ["crossy-road-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase.from("crossy_road_settings").select("game_enabled").limit(1).single();
+      return data as any;
+    },
+  });
+
   // Mark disabled games instead of filtering them out
   const gamesWithStatus = GAME_NODES.map(game => {
     if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
@@ -95,6 +104,9 @@ export default function MiniGames() {
       return { ...game, _disabled: true };
     }
     if (game.node_name === "knife_rain" && knifeRainSettings && !knifeRainSettings.game_enabled) {
+      return { ...game, _disabled: true };
+    }
+    if (game.node_name === "crossy_road" && crossyRoadSettings && !crossyRoadSettings.game_enabled) {
       return { ...game, _disabled: true };
     }
     return { ...game, _disabled: false };
@@ -151,6 +163,9 @@ export default function MiniGames() {
             )}
             {activeGame === 'knife_rain' && (
               <KnifeRainGame onBack={() => setActiveGame(null)} />
+            )}
+            {activeGame === 'crossy_road' && (
+              <CrossyRoadGame onBack={() => setActiveGame(null)} />
             )}
           </Suspense>
         </div>
