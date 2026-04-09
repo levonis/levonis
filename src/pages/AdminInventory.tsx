@@ -824,7 +824,7 @@ export default function AdminInventory() {
   }
 
   return (
-    <div className="min-h-screen relative bg-background" dir="rtl" style={{ background: 'linear-gradient(135deg, hsl(225 30% 6%), hsl(235 25% 10%), hsl(225 30% 6%))' }}>
+    <div className="min-h-screen relative bg-background border-background" dir="rtl" style={{ background: 'linear-gradient(135deg, hsl(225 30% 6%), hsl(235 25% 10%), hsl(225 30% 6%))' }}>
       {/* Ambient gradient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full opacity-[0.05]" style={{ background: `radial-gradient(circle, ${NEON.cyan}, transparent 70%)` }} />
