@@ -505,8 +505,10 @@ export default function AdminInventory() {
       const totalQty = items.reduce((s: number, i: DraftItem) => s + i.quantity, 0);
       const firstProductId = items[0]?.product_id;
 
+      if (!firstProductId) throw new Error('المسودة لا تحتوي على منتجات');
+
       const { error: shipErr } = await supabase.from('future_shipments').insert({
-        product_id: firstProductId || null,
+        product_id: firstProductId,
         quantity: totalQty,
         total_cost: totalCost,
         note: `مسودة: ${draft.title || ''}`,
