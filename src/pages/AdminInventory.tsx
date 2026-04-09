@@ -525,7 +525,10 @@ export default function AdminInventory() {
       queryClient.invalidateQueries({ queryKey: ['future-shipments'] });
       toast.success('تم تحويل المسودة إلى شحنة معلقة');
     },
-    onError: () => toast.error('خطأ في تحويل المسودة')
+    onError: (err: any) => {
+      console.error('Draft convert error:', err);
+      toast.error(err?.message || 'خطأ في تحويل المسودة');
+    }
   });
 
   const deleteDraftMutation = useMutation({
