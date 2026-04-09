@@ -505,8 +505,10 @@ export default function AdminInventory() {
       const totalQty = items.reduce((s: number, i: DraftItem) => s + i.quantity, 0);
       const firstProductId = items[0]?.product_id;
 
+      if (!firstProductId) throw new Error('المسودة لا تحتوي على منتجات');
+
       const { error: shipErr } = await supabase.from('future_shipments').insert({
-        product_id: firstProductId || null,
+        product_id: firstProductId,
         quantity: totalQty,
         total_cost: totalCost,
         note: `مسودة: ${draft.title || ''}`,
@@ -523,7 +525,10 @@ export default function AdminInventory() {
       queryClient.invalidateQueries({ queryKey: ['future-shipments'] });
       toast.success('تم تحويل المسودة إلى شحنة معلقة');
     },
-    onError: () => toast.error('خطأ في تحويل المسودة')
+    onError: (err: any) => {
+      console.error('Draft convert error:', err);
+      toast.error(err?.message || 'خطأ في تحويل المسودة');
+    }
   });
 
   const deleteDraftMutation = useMutation({
