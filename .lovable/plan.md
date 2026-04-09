@@ -1,38 +1,43 @@
 
 
-## إخفاء "تحويل لشحنة" بعد إرجاع الشحنة لمسودة
+## تعديل سلوك التحويل والإرجاع في المخزون
 
-### المشكلة
-عند إرجاع شحنة معلقة إلى مسودة، المسودة الجديدة تُنشأ بحالة `status: 'draft'` مما يجعل زر "تحويل لشحنة" يظهر مرة أخرى. المطلوب أن المسودة المُرجَعة تعرض فقط زر "تعديل".
+### المشكلة الحالية
+1. عند تحويل مسودة لشحنة: المسودة تبقى بحالة "تم التحويل" في القائمة
+2. عند إرجاع الشحنة: يتم إنشاء مسودة **جديدة** بدلاً من استعادة الأصلية → تكرار (المسودة القديمة "تم التحويل" + المسودة الجديدة)
 
 ### الحل
-إضافة علامة `reverted_from_shipment: true` عند إنشاء المسودة من شحنة مُرجَعة، ثم إخفاء زر "تحويل لشحنة" للمسودات التي تحمل هذه العلامة — بحيث تظهر فقط "تعديل".
+- **التحويل**: حذف المسودة بالكامل من `purchase_drafts` بدلاً من تحديث حالتها إلى `converted`
+- **الإرجاع**: إنشاء مسودة جديدة بحالة `draft` عادية (بدون `reverted_from_shipment`) وحذف الشحنة — المسودة ترجع كما كانت أول مرة مع كل الأزرار (تعديل + تحويل لشحنة)
 
-### التنفيذ
+### التغييرات في `src/pages/AdminInventory.tsx`
 
-#### 1. Migration — إضافة عمود `reverted_from_shipment`
-```sql
-ALTER TABLE purchase_drafts ADD COLUMN reverted_from_shipment boolean DEFAULT false;
-```
-
-#### 2. تعديل `revertShipmentToDraftMutation` (سطر ~546)
-إضافة `reverted_from_shipment: true` في الـ insert.
-
-#### 3. تعديل شرط إظهار "تحويل لشحنة" (سطر ~1200)
+#### 1. `convertDraftMutation` (سطر ~518-522)
+استبدال `update status: 'converted'` بـ `delete` للمسودة:
 ```typescript
-// من:
-{!isConverted && <Button>تحويل لشحنة</Button>}
-// إلى:
-{!isConverted && !draft.reverted_from_shipment && <Button>تحويل لشحنة</Button>}
+// بدلاً من update status to converted
+await supabase.from('purchase_drafts').delete().eq('id', draft.id);
 ```
 
-#### 4. عند تعديل المسودة وحفظها — إعادة تفعيل التحويل
-عند الضغط على "تعديل" وحفظ التغييرات، يتم تحديث `reverted_from_shipment` إلى `false` لتمكين التحويل مجدداً إذا أراد المستخدم.
+#### 2. `revertShipmentToDraftMutation` (سطر ~547-553)
+إزالة `reverted_from_shipment: true` وإنشاء مسودة عادية:
+```typescript
+await supabase.from('purchase_drafts').insert({
+  title: shipment.note || 'مسودة شراء',
+  items: items,
+  total_value: ...,
+  status: 'draft'
+  // بدون reverted_from_shipment
+});
+```
 
-### البديل الأبسط (بدون migration)
-بدلاً من إضافة عمود جديد، يمكن تخزين العلامة في حقل `notes` أو في `items` JSON. لكن الطريقة الأنظف هي العمود المستقل.
+#### 3. شرط عرض الزر (سطر ~1202)
+إزالة شرط `!draft.reverted_from_shipment` — يعود الشرط الأصلي:
+```typescript
+{!isConverted && <Button>تحويل لشحنة</Button>}
+```
 
-### الملفات المتأثرة
-- **Migration جديد**: إضافة عمود `reverted_from_shipment`
-- `src/pages/AdminInventory.tsx`: تعديل الـ mutation وشرط عرض الزر
+### النتيجة
+- عند التحويل: المسودة تختفي من القائمة وتظهر فقط في الشحنات
+- عند الإرجاع: المسودة ترجع كما كانت بالضبط مع كل الأزرار الأصلية
 
