@@ -11,7 +11,7 @@ interface Props {
 type RowType = "grass" | "road" | "rail" | "river";
 
 interface Obstacle {
-  x: number; speed: number; width: number; color: string;
+  x: number; speed: number; width: number; colorKey: string;
 }
 
 interface LogObj {
@@ -29,7 +29,7 @@ interface Row {
   coin: Coin | null;
   trainWarning: boolean;
   trainTimer: number;
-  grassColor: string;
+  grassIndex: number;
 }
 
 // ── Constants ──
@@ -37,23 +37,31 @@ const CELL = 48;
 const LANES = 9;
 const CANVAS_W = LANES * CELL;
 const PLAYER_SIZE = 32;
-const COLORS = {
-  grass: ["#4a7c2e", "#5a8c3e", "#3d6b24"],
-  road: "#555",
-  roadLine: "#777",
-  rail: "#8B7355",
-  railTrack: "#444",
-  river: "#3498db",
-  player: "#FFD700",
-  playerEye: "#333",
-  playerBeak: "#FF6B35",
-  coin: "#FFD700",
-  coinShine: "#FFF8DC",
-  tree: "#2d5a1e",
-  treeTrunk: "#5a3a1a",
-  log: "#8B6914",
-  logDark: "#6B4F12",
-};
+
+const CAR_COLORS = ["red", "blue", "green", "yellow"];
+
+// ── Sprite loader ──
+const SPRITE_NAMES = [
+  "chicken", "car-red", "car-blue", "car-green", "car-yellow",
+  "tree", "log", "coin", "train",
+  "grass-0", "grass-1", "grass-2", "road", "rail", "water",
+];
+
+function loadSprites(): Promise<Record<string, HTMLImageElement>> {
+  return new Promise((resolve) => {
+    const sprites: Record<string, HTMLImageElement> = {};
+    let loaded = 0;
+    for (const name of SPRITE_NAMES) {
+      const img = new Image();
+      img.src = `/games/crossy-road/sprites/${name}.png`;
+      img.onload = img.onerror = () => {
+        sprites[name] = img;
+        loaded++;
+        if (loaded >= SPRITE_NAMES.length) resolve(sprites);
+      };
+    }
+  });
+}
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,13 +70,12 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
 
   const initGame = useCallback(() => {
     const rows: Row[] = [];
-    // start with 6 grass rows, then generate
     for (let i = 0; i < 30; i++) {
       rows.push(generateRow(i));
     }
     return {
       playerLane: Math.floor(LANES / 2),
-      playerRow: 3, // visual row on screen
+      playerRow: 3,
       score: 0,
       maxRow: 0,
       steps: 0,
@@ -84,6 +91,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
       cameraY: 0,
       targetCameraY: 0,
       hopAnim: 0,
+      playerOffsetX: 0,
     };
   }, []);
 
@@ -108,6 +116,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
 
     let raf: number;
     let lastTime = 0;
+    let spritesLoaded: Record<string, HTMLImageElement> = {};
 
     // ── Input ──
     let touchStartX = 0, touchStartY = 0;
@@ -118,6 +127,9 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
       g.moveProgress = 0;
       g.fromLane = g.playerLane;
       g.fromRow = g.playerRow;
+
+      // Reset log offset when player jumps
+      g.playerOffsetX = 0;
 
       if (dir === "up") {
         g.playerRow++;
@@ -157,7 +169,6 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
       if (absDy > absDx) {
         handleMove(dy < 0 ? "up" : "down");
       } else {
-        // RTL: swipe right = move left in grid
         handleMove(dx > 0 ? "left" : "right");
       }
     };
@@ -180,10 +191,15 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
           return;
         }
       }
-      render(ctx, g, canvasH);
+      render(ctx, g, canvasH, spritesLoaded);
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+
+    // Load sprites then start
+    loadSprites().then((sprites) => {
+      spritesLoaded = sprites;
+      raf = requestAnimationFrame(tick);
+    });
 
     return () => {
       cancelAnimationFrame(raf);
@@ -204,7 +220,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
 // ── Row Generation ──
 function generateRow(index: number): Row {
   if (index < 4) {
-    return { type: "grass", obstacles: [], logs: [], coin: null, trainWarning: false, trainTimer: 0, grassColor: COLORS.grass[index % 3] };
+    return { type: "grass", obstacles: [], logs: [], coin: null, trainWarning: false, trainTimer: 0, grassIndex: index % 3 };
   }
   const difficulty = Math.min(index / 50, 1);
   const rand = Math.random();
@@ -214,19 +230,18 @@ function generateRow(index: number): Row {
   else if (rand < 0.85) type = "rail";
   else type = "river";
 
-  const row: Row = { type, obstacles: [], logs: [], coin: null, trainWarning: false, trainTimer: 0, grassColor: COLORS.grass[Math.floor(Math.random() * 3)] };
+  const row: Row = { type, obstacles: [], logs: [], coin: null, trainWarning: false, trainTimer: 0, grassIndex: Math.floor(Math.random() * 3) };
 
   if (type === "road") {
     const dir = Math.random() > 0.5 ? 1 : -1;
     const count = 1 + Math.floor(Math.random() * 2);
     const speed = (40 + Math.random() * 80 + difficulty * 60) * dir;
     for (let i = 0; i < count; i++) {
-      const carColors = ["#e74c3c", "#2ecc71", "#3498db", "#f39c12", "#9b59b6", "#1abc9c"];
       row.obstacles.push({
         x: Math.random() * CANVAS_W,
         speed,
-        width: 36 + Math.random() * 20,
-        color: carColors[Math.floor(Math.random() * carColors.length)],
+        width: 48,
+        colorKey: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
       });
     }
   } else if (type === "rail") {
@@ -239,12 +254,11 @@ function generateRow(index: number): Row {
       row.logs.push({
         x: (CANVAS_W / count) * i + Math.random() * 40,
         speed,
-        width: 50 + Math.random() * 30,
+        width: 64,
       });
     }
   }
 
-  // random coin
   if (Math.random() < 0.15 && type !== "river") {
     row.coin = { lane: Math.floor(Math.random() * LANES), collected: false };
   }
@@ -294,10 +308,9 @@ function update(g: any, dt: number, audio: CrossyRoadAudio) {
         audio.playTrainAlarm();
       }
       if (row.trainTimer <= 0) {
-        // spawn train
         if (row.obstacles.length === 0) {
           audio.playTrainPass();
-          row.obstacles.push({ x: -200, speed: 350, width: CANVAS_W + 200, color: "#666" });
+          row.obstacles.push({ x: -200, speed: 350, width: CANVAS_W + 200, colorKey: "train" });
         }
         for (const obs of row.obstacles) {
           obs.x += obs.speed * dt;
@@ -322,7 +335,7 @@ function update(g: any, dt: number, audio: CrossyRoadAudio) {
   const currentRow = g.rows[g.playerRow];
   if (!currentRow) return;
 
-  const px = g.playerLane * CELL + CELL / 2;
+  const px = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
   const pw = PLAYER_SIZE * 0.6;
 
   if (currentRow.type === "road" || currentRow.type === "rail") {
@@ -342,12 +355,21 @@ function update(g: any, dt: number, audio: CrossyRoadAudio) {
     for (const log of currentRow.logs) {
       if (px + pw / 2 > log.x && px - pw / 2 < log.x + log.width) {
         onLog = true;
-        // move player with log
-        // (visual only, lane stays)
+        // Drag player with the log
+        if (!g.moving) {
+          g.playerOffsetX += log.speed * dt;
+        }
         break;
       }
     }
     if (!onLog) {
+      g.dead = true;
+      g.deathTimer = 0;
+      audio.playWater();
+      return;
+    }
+    // Die if dragged off screen
+    if (px < -CELL || px > CANVAS_W + CELL) {
       g.dead = true;
       g.deathTimer = 0;
       audio.playWater();
@@ -364,7 +386,7 @@ function update(g: any, dt: number, audio: CrossyRoadAudio) {
 }
 
 // ── Render ──
-function render(ctx: CanvasRenderingContext2D, g: any, canvasH: number) {
+function render(ctx: CanvasRenderingContext2D, g: any, canvasH: number, sprites: Record<string, HTMLImageElement>) {
   ctx.clearRect(0, 0, CANVAS_W, canvasH);
 
   // background
@@ -374,98 +396,74 @@ function render(ctx: CanvasRenderingContext2D, g: any, canvasH: number) {
   const startRow = Math.max(0, Math.floor(g.cameraY / CELL) - 2);
   const endRow = Math.min(g.rows.length - 1, startRow + Math.ceil(canvasH / CELL) + 4);
 
-  // draw rows bottom to top
   for (let r = startRow; r <= endRow; r++) {
     const row = g.rows[r];
     if (!row) continue;
     const y = canvasH - (r * CELL - g.cameraY) - CELL;
 
-    // row background
-    if (row.type === "grass") {
-      ctx.fillStyle = row.grassColor;
-      ctx.fillRect(0, y, CANVAS_W, CELL);
-      // random trees
-      if (r > 3 && r % 3 === 0) {
-        drawTree(ctx, 10, y + 5);
-        drawTree(ctx, CANVAS_W - 30, y + 8);
+    // row background using sprites
+    const bgSprite = row.type === "grass" ? sprites[`grass-${row.grassIndex}`]
+      : row.type === "road" ? sprites["road"]
+      : row.type === "rail" ? sprites["rail"]
+      : sprites["water"];
+
+    if (bgSprite) {
+      for (let tx = 0; tx < CANVAS_W; tx += CELL) {
+        ctx.drawImage(bgSprite, tx, y, CELL, CELL);
       }
-    } else if (row.type === "road") {
-      ctx.fillStyle = COLORS.road;
+    }
+
+    // warning flash for rail
+    if (row.type === "rail" && row.trainWarning && row.trainTimer > 0) {
+      ctx.fillStyle = `rgba(255, 0, 0, ${0.3 + Math.sin(Date.now() / 100) * 0.2})`;
       ctx.fillRect(0, y, CANVAS_W, CELL);
-      // lane lines
-      ctx.strokeStyle = COLORS.roadLine;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([8, 8]);
-      ctx.beginPath();
-      ctx.moveTo(0, y + CELL / 2);
-      ctx.lineTo(CANVAS_W, y + CELL / 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    } else if (row.type === "rail") {
-      ctx.fillStyle = COLORS.rail;
-      ctx.fillRect(0, y, CANVAS_W, CELL);
-      // tracks
-      ctx.fillStyle = COLORS.railTrack;
-      ctx.fillRect(0, y + 10, CANVAS_W, 4);
-      ctx.fillRect(0, y + CELL - 14, CANVAS_W, 4);
-      // ties
-      for (let tx = 0; tx < CANVAS_W; tx += 20) {
-        ctx.fillRect(tx, y + 8, 6, CELL - 16);
-      }
-      // warning flash
-      if (row.trainWarning && row.trainTimer > 0) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${0.3 + Math.sin(Date.now() / 100) * 0.2})`;
-        ctx.fillRect(0, y, CANVAS_W, CELL);
-      }
-    } else if (row.type === "river") {
-      ctx.fillStyle = COLORS.river;
-      ctx.fillRect(0, y, CANVAS_W, CELL);
-      // water animation
-      ctx.fillStyle = "rgba(255,255,255,0.1)";
+    }
+
+    // water shimmer
+    if (row.type === "river") {
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
       for (let wx = 0; wx < CANVAS_W; wx += 30) {
         const wy = y + 10 + Math.sin((wx + Date.now() / 300) * 0.1) * 5;
         ctx.fillRect(wx, wy, 15, 2);
       }
     }
 
-    // draw obstacles
+    // trees on grass
+    if (row.type === "grass" && r > 3 && r % 3 === 0 && sprites["tree"]) {
+      ctx.drawImage(sprites["tree"], 4, y + 4, 24, 40);
+      ctx.drawImage(sprites["tree"], CANVAS_W - 28, y + 4, 24, 40);
+    }
+
+    // obstacles
     for (const obs of row.obstacles) {
       if (row.type === "road") {
-        drawCar(ctx, obs.x, y + 6, obs.width, CELL - 12, obs.color);
+        const carSprite = sprites[`car-${obs.colorKey}`];
+        if (carSprite) {
+          ctx.drawImage(carSprite, obs.x, y + 8, 48, 32);
+        }
       } else if (row.type === "rail") {
-        ctx.fillStyle = "#444";
-        ctx.fillRect(obs.x, y + 2, obs.width, CELL - 4);
-        // train windows
-        ctx.fillStyle = "#FFE";
-        for (let wx = obs.x + 10; wx < obs.x + obs.width - 10; wx += 25) {
-          ctx.fillRect(wx, y + 10, 12, 12);
+        const trainSprite = sprites["train"];
+        if (trainSprite) {
+          for (let tx = obs.x; tx < obs.x + obs.width; tx += 48) {
+            ctx.drawImage(trainSprite, tx, y + 2, 48, 44);
+          }
         }
       }
     }
 
-    // draw logs
+    // logs
     for (const log of row.logs) {
-      ctx.fillStyle = COLORS.log;
-      ctx.beginPath();
-      ctx.roundRect(log.x, y + 8, log.width, CELL - 16, 6);
-      ctx.fill();
-      ctx.fillStyle = COLORS.logDark;
-      ctx.fillRect(log.x + 5, y + 14, log.width - 10, 3);
-      ctx.fillRect(log.x + 5, y + CELL - 22, log.width - 10, 3);
+      const logSprite = sprites["log"];
+      if (logSprite) {
+        ctx.drawImage(logSprite, log.x, y + 12, log.width, 24);
+      }
     }
 
-    // draw coin
-    if (row.coin && !row.coin.collected) {
-      const cx = row.coin.lane * CELL + CELL / 2;
-      const cy = y + CELL / 2;
-      ctx.fillStyle = COLORS.coin;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = COLORS.coinShine;
-      ctx.beginPath();
-      ctx.arc(cx - 2, cy - 2, 3, 0, Math.PI * 2);
-      ctx.fill();
+    // coin
+    if (row.coin && !row.coin.collected && sprites["coin"]) {
+      const cx = row.coin.lane * CELL + CELL / 2 - 8;
+      const cy = y + CELL / 2 - 8;
+      ctx.drawImage(sprites["coin"], cx, cy, 16, 16);
     }
   }
 
@@ -476,90 +474,28 @@ function render(ctx: CanvasRenderingContext2D, g: any, canvasH: number) {
       const t = g.moveProgress;
       const fromX = g.fromLane * CELL + CELL / 2;
       const fromY = canvasH - (g.fromRow * CELL - g.cameraY) - CELL + CELL / 2;
-      const toX = g.playerLane * CELL + CELL / 2;
+      const toX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
       const toY = canvasH - (g.playerRow * CELL - g.cameraY) - CELL + CELL / 2;
       px = fromX + (toX - fromX) * t;
       py = fromY + (toY - fromY) * t;
     } else {
-      px = g.playerLane * CELL + CELL / 2;
+      px = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
       py = canvasH - (g.playerRow * CELL - g.cameraY) - CELL + CELL / 2;
     }
 
     const hopOffset = Math.sin(g.hopAnim * Math.PI) * 8;
 
     if (g.dead) {
-      // death animation
       ctx.globalAlpha = 1 - g.deathTimer;
-      ctx.fillStyle = "#f00";
-      ctx.beginPath();
-      ctx.arc(px, py - hopOffset, PLAYER_SIZE / 2 + 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
     }
 
-    drawChicken(ctx, px, py - hopOffset, PLAYER_SIZE);
+    const chickenSprite = sprites["chicken"];
+    if (chickenSprite) {
+      ctx.drawImage(chickenSprite, px - PLAYER_SIZE / 2, py - hopOffset - PLAYER_SIZE / 2, PLAYER_SIZE, PLAYER_SIZE);
+    }
+
+    if (g.dead) {
+      ctx.globalAlpha = 1;
+    }
   }
-}
-
-function drawChicken(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
-  const s = size / 2;
-  // body
-  ctx.fillStyle = COLORS.player;
-  ctx.beginPath();
-  ctx.ellipse(x, y + 2, s * 0.7, s * 0.85, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // head
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(x, y - s * 0.5, s * 0.45, 0, Math.PI * 2);
-  ctx.fill();
-  // eyes
-  ctx.fillStyle = COLORS.playerEye;
-  ctx.beginPath();
-  ctx.arc(x - 4, y - s * 0.55, 2, 0, Math.PI * 2);
-  ctx.arc(x + 4, y - s * 0.55, 2, 0, Math.PI * 2);
-  ctx.fill();
-  // beak
-  ctx.fillStyle = COLORS.playerBeak;
-  ctx.beginPath();
-  ctx.moveTo(x, y - s * 0.35);
-  ctx.lineTo(x - 4, y - s * 0.2);
-  ctx.lineTo(x + 4, y - s * 0.2);
-  ctx.closePath();
-  ctx.fill();
-  // comb
-  ctx.fillStyle = "#e74c3c";
-  ctx.beginPath();
-  ctx.arc(x - 3, y - s * 0.85, 3, 0, Math.PI * 2);
-  ctx.arc(x + 3, y - s * 0.85, 3, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawCar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 4);
-  ctx.fill();
-  // windows
-  ctx.fillStyle = "rgba(200,230,255,0.7)";
-  ctx.fillRect(x + 6, y + 3, w * 0.25, h - 6);
-  ctx.fillRect(x + w - 6 - w * 0.2, y + 3, w * 0.2, h - 6);
-  // wheels
-  ctx.fillStyle = "#222";
-  ctx.beginPath();
-  ctx.arc(x + 8, y + h, 4, 0, Math.PI * 2);
-  ctx.arc(x + w - 8, y + h, 4, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.fillStyle = COLORS.treeTrunk;
-  ctx.fillRect(x + 6, y + 20, 6, 16);
-  ctx.fillStyle = COLORS.tree;
-  ctx.beginPath();
-  ctx.moveTo(x, y + 22);
-  ctx.lineTo(x + 9, y);
-  ctx.lineTo(x + 18, y + 22);
-  ctx.closePath();
-  ctx.fill();
 }
