@@ -472,7 +472,8 @@ export default function AdminInventory() {
           title: draftTitle || `مسودة ${format(new Date(), 'dd/MM/yyyy')}`,
           items: draftItems as any,
           total_value: totalValue,
-          notes: draftNotes
+          notes: draftNotes,
+          reverted_from_shipment: false
         }).eq('id', editingDraftId);
         if (error) throw error;
       } else {
@@ -547,7 +548,8 @@ export default function AdminInventory() {
         title: shipment.note || 'مسودة شراء',
         items: items as any,
         total_value: Number(shipment.total_cost) || 0,
-        status: 'draft'
+        status: 'draft',
+        reverted_from_shipment: true
       });
       if (draftErr) throw draftErr;
       // Delete the shipment
@@ -1197,7 +1199,7 @@ export default function AdminInventory() {
                             }}>
                                   <Pencil className="h-3 w-3 ml-1" /> تعديل
                                 </Button>
-                            {!isConverted &&
+                            {!isConverted && !draft.reverted_from_shipment &&
                                 <Button size="sm" className="h-7 text-[10px] px-3 text-white border"
                             style={{ background: `linear-gradient(135deg, ${NEON.blue}25, ${NEON.blue}10)`, borderColor: `${NEON.blue}30` }}
                             disabled={convertDraftMutation.isPending}

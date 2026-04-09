@@ -1,0 +1,1 @@
+ALTER TABLE public.purchase_drafts ADD COLUMN reverted_from_shipment boolean DEFAULT false;

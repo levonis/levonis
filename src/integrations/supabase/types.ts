@@ -7259,6 +7259,7 @@ export type Database = {
           id: string
           items: Json | null
           notes: string | null
+          reverted_from_shipment: boolean | null
           status: string | null
           title: string | null
           total_value: number | null
@@ -7270,6 +7271,7 @@ export type Database = {
           id?: string
           items?: Json | null
           notes?: string | null
+          reverted_from_shipment?: boolean | null
           status?: string | null
           title?: string | null
           total_value?: number | null
@@ -7281,6 +7283,7 @@ export type Database = {
           id?: string
           items?: Json | null
           notes?: string | null
+          reverted_from_shipment?: boolean | null
           status?: string | null
           title?: string | null
           total_value?: number | null
