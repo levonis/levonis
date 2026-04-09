@@ -1,55 +1,38 @@
 
 
-## إضافة Skeleton Loading لجميع الصفحات
+## إخفاء "تحويل لشحنة" بعد إرجاع الشحنة لمسودة
 
-### النطاق
-يوجد **59 صفحة** تستخدم حالياً `Loader2` spinner بدلاً من Skeleton loading. سيتم تحويلها جميعاً لاستخدام Skeleton components مناسبة لمحتوى كل صفحة.
+### المشكلة
+عند إرجاع شحنة معلقة إلى مسودة، المسودة الجديدة تُنشأ بحالة `status: 'draft'` مما يجعل زر "تحويل لشحنة" يظهر مرة أخرى. المطلوب أن المسودة المُرجَعة تعرض فقط زر "تعديل".
 
-### الاستراتيجية
+### الحل
+إضافة علامة `reverted_from_shipment: true` عند إنشاء المسودة من شحنة مُرجَعة، ثم إخفاء زر "تحويل لشحنة" للمسودات التي تحمل هذه العلامة — بحيث تظهر فقط "تعديل".
 
-**إنشاء مكونات Skeleton قابلة لإعادة الاستخدام** في ملف مركزي جديد، ثم استبدال كل spinner في كل صفحة.
+### التنفيذ
 
-#### 1. إنشاء `src/components/ui/PageSkeletons.tsx`
-مكونات Skeleton عامة قابلة لإعادة الاستخدام:
-- `HeaderSkeleton` — عنوان + وصف
-- `GridCardsSkeleton` — شبكة بطاقات (2-4 أعمدة)
-- `ListCardsSkeleton` — قائمة بطاقات عمودية
-- `TableSkeleton` — جدول بيانات (للصفحات الإدارية)
-- `FormSkeleton` — نموذج إعدادات
-- `ChatSkeleton` — واجهة محادثة
-- `DetailPageSkeleton` — صفحة تفاصيل منتج/طلب
-- `StatsGridSkeleton` — شبكة إحصائيات
-- `NotificationsSkeleton` — قائمة إشعارات
-- `ProductGridSkeleton` — شبكة منتجات
+#### 1. Migration — إضافة عمود `reverted_from_shipment`
+```sql
+ALTER TABLE purchase_drafts ADD COLUMN reverted_from_shipment boolean DEFAULT false;
+```
 
-#### 2. تحديث الصفحات العامة (الأولوية العالية — 20 صفحة)
-الصفحات التي يراها المستخدم العادي:
-- `Home.tsx` — skeleton للبانر + الأقسام + المنتجات
-- `Categories.tsx` — شبكة skeleton للفئات
-- `Products.tsx`, `ProductShop.tsx` — شبكة منتجات
-- `Cart.tsx` — قائمة عناصر السلة
-- `Competitions.tsx`, `CompetitionHistory.tsx` — بطاقات مسابقات
-- `Notifications.tsx`, `NotificationSettings.tsx` — قائمة إشعارات
-- `ProfileSettings.tsx`, `UserInfo.tsx` — نماذج إعدادات
-- `MyOrders.tsx`, `OrderDetail.tsx` — قائمة/تفاصيل طلبات
-- `BundleDetail.tsx`, `ProductBundles.tsx` — حزم المنتجات
-- `ProductOffersPage.tsx`, `OffersStoragePage.tsx` — عروض
-- `MyCustomRequests.tsx`, `MyOfferPurchases.tsx`, `MyPurchasedProducts.tsx`
-- `PublicProfile.tsx`, `ReelsPage.tsx`, `WarrantyDashboard.tsx`
+#### 2. تعديل `revertShipmentToDraftMutation` (سطر ~546)
+إضافة `reverted_from_shipment: true` في الـ insert.
 
-#### 3. تحديث صفحات المجتمع (8 صفحات)
-- `CommunityMessages.tsx` — ChatSkeleton
-- `ChatOrderCheckout.tsx` — FormSkeleton
+#### 3. تعديل شرط إظهار "تحويل لشحنة" (سطر ~1200)
+```typescript
+// من:
+{!isConverted && <Button>تحويل لشحنة</Button>}
+// إلى:
+{!isConverted && !draft.reverted_from_shipment && <Button>تحويل لشحنة</Button>}
+```
 
-#### 4. تحديث الصفحات الإدارية (31 صفحة)
-جميع صفحات `Admin*.tsx` — استخدام `TableSkeleton` أو `ListCardsSkeleton` حسب المحتوى
+#### 4. عند تعديل المسودة وحفظها — إعادة تفعيل التحويل
+عند الضغط على "تعديل" وحفظ التغييرات، يتم تحديث `reverted_from_shipment` إلى `false` لتمكين التحويل مجدداً إذا أراد المستخدم.
 
-### التنفيذ لكل صفحة
-1. استيراد Skeleton المناسب من `PageSkeletons.tsx`
-2. استبدال `<Loader2 className="animate-spin" />` بمكون Skeleton مطابق لتخطيط الصفحة
-3. إزالة استيراد `Loader2` إذا لم يعد مستخدماً في مكان آخر
+### البديل الأبسط (بدون migration)
+بدلاً من إضافة عمود جديد، يمكن تخزين العلامة في حقل `notes` أو في `items` JSON. لكن الطريقة الأنظف هي العمود المستقل.
 
 ### الملفات المتأثرة
-- **ملف جديد**: `src/components/ui/PageSkeletons.tsx`
-- **59 صفحة**: جميع الصفحات المذكورة أعلاه في `src/pages/`
+- **Migration جديد**: إضافة عمود `reverted_from_shipment`
+- `src/pages/AdminInventory.tsx`: تعديل الـ mutation وشرط عرض الزر
 
