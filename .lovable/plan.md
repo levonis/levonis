@@ -1,120 +1,68 @@
 
 
-# خطة بناء لعبة "اعبر الطريق" (Cross the Road)
+# خطة: إصلاح رسومات اللعبة + خلل الجذوع في النهر
 
-## ملخص
-بناء لعبة Crossy Road كاملة باستخدام HTML5 Canvas (2D top-down style) مع استخدام الأصوات والصور من مستودع GitHub الأصلي، وربطها بالكامل بأنظمة النقاط والتذاكر والمتصدرين والجوائز والإعدادات الموجودة.
+## المشكلتان
 
----
+1. **الرسومات**: حالياً كل العناصر (دجاجة، سيارات، أشجار، جذوع، عملات) مرسومة برمجياً بأوامر Canvas. المطلوب استخدام صور PNG حقيقية.
+2. **خلل الجذع**: عند القفز على جذع في النهر، الدجاجة تبقى ثابتة بدل أن يسحبها الجذع معه.
 
-## المرحلة 1: قاعدة البيانات
+## ملاحظة مهمة حول الأصول
+مستودع GitHub يستخدم نماذج ثلاثية الأبعاد (.obj) وليس صور 2D sprites. الصور الموجودة هي textures صغيرة للنماذج 3D. لذلك سأقوم بإنشاء sprite sheet بأسلوب pixel-art يحاكي شكل Crossy Road الأصلي، وحفظها كملفات PNG يتم تحميلها في اللعبة بدلاً من الرسم البرمجي.
 
-إنشاء الجداول التالية (نفس نمط knife_rain):
+## التغييرات
 
-- **crossy_road_settings** -- إعدادات اللعبة (game_enabled, entry_fee_tickets, points_per_step, max_daily_plays, bonus_coin_points, total_plays, total_points_distributed)
-- **crossy_road_sessions** -- جلسات اللعب (user_id, session_token, status, score, steps_taken, coins_collected, points_awarded, started_at, ended_at)
-- **crossy_road_high_scores** -- أعلى نتائج (user_id, high_score, best_steps, season)
-- **crossy_road_milestones** -- جوائز النقاط (target_score, prize_name, product_id, selected_color, selected_option_id, stock, claimed_count, is_active)
-- **crossy_road_milestone_claims** -- سجل المطالبات
-- **crossy_road_leaderboard_prizes** -- جوائز المتصدرين (position, prize_name, product_id, etc.)
-- **crossy_road_winners** -- الفائزون
+### 1. إنشاء صور Sprite (PNG) للعناصر
+سأنشئ ملفات PNG باستخدام Canvas offline script وحفظها في `public/games/crossy-road/sprites/`:
+- `chicken.png` -- الدجاجة (اللاعب)
+- `car-red.png`, `car-blue.png`, `car-green.png`, `car-yellow.png` -- السيارات
+- `tree.png` -- الشجرة
+- `log.png` -- الجذع
+- `train.png` -- القطار
+- `coin.png` -- العملة
+- `grass-dark.png`, `grass-light.png` -- خلفية العشب
+- `water.png` -- خلفية الماء
+- `road.png` -- خلفية الطريق
+- `rail.png` -- خلفية السكة
 
-إنشاء RPCs:
-- **start_crossy_road** -- بدء جلسة (خصم تذكرة، تحقق VIP)
-- **end_crossy_road** -- إنهاء جلسة (منح نقاط)
-- **update_crossy_road_high_score** -- تحديث أعلى نتيجة
-- **check_crossy_road_milestone** -- فحص الجوائز أثناء اللعب
-- **claim_crossy_road_prize_to_cart** -- إضافة جائزة للسلة
-- **admin_award_crossy_road_winners** -- توزيع جوائز المتصدرين
+### 2. تحديث CrossyRoadCanvas.tsx - تحميل الصور
+- إضافة image preloader يحمل كل الـ sprites عند بدء اللعبة
+- استبدال كل دوال الرسم البرمجي (`drawChicken`, `drawCar`, `drawTree`) بـ `ctx.drawImage()`
+- تحميل الصور في `useEffect` قبل بدء game loop
 
----
+### 3. إصلاح خلل الجذع (Log Drag)
+- إضافة `playerOffsetX: number` لحالة اللعبة لتتبع الإزاحة الأفقية من الجذع
+- في دالة `update()`: عند وقوف اللاعب على جذع، تحديث `playerOffsetX += log.speed * dt`
+- إذا خرج اللاعب عن حدود الشاشة بسبب حركة الجذع = موت (سقوط)
+- في دالة `render()`: إضافة `playerOffsetX` لموضع الرسم الأفقي
+- عند القفز (handleMove) إعادة تعيين `playerOffsetX = 0`
 
-## المرحلة 2: أصول اللعبة من GitHub
-
-تحميل الملفات التالية من `https://raw.githubusercontent.com/EvanBacon/Expo-Crossy-Road/master/assets/` إلى مجلد `public/games/crossy-road/`:
-
-**الصوت:**
-- `audio/buck1.wav` - `buck12.wav` (أصوات الحركة/القفز)
-- `audio/car-horn.wav`, `audio/carhit.mp3` (أصوات السيارات)
-- `audio/Train_Alarm.wav`, `audio/train_pass_shorter.wav` (القطار)
-- `audio/chickendeath.wav` (الموت)
-- `audio/Get Coin 73 wav.mp3` (جمع العملات)
-- `audio/watersplashlow.mp3` (السقوط في الماء)
-
-**الصور:**
-- `images/title.png` (شعار اللعبة)
-- `images/buttons/` (أزرار واجهة المستخدم)
-- `images/hand/` (إرشاد اللمس)
-
----
-
-## المرحلة 3: محرك اللعبة (Canvas 2D)
-
-إنشاء `src/components/games/crossy-road/`:
-
-### CrossyRoadCanvas.tsx
-- لعبة top-down/isometric مبسطة على Canvas
-- **اللاعب**: دجاجة بكسل تتحرك على شبكة
-- **الصفوف**: عشب آمن، طريق (سيارات)، سكة حديد (قطارات)، نهر (جذوع أشجار)
-- **التحكم**: سحب/ضغط للأعلى/أسفل/يمين/يسار + أزرار لوحة المفاتيح
-- **التسجيل**: كل خطوة للأمام = نقطة، عملات إضافية متناثرة
-- **الموت**: اصطدام بسيارة/قطار أو سقوط في الماء
-- **الأصوات**: من ملفات GitHub عبر Web Audio API
-
-### CrossyRoadAudio.ts
-- تحميل وتشغيل أصوات الخطوات (buck1-12)، السيارات، القطارات، الموت، العملات
-
-### CrossyRoadGame.tsx
-- واجهة القائمة/اللعب/انتهاء اللعبة (نفس نمط KnifeRainGame)
-- عرض التذاكر، التكلفة، أعلى نتيجة، المتصدرين، الجوائز
-- استدعاء RPCs للبدء والانتهاء
-
----
-
-## المرحلة 4: لوحة الإدارة
-
-### CrossyRoadTab.tsx
-إضافة تبويب جديد في صفحة إعدادات الألعاب (`AdminGamesSettings.tsx`):
-- تفعيل/إيقاف اللعبة
-- تكلفة الدخول (تذاكر)
-- نقاط لكل خطوة / عملة
-- الحد اليومي
-- إدارة جوائز النقاط (Milestones) مع ربط المنتجات
-- إدارة جوائز المتصدرين
-- إحصائيات (إجمالي اللعب والنقاط)
-
----
-
-## المرحلة 5: التكامل
-
-1. إضافة `crossy_road` إلى `GAME_NODES` في `GamesData.ts` (status: LIVE)
-2. إضافة lazy import في `MiniGames.tsx` + عرضه عند `activeGame === 'crossy_road'`
-3. إضافة فحص `crossy_road_settings.game_enabled` في MiniGames
-4. إضافة التبويب في `AdminGamesSettings.tsx`
-5. دعم VIP free play لـ `crossy_road`
-
----
-
-## التفاصيل التقنية
+### التفاصيل التقنية
 
 ```text
-src/components/games/crossy-road/
-├── CrossyRoadGame.tsx      ← Menu/Play/GameOver wrapper (like KnifeRainGame)
-├── CrossyRoadCanvas.tsx    ← Canvas game engine
-└── CrossyRoadAudio.ts      ← Sound manager using GitHub assets
+// إصلاح الجذع - في update():
+if (currentRow.type === "river") {
+  for (const log of currentRow.logs) {
+    if (playerOnLog) {
+      g.playerOffsetX += log.speed * dt;
+      // موت إذا خرج عن الحدود
+      if (px + g.playerOffsetX < -CELL || px + g.playerOffsetX > CANVAS_W + CELL) {
+        g.dead = true;
+      }
+    }
+  }
+}
 
-src/components/admin/CrossyRoadTab.tsx  ← Admin settings tab
+// تحميل الصور:
+const sprites: Record<string, HTMLImageElement> = {};
+const spriteNames = ['chicken', 'car-red', 'tree', 'log', 'coin', ...];
+await Promise.all(spriteNames.map(name => loadImage(`/games/crossy-road/sprites/${name}.png`)));
 
-public/games/crossy-road/audio/        ← Audio files from GitHub
-public/games/crossy-road/images/       ← Image files from GitHub
-
-Database: 7 tables + 6 RPCs (mirroring knife_rain pattern)
+// الرسم:
+ctx.drawImage(sprites.chicken, px - size/2, py - size/2, size, size);
 ```
 
-### ميكانيكا اللعبة
-- شبكة صفوف لانهائية تتولد أثناء التقدم
-- أنواع الصفوف: عشب (آمن)، طريق (سيارات بسرعات مختلفة)، سكة حديد (قطارات سريعة مع تحذير)، نهر (جذوع متحركة يجب القفز عليها)
-- كاميرا تتبع اللاعب عمودياً
-- صعوبة تتزايد تدريجياً (سرعة + كثافة المركبات)
-- عملات ذهبية عشوائية = نقاط إضافية
+### الملفات المتأثرة
+- `public/games/crossy-road/sprites/*.png` -- ملفات جديدة (sprites)
+- `src/components/games/crossy-road/CrossyRoadCanvas.tsx` -- تحديث شامل (صور + إصلاح الجذع)
 
