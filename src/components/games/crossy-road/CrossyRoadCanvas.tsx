@@ -1,4 +1,4 @@
-import { useCallback, useState, Suspense } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ModelsProvider } from "./CrossyRoadModels";
 import CrossyRoad3DScene from "./CrossyRoad3DScene";
@@ -9,9 +9,28 @@ interface Props {
   scoreSettings?: { points_per_step: number; bonus_coin_points: number };
 }
 
+function useResponsiveZoom() {
+  const [zoom, setZoom] = useState(() => {
+    const min = Math.min(window.innerWidth, window.innerHeight);
+    return Math.max(35, Math.min(80, min / 15));
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const min = Math.min(window.innerWidth, window.innerHeight);
+      setZoom(Math.max(35, Math.min(80, min / 15)));
+    };
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return zoom;
+}
+
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
   const [loaded, setLoaded] = useState(false);
   const handleLoaded = useCallback(() => setLoaded(true), []);
+  const zoom = useResponsiveZoom();
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "fixed", top: 0, left: 0, background: "#000" }}>
@@ -32,7 +51,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
       <Canvas
         orthographic
         camera={{
-          zoom: 50,
+          zoom,
           position: [4.5, 12, 8],
           near: -100,
           far: 100,

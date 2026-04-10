@@ -58,12 +58,12 @@ interface GameState {
 }
 
 // ── Render snapshot for declarative rendering ──
-interface RenderGround { key: string; x: number; z: number; colorType: string; }
+interface RenderGround { key: string; x: number; z: number; rowType: RowType; grassDark: boolean; }
 interface RenderWarning { key: string; x: number; z: number; }
 interface RenderTree { key: string; x: number; z: number; modelIdx: number; }
 interface RenderVehicle { key: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { key: string; x: number; z: number; }
-interface RenderLog { key: string; x: number; z: number; modelIdx: number; }
+interface RenderLog { key: string; x: number; z: number; modelIdx: number; logWidth: number; }
 interface RenderCoin { key: string; x: number; z: number; rotY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; }
 
@@ -81,6 +81,9 @@ interface RenderSnapshot {
 const LANES = 9;
 const CELL = 1;
 const MODEL_SCALE = 1.0;
+// OBJ ground models are 25 units wide, we need them to cover LANES (9) units
+const GROUND_SCALE_X = (LANES * CELL) / 25;
+const GROUND_SCALE_Z = CELL / 1; // depth is 1 unit in OBJ, maps to CELL
 
 interface Props {
   onGameOver: (score: number, steps: number, coins: number) => void;
@@ -149,24 +152,44 @@ function generateRow(index: number): Row {
 
 // ── Sub-components for declarative rendering ──
 function GroundTile({ data }: { data: RenderGround }) {
-  const color = data.colorType === "grassDark" ? 0x4a7a2e
-    : data.colorType === "grassLight" ? 0x5a9a3e
-    : data.colorType === "road" ? 0x555555
-    : data.colorType === "rail" ? 0x8B7355
-    : 0x4488cc;
-  const transparent = data.colorType === "river";
+  const models = useGameModels();
+  if (!models) return null;
+
+  let geometry: THREE.BufferGeometry;
+  let material: THREE.MeshLambertMaterial;
+
+  if (data.rowType === "grass") {
+    geometry = models.grass.obj.geometry;
+    const tex = data.grassDark ? models.grass.darkTex : models.grass.lightTex;
+    material = new THREE.MeshLambertMaterial({ map: tex });
+  } else if (data.rowType === "road") {
+    geometry = models.road.obj.geometry;
+    // Alternate between striped and blank roads
+    const tex = Math.random() > 0.5 ? models.road.stripesTex : models.road.blankTex;
+    material = new THREE.MeshLambertMaterial({ map: tex });
+  } else if (data.rowType === "rail") {
+    geometry = models.railroad.geometry;
+    material = models.railroad.material;
+  } else {
+    // river
+    geometry = models.river.geometry;
+    material = models.river.material;
+  }
+
   return (
-    <mesh position={[data.x, -0.05, data.z]}>
-      <boxGeometry args={[LANES * CELL, 0.1, CELL]} />
-      <meshLambertMaterial color={color} transparent={transparent} opacity={transparent ? 0.8 : 1} />
-    </mesh>
+    <mesh
+      geometry={geometry}
+      material={material}
+      position={[data.x, 0, data.z]}
+      scale={[GROUND_SCALE_X, 1, GROUND_SCALE_Z]}
+    />
   );
 }
 
 function WarningTile({ data }: { data: RenderWarning }) {
   return (
-    <mesh position={[data.x, 0, data.z]}>
-      <boxGeometry args={[LANES * CELL, 0.1, CELL]} />
+    <mesh position={[data.x, 0.01, data.z]}>
+      <boxGeometry args={[LANES * CELL, 0.05, CELL]} />
       <meshLambertMaterial color={0xff0000} transparent opacity={0.3} />
     </mesh>
   );
@@ -190,11 +213,14 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
   const m = data.isTruck
     ? models.trucks[data.modelIdx % models.trucks.length]
     : models.cars[data.modelIdx % models.cars.length];
+  // Vehicles need 90° rotation: their long axis is Z in the OBJ but they move along X
+  const baseRotY = Math.PI / 2;
+  const flipRotY = data.flipY ? Math.PI : 0;
   return (
     <mesh geometry={m.geometry} material={m.material}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
       position={[data.x, 0, data.z]}
-      rotation={[0, data.flipY ? Math.PI : 0, 0]}
+      rotation={[0, baseRotY + flipRotY, 0]}
     />
   );
 }
@@ -202,21 +228,26 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
+  // Train parts are ~4.875 units wide each in the OBJ, rotated 90° to move along X
+  const partWidth = 5;
   return (
     <group>
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[data.x + 1, 0, data.z]}
+        position={[data.x, 0, data.z]}
+        rotation={[0, Math.PI / 2, 0]}
       />
       {[1, 2, 3].map(ti => (
         <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-          position={[data.x + 1 + ti * 1.5, 0, data.z]}
+          position={[data.x + ti * partWidth, 0, data.z]}
+          rotation={[0, Math.PI / 2, 0]}
         />
       ))}
       <mesh geometry={models.train.back.geometry} material={models.train.back.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[data.x + 7, 0, data.z]}
+        position={[data.x + 4 * partWidth, 0, data.z]}
+        rotation={[0, Math.PI / 2, 0]}
       />
     </group>
   );
@@ -226,9 +257,10 @@ function LogMesh({ data }: { data: RenderLog }) {
   const models = useGameModels();
   if (!models) return null;
   const m = models.logs[data.modelIdx % models.logs.length];
+  // Scale X to match the log's logical width (OBJ log is ~1 unit wide)
   return (
     <mesh geometry={m.geometry} material={m.material}
-      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+      scale={[data.logWidth, MODEL_SCALE, MODEL_SCALE]}
       position={[data.x, 0.05, data.z]}
     />
   );
@@ -286,12 +318,15 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const audio = audioRef.current;
     if (!g || g.dead || g.moving) return;
 
+    // Check if player is currently on a river row (on a log)
+    const currentRow = g.rows[g.playerRow];
+    const wasOnRiver = currentRow && currentRow.type === "river";
+
     g.moving = true;
     g.moveDir = dir;
     g.moveProgress = 0;
     g.fromLane = g.playerLane;
     g.fromRow = g.playerRow;
-    g.playerOffsetX = 0;
 
     if (dir === "up") {
       g.playerRow++;
@@ -306,6 +341,18 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       g.playerLane = Math.max(0, g.playerLane - 1);
     } else if (dir === "right") {
       g.playerLane = Math.min(LANES - 1, g.playerLane + 1);
+    }
+
+    // Only reset playerOffsetX when leaving a river row
+    // When staying on river or moving within, preserve the offset
+    const newRow = g.rows[g.playerRow];
+    const nowOnRiver = newRow && newRow.type === "river";
+    if (!nowOnRiver) {
+      g.playerOffsetX = 0;
+    }
+    // If moving from river to river, keep offset; if arriving at river fresh, reset
+    if (nowOnRiver && !wasOnRiver) {
+      g.playerOffsetX = 0;
     }
 
     g.hopAnim = 1;
@@ -351,6 +398,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
   // Game loop - only updates state, rendering is declarative
   const frameCountRef = useRef(0);
+  // Cache road texture choice per row to avoid flickering
+  const roadTexChoiceRef = useRef<Map<number, boolean>>(new Map());
   
   useFrame((_, delta) => {
     const g = gameRef.current;
@@ -485,9 +534,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       const z = -r * CELL;
       const cx = (LANES * CELL) / 2;
 
-      const colorType = row.type === "grass" ? (row.grassDark ? "grassDark" : "grassLight")
-        : row.type === "road" ? "road" : row.type === "rail" ? "rail" : "river";
-      grounds.push({ key: `g${r}`, x: cx, z, colorType });
+      grounds.push({ key: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
 
       if (row.type === "rail" && row.trainWarning && row.trainTimer > 0) {
         warnings.push({ key: `w${r}`, x: cx, z });
@@ -515,7 +562,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       for (let li = 0; li < row.logs.length; li++) {
         const log = row.logs[li];
-        logRenders.push({ key: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
+        logRenders.push({ key: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex, logWidth: log.width });
       }
 
       if (row.coin && !row.coin.collected) {
