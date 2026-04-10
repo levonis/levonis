@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useMemo } from "react";
+import { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGameModels } from "./CrossyRoadModels";
@@ -57,10 +57,30 @@ interface GameState {
   playerOffsetX: number;
 }
 
-// ── Constants ──
+// ── Render snapshot for declarative rendering ──
+interface RenderGround { key: string; x: number; z: number; colorType: string; }
+interface RenderWarning { key: string; x: number; z: number; }
+interface RenderTree { key: string; x: number; z: number; modelIdx: number; }
+interface RenderVehicle { key: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
+interface RenderTrain { key: string; x: number; z: number; }
+interface RenderLog { key: string; x: number; z: number; modelIdx: number; }
+interface RenderCoin { key: string; x: number; z: number; rotY: number; }
+interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; }
+
+interface RenderSnapshot {
+  grounds: RenderGround[];
+  warnings: RenderWarning[];
+  trees: RenderTree[];
+  vehicles: RenderVehicle[];
+  trains: RenderTrain[];
+  logs: RenderLog[];
+  coins: RenderCoin[];
+  player: PlayerSnapshot;
+}
+
 const LANES = 9;
-const CELL = 1; // 1 unit per cell in 3D
-const MODEL_SCALE = 0.009; // OBJ models are large, scale them down
+const CELL = 1;
+const MODEL_SCALE = 0.009;
 
 interface Props {
   onGameOver: (score: number, steps: number, coins: number) => void;
@@ -70,14 +90,8 @@ interface Props {
 function generateRow(index: number): Row {
   if (index < 4) {
     return {
-      type: "grass",
-      obstacles: [],
-      logs: [],
-      coin: null,
-      trainWarning: false,
-      trainTimer: 0,
-      treeIndices: [],
-      grassDark: index % 2 === 0,
+      type: "grass", obstacles: [], logs: [], coin: null,
+      trainWarning: false, trainTimer: 0, treeIndices: [], grassDark: index % 2 === 0,
     };
   }
   const difficulty = Math.min(index / 50, 1);
@@ -89,18 +103,11 @@ function generateRow(index: number): Row {
   else type = "river";
 
   const row: Row = {
-    type,
-    obstacles: [],
-    logs: [],
-    coin: null,
-    trainWarning: false,
-    trainTimer: 0,
-    treeIndices: [],
-    grassDark: Math.random() > 0.5,
+    type, obstacles: [], logs: [], coin: null,
+    trainWarning: false, trainTimer: 0, treeIndices: [], grassDark: Math.random() > 0.5,
   };
 
   if (type === "grass" && index > 3) {
-    // Random trees on edges
     if (Math.random() > 0.5) row.treeIndices.push(0);
     if (Math.random() > 0.5) row.treeIndices.push(LANES - 1);
   }
@@ -113,8 +120,7 @@ function generateRow(index: number): Row {
     for (let i = 0; i < count; i++) {
       row.obstacles.push({
         x: Math.random() * LANES * CELL,
-        speed,
-        width: isTruck ? 2 : 1,
+        speed, width: isTruck ? 2 : 1,
         modelIndex: Math.floor(Math.random() * (isTruck ? 2 : 6)),
         isTruck,
       });
@@ -128,8 +134,7 @@ function generateRow(index: number): Row {
     for (let i = 0; i < count; i++) {
       row.logs.push({
         x: ((LANES * CELL) / count) * i + Math.random() * 2,
-        speed,
-        width: 2,
+        speed, width: 2,
         modelIndex: Math.floor(Math.random() * 4),
       });
     }
@@ -142,20 +147,119 @@ function generateRow(index: number): Row {
   return row;
 }
 
+// ── Sub-components for declarative rendering ──
+function GroundTile({ data }: { data: RenderGround }) {
+  const color = data.colorType === "grassDark" ? 0x4a7a2e
+    : data.colorType === "grassLight" ? 0x5a9a3e
+    : data.colorType === "road" ? 0x555555
+    : data.colorType === "rail" ? 0x8B7355
+    : 0x4488cc;
+  const transparent = data.colorType === "river";
+  return (
+    <mesh position={[data.x, -0.05, data.z]}>
+      <boxGeometry args={[LANES * CELL, 0.1, CELL]} />
+      <meshLambertMaterial color={color} transparent={transparent} opacity={transparent ? 0.8 : 1} />
+    </mesh>
+  );
+}
+
+function WarningTile({ data }: { data: RenderWarning }) {
+  return (
+    <mesh position={[data.x, 0, data.z]}>
+      <boxGeometry args={[LANES * CELL, 0.1, CELL]} />
+      <meshLambertMaterial color={0xff0000} transparent opacity={0.3} />
+    </mesh>
+  );
+}
+
+function TreeMesh({ data }: { data: RenderTree }) {
+  const models = useGameModels();
+  if (!models) return null;
+  const m = models.trees[data.modelIdx % models.trees.length];
+  return (
+    <mesh geometry={m.geometry} material={m.material}
+      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+      position={[data.x, 0, data.z]}
+    />
+  );
+}
+
+function VehicleMesh({ data }: { data: RenderVehicle }) {
+  const models = useGameModels();
+  if (!models) return null;
+  const m = data.isTruck
+    ? models.trucks[data.modelIdx % models.trucks.length]
+    : models.cars[data.modelIdx % models.cars.length];
+  return (
+    <mesh geometry={m.geometry} material={m.material}
+      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+      position={[data.x, 0, data.z]}
+      rotation={[0, data.flipY ? Math.PI : 0, 0]}
+    />
+  );
+}
+
+function TrainMeshGroup({ data }: { data: RenderTrain }) {
+  const models = useGameModels();
+  if (!models) return null;
+  return (
+    <group>
+      <mesh geometry={models.train.front.geometry} material={models.train.front.material}
+        scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+        position={[data.x + 1, 0, data.z]}
+      />
+      {[1, 2, 3].map(ti => (
+        <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
+          scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+          position={[data.x + 1 + ti * 1.5, 0, data.z]}
+        />
+      ))}
+      <mesh geometry={models.train.back.geometry} material={models.train.back.material}
+        scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+        position={[data.x + 7, 0, data.z]}
+      />
+    </group>
+  );
+}
+
+function LogMesh({ data }: { data: RenderLog }) {
+  const models = useGameModels();
+  if (!models) return null;
+  const m = models.logs[data.modelIdx % models.logs.length];
+  return (
+    <mesh geometry={m.geometry} material={m.material}
+      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+      position={[data.x, 0.05, data.z]}
+    />
+  );
+}
+
+function CoinMesh({ data }: { data: RenderCoin }) {
+  return (
+    <mesh position={[data.x, 0.5, data.z]} rotation={[Math.PI / 2, data.rotY, 0]}>
+      <cylinderGeometry args={[0.15, 0.15, 0.05, 16]} />
+      <meshLambertMaterial color={0xffd700} emissive={0xaa8800} />
+    </mesh>
+  );
+}
+
 export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) {
   const models = useGameModels();
   const { camera } = useThree();
   const audioRef = useRef<CrossyRoadAudio | null>(null);
   const gameRef = useRef<GameState | null>(null);
-  const meshGroupRef = useRef<THREE.Group>(null);
-  const playerMeshRef = useRef<THREE.Mesh>(null);
-  const coinMeshesRef = useRef<Map<number, THREE.Mesh>>(new Map());
   const onGameOverRef = useRef(onGameOver);
   const onScoreUpdateRef = useRef(onScoreUpdate);
   onGameOverRef.current = onGameOver;
   onScoreUpdateRef.current = onScoreUpdate;
 
-  // Initialize game state
+  const [snapshot, setSnapshot] = useState<RenderSnapshot>({
+    grounds: [], warnings: [], trees: [], vehicles: [],
+    trains: [], logs: [], coins: [],
+    player: { x: LANES * CELL / 2, y: 0, z: -3, visible: true, opacity: 1 },
+  });
+
+  // Initialize game
   useEffect(() => {
     const audio = new CrossyRoadAudio();
     audioRef.current = audio;
@@ -166,29 +270,17 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     gameRef.current = {
       playerLane: Math.floor(LANES / 2),
-      playerRow: 3,
-      score: 0,
-      maxRow: 0,
-      steps: 0,
-      coins: 0,
-      rows,
-      dead: false,
-      deathTimer: 0,
-      moving: false,
-      moveDir: null,
-      moveProgress: 0,
-      fromLane: Math.floor(LANES / 2),
-      fromRow: 3,
-      hopAnim: 0,
-      playerOffsetX: 0,
+      playerRow: 3, score: 0, maxRow: 0, steps: 0, coins: 0,
+      rows, dead: false, deathTimer: 0,
+      moving: false, moveDir: null, moveProgress: 0,
+      fromLane: Math.floor(LANES / 2), fromRow: 3,
+      hopAnim: 0, playerOffsetX: 0,
     };
 
-    return () => {
-      audio.dispose();
-    };
+    return () => { audio.dispose(); };
   }, []);
 
-  // Input handling
+  // Input
   const handleMove = useCallback((dir: string) => {
     const g = gameRef.current;
     const audio = audioRef.current;
@@ -243,17 +335,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       const dy = e.changedTouches[0].clientY - touchStartY;
       const absDx = Math.abs(dx), absDy = Math.abs(dy);
       if (absDx < 15 && absDy < 15) { handleMove("up"); return; }
-      if (absDy > absDx) {
-        handleMove(dy < 0 ? "up" : "down");
-      } else {
-        handleMove(dx > 0 ? "right" : "left");
-      }
+      if (absDy > absDx) handleMove(dy < 0 ? "up" : "down");
+      else handleMove(dx > 0 ? "right" : "left");
     };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchend", handleTouchEnd);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("touchstart", handleTouchStart);
@@ -261,25 +349,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     };
   }, [handleMove]);
 
-  // Coin geometry
-  const coinGeometry = useMemo(() => {
-    const geo = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 16);
-    geo.rotateX(Math.PI / 2);
-    return geo;
-  }, []);
-  const coinMaterial = useMemo(() => new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0xaa8800 }), []);
-
-  // Ground plane materials
-  const grassDarkMat = useMemo(() => new THREE.MeshLambertMaterial({ color: 0x4a7a2e }), []);
-  const grassLightMat = useMemo(() => new THREE.MeshLambertMaterial({ color: 0x5a9a3e }), []);
-  const roadMat = useMemo(() => new THREE.MeshLambertMaterial({ color: 0x555555 }), []);
-  const railMat = useMemo(() => new THREE.MeshLambertMaterial({ color: 0x8B7355 }), []);
-  const riverMat = useMemo(() => new THREE.MeshLambertMaterial({ color: 0x4488cc, transparent: true, opacity: 0.8 }), []);
-  const warningMat = useMemo(() => new THREE.MeshLambertMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 }), []);
-
-  const groundGeo = useMemo(() => new THREE.BoxGeometry(LANES * CELL, 0.1, CELL), []);
-
-  // Game loop
+  // Game loop - only updates state, rendering is declarative
+  const frameCountRef = useRef(0);
+  
   useFrame((_, delta) => {
     const g = gameRef.current;
     const audio = audioRef.current;
@@ -288,7 +360,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const dt = Math.min(delta, 0.05);
 
     if (!g.dead) {
-      // Move animation
       if (g.moving) {
         g.moveProgress += dt * 8;
         if (g.moveProgress >= 1) {
@@ -297,18 +368,15 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         }
       }
 
-      // Hop animation
       if (g.hopAnim > 0) {
         g.hopAnim -= dt * 6;
         if (g.hopAnim < 0) g.hopAnim = 0;
       }
 
-      // Ensure enough rows
       while (g.rows.length <= g.playerRow + 20) {
         g.rows.push(generateRow(g.rows.length));
       }
 
-      // Update obstacles
       for (const row of g.rows) {
         if (row.type === "road") {
           for (const obs of row.obstacles) {
@@ -328,9 +396,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               audio?.playTrainPass();
               row.obstacles.push({ x: -5, speed: 8, width: LANES + 5, modelIndex: 0, isTruck: false });
             }
-            for (const obs of row.obstacles) {
-              obs.x += obs.speed * dt;
-            }
+            for (const obs of row.obstacles) obs.x += obs.speed * dt;
             if (row.obstacles.length > 0 && row.obstacles[0].x > LANES * CELL + 8) {
               row.obstacles = [];
               row.trainWarning = false;
@@ -370,27 +436,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
           for (const log of currentRow.logs) {
             if (px + pw / 2 > log.x && px - pw / 2 < log.x + log.width) {
               onLog = true;
-              if (!g.moving) {
-                g.playerOffsetX += log.speed * dt;
-              }
+              if (!g.moving) g.playerOffsetX += log.speed * dt;
               break;
             }
           }
-          if (!onLog) {
-            g.dead = true;
-            g.deathTimer = 0;
-            audio?.playWater();
-            return;
-          }
-          if (px < -CELL || px > LANES * CELL + CELL) {
-            g.dead = true;
-            g.deathTimer = 0;
-            audio?.playWater();
-            return;
-          }
+          if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
+          if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
 
-        // Coin
         if (currentRow.coin && !currentRow.coin.collected && currentRow.coin.lane === g.playerLane) {
           currentRow.coin.collected = true;
           g.coins++;
@@ -407,146 +460,138 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     // Camera follow
     const targetZ = -(g.playerRow - 5) * CELL;
-    (camera as THREE.OrthographicCamera).position.z += (targetZ + 8) * 0.05;
-    (camera as THREE.OrthographicCamera).position.x = (LANES * CELL) / 2;
+    camera.position.z += (targetZ + 8) * 0.05;
+    camera.position.x = (LANES * CELL) / 2;
 
-    // ── Render: update meshes ──
-    const group = meshGroupRef.current;
-    if (!group) return;
-
-    // Clear previous meshes
-    while (group.children.length > 0) {
-      group.remove(group.children[0]);
-    }
-    coinMeshesRef.current.clear();
+    // Build render snapshot (throttled to ~30fps to reduce React re-renders)
+    frameCountRef.current++;
+    if (frameCountRef.current % 2 !== 0) return;
 
     const startRow = Math.max(0, g.playerRow - 8);
     const endRow = Math.min(g.rows.length - 1, g.playerRow + 15);
+    const now = Date.now();
+
+    const grounds: RenderGround[] = [];
+    const warnings: RenderWarning[] = [];
+    const trees: RenderTree[] = [];
+    const vehicles: RenderVehicle[] = [];
+    const trains: RenderTrain[] = [];
+    const logRenders: RenderLog[] = [];
+    const coins: RenderCoin[] = [];
 
     for (let r = startRow; r <= endRow; r++) {
       const row = g.rows[r];
       if (!row) continue;
       const z = -r * CELL;
+      const cx = (LANES * CELL) / 2;
 
-      // Ground
-      const groundMat = row.type === "grass" ? (row.grassDark ? grassDarkMat : grassLightMat)
-        : row.type === "road" ? roadMat
-        : row.type === "rail" ? railMat
-        : riverMat;
-      const ground = new THREE.Mesh(groundGeo, groundMat);
-      ground.position.set((LANES * CELL) / 2, -0.05, z);
-      group.add(ground);
+      const colorType = row.type === "grass" ? (row.grassDark ? "grassDark" : "grassLight")
+        : row.type === "road" ? "road" : row.type === "rail" ? "rail" : "river";
+      grounds.push({ key: `g${r}`, x: cx, z, colorType });
 
-      // Warning flash
       if (row.type === "rail" && row.trainWarning && row.trainTimer > 0) {
-        const warn = new THREE.Mesh(groundGeo, warningMat);
-        warn.position.set((LANES * CELL) / 2, 0, z);
-        group.add(warn);
+        warnings.push({ key: `w${r}`, x: cx, z });
       }
 
-      // Trees
-      if (row.type === "grass" && row.treeIndices.length > 0) {
+      if (row.type === "grass") {
         for (const laneIdx of row.treeIndices) {
-          const treeModel = models.trees[r % models.trees.length];
-          const treeMesh = new THREE.Mesh(treeModel.geometry, treeModel.material);
-          treeMesh.scale.setScalar(MODEL_SCALE);
-          treeMesh.position.set(laneIdx * CELL + CELL / 2, 0, z);
-          group.add(treeMesh);
+          trees.push({ key: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r });
         }
       }
 
-      // Obstacles (cars/trucks/trains)
-      for (const obs of row.obstacles) {
+      for (let oi = 0; oi < row.obstacles.length; oi++) {
+        const obs = row.obstacles[oi];
         if (row.type === "road") {
-          const modelAsset = obs.isTruck
-            ? models.trucks[obs.modelIndex % models.trucks.length]
-            : models.cars[obs.modelIndex % models.cars.length];
-          const mesh = new THREE.Mesh(modelAsset.geometry, modelAsset.material);
-          mesh.scale.setScalar(MODEL_SCALE);
-          mesh.position.set(obs.x + obs.width / 2, 0, z);
-          if (obs.speed < 0) mesh.rotation.y = Math.PI;
-          group.add(mesh);
+          vehicles.push({
+            key: `v${r}_${oi}`,
+            x: obs.x + obs.width / 2, z,
+            modelIdx: obs.modelIndex, isTruck: obs.isTruck,
+            flipY: obs.speed < 0,
+          });
         } else if (row.type === "rail") {
-          // Train
-          const frontMesh = new THREE.Mesh(models.train.front.geometry, models.train.front.material);
-          frontMesh.scale.setScalar(MODEL_SCALE);
-          frontMesh.position.set(obs.x + 1, 0, z);
-          group.add(frontMesh);
-
-          for (let ti = 1; ti < 4; ti++) {
-            const midMesh = new THREE.Mesh(models.train.middle.geometry, models.train.middle.material);
-            midMesh.scale.setScalar(MODEL_SCALE);
-            midMesh.position.set(obs.x + 1 + ti * 1.5, 0, z);
-            group.add(midMesh);
-          }
-
-          const backMesh = new THREE.Mesh(models.train.back.geometry, models.train.back.material);
-          backMesh.scale.setScalar(MODEL_SCALE);
-          backMesh.position.set(obs.x + 7, 0, z);
-          group.add(backMesh);
+          trains.push({ key: `tr${r}_${oi}`, x: obs.x, z });
         }
       }
 
-      // Logs
-      for (const log of row.logs) {
-        const logModel = models.logs[log.modelIndex % models.logs.length];
-        const logMesh = new THREE.Mesh(logModel.geometry, logModel.material);
-        logMesh.scale.setScalar(MODEL_SCALE);
-        logMesh.position.set(log.x + log.width / 2, 0.05, z);
-        group.add(logMesh);
+      for (let li = 0; li < row.logs.length; li++) {
+        const log = row.logs[li];
+        logRenders.push({ key: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
       }
 
-      // Coin
       if (row.coin && !row.coin.collected) {
-        const coinMesh = new THREE.Mesh(coinGeometry, coinMaterial);
-        coinMesh.position.set(row.coin.lane * CELL + CELL / 2, 0.5, z);
-        coinMesh.rotation.y = Date.now() * 0.003;
-        group.add(coinMesh);
+        coins.push({ key: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003 });
       }
     }
 
-    // Player
-    if (playerMeshRef.current && (!g.dead || g.deathTimer < 1)) {
-      let px: number, pz: number;
-      if (g.moving) {
-        const t = g.moveProgress;
-        const fromX = g.fromLane * CELL + CELL / 2;
-        const fromZ = -g.fromRow * CELL;
-        const toX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
-        const toZ = -g.playerRow * CELL;
-        px = fromX + (toX - fromX) * t;
-        pz = fromZ + (toZ - fromZ) * t;
-      } else {
-        px = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
-        pz = -g.playerRow * CELL;
-      }
-
-      const hopOffset = Math.sin(g.hopAnim * Math.PI) * 0.3;
-      playerMeshRef.current.position.set(px, hopOffset, pz);
-      playerMeshRef.current.visible = true;
-
-      if (g.dead) {
-        const mat = playerMeshRef.current.material as THREE.Material;
-        mat.opacity = 1 - g.deathTimer;
-        mat.transparent = true;
-      }
+    // Player position
+    let px: number, pz: number;
+    if (g.moving) {
+      const t = g.moveProgress;
+      px = g.fromLane * CELL + CELL / 2 + (g.playerLane * CELL + CELL / 2 + g.playerOffsetX - (g.fromLane * CELL + CELL / 2)) * t;
+      pz = -g.fromRow * CELL + (-g.playerRow * CELL - (-g.fromRow * CELL)) * t;
+    } else {
+      px = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      pz = -g.playerRow * CELL;
     }
+    const hopOffset = Math.sin(g.hopAnim * Math.PI) * 0.3;
+
+    setSnapshot({
+      grounds, warnings, trees, vehicles, trains, logs: logRenders, coins,
+      player: {
+        x: px, y: hopOffset, z: pz,
+        visible: !g.dead || g.deathTimer < 1,
+        opacity: g.dead ? Math.max(0, 1 - g.deathTimer) : 1,
+      },
+    });
   });
 
-  if (!models) return null;
+  const playerMat = useMemo(() => {
+    if (!models) return null;
+    return models.chicken.material.clone();
+  }, [models]);
 
-  const playerMat = models.chicken.material.clone();
+  if (!models || !playerMat) return null;
 
   return (
     <>
-      <group ref={meshGroupRef} />
-      <mesh
-        ref={playerMeshRef}
-        geometry={models.chicken.geometry}
-        material={playerMat}
-        scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[LANES * CELL / 2, 0, -3 * CELL]}
-      />
+      {/* Ground tiles */}
+      {snapshot.grounds.map(d => <GroundTile key={d.key} data={d} />)}
+      
+      {/* Warning flashes */}
+      {snapshot.warnings.map(d => <WarningTile key={d.key} data={d} />)}
+      
+      {/* Trees */}
+      {snapshot.trees.map(d => <TreeMesh key={d.key} data={d} />)}
+      
+      {/* Vehicles */}
+      {snapshot.vehicles.map(d => <VehicleMesh key={d.key} data={d} />)}
+      
+      {/* Trains */}
+      {snapshot.trains.map(d => <TrainMeshGroup key={d.key} data={d} />)}
+      
+      {/* Logs */}
+      {snapshot.logs.map(d => <LogMesh key={d.key} data={d} />)}
+      
+      {/* Coins */}
+      {snapshot.coins.map(d => <CoinMesh key={d.key} data={d} />)}
+      
+      {/* Player */}
+      {snapshot.player.visible && (
+        <mesh
+          geometry={models.chicken.geometry}
+          material={playerMat}
+          scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+          position={[snapshot.player.x, snapshot.player.y, snapshot.player.z]}
+        >
+          {snapshot.player.opacity < 1 && (
+            <meshLambertMaterial
+              map={models.chicken.material.map}
+              transparent
+              opacity={snapshot.player.opacity}
+            />
+          )}
+        </mesh>
+      )}
     </>
   );
 }
