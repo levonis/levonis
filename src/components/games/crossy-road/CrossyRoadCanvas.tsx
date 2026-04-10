@@ -14,7 +14,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
   const handleLoaded = useCallback(() => setLoaded(true), []);
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative", background: "#000" }}>
+    <div style={{ width: "100%", height: "100vh", position: "fixed", top: 0, left: 0, background: "#000" }}>
       {!loaded && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 10,
