@@ -28,28 +28,21 @@ function computeZoom() {
   const isMobile = w < h;
 
   if (isMobile) {
-    // Mobile: keep objects small enough to see the game board comfortably
-    // Use the smaller of width-based or height-based zoom
-    const fromH = h / 20;
-    const fromW = w / 14;   // 9 lanes + generous side margins
-    return Math.max(20, Math.min(38, Math.min(fromH, fromW)));
+    // Mobile (Portrait): Scale off width so the 9 lanes fit exactly, with a slight margin.
+    const zoomFromW = w / 11; 
+    const zoomFromH = h / 16;
+    // Bound the zoom so it never gets microscopic on small phones
+    return Math.max(36, Math.min(65, Math.min(zoomFromW, zoomFromH)));
   }
 
-  // Desktop / landscape tablet
-  // Start from height-based zoom, then ensure the 9-lane board fills width
-  const fromH = h / 10;
-  const fromW = w / 9.5; // slightly loose so there's a bit of margin
-  let z = Math.max(fromH, fromW);
-
-  // Extra-wide screens: fill horizontal space
-  if (w > 1800) {
-    z = Math.max(z, w / 12);
-  } else if (w > 1400) {
-    z = Math.max(z, w / 13);
-  } else if (w > 1100) {
-    z = Math.max(z, w / 14);
-  }
-  return Math.max(55, Math.min(200, z));
+  // Desktop / Tablet (Landscape): 
+  // We DO NOT want to scale directly with screen width! If we do, a 4K or Ultrawide
+  // monitor will blow the game up until the chicken is the size of a dinner plate.
+  // Instead, we scale purely off height. Let's aim to comfortably fit ~14 units vertically.
+  const z = h / 14; 
+  
+  // Bound the desktop zoom so it stays comfortable
+  return Math.max(45, Math.min(100, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
