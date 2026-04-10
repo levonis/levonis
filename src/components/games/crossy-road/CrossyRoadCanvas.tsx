@@ -11,12 +11,12 @@ interface Props {
 
 function useResponsiveZoom() {
   const [zoom, setZoom] = useState(() => {
-    return Math.max(35, Math.min(100, window.innerHeight / 12));
+    return Math.max(50, Math.min(120, window.innerHeight / 10));
   });
 
   useEffect(() => {
     const update = () => {
-      setZoom(Math.max(35, Math.min(100, window.innerHeight / 12)));
+      setZoom(Math.max(50, Math.min(120, window.innerHeight / 10)));
     };
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
