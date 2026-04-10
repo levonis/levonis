@@ -80,7 +80,7 @@ interface RenderSnapshot {
 
 const LANES = 9;
 const CELL = 1;
-const MODEL_SCALE = 0.009;
+const MODEL_SCALE = 1.0;
 
 interface Props {
   onGameOver: (score: number, steps: number, coins: number) => void;
@@ -460,7 +460,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     // Camera follow
     const targetZ = -(g.playerRow - 5) * CELL;
-    camera.position.z += (targetZ + 8) * 0.05;
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ + 8, 0.05);
     camera.position.x = (LANES * CELL) / 2;
 
     // Build render snapshot (throttled to ~30fps to reduce React re-renders)
