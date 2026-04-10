@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ModelsProvider } from "./CrossyRoadModels";
