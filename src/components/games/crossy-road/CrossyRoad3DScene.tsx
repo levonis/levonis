@@ -34,7 +34,7 @@ interface Row {
   coin: Coin | null;
   trainWarning: boolean;
   trainTimer: number;
-  trainWarningPhase: boolean; // separate warning phase flag
+  trainWarningPhase: boolean;
   treeIndices: number[];
   grassDark: boolean;
 }
@@ -62,17 +62,17 @@ interface GameState {
 
 // ── Render snapshot for declarative rendering ──
 interface RenderGround { key: string; x: number; z: number; rowType: RowType; grassDark: boolean; }
-interface RenderWarning { key: string; x: number; z: number; intensity: number; }
+interface RenderTrafficLight { key: string; x: number; z: number; isWarning: boolean; intensity: number; }
 interface RenderTree { key: string; x: number; z: number; modelIdx: number; }
 interface RenderVehicle { key: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { key: string; x: number; z: number; }
-interface RenderLog { key: string; x: number; z: number; modelIdx: number; logWidth: number; }
+interface RenderLog { key: string; x: number; z: number; modelIdx: number; }
 interface RenderCoin { key: string; x: number; z: number; rotY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
 interface RenderSnapshot {
   grounds: RenderGround[];
-  warnings: RenderWarning[];
+  trafficLights: RenderTrafficLight[];
   trees: RenderTree[];
   vehicles: RenderVehicle[];
   trains: RenderTrain[];
@@ -88,17 +88,22 @@ const GROUND_SCALE_X = (LANES * CELL) / 25;
 const GROUND_SCALE_Z = CELL / 1;
 
 // Train constants
-const TRAIN_PART_WIDTH = 2.0; // spacing between train segments
-const TRAIN_TOTAL_PARTS = 5; // front + 3 middle + back
+const TRAIN_PART_WIDTH = 2.5;
+const TRAIN_TOTAL_PARTS = 5;
 const TRAIN_TOTAL_WIDTH = TRAIN_PART_WIDTH * TRAIN_TOTAL_PARTS;
-const TRAIN_SPAWN_X = -TRAIN_TOTAL_WIDTH - 5; // start well off-screen
+const TRAIN_SPAWN_X = -TRAIN_TOTAL_WIDTH - 5;
 const TRAIN_EXIT_X = LANES * CELL + TRAIN_TOTAL_WIDTH + 5;
 
 // Warning timing
-const TRAIN_WARNING_DURATION = 3.0; // seconds of warning before train spawns
+const TRAIN_WARNING_DURATION = 3.0;
 
 // Player on-log Y offset
 const LOG_Y_OFFSET = 0.15;
+
+// Log natural width (no stretching)
+const LOG_WIDTH = 1.0;
+// Log collision tolerance
+const LOG_TOLERANCE = 0.3;
 
 interface Props {
   onGameOver: (score: number, steps: number, coins: number) => void;
@@ -137,16 +142,18 @@ function generateRow(index: number): Row {
     const count = 1 + Math.floor(Math.random() * 2);
     const speed = (2.5 + Math.random() * 3 + difficulty * 2) * dir;
     const isTruck = Math.random() < 0.3;
+    // Space cars evenly to prevent overlap
+    const segmentWidth = (LANES * CELL) / count;
     for (let i = 0; i < count; i++) {
+      const baseX = segmentWidth * i + Math.random() * (segmentWidth - (isTruck ? 2 : 1));
       row.obstacles.push({
-        x: Math.random() * LANES * CELL,
+        x: baseX,
         speed, width: isTruck ? 2 : 1,
         modelIndex: Math.floor(Math.random() * (isTruck ? 2 : 6)),
         isTruck,
       });
     }
   } else if (type === "rail") {
-    // Initial delay before warning phase starts
     row.trainTimer = 3 + Math.random() * 5;
   } else if (type === "river") {
     const dir = Math.random() > 0.5 ? 1 : -1;
@@ -155,7 +162,7 @@ function generateRow(index: number): Row {
     for (let i = 0; i < count; i++) {
       row.logs.push({
         x: ((LANES * CELL) / count) * i + Math.random() * 2,
-        speed, width: 1.2,
+        speed, width: LOG_WIDTH,
         modelIndex: Math.floor(Math.random() * 4),
       });
     }
@@ -168,7 +175,7 @@ function generateRow(index: number): Row {
   return row;
 }
 
-// ── Sub-components for declarative rendering ──
+// ── Sub-components ──
 function GroundTile({ data }: { data: RenderGround }) {
   const models = useGameModels();
   if (!models) return null;
@@ -202,14 +209,52 @@ function GroundTile({ data }: { data: RenderGround }) {
   );
 }
 
-function WarningTile({ data }: { data: RenderWarning }) {
-  const pulse = Math.abs(Math.sin(Date.now() * 0.01));
-  const baseOpacity = 0.3 + data.intensity * 0.3;
+// Traffic Light component - pole with 3 lights
+function TrafficLight({ data }: { data: RenderTrafficLight }) {
+  const pulse = Math.abs(Math.sin(Date.now() * 0.008));
+  const redOn = data.isWarning;
+  const greenOn = !data.isWarning;
+
   return (
-    <mesh position={[data.x, 0.05, data.z]} scale={[1, 1, 1.2]}>
-      <boxGeometry args={[LANES * CELL, 0.12, CELL]} />
-      <meshLambertMaterial color={0xff0000} transparent opacity={baseOpacity + pulse * 0.4} />
-    </mesh>
+    <group position={[data.x, 0, data.z]}>
+      {/* Pole */}
+      <mesh position={[0, 0.5, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 1, 8]} />
+        <meshLambertMaterial color={0x333333} />
+      </mesh>
+      {/* Housing */}
+      <mesh position={[0, 1.1, 0]}>
+        <boxGeometry args={[0.2, 0.5, 0.15]} />
+        <meshLambertMaterial color={0x222222} />
+      </mesh>
+      {/* Red light */}
+      <mesh position={[0, 1.25, 0.08]}>
+        <sphereGeometry args={[0.06, 12, 12]} />
+        <meshStandardMaterial
+          color={redOn ? 0xff0000 : 0x330000}
+          emissive={redOn ? 0xff0000 : 0x000000}
+          emissiveIntensity={redOn ? 1.5 + pulse * 2 : 0}
+        />
+      </mesh>
+      {/* Yellow light */}
+      <mesh position={[0, 1.1, 0.08]}>
+        <sphereGeometry args={[0.06, 12, 12]} />
+        <meshStandardMaterial
+          color={redOn ? 0xffaa00 : 0x332200}
+          emissive={redOn ? 0xffaa00 : 0x000000}
+          emissiveIntensity={redOn ? 0.5 + pulse * 0.5 : 0}
+        />
+      </mesh>
+      {/* Green light */}
+      <mesh position={[0, 0.95, 0.08]}>
+        <sphereGeometry args={[0.06, 12, 12]} />
+        <meshStandardMaterial
+          color={greenOn ? 0x00ff00 : 0x003300}
+          emissive={greenOn ? 0x00ff00 : 0x000000}
+          emissiveIntensity={greenOn ? 0.8 : 0}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -245,22 +290,24 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
-  // No rotation - train models are already oriented along X axis
   return (
     <group position={[data.x, 0, data.z]}>
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
         position={[0, 0, 0]}
+        rotation={[0, Math.PI / 2, 0]}
       />
       {[1, 2, 3].map(ti => (
         <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
           position={[ti * TRAIN_PART_WIDTH, 0, 0]}
+          rotation={[0, Math.PI / 2, 0]}
         />
       ))}
       <mesh geometry={models.train.back.geometry} material={models.train.back.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
         position={[4 * TRAIN_PART_WIDTH, 0, 0]}
+        rotation={[0, Math.PI / 2, 0]}
       />
     </group>
   );
@@ -272,7 +319,7 @@ function LogMesh({ data }: { data: RenderLog }) {
   const m = models.logs[data.modelIdx % models.logs.length];
   return (
     <mesh geometry={m.geometry} material={m.material}
-      scale={[data.logWidth, MODEL_SCALE, MODEL_SCALE]}
+      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
       position={[data.x, 0.05, data.z]}
     />
   );
@@ -298,9 +345,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
   onScoreUpdateRef.current = onScoreUpdate;
 
   const [snapshot, setSnapshot] = useState<RenderSnapshot>({
-    grounds: [], warnings: [], trees: [], vehicles: [],
+    grounds: [], trafficLights: [], trees: [], vehicles: [],
     trains: [], logs: [], coins: [],
-    player: { x: LANES * CELL / 2, y: 0, z: -3, visible: true, opacity: 1, rotationY: Math.PI },
+    player: { x: LANES * CELL / 2, y: 0, z: -3, visible: true, opacity: 1, rotationY: 0 },
   });
 
   // Initialize game
@@ -318,14 +365,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       rows, dead: false, deathTimer: 0,
       moving: false, moveDir: null, moveProgress: 0,
       fromLane: Math.floor(LANES / 2), fromRow: 3,
-      hopAnim: 0, playerOffsetX: 0, playerRotation: Math.PI,
+      hopAnim: 0, playerOffsetX: 0, playerRotation: 0,
       onRiver: false,
     };
 
     return () => { audio.dispose(); };
   }, []);
 
-  // Input - standard controls, NO reversal
+  // Input: A=left, S=down, D=right, Space=jump forward
   const handleMove = useCallback((dir: string) => {
     const g = gameRef.current;
     const audio = audioRef.current;
@@ -333,9 +380,22 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     const currentRow = g.rows[g.playerRow];
     const wasOnRiver = currentRow && currentRow.type === "river";
-
-    // Calculate actual visual X before moving (for river exit)
     const visualXBefore = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+
+    // Check tree collision before moving
+    let targetLane = g.playerLane;
+    let targetRow = g.playerRow;
+
+    if (dir === "up") { targetRow = g.playerRow + 1; }
+    else if (dir === "down") { targetRow = Math.max(0, g.playerRow - 1); }
+    else if (dir === "left") { targetLane = Math.max(0, g.playerLane - 1); }
+    else if (dir === "right") { targetLane = Math.min(LANES - 1, g.playerLane + 1); }
+
+    // Block movement into trees
+    const destRow = g.rows[targetRow];
+    if (destRow && destRow.type === "grass" && destRow.treeIndices.includes(targetLane)) {
+      return; // blocked by tree
+    }
 
     g.moving = true;
     g.moveDir = dir;
@@ -343,73 +403,58 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.fromLane = g.playerLane;
     g.fromRow = g.playerRow;
 
-    // Standard movement - left decreases lane, right increases lane
+    g.playerLane = targetLane;
+    g.playerRow = targetRow;
+
     if (dir === "up") {
-      g.playerRow++;
       g.steps++;
       if (g.playerRow > g.maxRow) {
         g.maxRow = g.playerRow;
         g.score = g.maxRow;
       }
-    } else if (dir === "down") {
-      g.playerRow = Math.max(0, g.playerRow - 1);
-    } else if (dir === "left") {
-      g.playerLane = Math.max(0, g.playerLane - 1);
-    } else if (dir === "right") {
-      g.playerLane = Math.min(LANES - 1, g.playerLane + 1);
     }
 
     const newRow = g.rows[g.playerRow];
     const nowOnRiver = newRow && newRow.type === "river";
 
     if (wasOnRiver && !nowOnRiver) {
-      // Leaving river: use the actual visual X to determine the correct lane
       const snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
       g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
       g.playerOffsetX = 0;
       g.onRiver = false;
     } else if (nowOnRiver) {
-      // Entering or moving within river
-      // Use actual visual X to check which log we're on
       let actualPx: number;
       if (wasOnRiver) {
-        // Moving within river - carry the visual position
         actualPx = visualXBefore;
-        // Adjust for left/right movement
         if (dir === "left") actualPx -= CELL;
         else if (dir === "right") actualPx += CELL;
       } else {
-        // Fresh entry from non-river
         actualPx = g.playerLane * CELL + CELL / 2;
       }
 
-      // Find log at this actual position
       let foundLog: LogObj | null = null;
       for (const log of newRow.logs) {
-        if (actualPx >= log.x - 0.5 && actualPx <= log.x + log.width + 0.5) {
+        if (actualPx >= log.x - LOG_TOLERANCE && actualPx <= log.x + log.width + LOG_TOLERANCE) {
           foundLog = log;
           break;
         }
       }
 
       if (foundLog) {
-        // Snap offset so player rides this log
         const logCenter = foundLog.x + foundLog.width / 2;
         g.playerOffsetX = logCenter - (g.playerLane * CELL + CELL / 2);
       }
-      // If no log found, player will fall in water (handled in collision)
       g.onRiver = true;
     } else {
       g.playerOffsetX = 0;
       g.onRiver = false;
     }
 
-    // Standard rotation - model faces movement direction
-    // Add Math.PI offset so chicken's "front" faces the correct way
-    if (dir === "up") g.playerRotation = Math.PI;
-    else if (dir === "down") g.playerRotation = 0;
-    else if (dir === "left") g.playerRotation = Math.PI / 2;
-    else if (dir === "right") g.playerRotation = -Math.PI / 2;
+    // Rotation: flip by Math.PI so chicken face matches direction
+    if (dir === "up") g.playerRotation = 0;
+    else if (dir === "down") g.playerRotation = Math.PI;
+    else if (dir === "left") g.playerRotation = -Math.PI / 2;
+    else if (dir === "right") g.playerRotation = Math.PI / 2;
 
     g.hopAnim = 1;
     audio?.playHop();
@@ -420,11 +465,12 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     let touchStartX = 0, touchStartY = 0;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const map: Record<string, string> = {
-        ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-        w: "up", s: "down", a: "left", d: "right",
-      };
-      const dir = map[e.key];
+      const key = e.key.toLowerCase();
+      let dir: string | null = null;
+      if (key === " " || key === "arrowup") dir = "up";
+      else if (key === "s" || key === "arrowdown") dir = "down";
+      else if (key === "a" || key === "arrowleft") dir = "left";
+      else if (key === "d" || key === "arrowright") dir = "right";
       if (dir) { e.preventDefault(); handleMove(dir); }
     };
 
@@ -490,18 +536,15 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         }
         if (row.type === "rail") {
           if (row.obstacles.length === 0) {
-            // Count down to warning / spawn
             row.trainTimer -= dt;
 
             if (row.trainTimer <= TRAIN_WARNING_DURATION && !row.trainWarningPhase) {
-              // Enter warning phase
               row.trainWarningPhase = true;
               row.trainWarning = true;
               audio?.playTrainAlarm();
             }
 
             if (row.trainTimer <= 0) {
-              // Spawn train
               audio?.playTrainPass();
               row.obstacles.push({
                 x: TRAIN_SPAWN_X,
@@ -512,7 +555,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               });
             }
           } else {
-            // Train is moving
             for (const obs of row.obstacles) obs.x += obs.speed * dt;
             if (row.obstacles[0].x > TRAIN_EXIT_X) {
               row.obstacles = [];
@@ -590,7 +632,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const now = Date.now();
 
     const grounds: RenderGround[] = [];
-    const warnings: RenderWarning[] = [];
+    const trafficLights: RenderTrafficLight[] = [];
     const trees: RenderTree[] = [];
     const vehicles: RenderVehicle[] = [];
     const trains: RenderTrain[] = [];
@@ -605,12 +647,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ key: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
 
-      // Show warning when in warning phase or train is active
-      if (row.type === "rail" && (row.trainWarning || row.obstacles.length > 0)) {
-        const intensity = row.trainWarningPhase && row.obstacles.length === 0
+      // Traffic lights on rail rows (placed at both sides)
+      if (row.type === "rail") {
+        const isWarning = row.trainWarningPhase && row.obstacles.length === 0;
+        const intensity = isWarning
           ? Math.min(1, (TRAIN_WARNING_DURATION - row.trainTimer) / TRAIN_WARNING_DURATION)
-          : 1;
-        warnings.push({ key: `w${r}`, x: cx, z, intensity });
+          : 0;
+        trafficLights.push({ key: `tl${r}_l`, x: -0.5, z, isWarning, intensity });
+        trafficLights.push({ key: `tl${r}_r`, x: LANES * CELL + 0.5, z, isWarning, intensity });
       }
 
       if (row.type === "grass") {
@@ -635,7 +679,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       for (let li = 0; li < row.logs.length; li++) {
         const log = row.logs[li];
-        logRenders.push({ key: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex, logWidth: log.width });
+        logRenders.push({ key: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
       }
 
       if (row.coin && !row.coin.collected) {
@@ -657,13 +701,12 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     }
     const hopOffset = Math.sin(g.hopAnim * Math.PI) * 0.3;
 
-    // Player Y: elevated when on a log
     const currentRow = g.rows[g.playerRow];
     const isOnRiver = currentRow && currentRow.type === "river";
     const baseY = isOnRiver ? LOG_Y_OFFSET : 0;
 
     setSnapshot({
-      grounds, warnings, trees, vehicles, trains, logs: logRenders, coins,
+      grounds, trafficLights, trees, vehicles, trains, logs: logRenders, coins,
       player: {
         x: px, y: baseY + hopOffset, z: pz,
         visible: !g.dead || g.deathTimer < 1,
@@ -683,7 +726,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
   return (
     <>
       {snapshot.grounds.map(d => <GroundTile key={d.key} data={d} />)}
-      {snapshot.warnings.map(d => <WarningTile key={d.key} data={d} />)}
+      {snapshot.trafficLights.map(d => <TrafficLight key={d.key} data={d} />)}
       {snapshot.trees.map(d => <TreeMesh key={d.key} data={d} />)}
       {snapshot.vehicles.map(d => <VehicleMesh key={d.key} data={d} />)}
       {snapshot.trains.map(d => <TrainMeshGroup key={d.key} data={d} />)}

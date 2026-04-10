@@ -24,13 +24,22 @@ function useResponsiveZoom() {
 function computeZoom() {
   const w = window.innerWidth;
   const h = window.innerHeight;
-  // Base zoom from height
-  let z = h / 10;
-  // On wide screens, boost zoom so the playfield fills more horizontal space
-  if (w > 1200) {
-    z = Math.max(z, w / 18);
+  const isMobile = w < h;
+
+  if (isMobile) {
+    // Mobile: smaller zoom so objects aren't too big
+    return Math.max(40, Math.min(65, h / 14));
   }
-  return Math.max(55, Math.min(140, z));
+
+  // Desktop
+  let z = h / 10;
+  // Wide screens: boost zoom to fill horizontal space
+  if (w > 1600) {
+    z = Math.max(z, w / 14);
+  } else if (w > 1200) {
+    z = Math.max(z, w / 16);
+  }
+  return Math.max(55, Math.min(160, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
