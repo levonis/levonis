@@ -193,6 +193,18 @@ export default function AdminFinancialDrafts() {
     });
   };
 
+  const addRowAt = (afterIndex: number) => {
+    updateDraft(d => {
+      const newRow: DraftRow = { id: newRowId() };
+      d.columns.forEach(col => {
+        if (col.type === 'date') newRow[col.id] = new Date().toISOString().split('T')[0];
+      });
+      const rows = [...d.rows];
+      rows.splice(afterIndex + 1, 0, newRow);
+      return { ...d, rows };
+    });
+  };
+
   const deleteRow = (rowId: string) => {
     updateDraft(d => ({ ...d, rows: d.rows.filter(r => r.id !== rowId) }));
   };
@@ -390,92 +402,109 @@ export default function AdminFinancialDrafts() {
                 ) : (
                   activeDraft.rows.map((row, idx) => {
                     const rowSub = hasSubtotal ? calcRowSubtotal(row, activeDraft.columns) : 0;
+                    const totalCols = activeDraft.columns.length + (hasSubtotal ? 2 : 1) + 1;
                     return (
-                      <tr key={row.id} className="border-b border-white/5 hover:bg-primary/[0.03] transition-colors group/row">
-                        <td className="p-3 text-center text-muted-foreground/50 text-sm font-mono select-none">{idx + 1}</td>
-                        {activeDraft.columns.map(col => (
-                          <td key={col.id} className="p-0 border-r border-white/5 last:border-r-0">
-                            {/* DATE */}
-                            {col.type === 'date' ? (
-                              <div className="relative">
-                                <input
-                                  type="date"
-                                  value={row[col.id] || ''}
-                                  onChange={e => setCellVal(row.id, col.id, e.target.value)}
-                                  className="w-full h-10 px-3 text-sm bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
-                                  dir="ltr"
-                                />
-                              </div>
-                            ) : (col.type === 'number' || col.type === 'quantity') ? (
-                              /* NUMBER / QUANTITY */
-                              editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={cellValue}
-                                  onChange={e => {
-                                    const raw = e.target.value.replace(/[^0-9.]/g, '');
-                                    setCellValue(formatNumberInput(raw));
-                                  }}
-                                  className={`w-full h-10 px-3 text-sm border-0 outline-none font-mono ${
-                                    col.type === 'quantity' ? 'bg-purple-500/5' : 'bg-emerald-500/5'
-                                  }`}
-                                  dir="ltr"
-                                  autoFocus
-                                  onBlur={() => { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }
-                                    if (e.key === 'Escape') setEditingCell(null);
-                                  }}
-                                />
-                              ) : (
-                                <div
-                                  className={`px-3 py-2.5 min-h-[40px] cursor-text text-sm font-mono hover:bg-muted/20 transition-colors flex items-center ${
-                                    col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
-                                  }`}
-                                  dir="ltr"
-                                  onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] ? formatNumberInput(row[col.id]) : ''); }}
-                                >
-                                  {row[col.id] ? formatNumberInput(row[col.id]) : <span className="text-muted-foreground/25">0</span>}
+                      <>
+                        <tr key={row.id} className="border-b border-white/5 hover:bg-primary/[0.03] transition-colors group/row relative">
+                          <td className="p-3 text-center text-muted-foreground/50 text-sm font-mono select-none">{idx + 1}</td>
+                          {activeDraft.columns.map(col => (
+                            <td key={col.id} className="p-0 border-r border-white/5 last:border-r-0">
+                              {/* DATE */}
+                              {col.type === 'date' ? (
+                                <div className="relative">
+                                  <input
+                                    type="date"
+                                    value={row[col.id] || ''}
+                                    onChange={e => setCellVal(row.id, col.id, e.target.value)}
+                                    className="w-full h-10 px-3 text-sm bg-transparent border-0 outline-none focus:bg-amber-500/5 transition-colors cursor-pointer font-mono"
+                                    dir="ltr"
+                                  />
                                 </div>
-                              )
-                            ) : (
-                              /* TEXT */
-                              editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
-                                <input
-                                  value={cellValue}
-                                  onChange={e => setCellValue(e.target.value)}
-                                  className="w-full h-10 px-3 text-sm bg-blue-500/5 border-0 outline-none"
-                                  autoFocus
-                                  onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }
-                                    if (e.key === 'Escape') setEditingCell(null);
-                                  }}
-                                />
+                              ) : (col.type === 'number' || col.type === 'quantity') ? (
+                                /* NUMBER / QUANTITY */
+                                editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={cellValue}
+                                    onChange={e => {
+                                      const raw = e.target.value.replace(/[^0-9.]/g, '');
+                                      setCellValue(formatNumberInput(raw));
+                                    }}
+                                    className={`w-full h-10 px-3 text-sm border-0 outline-none font-mono ${
+                                      col.type === 'quantity' ? 'bg-purple-500/5' : 'bg-emerald-500/5'
+                                    }`}
+                                    dir="ltr"
+                                    autoFocus
+                                    onBlur={() => { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') { setCellVal(row.id, col.id, String(parseFormattedNumber(cellValue))); setEditingCell(null); }
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    className={`px-3 py-2.5 min-h-[40px] cursor-text text-sm font-mono hover:bg-muted/20 transition-colors flex items-center ${
+                                      col.type === 'quantity' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'
+                                    }`}
+                                    dir="ltr"
+                                    onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] ? formatNumberInput(row[col.id]) : ''); }}
+                                  >
+                                    {row[col.id] ? formatNumberInput(row[col.id]) : <span className="text-muted-foreground/25">0</span>}
+                                  </div>
+                                )
                               ) : (
-                                <div
-                                  className="px-3 py-2.5 min-h-[40px] cursor-text text-sm hover:bg-muted/20 transition-colors flex items-center"
-                                  onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
-                                >
-                                  {row[col.id] || <span className="text-muted-foreground/25">—</span>}
-                                </div>
-                              )
-                            )}
+                                /* TEXT */
+                                editingCell?.rowId === row.id && editingCell?.colId === col.id ? (
+                                  <input
+                                    value={cellValue}
+                                    onChange={e => setCellValue(e.target.value)}
+                                    className="w-full h-10 px-3 text-sm bg-blue-500/5 border-0 outline-none"
+                                    autoFocus
+                                    onBlur={() => { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') { setCellVal(row.id, col.id, cellValue); setEditingCell(null); }
+                                      if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="px-3 py-2.5 min-h-[40px] cursor-text text-sm hover:bg-muted/20 transition-colors flex items-center"
+                                    onClick={() => { setEditingCell({ rowId: row.id, colId: col.id }); setCellValue(row[col.id] || ''); }}
+                                  >
+                                    {row[col.id] || <span className="text-muted-foreground/25">—</span>}
+                                  </div>
+                                )
+                              )}
+                            </td>
+                          ))}
+                          {/* Row Subtotal */}
+                          {hasSubtotal && (
+                            <td className="px-3 py-2.5 border-r border-white/5 text-sm font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
+                              {rowSub > 0 ? formatNumberInput(String(rowSub)) : <span className="text-muted-foreground/25">0</span>}
+                            </td>
+                          )}
+                          <td className="p-1">
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/50 hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={() => deleteRow(row.id)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </td>
-                        ))}
-                        {/* Row Subtotal */}
-                        {hasSubtotal && (
-                          <td className="px-3 py-2.5 border-r border-white/5 text-sm font-mono font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/[0.04]" dir="ltr">
-                            {rowSub > 0 ? formatNumberInput(String(rowSub)) : <span className="text-muted-foreground/25">0</span>}
+                        </tr>
+                        {/* Insert row between rows */}
+                        <tr key={`insert-${row.id}`} className="group/insert h-0">
+                          <td colSpan={totalCols} className="p-0 relative h-0">
+                            <div className="absolute inset-x-0 -top-[1px] flex items-center justify-center opacity-0 group-hover/insert:opacity-100 transition-opacity z-10" style={{ height: '12px' }}>
+                              <button
+                                onClick={() => addRowAt(idx)}
+                                className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-all scale-90 hover:scale-100 border border-primary/30"
+                              >
+                                <Plus className="h-2.5 w-2.5" />
+                                صف
+                              </button>
+                            </div>
                           </td>
-                        )}
-                        <td className="p-1">
-                          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive/50 hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={() => deleteRow(row.id)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </td>
-                      </tr>
+                        </tr>
+                      </>
                     );
                   })
                 )}
