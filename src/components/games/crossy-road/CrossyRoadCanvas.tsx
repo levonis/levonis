@@ -1,3 +1,4 @@
+/// <reference types="react" />
 import { useCallback, useState, useEffect, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ModelsProvider } from "./CrossyRoadModels";
@@ -29,9 +30,9 @@ function computeZoom() {
   if (isMobile) {
     // Mobile: keep objects small enough to see the game board comfortably
     // Use the smaller of width-based or height-based zoom
-    const fromH = h / 16;
-    const fromW = w / 9;   // 9 lanes should fit the width
-    return Math.max(28, Math.min(50, Math.min(fromH, fromW)));
+    const fromH = h / 20;
+    const fromW = w / 14;   // 9 lanes + generous side margins
+    return Math.max(20, Math.min(38, Math.min(fromH, fromW)));
   }
 
   // Desktop / landscape tablet

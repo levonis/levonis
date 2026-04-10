@@ -1,3 +1,4 @@
+/// <reference types="react" />
 import { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
@@ -88,7 +89,7 @@ const GROUND_SCALE_X = (LANES * CELL) / 25;
 const GROUND_SCALE_Z = CELL / 1;
 
 // Train constants
-const TRAIN_PART_WIDTH = 2.5;
+const TRAIN_PART_WIDTH = 4.6;
 const TRAIN_TOTAL_PARTS = 5;
 const TRAIN_TOTAL_WIDTH = TRAIN_PART_WIDTH * TRAIN_TOTAL_PARTS;
 const TRAIN_SPAWN_X = -TRAIN_TOTAL_WIDTH - 5;
@@ -304,32 +305,26 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
-  // Train spawns from the left side (obs.x starts very negative and moves right).
-  // Part layout from x=0: FRONT at offset 0 (leading edge), middles behind it,
-  // BACK at the rear. Parts are spaced by TRAIN_PART_WIDTH.
-  // Since the train moves left-to-right, the front is the RIGHTMOST part visually.
-  // So: back at 0, middles at 1..3, front at 4 (= leading edge going right).
+  // Offset to ensure the train's left edge starts exactly at data.x without protruding backwards
+  const offset = TRAIN_PART_WIDTH / 2;
   return (
-    <group position={[data.x, 0, data.z]}>
+    <group position={[data.x, 0.05, data.z]}>
       {/* Back of train (trailing, lowest x) */}
       <mesh geometry={models.train.back.geometry} material={models.train.back.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[0, 0, 0]}
-        rotation={[0, Math.PI / 2, 0]}
+        position={[offset, 0, 0]}
       />
       {/* Middle cars */}
       {[1, 2, 3].map(ti => (
         <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-          position={[ti * TRAIN_PART_WIDTH, 0, 0]}
-          rotation={[0, Math.PI / 2, 0]}
+          position={[offset + ti * TRAIN_PART_WIDTH, 0, 0]}
         />
       ))}
       {/* Front of train (leading edge, highest x) */}
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[4 * TRAIN_PART_WIDTH, 0, 0]}
-        rotation={[0, Math.PI / 2, 0]}
+        position={[offset + 4 * TRAIN_PART_WIDTH, 0, 0]}
       />
     </group>
   );
