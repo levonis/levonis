@@ -267,7 +267,7 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
       </Dialog>
 
       {/* Add Tickets Dialog */}
-      <Dialog open={addTicketDialogOpen} onOpenChange={setAddTicketDialogOpen} modal={false}>
+      <Dialog open={addTicketDialogOpen} onOpenChange={setAddTicketDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>إضافة تذاكر لمستخدم</DialogTitle>
