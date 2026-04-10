@@ -165,9 +165,7 @@ export default function MiniGames() {
               <KnifeRainGame onBack={() => setActiveGame(null)} />
             )}
             {activeGame === 'crossy_road' && (
-              <div className="fixed inset-0 z-50">
-                <CrossyRoadGame onBack={() => setActiveGame(null)} />
-              </div>
+              <CrossyRoadGame onBack={() => setActiveGame(null)} />
             )}
           </Suspense>
         </div>
