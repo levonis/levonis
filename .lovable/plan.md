@@ -1,57 +1,53 @@
 
+I checked the current Crossy Road code, and your complaint is valid: the last attempt changed the movement logic, but the real problem is mostly visual alignment/orientation.
 
-# إصلاح شامل لمشاكل Crossy Road
+Plan:
 
-## المشاكل والإصلاحات
+1. Restore movement controls and fix only the player visual facing
+- Revert `A/D` and left/right lane movement in `handleMove` so controls stay normal.
+- Fix the chicken “design direction” by adjusting `playerRotation` only.
+- Add a single base yaw offset for the chicken model so its mesh faces the correct world direction without changing gameplay movement.
 
-### 1. موقع اللاعب معكوس (Player Position Reversed)
-**المشكلة**: الدجاجة تظهر معكوسة — عند الضغط "يمين" تذهب "يسار" بصرياً. السبب أن الكاميرا الإيزومترية تعكس المحور. اتجاهات `left`/`right` في `handleMove` تحرك الـ `playerLane` بشكل منطقي صحيح لكن بصرياً معكوس بسبب زاوية الكاميرا.
+2. Fix log landing and leaving using real visual X, not nearest-log snapping
+- Stop snapping to the “nearest log” when landing on a river row, because that is what pulls the player into the wrong log.
+- Use the player’s actual carried X position when jumping between river rows.
+- Only attach to a log if that actual X is inside that log’s real bounds.
+- When leaving the river, compute the real visual X and snap that to the correct lane with clamp.
 
-**الإصلاح**: عكس اتجاه `left` و `right` في `handleMove`:
-- `left` → يزيد `playerLane` (بدل ينقص)
-- `right` → ينقص `playerLane` (بدل يزيد)
-- وعكس rotation أيضاً
+3. Fix player height while standing on logs
+- The player is currently always rendered at ground height, while logs are raised meshes.
+- Add a player base Y offset when the player is on a log so the chicken stands on top of the log instead of intersecting it.
+- Interpolate that height cleanly during jump/landing so it does not pop.
 
-### 2. اللاعب يظهر داخل الجذع + موقع مغادرة خاطئ
-**المشكلة**: عند الهبوط على النهر، `playerOffsetX` يُحسب بناءً على أقرب جذع لكن الجذع قد يكون بعيداً — اللاعب ينجذب لجذع غير الذي تحته. أيضاً `log.x` هو الحافة اليسرى وليس المركز، لذا حساب `logCenter = log.x + log.width/2` صحيح لكن مقارنة الاصطدام `px > log.x && px < log.x + log.width` تستخدم نطاق مختلف.
+4. Fix train model orientation and segment spacing from the actual OBJ dimensions
+- The train models are already long on the X axis, so the current 90° Y rotation is incorrect.
+- Remove/correct the train rotation so the train length aligns with movement on X.
+- Replace the fake `partWidth = 1.5` spacing with spacing based on the real train model size.
+- Update spawn X, rendered group length, collision width, and off-screen reset threshold so the visuals and hitbox match.
 
-**الإصلاح**:
-- عند الهبوط على نهر: فقط حساب offset إذا كان اللاعب فعلاً داخل نطاق جذع (وليس أقرب جذع)
-- عند المغادرة: حساب الموقع الحقيقي `actualX` وتقريبه لأقرب lane مع clamp
-- أثناء البقاء على النهر والقفز بين صفوف نهر: الاحتفاظ بـ offset وإعادة حسابه للصف الجديد
+5. Make train warning guaranteed before the train appears
+- Replace the current “same timer does everything” behavior with a clear warning phase before spawn.
+- Keep the warning visible for a guaranteed duration before the train is created.
+- Make the warning more visible by raising it above the track and strengthening the pulse/opacity.
 
-### 3. القطار: القطع متداخلة وموقعها غير صحيح
-**المشكلة**: `partWidth = 2` لا يتناسب مع الحجم الفعلي لنموذج القطار بعد الدوران 90°. أيضاً القطار يبدأ من `x: -5` وهذا قريب جداً — القطع تظهر فوق بعضها.
+6. Improve large-screen desktop framing
+- The fullscreen container is already correct; the issue is the orthographic framing on wide screens.
+- Update `useResponsiveZoom` to consider wide desktop aspect ratios instead of only `innerHeight / 10`.
+- Increase the allowed desktop zoom range so the playfield fills more of a 1790px-wide screen.
+- If needed, slightly tune camera position/look target to keep the board centered after the zoom change.
 
-**الإصلاح**:
-- قياس حجم نموذج القطار الفعلي واستخدامه كـ `partWidth` (~1.5 وحدة بعد الدوران)
-- بدء القطار من `x: -15` ليأتي من خارج الشاشة بالكامل
-- ضمان أن العربات مرتبة بشكل صحيح على X
+Files to update
+- `src/components/games/crossy-road/CrossyRoad3DScene.tsx`
+  - restore normal left/right lane movement
+  - fix player mesh facing
+  - fix log attach/leave logic with real X
+  - add standing-on-log height
+  - fix train rotation, spacing, spawn, width, warning phase
+- `src/components/games/crossy-road/CrossyRoadCanvas.tsx`
+  - improve desktop orthographic zoom calculation
 
-### 4. تحذير القطار لا يظهر قبل القطار
-**المشكلة**: التحذير يظهر عندما `trainTimer <= 1.5 && trainTimer > 0` لكن لا يتم عرضه في الـ snapshot إلا عندما `row.trainWarning && row.trainTimer > 0`. القطار يظهر مباشرة عند `trainTimer <= 0` — الفارق 1.5 ثانية فقط وقد لا يكون كافياً بصرياً.
-
-**الإصلاح**:
-- زيادة وقت التحذير إلى `trainTimer <= 3` ثانية
-- إضافة وميض أقوى (حجم أكبر وتعتيم أعلى) للتحذير
-- عرض التحذير أيضاً عند وجود قطار فعلي يتحرك في الصف
-
-### 5. Canvas لا يملأ الشاشة على PC
-**المشكلة**: `zoom = innerHeight / 12` ينتج zoom ~83 على شاشة 995px — هذا جيد للارتفاع لكن على شاشة عريضة (1790px) المحتوى يبقى ضيقاً مع مساحات فارغة على الجوانب.
-
-**الإصلاح**: 
-- استخدام zoom أكبر للشاشات الكبيرة: `Math.max(50, Math.min(120, innerHeight / 10))`
-- التأكد من أن الكاميرا تعرض مساحة كافية
-
-## الملفات المتأثرة
-
-### `CrossyRoad3DScene.tsx`
-- عكس `left`/`right` في `handleMove` وrotation المقابل
-- إصلاح حساب `playerOffsetX` عند الهبوط/المغادرة من النهر
-- ضبط `partWidth` للقطار وموقع بدايته
-- زيادة مدة تحذير القطار
-- تحسين `WarningTile` بصرياً
-
-### `CrossyRoadCanvas.tsx`
-- تحسين `useResponsiveZoom` لشاشات PC الكبيرة
-
+Technical notes
+- The current bug is not mainly input mapping; it is the mesh orientation plus bad river/train rendering logic.
+- The biggest log bug is that the code still falls back to the nearest log and keeps the player at ground Y.
+- The biggest train bug is that the train OBJ appears to already be oriented along X, so rotating it by 90° makes the segments align incorrectly.
+- `MiniGames.tsx` already gives Crossy Road a fullscreen route path, so I would not change that unless verification proves otherwise.
