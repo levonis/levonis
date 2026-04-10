@@ -10,19 +10,27 @@ interface Props {
 }
 
 function useResponsiveZoom() {
-  const [zoom, setZoom] = useState(() => {
-    return Math.max(50, Math.min(120, window.innerHeight / 10));
-  });
+  const [zoom, setZoom] = useState(() => computeZoom());
 
   useEffect(() => {
-    const update = () => {
-      setZoom(Math.max(50, Math.min(120, window.innerHeight / 10)));
-    };
+    const update = () => setZoom(computeZoom());
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
 
   return zoom;
+}
+
+function computeZoom() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  // Base zoom from height
+  let z = h / 10;
+  // On wide screens, boost zoom so the playfield fills more horizontal space
+  if (w > 1200) {
+    z = Math.max(z, w / 18);
+  }
+  return Math.max(55, Math.min(140, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
