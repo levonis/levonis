@@ -150,7 +150,7 @@ export default function MiniGames() {
     return (
       <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
         <PixelBackground />
-        <div className="relative z-10 max-w-2xl mx-auto">
+        <div className={`relative z-10 ${activeGame === 'crossy_road' ? '' : 'max-w-2xl'} mx-auto`}>
           <Suspense fallback={<div className="flex items-center justify-center h-screen text-primary font-mono">Loading...</div>}>
             {activeGame === 'space_blaster' && (
               <SpaceBlasterGame onBack={() => setActiveGame(null)} />
