@@ -188,10 +188,11 @@ function GroundTile({ data }: { data: RenderGround }) {
 }
 
 function WarningTile({ data }: { data: RenderWarning }) {
+  const pulse = Math.abs(Math.sin(Date.now() * 0.008));
   return (
-    <mesh position={[data.x, 0.01, data.z]}>
-      <boxGeometry args={[LANES * CELL, 0.05, CELL]} />
-      <meshLambertMaterial color={0xff0000} transparent opacity={0.3} />
+    <mesh position={[data.x, 0.02, data.z]} scale={[1, 1, 1.2]}>
+      <boxGeometry args={[LANES * CELL, 0.08, CELL]} />
+      <meshLambertMaterial color={0xff0000} transparent opacity={0.3 + pulse * 0.4} />
     </mesh>
   );
 }
@@ -229,8 +230,8 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
-  // After 90° rotation, the OBJ depth (~4.875) becomes the X-axis span of each part
-  const partWidth = 2;
+  // Each train part is ~1.5 units wide after 90° rotation
+  const partWidth = 1.5;
   return (
     <group position={[data.x, 0, data.z]}>
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
@@ -339,9 +340,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     } else if (dir === "down") {
       g.playerRow = Math.max(0, g.playerRow - 1);
     } else if (dir === "left") {
-      g.playerLane = Math.max(0, g.playerLane - 1);
-    } else if (dir === "right") {
+      // Reversed for isometric camera: visual left = increase lane
       g.playerLane = Math.min(LANES - 1, g.playerLane + 1);
+    } else if (dir === "right") {
+      // Reversed for isometric camera: visual right = decrease lane
+      g.playerLane = Math.max(0, g.playerLane - 1);
     }
 
     const newRow = g.rows[g.playerRow];
@@ -349,33 +352,43 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     if (wasOnRiver && !nowOnRiver) {
       // Leaving river: snap to nearest lane based on actual visual position
-      const actualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      const actualX = g.fromLane * CELL + CELL / 2 + g.playerOffsetX;
       g.playerLane = Math.max(0, Math.min(LANES - 1, Math.round((actualX - CELL / 2) / CELL)));
       g.playerOffsetX = 0;
-    } else if (nowOnRiver && !wasOnRiver) {
-      // Arriving at river: calculate offset to snap player onto nearest log
+    } else if (nowOnRiver) {
+      // Arriving at or moving within river: find the log the player is actually on
       const px = g.playerLane * CELL + CELL / 2;
-      let bestLog: LogObj | null = null;
-      let bestDist = Infinity;
+      let foundLog: LogObj | null = null;
+      // First check if player is within any log bounds
       for (const log of newRow.logs) {
-        const logCenter = log.x + log.width / 2;
-        const dist = Math.abs(px - logCenter);
-        if (dist < bestDist) { bestDist = dist; bestLog = log; }
+        if (px >= log.x - 0.3 && px <= log.x + log.width + 0.3) {
+          foundLog = log;
+          break;
+        }
       }
-      if (bestLog) {
-        g.playerOffsetX = (bestLog.x + bestLog.width / 2) - px;
+      // If not on any log, find the nearest one
+      if (!foundLog) {
+        let bestDist = Infinity;
+        for (const log of newRow.logs) {
+          const logCenter = log.x + log.width / 2;
+          const dist = Math.abs(px - logCenter);
+          if (dist < bestDist) { bestDist = dist; foundLog = log; }
+        }
+      }
+      if (foundLog) {
+        g.playerOffsetX = (foundLog.x + foundLog.width / 2) - px;
       } else {
         g.playerOffsetX = 0;
       }
-    } else if (!nowOnRiver) {
+    } else {
       g.playerOffsetX = 0;
     }
 
-    // Set player rotation based on direction
+    // Set player rotation based on direction (reversed left/right for isometric)
     if (dir === "up") g.playerRotation = Math.PI;
     else if (dir === "down") g.playerRotation = 0;
-    else if (dir === "left") g.playerRotation = Math.PI / 2;
-    else if (dir === "right") g.playerRotation = -Math.PI / 2;
+    else if (dir === "left") g.playerRotation = -Math.PI / 2;
+    else if (dir === "right") g.playerRotation = Math.PI / 2;
 
     g.hopAnim = 1;
     audio?.playHop();
@@ -458,17 +471,17 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         }
         if (row.type === "rail") {
           row.trainTimer -= dt;
-          if (row.trainTimer <= 1.5 && row.trainTimer > 0 && !row.trainWarning) {
+          if (row.trainTimer <= 3 && row.trainTimer > 0 && !row.trainWarning) {
             row.trainWarning = true;
             audio?.playTrainAlarm();
           }
           if (row.trainTimer <= 0) {
             if (row.obstacles.length === 0) {
               audio?.playTrainPass();
-              row.obstacles.push({ x: -5, speed: 8, width: LANES + 5, modelIndex: 0, isTruck: false });
+              row.obstacles.push({ x: -15, speed: 8, width: LANES + 5, modelIndex: 0, isTruck: false });
             }
             for (const obs of row.obstacles) obs.x += obs.speed * dt;
-            if (row.obstacles.length > 0 && row.obstacles[0].x > LANES * CELL + 8) {
+            if (row.obstacles.length > 0 && row.obstacles[0].x > LANES * CELL + 12) {
               row.obstacles = [];
               row.trainWarning = false;
               row.trainTimer = 4 + Math.random() * 6;
@@ -558,7 +571,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ key: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
 
-      if (row.type === "rail" && row.trainWarning && row.trainTimer > 0) {
+      if (row.type === "rail" && (row.trainWarning || row.obstacles.length > 0)) {
         warnings.push({ key: `w${r}`, x: cx, z });
       }
 
