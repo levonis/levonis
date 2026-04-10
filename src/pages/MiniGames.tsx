@@ -34,6 +34,12 @@ export default function MiniGames() {
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [showStore, setShowStore] = useState(false);
   const [showPrizes, setShowPrizes] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
@@ -87,7 +93,7 @@ export default function MiniGames() {
   const { data: crossyRoadSettings } = useQuery({
     queryKey: ["crossy-road-enabled"],
     queryFn: async () => {
-      const { data } = await supabase.from("crossy_road_settings").select("game_enabled").limit(1).single();
+      const { data } = await supabase.from("crossy_road_settings").select("game_enabled, next_season_starts_at").limit(1).single();
       return data as any;
     },
   });
@@ -109,7 +115,25 @@ export default function MiniGames() {
     if (game.node_name === "crossy_road" && crossyRoadSettings && !crossyRoadSettings.game_enabled) {
       return { ...game, _disabled: true };
     }
-    return { ...game, _disabled: false };
+    let startingSoon: string | undefined = undefined;
+    if (game.node_name === "crossy_road" && crossyRoadSettings?.next_season_starts_at) {
+      const startsAt = new Date(crossyRoadSettings.next_season_starts_at).getTime();
+      const now = currentTime;
+      if (startsAt > now) {
+        const diff = startsAt - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        if (days > 0) startingSoon = `${days} يوم و${hours} ساعة`;
+        else if (hours > 0) startingSoon = `${hours} ساعة و${mins} دقيقة`;
+        else if (mins > 0) startingSoon = `${mins} دقيقة و${secs} ثانية`;
+        else startingSoon = `${secs} ثانية`;
+      }
+    }
+
+    return { ...game, _disabled: isDisabled, _starting_soon: startingSoon };
   });
 
   const filteredGames = filterGameNodes(gamesWithStatus, activeFilter).sort((a, b) => {
@@ -261,6 +285,7 @@ export default function MiniGames() {
               onPlay={() => handlePlay(game)}
               onClickSound={playClick}
               disabled={(game as any)._disabled}
+              startingSoon={(game as any)._starting_soon}
             />
           ))}
         </div>

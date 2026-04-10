@@ -152,6 +152,7 @@ export default function CrossyRoadTab() {
   const [subTab, setSubTab] = useState<"settings" | "milestones" | "leaderboard" | "winners">("settings");
   const [newMilestone, setNewMilestone] = useState({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null as string | null, selected_color: null as string | null, selected_option_id: null as string | null });
   const [newLbPrize, setNewLbPrize] = useState({ position: 1, prize_name_ar: "", product_id: null as string | null, selected_color: null as string | null, selected_option_id: null as string | null });
+  const [nextSeasonDelay, setNextSeasonDelay] = useState<number>(0);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -209,7 +210,17 @@ export default function CrossyRoadTab() {
   });
 
   const awardWinners = useMutation({
-    mutationFn: async () => { const { data, error } = await supabase.rpc("admin_award_crossy_road_winners" as any); if (error) throw error; return data as any; },
+    mutationFn: async () => { 
+      let startsAt: string | null = null;
+      if (nextSeasonDelay > 0) {
+        startsAt = new Date(Date.now() + nextSeasonDelay * 60 * 60 * 1000).toISOString();
+      }
+      const { data, error } = await supabase.rpc("admin_award_crossy_road_winners" as any, { 
+        p_next_season_starts_at: startsAt 
+      }); 
+      if (error) throw error; 
+      return data as any; 
+    },
     onSuccess: (data: any) => {
       toast.success(`تم تتويج ${data?.winners_awarded ?? 0} فائزين`);
       queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-high-scores"] });
@@ -369,8 +380,34 @@ export default function CrossyRoadTab() {
               </div>
             )}
           </div>
-          <Button onClick={() => { if (confirm("هل أنت متأكد؟")) awardWinners.mutate(); }} disabled={awardWinners.isPending || highScores.length === 0} className="w-full">
-            {awardWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />} تتويج الفائزين
+          <div className="bg-muted/10 rounded-lg p-3 border border-border/50 mb-3">
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">وقت بدء الموسم القادم</label>
+            <Select value={String(nextSeasonDelay)} onValueChange={v => setNextSeasonDelay(Number(v))}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">بدء الموعد فوراً (بدون توقف)</SelectItem>
+                <SelectItem value="1">يبدأ قريباً (بعد ساعة واحدة)</SelectItem>
+                <SelectItem value="24">بعد 1 يوم</SelectItem>
+                <SelectItem value="48">بعد 2 يوم</SelectItem>
+                <SelectItem value="168">بعد أسبوع (7 أيام)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-1.5">سيتم إغلاق اللعبة وعرض عد تنازلي للمستخدمين حتى يحين الموعد المختار.</p>
+          </div>
+
+          <Button 
+            onClick={() => { 
+              if (confirm("هل أنت متأكد من تتويج الفائزين؟ سيتم تصفير النقاط وبدء موسم جديد.")) { 
+                awardWinners.mutate(); 
+              } 
+            }} 
+            disabled={awardWinners.isPending || highScores.length === 0} 
+            className="w-full"
+          >
+            {awardWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin outline-none" /> : <RefreshCcw className="h-4 w-4" />} 
+            تتويج الفائزين وبدء الموسم
           </Button>
         </div>
       )}

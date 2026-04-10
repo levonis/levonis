@@ -11,24 +11,41 @@ interface GameCardProps {
   onPlay: () => void;
   onClickSound: () => void;
   disabled?: boolean;
+  startingSoon?: string;
 }
 
-export default function GameCard({ game, onPlay, onClickSound, disabled }: GameCardProps) {
+export default function GameCard({ game, onPlay, onClickSound, disabled, startingSoon }: GameCardProps) {
   const isLive = game.status === GameStatus.LIVE;
 
   // Locked / Coming Soon card or admin-disabled card
-  if (!isLive || disabled) {
+  if (!isLive || disabled || startingSoon) {
     return (
-      <div className="pixel-frame-disabled opacity-60 p-4 flex flex-col items-center justify-center min-h-[180px] text-center relative overflow-hidden">
-        {disabled && game.image ? (
-          <img src={game.image} alt={game.title} className="w-12 h-12 object-cover rounded mb-2 opacity-40" />
+      <div className={cn(
+        "pixel-frame-disabled opacity-60 p-4 flex flex-col items-center justify-center min-h-[180px] text-center relative overflow-hidden",
+        startingSoon && "opacity-80 border-primary/40 bg-primary/5"
+      )}>
+        {game.image ? (
+          <img src={game.image} alt={game.title} className="w-12 h-12 object-cover rounded mb-2 opacity-40 shrink-0" />
         ) : (
           <Lock className="h-8 w-8 text-muted-foreground/40 mb-3" />
         )}
-        {disabled && <h3 className="text-xs font-bold font-mono text-muted-foreground mb-2">{game.title}</h3>}
-        <span className="pixel-badge-locked text-[11px] font-mono font-bold px-3 py-1 uppercase tracking-wider">
-          SOON
-        </span>
+        <h3 className="text-xs font-bold font-mono text-muted-foreground mb-2 truncate max-w-full">{game.title}</h3>
+        
+        {startingSoon ? (
+          <div className="flex flex-col items-center gap-1.5 w-full">
+            <span className="pixel-badge-new text-[10px] font-mono font-bold px-3 py-1 uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 animate-pulse">
+              STARTING SOON
+            </span>
+            <div className="text-[10px] font-mono font-black text-primary bg-primary/10 px-2.5 py-1 rounded border border-primary/20 flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              {startingSoon}
+            </div>
+          </div>
+        ) : (
+          <span className="pixel-badge-locked text-[11px] font-mono font-bold px-3 py-1 uppercase tracking-wider">
+            {game.status === GameStatus.COMING_SOON ? 'SOON' : 'DISABLED'}
+          </span>
+        )}
       </div>
     );
   }
