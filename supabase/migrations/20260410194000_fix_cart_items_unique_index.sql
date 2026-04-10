@@ -1,5 +1,6 @@
--- Drop existing index
+-- Drop existing indices
 DROP INDEX IF EXISTS public.ux_cart_items_user_product_option_color_shipping;
+DROP INDEX IF EXISTS public.ux_cart_items_non_gift;
 
 -- Create a more comprehensive unique index for cart items
 -- This ensures that the same product with different options, colors, shipping methods, 
