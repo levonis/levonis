@@ -11,14 +11,12 @@ interface Props {
 
 function useResponsiveZoom() {
   const [zoom, setZoom] = useState(() => {
-    const min = Math.min(window.innerWidth, window.innerHeight);
-    return Math.max(35, Math.min(80, min / 15));
+    return Math.max(35, Math.min(100, window.innerHeight / 12));
   });
 
   useEffect(() => {
     const update = () => {
-      const min = Math.min(window.innerWidth, window.innerHeight);
-      setZoom(Math.max(35, Math.min(80, min / 15)));
+      setZoom(Math.max(35, Math.min(100, window.innerHeight / 12)));
     };
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -33,7 +31,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
   const zoom = useResponsiveZoom();
 
   return (
-    <div style={{ width: "100%", height: "100vh", position: "fixed", top: 0, left: 0, background: "#000" }}>
+    <div style={{ width: "100vw", height: "100vh", position: "fixed", top: 0, left: 0, background: "#000" }}>
       {!loaded && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 10,

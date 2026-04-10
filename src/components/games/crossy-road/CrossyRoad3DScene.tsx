@@ -230,7 +230,7 @@ function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
   // After 90° rotation, the OBJ depth (~4.875) becomes the X-axis span of each part
-  const partWidth = 1;
+  const partWidth = 2;
   return (
     <group position={[data.x, 0, data.z]}>
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
@@ -344,15 +344,30 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       g.playerLane = Math.min(LANES - 1, g.playerLane + 1);
     }
 
-    // Only reset playerOffsetX when leaving a river row
-    // When staying on river or moving within, preserve the offset
     const newRow = g.rows[g.playerRow];
     const nowOnRiver = newRow && newRow.type === "river";
-    if (!nowOnRiver) {
+
+    if (wasOnRiver && !nowOnRiver) {
+      // Leaving river: snap to nearest lane based on actual visual position
+      const actualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      g.playerLane = Math.max(0, Math.min(LANES - 1, Math.round((actualX - CELL / 2) / CELL)));
       g.playerOffsetX = 0;
-    }
-    // If moving from river to river, keep offset; if arriving at river fresh, reset
-    if (nowOnRiver && !wasOnRiver) {
+    } else if (nowOnRiver && !wasOnRiver) {
+      // Arriving at river: calculate offset to snap player onto nearest log
+      const px = g.playerLane * CELL + CELL / 2;
+      let bestLog: LogObj | null = null;
+      let bestDist = Infinity;
+      for (const log of newRow.logs) {
+        const logCenter = log.x + log.width / 2;
+        const dist = Math.abs(px - logCenter);
+        if (dist < bestDist) { bestDist = dist; bestLog = log; }
+      }
+      if (bestLog) {
+        g.playerOffsetX = (bestLog.x + bestLog.width / 2) - px;
+      } else {
+        g.playerOffsetX = 0;
+      }
+    } else if (!nowOnRiver) {
       g.playerOffsetX = 0;
     }
 
