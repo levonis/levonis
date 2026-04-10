@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ModelsProvider } from "./CrossyRoadModels";
 import CrossyRoad3DScene from "./CrossyRoad3DScene";
