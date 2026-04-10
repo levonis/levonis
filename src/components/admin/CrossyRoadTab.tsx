@@ -160,7 +160,7 @@ export default function CrossyRoadTab() {
         game_enabled: s.game_enabled, entry_fee_tickets: s.entry_fee_tickets,
         points_per_step: s.points_per_step, bonus_coin_points: s.bonus_coin_points,
         max_daily_plays: s.max_daily_plays || null, updated_at: new Date().toISOString(),
-      }).eq("id", settings.id);
+      }).eq("id", settings.id).select("id").single();
       if (error) throw error;
     },
     onSuccess: () => { toast.success("تم حفظ الإعدادات"); queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-settings"] }); setForm(null); },
@@ -263,8 +263,8 @@ export default function CrossyRoadTab() {
             <Switch checked={s.game_enabled} onCheckedChange={async (v) => {
               update("game_enabled", v);
               if (settings?.id) {
-                const { error } = await supabase.from("crossy_road_settings").update({ game_enabled: v, updated_at: new Date().toISOString() }).eq("id", settings.id);
-                if (error) { toast.error("فشل التحديث"); update("game_enabled", !v); return; }
+                const { error, data } = await supabase.from("crossy_road_settings").update({ game_enabled: v, updated_at: new Date().toISOString() }).eq("id", settings.id).select("game_enabled").single();
+                if (error || !data) { toast.error("فشل التحديث - تأكد من الصلاحيات"); update("game_enabled", !v); return; }
                 toast.success(v ? "تم تفعيل اللعبة" : "تم تعطيل اللعبة");
                 queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-settings"] });
               }

@@ -431,8 +431,8 @@ export default function MysteryCaseTab() {
   const saveSettings = useMutation({
     mutationFn: async () => {
       if (!settings?.id) return;
-      const { error } = await supabase.from("mystery_case_settings").update({ ...sf, updated_at: new Date().toISOString() }).eq("id", settings.id);
-      if (error) throw error;
+      const { error, data } = await supabase.from("mystery_case_settings").update({ ...sf, updated_at: new Date().toISOString() }).eq("id", settings.id).select().single();
+      if (error || !data) throw error || new Error("لم يتم التحديث - تأكد من الصلاحيات");
     },
     onSuccess: () => { toast.success("تم حفظ الإعدادات"); queryClient.invalidateQueries({ queryKey: ["admin-mystery-settings"] }); },
     onError: () => toast.error("فشل حفظ الإعدادات"),

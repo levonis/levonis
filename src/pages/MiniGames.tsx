@@ -9,7 +9,7 @@ import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
 import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
-import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource } from "@/components/games/GamesData";
+import { GAME_NODES, FILTER_NODES, filterGameNodes, GameCategory, GameResource, GameStatus } from "@/components/games/GamesData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -112,7 +112,13 @@ export default function MiniGames() {
     return { ...game, _disabled: false };
   });
 
-  const filteredGames = filterGameNodes(gamesWithStatus, activeFilter);
+  const filteredGames = filterGameNodes(gamesWithStatus, activeFilter).sort((a, b) => {
+    const aDisabled = (a as any)._disabled || a.status === GameStatus.COMING_SOON;
+    const bDisabled = (b as any)._disabled || b.status === GameStatus.COMING_SOON;
+    
+    if (aDisabled === bDisabled) return 0;
+    return aDisabled ? 1 : -1;
+  });
 
   const handlePlay = (game: GameResource) => {
     setActiveGame(game.node_name);

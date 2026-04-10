@@ -1,4 +1,3 @@
-/* Font metrics to reduce layout shift */
 @font-face {
   font-family: 'Cairo Fallback';
   src: local('Arial');
@@ -6,6 +5,30 @@
   ascent-override: 95%;
   descent-override: 25%;
   line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/cairo-400.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/cairo-700.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cairo';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/cairo-900.ttf') format('truetype');
 }
 
 @tailwind base;
