@@ -1,37 +1,53 @@
 
 
-# إصلاح مشاكل Crossy Road: الجذوع، القطار، الدجاجة، الشاشة
+# إصلاح مشاكل Crossy Road: الموقع المعكوس، الجذوع، القطار، الشاشة
 
 ## المشاكل والإصلاحات
 
-### 1. الجذوع طويلة جداً
-- حالياً `log.width = 2` ويتم تطبيق `scaleX = data.logWidth` (أي 2x) على نموذج OBJ الذي عرضه ~1 وحدة
-- **الإصلاح**: تقليل `log.width` إلى `1.2` في `generateRow` وضبط الـ scale ليكون مناسباً بصرياً
+### 1. موقع اللاعب معكوس (Player Position Reversed)
+**المشكلة**: اللاعب يظهر بموقع معكوس بسبب أن `playerOffsetX` يُضاف مباشرة لكن حركة الجذع قد تكون بعكس الاتجاه المتوقع.
 
-### 2. موقع القطار غير صحيح
-- حالياً `partWidth = 5` ثابت بين قطع القطار، والقطار يُنشأ كـ obstacle عادي بـ `x: -5` ثم يتحرك
-- **الإصلاح**: ضبط `partWidth` ليتناسب مع حجم نموذج القطار الفعلي (~4.875 وحدة)، وتحديث موقع القطار ليبدأ من خارج الشاشة بشكل صحيح. ربط موقع مجموعة القطار بـ `obs.x` بدلاً من القيمة الثابتة
+**الإصلاح في `CrossyRoad3DScene.tsx`**:
+- عند القفز على جذع، حساب `playerOffsetX` كالفرق بين موقع اللاعب الشبكي ومركز الجذع الأقرب: `playerOffsetX = (log.x + log.width/2) - (playerLane * CELL + CELL/2)`
+- عند مغادرة الجذع، تثبيت الموقع الفعلي للاعب: تحويل `playerOffsetX` إلى أقرب `playerLane` ثم إعادة التعيين
 
-### 3. الدجاجة لا تدور عند تغيير الاتجاه
-- حالياً يُعرض نموذج الدجاجة بدون أي rotation بغض النظر عن اتجاه الحركة
-- **الإصلاح**: 
-  - إضافة `playerRotation` إلى `PlayerSnapshot` و `GameState`
-  - عند الحركة: up → `rotation-y = π`, down → `0`, left → `π/2`, right → `-π/2`
-  - تطبيق الدوران على mesh الدجاجة
+### 2. اللاعب يظهر داخل الجذع عند القفز
+**المشكلة**: عند الوصول لصف نهر، يتم إعادة `playerOffsetX = 0` (سطر 356) مما يجعل اللاعب يظهر في موقعه الشبكي بدلاً من مركز الجذع — فيبدو داخل الجذع أو بجانبه.
 
-### 4. Canvas لا يملأ الشاشة
-- الحاوية في `MiniGames.tsx` تستخدم `fixed inset-0` لكن الـ `div` الداخلي بدون constraints قد يتداخل
-- الـ Canvas في `CrossyRoadCanvas.tsx` يستخدم `position: fixed` وهو صحيح، لكن قد يكون هناك تداخل مع عناصر أخرى
-- **الإصلاح**: التأكد من أن حاوية CrossyRoad في MiniGames لا تضيف أي padding/margin، وإزالة الـ wrapper div الإضافي (`relative z-10`) عند crossy_road
+**الإصلاح**: عند الهبوط على صف نهر جديد (`nowOnRiver && !wasOnRiver`)، العثور على الجذع الأقرب وحساب `playerOffsetX` ليكون فوق مركزه مباشرة.
+
+### 3. موقع مغادرة الجذع غير صحيح
+**المشكلة**: عند مغادرة النهر، `playerOffsetX` يبقى بقيمة قديمة مما يجعل اللاعب يظهر بموقع خاطئ على اليابسة.
+
+**الإصلاح**: عند مغادرة النهر (`wasOnRiver && !nowOnRiver`)، حساب الموقع الفعلي `actualX = playerLane * CELL + CELL/2 + playerOffsetX` ثم تحويله لأقرب lane: `playerLane = Math.round((actualX - CELL/2) / CELL)` وإعادة `playerOffsetX = 0`.
+
+### 4. القطار: القطع مرتبة على Y بدل X
+**المشكلة**: `TrainMeshGroup` يضع القطع بـ `position={[ti * partWidth, 0, 0]}` لكن `partWidth = 1` صغير جداً — القطع متداخلة. أيضاً القطار ككل `obs.x` يبدأ من `-5` ثم يتحرك، لكن القطع الفردية لا تمتد بشكل صحيح.
+
+**الإصلاح**:
+- تغيير `partWidth` من `1` إلى `2` (حجم كل قطعة بعد الدوران 90°)
+- ضمان أن القطع مرتبة على محور X الصحيح (وهي كذلك حالياً، لكن المسافة بينها خاطئة)
+
+### 5. Canvas لا يملأ الشاشة على PC
+**المشكلة**: الحاوية في MiniGames تضع CrossyRoad داخل `div.relative.z-10` مما قد يقيد الحجم. أيضاً `useResponsiveZoom` يستخدم `Math.min(w,h)` مما يعطي zoom صغير على شاشات عريضة.
+
+**الإصلاح في `MiniGames.tsx`**:
+- إخراج CrossyRoad من الـ wrapper `div.relative.z-10` بالكامل — عرضه مباشرة تحت الحاوية `fixed inset-0`
+
+**الإصلاح في `CrossyRoadCanvas.tsx`**:
+- تغيير `useResponsiveZoom` ليستخدم `window.innerHeight / 15` بدلاً من `Math.min` — على PC الارتفاع أصغر من العرض فهو المحدد
+- إضافة `width: 100vw` للحاوية الرئيسية
 
 ## الملفات المتأثرة
 
 ### `CrossyRoad3DScene.tsx`
-- تقليل `log.width` في `generateRow` من `2` إلى `1.2`
-- إضافة `playerRotation` إلى snapshot وتحديثه حسب `moveDir`
-- ضبط `TrainMeshGroup` لتتبع `obs.x` الفعلي بدل الثابت
-- تطبيق rotation على mesh الدجاجة
+- إصلاح `handleMove`: حساب `playerOffsetX` عند الهبوط على جذع، وتحويله لـ lane عند المغادرة
+- تغيير `partWidth` في `TrainMeshGroup` من `1` إلى `2`
+
+### `CrossyRoadCanvas.tsx`
+- تعديل `useResponsiveZoom` لاستخدام `innerHeight` بدل `Math.min`
+- إضافة `width: 100vw` للحاوية
 
 ### `MiniGames.tsx`
-- إزالة wrapper div عند `crossy_road` ليكون Canvas مباشرة تحت `fixed inset-0`
+- عرض CrossyRoad خارج wrapper `relative z-10`
 
