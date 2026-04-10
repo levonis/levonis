@@ -27,19 +27,28 @@ function computeZoom() {
   const isMobile = w < h;
 
   if (isMobile) {
-    // Mobile: smaller zoom so objects aren't too big
-    return Math.max(40, Math.min(65, h / 14));
+    // Mobile: keep objects small enough to see the game board comfortably
+    // Use the smaller of width-based or height-based zoom
+    const fromH = h / 16;
+    const fromW = w / 9;   // 9 lanes should fit the width
+    return Math.max(28, Math.min(50, Math.min(fromH, fromW)));
   }
 
-  // Desktop
-  let z = h / 10;
-  // Wide screens: boost zoom to fill horizontal space
-  if (w > 1600) {
+  // Desktop / landscape tablet
+  // Start from height-based zoom, then ensure the 9-lane board fills width
+  const fromH = h / 10;
+  const fromW = w / 9.5; // slightly loose so there's a bit of margin
+  let z = Math.max(fromH, fromW);
+
+  // Extra-wide screens: fill horizontal space
+  if (w > 1800) {
+    z = Math.max(z, w / 12);
+  } else if (w > 1400) {
+    z = Math.max(z, w / 13);
+  } else if (w > 1100) {
     z = Math.max(z, w / 14);
-  } else if (w > 1200) {
-    z = Math.max(z, w / 16);
   }
-  return Math.max(55, Math.min(160, z));
+  return Math.max(55, Math.min(200, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
@@ -48,7 +57,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
   const zoom = useResponsiveZoom();
 
   return (
-    <div style={{ width: "100vw", height: "100vh", position: "fixed", top: 0, left: 0, background: "#000" }}>
+    <div style={{ width: "100vw", height: "100dvh", position: "fixed", top: 0, left: 0, background: "#000" }}>
       {!loaded && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 10,

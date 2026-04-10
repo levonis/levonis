@@ -61,13 +61,13 @@ interface GameState {
 }
 
 // ── Render snapshot for declarative rendering ──
-interface RenderGround { key: string; x: number; z: number; rowType: RowType; grassDark: boolean; }
-interface RenderTrafficLight { key: string; x: number; z: number; isWarning: boolean; intensity: number; }
-interface RenderTree { key: string; x: number; z: number; modelIdx: number; }
-interface RenderVehicle { key: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
-interface RenderTrain { key: string; x: number; z: number; }
-interface RenderLog { key: string; x: number; z: number; modelIdx: number; }
-interface RenderCoin { key: string; x: number; z: number; rotY: number; }
+interface RenderGround { id: string; x: number; z: number; rowType: RowType; grassDark: boolean; }
+interface RenderTrafficLight { id: string; x: number; z: number; isWarning: boolean; intensity: number; }
+interface RenderTree { id: string; x: number; z: number; modelIdx: number; }
+interface RenderVehicle { id: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
+interface RenderTrain { id: string; x: number; z: number; }
+interface RenderLog { id: string; x: number; z: number; modelIdx: number; }
+interface RenderCoin { id: string; x: number; z: number; rotY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
 interface RenderSnapshot {
@@ -98,12 +98,12 @@ const TRAIN_EXIT_X = LANES * CELL + TRAIN_TOTAL_WIDTH + 5;
 const TRAIN_WARNING_DURATION = 3.0;
 
 // Player on-log Y offset
-const LOG_Y_OFFSET = 0.15;
+const LOG_Y_OFFSET = 0.18;
 
-// Log natural width (no stretching)
-const LOG_WIDTH = 1.0;
-// Log collision tolerance
-const LOG_TOLERANCE = 0.3;
+// Log width - matches the visual log model size (wider = chicken lands properly)
+const LOG_WIDTH = 2.0;
+// Log collision tolerance - generous so chicken doesn't fall off edges
+const LOG_TOLERANCE = 0.45;
 
 interface Props {
   onGameOver: (score: number, steps: number, coins: number) => void;
@@ -133,8 +133,18 @@ function generateRow(index: number): Row {
   };
 
   if (type === "grass" && index > 3) {
-    if (Math.random() > 0.5) row.treeIndices.push(0);
-    if (Math.random() > 0.5) row.treeIndices.push(LANES - 1);
+    // Place trees on edges and potentially random interior positions
+    // Trees must never overlap with each other or block all paths
+    const treePositions: number[] = [];
+    if (Math.random() > 0.4) treePositions.push(0);
+    if (Math.random() > 0.4) treePositions.push(LANES - 1);
+    // Optionally add 1 interior tree (at an odd lane so player can always pass)
+    if (Math.random() > 0.6 && treePositions.length < 2) {
+      const interiorCandidates = [2, 3, 5, 6];
+      const picked = interiorCandidates[Math.floor(Math.random() * interiorCandidates.length)];
+      if (!treePositions.includes(picked)) treePositions.push(picked);
+    }
+    row.treeIndices = treePositions;
   }
 
   if (type === "road") {
@@ -159,9 +169,13 @@ function generateRow(index: number): Row {
     const dir = Math.random() > 0.5 ? 1 : -1;
     const count = 2 + Math.floor(Math.random() * 2);
     const speed = (1.5 + Math.random() * 2) * dir;
+    // Space logs with guaranteed gaps between them
+    const segmentWidth = (LANES * CELL) / count;
     for (let i = 0; i < count; i++) {
+      // Place log with a gap between logs (logs take up LOG_WIDTH, leave at least 1 unit gap)
+      const maxOffset = Math.max(0, segmentWidth - LOG_WIDTH - 1);
       row.logs.push({
-        x: ((LANES * CELL) / count) * i + Math.random() * 2,
+        x: segmentWidth * i + Math.random() * maxOffset,
         speed, width: LOG_WIDTH,
         modelIndex: Math.floor(Math.random() * 4),
       });
@@ -290,13 +304,20 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
+  // Train spawns from the left side (obs.x starts very negative and moves right).
+  // Part layout from x=0: FRONT at offset 0 (leading edge), middles behind it,
+  // BACK at the rear. Parts are spaced by TRAIN_PART_WIDTH.
+  // Since the train moves left-to-right, the front is the RIGHTMOST part visually.
+  // So: back at 0, middles at 1..3, front at 4 (= leading edge going right).
   return (
     <group position={[data.x, 0, data.z]}>
-      <mesh geometry={models.train.front.geometry} material={models.train.front.material}
+      {/* Back of train (trailing, lowest x) */}
+      <mesh geometry={models.train.back.geometry} material={models.train.back.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
         position={[0, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
       />
+      {/* Middle cars */}
       {[1, 2, 3].map(ti => (
         <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
@@ -304,7 +325,8 @@ function TrainMeshGroup({ data }: { data: RenderTrain }) {
           rotation={[0, Math.PI / 2, 0]}
         />
       ))}
-      <mesh geometry={models.train.back.geometry} material={models.train.back.material}
+      {/* Front of train (leading edge, highest x) */}
+      <mesh geometry={models.train.front.geometry} material={models.train.front.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
         position={[4 * TRAIN_PART_WIDTH, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
@@ -320,7 +342,7 @@ function LogMesh({ data }: { data: RenderLog }) {
   return (
     <mesh geometry={m.geometry} material={m.material}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0.05, data.z]}
+      position={[data.x, 0.08, data.z]}
     />
   );
 }
@@ -593,14 +615,20 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
         if (currentRow.type === "river") {
           let onLog = false;
+          // Use a smaller player half-width for river so chicken needs to be more centered
+          const riverPw = 0.3;
           for (const log of currentRow.logs) {
-            if (px + pw / 2 > log.x && px - pw / 2 < log.x + log.width) {
+            const logLeft = log.x - LOG_TOLERANCE;
+            const logRight = log.x + log.width + LOG_TOLERANCE;
+            if (px + riverPw / 2 > logLeft && px - riverPw / 2 < logRight) {
               onLog = true;
+              // Ride the log — update offset by log speed when not jumping
               if (!g.moving) g.playerOffsetX += log.speed * dt;
               break;
             }
           }
           if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
+          // Out of bounds check
           if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
 
@@ -645,7 +673,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       const z = -r * CELL;
       const cx = (LANES * CELL) / 2;
 
-      grounds.push({ key: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
+      grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
 
       // Traffic lights on rail rows (placed at both sides)
       if (row.type === "rail") {
@@ -653,13 +681,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         const intensity = isWarning
           ? Math.min(1, (TRAIN_WARNING_DURATION - row.trainTimer) / TRAIN_WARNING_DURATION)
           : 0;
-        trafficLights.push({ key: `tl${r}_l`, x: -0.5, z, isWarning, intensity });
-        trafficLights.push({ key: `tl${r}_r`, x: LANES * CELL + 0.5, z, isWarning, intensity });
+        trafficLights.push({ id: `tl${r}_l`, x: -0.5, z, isWarning, intensity });
+        trafficLights.push({ id: `tl${r}_r`, x: LANES * CELL + 0.5, z, isWarning, intensity });
       }
 
       if (row.type === "grass") {
         for (const laneIdx of row.treeIndices) {
-          trees.push({ key: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r });
+          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r });
         }
       }
 
@@ -667,23 +695,23 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         const obs = row.obstacles[oi];
         if (row.type === "road") {
           vehicles.push({
-            key: `v${r}_${oi}`,
+            id: `v${r}_${oi}`,
             x: obs.x + obs.width / 2, z,
             modelIdx: obs.modelIndex, isTruck: obs.isTruck,
             flipY: obs.speed < 0,
           });
         } else if (row.type === "rail") {
-          trains.push({ key: `tr${r}_${oi}`, x: obs.x, z });
+          trains.push({ id: `tr${r}_${oi}`, x: obs.x, z });
         }
       }
 
       for (let li = 0; li < row.logs.length; li++) {
         const log = row.logs[li];
-        logRenders.push({ key: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
+        logRenders.push({ id: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
       }
 
       if (row.coin && !row.coin.collected) {
-        coins.push({ key: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003 });
+        coins.push({ id: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003 });
       }
     }
 
@@ -725,13 +753,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
   return (
     <>
-      {snapshot.grounds.map(d => <GroundTile key={d.key} data={d} />)}
-      {snapshot.trafficLights.map(d => <TrafficLight key={d.key} data={d} />)}
-      {snapshot.trees.map(d => <TreeMesh key={d.key} data={d} />)}
-      {snapshot.vehicles.map(d => <VehicleMesh key={d.key} data={d} />)}
-      {snapshot.trains.map(d => <TrainMeshGroup key={d.key} data={d} />)}
-      {snapshot.logs.map(d => <LogMesh key={d.key} data={d} />)}
-      {snapshot.coins.map(d => <CoinMesh key={d.key} data={d} />)}
+      {snapshot.grounds.map(d => <GroundTile key={d.id} data={d} />)}
+      {snapshot.trafficLights.map(d => <TrafficLight key={d.id} data={d} />)}
+      {snapshot.trees.map(d => <TreeMesh key={d.id} data={d} />)}
+      {snapshot.vehicles.map(d => <VehicleMesh key={d.id} data={d} />)}
+      {snapshot.trains.map(d => <TrainMeshGroup key={d.id} data={d} />)}
+      {snapshot.logs.map(d => <LogMesh key={d.id} data={d} />)}
+      {snapshot.coins.map(d => <CoinMesh key={d.id} data={d} />)}
 
       {/* Player */}
       {snapshot.player.visible && (
