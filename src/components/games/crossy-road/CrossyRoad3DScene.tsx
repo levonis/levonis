@@ -55,6 +55,7 @@ interface GameState {
   fromRow: number;
   hopAnim: number;
   playerOffsetX: number;
+  playerRotation: number;
 }
 
 // ── Render snapshot for declarative rendering ──
@@ -65,7 +66,7 @@ interface RenderVehicle { key: string; x: number; z: number; modelIdx: number; i
 interface RenderTrain { key: string; x: number; z: number; }
 interface RenderLog { key: string; x: number; z: number; modelIdx: number; logWidth: number; }
 interface RenderCoin { key: string; x: number; z: number; rotY: number; }
-interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; }
+interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
 interface RenderSnapshot {
   grounds: RenderGround[];
@@ -137,7 +138,7 @@ function generateRow(index: number): Row {
     for (let i = 0; i < count; i++) {
       row.logs.push({
         x: ((LANES * CELL) / count) * i + Math.random() * 2,
-        speed, width: 2,
+        speed, width: 1.2,
         modelIndex: Math.floor(Math.random() * 4),
       });
     }
@@ -228,25 +229,25 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
-  // Train parts are ~4.875 units wide each in the OBJ, rotated 90° to move along X
-  const partWidth = 5;
+  // After 90° rotation, the OBJ depth (~4.875) becomes the X-axis span of each part
+  const partWidth = 1;
   return (
-    <group>
+    <group position={[data.x, 0, data.z]}>
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[data.x, 0, data.z]}
+        position={[0, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
       />
       {[1, 2, 3].map(ti => (
         <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-          position={[data.x + ti * partWidth, 0, data.z]}
+          position={[ti * partWidth, 0, 0]}
           rotation={[0, Math.PI / 2, 0]}
         />
       ))}
       <mesh geometry={models.train.back.geometry} material={models.train.back.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-        position={[data.x + 4 * partWidth, 0, data.z]}
+        position={[4 * partWidth, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
       />
     </group>
@@ -288,7 +289,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
   const [snapshot, setSnapshot] = useState<RenderSnapshot>({
     grounds: [], warnings: [], trees: [], vehicles: [],
     trains: [], logs: [], coins: [],
-    player: { x: LANES * CELL / 2, y: 0, z: -3, visible: true, opacity: 1 },
+    player: { x: LANES * CELL / 2, y: 0, z: -3, visible: true, opacity: 1, rotationY: Math.PI },
   });
 
   // Initialize game
@@ -306,7 +307,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       rows, dead: false, deathTimer: 0,
       moving: false, moveDir: null, moveProgress: 0,
       fromLane: Math.floor(LANES / 2), fromRow: 3,
-      hopAnim: 0, playerOffsetX: 0,
+      hopAnim: 0, playerOffsetX: 0, playerRotation: Math.PI,
     };
 
     return () => { audio.dispose(); };
@@ -354,6 +355,12 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     if (nowOnRiver && !wasOnRiver) {
       g.playerOffsetX = 0;
     }
+
+    // Set player rotation based on direction
+    if (dir === "up") g.playerRotation = Math.PI;
+    else if (dir === "down") g.playerRotation = 0;
+    else if (dir === "left") g.playerRotation = Math.PI / 2;
+    else if (dir === "right") g.playerRotation = -Math.PI / 2;
 
     g.hopAnim = 1;
     audio?.playHop();
@@ -588,6 +595,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         x: px, y: hopOffset, z: pz,
         visible: !g.dead || g.deathTimer < 1,
         opacity: g.dead ? Math.max(0, 1 - g.deathTimer) : 1,
+        rotationY: g.playerRotation,
       },
     });
   });
@@ -629,6 +637,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
           material={playerMat}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
           position={[snapshot.player.x, snapshot.player.y, snapshot.player.z]}
+          rotation={[0, snapshot.player.rotationY, 0]}
         >
           {snapshot.player.opacity < 1 && (
             <meshLambertMaterial
