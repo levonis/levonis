@@ -1,8 +1,8 @@
--- 1. Add scheduling column to crossy_road_settings
+-- 1. Add scheduling column to crossy_road_settings (in case it wasn't added)
 ALTER TABLE public.crossy_road_settings 
 ADD COLUMN IF NOT EXISTS next_season_starts_at timestamptz DEFAULT NULL;
 
--- 2. Update the RPC function to handle scheduling and fix potential failures
+-- 2. Update the RPC function to handle scheduling and fix failures
 CREATE OR REPLACE FUNCTION public.admin_award_crossy_road_winners(p_next_season_starts_at timestamptz DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -14,9 +14,18 @@ DECLARE
   v_hs record;
   v_awarded integer := 0;
   v_season integer;
+  v_option_name text;
 BEGIN
   -- Get current season
   SELECT COALESCE(MAX(season), 0) INTO v_season FROM crossy_road_high_scores;
+
+  -- Verify there are players with scores > 0
+  IF NOT EXISTS (SELECT 1 FROM crossy_road_high_scores WHERE high_score > 0) THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'error', 'لا يوجد لاعبين لديهم نتائج لتتويجهم'
+    );
+  END IF;
 
   -- 1. Award Leaderboard Prizes
   FOR v_prize IN 
@@ -24,8 +33,7 @@ BEGIN
     WHERE is_active = true 
     ORDER BY position ASC 
   LOOP
-    -- Get the player at this position (1st, 2nd, 3rd, etc.)
-    -- Using OFFSET (position-1) on high scores ordered DESC
+    -- Get the player at this position
     SELECT * INTO v_hs 
     FROM crossy_road_high_scores 
     WHERE high_score > 0 
@@ -60,8 +68,7 @@ BEGIN
 
       -- Add product to cart if available
       IF v_prize.product_id IS NOT NULL THEN
-        -- Insert into cart_items. We use ON CONFLICT DO NOTHING to avoid duplicate errors
-        -- if the user somehow has the exact same gift already.
+        -- Insert into cart_items
         INSERT INTO cart_items (
           user_id, 
           product_id, 
@@ -70,7 +77,8 @@ BEGIN
           is_locked, 
           selected_color, 
           product_option_id,
-          sale_type
+          sale_type,
+          shipping_option_index
         )
         VALUES (
           v_hs.user_id, 
@@ -80,15 +88,22 @@ BEGIN
           true, 
           v_prize.selected_color, 
           v_prize.selected_option_id,
-          'direct'
+          'direct',
+          -1
         )
         ON CONFLICT DO NOTHING;
 
-        -- Attempt to deduct stock (wrapped in check to prevent crash)
+        -- Attempt to deduct stock
         BEGIN
-          PERFORM deduct_prize_stock(v_prize.product_id, v_prize.selected_color, v_prize.selected_option_id);
+          -- Fetch option name if ID exists
+          v_option_name := NULL;
+          IF v_prize.selected_option_id IS NOT NULL THEN
+            SELECT name_ar INTO v_option_name FROM product_options WHERE id = v_prize.selected_option_id;
+          END IF;
+
+          -- Call with correct signature: (uuid, color_text, option_name_text)
+          PERFORM deduct_prize_stock(v_prize.product_id, v_prize.selected_color, v_option_name);
         EXCEPTION WHEN OTHERS THEN
-          -- Log error internally if needed, but don't stop the whole process
           NULL;
         END;
       END IF;
@@ -105,7 +120,6 @@ BEGIN
       updated_at = now();
 
   -- 3. Update game settings with next season start time
-  -- If p_next_season_starts_at is null, the game starts immediately (stays enabled)
   UPDATE crossy_road_settings 
   SET next_season_starts_at = p_next_season_starts_at,
       updated_at = now();
@@ -118,3 +132,7 @@ BEGIN
   );
 END;
 $$;
+
+-- 3. GRANT EXECUTE PERMISSIONS (Crucial for frontend access)
+GRANT EXECUTE ON FUNCTION public.admin_award_crossy_road_winners(timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_award_crossy_road_winners(timestamptz) TO service_role;

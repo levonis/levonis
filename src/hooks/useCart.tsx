@@ -395,13 +395,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const normalize = (v: any) => v ? v.toString().trim() : null;
       const normalizeShippingIndex = (v: any): number | null => (v === null || v === undefined) ? null : Number(v);
       
-      const targetShippingIndex = normalizeShippingIndex(shippingInfo?.index);
+      const targetShippingIndex = normalizeShippingIndex(shippingInfo?.index) ?? -1;
       
       const existingItem = items.find(item => 
         item.product_id === productId && 
         normalize((item as any).product_option_id) === normalize(optionId) &&
         normalize((item as any).selected_color) === normalize(color) &&
-        normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex &&
+        (normalizeShippingIndex((item as any).shipping_option_index) ?? -1) === targetShippingIndex &&
+        (item as any).sale_type === saleType &&
+        (item as any).is_gift === false &&
         !(item as any).bundle_id &&
         !(item as any).offer_purchase_id
       );
@@ -440,6 +442,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (safeShippingIndex !== null && Number.isFinite(safeShippingIndex)) {
         insertData.shipping_option_index = Math.trunc(safeShippingIndex);
         insertData.shipping_option_name_ar = safeShippingNameAr || null;
+      } else {
+        insertData.shipping_option_index = -1;
       }
 
       const { error } = await supabase
@@ -455,7 +459,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return true;
     } catch (error: any) {
       if (error?.message === 'SALE_TYPE_CONFLICT') throw error;
-      console.error('Error adding to cart:', error);
+      console.error('Error adding to cart - Full Context:', {
+        productId,
+        optionId,
+        color,
+        quantity,
+        saleType,
+        error
+      });
       const msg = error?.message || error?.error_description || 'حدث خطأ في إضافة المنتج';
       toast.error(msg);
       return false;
