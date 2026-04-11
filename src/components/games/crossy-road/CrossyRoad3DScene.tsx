@@ -677,6 +677,16 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
 
+      // Decorative trees on sides (outside play area) for filling empty space
+      if (row.type === "grass" || row.type === "road") {
+        // Left side decorations
+        trees.push({ id: `dl${r}_1`, x: -2, z, modelIdx: r * 3 });
+        if (r % 2 === 0) trees.push({ id: `dl${r}_2`, x: -4, z, modelIdx: r * 3 + 1 });
+        // Right side decorations
+        trees.push({ id: `dr${r}_1`, x: LANES * CELL + 2, z, modelIdx: r * 3 + 2 });
+        if (r % 3 === 0) trees.push({ id: `dr${r}_2`, x: LANES * CELL + 4, z, modelIdx: r * 3 });
+      }
+
       // Traffic lights on rail rows (placed at both sides)
       if (row.type === "rail") {
         const isWarning = row.trainWarningPhase && row.obstacles.length === 0;
