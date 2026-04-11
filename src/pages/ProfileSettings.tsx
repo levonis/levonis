@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut, Users, FileText } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut, Users, FileText, Palette, KeyRound, CreditCard } from "lucide-react";
 import { useLanguage, LANGUAGE_LABELS } from "@/lib/i18n";
 import type { Language } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
