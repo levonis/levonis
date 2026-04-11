@@ -29,7 +29,7 @@ import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 import { sendAllNotifications } from '@/lib/notifications';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
-
+import AdminOrderItemEditor from '@/components/admin/AdminOrderItemEditor';
 const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
