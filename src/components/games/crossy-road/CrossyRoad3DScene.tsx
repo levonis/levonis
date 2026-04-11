@@ -435,11 +435,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const nowOnRiver = newRow && newRow.type === "river";
 
     if (wasOnRiver && !nowOnRiver) {
+      // Leaving river: use the visual X to compute the correct landing lane
       const snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
       g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
       g.playerOffsetX = 0;
       g.onRiver = false;
     } else if (nowOnRiver) {
+      // Entering or moving on river: check actual position against logs
       let actualPx: number;
       if (wasOnRiver) {
         actualPx = visualXBefore;
@@ -449,17 +451,23 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         actualPx = g.playerLane * CELL + CELL / 2;
       }
 
+      // Check if player lands on any log — NO snapping to nearest, just check collision
       let foundLog: LogObj | null = null;
       for (const log of newRow.logs) {
-        if (actualPx >= log.x - LOG_TOLERANCE && actualPx <= log.x + log.width + LOG_TOLERANCE) {
+        const logLeft = log.x;
+        const logRight = log.x + log.width;
+        if (actualPx >= logLeft - LOG_TOLERANCE && actualPx <= logRight + LOG_TOLERANCE) {
           foundLog = log;
           break;
         }
       }
 
       if (foundLog) {
-        const logCenter = foundLog.x + foundLog.width / 2;
-        g.playerOffsetX = logCenter - (g.playerLane * CELL + CELL / 2);
+        // Stay at actual position, just compute offset from grid lane
+        g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
+      } else {
+        // No log found — player will drown (collision check handles this)
+        g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
       g.onRiver = true;
     } else {
@@ -610,12 +618,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
         if (currentRow.type === "river") {
           let onLog = false;
-          // Use a smaller player half-width for river so chicken needs to be more centered
           const riverPw = 0.3;
           for (const log of currentRow.logs) {
-            const logLeft = log.x - LOG_TOLERANCE;
-            const logRight = log.x + log.width + LOG_TOLERANCE;
-            if (px + riverPw / 2 > logLeft && px - riverPw / 2 < logRight) {
+            const logLeft = log.x;
+            const logRight = log.x + log.width;
+            if (px + riverPw / 2 > logLeft - LOG_TOLERANCE && px - riverPw / 2 < logRight + LOG_TOLERANCE) {
               onLog = true;
               // Ride the log — update offset by log speed when not jumping
               if (!g.moving) g.playerOffsetX += log.speed * dt;
@@ -669,6 +676,16 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       const cx = (LANES * CELL) / 2;
 
       grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
+
+      // Decorative trees on sides (outside play area) for filling empty space
+      if (row.type === "grass" || row.type === "road") {
+        // Left side decorations
+        trees.push({ id: `dl${r}_1`, x: -2, z, modelIdx: r * 3 });
+        if (r % 2 === 0) trees.push({ id: `dl${r}_2`, x: -4, z, modelIdx: r * 3 + 1 });
+        // Right side decorations
+        trees.push({ id: `dr${r}_1`, x: LANES * CELL + 2, z, modelIdx: r * 3 + 2 });
+        if (r % 3 === 0) trees.push({ id: `dr${r}_2`, x: LANES * CELL + 4, z, modelIdx: r * 3 });
+      }
 
       // Traffic lights on rail rows (placed at both sides)
       if (row.type === "rail") {

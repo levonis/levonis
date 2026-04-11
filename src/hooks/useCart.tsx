@@ -446,11 +446,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         insertData.shipping_option_index = -1;
       }
 
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('cart_items')
-        .insert([insertData]);
+        .insert([insertData])
+        .select('id')
+        .single();
 
       if (error) {
+        // Handle unique violation - item already exists, try to increment quantity
+        if (error.code === '23505') {
+          const { data: existing } = await supabase
+            .from('cart_items')
+            .select('id, quantity')
+            .eq('user_id', user.id)
+            .eq('product_id', productId)
+            .eq('is_gift', false)
+            .limit(1)
+            .maybeSingle();
+          if (existing) {
+            await updateQuantity(existing.id, existing.quantity + quantity);
+            return true;
+          }
+        }
         console.error('Insert error:', error);
         throw error;
       }

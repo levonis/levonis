@@ -48,7 +48,7 @@ const ProductBundles = () => {
             <p className="text-sm text-muted-foreground">لا توجد باقات متاحة حالياً</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
             {bundles.map((bundle: any, idx: number) => {
               const discount = bundle.original_price > 0
                 ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
