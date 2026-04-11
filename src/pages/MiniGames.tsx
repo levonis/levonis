@@ -140,7 +140,7 @@ export default function MiniGames() {
     const aLive = !(a as any)._disabled && a.status !== GameStatus.COMING_SOON;
     const bLive = !(b as any)._disabled && b.status !== GameStatus.COMING_SOON;
     
-    if (aLive === bLive) return (a.display_order ?? 99) - (b.display_order ?? 99);
+    if (aLive === bLive) return ((a as any).display_order ?? 99) - ((b as any).display_order ?? 99);
     return aLive ? -1 : 1;
   });
 
