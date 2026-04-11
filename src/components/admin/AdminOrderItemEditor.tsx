@@ -45,7 +45,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
     queryFn: async () => {
       const { data } = await supabase
         .from("products")
-        .select("id, name, name_ar, price, colors, stock_quantity")
+        .select("id, name, name_ar, price, colors, direct_stock")
         .order("name_ar");
       return data ?? [];
     },
@@ -260,7 +260,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                 <SelectContent>
                   {allProducts?.map(p => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name_ar || p.name} ({p.stock_quantity ?? 0} متاح)
+                      {p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)
                     </SelectItem>
                   ))}
                 </SelectContent>
