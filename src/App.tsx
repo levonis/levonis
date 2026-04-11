@@ -274,6 +274,7 @@ function AppContent() {
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/games" element={<MiniGames />} />
+            <Route path="/games/winners" element={<GameWinnersPage />} />
             <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
