@@ -64,18 +64,18 @@ function ChangePasswordButton() {
 
   const handleChange = async () => {
     if (newPass.length < 6) {
-      toast({ title: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" } as any);
+      sonnerToast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
       return;
     }
     setLoading(true);
     try {
       const { error } = await supabaseClient.auth.updateUser({ password: newPass });
       if (error) throw error;
-      toast({ title: "تم تغيير كلمة المرور بنجاح" } as any);
+      sonnerToast.success("تم تغيير كلمة المرور بنجاح");
       setShowInput(false);
       setNewPass("");
     } catch (err: any) {
-      toast({ title: "فشل في تغيير كلمة المرور", description: err?.message, variant: "destructive" } as any);
+      sonnerToast.error("فشل في تغيير كلمة المرور: " + (err?.message || ""));
     } finally {
       setLoading(false);
     }
