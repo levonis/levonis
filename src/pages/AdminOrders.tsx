@@ -1283,6 +1283,16 @@ const AdminOrders = () => {
                 </div>
               </div>
 
+              {/* Edit Order Items Button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setItemEditorOpen(true)}
+              >
+                <Package className="h-4 w-4" />
+                تعديل منتجات الطلب والمخزون
+              </Button>
+
               {/* Full Order Summary Breakdown */}
               {(() => {
                 const subtotal = Number(editingOrder.subtotal) || 0;
