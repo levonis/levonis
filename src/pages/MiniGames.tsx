@@ -271,6 +271,11 @@ export default function MiniGames() {
         </div>
       </div>
 
+      {/* Winners Ticker */}
+      <div className="max-w-2xl mx-auto px-4 pt-2 relative z-10">
+        <WinnersTicker />
+      </div>
+
       {/* Ad Reward Section */}
       <div className="max-w-2xl mx-auto px-4 pt-2 relative z-10">
         <AdRewardSection />
