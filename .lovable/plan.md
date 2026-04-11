@@ -1,88 +1,94 @@
 
-# الدفعة الثانية — البنود 14-22
 
-نظراً لضخامة هذه البنود، سأقسمها إلى مجموعتين فرعيتين:
+# خطة إصلاح شاملة — 12 مشكلة
 
----
+## التحليل والحلول
 
-## المجموعة أ: الأداء والتحميل (14-17)
+### 1. إضافة المنتج للسلة لا تعمل
+**السبب الجذري**: الـ unique index `ux_cart_items_non_gift` يشمل أعمدة nullable (`product_option_id`, `selected_color`, `shipping_option_index`). في PostgreSQL، القيم `NULL` لا تتساوى في unique index — فكل إدراج بقيم `NULL` يُعتبر فريداً ولا يطابق السجل الموجود. لكن الكود في السطر 400-408 يبحث عن `existingItem` مع مقارنة `null === null` (تُرجع `true` في JS)، فإذا كان `shipping_option_index` في قاعدة البيانات `NULL` لكن في الكود يتحول لـ `-1`، لن يتطابقا.
 
-### 14. بطء التحميل الأولي وبين الصفحات
-- الصفحات محملة بـ `lazy()` بالفعل وهذا جيد
-- المشكلة في `SuspenseLoader` — يعرض دائرة فارغة بدل skeleton
-- **الحل**: استبدال `SuspenseLoader` بنظام skeleton ذكي يعتمد على `useLocation` لعرض skeleton مناسب لكل صفحة من `PageSkeletons.tsx`
+**الحل**:
+- تعديل `addToCart` لعدم إرسال `shipping_option_index: -1` كقيمة افتراضية — إرسال `null` بدلاً منها ليتطابق مع السجلات الموجودة
+- إضافة `COALESCE` في مقارنة `existingItem` للتعامل مع `null` بشكل صحيح
+- تحسين معالجة خطأ `23505` لتشمل مقارنة أكثر دقة بالعمود `sale_type` والـ `shipping_option_index`
 
-### 15. اعتماد Skeleton Loading بدل الدائرة/الشاشة الفارغة
-- **الحل**: تعديل `SuspenseLoader` في `App.tsx` ليستخدم `PageSkeletons` بناءً على المسار الحالي
-- إضافة mapping بين المسارات وأنواع الـ skeleton المناسبة
+### 2. تتويج الفائزين لا يعمل
+**السبب الجذري**: الدالة `admin_award_crossy_road_winners` مُعرَّفة بـ **0 arguments** (`pronargs: 0`)، لكن الكود يستدعيها بـ `{ p_next_season_starts_at: startsAt }` — وهذا يُسبب خطأ PostgreSQL مباشرةً.
 
-### 16. تحميل الألعاب عند الدخول فقط (وليس كلها دفعة واحدة)
-- الألعاب محملة بـ `lazy()` بالفعل في `MiniGames.tsx` ✅
-- المشكلة أن `MiniGames.tsx` يحجز `body overflow: hidden` ويشغل `PixelBackground` حتى قبل اختيار لعبة
-- **الحل**: إبقاء الوضع الحالي مع تحسين الـ Suspense fallback ليعرض شاشة تحميل بكسل مناسبة عند الدخول للعبة
+**الحل**:
+- Migration: إعادة إنشاء الدالة لتقبل parameter اختياري `p_next_season_starts_at timestamptz DEFAULT NULL`
+- إضافة `SECURITY DEFINER` + التحقق من `has_role(auth.uid(), 'admin')`
 
-### 17. الألعاب بوضع ملء الشاشة
-- Crossy Road يعمل بـ fullscreen بالفعل (`fixed inset-0`)
-- الألعاب الأخرى تعمل بـ `max-w-2xl` محدود
-- **الحل**: جعل جميع الألعاب تعمل بـ `fixed inset-0` عند الدخول (بدون `max-w-2xl`)
+### 3. مشاكل الجذوع في Crossy Road
+**التحليل**: Log collision logic في السطر 454-471 يبدو صحيحاً نظرياً (لا snapping). المشكلة المحتملة:
+- عند مغادرة النهر (سطر 439): `snappedLane = Math.round((visualXBefore - CELL/2) / CELL)` — قد ينتج lane خاطئ إذا كان `playerOffsetX` كبيراً
+- الـ `LOG_TOLERANCE = 0.45` مع `LOG_WIDTH = 2.0` يجعل مساحة القبول واسعة جداً، ما قد يجعل اللاعب "يلتقط" جذوعاً بعيدة
+- logs تُعاد لحظياً (`log.x > LANES * CELL + 3`) ما يخلق "جذوعاً وهمية" عند wrap-around
 
----
+**الحل**:
+- تقليل `LOG_TOLERANCE` من 0.45 إلى 0.25
+- تحسين wrap-around لمنع teleporting مفاجئ
+- عند مغادرة النهر: استخدام `visualXBefore` مباشرة بدلاً من `Math.round`
 
-## المجموعة ب: الفائزين والبروفايل والطلبات (18-22)
+### 4. فراغات على الشاشات الكبيرة + الكاميرا
+**الحل**: الكاميرا حالياً تتمركز عند `camera.position.x = (LANES * CELL) / 2` وهو صحيح. المشكلة في الديكور — الأشجار الحالية فقط عند `-2, -4` و `+11, +13` وهذا غير كافٍ للشاشات العريضة جداً. سأوسع نطاق الديكور ليشمل مواقع أبعد (`-6, -8, +15, +17`).
 
-### 18. شريط بكسل متحرك للفائزين
-- إنشاء `WinnersTicker.tsx` — شريط متحرك بنمط pixel يعرض أسماء الفائزين الأخيرين
-- يوضع أسفل الفلاتر في `/games`
-- عند الضغط ينقل لصفحة `/games/winners` تعرض جميع الفائزين
-- يتطلب query من جداول الفائزين (`crossy_road_winners`, `stack_game_winners`, إلخ)
-- إضافة قسم "جوائزي من الألعاب" في البروفايل كـ Dialog
+### 5. مقاس Canvas في الجوال
+**الحل**: تحسين `computeZoom` للجوال — القيم الحالية `max(28, min(55, ...))` كبيرة قليلاً. سأخفضها لـ `max(25, min(45, ...))`.
 
-### 19. تحسين البروفايل
-- تحسين `ProfileHeader` ليعرض الشارات المرتبطة بالمستخدم
-- تحسين بطاقة البروفايل (اسم، يوزر، صورة، تاريخ انضمام) بتصميم بطاقة ولاء
-- إضافة قسم الألعاب (إحصائيات، أعلى سكور، جوائز)
+### 6. Hero في /category للشاشات الصغيرة
+**التحليل**: الكود الحالي (سطر 90-125) يستخدم `flex-row` مع `w-32 sm:w-48` — هذا موجود بالفعل. المشكلة المحتملة أن الـ container عريض (`container mx-auto`) بدون `max-w-lg`. سأضبط المقاسات بشكل أفضل.
 
-### 20. إعدادات مفقودة في البروفايل
-- إضافة قسم "المظهر" (Dark/Light/System) في `ProfileSettings.tsx`
-- إضافة "تغيير كلمة المرور" عبر `supabase.auth.updateUser`
-- إضافة رابط "تغيير بطاقة الملف الشخصي" يوجه لصفحة إطارات البطاقة
+### 7. شريط "نفذ من المخزون" على بطاقات /bundles
+**التحليل**: الكود الحالي لا يتحقق من نفاد المخزون أصلاً. يجب إضافة query لبيانات المخزون + عرض شريط قطري CSS.
 
-### 21. تعديل منتجات الطلب من لوحة الأدمن
-- إضافة dialog/section في `AdminOrders.tsx` لتعديل عناصر الطلب:
-  - تغيير اللون/الخيار
-  - تعديل الكمية والسعر
-  - حذف منتج من الطلب
-  - إضافة منتج جديد للطلب
-- كل تغيير يحدّث المخزون تلقائياً (إرجاع القديم + سحب الجديد)
-- يتطلب migration لإنشاء دالة `admin_modify_order_item` بصلاحية `SECURITY DEFINER`
+### 8. Skeleton Loading
+**التحليل**: `SuspenseLoader` الحالي (سطر 138-165) ثابت — نفس الشكل لكل الصفحات. يجب جعله يتكيف مع المسار.
 
-### 22. تحديث المخزون اللحظي والدقيق
-- إنشاء database function `adjust_inventory` بـ `SECURITY DEFINER` تقوم بـ:
-  - تعديل `stock_quantity` بشكل atomic
-  - تحديث `sold_count` بدقة
-  - منع القيم السالبة
-- ربط تعديلات الطلب بهذه الدالة
+**الحل**: إنشاء component `RouteAwareSkeleton` يستخدم `window.location.pathname` (بدلاً من `useLocation` الذي لا يعمل داخل Suspense fallback) لعرض skeleton مناسب.
 
----
+### 9. تحميل الألعاب وفتحها بشكل فردي
+**الحل**: الألعاب محملة بـ `lazy()` بالفعل — المشكلة أن `MiniGames.tsx` يقفل `body overflow` ويُشغل `PixelBackground` فوراً. سأؤخر هذا لحين اختيار لعبة.
 
-## ملفات ستتأثر
+### 10. تحسين البروفايل
+**الحل**: تحسين `ProfileHeader` بتصميم بطاقة ولاء + إضافة شارات + إحصائيات ألعاب.
 
-### قاعدة البيانات:
-- Migration: دالة `admin_modify_order_item` + `adjust_inventory`
-- RLS policies للدوال الجديدة
+### 11. تعديل منتجات الطلب لا يعمل
+**التحليل**: الكود يستخدم `supabase.from("order_items").delete()` و `.insert()` — لكن **لا توجد RLS policies** للأدمن على جدول `order_items` تسمح بالحذف/التعديل/الإدراج. كذلك دالة `admin_adjust_order_inventory` تحتاج `p_option_id` كمعامل لكن الكود لا يمرره.
 
-### الملفات:
-- `src/App.tsx` — استبدال `SuspenseLoader` بـ skeleton ذكي
-- `src/pages/MiniGames.tsx` — شريط الفائزين + fullscreen لجميع الألعاب
-- `src/pages/Profile.tsx` — قسم شارات وألعاب
-- `src/pages/ProfileSettings.tsx` — المظهر + كلمة المرور + بطاقة الملف
-- `src/pages/AdminOrders.tsx` — تعديل عناصر الطلب مع تحديث المخزون
-- `src/components/profile/ProfileHeader.tsx` — تحسين البطاقة
-- ملفات جديدة: `WinnersTicker.tsx`, `GameWinnersPage.tsx`, `AdminOrderItemEditor.tsx`
+**الحل**:
+- Migration: إضافة RLS policies للأدمن على `order_items` (DELETE, UPDATE, INSERT)
+- تعديل `AdminOrderItemEditor` لتمرير `p_option_id` بشكل صحيح
+
+### 12. قسم الفائزون في لوحة الإدارة
+**الحل**: إنشاء صفحة `AdminWinners.tsx` تعرض جميع الفائزين من:
+- `crossy_road_winners`
+- `stack_game_winners`
+- `competition_prizes`
+- `knife_rain_winners` (إن وُجد)
+
+مع فلتر حسب اللعبة والتاريخ + زر "تم التسليم".
 
 ---
 
-## الأولوية
-سأبدأ بالمجموعة أ (14-17) لأنها تؤثر على تجربة المستخدم العامة، ثم المجموعة ب (18-22).
+## الملفات المتأثرة
 
-**هل توافق على البدء بالتنفيذ؟**
+### Migrations:
+1. إعادة إنشاء `admin_award_crossy_road_winners` بمعامل اختياري + `SECURITY DEFINER`
+2. إضافة RLS policies للأدمن على `order_items` (DELETE, UPDATE, INSERT)
+
+### ملفات موجودة:
+- `src/hooks/useCart.tsx` — إصلاح `shipping_option_index` null handling
+- `src/components/admin/CrossyRoadTab.tsx` — لا تغيير مطلوب (بعد إصلاح DB)
+- `src/components/games/crossy-road/CrossyRoad3DScene.tsx` — تقليل LOG_TOLERANCE، توسيع الديكور
+- `src/components/games/crossy-road/CrossyRoadCanvas.tsx` — ضبط zoom الجوال
+- `src/pages/CategoryDetail.tsx` — ضبط Hero للجوال
+- `src/pages/ProductBundles.tsx` — إضافة شريط نفاد المخزون + query المخزون
+- `src/App.tsx` — `RouteAwareSkeleton` بدلاً من SuspenseLoader ثابت
+- `src/pages/MiniGames.tsx` — تأخير body lock + pixel background
+- `src/pages/Profile.tsx` — تحسين UI + شارات
+- `src/components/admin/AdminOrderItemEditor.tsx` — إصلاح RPC call
+
+### ملفات جديدة:
+- `src/pages/AdminWinners.tsx` — قسم الفائزون في لوحة الإدارة
+
