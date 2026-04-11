@@ -133,7 +133,7 @@ export default function MiniGames() {
       }
     }
 
-    return { ...game, _disabled: isDisabled, _starting_soon: startingSoon };
+    return { ...game, _disabled: false, _starting_soon: startingSoon };
   });
 
   const filteredGames = filterGameNodes(gamesWithStatus, activeFilter).sort((a, b) => {

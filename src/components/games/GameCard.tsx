@@ -1,5 +1,5 @@
 /** Individual Game Card – pixel frame style with sprite sheet assets */
-import { Lock } from "lucide-react";
+import { Lock, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GameResource, GameStatus } from "./GamesData";
 import DifficultyBadge from "./DifficultyBadge";
