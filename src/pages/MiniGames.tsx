@@ -45,17 +45,25 @@ export default function MiniGames() {
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.inset = '0';
-    document.body.style.width = '100%';
+    // Only lock body scroll when a game is active (fullscreen)
+    if (activeGame || showStore || showPrizes) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.inset = '0';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.inset = '';
+      document.body.style.width = '';
+    }
     return () => {
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.inset = '';
       document.body.style.width = '';
     };
-  }, []);
+  }, [activeGame, showStore, showPrizes]);
 
 
   // Fetch disabled game settings for all games

@@ -19,11 +19,39 @@ const ProductBundles = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, description_ar, image_url, bundle_price, original_price, sale_type, display_order')
+        .select('id, title_ar, description_ar, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
         .eq('is_active', true)
         .order('display_order');
       if (error) throw error;
-      return data;
+
+      // Check stock for each bundle
+      if (!data?.length) return [];
+      const productIds = [...new Set(data.flatMap((b: any) => b.bundle_items?.map((i: any) => i.product_id) || []))];
+      const { data: stockData } = await supabase
+        .from('products')
+        .select('id, direct_stock, colors')
+        .in('id', productIds);
+      const stockMap = new Map((stockData || []).map((p: any) => [p.id, p]));
+
+      return data.map((b: any) => {
+        let outOfStock = false;
+        for (const item of (b.bundle_items || [])) {
+          const product = stockMap.get(item.product_id);
+          if (!product) { outOfStock = true; break; }
+          if (item.selected_color && product.colors) {
+            const colorArr = Array.isArray(product.colors) ? product.colors : [];
+            const colorEntry = colorArr.find((c: any) => c.name === item.selected_color || c.name_ar === item.selected_color);
+            if (colorEntry) {
+              const optStocks = colorEntry.option_stocks || {};
+              const stock = item.selected_option_id ? (optStocks[item.selected_option_id] ?? 0) : (colorEntry.stock ?? product.direct_stock ?? 0);
+              if (stock < (item.quantity || 1)) { outOfStock = true; break; }
+            }
+          } else {
+            if ((product.direct_stock ?? 0) < (item.quantity || 1)) { outOfStock = true; break; }
+          }
+        }
+        return { ...b, outOfStock };
+      });
     },
     staleTime: 60 * 1000,
   });
@@ -72,7 +100,7 @@ const ProductBundles = () => {
                         <img
                           src={bundle.image_url}
                           alt={bundle.title_ar}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${bundle.outOfStock ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-muted/20">
@@ -80,6 +108,16 @@ const ProductBundles = () => {
                         </div>
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
+
+                      {/* Out of stock diagonal ribbon */}
+                      {bundle.outOfStock && (
+                        <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
+                          <div className="absolute bg-destructive/90 text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap"
+                            style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
+                            نفذ من المخزون
+                          </div>
+                        </div>
+                      )}
 
                       {/* Badges */}
                       {discount > 0 && (
