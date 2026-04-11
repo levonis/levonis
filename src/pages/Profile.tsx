@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,11 @@ import QuickServicesGrid from "@/components/profile/QuickServicesGrid";
 import CouponsStrip from "@/components/profile/CouponsStrip";
 import RecentOrders from "@/components/profile/RecentOrders";
 import NotificationPromptBanner from "@/components/profile/NotificationPromptBanner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Trophy, Gamepad2 } from "lucide-react";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 export default function Profile() {
   const { user } = useAuth();
