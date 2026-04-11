@@ -2,6 +2,7 @@
  * Export financial drafts as PDF, Excel (CSV), or Word (HTML-based .doc)
  */
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 type ColType = 'text' | 'date' | 'number' | 'quantity';
 
@@ -59,7 +60,6 @@ export function exportDraftToExcel(draft: DraftExportData) {
     return cells.map(escapeCSV).join(',');
   });
 
-  // Grand totals
   const totalsRow = ['المجموع الكلي'];
   draft.columns.forEach(col => {
     if (col.type === 'number' || col.type === 'quantity') {
@@ -78,16 +78,16 @@ export function exportDraftToExcel(draft: DraftExportData) {
   downloadBlob(csv, `${draft.title}.csv`, 'text/csv;charset=utf-8');
 }
 
-// ─── Word (.doc via HTML) ───
-export function exportDraftToWord(draft: DraftExportData) {
+// ─── Shared HTML table builder (used by Word + PDF) ───
+function buildHTMLTable(draft: DraftExportData): string {
   const showSub = hasSubtotalCols(draft.columns);
-  const colCount = draft.columns.length + 1 + (showSub ? 1 : 0);
 
-  const headerCells = [`<th style="background:#2563eb;color:#fff;padding:10px 14px;border:1px solid #1d4ed8;font-size:13px">#</th>`,
+  const headerCells = [
+    `<th style="background:#2563eb;color:#fff;padding:10px 14px;border:1px solid #1d4ed8;font-size:13px;white-space:nowrap">#</th>`,
     ...draft.columns.map(c =>
-      `<th style="background:#2563eb;color:#fff;padding:10px 14px;border:1px solid #1d4ed8;font-size:13px">${c.name}</th>`
+      `<th style="background:#2563eb;color:#fff;padding:10px 14px;border:1px solid #1d4ed8;font-size:13px;white-space:nowrap">${c.name}</th>`
     ),
-    ...(showSub ? [`<th style="background:#ea580c;color:#fff;padding:10px 14px;border:1px solid #c2410c;font-size:13px">المجموع</th>`] : [])
+    ...(showSub ? [`<th style="background:#ea580c;color:#fff;padding:10px 14px;border:1px solid #c2410c;font-size:13px;white-space:nowrap">المجموع</th>`] : [])
   ].join('');
 
   const bodyRows = draft.rows.map((row, i) => {
@@ -106,8 +106,7 @@ export function exportDraftToWord(draft: DraftExportData) {
     return `<tr>${cells.join('')}</tr>`;
   }).join('');
 
-  // Totals row
-  const totalCells = [`<td style="background:#f1f5f9;padding:10px 14px;border:1px solid #cbd5e1;font-weight:bold;font-size:13px" colspan="1">المجموع الكلي</td>`];
+  const totalCells = [`<td style="background:#f1f5f9;padding:10px 14px;border:1px solid #cbd5e1;font-weight:bold;font-size:13px">المجموع الكلي</td>`];
   draft.columns.forEach(col => {
     if (col.type === 'number' || col.type === 'quantity') {
       const total = draft.rows.reduce((s, r) => s + (parseFloat(r[col.id] || '0') || 0), 0);
@@ -122,201 +121,101 @@ export function exportDraftToWord(draft: DraftExportData) {
     totalCells.push(`<td style="background:#fff7ed;padding:10px 14px;border:1px solid #cbd5e1;font-weight:bold;font-size:14px;color:#ea580c;direction:ltr;text-align:right;font-family:monospace">${fmt(grandSub)}</td>`);
   }
 
-  const html = `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  return `
+    <h1 style="font-family:'Segoe UI',Tahoma,Arial,sans-serif;font-size:22px;color:#1e293b;margin-bottom:4px;direction:rtl">${draft.title}</h1>
+    <div style="font-family:'Segoe UI',Tahoma,Arial,sans-serif;font-size:11px;color:#94a3b8;margin-bottom:20px;direction:rtl">تاريخ التصدير: ${new Date().toLocaleDateString('ar-IQ')} &nbsp;|&nbsp; ${draft.rows.length} صف &nbsp;|&nbsp; ${draft.columns.length} عمود</div>
+    <table style="border-collapse:collapse;width:100%;direction:rtl;font-family:'Segoe UI',Tahoma,Arial,sans-serif">
+      <thead><tr>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot><tr>${totalCells.join('')}</tr></tfoot>
+    </table>`;
+}
+
+// ─── Word (.doc via HTML) ───
+export function exportDraftToWord(draft: DraftExportData) {
+  const tableHtml = buildHTMLTable(draft);
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><style>
   @page { size: A4 landscape; margin: 1.5cm; }
   body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; color: #1e293b; }
-  h1 { font-size: 22px; color: #1e293b; margin-bottom: 4px; }
-  .meta { font-size: 11px; color: #94a3b8; margin-bottom: 20px; }
-  table { border-collapse: collapse; width: 100%; }
 </style></head>
-<body>
-  <h1>${draft.title}</h1>
-  <div class="meta">تاريخ التصدير: ${new Date().toLocaleDateString('ar-IQ')} &nbsp;|&nbsp; ${draft.rows.length} صف &nbsp;|&nbsp; ${draft.columns.length} عمود</div>
-  <table>
-    <thead><tr>${headerCells}</tr></thead>
-    <tbody>${bodyRows}</tbody>
-    <tfoot><tr>${totalCells.join('')}</tr></tfoot>
-  </table>
-</body></html>`;
+<body>${tableHtml}</body></html>`;
 
   downloadBlob(html, `${draft.title}.doc`, 'application/msword;charset=utf-8');
 }
 
-// ─── PDF ───
-export function exportDraftToPDF(draft: DraftExportData) {
-  const showSub = hasSubtotalCols(draft.columns);
-  const allCols = [...draft.columns.map(c => c.name), ...(showSub ? ['المجموع'] : [])];
-  const colCount = allCols.length + 1; // +1 for #
+// ─── PDF (html2canvas for Arabic support) ───
+export async function exportDraftToPDF(draft: DraftExportData) {
+  const tableHtml = buildHTMLTable(draft);
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  // Create offscreen container
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;padding:24px;background:#fff;z-index:-1;direction:rtl;font-family:"Segoe UI",Tahoma,Arial,sans-serif';
+  container.innerHTML = tableHtml;
+  document.body.appendChild(container);
 
-  // Load Arabic-compatible font isn't easy with jsPDF, so we'll use the built-in approach
-  // and render a clean table with numbers (which are universal)
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 12;
-  const usableW = pageW - margin * 2;
-  const rowH = 8;
-  const headerH = 10;
+  try {
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
 
-  // Calculate column widths proportionally
-  const numColW = 28;
-  const idxColW = 12;
-  const fixedW = idxColW + draft.columns.filter(c => c.type === 'number' || c.type === 'quantity' || c.type === 'date').length * numColW + (showSub ? numColW : 0);
-  const textCols = draft.columns.filter(c => c.type !== 'number' && c.type !== 'quantity' && c.type !== 'date');
-  const textColW = textCols.length > 0 ? (usableW - fixedW) / textCols.length : 0;
+    const imgData = canvas.toDataURL('image/png');
+    const imgW = canvas.width;
+    const imgH = canvas.height;
 
-  const colWidths: number[] = [idxColW];
-  draft.columns.forEach(col => {
-    if (col.type === 'number' || col.type === 'quantity' || col.type === 'date') {
-      colWidths.push(numColW);
+    // A4 landscape dimensions in mm
+    const pdf = new jsPDF({
+      orientation: imgW > imgH ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+
+    const ratio = imgW / imgH;
+    let printW = usableW;
+    let printH = printW / ratio;
+
+    // If content is taller than one page, scale to fit width and paginate
+    if (printH <= usableH) {
+      pdf.addImage(imgData, 'PNG', margin, margin, printW, printH);
     } else {
-      colWidths.push(Math.max(textColW, 20));
-    }
-  });
-  if (showSub) colWidths.push(numColW);
+      // Multi-page: slice the canvas
+      const scaleFactor = usableW / imgW;
+      const sliceH = Math.floor(usableH / scaleFactor);
+      let srcY = 0;
+      let pageIdx = 0;
 
-  // Title
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(draft.title, pageW / 2, margin + 4, { align: 'center' });
+      while (srcY < imgH) {
+        if (pageIdx > 0) pdf.addPage();
+        const currentSliceH = Math.min(sliceH, imgH - srcY);
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(150);
-  doc.text(`${draft.rows.length} rows | ${draft.columns.length} columns | ${new Date().toLocaleDateString('en-US')}`, pageW / 2, margin + 10, { align: 'center' });
-  doc.setTextColor(0);
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = imgW;
+        sliceCanvas.height = currentSliceH;
+        const ctx = sliceCanvas.getContext('2d')!;
+        ctx.drawImage(canvas, 0, srcY, imgW, currentSliceH, 0, 0, imgW, currentSliceH);
 
-  let y = margin + 16;
+        const sliceImg = sliceCanvas.toDataURL('image/png');
+        const slicePrintH = currentSliceH * scaleFactor;
+        pdf.addImage(sliceImg, 'PNG', margin, margin, usableW, slicePrintH);
 
-  // Draw header
-  const drawHeader = () => {
-    let x = margin;
-    doc.setFillColor(37, 99, 235);
-    doc.rect(margin, y, usableW, headerH, 'F');
-    doc.setTextColor(255);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-
-    // # column
-    doc.text('#', x + idxColW / 2, y + headerH / 2 + 1, { align: 'center' });
-    x += idxColW;
-
-    draft.columns.forEach((col, i) => {
-      const w = colWidths[i + 1];
-      doc.text(col.name.substring(0, 15), x + w / 2, y + headerH / 2 + 1, { align: 'center' });
-      x += w;
-    });
-
-    if (showSub) {
-      doc.setFillColor(234, 88, 12);
-      doc.rect(x, y, numColW, headerH, 'F');
-      doc.setTextColor(255);
-      doc.text('Total', x + numColW / 2, y + headerH / 2 + 1, { align: 'center' });
-    }
-
-    doc.setTextColor(0);
-    y += headerH;
-  };
-
-  drawHeader();
-
-  // Draw rows
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-
-  draft.rows.forEach((row, idx) => {
-    if (y + rowH > pageH - margin) {
-      doc.addPage();
-      y = margin;
-      drawHeader();
-    }
-
-    const bg = idx % 2 === 0;
-    if (bg) {
-      doc.setFillColor(248, 250, 252);
-      doc.rect(margin, y, usableW, rowH, 'F');
-    }
-
-    // Draw border
-    doc.setDrawColor(226, 232, 240);
-    doc.line(margin, y + rowH, margin + usableW, y + rowH);
-
-    let x = margin;
-    // #
-    doc.setTextColor(150);
-    doc.text(String(idx + 1), x + idxColW / 2, y + rowH / 2 + 1, { align: 'center' });
-    x += idxColW;
-
-    draft.columns.forEach((col, i) => {
-      const w = colWidths[i + 1];
-      const val = row[col.id] || '';
-      const isNum = col.type === 'number' || col.type === 'quantity';
-
-      if (col.type === 'number') doc.setTextColor(5, 150, 105);
-      else if (col.type === 'quantity') doc.setTextColor(124, 58, 237);
-      else doc.setTextColor(30, 41, 59);
-
-      const display = isNum ? fmt(val) : (val || '-');
-      const align = isNum ? 'right' : 'left';
-      const textX = align === 'right' ? x + w - 3 : x + 3;
-      doc.text(display.substring(0, 20), textX, y + rowH / 2 + 1, { align });
-      x += w;
-    });
-
-    if (showSub) {
-      const sub = calcRowSubtotal(row, draft.columns);
-      doc.setTextColor(234, 88, 12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(fmt(sub), x + numColW - 3, y + rowH / 2 + 1, { align: 'right' });
-      doc.setFont('helvetica', 'normal');
-    }
-
-    y += rowH;
-  });
-
-  // Grand totals
-  if (draft.rows.length > 0) {
-    if (y + rowH + 2 > pageH - margin) {
-      doc.addPage();
-      y = margin;
-    }
-
-    doc.setFillColor(241, 245, 249);
-    doc.rect(margin, y, usableW, rowH + 2, 'F');
-    doc.setDrawColor(37, 99, 235);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, margin + usableW, y);
-    doc.setLineWidth(0.2);
-
-    let x = margin;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(30, 41, 59);
-    doc.text('TOTAL', x + idxColW / 2, y + (rowH + 2) / 2 + 1, { align: 'center' });
-    x += idxColW;
-
-    draft.columns.forEach((col, i) => {
-      const w = colWidths[i + 1];
-      if (col.type === 'number' || col.type === 'quantity') {
-        const total = draft.rows.reduce((s, r) => s + (parseFloat(r[col.id] || '0') || 0), 0);
-        if (col.type === 'number') doc.setTextColor(5, 150, 105);
-        else doc.setTextColor(124, 58, 237);
-        doc.text(fmt(total), x + w - 3, y + (rowH + 2) / 2 + 1, { align: 'right' });
+        srcY += currentSliceH;
+        pageIdx++;
       }
-      x += w;
-    });
-
-    if (showSub) {
-      const grandSub = draft.rows.reduce((s, r) => s + calcRowSubtotal(r, draft.columns), 0);
-      doc.setTextColor(234, 88, 12);
-      doc.text(fmt(grandSub), x + numColW - 3, y + (rowH + 2) / 2 + 1, { align: 'right' });
     }
-  }
 
-  doc.save(`${draft.title}.pdf`);
+    pdf.save(`${draft.title}.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
 }
 
 function downloadBlob(content: string, filename: string, mimeType: string) {
