@@ -21,6 +21,7 @@ const CrossyRoadGame = lazy(() => import("@/components/games/crossy-road/CrossyR
 const GameStore = lazy(() => import("@/components/games/GameStore"));
 const MyGamePrizes = lazy(() => import("@/components/games/MyGamePrizes"));
 import AdRewardSection from "@/components/games/AdRewardSection";
+import WinnersTicker from "@/components/games/WinnersTicker";
 
 const FILTER_ICONS = { Filter, Flame, Clock, Star, Zap } as const;
 
@@ -178,9 +179,9 @@ export default function MiniGames() {
 
   if (activeGame) {
     return (
-      <div className={`fixed inset-0 z-30 ${activeGame === 'crossy_road' ? '' : 'bg-background text-foreground overflow-y-auto'}`} dir="rtl">
+      <div className="fixed inset-0 z-30 bg-background text-foreground overflow-y-auto" dir="rtl">
         {activeGame !== 'crossy_road' && <PixelBackground />}
-        <div className={`relative z-10 ${activeGame === 'crossy_road' ? '' : 'max-w-2xl mx-auto'}`}>
+        <div className={`relative z-10 ${activeGame === 'crossy_road' ? 'fixed inset-0' : 'fixed inset-0 overflow-y-auto'}`}>
           <Suspense fallback={<div className="flex items-center justify-center h-screen text-primary font-mono">Loading...</div>}>
             {activeGame === 'space_blaster' && (
               <SpaceBlasterGame onBack={() => setActiveGame(null)} />
