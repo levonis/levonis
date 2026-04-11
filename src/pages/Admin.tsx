@@ -1775,6 +1775,7 @@ const Admin = () => {
                 { icon: BadgeDollarSign, title: 'مطابقة أسعار', desc: 'طلبات', path: ADMIN_ROUTES.priceMatch },
                 { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
                 { icon: Star, title: 'التقييمات', desc: 'موافقة', path: ADMIN_ROUTES.reviews },
+                { icon: Trophy, title: 'الفائزون', desc: 'جوائز', path: ADMIN_ROUTES.winners },
               ].map((item, idx) => (
                 <button
                   key={idx}
