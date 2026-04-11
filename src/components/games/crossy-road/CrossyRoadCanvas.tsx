@@ -28,10 +28,10 @@ function computeZoom() {
   const isMobile = w < h;
 
   if (isMobile) {
-    // Mobile: scale to fit 9 lanes comfortably
-    const zoomFromW = w / 12;
-    const zoomFromH = h / 18;
-    return Math.max(28, Math.min(55, Math.min(zoomFromW, zoomFromH)));
+    // Mobile: scale to fit 9 lanes comfortably — tuned for smaller screens
+    const zoomFromW = w / 13;
+    const zoomFromH = h / 20;
+    return Math.max(24, Math.min(42, Math.min(zoomFromW, zoomFromH)));
   }
 
   // Desktop / Tablet (Landscape)

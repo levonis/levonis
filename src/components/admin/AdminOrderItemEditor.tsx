@@ -92,8 +92,9 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         const stillExists = items.find(i => i.id === orig.id);
         if (!stillExists) {
           // Item was removed - restore stock
-          await supabase.rpc("admin_adjust_order_inventory", {
+          await supabase.rpc("admin_adjust_order_inventory" as any, {
             p_product_id: orig.product_id,
+            p_option_id: orig.selected_option || null,
             p_selected_color: orig.selected_color || null,
             p_quantity_change: orig.quantity, // positive = restore
           });
@@ -113,20 +114,23 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
           
           if (colorChanged) {
             // Restore old color stock
-            await supabase.rpc("admin_adjust_order_inventory", {
+            await supabase.rpc("admin_adjust_order_inventory" as any, {
               p_product_id: orig.product_id,
+              p_option_id: orig.selected_option || null,
               p_selected_color: orig.selected_color || null,
               p_quantity_change: orig.quantity,
             });
             // Deduct new color stock
-            await supabase.rpc("admin_adjust_order_inventory", {
+            await supabase.rpc("admin_adjust_order_inventory" as any, {
               p_product_id: item.product_id,
+              p_option_id: item.selected_option || null,
               p_selected_color: item.selected_color || null,
               p_quantity_change: -item.quantity,
             });
           } else if (qtyDiff !== 0) {
-            await supabase.rpc("admin_adjust_order_inventory", {
+            await supabase.rpc("admin_adjust_order_inventory" as any, {
               p_product_id: item.product_id,
+              p_option_id: item.selected_option || null,
               p_selected_color: item.selected_color || null,
               p_quantity_change: qtyDiff,
             });
@@ -142,8 +146,9 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
           }).eq("id", item.id);
         } else {
           // New item - deduct stock and insert
-          await supabase.rpc("admin_adjust_order_inventory", {
+          await supabase.rpc("admin_adjust_order_inventory" as any, {
             p_product_id: item.product_id,
+            p_option_id: item.selected_option || null,
             p_selected_color: item.selected_color || null,
             p_quantity_change: -item.quantity,
           });

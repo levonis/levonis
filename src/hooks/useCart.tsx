@@ -253,7 +253,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             shipping_type,
             category_id,
             card_discounts,
-            categories (
+            categories!products_category_id_fkey (
               id,
               tax_rate,
               main_section_id
@@ -395,13 +395,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const normalize = (v: any) => v ? v.toString().trim() : null;
       const normalizeShippingIndex = (v: any): number | null => (v === null || v === undefined) ? null : Number(v);
       
-      const targetShippingIndex = normalizeShippingIndex(shippingInfo?.index) ?? -1;
+      const targetShippingIndex = normalizeShippingIndex(shippingInfo?.index);
       
       const existingItem = items.find(item => 
         item.product_id === productId && 
         normalize((item as any).product_option_id) === normalize(optionId) &&
         normalize((item as any).selected_color) === normalize(color) &&
-        (normalizeShippingIndex((item as any).shipping_option_index) ?? -1) === targetShippingIndex &&
+        normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex &&
         (item as any).sale_type === saleType &&
         (item as any).is_gift === false &&
         !(item as any).bundle_id &&
@@ -442,9 +442,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (safeShippingIndex !== null && Number.isFinite(safeShippingIndex)) {
         insertData.shipping_option_index = Math.trunc(safeShippingIndex);
         insertData.shipping_option_name_ar = safeShippingNameAr || null;
-      } else {
-        insertData.shipping_option_index = -1;
       }
+      // Don't set shipping_option_index at all if null — let DB default handle it
 
       const { data: insertedData, error } = await supabase
         .from('cart_items')
