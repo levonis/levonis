@@ -1663,6 +1663,19 @@ const AdminOrders = () => {
         />
       )}
 
+      {/* Order Item Editor */}
+      {editingOrder && (
+        <AdminOrderItemEditor
+          open={itemEditorOpen}
+          onOpenChange={setItemEditorOpen}
+          orderId={editingOrder.id}
+          orderItems={editingOrder.order_items || []}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+          }}
+        />
+      )}
+
     </AdminLayout>
   );
 };
