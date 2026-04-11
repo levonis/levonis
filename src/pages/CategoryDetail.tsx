@@ -61,11 +61,7 @@ const CategoryDetail = () => {
   })();
   const otherProducts = products?.filter(p => p.id !== featuredProduct?.id) || [];
 
-  // Split other products into 3 columns for staggered layout
-  const columns: typeof otherProducts[] = [[], [], []];
-  otherProducts.forEach((p, i) => {
-    columns[i % 3].push(p);
-  });
+  // No longer needed — using flat responsive grid
 
   return (
     <div className="min-h-screen category-luxury-bg">

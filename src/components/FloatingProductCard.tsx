@@ -99,48 +99,44 @@ const FloatingProductCard = memo(({
     );
   }
 
-  // Standard product — green gradient card
+  // Standard product — image-fill card
   return (
     <Link to={`/product/${slug}`} className="block group h-full">
-      <div className="product-card-green relative h-full flex flex-col">
-        {/* Product image area */}
-        <div className="relative h-40 md:h-48 flex items-end justify-center px-4 pt-4 pb-2 flex-shrink-0">
+      <div className="relative h-full flex flex-col rounded-xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300">
+        {/* Product image — fills the card top, no padding */}
+        <div className="relative aspect-square overflow-hidden flex-shrink-0">
           <img
             src={imageUrl || '/placeholder.svg'}
             alt={nameAr}
             loading="lazy"
-            className="max-h-full max-w-full object-contain relative z-10"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
+          {/* Discount badge */}
+          {discount > 0 && (
+            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[9px] font-bold">
+              -{discount}%
+            </span>
+          )}
         </div>
 
-        {/* Floor line */}
-        <div className="mx-4 h-px bg-white/10" />
-
         {/* Product info */}
-        <div className="p-4 pt-3 text-center space-y-1.5 flex-1 flex flex-col justify-center">
-          <h3 className="text-sm md:text-base font-semibold text-foreground/85 leading-tight line-clamp-2">
+        <div className="p-2.5 pt-2 text-center space-y-1 flex-1 flex flex-col justify-center">
+          <h3 className="text-[11px] md:text-sm font-bold text-foreground/85 leading-tight line-clamp-2">
             {nameAr}
           </h3>
-          <div className="flex items-center justify-center gap-1.5">
-            <span className="text-base md:text-lg font-black text-primary">
+          <div className="flex items-center justify-center gap-1">
+            <span className="text-sm md:text-base font-black text-primary">
               {price.toLocaleString()}
             </span>
-            <span className="text-[10px] text-primary/60">
+            <span className="text-[8px] text-primary/60">
               {currency === 'IQD' ? 'د.ع' : currency}
             </span>
           </div>
-          {/* Discount badge — below price */}
-          {discount > 0 && (
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="px-2 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-xs font-bold">
-                -{discount}%
-              </span>
-              {originalPrice && (
-                <span className="line-through text-[11px] text-muted-foreground">
-                  {originalPrice.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
-                </span>
-              )}
-            </div>
+          {originalPrice && discount > 0 && (
+            <span className="line-through text-[9px] text-muted-foreground/60 block leading-none">
+              {originalPrice.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
+            </span>
           )}
         </div>
       </div>
