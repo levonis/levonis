@@ -485,16 +485,42 @@ export default function ProfileSettings() {
           </SettingsSection>
         )}
 
+        {/* Appearance Section */}
+        <SettingsSection icon={Palette} title="المظهر">
+          <div className="space-y-3">
+            <ThemeSwitcherInline />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">بطاقة الملف الشخصي</p>
+                <p className="text-xs text-muted-foreground">تغيير إطار وتصميم بطاقتك</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => navigate("/rewards?tab=cards")}>
+                <CreditCard className="h-3.5 w-3.5" />
+                تغيير
+              </Button>
+            </div>
+          </div>
+        </SettingsSection>
+
         {/* Security Section */}
         <SettingsSection icon={Lock} title="الأمان">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
-              <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
+                <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowPinDialog(true)}>
+                تعيين / تغيير
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowPinDialog(true)}>
-              تعيين / تغيير
-            </Button>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">تغيير كلمة المرور</p>
+                <p className="text-xs text-muted-foreground">تحديث كلمة مرور حسابك</p>
+              </div>
+              <ChangePasswordButton />
+            </div>
           </div>
         </SettingsSection>
 
