@@ -10137,9 +10137,10 @@ export type Database = {
         Args: { p_transaction_id: string }
         Returns: boolean
       }
-      admin_award_crossy_road_winners:
-        | { Args: never; Returns: Json }
-        | { Args: { p_next_season_starts_at?: string }; Returns: Json }
+      admin_award_crossy_road_winners: {
+        Args: { p_next_season_starts_at?: string }
+        Returns: Json
+      }
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
