@@ -289,7 +289,7 @@ export default function AdminFinancialDrafts() {
               <DropdownMenuContent align="end" className="backdrop-blur-xl bg-card/90 border-border/30 min-w-[160px]">
                 <DropdownMenuLabel>تصدير كـ</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => { exportDraftToPDF({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows, updatedAt: activeDraft.updated_at }); toast.success('تم تصدير PDF'); }} className="gap-2 text-xs">
+                <DropdownMenuItem onClick={async () => { await exportDraftToPDF({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows, updatedAt: activeDraft.updated_at }); toast.success('تم تصدير PDF'); }} className="gap-2 text-xs">
                   <FileDown className="h-4 w-4 text-red-500" /> PDF
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { exportDraftToExcel({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows, updatedAt: activeDraft.updated_at }); toast.success('تم تصدير Excel'); }} className="gap-2 text-xs">
