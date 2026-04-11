@@ -29,7 +29,7 @@ import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 import { sendAllNotifications } from '@/lib/notifications';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { calcAutoOrderProductCost } from '@/lib/orderFinancials';
-
+import AdminOrderItemEditor from '@/components/admin/AdminOrderItemEditor';
 const directStatusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
   { value: 'confirmed', label: 'تم التأكيد' },
@@ -94,6 +94,7 @@ const AdminOrders = () => {
   const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
+  const [itemEditorOpen, setItemEditorOpen] = useState(false);
   // Edit form state
   const [editStatus, setEditStatus] = useState('');
   const [editPaymentStatus, setEditPaymentStatus] = useState('');
@@ -1282,6 +1283,16 @@ const AdminOrders = () => {
                 </div>
               </div>
 
+              {/* Edit Order Items Button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setItemEditorOpen(true)}
+              >
+                <Package className="h-4 w-4" />
+                تعديل منتجات الطلب والمخزون
+              </Button>
+
               {/* Full Order Summary Breakdown */}
               {(() => {
                 const subtotal = Number(editingOrder.subtotal) || 0;
@@ -1649,6 +1660,19 @@ const AdminOrders = () => {
           userId={selectedOrderForMessage.user_id}
           customerName={selectedOrderForMessage.profiles?.full_name || selectedOrderForMessage.profiles?.username || 'زبون'}
           initialOrderData={selectedOrderForMessage}
+        />
+      )}
+
+      {/* Order Item Editor */}
+      {editingOrder && (
+        <AdminOrderItemEditor
+          open={itemEditorOpen}
+          onOpenChange={setItemEditorOpen}
+          orderId={editingOrder.id}
+          orderItems={editingOrder.order_items || []}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+          }}
         />
       )}
 

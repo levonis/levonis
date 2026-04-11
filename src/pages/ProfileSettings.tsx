@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut, Users, FileText } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe, User, MapPin, Save, LogOut, Users, FileText, Palette, KeyRound, CreditCard } from "lucide-react";
 import { useLanguage, LANGUAGE_LABELS } from "@/lib/i18n";
 import type { Language } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,95 @@ import ImageCropper from "@/components/marketplace/ImageCropper";
 import WalletPinDialog from "@/components/wallet/WalletPinDialog";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useTheme, ThemeMode } from "@/hooks/useTheme";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
+
+// Inline theme switcher for settings
+function ThemeSwitcherInline() {
+  const { theme, setTheme } = useTheme();
+  const themes: { key: ThemeMode; label: string; colors: string[] }[] = [
+    { key: "default", label: "الأساسي", colors: ["hsl(160,46%,15%)", "hsl(44,39%,60%)"] },
+    { key: "light", label: "فاتح", colors: ["hsl(45,30%,92%)", "hsl(44,50%,55%)"] },
+    { key: "dark", label: "ليلي", colors: ["hsl(220,20%,8%)", "hsl(44,50%,55%)"] },
+  ];
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-bold text-foreground">المظهر</p>
+        <p className="text-xs text-muted-foreground">اختر ثيم الواجهة</p>
+      </div>
+      <div className="flex gap-1.5">
+        {themes.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTheme(t.key)}
+            className={`relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${
+              theme === t.key
+                ? "border-primary ring-2 ring-primary/30 scale-110"
+                : "border-border/50 hover:border-primary/40"
+            }`}
+            title={t.label}
+          >
+            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(135deg, ${t.colors[0]} 50%, ${t.colors[1]} 50%)` }} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Password change button
+function ChangePasswordButton() {
+  const [loading, setLoading] = useState(false);
+  const [newPass, setNewPass] = useState("");
+  const [showInput, setShowInput] = useState(false);
+
+  const handleChange = async () => {
+    if (newPass.length < 6) {
+      sonnerToast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+      if (error) throw error;
+      sonnerToast.success("تم تغيير كلمة المرور بنجاح");
+      setShowInput(false);
+      setNewPass("");
+    } catch (err: any) {
+      sonnerToast.error("فشل في تغيير كلمة المرور: " + (err?.message || ""));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!showInput) {
+    return (
+      <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => setShowInput(true)}>
+        <KeyRound className="h-3.5 w-3.5" />
+        تغيير
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex gap-2 items-center">
+      <Input
+        type="password"
+        value={newPass}
+        onChange={e => setNewPass(e.target.value)}
+        placeholder="كلمة المرور الجديدة"
+        className="h-8 w-36 rounded-lg text-sm"
+      />
+      <Button size="sm" className="rounded-lg h-8" onClick={handleChange} disabled={loading}>
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "حفظ"}
+      </Button>
+      <Button size="sm" variant="ghost" className="rounded-lg h-8" onClick={() => { setShowInput(false); setNewPass(""); }}>
+        ×
+      </Button>
+    </div>
+  );
+}
 
 function daysUntilAllowed(last: string | null) {
   if (!last) return 0;
@@ -485,16 +575,42 @@ export default function ProfileSettings() {
           </SettingsSection>
         )}
 
+        {/* Appearance Section */}
+        <SettingsSection icon={Palette} title="المظهر">
+          <div className="space-y-3">
+            <ThemeSwitcherInline />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">بطاقة الملف الشخصي</p>
+                <p className="text-xs text-muted-foreground">تغيير إطار وتصميم بطاقتك</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => navigate("/rewards?tab=cards")}>
+                <CreditCard className="h-3.5 w-3.5" />
+                تغيير
+              </Button>
+            </div>
+          </div>
+        </SettingsSection>
+
         {/* Security Section */}
         <SettingsSection icon={Lock} title="الأمان">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
-              <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
+                <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowPinDialog(true)}>
+                تعيين / تغيير
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowPinDialog(true)}>
-              تعيين / تغيير
-            </Button>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">تغيير كلمة المرور</p>
+                <p className="text-xs text-muted-foreground">تحديث كلمة مرور حسابك</p>
+              </div>
+              <ChangePasswordButton />
+            </div>
           </div>
         </SettingsSection>
 

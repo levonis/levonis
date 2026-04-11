@@ -124,6 +124,7 @@ const AdminReviews = lazy(() => import("./pages/AdminReviews"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
+const GameWinnersPage = lazy(() => import("./pages/GameWinnersPage"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
@@ -133,11 +134,35 @@ const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Simple loading fallback
-const SuspenseLoader = () =>
-<div className="fixed inset-0 z-[9998] flex items-center justify-center bg-background">
-    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-  </div>;
+// Route-aware skeleton loading fallback
+const SuspenseLoader = () => {
+  // We can't use useLocation here since it's inside Suspense fallback
+  // Use a simple but good-looking skeleton instead
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6 max-w-lg space-y-4">
+        {/* Header skeleton */}
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="h-4 w-72 rounded bg-muted/70 animate-pulse" />
+        {/* Card skeletons */}
+        <div className="rounded-2xl border border-border/30 bg-card p-4 space-y-3">
+          <div className="h-32 w-full rounded-xl bg-muted animate-pulse" />
+          <div className="h-4 w-3/4 rounded bg-muted/70 animate-pulse" />
+          <div className="h-4 w-1/2 rounded bg-muted/60 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="rounded-xl border border-border/30 bg-card p-3 space-y-2">
+              <div className="aspect-square w-full rounded-lg bg-muted animate-pulse" />
+              <div className="h-3 w-3/4 rounded bg-muted/70 animate-pulse" />
+              <div className="h-3 w-1/2 rounded bg-muted/60 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 
 function AppContent() {
@@ -249,6 +274,7 @@ function AppContent() {
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/games" element={<MiniGames />} />
+            <Route path="/games/winners" element={<GameWinnersPage />} />
             <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
