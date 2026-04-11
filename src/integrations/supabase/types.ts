@@ -10102,6 +10102,15 @@ export type Database = {
         Args: { p_amount: number; p_source?: string; p_user_id: string }
         Returns: boolean
       }
+      admin_adjust_order_inventory: {
+        Args: {
+          p_option_id?: string
+          p_product_id: string
+          p_quantity_change?: number
+          p_selected_color?: string
+        }
+        Returns: undefined
+      }
       admin_adjust_points: {
         Args: {
           p_amount: number
