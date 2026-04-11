@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Trash2, ArrowRight, Pencil, X, FileSpreadsheet, Calendar, Type, Hash, Check, MoreVertical, Layers, Sigma } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Pencil, X, FileSpreadsheet, Calendar, Type, Hash, Check, MoreVertical, Layers, Sigma, Download, FileText, FileDown } from 'lucide-react';
+import { exportDraftToExcel, exportDraftToPDF, exportDraftToWord } from '@/lib/draftExport';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatNumberInput, parseFormattedNumber } from '@/lib/utils';
@@ -276,6 +277,30 @@ export default function AdminFinancialDrafts() {
           <span className="text-xs text-muted-foreground px-2.5 py-1 rounded-full bg-muted/50">
             {saveDraft.isPending ? '⏳ جارٍ الحفظ...' : '✓ محفوظ'}
           </span>
+
+          {/* Export Dropdown */}
+          {activeDraft.columns.length > 0 && activeDraft.rows.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+                  <Download className="h-3.5 w-3.5" /> تصدير
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="backdrop-blur-xl bg-card/90 border-border/30 min-w-[160px]">
+                <DropdownMenuLabel>تصدير كـ</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { exportDraftToPDF({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows, updatedAt: activeDraft.updated_at }); toast.success('تم تصدير PDF'); }} className="gap-2 text-xs">
+                  <FileDown className="h-4 w-4 text-red-500" /> PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { exportDraftToExcel({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows, updatedAt: activeDraft.updated_at }); toast.success('تم تصدير Excel'); }} className="gap-2 text-xs">
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" /> Excel (CSV)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { exportDraftToWord({ title: activeDraft.title, columns: activeDraft.columns, rows: activeDraft.rows, updatedAt: activeDraft.updated_at }); toast.success('تم تصدير Word'); }} className="gap-2 text-xs">
+                  <FileText className="h-4 w-4 text-blue-600" /> Word
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Add Column Dropdown */}
           <DropdownMenu>
