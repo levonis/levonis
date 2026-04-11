@@ -91,20 +91,20 @@ const CategoryDetail = () => {
               <div className="space-y-16">
                 {/* Hero section: Title + Featured product side by side */}
                 {featuredProduct && (
-                  <div className="flex flex-col-reverse md:flex-row items-center md:items-start gap-8 md:gap-16">
-                    {/* Title & description — left side */}
-                    <div className="flex-1 text-right pt-4 md:pt-12">
-                      <h1 className="text-4xl md:text-6xl font-black text-foreground/90 mb-2 tracking-tight leading-tight">
+                  <div className="flex flex-row items-center gap-4 md:gap-16">
+                    {/* Title & description — right side (RTL) */}
+                    <div className="flex-1 text-right pt-2 md:pt-12">
+                      <h1 className="text-xl sm:text-3xl md:text-6xl font-black text-foreground/90 mb-1 md:mb-2 tracking-tight leading-tight">
                         {featuredProduct.name_ar}
                       </h1>
                       {featuredProduct.description_ar && (
                         <div>
-                          <p className="text-foreground/40 text-base md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
+                          <p className="text-foreground/40 text-xs sm:text-sm md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
                             {featuredProduct.description_ar}
                           </p>
                           <Link
                             to={`/product/${featuredProduct.slug}`}
-                            className="text-primary text-sm mt-2 hover:underline inline-block"
+                            className="text-primary text-xs md:text-sm mt-1 md:mt-2 hover:underline inline-block"
                           >
                             عرض المزيد
                           </Link>
@@ -112,8 +112,8 @@ const CategoryDetail = () => {
                       )}
                     </div>
 
-                    {/* Featured product on right */}
-                    <div className="flex-shrink-0 w-full max-w-sm">
+                    {/* Featured product on left (smaller on mobile) */}
+                    <div className="flex-shrink-0 w-32 sm:w-48 md:w-full md:max-w-sm">
                       <FloatingProductCard
                         id={featuredProduct.id}
                         name={featuredProduct.name}
@@ -130,36 +130,9 @@ const CategoryDetail = () => {
                 )}
 
 
-                {/* Staggered grid of product cards */}
+                {/* Responsive grid of product cards */}
                 {otherProducts.length > 0 && (
-                  <div className="hidden md:flex gap-6 items-start">
-                    {columns.map((col, colIdx) => (
-                      <div
-                        key={colIdx}
-                        className="flex-1 flex flex-col gap-6"
-                        style={{ marginTop: colIdx === 1 ? '3rem' : colIdx === 2 ? '1.5rem' : '0' }}
-                      >
-                        {col.map((product) => (
-                          <FloatingProductCard
-                            key={product.id}
-                            id={product.id}
-                            name={product.name}
-                            nameAr={product.name_ar}
-                            price={Number(product.price)}
-                            originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                            imageUrl={product.image_url || undefined}
-                            currency={product.currency || undefined}
-                            slug={product.slug}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Mobile: simple 2-column grid */}
-                {otherProducts.length > 0 && (
-                  <div className="grid grid-cols-2 gap-4 md:hidden">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
                     {otherProducts.map((product) => (
                       <FloatingProductCard
                         key={product.id}

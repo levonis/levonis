@@ -137,11 +137,11 @@ export default function MiniGames() {
   });
 
   const filteredGames = filterGameNodes(gamesWithStatus, activeFilter).sort((a, b) => {
-    const aDisabled = (a as any)._disabled || a.status === GameStatus.COMING_SOON;
-    const bDisabled = (b as any)._disabled || b.status === GameStatus.COMING_SOON;
+    const aLive = !(a as any)._disabled && a.status !== GameStatus.COMING_SOON;
+    const bLive = !(b as any)._disabled && b.status !== GameStatus.COMING_SOON;
     
-    if (aDisabled === bDisabled) return 0;
-    return aDisabled ? 1 : -1;
+    if (aLive === bLive) return (a.display_order ?? 99) - (b.display_order ?? 99);
+    return aLive ? -1 : 1;
   });
 
   const handlePlay = (game: GameResource) => {
