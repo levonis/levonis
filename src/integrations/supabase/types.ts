@@ -2094,6 +2094,7 @@ export type Database = {
       }
       crossy_road_high_scores: {
         Row: {
+          all_time_high_score: number | null
           best_steps: number
           high_score: number
           id: string
@@ -2102,6 +2103,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          all_time_high_score?: number | null
           best_steps?: number
           high_score?: number
           id?: string
@@ -2110,6 +2112,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          all_time_high_score?: number | null
           best_steps?: number
           high_score?: number
           id?: string
@@ -2307,7 +2310,11 @@ export type Database = {
           game_enabled: boolean
           id: string
           max_daily_plays: number | null
+          max_daily_points: number | null
           points_per_step: number
+          score_per_coin: number | null
+          score_per_step: number | null
+          season_ends_at: string | null
           total_plays: number
           total_points_distributed: number
           updated_at: string
@@ -2319,7 +2326,11 @@ export type Database = {
           game_enabled?: boolean
           id?: string
           max_daily_plays?: number | null
+          max_daily_points?: number | null
           points_per_step?: number
+          score_per_coin?: number | null
+          score_per_step?: number | null
+          season_ends_at?: string | null
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
@@ -2331,7 +2342,11 @@ export type Database = {
           game_enabled?: boolean
           id?: string
           max_daily_plays?: number | null
+          max_daily_points?: number | null
           points_per_step?: number
+          score_per_coin?: number | null
+          score_per_step?: number | null
+          season_ends_at?: string | null
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
