@@ -28,19 +28,16 @@ function computeZoom() {
   const isMobile = w < h;
 
   if (isMobile) {
-    // Mobile: scale to fit 9 lanes comfortably — tuned for smaller screens
-    const zoomFromW = w / 13;
-    const zoomFromH = h / 20;
-    return Math.max(24, Math.min(42, Math.min(zoomFromW, zoomFromH)));
+    // Mobile: fill screen vertically, show ~12 rows
+    const z = h / 16;
+    return Math.max(35, Math.min(55, z));
   }
 
   // Desktop / Tablet (Landscape)
-  // Scale off height but also consider width for ultra-wide screens
-  const zFromH = h / 12;
-  const zFromW = w / 18;
+  const zFromH = h / 14;
+  const zFromW = w / 20;
   const z = Math.min(zFromH, zFromW);
-  
-  return Math.max(50, Math.min(160, z));
+  return Math.max(45, Math.min(90, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
@@ -68,9 +65,9 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
         orthographic
         camera={{
           zoom,
-          position: [4.5, 12, 8],
-          near: -100,
-          far: 100,
+          position: [4.5, 10, 8],
+          near: -200,
+          far: 200,
         }}
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
         gl={{ antialias: true, alpha: false }}

@@ -7,6 +7,7 @@ import CrossyRoadAudio from "./CrossyRoadAudio";
 
 // ── Types ──
 type RowType = "grass" | "road" | "rail" | "river";
+type Biome = "green" | "desert" | "snow" | "dark_forest";
 
 interface Obstacle {
   x: number;
@@ -38,6 +39,7 @@ interface Row {
   trainWarningPhase: boolean;
   treeIndices: number[];
   grassDark: boolean;
+  biome: Biome;
 }
 
 interface GameState {
@@ -62,9 +64,9 @@ interface GameState {
 }
 
 // ── Render snapshot for declarative rendering ──
-interface RenderGround { id: string; x: number; z: number; rowType: RowType; grassDark: boolean; }
+interface RenderGround { id: string; x: number; z: number; rowType: RowType; grassDark: boolean; biome: Biome; }
 interface RenderTrafficLight { id: string; x: number; z: number; isWarning: boolean; intensity: number; }
-interface RenderTree { id: string; x: number; z: number; modelIdx: number; }
+interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; }
 interface RenderVehicle { id: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { id: string; x: number; z: number; }
 interface RenderLog { id: string; x: number; z: number; modelIdx: number; }
@@ -88,6 +90,9 @@ const MODEL_SCALE = 1.0;
 const GROUND_SCALE_X = (LANES * CELL) / 25;
 const GROUND_SCALE_Z = CELL / 1;
 
+// Spawn margin — cars/logs appear from well off-screen
+const SPAWN_MARGIN = 6;
+
 // Train constants
 const TRAIN_PART_WIDTH = 4.6;
 const TRAIN_TOTAL_PARTS = 5;
@@ -101,10 +106,28 @@ const TRAIN_WARNING_DURATION = 3.0;
 // Player on-log Y offset
 const LOG_Y_OFFSET = 0.18;
 
-// Log width - matches the visual log model size (wider = chicken lands properly)
-const LOG_WIDTH = 2.0;
-// Log collision tolerance - generous so chicken doesn't fall off edges
+// Log collision tolerance
 const LOG_TOLERANCE = 0.25;
+
+// ── Biome colors ──
+const BIOME_COLORS: Record<Biome, { ground: number; groundDark: number; tree: number; sky: string }> = {
+  green:       { ground: 0x7ec850, groundDark: 0x6ab040, tree: 0x2d6b1e, sky: "#87CEEB" },
+  desert:      { ground: 0xd4a847, groundDark: 0xc49535, tree: 0x8b6914, sky: "#E8C87A" },
+  snow:        { ground: 0xe8eef0, groundDark: 0xc8d8e0, tree: 0x4a7a6a, sky: "#B8D4E8" },
+  dark_forest: { ground: 0x3a5a2a, groundDark: 0x2a4420, tree: 0x1a3010, sky: "#4A6848" },
+};
+
+function getBiome(index: number): Biome {
+  // Change biome every ~18 rows, cycling through them
+  const biomes: Biome[] = ["green", "desert", "snow", "dark_forest"];
+  const cycle = Math.floor(index / 18) % biomes.length;
+  return biomes[cycle];
+}
+
+function getDifficulty(index: number): number {
+  // Ramps from 0 to 1 over 80 rows, then slowly continues
+  return Math.min(index / 80, 1) + Math.max(0, (index - 80) / 200);
+}
 
 interface Props {
   onGameOver: (score: number, steps: number, coins: number) => void;
@@ -112,72 +135,102 @@ interface Props {
 }
 
 function generateRow(index: number): Row {
+  const biome = getBiome(index);
+  const diff = getDifficulty(index);
+
   if (index < 4) {
     return {
       type: "grass", obstacles: [], logs: [], coin: null,
       trainWarning: false, trainTimer: 0, trainWarningPhase: false,
-      treeIndices: [], grassDark: index % 2 === 0,
+      treeIndices: [], grassDark: index % 2 === 0, biome,
     };
   }
-  const difficulty = Math.min(index / 50, 1);
+
   const rand = Math.random();
   let type: RowType;
-  if (rand < 0.35) type = "grass";
-  else if (rand < 0.7) type = "road";
-  else if (rand < 0.85) type = "rail";
+
+  // More dangerous rows at higher difficulty
+  const grassChance = Math.max(0.15, 0.35 - diff * 0.15);
+  const roadChance = grassChance + 0.30 + diff * 0.05;
+  const railChance = roadChance + 0.15 + diff * 0.05;
+
+  if (rand < grassChance) type = "grass";
+  else if (rand < roadChance) type = "road";
+  else if (rand < railChance) type = "rail";
   else type = "river";
 
   const row: Row = {
     type, obstacles: [], logs: [], coin: null,
     trainWarning: false, trainTimer: 0, trainWarningPhase: false,
-    treeIndices: [], grassDark: Math.random() > 0.5,
+    treeIndices: [], grassDark: Math.random() > 0.5, biome,
   };
 
   if (type === "grass" && index > 3) {
-    // Place trees on edges and potentially random interior positions
-    // Trees must never overlap with each other or block all paths
     const treePositions: number[] = [];
-    if (Math.random() > 0.4) treePositions.push(0);
-    if (Math.random() > 0.4) treePositions.push(LANES - 1);
-    // Optionally add 1 interior tree (at an odd lane so player can always pass)
-    if (Math.random() > 0.6 && treePositions.length < 2) {
-      const interiorCandidates = [2, 3, 5, 6];
-      const picked = interiorCandidates[Math.floor(Math.random() * interiorCandidates.length)];
-      if (!treePositions.includes(picked)) treePositions.push(picked);
+    // More trees in dark_forest
+    const treeChance = biome === "dark_forest" ? 0.25 : 0.4;
+    if (Math.random() > treeChance) treePositions.push(0);
+    if (Math.random() > treeChance) treePositions.push(LANES - 1);
+
+    // More interior trees at higher difficulty and in dark_forest
+    const interiorCount = biome === "dark_forest" ? 2 : (diff > 0.5 ? 1 : 0);
+    const interiorCandidates = [2, 3, 4, 5, 6];
+    for (let t = 0; t < interiorCount; t++) {
+      if (Math.random() > 0.4) {
+        const picked = interiorCandidates[Math.floor(Math.random() * interiorCandidates.length)];
+        if (!treePositions.includes(picked)) treePositions.push(picked);
+      }
+    }
+    // Ensure at least 3 free lanes
+    if (treePositions.length > LANES - 3) {
+      treePositions.length = LANES - 3;
     }
     row.treeIndices = treePositions;
   }
 
   if (type === "road") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    const count = 1 + Math.floor(Math.random() * 2);
-    const speed = (2.5 + Math.random() * 3 + difficulty * 2) * dir;
+    const baseCount = 1 + Math.floor(Math.random() * 2);
+    const count = Math.min(4, baseCount + (diff > 0.6 ? 1 : 0));
+    const baseSpeed = 2.5 + Math.random() * 2;
+    const speed = (baseSpeed + diff * 3) * dir;
     const isTruck = Math.random() < 0.3;
-    // Space cars evenly to prevent overlap
-    const segmentWidth = (LANES * CELL) / count;
+
+    // Spawn cars spread across a wide range, they enter/exit like trains
+    const totalRange = LANES * CELL + SPAWN_MARGIN * 2;
+    const spacing = totalRange / count;
     for (let i = 0; i < count; i++) {
-      const baseX = segmentWidth * i + Math.random() * (segmentWidth - (isTruck ? 2 : 1));
+      const startX = -SPAWN_MARGIN + spacing * i + Math.random() * (spacing * 0.5);
       row.obstacles.push({
-        x: baseX,
+        x: startX,
         speed, width: isTruck ? 2 : 1,
         modelIndex: Math.floor(Math.random() * (isTruck ? 2 : 6)),
         isTruck,
       });
     }
   } else if (type === "rail") {
-    row.trainTimer = 3 + Math.random() * 5;
+    // Faster trains at higher difficulty
+    row.trainTimer = Math.max(2, (3 + Math.random() * 5) - diff * 2);
   } else if (type === "river") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    const count = 2 + Math.floor(Math.random() * 2);
-    const speed = (1.5 + Math.random() * 2) * dir;
-    // Space logs with guaranteed gaps between them
-    const segmentWidth = (LANES * CELL) / count;
+    // Fewer logs = harder; minimum 1
+    const baseLogCount = 3 - Math.floor(diff * 1.5);
+    const count = Math.max(1, baseLogCount);
+    const baseSpeed = 1.5 + Math.random() * 1.5;
+    const speed = (baseSpeed + diff * 1.5) * dir;
+    
+    // Space logs with guaranteed large gaps (≥2.5 units)
+    const logWidth = 1.5 + Math.random() * 1.0; // vary between 1.5 and 2.5
+    const totalRange = LANES * CELL + SPAWN_MARGIN * 2;
+    const spacing = totalRange / count;
+    const minGap = 2.5;
+    
     for (let i = 0; i < count; i++) {
-      // Place log with a gap between logs (logs take up LOG_WIDTH, leave at least 1 unit gap)
-      const maxOffset = Math.max(0, segmentWidth - LOG_WIDTH - 1);
+      const maxJitter = Math.max(0, spacing - logWidth - minGap);
+      const startX = -SPAWN_MARGIN + spacing * i + Math.random() * maxJitter;
       row.logs.push({
-        x: segmentWidth * i + Math.random() * maxOffset,
-        speed, width: LOG_WIDTH,
+        x: startX,
+        speed, width: logWidth,
         modelIndex: Math.floor(Math.random() * 4),
       });
     }
@@ -198,10 +251,12 @@ function GroundTile({ data }: { data: RenderGround }) {
   let geometry: THREE.BufferGeometry;
   let material: THREE.MeshLambertMaterial;
 
+  const biomeColors = BIOME_COLORS[data.biome];
+
   if (data.rowType === "grass") {
     geometry = models.grass.obj.geometry;
     const tex = data.grassDark ? models.grass.darkTex : models.grass.lightTex;
-    material = new THREE.MeshLambertMaterial({ map: tex });
+    material = new THREE.MeshLambertMaterial({ map: tex, color: data.grassDark ? biomeColors.groundDark : biomeColors.ground });
   } else if (data.rowType === "road") {
     geometry = models.road.obj.geometry;
     const tex = Math.random() > 0.5 ? models.road.stripesTex : models.road.blankTex;
@@ -224,7 +279,7 @@ function GroundTile({ data }: { data: RenderGround }) {
   );
 }
 
-// Traffic Light component - pole with 3 lights
+// Traffic Light component
 function TrafficLight({ data }: { data: RenderTrafficLight }) {
   const pulse = Math.abs(Math.sin(Date.now() * 0.008));
   const redOn = data.isWarning;
@@ -232,17 +287,14 @@ function TrafficLight({ data }: { data: RenderTrafficLight }) {
 
   return (
     <group position={[data.x, 0, data.z]}>
-      {/* Pole */}
       <mesh position={[0, 0.5, 0]}>
         <cylinderGeometry args={[0.04, 0.04, 1, 8]} />
         <meshLambertMaterial color={0x333333} />
       </mesh>
-      {/* Housing */}
       <mesh position={[0, 1.1, 0]}>
         <boxGeometry args={[0.2, 0.5, 0.15]} />
         <meshLambertMaterial color={0x222222} />
       </mesh>
-      {/* Red light */}
       <mesh position={[0, 1.25, 0.08]}>
         <sphereGeometry args={[0.06, 12, 12]} />
         <meshStandardMaterial
@@ -251,7 +303,6 @@ function TrafficLight({ data }: { data: RenderTrafficLight }) {
           emissiveIntensity={redOn ? 1.5 + pulse * 2 : 0}
         />
       </mesh>
-      {/* Yellow light */}
       <mesh position={[0, 1.1, 0.08]}>
         <sphereGeometry args={[0.06, 12, 12]} />
         <meshStandardMaterial
@@ -260,7 +311,6 @@ function TrafficLight({ data }: { data: RenderTrafficLight }) {
           emissiveIntensity={redOn ? 0.5 + pulse * 0.5 : 0}
         />
       </mesh>
-      {/* Green light */}
       <mesh position={[0, 0.95, 0.08]}>
         <sphereGeometry args={[0.06, 12, 12]} />
         <meshStandardMaterial
@@ -277,8 +327,16 @@ function TreeMesh({ data }: { data: RenderTree }) {
   const models = useGameModels();
   if (!models) return null;
   const m = models.trees[data.modelIdx % models.trees.length];
+  // Tint tree color based on biome
+  const biomeColor = BIOME_COLORS[data.biome].tree;
+  const tintedMat = useMemo(() => {
+    const mat = m.material.clone();
+    mat.color = new THREE.Color(biomeColor);
+    return mat;
+  }, [m.material, biomeColor]);
+
   return (
-    <mesh geometry={m.geometry} material={m.material}
+    <mesh geometry={m.geometry} material={tintedMat}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
       position={[data.x, 0, data.z]}
     />
@@ -305,23 +363,19 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
 function TrainMeshGroup({ data }: { data: RenderTrain }) {
   const models = useGameModels();
   if (!models) return null;
-  // Offset to ensure the train's left edge starts exactly at data.x without protruding backwards
   const offset = TRAIN_PART_WIDTH / 2;
   return (
     <group position={[data.x, 0.05, data.z]}>
-      {/* Back of train (trailing, lowest x) */}
       <mesh geometry={models.train.back.geometry} material={models.train.back.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
         position={[offset, 0, 0]}
       />
-      {/* Middle cars */}
       {[1, 2, 3].map(ti => (
         <mesh key={ti} geometry={models.train.middle.geometry} material={models.train.middle.material}
           scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
           position={[offset + ti * TRAIN_PART_WIDTH, 0, 0]}
         />
       ))}
-      {/* Front of train (leading edge, highest x) */}
       <mesh geometry={models.train.front.geometry} material={models.train.front.material}
         scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
         position={[offset + 4 * TRAIN_PART_WIDTH, 0, 0]}
@@ -389,7 +443,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     return () => { audio.dispose(); };
   }, []);
 
-  // Input: A=left, S=down, D=right, Space=jump forward
+  // Input
   const handleMove = useCallback((dir: string) => {
     const g = gameRef.current;
     const audio = audioRef.current;
@@ -399,7 +453,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const wasOnRiver = currentRow && currentRow.type === "river";
     const visualXBefore = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
 
-    // Check tree collision before moving
     let targetLane = g.playerLane;
     let targetRow = g.playerRow;
 
@@ -408,10 +461,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     else if (dir === "left") { targetLane = Math.max(0, g.playerLane - 1); }
     else if (dir === "right") { targetLane = Math.min(LANES - 1, g.playerLane + 1); }
 
-    // Block movement into trees
     const destRow = g.rows[targetRow];
     if (destRow && destRow.type === "grass" && destRow.treeIndices.includes(targetLane)) {
-      return; // blocked by tree
+      return;
     }
 
     g.moving = true;
@@ -419,7 +471,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.moveProgress = 0;
     g.fromLane = g.playerLane;
     g.fromRow = g.playerRow;
-
     g.playerLane = targetLane;
     g.playerRow = targetRow;
 
@@ -435,13 +486,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const nowOnRiver = newRow && newRow.type === "river";
 
     if (wasOnRiver && !nowOnRiver) {
-      // Leaving river: use the visual X to compute the correct landing lane
       const snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
       g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
       g.playerOffsetX = 0;
       g.onRiver = false;
     } else if (nowOnRiver) {
-      // Entering or moving on river: check actual position against logs
       let actualPx: number;
       if (wasOnRiver) {
         actualPx = visualXBefore;
@@ -451,7 +500,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         actualPx = g.playerLane * CELL + CELL / 2;
       }
 
-      // Check if player lands on any log — NO snapping to nearest, just check collision
       let foundLog: LogObj | null = null;
       for (const log of newRow.logs) {
         const logLeft = log.x;
@@ -463,10 +511,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
 
       if (foundLog) {
-        // Stay at actual position, just compute offset from grid lane
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       } else {
-        // No log found — player will drown (collision check handles this)
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
       g.onRiver = true;
@@ -475,7 +521,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       g.onRiver = false;
     }
 
-    // Rotation: flip by Math.PI so chicken face matches direction
     if (dir === "up") g.playerRotation = 0;
     else if (dir === "down") g.playerRotation = Math.PI;
     else if (dir === "left") g.playerRotation = -Math.PI / 2;
@@ -551,12 +596,18 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         g.rows.push(generateRow(g.rows.length));
       }
 
+      // Update obstacles — cars and logs spawn from off-screen like trains
       for (const row of g.rows) {
         if (row.type === "road") {
           for (const obs of row.obstacles) {
             obs.x += obs.speed * dt;
-            if (obs.x > LANES * CELL + 3) obs.x = -obs.width;
-            if (obs.x < -obs.width - 3) obs.x = LANES * CELL;
+            // Off-screen respawn like train (not wrap)
+            if (obs.speed > 0 && obs.x > LANES * CELL + SPAWN_MARGIN) {
+              obs.x = -obs.width - SPAWN_MARGIN;
+            }
+            if (obs.speed < 0 && obs.x < -obs.width - SPAWN_MARGIN) {
+              obs.x = LANES * CELL + SPAWN_MARGIN;
+            }
           }
         }
         if (row.type === "rail") {
@@ -573,7 +624,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               audio?.playTrainPass();
               row.obstacles.push({
                 x: TRAIN_SPAWN_X,
-                speed: 8,
+                speed: 8 + getDifficulty(g.playerRow) * 4,
                 width: TRAIN_TOTAL_WIDTH,
                 modelIndex: 0,
                 isTruck: false,
@@ -585,15 +636,20 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               row.obstacles = [];
               row.trainWarning = false;
               row.trainWarningPhase = false;
-              row.trainTimer = 4 + Math.random() * 6;
+              row.trainTimer = Math.max(2, (4 + Math.random() * 6) - getDifficulty(g.playerRow) * 2);
             }
           }
         }
         if (row.type === "river") {
           for (const log of row.logs) {
             log.x += log.speed * dt;
-            if (log.x > LANES * CELL + 3) log.x = -log.width;
-            if (log.x < -log.width - 3) log.x = LANES * CELL;
+            // Off-screen respawn like train
+            if (log.speed > 0 && log.x > LANES * CELL + SPAWN_MARGIN) {
+              log.x = -log.width - SPAWN_MARGIN;
+            }
+            if (log.speed < 0 && log.x < -log.width - SPAWN_MARGIN) {
+              log.x = LANES * CELL + SPAWN_MARGIN;
+            }
           }
         }
       }
@@ -624,13 +680,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
             const logRight = log.x + log.width;
             if (px + riverPw / 2 > logLeft - LOG_TOLERANCE && px - riverPw / 2 < logRight + LOG_TOLERANCE) {
               onLog = true;
-              // Ride the log — update offset by log speed when not jumping
               if (!g.moving) g.playerOffsetX += log.speed * dt;
               break;
             }
           }
           if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
-          // Out of bounds check
           if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
 
@@ -675,23 +729,21 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       const z = -r * CELL;
       const cx = (LANES * CELL) / 2;
 
-      grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark });
+      grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark, biome: row.biome });
 
-      // Decorative trees on sides (outside play area) for filling empty space
+      // Decorative trees on sides
       if (row.type === "grass" || row.type === "road") {
-        // Left side decorations — extended range for wide screens
-        trees.push({ id: `dl${r}_1`, x: -2, z, modelIdx: r * 3 });
-        trees.push({ id: `dl${r}_2`, x: -4, z, modelIdx: r * 3 + 1 });
-        if (r % 2 === 0) trees.push({ id: `dl${r}_3`, x: -6, z, modelIdx: r * 5 });
-        if (r % 3 === 0) trees.push({ id: `dl${r}_4`, x: -8, z, modelIdx: r * 7 + 2 });
-        // Right side decorations — extended range for wide screens
-        trees.push({ id: `dr${r}_1`, x: LANES * CELL + 2, z, modelIdx: r * 3 + 2 });
-        trees.push({ id: `dr${r}_2`, x: LANES * CELL + 4, z, modelIdx: r * 3 });
-        if (r % 2 === 0) trees.push({ id: `dr${r}_3`, x: LANES * CELL + 6, z, modelIdx: r * 5 + 1 });
-        if (r % 3 === 0) trees.push({ id: `dr${r}_4`, x: LANES * CELL + 8, z, modelIdx: r * 7 });
+        trees.push({ id: `dl${r}_1`, x: -2, z, modelIdx: r * 3, biome: row.biome });
+        trees.push({ id: `dl${r}_2`, x: -4, z, modelIdx: r * 3 + 1, biome: row.biome });
+        if (r % 2 === 0) trees.push({ id: `dl${r}_3`, x: -6, z, modelIdx: r * 5, biome: row.biome });
+        if (r % 3 === 0) trees.push({ id: `dl${r}_4`, x: -8, z, modelIdx: r * 7 + 2, biome: row.biome });
+        trees.push({ id: `dr${r}_1`, x: LANES * CELL + 2, z, modelIdx: r * 3 + 2, biome: row.biome });
+        trees.push({ id: `dr${r}_2`, x: LANES * CELL + 4, z, modelIdx: r * 3, biome: row.biome });
+        if (r % 2 === 0) trees.push({ id: `dr${r}_3`, x: LANES * CELL + 6, z, modelIdx: r * 5 + 1, biome: row.biome });
+        if (r % 3 === 0) trees.push({ id: `dr${r}_4`, x: LANES * CELL + 8, z, modelIdx: r * 7, biome: row.biome });
       }
 
-      // Traffic lights on rail rows (placed at both sides)
+      // Traffic lights on rail rows
       if (row.type === "rail") {
         const isWarning = row.trainWarningPhase && row.obstacles.length === 0;
         const intensity = isWarning
@@ -703,7 +755,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       if (row.type === "grass") {
         for (const laneIdx of row.treeIndices) {
-          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r });
+          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r, biome: row.biome });
         }
       }
 
