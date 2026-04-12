@@ -16,13 +16,37 @@ import type { FrameAnimationType } from '@/components/merchant/AvatarWithFrame';
 import { useLanguage } from '@/lib/i18n';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const PublicProfile = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { userId: paramId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') === 'games' ? 'games' : 'community';
   const { user } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
+
+  const isUuid = paramId ? UUID_REGEX.test(paramId) : false;
+
+  // Resolve username to user ID if needed
+  const { data: resolvedUserId, isLoading: loadingResolve } = useQuery({
+    queryKey: ['resolve-username', paramId],
+    queryFn: async () => {
+      if (!paramId) return null;
+      if (isUuid) return paramId;
+      // Look up by username
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', paramId)
+        .maybeSingle();
+      if (error || !data) return null;
+      return data.id;
+    },
+    enabled: !!paramId,
+  });
+
+  const userId = resolvedUserId;
   const isOwnProfile = user?.id === userId;
 
   // Fetch profile data
@@ -88,6 +112,23 @@ const PublicProfile = () => {
     enabled: !!userId,
   });
 
+  // Game enabled settings
+  const { data: gameSettings } = useQuery({
+    queryKey: ['game-enabled-settings'],
+    queryFn: async () => {
+      const [stackRes, knifeRes, crossyRes] = await Promise.all([
+        supabase.from('stack_game_settings' as any).select('game_enabled').limit(1).single(),
+        supabase.from('knife_rain_settings' as any).select('game_enabled').limit(1).single(),
+        supabase.from('crossy_road_settings').select('game_enabled').limit(1).single(),
+      ]);
+      return {
+        stack: (stackRes.data as any)?.game_enabled ?? true,
+        knife: (knifeRes.data as any)?.game_enabled ?? true,
+        crossy: (crossyRes.data as any)?.game_enabled ?? true,
+      };
+    },
+  });
+
   // Game stats - stack game
   const { data: stackStats } = useQuery({
     queryKey: ['public-stack-stats', userId],
@@ -100,7 +141,7 @@ const PublicProfile = () => {
         .maybeSingle();
       return data as any;
     },
-    enabled: !!userId,
+    enabled: !!userId && (gameSettings?.stack !== false),
   });
 
   // Game stats - knife rain
@@ -115,7 +156,22 @@ const PublicProfile = () => {
         .maybeSingle();
       return data as any;
     },
-    enabled: !!userId,
+    enabled: !!userId && (gameSettings?.knife !== false),
+  });
+
+  // Game stats - crossy road
+  const { data: crossyStats } = useQuery({
+    queryKey: ['public-crossy-stats', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from('crossy_road_high_scores' as any)
+        .select('high_score, all_time_high_score')
+        .eq('user_id', userId)
+        .maybeSingle();
+      return data as any;
+    },
+    enabled: !!userId && (gameSettings?.crossy !== false),
   });
 
   const { data: rep } = useUserPrintReputation(userId);
@@ -165,7 +221,11 @@ const PublicProfile = () => {
   const cardLevelName = (userCard?.loyalty_levels as any)?.name_ar;
   const cardColor = (userCard?.loyalty_levels as any)?.card_color;
 
-  if (loadingProfile) {
+  const hasAnyGame = (gameSettings?.stack !== false && stackStats) || 
+                     (gameSettings?.knife !== false && knifeStats) || 
+                     (gameSettings?.crossy !== false && crossyStats);
+
+  if (loadingProfile || loadingResolve) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
         <div className="container mx-auto px-4 max-w-2xl py-8">
@@ -315,44 +375,75 @@ const PublicProfile = () => {
           {/* Games Tab */}
           <TabsContent value="games" className="mt-4 space-y-3">
             {/* Stack Game Stats */}
-            <div className="rounded-xl border border-border/30 bg-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Trophy className="h-4 w-4 text-primary" />
+            {gameSettings?.stack !== false && (
+              <div className="rounded-xl border border-border/30 bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Trophy className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">لعبة البرج</h3>
+                    <p className="text-[9px] text-muted-foreground">Stack Game</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">لعبة البرج</h3>
-                  <p className="text-[9px] text-muted-foreground">Stack Game</p>
-                </div>
+                {stackStats ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    <StatBox label="أعلى سكور" value={stackStats.high_score?.toLocaleString() || '0'} icon="🏆" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-4">لم يلعب بعد</p>
+                )}
               </div>
-              {stackStats ? (
-                <div className="grid grid-cols-1 gap-2">
-                  <StatBox label="أعلى سكور" value={stackStats.high_score?.toLocaleString() || '0'} icon="🏆" />
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center py-4">لم يلعب بعد</p>
-              )}
-            </div>
+            )}
 
             {/* Knife Rain Stats */}
-            <div className="rounded-xl border border-border/30 bg-card p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Swords className="h-4 w-4 text-accent" />
+            {gameSettings?.knife !== false && (
+              <div className="rounded-xl border border-border/30 bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <Swords className="h-4 w-4 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">مطر السكاكين</h3>
+                    <p className="text-[9px] text-muted-foreground">Knife Rain</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">مطر السكاكين</h3>
-                  <p className="text-[9px] text-muted-foreground">Knife Rain</p>
-                </div>
+                {knifeStats ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    <StatBox label="أعلى سكور" value={knifeStats.high_score?.toLocaleString() || '0'} icon="🏆" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-4">لم يلعب بعد</p>
+                )}
               </div>
-              {knifeStats ? (
-                <div className="grid grid-cols-1 gap-2">
-                  <StatBox label="أعلى سكور" value={knifeStats.high_score?.toLocaleString() || '0'} icon="🏆" />
+            )}
+
+            {/* Crossy Road Stats */}
+            {gameSettings?.crossy !== false && (
+              <div className="rounded-xl border border-border/30 bg-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Gamepad2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">اعبر الطريق</h3>
+                    <p className="text-[9px] text-muted-foreground">Crossy Road</p>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center py-4">لم يلعب بعد</p>
-              )}
-            </div>
+                {crossyStats ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <StatBox label="سكور الموسم" value={crossyStats.high_score?.toLocaleString() || '0'} icon="🏆" />
+                    <StatBox label="أعلى سكور" value={crossyStats.all_time_high_score?.toLocaleString() || '0'} icon="🌟" />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-4">لم يلعب بعد</p>
+                )}
+              </div>
+            )}
+
+            {!hasAnyGame && gameSettings?.stack === false && gameSettings?.knife === false && gameSettings?.crossy === false && (
+              <p className="text-xs text-muted-foreground text-center py-8">لا توجد ألعاب متاحة حالياً</p>
+            )}
           </TabsContent>
 
           {/* Community Tab */}

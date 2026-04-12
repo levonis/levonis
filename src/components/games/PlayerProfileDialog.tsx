@@ -111,7 +111,7 @@ export default function PlayerProfileDialog({ open, onOpenChange, userId }: Play
             className="w-full gap-1.5 text-xs"
             onClick={() => {
               onOpenChange(false);
-              navigate(`/profile/${userId}?tab=games`);
+              navigate(`/profile/${profile?.username || userId}?tab=games`);
             }}
           >
             <ExternalLink className="h-3 w-3" />

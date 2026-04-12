@@ -10571,7 +10571,7 @@ export type Database = {
       }
       trigger_badge_calculation: { Args: never; Returns: undefined }
       update_crossy_road_high_score: {
-        Args: { p_score: number; p_steps?: number }
+        Args: { p_score: number; p_steps: number }
         Returns: undefined
       }
       update_knife_rain_high_score: {

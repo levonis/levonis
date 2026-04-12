@@ -1,16 +1,44 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PlayerProfileDialog from "@/components/games/PlayerProfileDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe, Timer } from "lucide-react";
 import CrossyRoadCanvas from "./CrossyRoadCanvas";
 import { useVipFreePlay } from "@/hooks/useVipPlus";
 
 interface Props {
   onBack: () => void;
+}
+
+function SeasonCountdownBanner({ endsAt }: { endsAt: string | null }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    const iv = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [endsAt]);
+
+  if (!endsAt) return null;
+  const diff = new Date(endsAt).getTime() - now;
+  if (diff <= 0) return null;
+
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+
+  return (
+    <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20">
+      <Timer className="h-4 w-4 text-primary" />
+      <span className="text-xs text-muted-foreground">ينتهي الموسم بعد:</span>
+      <span className="font-mono font-bold text-primary text-sm">
+        {d > 0 && `${d}ي `}{h}س {m}د {s}ث
+      </span>
+    </div>
+  );
 }
 
 export default function CrossyRoadGame({ onBack }: Props) {
@@ -33,6 +61,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
   const [liveScore, setLiveScore] = useState(0);
   const [liveSteps, setLiveSteps] = useState(0);
   const [profileDialogUserId, setProfileDialogUserId] = useState<string | null>(null);
+  const [lbView, setLbView] = useState<"season" | "alltime">("season");
 
   const { data: settings } = useQuery({
     queryKey: ["crossy-road-settings"],
@@ -68,11 +97,19 @@ export default function CrossyRoadGame({ onBack }: Props) {
     },
   });
 
+  const { data: allTimeLeaderboard = [] } = useQuery({
+    queryKey: ["crossy-road-alltime-leaderboard"],
+    queryFn: async () => {
+      const { data } = await supabase.from("crossy_road_high_scores" as any).select("*").gt("all_time_high_score", 0).order("all_time_high_score", { ascending: false }).limit(10);
+      return (data || []) as any[];
+    },
+  });
+
   const { data: userHighScore } = useQuery({
     queryKey: ["crossy-road-high-score", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase.from("crossy_road_high_scores" as any).select("high_score, best_steps").eq("user_id", user.id).maybeSingle();
+      const { data } = await supabase.from("crossy_road_high_scores" as any).select("high_score, best_steps, all_time_high_score").eq("user_id", user.id).maybeSingle();
       return data as any;
     },
     enabled: !!user,
@@ -95,14 +132,14 @@ export default function CrossyRoadGame({ onBack }: Props) {
   });
 
   const { data: userProfiles = [] } = useQuery({
-    queryKey: ["crossy-road-profiles", leaderboard, recentWinners],
+    queryKey: ["crossy-road-profiles", leaderboard, allTimeLeaderboard, recentWinners],
     queryFn: async () => {
-      const ids = [...new Set([...leaderboard.map((l: any) => l.user_id), ...recentWinners.map((w: any) => w.user_id)])].filter(Boolean);
+      const ids = [...new Set([...leaderboard.map((l: any) => l.user_id), ...allTimeLeaderboard.map((l: any) => l.user_id), ...recentWinners.map((w: any) => w.user_id)])].filter(Boolean);
       if (ids.length === 0) return [];
       const { data } = await supabase.rpc("get_public_profiles", { p_user_ids: ids } as any);
       return (data || []) as any[];
     },
-    enabled: leaderboard.length > 0 || recentWinners.length > 0,
+    enabled: leaderboard.length > 0 || allTimeLeaderboard.length > 0 || recentWinners.length > 0,
   });
 
   const getProfileName = (userId: string) => {
@@ -112,6 +149,10 @@ export default function CrossyRoadGame({ onBack }: Props) {
   const getProfileAvatar = (userId: string) => {
     const p = userProfiles.find((pr: any) => pr.id === userId);
     return p?.avatar_url || null;
+  };
+  const getProfileUsername = (userId: string) => {
+    const p = userProfiles.find((pr: any) => pr.id === userId);
+    return p?.username || null;
   };
 
   const invalidateBalances = useCallback(() => {
@@ -186,6 +227,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
       try { await supabase.rpc("update_crossy_road_high_score" as any, { p_score: gameScore, p_steps: steps }); } catch (e) { console.error(e); }
 
       queryClient.invalidateQueries({ queryKey: ["crossy-road-leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["crossy-road-alltime-leaderboard"] });
       queryClient.invalidateQueries({ queryKey: ["crossy-road-milestones"] });
       queryClient.invalidateQueries({ queryKey: ["crossy-road-high-score"] });
       invalidateBalances();
@@ -250,7 +292,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
         <CrossyRoadCanvas
           onGameOver={handleGameOver}
           onScoreUpdate={handleScoreUpdate}
-          scoreSettings={settings ? { points_per_step: settings.points_per_step ?? 1, bonus_coin_points: settings.bonus_coin_points ?? 5 } : undefined}
+          scoreSettings={settings ? { points_per_step: settings.score_per_step ?? settings.points_per_step ?? 1, bonus_coin_points: settings.score_per_coin ?? settings.bonus_coin_points ?? 5 } : undefined}
         />
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none" dir="rtl">
           <div className="flex items-center justify-between px-4 py-3">
@@ -281,6 +323,8 @@ export default function CrossyRoadGame({ onBack }: Props) {
   }
 
   const userPosition = user ? leaderboard.findIndex((l: any) => l.user_id === user.id) + 1 : 0;
+  const currentLb = lbView === "alltime" ? allTimeLeaderboard : leaderboard;
+  const scoreKey = lbView === "alltime" ? "all_time_high_score" : "high_score";
 
   // ==================== MENU / LEADERBOARD / WINNERS ====================
   return (
@@ -299,6 +343,9 @@ export default function CrossyRoadGame({ onBack }: Props) {
           <div className="text-7xl mt-4">🐔</div>
           <h1 className="text-2xl font-bold text-foreground">اعبر الطريق</h1>
           <p className="text-sm text-muted-foreground">تحرّك عبر الطرق والأنهار وسكك الحديد! تجنب السيارات والقطارات ولا تسقط في الماء.</p>
+
+          {/* Season countdown */}
+          <SeasonCountdownBanner endsAt={settings?.season_ends_at} />
 
           {userHighScore && userHighScore.high_score > 0 && (
             <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20">
@@ -349,8 +396,10 @@ export default function CrossyRoadGame({ onBack }: Props) {
               <Trophy className="h-4 w-4 text-primary" /> المكافآت
             </h3>
             <div className="text-xs space-y-2 text-muted-foreground">
-              <div className="flex justify-between"><span>+{settings?.points_per_step ?? 1}</span><span>لكل خطوة 🚶</span></div>
-              <div className="flex justify-between"><span>+{settings?.bonus_coin_points ?? 5}</span><span>عملة ذهبية 🪙</span></div>
+              <div className="flex justify-between"><span>+{settings?.points_per_step ?? 1}</span><span>نقاط موقع لكل خطوة 🚶</span></div>
+              <div className="flex justify-between"><span>+{settings?.bonus_coin_points ?? 5}</span><span>نقاط موقع لعملة ذهبية 🪙</span></div>
+              <div className="flex justify-between"><span>+{settings?.score_per_step ?? 1}</span><span>سكور لكل خطوة 🎮</span></div>
+              <div className="flex justify-between"><span>+{settings?.score_per_coin ?? 5}</span><span>سكور لعملة ذهبية 🎮</span></div>
             </div>
           </div>
 
@@ -384,7 +433,21 @@ export default function CrossyRoadGame({ onBack }: Props) {
             <Crown className="h-10 w-10 text-primary mx-auto mb-2" />
             <h2 className="text-xl font-bold text-foreground">قائمة المتصدرين</h2>
           </div>
-          {lbPrizes.length > 0 && (
+
+          {/* Season / All-Time toggle */}
+          <div className="flex gap-2 bg-muted/20 rounded-xl p-1">
+            <button onClick={() => setLbView("season")} className={`flex-1 text-xs py-2 rounded-lg font-medium transition-colors ${lbView === "season" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              الموسم الحالي
+            </button>
+            <button onClick={() => setLbView("alltime")} className={`flex-1 text-xs py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 ${lbView === "alltime" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <Globe className="h-3 w-3" /> الأفضل على الإطلاق
+            </button>
+          </div>
+
+          {/* Season countdown */}
+          <SeasonCountdownBanner endsAt={settings?.season_ends_at} />
+
+          {lbView === "season" && lbPrizes.length > 0 && (
             <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-right space-y-1">
               <h4 className="text-xs font-bold text-primary flex items-center gap-1 justify-end"><Gift className="h-3.5 w-3.5" /> جوائز المراكز</h4>
               {lbPrizes.map((p: any) => (
@@ -394,14 +457,15 @@ export default function CrossyRoadGame({ onBack }: Props) {
               ))}
             </div>
           )}
-          {leaderboard.length === 0 ? (
+          {currentLb.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground text-sm">لا توجد نقاط بعد. كن أول المتصدرين!</div>
           ) : (
             <div className="space-y-2">
-              {leaderboard.map((entry: any, i: number) => {
-                const prize = lbPrizes.find((p: any) => p.position === i + 1);
+              {currentLb.map((entry: any, i: number) => {
+                const prize = lbView === "season" ? lbPrizes.find((p: any) => p.position === i + 1) : null;
                 const isUser = user && entry.user_id === user.id;
                 const posEmoji = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+                const entryScore = entry[scoreKey];
                 return (
                   <div key={entry.id} onClick={() => setProfileDialogUserId(entry.user_id)} className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer hover:scale-[1.02] ${
                     i === 0 ? "bg-gradient-to-l from-yellow-500/10 to-transparent border-2 border-yellow-500/30"
@@ -410,7 +474,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
                     : "bg-muted/20 border border-border"
                   }`}>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground text-lg">{entry.high_score}</span>
+                      <span className="font-bold text-foreground text-lg">{entryScore}</span>
                       {prize && <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">🎁 {prize.prize_name_ar}</span>}
                     </div>
                     <div className="flex items-center gap-2">
@@ -433,7 +497,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
               })}
             </div>
           )}
-          {userPosition > 0 && (
+          {lbView === "season" && userPosition > 0 && (
             <div className="text-center text-xs text-muted-foreground bg-muted/20 rounded-xl p-2">
               مركزك الحالي: <span className="font-bold text-primary">#{userPosition}</span>
             </div>

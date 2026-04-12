@@ -95,7 +95,7 @@ export default function AdminChatTopBar({
   const [warnReason, setWarnReason] = useState('');
 
   const goToProfile = () => {
-    navigate(`/profile/${usersId}`);
+    navigate(`/profile/${usersId}`); // UUID - resolved in PublicProfile
     onViewProfile?.();
   };
 

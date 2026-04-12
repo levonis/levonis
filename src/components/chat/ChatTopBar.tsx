@@ -78,7 +78,7 @@ export default function ChatTopBar({
 
   const goToCustomerProfile = () => {
     if (customerId) {
-      navigate(`/profile/${customerId}`);
+      navigate(`/profile/${customerId}`); // customerId is UUID, username resolution happens in PublicProfile
     }
     onViewCustomerProfile?.();
   };
