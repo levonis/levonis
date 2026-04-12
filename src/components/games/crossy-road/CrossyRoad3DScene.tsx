@@ -325,15 +325,17 @@ function TrafficLight({ data }: { data: RenderTrafficLight }) {
 
 function TreeMesh({ data }: { data: RenderTree }) {
   const models = useGameModels();
-  if (!models) return null;
-  const m = models.trees[data.modelIdx % models.trees.length];
-  // Tint tree color based on biome
   const biomeColor = BIOME_COLORS[data.biome].tree;
   const tintedMat = useMemo(() => {
+    if (!models) return null;
+    const m = models.trees[data.modelIdx % models.trees.length];
     const mat = m.material.clone();
     mat.color = new THREE.Color(biomeColor);
     return mat;
-  }, [m.material, biomeColor]);
+  }, [models, data.modelIdx, biomeColor]);
+
+  if (!models || !tintedMat) return null;
+  const m = models.trees[data.modelIdx % models.trees.length];
 
   return (
     <mesh geometry={m.geometry} material={tintedMat}
