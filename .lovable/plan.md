@@ -1,94 +1,96 @@
 
 
-# خطة إصلاح شاملة — 12 مشكلة
+# خطة التحسينات — Crossy Road + البروفايل + المتصدرين
 
-## التحليل والحلول
+## 1. تحكم بالنقاط والسكور (إعدادات + DB)
 
-### 1. إضافة المنتج للسلة لا تعمل
-**السبب الجذري**: الـ unique index `ux_cart_items_non_gift` يشمل أعمدة nullable (`product_option_id`, `selected_color`, `shipping_option_index`). في PostgreSQL، القيم `NULL` لا تتساوى في unique index — فكل إدراج بقيم `NULL` يُعتبر فريداً ولا يطابق السجل الموجود. لكن الكود في السطر 400-408 يبحث عن `existingItem` مع مقارنة `null === null` (تُرجع `true` في JS)، فإذا كان `shipping_option_index` في قاعدة البيانات `NULL` لكن في الكود يتحول لـ `-1`، لن يتطابقا.
+### حالياً:
+- `points_per_step` و `bonus_coin_points` موجودان ويؤثران على **نقاط الموقع فقط**
+- سكور اللعبة يأتي خام من Canvas ولا يتأثر بالإعدادات
+- `max_daily_plays` موجود (حد المحاولات)، لكن لا يوجد **حد يومي للنقاط**
 
-**الحل**:
-- تعديل `addToCart` لعدم إرسال `shipping_option_index: -1` كقيمة افتراضية — إرسال `null` بدلاً منها ليتطابق مع السجلات الموجودة
-- إضافة `COALESCE` في مقارنة `existingItem` للتعامل مع `null` بشكل صحيح
-- تحسين معالجة خطأ `23505` لتشمل مقارنة أكثر دقة بالعمود `sale_type` والـ `shipping_option_index`
+### المطلوب:
+- إضافة أعمدة جديدة: `score_per_step` و `score_per_coin` (للسكور المعروض في اللعبة)
+- إضافة `max_daily_points` (حد يومي للنقاط — يختلف عن حد المحاولات)
+- تحديث `end_crossy_road` ليحسب السكور من إعدادات منفصلة + يفرض الحد اليومي على النقاط فقط
+- تحديث واجهة الإدارة لعرض الحقول الجديدة مقسمة: قسم "نقاط الموقع" وقسم "سكور اللعبة"
 
-### 2. تتويج الفائزين لا يعمل
-**السبب الجذري**: الدالة `admin_award_crossy_road_winners` مُعرَّفة بـ **0 arguments** (`pronargs: 0`)، لكن الكود يستدعيها بـ `{ p_next_season_starts_at: startsAt }` — وهذا يُسبب خطأ PostgreSQL مباشرةً.
+### Migration:
+```sql
+ALTER TABLE crossy_road_settings
+  ADD COLUMN IF NOT EXISTS score_per_step integer DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS score_per_coin integer DEFAULT 5,
+  ADD COLUMN IF NOT EXISTS max_daily_points integer;
 
-**الحل**:
-- Migration: إعادة إنشاء الدالة لتقبل parameter اختياري `p_next_season_starts_at timestamptz DEFAULT NULL`
-- إضافة `SECURITY DEFINER` + التحقق من `has_role(auth.uid(), 'admin')`
+ALTER TABLE crossy_road_settings
+  ADD COLUMN IF NOT EXISTS season_ends_at timestamptz;
 
-### 3. مشاكل الجذوع في Crossy Road
-**التحليل**: Log collision logic في السطر 454-471 يبدو صحيحاً نظرياً (لا snapping). المشكلة المحتملة:
-- عند مغادرة النهر (سطر 439): `snappedLane = Math.round((visualXBefore - CELL/2) / CELL)` — قد ينتج lane خاطئ إذا كان `playerOffsetX` كبيراً
-- الـ `LOG_TOLERANCE = 0.45` مع `LOG_WIDTH = 2.0` يجعل مساحة القبول واسعة جداً، ما قد يجعل اللاعب "يلتقط" جذوعاً بعيدة
-- logs تُعاد لحظياً (`log.x > LANES * CELL + 3`) ما يخلق "جذوعاً وهمية" عند wrap-around
+ALTER TABLE crossy_road_high_scores
+  ADD COLUMN IF NOT EXISTS all_time_high_score integer DEFAULT 0;
 
-**الحل**:
-- تقليل `LOG_TOLERANCE` من 0.45 إلى 0.25
-- تحسين wrap-around لمنع teleporting مفاجئ
-- عند مغادرة النهر: استخدام `visualXBefore` مباشرة بدلاً من `Math.round`
+UPDATE crossy_road_high_scores SET all_time_high_score = high_score WHERE true;
+```
 
-### 4. فراغات على الشاشات الكبيرة + الكاميرا
-**الحل**: الكاميرا حالياً تتمركز عند `camera.position.x = (LANES * CELL) / 2` وهو صحيح. المشكلة في الديكور — الأشجار الحالية فقط عند `-2, -4` و `+11, +13` وهذا غير كافٍ للشاشات العريضة جداً. سأوسع نطاق الديكور ليشمل مواقع أبعد (`-6, -8, +15, +17`).
+### تحديث `end_crossy_road`:
+- حساب `game_score = (steps * score_per_step) + (coins * score_per_coin)`
+- حساب `site_points = (steps * points_per_step) + (coins * bonus_coin_points)`
+- فحص الحد اليومي: `SELECT COALESCE(SUM(points_awarded),0) FROM crossy_road_sessions WHERE user_id = v_user_id AND ended_at::date = CURRENT_DATE` — إذا تجاوز `max_daily_points` يعطي `site_points = 0`
+- إرجاع `game_score` المحسوب بدلاً من `p_score`
 
-### 5. مقاس Canvas في الجوال
-**الحل**: تحسين `computeZoom` للجوال — القيم الحالية `max(28, min(55, ...))` كبيرة قليلاً. سأخفضها لـ `max(25, min(45, ...))`.
+### تحديث `update_crossy_road_high_score`:
+- تحديث `all_time_high_score = GREATEST(all_time_high_score, p_score)` دون تصفيره عند بدء موسم جديد
 
-### 6. Hero في /category للشاشات الصغيرة
-**التحليل**: الكود الحالي (سطر 90-125) يستخدم `flex-row` مع `w-32 sm:w-48` — هذا موجود بالفعل. المشكلة المحتملة أن الـ container عريض (`container mx-auto`) بدون `max-w-lg`. سأضبط المقاسات بشكل أفضل.
+### تحديث `admin_award_crossy_road_winners`:
+- عدم تصفير `all_time_high_score` عند إعادة التعيين
+- دعم `season_ends_at`
 
-### 7. شريط "نفذ من المخزون" على بطاقات /bundles
-**التحليل**: الكود الحالي لا يتحقق من نفاد المخزون أصلاً. يجب إضافة query لبيانات المخزون + عرض شريط قطري CSS.
+---
 
-### 8. Skeleton Loading
-**التحليل**: `SuspenseLoader` الحالي (سطر 138-165) ثابت — نفس الشكل لكل الصفحات. يجب جعله يتكيف مع المسار.
+## 2. إخفاء الألعاب المعطلة من البروفايل
 
-**الحل**: إنشاء component `RouteAwareSkeleton` يستخدم `window.location.pathname` (بدلاً من `useLocation` الذي لا يعمل داخل Suspense fallback) لعرض skeleton مناسب.
+**الملف**: `PublicProfile.tsx`
+- جلب `game_enabled` من `crossy_road_settings`, `stack_game_settings`, `knife_rain_settings`
+- إخفاء قسم اللعبة إذا `game_enabled = false`
 
-### 9. تحميل الألعاب وفتحها بشكل فردي
-**الحل**: الألعاب محملة بـ `lazy()` بالفعل — المشكلة أن `MiniGames.tsx` يقفل `body overflow` ويُشغل `PixelBackground` فوراً. سأؤخر هذا لحين اختيار لعبة.
+---
 
-### 10. تحسين البروفايل
-**الحل**: تحسين `ProfileHeader` بتصميم بطاقة ولاء + إضافة شارات + إحصائيات ألعاب.
+## 3. استخدام اليوزرنيم في روابط البروفايل
 
-### 11. تعديل منتجات الطلب لا يعمل
-**التحليل**: الكود يستخدم `supabase.from("order_items").delete()` و `.insert()` — لكن **لا توجد RLS policies** للأدمن على جدول `order_items` تسمح بالحذف/التعديل/الإدراج. كذلك دالة `admin_adjust_order_inventory` تحتاج `p_option_id` كمعامل لكن الكود لا يمرره.
+**الملف**: `PublicProfile.tsx`
+- إذا لم يكن `params.userId` بصيغة UUID → البحث بـ `username`
+- تحديث جميع الملفات التي تستخدم `navigate('/profile/${id}')` لاستخدام `username` إن وُجد:
+  - `PlayerProfileDialog.tsx`
+  - `ChatTopBar.tsx`, `AdminChatTopBar.tsx`
+  - `CustomerRequestStrip.tsx`, `RequestDetailModal.tsx`
+  - `AdminUsers.tsx`
 
-**الحل**:
-- Migration: إضافة RLS policies للأدمن على `order_items` (DELETE, UPDATE, INSERT)
-- تعديل `AdminOrderItemEditor` لتمرير `p_option_id` بشكل صحيح
+---
 
-### 12. قسم الفائزون في لوحة الإدارة
-**الحل**: إنشاء صفحة `AdminWinners.tsx` تعرض جميع الفائزين من:
-- `crossy_road_winners`
-- `stack_game_winners`
-- `competition_prizes`
-- `knife_rain_winners` (إن وُجد)
+## 4. عداد الموسم
 
-مع فلتر حسب اللعبة والتاريخ + زر "تم التسليم".
+- إضافة `season_ends_at` للإعدادات (في Migration أعلاه)
+- **الإدارة** (`CrossyRoadTab.tsx`): إضافة حقل تاريخ لانتهاء الموسم + عرض عداد تنازلي
+- **اللعبة** (`CrossyRoadGame.tsx`): عرض عداد تنازلي لانتهاء الموسم في القائمة الرئيسية
+
+---
+
+## 5. قائمة متصدرين All-Time
+
+- إضافة `all_time_high_score` لـ `crossy_road_high_scores` (في Migration أعلاه)
+- **اللعبة** (`CrossyRoadGame.tsx`): إضافة تبويب "الأفضل على الإطلاق" في المتصدرين
+- **الإدارة** (`CrossyRoadTab.tsx`): عرض All-Time في تبويب المتصدرين
 
 ---
 
 ## الملفات المتأثرة
-
-### Migrations:
-1. إعادة إنشاء `admin_award_crossy_road_winners` بمعامل اختياري + `SECURITY DEFINER`
-2. إضافة RLS policies للأدمن على `order_items` (DELETE, UPDATE, INSERT)
-
-### ملفات موجودة:
-- `src/hooks/useCart.tsx` — إصلاح `shipping_option_index` null handling
-- `src/components/admin/CrossyRoadTab.tsx` — لا تغيير مطلوب (بعد إصلاح DB)
-- `src/components/games/crossy-road/CrossyRoad3DScene.tsx` — تقليل LOG_TOLERANCE، توسيع الديكور
-- `src/components/games/crossy-road/CrossyRoadCanvas.tsx` — ضبط zoom الجوال
-- `src/pages/CategoryDetail.tsx` — ضبط Hero للجوال
-- `src/pages/ProductBundles.tsx` — إضافة شريط نفاد المخزون + query المخزون
-- `src/App.tsx` — `RouteAwareSkeleton` بدلاً من SuspenseLoader ثابت
-- `src/pages/MiniGames.tsx` — تأخير body lock + pixel background
-- `src/pages/Profile.tsx` — تحسين UI + شارات
-- `src/components/admin/AdminOrderItemEditor.tsx` — إصلاح RPC call
-
-### ملفات جديدة:
-- `src/pages/AdminWinners.tsx` — قسم الفائزون في لوحة الإدارة
+- **Migration جديد** — أعمدة + تحديث 3 دوال RPC
+- `src/components/admin/CrossyRoadTab.tsx` — حقول جديدة + عداد + all-time
+- `src/components/games/crossy-road/CrossyRoadGame.tsx` — all-time tab + عداد + score settings
+- `src/pages/PublicProfile.tsx` — username routing + إخفاء ألعاب معطلة
+- `src/components/games/PlayerProfileDialog.tsx` — username link
+- `src/components/chat/ChatTopBar.tsx` — username link
+- `src/components/chat/AdminChatTopBar.tsx` — username link
+- `src/components/community/CustomerRequestStrip.tsx` — username link
+- `src/components/community/RequestDetailModal.tsx` — username link
+- `src/pages/AdminUsers.tsx` — username link
 
