@@ -10298,15 +10298,25 @@ export type Database = {
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
-      end_crossy_road: {
-        Args: {
-          p_coins?: number
-          p_score: number
-          p_session_token: string
-          p_steps?: number
-        }
-        Returns: Json
-      }
+      end_crossy_road:
+        | {
+            Args: {
+              p_coins: number
+              p_score: number
+              p_session_id: string
+              p_steps: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_coins?: number
+              p_score: number
+              p_session_token: string
+              p_steps?: number
+            }
+            Returns: Json
+          }
       end_knife_rain: {
         Args: {
           p_knives?: number
