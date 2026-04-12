@@ -1,75 +1,72 @@
 
 
-# إصلاح Crossy Road — الكاميرا + السيارات + الصعوبة + البيئات
+# Fix Crossy Road — Traffic Light, Player Height, Camera, Difficulty, Biomes, Score
 
-## المشاكل الحالية (من الصور)
-- **موبايل**: فراغ سماوي كبير أسفل منطقة اللعب — الزوم صغير جداً
-- **PC**: منطقة اللعب ضيقة في المنتصف مع فراغ كبير على الجوانب — الزوم كبير جداً
-- **السيارات والجذوع**: تتبدل مكانها فوراً (wrap) بدل أن تظهر من جهة وتخرج من الأخرى مثل القطار
-- **الجذوع ملتصقة**: تبدو كجذع واحد طويل بسبب قرب المسافات
-- **لا صعوبة تدريجية**: السرعة والعوائق ثابتة تقريباً
-- **بيئات محدودة**: فقط عشب، طريق، سكة، نهر
+## Issues Found
 
----
-
-## 1. إصلاح الكاميرا والزوم (`CrossyRoadCanvas.tsx`)
-
-تعديل `computeZoom()`:
-- **موبايل**: زيادة الزوم ليملأ الشاشة — `h / 16` مع حد أدنى `35` وأقصى `55`
-- **PC**: تقليل الزوم ليظهر مجال أوسع — `h / 14` مع حد أقصى `90`
-- ضبط مواضع الكاميرا `position` و `lookAt` لتتوسط اللعبة بشكل أفضل
-
-## 2. سيارات وجذوع تظهر من طرف وتخرج من الآخر (`CrossyRoad3DScene.tsx`)
-
-**حالياً**: عند خروج السيارة/الجذع من الحافة، يعود فوراً للجهة المقابلة (wrap).
-
-**التعديل**: نفس نظام القطار — السيارات تظهر من خارج الشاشة وتعبر للطرف الآخر ثم تُعاد:
-```
-if (obs.speed > 0 && obs.x > LANES * CELL + margin) obs.x = -obs.width - margin;
-if (obs.speed < 0 && obs.x < -obs.width - margin) obs.x = LANES * CELL + margin;
-```
-- نفس الشيء للجذوع في النهر
-- إضافة تأخير بسيط (مسافة أكبر) بين كل سيارة/جذع لمنع التكدس
-
-## 3. إصلاح الجذوع الملتصقة
-
-**السبب**: `segmentWidth` صغير مع `LOG_WIDTH = 2.0` فتتداخل الجذوع.
-
-**الحل**:
-- تقليل عدد الجذوع في الصف (1-2 بدل 2-3)
-- فرض حد أدنى للمسافة بين الجذوع (≥ 2.5 وحدة فجوة)
-- تنويع حجم الجذوع (`LOG_WIDTH` بين 1.5 و 2.5)
-
-## 4. صعوبة تدريجية
-
-تعديل `generateRow()` ليعتمد على `index` (كلما تقدم اللاعب):
-- **السرعة**: تزداد تدريجياً `baseSpeed + difficulty * 3`
-- **عدد العوائق**: يزداد (2-3 سيارات بدل 1-2)
-- **الأشجار**: أكثر كثافة وتحجب مسارات أكثر
-- **القطارات**: أسرع وتأتي بفترات أقصر
-- **الجذوع**: أقل وأسرع (أصعب للقفز عليها)
-- **المسافة**: كل 20 صف يزداد معامل الصعوبة
-
-## 5. بيئات جديدة (Biomes)
-
-إضافة نظام بيئات يتغير كل ~15-20 صف:
-
-| البيئة | اللون | الخصائص |
-|--------|-------|---------|
-| **عشب أخضر** (الحالي) | أخضر | الافتراضي |
-| **صحراء** | رملي/برتقالي | رمل بدل عشب، صخور بدل أشجار، ألوان دافئة |
-| **ثلج** | أبيض/أزرق فاتح | أرض بيضاء، أشجار ثلجية، انزلاق خفيف |
-| **غابة مظلمة** | أخضر داكن | أشجار كثيفة، رؤية أقل، ممرات ضيقة |
-
-**التنفيذ**: بما أن النماذج 3D ثابتة، سنغير ألوان المواد (`material.color`) حسب البيئة:
-- `GroundTile`: لون مختلف لكل biome
-- الأشجار: تلوين مختلف
-- إضافة خاصية `biome` لكل `Row`
-- تغير لون الخلفية (`<color attach="background">`) تدريجياً حسب البيئة
+1. **Traffic lights hidden on mobile**: Scale is too small (pole 0.04 radius, total height ~1.3 units). On mobile zoom they're invisible.
+2. **Player legs inside grass**: Player Y position is `0` on grass — the model origin is likely at the feet, needs a small Y offset (~0.15).
+3. **Score/points not calculated from DB settings**: `end_crossy_road` RPC still uses `points_per_step`/`bonus_coin_points` only for site points. It returns `p_score` raw without computing `game_score` from `score_per_step`/`score_per_coin`. Also `max_daily_points` is never checked.
+4. **Camera position**: Player appears at center — should be 25% from bottom (camera `lookAt` needs to shift so player appears lower on screen).
+5. **Difficulty starts too late**: Currently ramps over 80 rows. Should increase noticeably after row 50.
+6. **Biomes start too early**: Currently every 18 rows. Should start at row 100+.
 
 ---
 
-## الملفات المتأثرة
-- `CrossyRoadCanvas.tsx` — إصلاح zoom + camera
-- `CrossyRoad3DScene.tsx` — spawning + logs + difficulty + biomes (الملف الرئيسي)
+## Changes
+
+### 1. Traffic Lights — Scale Up (`CrossyRoad3DScene.tsx`)
+- Scale up the entire `TrafficLight` group by ~2x (`<group scale={[2,2,2]}>`)
+- Move position slightly outward so it doesn't overlap the road
+
+### 2. Player Y Offset (`CrossyRoad3DScene.tsx`)
+- Add `PLAYER_Y_OFFSET = 0.15` for grass/road/rail rows
+- On river, keep existing `LOG_Y_OFFSET + PLAYER_Y_OFFSET`
+- Line ~804: `const baseY = isOnRiver ? LOG_Y_OFFSET + 0.15 : 0.15;`
+
+### 3. Camera — Player at 25% from Bottom (`CrossyRoad3DScene.tsx` + `CrossyRoadCanvas.tsx`)
+- Camera follow: change `targetZ = -(g.playerRow - 5) * CELL` → `-(g.playerRow - 3) * CELL` (shifts view so player is lower on screen)
+- `lookAt` in Canvas: shift from `(4.5, 0, -2)` → `(4.5, 0, -4)` to look further ahead
+
+### 4. Score/Points RPC Fix (Migration)
+Update `end_crossy_road` to:
+```sql
+-- Calculate game_score from score settings
+v_game_score := (p_steps * COALESCE(v_settings.score_per_step, 1)) 
+              + (p_coins * COALESCE(v_settings.score_per_coin, 5));
+-- Calculate site points  
+v_points := (p_steps * v_settings.points_per_step) 
+           + (p_coins * v_settings.bonus_coin_points);
+-- Check daily points limit
+IF v_settings.max_daily_points IS NOT NULL THEN
+  SELECT COALESCE(SUM(points_awarded),0) INTO v_today 
+  FROM crossy_road_sessions 
+  WHERE user_id = v_user_id AND ended_at::date = CURRENT_DATE AND status='completed';
+  IF v_today >= v_settings.max_daily_points THEN v_points := 0; END IF;
+END IF;
+-- Return v_game_score as game_score
+```
+
+### 5. Difficulty — Earlier Ramp (`CrossyRoad3DScene.tsx`)
+Change `getDifficulty`:
+```ts
+// Ramps from 0→1 over 50 rows (was 80), continues after
+return Math.min(index / 50, 1) + Math.max(0, (index - 50) / 150);
+```
+
+### 6. Biomes — Start at Row 100 (`CrossyRoad3DScene.tsx`)
+Change `getBiome`:
+```ts
+if (index < 100) return "green";
+const adjusted = index - 100;
+const biomes = ["desert", "snow", "dark_forest"];
+return biomes[Math.floor(adjusted / 20) % biomes.length];
+```
+
+---
+
+## Files
+- `CrossyRoad3DScene.tsx` — traffic light scale, player Y, camera follow, difficulty, biomes
+- `CrossyRoadCanvas.tsx` — lookAt adjustment
+- **New migration** — fix `end_crossy_road` for `score_per_step`, `score_per_coin`, `max_daily_points`
 
