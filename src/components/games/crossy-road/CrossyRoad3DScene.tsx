@@ -118,15 +118,15 @@ const BIOME_COLORS: Record<Biome, { ground: number; groundDark: number; tree: nu
 };
 
 function getBiome(index: number): Biome {
-  // Change biome every ~18 rows, cycling through them
-  const biomes: Biome[] = ["green", "desert", "snow", "dark_forest"];
-  const cycle = Math.floor(index / 18) % biomes.length;
-  return biomes[cycle];
+  if (index < 100) return "green";
+  const adjusted = index - 100;
+  const biomes: Biome[] = ["desert", "snow", "dark_forest"];
+  return biomes[Math.floor(adjusted / 20) % biomes.length];
 }
 
 function getDifficulty(index: number): number {
-  // Ramps from 0 to 1 over 80 rows, then slowly continues
-  return Math.min(index / 80, 1) + Math.max(0, (index - 80) / 200);
+  // Ramps from 0 to 1 over 50 rows, then slowly continues
+  return Math.min(index / 50, 1) + Math.max(0, (index - 50) / 150);
 }
 
 interface Props {
@@ -286,7 +286,7 @@ function TrafficLight({ data }: { data: RenderTrafficLight }) {
   const greenOn = !data.isWarning;
 
   return (
-    <group position={[data.x, 0, data.z]}>
+    <group position={[data.x, 0, data.z]} scale={[2, 2, 2]}>
       <mesh position={[0, 0.5, 0]}>
         <cylinderGeometry args={[0.04, 0.04, 1, 8]} />
         <meshLambertMaterial color={0x333333} />
@@ -704,8 +704,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
     }
 
-    // Camera follow
-    const targetZ = -(g.playerRow - 5) * CELL;
+    // Camera follow — player at ~25% from bottom
+    const targetZ = -(g.playerRow - 3) * CELL;
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ + 8, 0.05);
     camera.position.x = (LANES * CELL) / 2;
 
@@ -801,7 +801,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     const currentRow = g.rows[g.playerRow];
     const isOnRiver = currentRow && currentRow.type === "river";
-    const baseY = isOnRiver ? LOG_Y_OFFSET : 0;
+    const baseY = isOnRiver ? LOG_Y_OFFSET + 0.15 : 0.15;
 
     setSnapshot({
       grounds, trafficLights, trees, vehicles, trains, logs: logRenders, coins,
