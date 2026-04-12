@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2 } from "lucide-react";
+import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2, Timer, Globe } from "lucide-react";
 
 interface ProductPickerValue { product_id: string | null; selected_color: string | null; selected_option_id: string | null; }
 
@@ -95,6 +95,34 @@ function ProductPicker({ value, onChange }: { value: ProductPickerValue; onChang
   );
 }
 
+function SeasonCountdown({ endsAt }: { endsAt: string | null }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    const iv = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [endsAt]);
+
+  if (!endsAt) return null;
+  const diff = new Date(endsAt).getTime() - now;
+  if (diff <= 0) return <span className="text-xs text-primary font-bold">الموسم الجديد بدأ!</span>;
+
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+
+  return (
+    <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg p-3">
+      <Timer className="h-4 w-4 text-primary shrink-0" />
+      <div className="text-xs text-muted-foreground">الموسم الجديد يبدأ بعد:</div>
+      <div className="font-mono font-bold text-primary text-sm">
+        {d > 0 && `${d}ي `}{h}س {m}د {s}ث
+      </div>
+    </div>
+  );
+}
+
 export default function CrossyRoadTab() {
   const queryClient = useQueryClient();
 
@@ -130,6 +158,14 @@ export default function CrossyRoadTab() {
     },
   });
 
+  const { data: allTimeScores = [] } = useQuery({
+    queryKey: ["admin-crossy-road-alltime-scores"],
+    queryFn: async () => {
+      const { data } = await supabase.from("crossy_road_high_scores" as any).select("*").gt("all_time_high_score", 0).order("all_time_high_score", { ascending: false }).limit(10);
+      return (data || []) as any[];
+    },
+  });
+
   const { data: winners = [] } = useQuery({
     queryKey: ["admin-crossy-road-winners"],
     queryFn: async () => {
@@ -148,12 +184,30 @@ export default function CrossyRoadTab() {
     },
   });
 
+  // Fetch profiles for leaderboard display
+  const allUserIds = [...new Set([...highScores.map((h: any) => h.user_id), ...allTimeScores.map((h: any) => h.user_id), ...winners.map((w: any) => w.user_id)])].filter(Boolean);
+  const { data: userProfiles = [] } = useQuery({
+    queryKey: ["admin-crossy-profiles", allUserIds],
+    queryFn: async () => {
+      if (allUserIds.length === 0) return [];
+      const { data } = await supabase.rpc("get_public_profiles", { p_user_ids: allUserIds } as any);
+      return (data || []) as any[];
+    },
+    enabled: allUserIds.length > 0,
+  });
+
+  const getProfileName = (userId: string) => {
+    const p = userProfiles.find((pr: any) => pr.id === userId);
+    return p?.full_name || p?.username || userId?.slice(0, 8) + "...";
+  };
+
   const [form, setForm] = useState<any>(null);
   const s = form ?? settings;
   const [subTab, setSubTab] = useState<"settings" | "milestones" | "leaderboard" | "winners">("settings");
   const [newMilestone, setNewMilestone] = useState({ target_score: 100, prize_name_ar: "", stock: 10, product_id: null as string | null, selected_color: null as string | null, selected_option_id: null as string | null });
   const [newLbPrize, setNewLbPrize] = useState({ position: 1, prize_name_ar: "", product_id: null as string | null, selected_color: null as string | null, selected_option_id: null as string | null });
   const [nextSeasonDelay, setNextSeasonDelay] = useState<number>(0);
+  const [lbView, setLbView] = useState<"season" | "alltime">("season");
 
   const save = useMutation({
     mutationFn: async () => {
@@ -161,7 +215,10 @@ export default function CrossyRoadTab() {
       const { error } = await supabase.from("crossy_road_settings").update({
         game_enabled: s.game_enabled, entry_fee_tickets: s.entry_fee_tickets,
         points_per_step: s.points_per_step, bonus_coin_points: s.bonus_coin_points,
-        max_daily_plays: s.max_daily_plays || null, updated_at: new Date().toISOString(),
+        score_per_step: s.score_per_step, score_per_coin: s.score_per_coin,
+        max_daily_plays: s.max_daily_plays || null, 
+        max_daily_points: s.max_daily_points || null,
+        updated_at: new Date().toISOString(),
       }).eq("id", settings.id).select("id").single();
       if (error) throw error;
     },
@@ -225,7 +282,9 @@ export default function CrossyRoadTab() {
     onSuccess: (data: any) => {
       toast.success(`تم تتويج ${data?.winners_awarded ?? 0} فائزين`);
       queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-high-scores"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-alltime-scores"] });
       queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-winners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-settings"] });
     },
     onError: () => toast.error("فشل في تتويج الفائزين"),
   });
@@ -283,23 +342,57 @@ export default function CrossyRoadTab() {
             }} />
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Ticket className="h-3.5 w-3.5" /> تكلفة الدخول (تذاكر)</label>
-              <Input type="number" min={0} value={s.entry_fee_tickets} onChange={e => update("entry_fee_tickets", parseInt(e.target.value) || 0)} />
+          {/* Season countdown */}
+          <SeasonCountdown endsAt={settings?.season_ends_at} />
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Ticket className="h-3.5 w-3.5" /> تكلفة الدخول (تذاكر)</label>
+            <Input type="number" min={0} value={s.entry_fee_tickets} onChange={e => update("entry_fee_tickets", parseInt(e.target.value) || 0)} />
+          </div>
+
+          {/* Site Points Section */}
+          <div className="border border-border/30 rounded-lg p-4 space-y-4">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Star className="h-4 w-4 text-primary" /> نقاط الموقع
+            </h4>
+            <p className="text-[10px] text-muted-foreground">النقاط التي تُضاف لرصيد المستخدم في الموقع</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">نقاط لكل خطوة</label>
+                <Input type="number" min={0} value={s.points_per_step} onChange={e => update("points_per_step", parseInt(e.target.value) || 0)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">نقاط لكل عملة ذهبية</label>
+                <Input type="number" min={0} value={s.bonus_coin_points} onChange={e => update("bonus_coin_points", parseInt(e.target.value) || 0)} />
+              </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">نقاط لكل خطوة</label>
-              <Input type="number" min={0} value={s.points_per_step} onChange={e => update("points_per_step", parseInt(e.target.value) || 0)} className="w-32" />
+              <label className="text-xs font-medium text-muted-foreground">الحد اليومي للنقاط (اتركه فارغاً = لا حد)</label>
+              <Input type="number" min={0} value={s.max_daily_points ?? ""} onChange={e => update("max_daily_points", e.target.value ? parseInt(e.target.value) : null)} className="w-48" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">نقاط لكل عملة ذهبية</label>
-              <Input type="number" min={0} value={s.bonus_coin_points} onChange={e => update("bonus_coin_points", parseInt(e.target.value) || 0)} className="w-32" />
+          </div>
+
+          {/* Game Score Section */}
+          <div className="border border-border/30 rounded-lg p-4 space-y-4">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <Gamepad2 className="h-4 w-4 text-primary" /> سكور اللعبة
+            </h4>
+            <p className="text-[10px] text-muted-foreground">النقاط المعروضة داخل اللعبة والتي تُسجَّل في لوحة المتصدرين</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">سكور لكل خطوة</label>
+                <Input type="number" min={0} value={s.score_per_step ?? 1} onChange={e => update("score_per_step", parseInt(e.target.value) || 0)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">سكور لكل عملة ذهبية</label>
+                <Input type="number" min={0} value={s.score_per_coin ?? 5} onChange={e => update("score_per_coin", parseInt(e.target.value) || 0)} />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">الحد اليومي (اتركه فارغاً = لا حد)</label>
-              <Input type="number" min={0} value={s.max_daily_plays ?? ""} onChange={e => update("max_daily_plays", e.target.value ? parseInt(e.target.value) : null)} className="w-32" />
-            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">الحد اليومي للمحاولات (اتركه فارغاً = لا حد)</label>
+            <Input type="number" min={0} value={s.max_daily_plays ?? ""} onChange={e => update("max_daily_plays", e.target.value ? parseInt(e.target.value) : null)} className="w-48" />
           </div>
 
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">
@@ -362,25 +455,59 @@ export default function CrossyRoadTab() {
               ))}
             </div>
           )}
+
+          {/* Season / All-Time toggle */}
+          <div className="flex gap-2 bg-muted/20 rounded-lg p-1">
+            <button onClick={() => setLbView("season")} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${lbView === "season" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              الموسم الحالي
+            </button>
+            <button onClick={() => setLbView("alltime")} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors flex items-center justify-center gap-1 ${lbView === "alltime" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <Globe className="h-3 w-3" /> الأفضل على الإطلاق
+            </button>
+          </div>
+
           <div className="bg-muted/20 rounded-lg p-4">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-1 mb-3"><Crown className="h-4 w-4 text-primary" /> المتصدرون الحاليون</h4>
-            {highScores.length === 0 ? <p className="text-xs text-muted-foreground text-center py-4">لا توجد نقاط</p> : (
-              <div className="space-y-1.5">
-                {highScores.map((hs: any, i: number) => {
-                  const prize = leaderboardPrizes.find((p: any) => p.position === i + 1);
-                  return (
-                    <div key={hs.id} className={`flex items-center justify-between rounded-md p-2 text-xs ${prize ? "bg-primary/10 border border-primary/20" : "bg-muted/30"}`}>
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-1 mb-3">
+              <Crown className="h-4 w-4 text-primary" /> {lbView === "season" ? "المتصدرون الحاليون" : "الأفضل على الإطلاق"}
+            </h4>
+            {lbView === "season" ? (
+              highScores.length === 0 ? <p className="text-xs text-muted-foreground text-center py-4">لا توجد نقاط</p> : (
+                <div className="space-y-1.5">
+                  {highScores.map((hs: any, i: number) => {
+                    const prize = leaderboardPrizes.find((p: any) => p.position === i + 1);
+                    return (
+                      <div key={hs.id} className={`flex items-center justify-between rounded-md p-2 text-xs ${prize ? "bg-primary/10 border border-primary/20" : "bg-muted/30"}`}>
+                        <span className="font-mono font-bold text-foreground">#{i + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">{getProfileName(hs.user_id)}</span>
+                          <span className="font-bold text-foreground font-mono">{hs.high_score}</span>
+                          {prize && <span className="text-[10px] text-primary">🎁 {prize.prize_name_ar}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              allTimeScores.length === 0 ? <p className="text-xs text-muted-foreground text-center py-4">لا توجد نقاط</p> : (
+                <div className="space-y-1.5">
+                  {allTimeScores.map((hs: any, i: number) => (
+                    <div key={hs.id} className="flex items-center justify-between rounded-md p-2 text-xs bg-muted/30">
                       <span className="font-mono font-bold text-foreground">#{i + 1}</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-foreground font-mono">{hs.high_score}</span>
-                        {prize && <span className="text-[10px] text-primary">🎁 {prize.prize_name_ar}</span>}
+                        <span className="text-[10px] text-muted-foreground">{getProfileName(hs.user_id)}</span>
+                        <span className="font-bold text-foreground font-mono">{hs.all_time_high_score}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
+
+          {/* Season countdown */}
+          <SeasonCountdown endsAt={settings?.season_ends_at} />
+
           <div className="bg-muted/10 rounded-lg p-3 border border-border/50 mb-3">
             <label className="text-xs font-medium text-muted-foreground mb-2 block">وقت بدء الموسم القادم</label>
             <Select value={String(nextSeasonDelay)} onValueChange={v => setNextSeasonDelay(Number(v))}>
@@ -422,7 +549,7 @@ export default function CrossyRoadTab() {
                 <div key={w.id} className="flex items-center justify-between rounded-lg p-3 border border-border bg-muted/10">
                   <div className="text-[10px] text-muted-foreground">{new Date(w.awarded_at).toLocaleDateString("ar-IQ")}</div>
                   <div className="text-right">
-                    <div className="text-xs font-medium text-foreground">{w.user_id?.slice(0, 8)}...</div>
+                    <div className="text-xs font-medium text-foreground">{getProfileName(w.user_id)}</div>
                     <div className="text-[10px] text-muted-foreground">{w.prize_type === "leaderboard" ? `🏅 المركز ${w.position}` : `🎯 ${w.score} نقطة`} • {w.prize_name_ar}</div>
                   </div>
                 </div>
