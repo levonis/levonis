@@ -72,7 +72,7 @@ export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSetti
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
         gl={{ antialias: true, alpha: false }}
         onCreated={({ camera }) => {
-          camera.lookAt(4.5, 0, -2);
+          camera.lookAt(4.5, 0, -4);
         }}
       >
         <color attach="background" args={["#87CEEB"]} />
