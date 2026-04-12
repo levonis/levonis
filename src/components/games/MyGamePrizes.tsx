@@ -10,6 +10,19 @@ interface Props {
   onBack: () => void;
 }
 
+interface UnifiedPrize {
+  id: string;
+  prize_name_ar: string;
+  game_name: string;
+  product_id: string | null;
+  prize_image_url: string | null;
+  is_delivered: boolean;
+  created_at: string;
+  source: "crossy" | "stack" | "competition";
+  selected_option_id?: string | null;
+  selected_color?: string | null;
+}
+
 export default function MyGamePrizes({ onBack }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -19,17 +32,58 @@ export default function MyGamePrizes({ onBack }: Props) {
     queryKey: ["my-game-prizes", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
-        .from("game_prizes" as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      return (data || []) as any[];
+      const results: UnifiedPrize[] = [];
+
+      const [crossy, stack, comp] = await Promise.all([
+        supabase.from("crossy_road_winners").select("*").eq("user_id", user.id).order("awarded_at", { ascending: false }),
+        supabase.from("stack_game_winners").select("*").eq("user_id", user.id).order("awarded_at", { ascending: false }),
+        supabase.from("competition_prizes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+      ]);
+
+      crossy.data?.forEach(w => results.push({
+        id: w.id,
+        prize_name_ar: w.prize_name_ar,
+        game_name: "Crossy Road",
+        product_id: w.product_id,
+        prize_image_url: null,
+        is_delivered: false,
+        created_at: w.awarded_at,
+        source: "crossy",
+        selected_option_id: w.selected_option_id,
+        selected_color: w.selected_color,
+      }));
+
+      stack.data?.forEach(w => results.push({
+        id: w.id,
+        prize_name_ar: w.prize_name_ar,
+        game_name: "Stack Tower",
+        product_id: w.product_id,
+        prize_image_url: null,
+        is_delivered: false,
+        created_at: w.awarded_at,
+        source: "stack",
+        selected_option_id: w.selected_option_id,
+        selected_color: w.selected_color,
+      }));
+
+      comp.data?.forEach(w => results.push({
+        id: w.id,
+        prize_name_ar: w.prize_name_ar,
+        game_name: w.source_type === "mystery_box" ? "صندوق الغموض" : "مسابقة",
+        product_id: w.product_id,
+        prize_image_url: w.prize_image_url,
+        is_delivered: w.status === "delivered",
+        created_at: w.created_at,
+        source: "competition",
+      }));
+
+      results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return results;
     },
     enabled: !!user,
   });
 
-  // Check which prizes are already in cart as gifts - always refetch fresh
+  // Check which prizes are already in cart as gifts
   const { data: cartGiftProductIds = [] } = useQuery({
     queryKey: ["cart-gift-ids", user?.id],
     queryFn: async () => {
@@ -39,18 +93,18 @@ export default function MyGamePrizes({ onBack }: Props) {
         .select("product_id")
         .eq("user_id", user.id)
         .eq("is_gift", true);
-      return (data || []).map((c: any) => c.product_id);
+      return (data || []).map((c) => c.product_id);
     },
     enabled: !!user,
     refetchOnMount: "always",
     staleTime: 0,
   });
 
-  const handleAddToCart = async (prize: any) => {
+  const handleAddToCart = async (prize: UnifiedPrize) => {
     if (!prize.product_id || !user) return;
     setAddingToCart(prize.id);
     try {
-      // First check if already in cart (fresh check)
+      // Check if already in cart
       const { data: existing } = await supabase
         .from("cart_items")
         .select("id")
@@ -65,46 +119,19 @@ export default function MyGamePrizes({ onBack }: Props) {
         return;
       }
 
-      // Find matching milestone to get proper option/color
-      const { data: milestones } = await supabase
-        .from("stack_game_milestones" as any)
-        .select("*")
-        .eq("product_id", prize.product_id)
-        .eq("is_active", true)
-        .limit(1);
-
-      const milestone = (milestones as any)?.[0];
-
-      // Insert with proper option/color from milestone config
+      // Use option/color from the prize record itself
       const { error } = await supabase.from("cart_items").insert({
         user_id: user.id,
         product_id: prize.product_id,
-        product_option_id: milestone?.selected_option_id || null,
-        selected_color: milestone?.selected_color || null,
+        product_option_id: prize.selected_option_id || null,
+        selected_color: prize.selected_color || null,
         quantity: 1,
         sale_type: "direct",
         is_gift: true,
         is_locked: true,
       });
 
-      if (error) {
-        console.error("cart insert error:", error);
-        throw error;
-      }
-
-      // Verify the insert actually worked
-      const { data: verify } = await supabase
-        .from("cart_items")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("product_id", prize.product_id)
-        .eq("is_gift", true)
-        .maybeSingle();
-
-      if (!verify) {
-        toast.error("فشل إضافة الجائزة للسلة");
-        return;
-      }
+      if (error) throw error;
 
       toast.success("تمت إضافة الجائزة للسلة!");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -119,7 +146,6 @@ export default function MyGamePrizes({ onBack }: Props) {
 
   return (
     <div className="min-h-screen p-4 pt-16 pb-20">
-      {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-20 pixel-header-bar">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground font-mono text-xs pixel-btn-ghost">
@@ -146,7 +172,7 @@ export default function MyGamePrizes({ onBack }: Props) {
           </div>
         ) : (
           <div className="space-y-3">
-            {prizes.map((prize: any) => {
+            {prizes.map((prize) => {
               const isInCart = cartGiftProductIds.includes(prize.product_id);
               const isAdding = addingToCart === prize.id;
 
@@ -164,13 +190,10 @@ export default function MyGamePrizes({ onBack }: Props) {
                       <div className="text-sm font-bold text-foreground">{prize.prize_name_ar}</div>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                         <span className="bg-accent/10 px-1.5 py-0.5 rounded">{prize.game_name}</span>
-                        {prize.score_achieved && <span>سكور: {prize.score_achieved}</span>}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">{prize.how_won_ar}</div>
-                      
+
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2">
-                          {/* Add to cart button */}
                           {!prize.is_delivered && prize.product_id && (
                             <Button
                               size="sm"
@@ -178,8 +201,8 @@ export default function MyGamePrizes({ onBack }: Props) {
                               onClick={() => !isInCart && handleAddToCart(prize)}
                               disabled={isAdding || isInCart}
                               className={`h-7 text-[10px] gap-1 rounded-lg ${
-                                isInCart 
-                                  ? "text-primary cursor-default" 
+                                isInCart
+                                  ? "text-primary cursor-default"
                                   : "border-primary/30 text-primary hover:bg-primary/10"
                               }`}
                             >
@@ -196,7 +219,7 @@ export default function MyGamePrizes({ onBack }: Props) {
                           {new Date(prize.created_at).toLocaleDateString('ar-IQ')}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center justify-end mt-1">
                         {prize.is_delivered ? (
                           <span className="flex items-center gap-1 text-[10px] text-green-500">
