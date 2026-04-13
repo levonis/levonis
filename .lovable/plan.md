@@ -1,49 +1,52 @@
 
 
-# Fix: Bambu Lab Color Names, Hex Codes, and Images Accuracy
+# Fix: التحقق من صحة صور الألوان (Image URL Validation)
 
-## Root Cause
+## المشكلة
 
-1. **Colors found but inaccurate**: The AI finds 8-12 colors from its training data (the product name "PETG Translucent" is enough), but the hex codes and images are **hallucinated** because the server-rendered HTML has NO color/variant data
-2. **Firecrawl never triggers**: The fallback only runs when `colors.length === 0`, but the AI already guessed colors, so Firecrawl is skipped
-3. **Firecrawl fallback has old bug**: Even if it ran, lines 1221-1224 still have the broken COLOR_MAP-priority logic (not fixed in the last update)
-4. **Missing SKU codes in names**: The color name "Translucent Orange" should be "Translucent Orange (32300)" as shown on the actual site
+الذكاء الاصطناعي يختلق (يهلوس) روابط صور غير موجودة للألوان. مثلاً يعطي رابط صورة لـ "Translucent Orange" لكن الرابط غير حقيقي أو يشير لصورة لون آخر. السبب: الـ HTML من Firecrawl يحتوي على صور المنتج لكن ليس بالضرورة صورة مخصصة لكل لون، والذكاء الاصطناعي يخترع روابط.
 
-## Fix
+أيضاً Bambu Lab API (`/api/spu/product`) أصبحت تُرجع صفحة خطأ HTML بدلاً من JSON — لذا لا يمكن الاعتماد عليها.
 
-### In `extract-product-info/index.ts`:
+## الحل
 
-**Change 1**: For JS-rendered sites (like Bambu Lab), **always** use Firecrawl when available, regardless of whether the AI already guessed colors. Change condition from `if (productInfo.colors.length === 0)` to also trigger when the site is JS-rendered AND the Bambu Lab API failed:
+### 1. التحقق من صحة روابط الصور (Image URL Validation)
 
-```ts
-const shouldTryFirecrawl = productInfo.colors.length === 0 || 
-  (isJsRendered && !platformApiData && firecrawlKey);
-```
-
-When Firecrawl returns better data (colors with valid image_urls from the actual site), **replace** the AI-guessed colors.
-
-**Change 2**: Fix the Firecrawl fallback color processing (lines 1221-1224) to match the fixed main logic:
+في كل من `extract-product-info` و `retry-extract-colors`:
+- بعد استخراج الألوان من الذكاء الاصطناعي، **جمع كل الروابط الموجودة فعلياً في HTML** (من Firecrawl أو الصفحة الأصلية)
+- لكل لون، التحقق أن `image_url` المعطاة من AI **موجودة فعلاً** في HTML المصدر
+- إذا الرابط **غير موجود** في HTML → تعيينها إلى `null` (بدلاً من استخدام رابط مهلوس)
+- هذا يمنع الصور الخاطئة من الظهور
 
 ```ts
-hex_code: (c.hex_code && /^#[0-9A-Fa-f]{6}$/i.test(c.hex_code)) 
-  ? c.hex_code 
-  : (info ? info[1].hex : '#808080'),
-name_ar: c.name_ar || (info ? info[1].ar : c.name),
+// جمع كل الروابط الموجودة في HTML
+const allUrlsInHtml = new Set<string>();
+const urlRegex = /https?:\/\/[^\s"'<>]+/gi;
+let urlMatch;
+while ((urlMatch = urlRegex.exec(renderedHtml)) !== null) {
+  allUrlsInHtml.add(urlMatch[0].split('?')[0]); // بدون query params
+}
+
+// التحقق من كل image_url
+for (const c of colorResult.colors) {
+  if (c.image_url) {
+    const baseUrl = c.image_url.split('?')[0];
+    if (!allUrlsInHtml.has(baseUrl)) {
+      c.image_url = null; // رابط مهلوس - إزالة
+    }
+  }
+}
 ```
 
-**Change 3**: Enhance the Firecrawl color extraction prompt (lines 1167-1185) to include the same accuracy instructions:
-- Request exact hex codes from swatches, not generic approximations
-- Include SKU/variant codes in names (e.g., "Translucent Orange (32300)")
-- Extract the variant-specific product image URL (the image that shows when you click that color swatch)
-- Look for `background-color` CSS properties on swatch elements to get exact hex codes
+### 2. نفس التحقق في الاستخراج الأولي (AI extraction)
 
-**Change 4**: Add better error logging for the Bambu Lab API call to understand why it's silently failing.
+في معالجة ألوان AI الأولى (سطر 869-873)، نفس المنطق: التحقق أن `image_url` موجود في `pageContent`.
 
-### In `retry-extract-colors/index.ts`:
+### 3. نفس الإصلاح في `retry-extract-colors/index.ts`
 
-Same Firecrawl prompt enhancement for consistency.
+تطبيق نفس التحقق من الصور.
 
-## Files
-- `supabase/functions/extract-product-info/index.ts` — Firecrawl trigger condition, fix color priority bug, enhance prompt
-- `supabase/functions/retry-extract-colors/index.ts` — prompt enhancement
+## الملفات المتأثرة
+- `supabase/functions/extract-product-info/index.ts` — إضافة validation للصور في الاستخراج الأولي وFirecrawl
+- `supabase/functions/retry-extract-colors/index.ts` — نفس validation
 
