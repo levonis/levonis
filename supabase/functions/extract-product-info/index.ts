@@ -591,6 +591,31 @@ serve(async (req) => {
       );
     }
 
+    // ===== Strategy 1: Try platform-specific API for Bambu Lab =====
+    let platformApiData: any = null;
+    if (platform === 'bambulab') {
+      try {
+        const urlObj = new URL(url);
+        const slug = urlObj.pathname.split('/products/')[1]?.split('?')[0];
+        if (slug) {
+          console.log('Trying Bambu Lab API for slug:', slug);
+          const apiUrl = `${urlObj.origin}/api/spu/product?handle=${slug}`;
+          const apiResp = await fetch(apiUrl, {
+            headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
+          });
+          if (apiResp.ok) {
+            const apiJson = await apiResp.json();
+            if (apiJson && (apiJson.data || apiJson.product)) {
+              platformApiData = apiJson.data || apiJson.product || apiJson;
+              console.log('Bambu Lab API success, got structured data');
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Bambu Lab API failed:', e);
+      }
+    }
+
     // Fetch page
     let pageContent = '';
     let fetchSuccess = false;
@@ -615,7 +640,21 @@ serve(async (req) => {
       console.log('Fetch error:', e);
     }
 
-    if (!fetchSuccess) {
+    // ===== Strategy 2: Parse __NEXT_DATA__ from Next.js sites =====
+    let nextData: any = null;
+    if (fetchSuccess) {
+      try {
+        const nextMatch = pageContent.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+        if (nextMatch) {
+          nextData = JSON.parse(nextMatch[1]);
+          console.log('Found __NEXT_DATA__, extracting product info');
+        }
+      } catch (e) {
+        console.log('__NEXT_DATA__ parse failed:', e);
+      }
+    }
+
+    if (!fetchSuccess && !platformApiData) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -636,8 +675,23 @@ serve(async (req) => {
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
-    // AI extraction with enhanced prompt for Chinese sites
+    // AI extraction with enhanced prompt
     console.log('Using AI for extraction...');
+
+    // Build extra context from platform API or __NEXT_DATA__
+    let extraContext = '';
+    if (platformApiData) {
+      extraContext = `\n\n===== بيانات API المنصة (بيانات منظمة) =====\n${JSON.stringify(platformApiData).substring(0, 50000)}`;
+    }
+    if (nextData) {
+      const nextStr = JSON.stringify(nextData).substring(0, 50000);
+      extraContext += `\n\n===== __NEXT_DATA__ (بيانات Next.js المضمنة) =====\n${nextStr}`;
+    }
+
+    // Detect if site is JS-rendered (limited HTML content)
+    const isJsRendered = pageContent.includes('__next') || pageContent.includes('__NEXT_DATA__') || 
+      pageContent.includes('id="root"') || pageContent.includes('id="app"') ||
+      (pageContent.length < 5000 && !pageContent.includes('sku'));
 
     // First AI call: Extract product info from the page
     const prompt = `استخرج معلومات المنتج من صفحة الويب هذه وأرجعها بصيغة JSON فقط.
@@ -645,9 +699,9 @@ serve(async (req) => {
 الرابط: ${url}
 المنصة: ${platform}
 رقم المنتج: ${itemId || 'غير معروف'}
-
+${isJsRendered ? '\n⚠️ هذا موقع يعتمد على JavaScript لعرض المحتوى. إذا لم تجد بيانات الألوان في HTML، استخدم معرفتك عن هذا المنتج من الرابط أعلاه لاستخراج كل الألوان المتاحة.\n' : ''}
 محتوى HTML (أول 100000 حرف):
-${pageContent.substring(0, 100000)}
+${pageContent.substring(0, 100000)}${extraContext}
 
 أرجع JSON بالشكل التالي بالضبط:
 {
@@ -1067,6 +1121,111 @@ Return JSON ONLY:
           available_for_direct_sale: true,
           available_for_pre_order: false
         });
+      }
+    }
+
+    // ===== Strategy 3: Firecrawl fallback for JS-rendered sites with 0 colors =====
+    if (productInfo.colors.length === 0) {
+      const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+      if (firecrawlKey) {
+        console.log('No colors found, trying Firecrawl for JS-rendered content...');
+        try {
+          const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: url,
+              formats: ['html'],
+              waitFor: 3000,
+            }),
+          });
+
+          if (fcResp.ok) {
+            const fcData = await fcResp.json();
+            const renderedHtml = fcData.data?.html || fcData.html || '';
+            console.log('Firecrawl returned HTML length:', renderedHtml.length);
+
+            if (renderedHtml.length > 1000) {
+              // Re-run AI extraction on the rendered content focusing on colors
+              const colorRetryPrompt = `Extract ALL available color/variant options from this fully-rendered product page HTML.
+
+Product URL: ${url}
+
+Rendered HTML (first 80000 chars):
+${renderedHtml.substring(0, 80000)}
+
+IMPORTANT:
+- Extract EVERY color variant available - look for swatch elements, variant selectors, option buttons
+- Include color name in English and Arabic
+- Include image URL for each color if available
+- Extract hex color code if visible
+- If this is a filament/material product, colors may include: Jade White, Bambu Green, Black, etc.
+- DO NOT skip any colors
+
+Return ONLY JSON:
+{
+  "colors": [{"name": "English Name", "name_ar": "الاسم بالعربية", "hex_code": "#hexcode", "image_url": "url or null"}]
+}`;
+
+              const colorAiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${lovableApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'google/gemini-2.5-flash',
+                  messages: [
+                    { role: 'system', content: 'You are a product color extraction expert. Extract ALL color variants completely.' },
+                    { role: 'user', content: colorRetryPrompt }
+                  ],
+                  temperature: 0.1,
+                  max_tokens: 16000,
+                }),
+              });
+
+              if (colorAiResp.ok) {
+                const colorAiData = await colorAiResp.json();
+                const colorText = colorAiData.choices[0]?.message?.content || '';
+                const colorJsonMatch = colorText.match(/\{[\s\S]*\}/);
+                if (colorJsonMatch) {
+                  const colorResult = JSON.parse(colorJsonMatch[0]);
+                  if (colorResult.colors && Array.isArray(colorResult.colors)) {
+                    console.log('Firecrawl+AI found colors:', colorResult.colors.length);
+                    for (const c of colorResult.colors) {
+                      if (c.name && isValidColorName(c.name)) {
+                        const colorLower = c.name.toLowerCase();
+                        const info = Object.entries(COLOR_MAP).find(([k]) => colorLower.includes(k));
+                        let colorImageUrl = null;
+                        if (c.image_url && c.image_url.startsWith('http')) {
+                          colorImageUrl = normalizeImageUrl(c.image_url);
+                          variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                        }
+                        productInfo.colors.push({
+                          name: c.name,
+                          name_ar: info ? info[1].ar : c.name_ar || c.name,
+                          hex_code: info ? info[1].hex : c.hex_code || '#808080',
+                          image_url: colorImageUrl,
+                          in_stock: true,
+                          available_for_direct_sale: true,
+                          available_for_pre_order: false
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            const fcErr = await fcResp.text();
+            console.log('Firecrawl error:', fcResp.status, fcErr);
+          }
+        } catch (fcError) {
+          console.error('Firecrawl fallback error:', fcError);
+        }
       }
     }
 
