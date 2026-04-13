@@ -1402,7 +1402,30 @@ Return ONLY JSON:
         }
     }
 
-    // Use direct images if none from AI
+    // ===== Bambu Lab deterministic color-image override =====
+    if (platform === 'bambulab') {
+      // Try parsing from Firecrawl HTML first (fully rendered), then fall back to direct HTML
+      const htmlForBambuParsing = pageContent;
+      const bambuColors = parseBambuLabColors(htmlForBambuParsing);
+      if (bambuColors.length > 0) {
+        console.log('Bambu Lab parser found', bambuColors.length, 'colors — replacing AI-guessed colors');
+        productInfo.colors = bambuColors.map(c => ({
+          ...c,
+          in_stock: true,
+          available_for_direct_sale: true,
+          available_for_pre_order: false
+        }));
+        // Track variant image URLs
+        for (const c of bambuColors) {
+          if (c.image_url) {
+            variantImageUrls.add(getImageBaseUrl(c.image_url));
+          }
+        }
+      } else {
+        console.log('Bambu Lab parser found no colors, keeping AI results');
+      }
+    }
+
     // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
     if (productInfo.images.length === 0 && directImages.length > 0) {
       console.log('Using direct extraction images...', directImages.length, 'images');
