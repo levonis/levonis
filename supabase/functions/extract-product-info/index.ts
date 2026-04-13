@@ -449,6 +449,130 @@ function extractSkuData(html: string): { colors: any[], options: any[] } {
   }
 
   console.log(`Direct SKU extraction: ${colors.length} colors, ${options.length} options`);
+}
+
+// ===== Bambu Lab deterministic color-image parser =====
+// Parses the rendered HTML to find color names, hex codes from spec table,
+// and maps them to JP-prefixed gallery images by order of appearance
+function parseBambuLabColors(html: string): Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> {
+  const colors: Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> = [];
+
+  // Step 1: Extract color names from the specification table
+  // Pattern: <td>Color Name</td> followed by <td style="background-color: #hex">
+  const colorTablePattern = /<td[^>]*>\s*(Translucent\s+\w[\w\s]*?)\s*<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
+  const tableColors: Array<{name: string; hex: string}> = [];
+  let tableMatch;
+  while ((tableMatch = colorTablePattern.exec(html)) !== null) {
+    tableColors.push({ name: tableMatch[1].trim(), hex: '#' + tableMatch[2] });
+  }
+
+  // Also try comment-based pattern: <!-- Color Name --> followed by <tr>...<td>name</td><td style="background-color:#hex">
+  if (tableColors.length === 0) {
+    const commentPattern = /<!--\s*([\w\s]+?)\s*-->\s*<tr[^>]*>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
+    let commentMatch;
+    while ((commentMatch = commentPattern.exec(html)) !== null) {
+      tableColors.push({ name: commentMatch[2].trim(), hex: '#' + commentMatch[3] });
+    }
+  }
+
+  // Also try generic swatch parsing: elements with background-color near text labels
+  if (tableColors.length === 0) {
+    // Look for any product color swatches with background-color
+    const swatchPattern = /background-color:\s*#([0-9a-fA-F]{6})/gi;
+    const hexCodes: string[] = [];
+    let swatchMatch;
+    while ((swatchMatch = swatchPattern.exec(html)) !== null) {
+      const hex = swatchMatch[1].toLowerCase();
+      if (hex !== 'ffffff' && hex !== '000000' && !hexCodes.includes(hex)) {
+        hexCodes.push(hex);
+      }
+    }
+    // If we found hex codes, try to find corresponding color names
+    for (const hex of hexCodes) {
+      const hexIdx = html.indexOf(hex);
+      if (hexIdx > 0) {
+        const nearbyText = html.substring(Math.max(0, hexIdx - 500), hexIdx + 500);
+        const nameMatch = nearbyText.match(/((?:Translucent|Matte|Glossy|Basic|Silk|Marble|Support)\s+\w[\w\s]*?)(?:<\/|"|'|\s*$)/i);
+        if (nameMatch) {
+          tableColors.push({ name: nameMatch[1].trim(), hex: '#' + hex });
+        }
+      }
+    }
+  }
+
+  console.log('Bambu Lab parser: found', tableColors.length, 'colors in spec table');
+
+  // Step 2: Extract JP-prefixed gallery images in order
+  // These are the variant-specific product images
+  const jpImagePattern = /https:\/\/store\.bblcdn\.com\/s7\/default\/[^\/]+\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
+  const jpImages: Map<string, string> = new Map(); // JP code -> full URL (first occurrence, without resize params)
+  let jpMatch;
+  while ((jpMatch = jpImagePattern.exec(html)) !== null) {
+    const fullUrl = jpMatch[0].split('__op__')[0]; // Remove resize params
+    const jpCode = jpMatch[1].match(/^JP\d{5}/)?.[0];
+    if (jpCode && !jpImages.has(jpCode)) {
+      jpImages.set(jpCode, fullUrl);
+    }
+  }
+
+  // Also check for bblcdn images without the s7/default path
+  if (jpImages.size === 0) {
+    const altJpPattern = /https:\/\/store\.bblcdn\.com[^"'\s<>]*\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
+    let altMatch;
+    while ((altMatch = altJpPattern.exec(html)) !== null) {
+      const fullUrl = altMatch[0].split('__op__')[0];
+      const jpCode = altMatch[1].match(/^JP\d{5}/)?.[0];
+      if (jpCode && !jpImages.has(jpCode)) {
+        jpImages.set(jpCode, fullUrl);
+      }
+    }
+  }
+
+  const orderedJpUrls = Array.from(jpImages.values());
+  console.log('Bambu Lab parser: found', orderedJpUrls.length, 'JP variant images');
+
+  // Step 3: Map colors to images by order
+  // The gallery images appear in the same order as the colors in the spec table
+  const bambuColorArMap: Record<string, string> = {
+    'gray': 'رمادي', 'grey': 'رمادي',
+    'light blue': 'أزرق فاتح', 'blue': 'أزرق',
+    'olive': 'زيتي', 'brown': 'بني',
+    'teal': 'أزرق مخضر', 'orange': 'برتقالي',
+    'purple': 'بنفسجي', 'pink': 'وردي',
+    'red': 'أحمر', 'green': 'أخضر',
+    'yellow': 'أصفر', 'white': 'أبيض',
+    'black': 'أسود', 'gold': 'ذهبي',
+    'silver': 'فضي', 'jade': 'أخضر يشمي',
+    'translucent': 'شفاف',
+  };
+
+  for (let i = 0; i < tableColors.length; i++) {
+    const { name, hex } = tableColors[i];
+    const imageUrl = i < orderedJpUrls.length ? orderedJpUrls[i] : null;
+
+    // Generate Arabic name
+    const nameLower = name.toLowerCase();
+    let nameAr = name;
+    for (const [key, ar] of Object.entries(bambuColorArMap)) {
+      if (nameLower.includes(key)) {
+        nameAr = nameLower.includes('translucent') && key !== 'translucent'
+          ? `شفاف ${ar}`
+          : ar;
+        break;
+      }
+    }
+
+    colors.push({
+      name,
+      name_ar: nameAr,
+      hex_code: hex,
+      image_url: imageUrl
+    });
+
+    console.log(`  Color ${i + 1}: ${name} (${hex}) -> ${imageUrl ? 'has image' : 'no image'}`);
+  }
+
+  return colors;
   return { colors, options };
 }
 
@@ -1278,7 +1402,30 @@ Return ONLY JSON:
         }
     }
 
-    // Use direct images if none from AI
+    // ===== Bambu Lab deterministic color-image override =====
+    if (platform === 'bambulab') {
+      // Try parsing from Firecrawl HTML first (fully rendered), then fall back to direct HTML
+      const htmlForBambuParsing = pageContent;
+      const bambuColors = parseBambuLabColors(htmlForBambuParsing);
+      if (bambuColors.length > 0) {
+        console.log('Bambu Lab parser found', bambuColors.length, 'colors — replacing AI-guessed colors');
+        productInfo.colors = bambuColors.map(c => ({
+          ...c,
+          in_stock: true,
+          available_for_direct_sale: true,
+          available_for_pre_order: false
+        }));
+        // Track variant image URLs
+        for (const c of bambuColors) {
+          if (c.image_url) {
+            variantImageUrls.add(getImageBaseUrl(c.image_url));
+          }
+        }
+      } else {
+        console.log('Bambu Lab parser found no colors, keeping AI results');
+      }
+    }
+
     // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
     if (productInfo.images.length === 0 && directImages.length > 0) {
       console.log('Using direct extraction images...', directImages.length, 'images');

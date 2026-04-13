@@ -6,13 +6,97 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Bambu Lab deterministic color-image parser
+function parseBambuLabColors(html: string): Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> {
+  const colors: Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> = [];
+
+  // Extract color names + hex codes from spec table
+  const colorTablePattern = /<td[^>]*>\s*((?:Translucent|Matte|Glossy|Basic|Silk|Marble|Support)\s+\w[\w\s]*?)\s*<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
+  const tableColors: Array<{name: string; hex: string}> = [];
+  let tableMatch;
+  while ((tableMatch = colorTablePattern.exec(html)) !== null) {
+    tableColors.push({ name: tableMatch[1].trim(), hex: '#' + tableMatch[2] });
+  }
+
+  // Fallback: comment-based pattern
+  if (tableColors.length === 0) {
+    const commentPattern = /<!--\s*([\w\s]+?)\s*-->\s*<tr[^>]*>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
+    let commentMatch;
+    while ((commentMatch = commentPattern.exec(html)) !== null) {
+      tableColors.push({ name: commentMatch[2].trim(), hex: '#' + commentMatch[3] });
+    }
+  }
+
+  console.log('Bambu parser: found', tableColors.length, 'colors in spec table');
+
+  // Extract JP-prefixed gallery images in order
+  const jpImagePattern = /https:\/\/store\.bblcdn\.com\/s7\/default\/[^\/]+\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
+  const jpImages: Map<string, string> = new Map();
+  let jpMatch;
+  while ((jpMatch = jpImagePattern.exec(html)) !== null) {
+    const fullUrl = jpMatch[0].split('__op__')[0];
+    const jpCode = jpMatch[1].match(/^JP\d{5}/)?.[0];
+    if (jpCode && !jpImages.has(jpCode)) {
+      jpImages.set(jpCode, fullUrl);
+    }
+  }
+
+  if (jpImages.size === 0) {
+    const altJpPattern = /https:\/\/store\.bblcdn\.com[^"'\s<>]*\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
+    let altMatch;
+    while ((altMatch = altJpPattern.exec(html)) !== null) {
+      const fullUrl = altMatch[0].split('__op__')[0];
+      const jpCode = altMatch[1].match(/^JP\d{5}/)?.[0];
+      if (jpCode && !jpImages.has(jpCode)) {
+        jpImages.set(jpCode, fullUrl);
+      }
+    }
+  }
+
+  const orderedJpUrls = Array.from(jpImages.values());
+  console.log('Bambu parser: found', orderedJpUrls.length, 'JP variant images');
+
+  const bambuColorArMap: Record<string, string> = {
+    'gray': 'رمادي', 'grey': 'رمادي',
+    'light blue': 'أزرق فاتح', 'blue': 'أزرق',
+    'olive': 'زيتي', 'brown': 'بني',
+    'teal': 'أزرق مخضر', 'orange': 'برتقالي',
+    'purple': 'بنفسجي', 'pink': 'وردي',
+    'red': 'أحمر', 'green': 'أخضر',
+    'yellow': 'أصفر', 'white': 'أبيض',
+    'black': 'أسود', 'gold': 'ذهبي',
+    'silver': 'فضي', 'jade': 'أخضر يشمي',
+    'translucent': 'شفاف',
+  };
+
+  for (let i = 0; i < tableColors.length; i++) {
+    const { name, hex } = tableColors[i];
+    const imageUrl = i < orderedJpUrls.length ? orderedJpUrls[i] : null;
+
+    const nameLower = name.toLowerCase();
+    let nameAr = name;
+    for (const [key, ar] of Object.entries(bambuColorArMap)) {
+      if (nameLower.includes(key)) {
+        nameAr = nameLower.includes('translucent') && key !== 'translucent'
+          ? `شفاف ${ar}`
+          : ar;
+        break;
+      }
+    }
+
+    colors.push({ name, name_ar: nameAr, hex_code: hex, image_url: imageUrl });
+    console.log(`  Color ${i + 1}: ${name} (${hex}) -> ${imageUrl ? 'has image' : 'no image'}`);
+  }
+
+  return colors;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify admin authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -25,7 +109,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify user is admin using the JWT token
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
@@ -39,7 +122,6 @@ serve(async (req) => {
       );
     }
 
-    // Check if user has admin role
     const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
@@ -56,6 +138,9 @@ serve(async (req) => {
 
     const { url, existingColors } = await req.json();
 
+    // Detect if Bambu Lab
+    const isBambuLab = url.toLowerCase().includes('bambulab.com');
+
     // Fetch the webpage
     const pageResponse = await fetch(url);
     if (!pageResponse.ok) {
@@ -63,8 +148,70 @@ serve(async (req) => {
     }
 
     const html = await pageResponse.text();
-    
-    // ===== Parse __NEXT_DATA__ for Next.js sites =====
+
+    // ===== Try Bambu Lab deterministic parser first =====
+    if (isBambuLab) {
+      const bambuColors = parseBambuLabColors(html);
+      if (bambuColors.length > 0) {
+        console.log('Bambu Lab parser found', bambuColors.length, 'colors — using deterministic results');
+
+        // Upload images
+        const uploadedColors = [];
+        for (const color of bambuColors) {
+          if (color.image_url && color.image_url.startsWith('http')) {
+            try {
+              const imgResp = await fetch(color.image_url);
+              if (imgResp.ok) {
+                const blob = await imgResp.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                const timestamp = Date.now();
+                const filename = `color-${color.name.replace(/\s+/g, '-').toLowerCase()}-${timestamp}.png`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('product-images')
+                  .upload(filename, arrayBuffer, {
+                    contentType: 'image/png',
+                    upsert: false
+                  });
+
+                if (!uploadError) {
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('product-images')
+                    .getPublicUrl(filename);
+                  
+                  uploadedColors.push({ ...color, image_url: publicUrl });
+                  console.log(`Color ${color.name} image uploaded`);
+                } else {
+                  console.error('Upload error:', color.name, uploadError);
+                  uploadedColors.push(color);
+                }
+              } else {
+                uploadedColors.push(color);
+              }
+            } catch (error) {
+              console.error('Error uploading:', error);
+              uploadedColors.push(color);
+            }
+          } else {
+            uploadedColors.push(color);
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            totalColors: uploadedColors.length,
+            existingColors: existingColors?.length || 0,
+            newColorsCount: uploadedColors.length,
+            addedColors: uploadedColors,
+            mode: 'replace'  // Signal to frontend to replace all colors
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // ===== Fallback: AI-based extraction for non-Bambu or if parser found nothing =====
     let nextDataContent = '';
     try {
       const nextMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
@@ -74,7 +221,6 @@ serve(async (req) => {
       }
     } catch {}
 
-    // Extract all image URLs and alt texts
     const imageUrls: string[] = [];
     const altTexts: string[] = [];
     const altSrcPairs: Array<{ alt: string; src: string }> = [];
@@ -85,32 +231,18 @@ serve(async (req) => {
       const tag = tagMatch[0];
       const srcMatch = tag.match(/src=["']([^"']+)["']/i);
       const dataSrcMatch = tag.match(/data-src=["']([^"']+)["']/i);
-      const srcsetMatch = tag.match(/srcset=["']([^"']+)["']/i);
       const altMatch = tag.match(/alt=["']([^"']+)["']/i);
-
-      const pushUrl = (u?: string | null) => {
-        if (!u) return;
-        if (u.startsWith('http') && !u.includes('icon') && !u.includes('logo')) {
-          imageUrls.push(u);
-        }
-      };
 
       const src = srcMatch?.[1] || dataSrcMatch?.[1] || null;
       const alt = altMatch?.[1] || null;
 
-      if (src && alt) {
-        altSrcPairs.push({ alt, src });
+      if (src && alt) altSrcPairs.push({ alt, src });
+      if (src?.startsWith('http') && !src.includes('icon') && !src.includes('logo')) {
+        imageUrls.push(src);
       }
-
-      pushUrl(src);
-      if (srcsetMatch?.[1]) {
-        const candidates = srcsetMatch[1].split(',').map(s => s.trim().split(' ')[0]);
-        for (const c of candidates) pushUrl(c);
-      }
-      if (altMatch?.[1]) altTexts.push(altMatch[1]);
+      if (alt) altTexts.push(alt);
     }
 
-    // Extract color candidates from HTML
     const uniqueColorCandidates = new Set<string>();
     const dataColorRegex = /data-color=["']([^"']+)["']/gi;
     let dcMatch;
@@ -118,72 +250,15 @@ serve(async (req) => {
       uniqueColorCandidates.add(dcMatch[1]);
     }
 
-    const ariaLabelRegex = /aria-label=["']([^"']*color[^"']*)["']/gi;
-    let alMatch;
-    while ((alMatch = ariaLabelRegex.exec(html)) !== null) {
-      uniqueColorCandidates.add(alMatch[1]);
-    }
+    const combinedHints = [...Array.from(uniqueColorCandidates)];
 
-    const selectOptionsRegex = /<option[^>]*>([^<]*color[^<]*)<\/option>/gi;
-    let soMatch;
-    while ((soMatch = selectOptionsRegex.exec(html)) !== null) {
-      uniqueColorCandidates.add(soMatch[1].trim());
-    }
+    const isJsRendered = html.includes('__next') || html.includes('__NEXT_DATA__');
 
-    // Extract from script blocks
-    const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
-    let scriptMatch;
-    const variantsData: any[] = [];
-    while ((scriptMatch = scriptRegex.exec(html)) !== null) {
-      const scriptContent = scriptMatch[1];
-      try {
-        const variantMatch = scriptContent.match(/variants?\s*:\s*(\[[^\]]+\])/i);
-        if (variantMatch) {
-          const parsed = JSON.parse(variantMatch[1]);
-          variantsData.push(...parsed);
-        }
-      } catch {}
-    }
-
-    for (const v of variantsData) {
-      if (v.option1) uniqueColorCandidates.add(v.option1);
-      if (v.option2) uniqueColorCandidates.add(v.option2);
-      if (v.title) uniqueColorCandidates.add(v.title);
-    }
-
-    // Extract color names from image filenames
-    const colorNamesFromImages = new Set<string>();
-    for (const imgUrl of imageUrls) {
-      const filename = imgUrl.split('/').pop()?.split('?')[0] || '';
-      const nameMatch = filename.match(/([A-Za-z-_]+)/g);
-      if (nameMatch) {
-        for (const part of nameMatch) {
-          if (part.length > 3 && !['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(part.toLowerCase())) {
-            colorNamesFromImages.add(part.replace(/-/g, ' ').replace(/_/g, ' '));
-          }
-        }
-      }
-    }
-
-    // Combine all hints
-    const combinedHints = [
-      ...Array.from(uniqueColorCandidates),
-      ...Array.from(colorNamesFromImages),
-      ...altTexts.filter(a => /color|colour|matt|matte|gloss|shade/i.test(a))
-    ];
-
-    console.log('Found color hints:', combinedHints.length);
-
-    // Detect if site is JS-rendered
-    const isJsRendered = html.includes('__next') || html.includes('__NEXT_DATA__') ||
-      html.includes('id="root"') || html.includes('id="app"');
-
-    // ===== Firecrawl fallback if no color hints and JS-rendered =====
     let firecrawlHtml = '';
     if (combinedHints.length === 0 && isJsRendered) {
       const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
       if (firecrawlKey) {
-        console.log('No color hints found on JS-rendered site, using Firecrawl...');
+        console.log('Using Firecrawl for JS-rendered site...');
         try {
           const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
@@ -196,9 +271,6 @@ serve(async (req) => {
           if (fcResp.ok) {
             const fcData = await fcResp.json();
             firecrawlHtml = fcData.data?.html || fcData.html || '';
-            console.log('Firecrawl HTML length:', firecrawlHtml.length);
-          } else {
-            console.log('Firecrawl error:', fcResp.status);
           }
         } catch (e) {
           console.error('Firecrawl error:', e);
@@ -206,53 +278,34 @@ serve(async (req) => {
       }
     }
 
-    // Get LOVABLE_API_KEY
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Prepare prompt for AI — use Firecrawl HTML if available, otherwise original
     const contentForAi = firecrawlHtml.length > 1000 ? firecrawlHtml.substring(0, 80000) : '';
     
     const prompt = `Extract ALL available color options from this product page. 
     
 Product URL: ${url}
-${isJsRendered ? '\n⚠️ This is a JavaScript-rendered site. If color data is not visible in HTML, use your knowledge of this product URL to identify all available colors.\n' : ''}
-Previous extraction found ${existingColors?.length || 0} colors. Please extract ALL colors again to ensure none are missed.
+${isJsRendered ? '\n⚠️ This is a JavaScript-rendered site.\n' : ''}
 
 ${contentForAi ? `Fully rendered HTML:\n${contentForAi}\n` : ''}
 Image URLs with ALT texts:
 ${altSrcPairs.slice(0, 200).map((p, i) => `${i + 1}. ${p.alt} -> ${p.src}`).join('\n')}
 
-Color candidates from page:
-${combinedHints.slice(0, 500).join(', ')}
-${nextDataContent ? `\n__NEXT_DATA__ (embedded JSON):\n${nextDataContent}\n` : ''}
+${nextDataContent ? `\n__NEXT_DATA__:\n${nextDataContent}\n` : ''}
 IMPORTANT: 
-- Extract EVERY SINGLE color variant available on the page - there may be 30, 40, 50+ colors
-- Do NOT limit yourself to any number - extract ALL colors even if there are 100+
-- Include color name in English and accurate Arabic translation
-- Include the SKU/variant code in the color name if shown on the page (e.g., "Translucent Orange (32300)" NOT just "Translucent Orange")
-- For hex_code: extract the EXACT hex code from CSS background-color or style attributes on swatch elements. Do NOT use generic approximations. Example: "Translucent Teal" should be the exact shade like #77EDD7, NOT generic #008080
-- For image_url: use the variant-specific product image (the image shown when clicking that color swatch) — NOT the main product image. Do NOT hallucinate URLs - only use URLs found in the HTML
-- Look at CSS background-color properties on swatch/color selector elements for exact hex codes
-- Check all data attributes, swatch elements, variant selectors
-- DO NOT summarize or skip any colors
-- If no color data is found in HTML, use your knowledge of this product (from the URL) to list all available colors with accurate hex codes
+- Extract EVERY color variant
+- Include color name in English and Arabic
+- For hex_code: extract EXACT hex from CSS or swatch elements
+- For image_url: ONLY use URLs that exist in the HTML — do NOT hallucinate
+- If no image can be definitively linked to a color, set image_url to null
 
-Return ONLY colors in this JSON format:
+Return ONLY JSON:
 {
-  "colors": [
-    {
-      "name": "Color Name in English",
-      "name_ar": "اسم اللون بالعربية",
-      "image_url": "full image URL",
-      "hex_code": "#hexcode"
-    }
-  ]
+  "colors": [{"name": "Color Name", "name_ar": "الاسم", "image_url": "url or null", "hex_code": "#hexcode"}]
 }`;
-
-    console.log('Calling AI for color extraction...');
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -263,14 +316,8 @@ Return ONLY colors in this JSON format:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          {
-            role: 'system',
-            content: 'You are a product data extraction expert. Extract ALL color variants completely and accurately. Never stop at a limit - extract every single color available even if there are 50+ colors. Always return complete results.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'system', content: 'Extract ALL color variants completely. Never hallucinate image URLs.' },
+          { role: 'user', content: prompt }
         ],
         temperature: 0.2,
         max_tokens: 16000,
@@ -278,28 +325,19 @@ Return ONLY colors in this JSON format:
     });
 
     if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
       throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
     const extractedText = aiData.choices[0].message.content;
 
-    console.log('AI response received');
-
-    // Parse the extracted data
     const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to extract JSON from AI response');
-    }
+    if (!jsonMatch) throw new Error('Failed to extract JSON from AI response');
 
     const extractedData = JSON.parse(jsonMatch[0]);
     const newColors = extractedData.colors || [];
 
-    console.log('Extracted colors:', newColors.length);
-
-    // Validate image URLs against actual HTML content
+    // Validate image URLs
     const sourceHtml = firecrawlHtml || html;
     const allUrlsInSource = new Set<string>();
     const sourceUrlRegex = /https?:\/\/[^\s"'<>]+/gi;
@@ -311,13 +349,13 @@ Return ONLY colors in this JSON format:
       if (c.image_url) {
         const baseUrl = c.image_url.split('?')[0];
         if (!allUrlsInSource.has(baseUrl)) {
-          console.log('Removed hallucinated image URL for color:', c.name);
+          console.log('Removed hallucinated image for:', c.name);
           c.image_url = null;
         }
       }
     }
 
-    // Compare with existing colors to find new ones
+    // Find new colors not in existing
     const existingColorNames = new Set(
       (existingColors || []).map((c: any) => c.name.toLowerCase())
     );
@@ -326,9 +364,7 @@ Return ONLY colors in this JSON format:
       (c: any) => !existingColorNames.has(c.name.toLowerCase())
     );
 
-    console.log('New colors found:', addedColors.length);
-
-    // Upload new color images
+    // Upload images
     const uploadedColors = [];
     for (const color of addedColors) {
       if (color.image_url && color.image_url.startsWith('http')) {
@@ -342,27 +378,20 @@ Return ONLY colors in this JSON format:
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('product-images')
-              .upload(filename, arrayBuffer, {
-                contentType: 'image/png',
-                upsert: false
-              });
+              .upload(filename, arrayBuffer, { contentType: 'image/png', upsert: false });
 
-            if (uploadError) {
-              console.error('Upload error for color:', color.name, uploadError);
-            } else {
+            if (!uploadError) {
               const { data: { publicUrl } } = supabase.storage
                 .from('product-images')
                 .getPublicUrl(filename);
-              
-              uploadedColors.push({
-                ...color,
-                image_url: publicUrl
-              });
-              console.log(`Color ${color.name} image uploaded`);
+              uploadedColors.push({ ...color, image_url: publicUrl });
+            } else {
+              uploadedColors.push(color);
             }
+          } else {
+            uploadedColors.push(color);
           }
-        } catch (error) {
-          console.error('Error uploading color image:', error);
+        } catch {
           uploadedColors.push(color);
         }
       } else {
