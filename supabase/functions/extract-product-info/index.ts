@@ -1124,6 +1124,111 @@ Return JSON ONLY:
       }
     }
 
+    // ===== Strategy 3: Firecrawl fallback for JS-rendered sites with 0 colors =====
+    if (productInfo.colors.length === 0) {
+      const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+      if (firecrawlKey) {
+        console.log('No colors found, trying Firecrawl for JS-rendered content...');
+        try {
+          const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: url,
+              formats: ['html'],
+              waitFor: 3000,
+            }),
+          });
+
+          if (fcResp.ok) {
+            const fcData = await fcResp.json();
+            const renderedHtml = fcData.data?.html || fcData.html || '';
+            console.log('Firecrawl returned HTML length:', renderedHtml.length);
+
+            if (renderedHtml.length > 1000) {
+              // Re-run AI extraction on the rendered content focusing on colors
+              const colorRetryPrompt = `Extract ALL available color/variant options from this fully-rendered product page HTML.
+
+Product URL: ${url}
+
+Rendered HTML (first 80000 chars):
+${renderedHtml.substring(0, 80000)}
+
+IMPORTANT:
+- Extract EVERY color variant available - look for swatch elements, variant selectors, option buttons
+- Include color name in English and Arabic
+- Include image URL for each color if available
+- Extract hex color code if visible
+- If this is a filament/material product, colors may include: Jade White, Bambu Green, Black, etc.
+- DO NOT skip any colors
+
+Return ONLY JSON:
+{
+  "colors": [{"name": "English Name", "name_ar": "الاسم بالعربية", "hex_code": "#hexcode", "image_url": "url or null"}]
+}`;
+
+              const colorAiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${lovableApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'google/gemini-2.5-flash',
+                  messages: [
+                    { role: 'system', content: 'You are a product color extraction expert. Extract ALL color variants completely.' },
+                    { role: 'user', content: colorRetryPrompt }
+                  ],
+                  temperature: 0.1,
+                  max_tokens: 16000,
+                }),
+              });
+
+              if (colorAiResp.ok) {
+                const colorAiData = await colorAiResp.json();
+                const colorText = colorAiData.choices[0]?.message?.content || '';
+                const colorJsonMatch = colorText.match(/\{[\s\S]*\}/);
+                if (colorJsonMatch) {
+                  const colorResult = JSON.parse(colorJsonMatch[0]);
+                  if (colorResult.colors && Array.isArray(colorResult.colors)) {
+                    console.log('Firecrawl+AI found colors:', colorResult.colors.length);
+                    for (const c of colorResult.colors) {
+                      if (c.name && isValidColorName(c.name)) {
+                        const colorLower = c.name.toLowerCase();
+                        const info = Object.entries(COLOR_MAP).find(([k]) => colorLower.includes(k));
+                        let colorImageUrl = null;
+                        if (c.image_url && c.image_url.startsWith('http')) {
+                          colorImageUrl = normalizeImageUrl(c.image_url);
+                          variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                        }
+                        productInfo.colors.push({
+                          name: c.name,
+                          name_ar: info ? info[1].ar : c.name_ar || c.name,
+                          hex_code: info ? info[1].hex : c.hex_code || '#808080',
+                          image_url: colorImageUrl,
+                          in_stock: true,
+                          available_for_direct_sale: true,
+                          available_for_pre_order: false
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            const fcErr = await fcResp.text();
+            console.log('Firecrawl error:', fcResp.status, fcErr);
+          }
+        } catch (fcError) {
+          console.error('Firecrawl fallback error:', fcError);
+        }
+      }
+    }
+
     // Use direct images if none from AI
     // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
     if (productInfo.images.length === 0 && directImages.length > 0) {
