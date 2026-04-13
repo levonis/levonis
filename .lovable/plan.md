@@ -1,48 +1,49 @@
 
 
-# Fix: Color Hex Codes and Images Being Overridden by Generic COLOR_MAP
+# Fix: Bambu Lab Color Names, Hex Codes, and Images Accuracy
 
-## Problem
+## Root Cause
 
-In `extract-product-info/index.ts` (lines 855-866), when the AI extracts a color like "Translucent Teal" with hex `#77EDD7`, the code searches COLOR_MAP for a partial match ("teal" found in "translucent teal") and **replaces** the AI's accurate hex with the generic `#008080`. Same issue with `name_ar` - the specific Arabic translation is overridden.
-
-Additionally, color-specific images from the AI may be inaccurate since the source site is JS-rendered.
+1. **Colors found but inaccurate**: The AI finds 8-12 colors from its training data (the product name "PETG Translucent" is enough), but the hex codes and images are **hallucinated** because the server-rendered HTML has NO color/variant data
+2. **Firecrawl never triggers**: The fallback only runs when `colors.length === 0`, but the AI already guessed colors, so Firecrawl is skipped
+3. **Firecrawl fallback has old bug**: Even if it ran, lines 1221-1224 still have the broken COLOR_MAP-priority logic (not fixed in the last update)
+4. **Missing SKU codes in names**: The color name "Translucent Orange" should be "Translucent Orange (32300)" as shown on the actual site
 
 ## Fix
 
-### 1. Fix hex_code priority in `extract-product-info/index.ts` (lines 863-866)
+### In `extract-product-info/index.ts`:
 
-Change the logic so AI-provided hex_code takes priority over COLOR_MAP when the AI gave a valid hex:
+**Change 1**: For JS-rendered sites (like Bambu Lab), **always** use Firecrawl when available, regardless of whether the AI already guessed colors. Change condition from `if (productInfo.colors.length === 0)` to also trigger when the site is JS-rendered AND the Bambu Lab API failed:
 
 ```ts
-// Before (broken):
-hex_code: info ? info[1].hex : c.hex_code || '#808080',
-name_ar: info ? info[1].ar : c.name_ar || c.name,
+const shouldTryFirecrawl = productInfo.colors.length === 0 || 
+  (isJsRendered && !platformApiData && firecrawlKey);
+```
 
-// After (fixed):
+When Firecrawl returns better data (colors with valid image_urls from the actual site), **replace** the AI-guessed colors.
+
+**Change 2**: Fix the Firecrawl fallback color processing (lines 1221-1224) to match the fixed main logic:
+
+```ts
 hex_code: (c.hex_code && /^#[0-9A-Fa-f]{6}$/i.test(c.hex_code)) 
   ? c.hex_code 
   : (info ? info[1].hex : '#808080'),
 name_ar: c.name_ar || (info ? info[1].ar : c.name),
 ```
 
-This means: if AI gave a valid hex code, use it. Otherwise fall back to COLOR_MAP, then to `#808080`.
+**Change 3**: Enhance the Firecrawl color extraction prompt (lines 1167-1185) to include the same accuracy instructions:
+- Request exact hex codes from swatches, not generic approximations
+- Include SKU/variant codes in names (e.g., "Translucent Orange (32300)")
+- Extract the variant-specific product image URL (the image that shows when you click that color swatch)
+- Look for `background-color` CSS properties on swatch elements to get exact hex codes
 
-### 2. Improve AI prompt for hex accuracy (lines 718, 734-764)
+**Change 4**: Add better error logging for the Bambu Lab API call to understand why it's silently failing.
 
-Add explicit instruction in the prompt:
-- "For each color, provide the EXACT hex code that represents the actual shade - not a generic color. Example: Translucent Teal should be #77EDD7, not generic #008080"
-- "Include the color variant code/SKU number in the color name if shown on the page (e.g., 'Translucent Teal (32501)')"
+### In `retry-extract-colors/index.ts`:
 
-### 3. Same fix in `retry-extract-colors/index.ts`
-
-The retry function also needs the same prompt improvement to request exact hex codes and return them accurately (it already doesn't have COLOR_MAP override, but the prompt should be enhanced).
-
-### 4. Enhance prompt for color-specific images
-
-Add instruction: "For each color, the image_url MUST be the swatch image or product image showing THAT specific color variant - not the main product image."
+Same Firecrawl prompt enhancement for consistency.
 
 ## Files
-- `supabase/functions/extract-product-info/index.ts` — fix hex priority + enhance prompt
-- `supabase/functions/retry-extract-colors/index.ts` — enhance prompt for exact hex codes
+- `supabase/functions/extract-product-info/index.ts` — Firecrawl trigger condition, fix color priority bug, enhance prompt
+- `supabase/functions/retry-extract-colors/index.ts` — prompt enhancement
 
