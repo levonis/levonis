@@ -233,11 +233,13 @@ IMPORTANT:
 - Do NOT limit yourself to any number - extract ALL colors even if there are 100+
 - Include color name in English and Arabic
 - Include the image URL for each color if available
-- Extract hex color code if visible
+- For hex_code: provide the EXACT hex code for each color's actual shade — NOT a generic color. Example: "Translucent Teal" should be #77EDD7, not generic #008080
+- If a SKU/variant code is shown next to the color (e.g., "32501"), include it in the name
+- For image_url: use the swatch image or product image showing THAT specific color variant — NOT the main product image
 - Look at ALL image URLs for color-specific images
 - Check all data attributes, swatch elements, variant selectors
 - DO NOT summarize or skip any colors
-- If no color data is found in HTML, use your knowledge of this product (from the URL) to list all available colors
+- If no color data is found in HTML, use your knowledge of this product (from the URL) to list all available colors with accurate hex codes
 
 Return ONLY colors in this JSON format:
 {
