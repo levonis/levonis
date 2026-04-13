@@ -591,6 +591,31 @@ serve(async (req) => {
       );
     }
 
+    // ===== Strategy 1: Try platform-specific API for Bambu Lab =====
+    let platformApiData: any = null;
+    if (platform === 'bambulab') {
+      try {
+        const urlObj = new URL(url);
+        const slug = urlObj.pathname.split('/products/')[1]?.split('?')[0];
+        if (slug) {
+          console.log('Trying Bambu Lab API for slug:', slug);
+          const apiUrl = `${urlObj.origin}/api/spu/product?handle=${slug}`;
+          const apiResp = await fetch(apiUrl, {
+            headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
+          });
+          if (apiResp.ok) {
+            const apiJson = await apiResp.json();
+            if (apiJson && (apiJson.data || apiJson.product)) {
+              platformApiData = apiJson.data || apiJson.product || apiJson;
+              console.log('Bambu Lab API success, got structured data');
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Bambu Lab API failed:', e);
+      }
+    }
+
     // Fetch page
     let pageContent = '';
     let fetchSuccess = false;
@@ -615,7 +640,21 @@ serve(async (req) => {
       console.log('Fetch error:', e);
     }
 
-    if (!fetchSuccess) {
+    // ===== Strategy 2: Parse __NEXT_DATA__ from Next.js sites =====
+    let nextData: any = null;
+    if (fetchSuccess) {
+      try {
+        const nextMatch = pageContent.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+        if (nextMatch) {
+          nextData = JSON.parse(nextMatch[1]);
+          console.log('Found __NEXT_DATA__, extracting product info');
+        }
+      } catch (e) {
+        console.log('__NEXT_DATA__ parse failed:', e);
+      }
+    }
+
+    if (!fetchSuccess && !platformApiData) {
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -636,8 +675,23 @@ serve(async (req) => {
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
-    // AI extraction with enhanced prompt for Chinese sites
+    // AI extraction with enhanced prompt
     console.log('Using AI for extraction...');
+
+    // Build extra context from platform API or __NEXT_DATA__
+    let extraContext = '';
+    if (platformApiData) {
+      extraContext = `\n\n===== بيانات API المنصة (بيانات منظمة) =====\n${JSON.stringify(platformApiData).substring(0, 50000)}`;
+    }
+    if (nextData) {
+      const nextStr = JSON.stringify(nextData).substring(0, 50000);
+      extraContext += `\n\n===== __NEXT_DATA__ (بيانات Next.js المضمنة) =====\n${nextStr}`;
+    }
+
+    // Detect if site is JS-rendered (limited HTML content)
+    const isJsRendered = pageContent.includes('__next') || pageContent.includes('__NEXT_DATA__') || 
+      pageContent.includes('id="root"') || pageContent.includes('id="app"') ||
+      (pageContent.length < 5000 && !pageContent.includes('sku'));
 
     // First AI call: Extract product info from the page
     const prompt = `استخرج معلومات المنتج من صفحة الويب هذه وأرجعها بصيغة JSON فقط.
@@ -645,9 +699,9 @@ serve(async (req) => {
 الرابط: ${url}
 المنصة: ${platform}
 رقم المنتج: ${itemId || 'غير معروف'}
-
+${isJsRendered ? '\n⚠️ هذا موقع يعتمد على JavaScript لعرض المحتوى. إذا لم تجد بيانات الألوان في HTML، استخدم معرفتك عن هذا المنتج من الرابط أعلاه لاستخراج كل الألوان المتاحة.\n' : ''}
 محتوى HTML (أول 100000 حرف):
-${pageContent.substring(0, 100000)}
+${pageContent.substring(0, 100000)}${extraContext}
 
 أرجع JSON بالشكل التالي بالضبط:
 {
