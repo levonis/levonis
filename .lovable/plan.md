@@ -1,54 +1,48 @@
 
 
-# Fix: Color Extraction Inaccuracy for JS-Rendered Sites (e.g., Bambu Lab)
+# Fix: Color Hex Codes and Images Being Overridden by Generic COLOR_MAP
 
-## Root Cause
+## Problem
 
-The `extract-product-info` and `retry-extract-colors` edge functions use plain `fetch()` to get page HTML. For sites like Bambu Lab (React/Next.js), the color swatches are rendered by JavaScript and **do not exist in the server-rendered HTML**. The AI then receives HTML with zero color data and either guesses incorrectly or returns nothing.
+In `extract-product-info/index.ts` (lines 855-866), when the AI extracts a color like "Translucent Teal" with hex `#77EDD7`, the code searches COLOR_MAP for a partial match ("teal" found in "translucent teal") and **replaces** the AI's accurate hex with the generic `#008080`. Same issue with `name_ar` - the specific Arabic translation is overridden.
 
-## Solution: Multi-Strategy Extraction with Firecrawl Fallback
+Additionally, color-specific images from the AI may be inaccurate since the source site is JS-rendered.
 
-### Strategy 1: Enhance direct extraction for known platforms
+## Fix
 
-For Bambu Lab specifically, the site uses a known internal API pattern. Add platform-specific API fetching before falling back to HTML parsing.
+### 1. Fix hex_code priority in `extract-product-info/index.ts` (lines 863-866)
 
-**In `extract-product-info/index.ts`:**
-- For `bambulab` platform, try fetching from their internal product API endpoint (`/api/spu/product?handle=<slug>`) which returns structured JSON with all variants, colors, and options
-- Parse the structured response directly instead of relying on AI to guess from HTML
+Change the logic so AI-provided hex_code takes priority over COLOR_MAP when the AI gave a valid hex:
 
-### Strategy 2: Add Firecrawl as JS-rendering fallback
+```ts
+// Before (broken):
+hex_code: info ? info[1].hex : c.hex_code || '#808080',
+name_ar: info ? info[1].ar : c.name_ar || c.name,
 
-For any site where plain `fetch()` returns insufficient color data (0 colors extracted), use Firecrawl to get the fully JS-rendered page content.
+// After (fixed):
+hex_code: (c.hex_code && /^#[0-9A-Fa-f]{6}$/i.test(c.hex_code)) 
+  ? c.hex_code 
+  : (info ? info[1].hex : '#808080'),
+name_ar: c.name_ar || (info ? info[1].ar : c.name),
+```
 
-**Changes to `extract-product-info/index.ts`:**
-1. After the initial `fetch()` + AI extraction, check if colors array is empty
-2. If empty AND `FIRECRAWL_API_KEY` env var exists, make a second attempt using Firecrawl's scrape API to get the JS-rendered HTML
-3. Re-run AI extraction on the Firecrawl-rendered content
-4. Same logic applies to `retry-extract-colors/index.ts`
+This means: if AI gave a valid hex code, use it. Otherwise fall back to COLOR_MAP, then to `#808080`.
 
-### Strategy 3: Improve AI extraction prompt
+### 2. Improve AI prompt for hex accuracy (lines 718, 734-764)
 
-When the HTML clearly shows a JS-rendered site (contains `__NEXT_DATA__`, `__next`, React root divs):
-- Tell the AI to use its knowledge of the product URL to identify colors
-- Include the page URL prominently so the AI model can use its training data about the product
-- Add a specific instruction: "If no color data is found in HTML, use your knowledge of this product to list all available colors"
+Add explicit instruction in the prompt:
+- "For each color, provide the EXACT hex code that represents the actual shade - not a generic color. Example: Translucent Teal should be #77EDD7, not generic #008080"
+- "Include the color variant code/SKU number in the color name if shown on the page (e.g., 'Translucent Teal (32501)')"
 
-## Technical Changes
+### 3. Same fix in `retry-extract-colors/index.ts`
 
-### File: `supabase/functions/extract-product-info/index.ts`
+The retry function also needs the same prompt improvement to request exact hex codes and return them accurately (it already doesn't have COLOR_MAP override, but the prompt should be enhanced).
 
-1. **Add Bambu Lab API fetcher** (~20 lines) — before the generic fetch, try `https://us.store.bambulab.com/api/spu/product?handle={slug}` for bambulab platform
-2. **Add Firecrawl fallback** (~30 lines) — after AI extraction returns 0 colors, if `FIRECRAWL_API_KEY` is set, re-fetch with Firecrawl and retry
-3. **Improve AI prompt** — add instruction to use URL context and product knowledge when HTML lacks color data
-4. **Add `__NEXT_DATA__` parser** (~15 lines) — extract product data from Next.js embedded JSON if present
+### 4. Enhance prompt for color-specific images
 
-### File: `supabase/functions/retry-extract-colors/index.ts`
+Add instruction: "For each color, the image_url MUST be the swatch image or product image showing THAT specific color variant - not the main product image."
 
-1. **Same Firecrawl fallback** — if initial HTML has no color hints, use Firecrawl
-2. **Same AI prompt improvement** — tell AI to use product URL knowledge
-
-## Impact
-- Sites with JS-rendered color swatches (Bambu Lab, modern Shopify, custom React stores) will get accurate color extraction
-- No breaking changes for sites that already work (Chinese e-commerce with server-rendered HTML)
-- Firecrawl is optional — works with or without it, just better with it
+## Files
+- `supabase/functions/extract-product-info/index.ts` — fix hex priority + enhance prompt
+- `supabase/functions/retry-extract-colors/index.ts` — enhance prompt for exact hex codes
 
