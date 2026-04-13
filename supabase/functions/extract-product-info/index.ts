@@ -741,6 +741,18 @@ ${pageContent.substring(0, 100000)}${extraContext}
 3. ابحث عن أي عنصر فيه 颜色 أو 颜色分类 أو color
 4. استخرج الصور من: data-img, data-bigpic, background-image, src
 
+===== قواعد hex_code (مهم جداً) =====
+- لكل لون، أعطِ hex_code الدقيق الذي يمثل اللون الفعلي — ليس لون عام
+- مثال: Translucent Teal يجب أن يكون #77EDD7 وليس #008080 العام
+- إذا كان اللون ظاهراً كـ swatch في الصفحة، استخرج اللون الفعلي منه
+- إذا كان رقم المنتج/SKU ظاهراً بجانب اللون (مثل 32501)، أضفه للاسم
+- For each color, provide the EXACT hex code representing the actual shade, NOT a generic color
+
+===== قواعد صور الألوان (مهم جداً) =====
+- لكل لون، image_url يجب أن تكون صورة swatch أو صورة المنتج بهذا اللون تحديداً
+- لا تستخدم صورة المنتج الرئيسية لكل الألوان — كل لون له صورته الخاصة
+- ابحث عن صور variant-specific في الصفحة
+
 ترجمة الألوان الصينية:
 黑色=Black/أسود, 白色=White/أبيض, 红色=Red/أحمر, 蓝色=Blue/أزرق, 绿色=Green/أخضر
 黄色=Yellow/أصفر, 粉色=Pink/وردي, 紫色=Purple/بنفسجي, 灰色=Gray/رمادي, 棕色=Brown/بني
@@ -862,8 +874,10 @@ ${pageContent.substring(0, 100000)}${extraContext}
                 
                 productInfo.colors.push({
                   name: c.name,
-                  name_ar: info ? info[1].ar : c.name_ar || c.name,
-                  hex_code: info ? info[1].hex : c.hex_code || '#808080',
+                  name_ar: c.name_ar || (info ? info[1].ar : c.name),
+                  hex_code: (c.hex_code && /^#[0-9A-Fa-f]{6}$/i.test(c.hex_code)) 
+                    ? c.hex_code 
+                    : (info ? info[1].hex : '#808080'),
                   image_url: colorImageUrl,
                   in_stock: true,
                   available_for_direct_sale: true,
