@@ -231,12 +231,11 @@ ${nextDataContent ? `\n__NEXT_DATA__ (embedded JSON):\n${nextDataContent}\n` : '
 IMPORTANT: 
 - Extract EVERY SINGLE color variant available on the page - there may be 30, 40, 50+ colors
 - Do NOT limit yourself to any number - extract ALL colors even if there are 100+
-- Include color name in English and Arabic
-- Include the image URL for each color if available
-- For hex_code: provide the EXACT hex code for each color's actual shade — NOT a generic color. Example: "Translucent Teal" should be #77EDD7, not generic #008080
-- If a SKU/variant code is shown next to the color (e.g., "32501"), include it in the name
-- For image_url: use the swatch image or product image showing THAT specific color variant — NOT the main product image
-- Look at ALL image URLs for color-specific images
+- Include color name in English and accurate Arabic translation
+- Include the SKU/variant code in the color name if shown on the page (e.g., "Translucent Orange (32300)" NOT just "Translucent Orange")
+- For hex_code: extract the EXACT hex code from CSS background-color or style attributes on swatch elements. Do NOT use generic approximations. Example: "Translucent Teal" should be the exact shade like #77EDD7, NOT generic #008080
+- For image_url: use the variant-specific product image (the image shown when clicking that color swatch) — NOT the main product image. Do NOT hallucinate URLs - only use URLs found in the HTML
+- Look at CSS background-color properties on swatch/color selector elements for exact hex codes
 - Check all data attributes, swatch elements, variant selectors
 - DO NOT summarize or skip any colors
 - If no color data is found in HTML, use your knowledge of this product (from the URL) to list all available colors with accurate hex codes
