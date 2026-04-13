@@ -139,16 +139,32 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
       setRetryProgress(100);
       setRetryResult(data);
 
-      if (data.newColorsCount > 0) {
-        // Update product with new colors
+      if (data.newColorsCount > 0 || data.mode === 'replace') {
+        // Upsert: merge by normalized color name, replacing existing entries
         const existingColorsArray = Array.isArray(existingColors) ? existingColors : [];
-        const updatedColors = [...existingColorsArray, ...data.addedColors];
+        const colorMap = new Map<string, any>();
+        
+        // Add existing colors first
+        for (const c of existingColorsArray) {
+          const key = (c.name || '').toLowerCase().trim();
+          if (key) colorMap.set(key, c);
+        }
+        
+        // Upsert new colors (replace if same name exists)
+        for (const c of (data.addedColors || [])) {
+          const key = (c.name || '').toLowerCase().trim();
+          if (key) colorMap.set(key, { ...colorMap.get(key), ...c });
+        }
+        
+        const updatedColors = Array.from(colorMap.values());
         await supabase
           .from('products')
           .update({ colors: updatedColors })
           .eq('slug', request.code);
 
-        toast.success(`تم إضافة ${data.newColorsCount} لون جديد`);
+        toast.success(data.mode === 'replace' 
+          ? `تم تحديث ${updatedColors.length} لون`
+          : `تم إضافة ${data.newColorsCount} لون جديد`);
       } else {
         toast.info('لم يتم العثور على ألوان جديدة');
       }
