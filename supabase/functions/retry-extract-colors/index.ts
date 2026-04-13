@@ -299,6 +299,24 @@ Return ONLY colors in this JSON format:
 
     console.log('Extracted colors:', newColors.length);
 
+    // Validate image URLs against actual HTML content
+    const sourceHtml = firecrawlHtml || html;
+    const allUrlsInSource = new Set<string>();
+    const sourceUrlRegex = /https?:\/\/[^\s"'<>]+/gi;
+    let sourceUrlMatch;
+    while ((sourceUrlMatch = sourceUrlRegex.exec(sourceHtml)) !== null) {
+      allUrlsInSource.add(sourceUrlMatch[0].split('?')[0]);
+    }
+    for (const c of newColors) {
+      if (c.image_url) {
+        const baseUrl = c.image_url.split('?')[0];
+        if (!allUrlsInSource.has(baseUrl)) {
+          console.log('Removed hallucinated image URL for color:', c.name);
+          c.image_url = null;
+        }
+      }
+    }
+
     // Compare with existing colors to find new ones
     const existingColorNames = new Set(
       (existingColors || []).map((c: any) => c.name.toLowerCase())

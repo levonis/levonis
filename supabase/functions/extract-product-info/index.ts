@@ -859,6 +859,14 @@ ${pageContent.substring(0, 100000)}${extraContext}
             productInfo.weight_kg = parseFloat(ai.weight_kg) || null;
           }
           
+          // Collect all URLs actually present in the page HTML for validation
+          const allUrlsInPageHtml = new Set<string>();
+          const pageUrlRegex = /https?:\/\/[^\s"'<>]+/gi;
+          let pageUrlMatch;
+          while ((pageUrlMatch = pageUrlRegex.exec(pageContent)) !== null) {
+            allUrlsInPageHtml.add(pageUrlMatch[0].split('?')[0]);
+          }
+          
           // Process colors from AI
           if (ai.colors && Array.isArray(ai.colors)) {
             for (const c of ai.colors) {
@@ -868,8 +876,13 @@ ${pageContent.substring(0, 100000)}${extraContext}
                 
                 let colorImageUrl = null;
                 if (c.image_url && c.image_url.startsWith('http')) {
-                  colorImageUrl = normalizeImageUrl(c.image_url);
-                  variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                  const baseImgUrl = c.image_url.split('?')[0];
+                  if (allUrlsInPageHtml.has(baseImgUrl)) {
+                    colorImageUrl = normalizeImageUrl(c.image_url);
+                    variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                  } else {
+                    console.log('Removed hallucinated image URL for color:', c.name);
+                  }
                 }
                 
                 productInfo.colors.push({
@@ -1217,14 +1230,27 @@ Return ONLY JSON:
                       console.log('Replacing', productInfo.colors.length, 'AI-guessed colors with', colorResult.colors.length, 'Firecrawl colors');
                       productInfo.colors = [];
                     }
+                    // Collect all URLs from rendered HTML for validation
+                    const allUrlsInRenderedHtml = new Set<string>();
+                    const renderedUrlRegex = /https?:\/\/[^\s"'<>]+/gi;
+                    let renderedUrlMatch;
+                    while ((renderedUrlMatch = renderedUrlRegex.exec(renderedHtml)) !== null) {
+                      allUrlsInRenderedHtml.add(renderedUrlMatch[0].split('?')[0]);
+                    }
+                    
                     for (const c of colorResult.colors) {
                       if (c.name && isValidColorName(c.name)) {
                         const colorLower = c.name.toLowerCase();
                         const info = Object.entries(COLOR_MAP).find(([k]) => colorLower.includes(k));
                         let colorImageUrl = null;
                         if (c.image_url && c.image_url.startsWith('http')) {
-                          colorImageUrl = normalizeImageUrl(c.image_url);
-                          variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                          const baseImgUrl = c.image_url.split('?')[0];
+                          if (allUrlsInRenderedHtml.has(baseImgUrl)) {
+                            colorImageUrl = normalizeImageUrl(c.image_url);
+                            variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                          } else {
+                            console.log('Removed hallucinated Firecrawl image URL for color:', c.name);
+                          }
                         }
                         productInfo.colors.push({
                           name: c.name,
