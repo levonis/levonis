@@ -1250,7 +1250,6 @@ Return ONLY JSON:
         } catch (fcError) {
           console.error('Firecrawl fallback error:', fcError);
         }
-      }
     }
 
     // Use direct images if none from AI
