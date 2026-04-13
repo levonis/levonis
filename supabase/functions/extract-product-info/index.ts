@@ -1138,11 +1138,12 @@ Return JSON ONLY:
       }
     }
 
-    // ===== Strategy 3: Firecrawl fallback for JS-rendered sites with 0 colors =====
-    if (productInfo.colors.length === 0) {
-      const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-      if (firecrawlKey) {
-        console.log('No colors found, trying Firecrawl for JS-rendered content...');
+    // ===== Strategy 3: Firecrawl fallback for JS-rendered sites =====
+    const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+    const shouldTryFirecrawl = productInfo.colors.length === 0 || 
+      (isJsRendered && !platformApiData && firecrawlKey);
+    if (shouldTryFirecrawl && firecrawlKey) {
+        console.log('Trying Firecrawl for JS-rendered content (colors found:', productInfo.colors.length, ')...');
         try {
           const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
             method: 'POST',
@@ -1171,17 +1172,19 @@ Product URL: ${url}
 Rendered HTML (first 80000 chars):
 ${renderedHtml.substring(0, 80000)}
 
-IMPORTANT:
+CRITICAL INSTRUCTIONS:
 - Extract EVERY color variant available - look for swatch elements, variant selectors, option buttons
-- Include color name in English and Arabic
-- Include image URL for each color if available
-- Extract hex color code if visible
-- If this is a filament/material product, colors may include: Jade White, Bambu Green, Black, etc.
+- Include color name in English and Arabic translation
+- Include the SKU/variant code in the color name if shown (e.g., "Translucent Orange (32300)" NOT just "Translucent Orange")
+- For hex_code: extract the EXACT hex from CSS background-color or style attributes on swatch elements. Do NOT use generic colors. Example: "Translucent Teal" should be the exact shade like #77EDD7, NOT generic #008080
+- For image_url: use the variant-specific product image URL (the image that appears when clicking that color swatch), NOT the main product image
+- Look for data-color, aria-label, background-color CSS properties on color swatch elements
 - DO NOT skip any colors
+- DO NOT hallucinate image URLs - only use URLs that actually exist in the HTML
 
 Return ONLY JSON:
 {
-  "colors": [{"name": "English Name", "name_ar": "الاسم بالعربية", "hex_code": "#hexcode", "image_url": "url or null"}]
+  "colors": [{"name": "English Name (SKU)", "name_ar": "الاسم بالعربية", "hex_code": "#exact_hex", "image_url": "url or null"}]
 }`;
 
               const colorAiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -1209,6 +1212,11 @@ Return ONLY JSON:
                   const colorResult = JSON.parse(colorJsonMatch[0]);
                   if (colorResult.colors && Array.isArray(colorResult.colors)) {
                     console.log('Firecrawl+AI found colors:', colorResult.colors.length);
+                    // If we already had AI-guessed colors and Firecrawl found better ones, replace them
+                    if (productInfo.colors.length > 0 && colorResult.colors.length > 0) {
+                      console.log('Replacing', productInfo.colors.length, 'AI-guessed colors with', colorResult.colors.length, 'Firecrawl colors');
+                      productInfo.colors = [];
+                    }
                     for (const c of colorResult.colors) {
                       if (c.name && isValidColorName(c.name)) {
                         const colorLower = c.name.toLowerCase();
@@ -1220,8 +1228,10 @@ Return ONLY JSON:
                         }
                         productInfo.colors.push({
                           name: c.name,
-                          name_ar: info ? info[1].ar : c.name_ar || c.name,
-                          hex_code: info ? info[1].hex : c.hex_code || '#808080',
+                          name_ar: c.name_ar || (info ? info[1].ar : c.name),
+                          hex_code: (c.hex_code && /^#[0-9A-Fa-f]{6}$/i.test(c.hex_code)) 
+                            ? c.hex_code 
+                            : (info ? info[1].hex : '#808080'),
                           image_url: colorImageUrl,
                           in_stock: true,
                           available_for_direct_sale: true,
