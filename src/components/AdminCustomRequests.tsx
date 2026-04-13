@@ -146,7 +146,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
         
         // Add existing colors first
         for (const c of existingColorsArray) {
-          const key = (c.name || '').toLowerCase().trim();
+          const key = ((c as any).name || '').toLowerCase().trim();
           if (key) colorMap.set(key, c);
         }
         
