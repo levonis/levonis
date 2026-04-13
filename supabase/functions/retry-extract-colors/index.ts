@@ -64,6 +64,16 @@ serve(async (req) => {
 
     const html = await pageResponse.text();
     
+    // ===== Parse __NEXT_DATA__ for Next.js sites =====
+    let nextDataContent = '';
+    try {
+      const nextMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+      if (nextMatch) {
+        nextDataContent = nextMatch[1].substring(0, 30000);
+        console.log('Found __NEXT_DATA__ in page');
+      }
+    } catch {}
+
     // Extract all image URLs and alt texts
     const imageUrls: string[] = [];
     const altTexts: string[] = [];
@@ -164,23 +174,60 @@ serve(async (req) => {
 
     console.log('Found color hints:', combinedHints.length);
 
+    // Detect if site is JS-rendered
+    const isJsRendered = html.includes('__next') || html.includes('__NEXT_DATA__') ||
+      html.includes('id="root"') || html.includes('id="app"');
+
+    // ===== Firecrawl fallback if no color hints and JS-rendered =====
+    let firecrawlHtml = '';
+    if (combinedHints.length === 0 && isJsRendered) {
+      const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+      if (firecrawlKey) {
+        console.log('No color hints found on JS-rendered site, using Firecrawl...');
+        try {
+          const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url, formats: ['html'], waitFor: 3000 }),
+          });
+          if (fcResp.ok) {
+            const fcData = await fcResp.json();
+            firecrawlHtml = fcData.data?.html || fcData.html || '';
+            console.log('Firecrawl HTML length:', firecrawlHtml.length);
+          } else {
+            console.log('Firecrawl error:', fcResp.status);
+          }
+        } catch (e) {
+          console.error('Firecrawl error:', e);
+        }
+      }
+    }
+
     // Get LOVABLE_API_KEY
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Prepare prompt for AI
+    // Prepare prompt for AI — use Firecrawl HTML if available, otherwise original
+    const contentForAi = firecrawlHtml.length > 1000 ? firecrawlHtml.substring(0, 80000) : '';
+    
     const prompt = `Extract ALL available color options from this product page. 
     
+Product URL: ${url}
+${isJsRendered ? '\n⚠️ This is a JavaScript-rendered site. If color data is not visible in HTML, use your knowledge of this product URL to identify all available colors.\n' : ''}
 Previous extraction found ${existingColors?.length || 0} colors. Please extract ALL colors again to ensure none are missed.
 
+${contentForAi ? `Fully rendered HTML:\n${contentForAi}\n` : ''}
 Image URLs with ALT texts:
 ${altSrcPairs.slice(0, 200).map((p, i) => `${i + 1}. ${p.alt} -> ${p.src}`).join('\n')}
 
 Color candidates from page:
 ${combinedHints.slice(0, 500).join(', ')}
-
+${nextDataContent ? `\n__NEXT_DATA__ (embedded JSON):\n${nextDataContent}\n` : ''}
 IMPORTANT: 
 - Extract EVERY SINGLE color variant available on the page - there may be 30, 40, 50+ colors
 - Do NOT limit yourself to any number - extract ALL colors even if there are 100+
@@ -190,6 +237,7 @@ IMPORTANT:
 - Look at ALL image URLs for color-specific images
 - Check all data attributes, swatch elements, variant selectors
 - DO NOT summarize or skip any colors
+- If no color data is found in HTML, use your knowledge of this product (from the URL) to list all available colors
 
 Return ONLY colors in this JSON format:
 {
