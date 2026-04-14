@@ -752,6 +752,20 @@ const Admin = () => {
       });
 
       if (response.error) {
+        // Try to read data even on error - edge function may return useful info
+        const errorData = response.data;
+        if (errorData?.requiresManualInput) {
+          setExtractionItemId(errorData.item_id || '');
+          setExtractionPlatform(errorData.platform || 'taobao');
+          setShowManualInput(true);
+          toast.info(errorData.message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
+          return;
+        }
+        if (errorData?.error) {
+          setShowManualInput(true);
+          toast.error(errorData.error);
+          return;
+        }
         throw new Error(response.error.message || 'فشل في استخراج المعلومات');
       }
 
