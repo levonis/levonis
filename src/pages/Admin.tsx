@@ -804,7 +804,7 @@ const Admin = () => {
     } catch (error) {
       console.error('Error extracting product info:', error);
       setShowManualInput(true);
-      toast.error('Taobao يحظر الوصول. استخدم الإدخال اليدوي.');
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء الاستخراج - استخدم الإدخال اليدوي');
     } finally {
       setExtractingInfo(false);
     }
