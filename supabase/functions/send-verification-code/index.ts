@@ -215,7 +215,7 @@ const handler = async (req: Request): Promise<Response> => {
     const email = emailValidation.sanitized;
 
   // Allow password_reset and signup types
-    const allowedTypes = ['password_reset', 'signup'];
+    const allowedTypes = ['password_reset', 'signup', 'password_change', 'email_change'];
     if (!type || !allowedTypes.includes(type)) {
       return new Response(
         JSON.stringify({ success: false, error: "نوع الطلب غير مدعوم" }),
