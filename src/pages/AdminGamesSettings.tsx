@@ -10,8 +10,9 @@ const StackGameTab = lazy(() => import("@/components/admin/StackGameTab"));
 const GameStoreTab = lazy(() => import("@/components/admin/GameStoreTab"));
 const KnifeRainTab = lazy(() => import("@/components/admin/KnifeRainTab"));
 const CrossyRoadTab = lazy(() => import("@/components/admin/CrossyRoadTab"));
+const GachaAdminTab = lazy(() => import("@/components/admin/GachaAdminTab"));
 
-type TabId = "mystery-case" | "space-blaster" | "stack-tower" | "knife-rain" | "crossy-road" | "music" | "store";
+type TabId = "mystery-case" | "space-blaster" | "stack-tower" | "knife-rain" | "crossy-road" | "gacha" | "music" | "store";
 
 const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "mystery-case", label: "صندوق الغموض", icon: Gift },
@@ -19,6 +20,7 @@ const TABS: { id: TabId; label: string; icon: typeof Gamepad2 }[] = [
   { id: "stack-tower", label: "البرج", icon: Gamepad2 },
   { id: "knife-rain", label: "أمطار السكاكين", icon: Crosshair },
   { id: "crossy-road", label: "اعبر الطريق", icon: PersonStanding },
+  { id: "gacha", label: "الغاتشا", icon: Gift },
   { id: "store", label: "متجر الألعاب", icon: ShoppingBag },
   { id: "music", label: "الموسيقى", icon: Music },
 ];
@@ -60,6 +62,7 @@ export default function AdminGamesSettings() {
         {activeTab === "stack-tower" && <StackGameTab />}
         {activeTab === "knife-rain" && <KnifeRainTab />}
         {activeTab === "crossy-road" && <CrossyRoadTab />}
+        {activeTab === "gacha" && <GachaAdminTab />}
         {activeTab === "store" && <GameStoreTab />}
         {activeTab === "music" && <GameMusicTab />}
       </Suspense>

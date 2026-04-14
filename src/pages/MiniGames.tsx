@@ -18,6 +18,7 @@ const MysteryCase = lazy(() => import("@/components/games/mystery-case/MysteryCa
 const StackGame = lazy(() => import("@/components/games/stack-game/StackGame"));
 const KnifeRainGame = lazy(() => import("@/components/games/knife-rain/KnifeRainGame"));
 const CrossyRoadGame = lazy(() => import("@/components/games/crossy-road/CrossyRoadGame"));
+const GachaLanding = lazy(() => import("@/components/games/gacha/GachaLanding"));
 const GameStore = lazy(() => import("@/components/games/GameStore"));
 const MyGamePrizes = lazy(() => import("@/components/games/MyGamePrizes"));
 import AdRewardSection from "@/components/games/AdRewardSection";
@@ -205,6 +206,9 @@ export default function MiniGames() {
             )}
             {activeGame === 'crossy_road' && (
               <CrossyRoadGame onBack={() => setActiveGame(null)} />
+            )}
+            {activeGame === 'gacha' && (
+              <GachaLanding onBack={() => setActiveGame(null)} />
             )}
           </Suspense>
         </div>

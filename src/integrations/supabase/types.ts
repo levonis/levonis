@@ -3073,6 +3073,790 @@ export type Database = {
           },
         ]
       }
+      gacha_advice_cards: {
+        Row: {
+          content: string
+          content_ar: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          rarity_tier_id: string | null
+          title: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          content_ar: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          rarity_tier_id?: string | null
+          title: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          content_ar?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          rarity_tier_id?: string | null
+          title?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_advice_cards_rarity_tier_id_fkey"
+            columns: ["rarity_tier_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_rarity_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_coupons: {
+        Row: {
+          coupon_type: string
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          discount_type: string | null
+          discount_value: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          max_uses_per_user: number | null
+          min_purchase: number | null
+          title: string
+          title_ar: string
+          updated_at: string
+          validity_days: number | null
+        }
+        Insert: {
+          coupon_type?: string
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_uses_per_user?: number | null
+          min_purchase?: number | null
+          title: string
+          title_ar: string
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Update: {
+          coupon_type?: string
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_uses_per_user?: number | null
+          min_purchase?: number | null
+          title?: string
+          title_ar?: string
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Relationships: []
+      }
+      gacha_dolls: {
+        Row: {
+          base_price: number
+          collection_category: string | null
+          created_at: string
+          current_price: number
+          demand_score: number
+          description: string | null
+          description_ar: string | null
+          doll_number: number
+          id: string
+          image_url: string | null
+          is_limited: boolean
+          is_seasonal: boolean
+          is_tradable: boolean
+          model_url: string | null
+          name: string
+          name_ar: string
+          rarity_tier_id: string | null
+          season_tag: string | null
+          supply_count: number
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          collection_category?: string | null
+          created_at?: string
+          current_price?: number
+          demand_score?: number
+          description?: string | null
+          description_ar?: string | null
+          doll_number: number
+          id?: string
+          image_url?: string | null
+          is_limited?: boolean
+          is_seasonal?: boolean
+          is_tradable?: boolean
+          model_url?: string | null
+          name: string
+          name_ar: string
+          rarity_tier_id?: string | null
+          season_tag?: string | null
+          supply_count?: number
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          collection_category?: string | null
+          created_at?: string
+          current_price?: number
+          demand_score?: number
+          description?: string | null
+          description_ar?: string | null
+          doll_number?: number
+          id?: string
+          image_url?: string | null
+          is_limited?: boolean
+          is_seasonal?: boolean
+          is_tradable?: boolean
+          model_url?: string | null
+          name?: string
+          name_ar?: string
+          rarity_tier_id?: string | null
+          season_tag?: string | null
+          supply_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_dolls_rarity_tier_id_fkey"
+            columns: ["rarity_tier_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_rarity_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_guaranteed_claims: {
+        Row: {
+          claim_count: number
+          created_at: string
+          id: string
+          machine_id: string
+          rule_id: string
+          user_id: string
+        }
+        Insert: {
+          claim_count?: number
+          created_at?: string
+          id?: string
+          machine_id: string
+          rule_id: string
+          user_id: string
+        }
+        Update: {
+          claim_count?: number
+          created_at?: string
+          id?: string
+          machine_id?: string
+          rule_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_guaranteed_claims_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_guaranteed_claims_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_guaranteed_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_guaranteed_rules: {
+        Row: {
+          condition_type: string
+          condition_value: number
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          is_repeatable: boolean
+          machine_id: string
+          new_users_only: boolean
+          per_user_limit: number | null
+          priority_order: number
+          reward_image_url: string | null
+          reward_name: string
+          reward_name_ar: string
+          reward_ref_id: string | null
+          reward_type: string
+          rule_name: string
+          rule_name_ar: string
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          condition_type: string
+          condition_value?: number
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_repeatable?: boolean
+          machine_id: string
+          new_users_only?: boolean
+          per_user_limit?: number | null
+          priority_order?: number
+          reward_image_url?: string | null
+          reward_name: string
+          reward_name_ar: string
+          reward_ref_id?: string | null
+          reward_type: string
+          rule_name: string
+          rule_name_ar: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_repeatable?: boolean
+          machine_id?: string
+          new_users_only?: boolean
+          per_user_limit?: number | null
+          priority_order?: number
+          reward_image_url?: string | null
+          reward_name?: string
+          reward_name_ar?: string
+          reward_ref_id?: string | null
+          reward_type?: string
+          rule_name?: string
+          rule_name_ar?: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_guaranteed_rules_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_machine_prizes: {
+        Row: {
+          created_at: string
+          drop_weight: number
+          id: string
+          is_active: boolean
+          machine_id: string
+          points_value: number | null
+          prize_image_url: string | null
+          prize_name: string
+          prize_name_ar: string
+          prize_ref_id: string | null
+          prize_type: string
+          rarity_tier_id: string | null
+          stock: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          drop_weight?: number
+          id?: string
+          is_active?: boolean
+          machine_id: string
+          points_value?: number | null
+          prize_image_url?: string | null
+          prize_name: string
+          prize_name_ar: string
+          prize_ref_id?: string | null
+          prize_type: string
+          rarity_tier_id?: string | null
+          stock?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          drop_weight?: number
+          id?: string
+          is_active?: boolean
+          machine_id?: string
+          points_value?: number | null
+          prize_image_url?: string | null
+          prize_name?: string
+          prize_name_ar?: string
+          prize_ref_id?: string | null
+          prize_type?: string
+          rarity_tier_id?: string | null
+          stock?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_machine_prizes_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_machine_prizes_rarity_tier_id_fkey"
+            columns: ["rarity_tier_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_rarity_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_machines: {
+        Row: {
+          available_from: string | null
+          available_until: string | null
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_limited: boolean
+          model_url: string | null
+          multi_spin_options: Json
+          name: string
+          name_ar: string
+          theme: string
+          ticket_cost: number
+          updated_at: string
+        }
+        Insert: {
+          available_from?: string | null
+          available_until?: string | null
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_limited?: boolean
+          model_url?: string | null
+          multi_spin_options?: Json
+          name: string
+          name_ar: string
+          theme?: string
+          ticket_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          available_from?: string | null
+          available_until?: string | null
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_limited?: boolean
+          model_url?: string | null
+          multi_spin_options?: Json
+          name?: string
+          name_ar?: string
+          theme?: string
+          ticket_cost?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gacha_marketplace: {
+        Row: {
+          asking_price: number
+          buyer_id: string | null
+          created_at: string
+          doll_id: string
+          id: string
+          inventory_item_id: string
+          seller_id: string
+          sold_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          asking_price: number
+          buyer_id?: string | null
+          created_at?: string
+          doll_id: string
+          id?: string
+          inventory_item_id: string
+          seller_id: string
+          sold_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          asking_price?: number
+          buyer_id?: string | null
+          created_at?: string
+          doll_id?: string
+          id?: string
+          inventory_item_id?: string
+          seller_id?: string
+          sold_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_marketplace_doll_id_fkey"
+            columns: ["doll_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_dolls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_marketplace_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_user_inventory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_price_history: {
+        Row: {
+          demand_score: number | null
+          doll_id: string
+          id: string
+          price: number
+          snapshot_at: string
+          supply_count: number | null
+        }
+        Insert: {
+          demand_score?: number | null
+          doll_id: string
+          id?: string
+          price: number
+          snapshot_at?: string
+          supply_count?: number | null
+        }
+        Update: {
+          demand_score?: number | null
+          doll_id?: string
+          id?: string
+          price?: number
+          snapshot_at?: string
+          supply_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_price_history_doll_id_fkey"
+            columns: ["doll_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_dolls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_rarity_tiers: {
+        Row: {
+          color: string
+          created_at: string
+          display_order: number
+          drop_weight: number
+          glow_color: string
+          id: string
+          name: string
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          drop_weight?: number
+          glow_color?: string
+          id?: string
+          name: string
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          display_order?: number
+          drop_weight?: number
+          glow_color?: string
+          id?: string
+          name?: string
+          name_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gacha_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      gacha_spins: {
+        Row: {
+          created_at: string
+          guaranteed_rule_id: string | null
+          id: string
+          is_guaranteed: boolean
+          machine_id: string
+          prize_id: string | null
+          prize_name: string
+          prize_name_ar: string
+          prize_type: string
+          rarity_tier_id: string | null
+          tickets_spent: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          guaranteed_rule_id?: string | null
+          id?: string
+          is_guaranteed?: boolean
+          machine_id: string
+          prize_id?: string | null
+          prize_name: string
+          prize_name_ar: string
+          prize_type: string
+          rarity_tier_id?: string | null
+          tickets_spent?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          guaranteed_rule_id?: string | null
+          id?: string
+          is_guaranteed?: boolean
+          machine_id?: string
+          prize_id?: string | null
+          prize_name?: string
+          prize_name_ar?: string
+          prize_type?: string
+          rarity_tier_id?: string | null
+          tickets_spent?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_spins_guaranteed_rule_id_fkey"
+            columns: ["guaranteed_rule_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_guaranteed_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_spins_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_spins_prize_id_fkey"
+            columns: ["prize_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_machine_prizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_spins_rarity_tier_id_fkey"
+            columns: ["rarity_tier_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_rarity_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_transactions: {
+        Row: {
+          amount: number
+          counterparty_id: string | null
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          counterparty_id?: string | null
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          counterparty_id?: string | null
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gacha_user_coupons: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          spin_id: string | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          spin_id?: string | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          spin_id?: string | null
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_user_coupons_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_user_coupons_spin_id_fkey"
+            columns: ["spin_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_spins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gacha_user_inventory: {
+        Row: {
+          acquired_from: string
+          acquired_price: number | null
+          created_at: string
+          doll_id: string
+          id: string
+          is_listed: boolean
+          spin_id: string | null
+          user_id: string
+        }
+        Insert: {
+          acquired_from?: string
+          acquired_price?: number | null
+          created_at?: string
+          doll_id: string
+          id?: string
+          is_listed?: boolean
+          spin_id?: string | null
+          user_id: string
+        }
+        Update: {
+          acquired_from?: string
+          acquired_price?: number | null
+          created_at?: string
+          doll_id?: string
+          id?: string
+          is_listed?: boolean
+          spin_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gacha_user_inventory_doll_id_fkey"
+            columns: ["doll_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_dolls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gacha_user_inventory_spin_id_fkey"
+            columns: ["spin_id"]
+            isOneToOne: false
+            referencedRelation: "gacha_spins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_music_stations: {
         Row: {
           created_at: string
