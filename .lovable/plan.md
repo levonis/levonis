@@ -1,66 +1,33 @@
 
 
-# Fix: رسالة الخطأ "Taobao يحظر الوصول" المضللة
+# Fix: extractSkuData Missing Return Statement
 
-## المشكلة
+## Root Cause
 
-عند فشل استخراج معلومات المنتج، يظهر دائماً "Taobao يحظر الوصول. استخدم الإدخال اليدوي." حتى لو كان الخطأ لسبب آخر (مثل خطأ شبكة، أو edge function أرجعت خطأ مع بيانات مفيدة).
+The function `extractSkuData` in `supabase/functions/extract-product-info/index.ts` (line 324-452) **does not have a return statement**. It builds `colors` and `options` arrays, logs them at line 451, but never returns them. So `directSkuData` on line 798 is `undefined`, and line 800's `directSkuData.colors.length` crashes with `Cannot read properties of undefined (reading 'colors')`.
 
-## السبب
+This explains:
+- Why EVERY Bambu Lab extraction attempt fails with the same error
+- Why the error is at compiled line 1423 (mapping to source line 800)
+- Why the log shows `Direct SKU extraction: 0 colors, 0 options` (from inside the function at line 451) but never shows line 800's log
 
-في `src/pages/Admin.tsx` سطر 754-755:
+## Fix
+
+Add `return { colors, options };` at the end of the `extractSkuData` function, before the closing `}` at line 452.
+
 ```ts
-if (response.error) {
-  throw new Error(response.error.message || 'فشل في استخراج المعلومات');
+// Line 451-452, change from:
+  console.log(`Direct SKU extraction: ${colors.length} colors, ${options.length} options`);
+}
+
+// To:
+  console.log(`Direct SKU extraction: ${colors.length} colors, ${options.length} options`);
+  return { colors, options };
 }
 ```
 
-عندما الـ edge function ترجع status غير 200 (مثل 400 أو 500)، `supabase.functions.invoke` يضع `response.error` — لكن `response.data` لا يزال يحتوي على البيانات المفيدة مثل `requiresManualInput` و `message` و `item_id`. لكن الكود يعمل `throw` مباشرة بدون قراءة `response.data`.
+## File
+- `supabase/functions/extract-product-info/index.ts` — add missing `return` statement in `extractSkuData` (line 452)
 
-النتيجة: الـ catch block (سطر 790-793) يعرض دائماً الرسالة المضللة "Taobao يحظر الوصول".
-
-## الحل
-
-تعديل `src/pages/Admin.tsx` في دالة `handleExtractProductInfo`:
-
-1. **قبل throw، محاولة قراءة `response.data`** — إذا فيها `requiresManualInput` أو `error` أو `message`، نستخدمها بدل throw
-2. **تغيير رسالة الـ catch** — من "Taobao يحظر الوصول" إلى رسالة عامة مثل "حدث خطأ أثناء الاستخراج - استخدم الإدخال اليدوي" مع عرض تفاصيل الخطأ الفعلي
-
-```ts
-// بدل:
-if (response.error) {
-  throw new Error(response.error.message || 'فشل في استخراج المعلومات');
-}
-
-// يصبح:
-if (response.error) {
-  // Try to read data even on error - edge function may return useful info
-  const data = response.data;
-  if (data?.requiresManualInput) {
-    setExtractionItemId(data.item_id || '');
-    setExtractionPlatform(data.platform || 'taobao');
-    setShowManualInput(true);
-    toast.info(data.message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
-    return;
-  }
-  if (data?.error) {
-    setShowManualInput(true);
-    toast.error(data.error);
-    return;
-  }
-  throw new Error(response.error.message || 'فشل في استخراج المعلومات');
-}
-```
-
-3. **تحديث رسالة catch العامة**:
-```ts
-catch (error) {
-  console.error('Error extracting product info:', error);
-  setShowManualInput(true);
-  toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء الاستخراج - استخدم الإدخال اليدوي');
-}
-```
-
-## الملف المتأثر
-- `src/pages/Admin.tsx` — تعديل دالة `handleExtractProductInfo` (سطر 749-796)
+After this one-line fix, the edge function needs to be redeployed.
 
