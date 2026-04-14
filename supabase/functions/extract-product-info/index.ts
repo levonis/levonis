@@ -449,6 +449,7 @@ function extractSkuData(html: string): { colors: any[], options: any[] } {
   }
 
   console.log(`Direct SKU extraction: ${colors.length} colors, ${options.length} options`);
+  return { colors, options };
 }
 
 // ===== Bambu Lab deterministic color-image parser =====
