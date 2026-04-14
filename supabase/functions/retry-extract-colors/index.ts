@@ -7,54 +7,9 @@ const corsHeaders = {
 };
 
 // Bambu Lab deterministic color-image parser
+// Parses rendered HTML to find color swatches with names (including SKU codes)
 function parseBambuLabColors(html: string): Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> {
   const colors: Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> = [];
-
-  // Extract color names + hex codes from spec table
-  const colorTablePattern = /<td[^>]*>\s*((?:Translucent|Matte|Glossy|Basic|Silk|Marble|Support)\s+\w[\w\s]*?)\s*<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
-  const tableColors: Array<{name: string; hex: string}> = [];
-  let tableMatch;
-  while ((tableMatch = colorTablePattern.exec(html)) !== null) {
-    tableColors.push({ name: tableMatch[1].trim(), hex: '#' + tableMatch[2] });
-  }
-
-  // Fallback: comment-based pattern
-  if (tableColors.length === 0) {
-    const commentPattern = /<!--\s*([\w\s]+?)\s*-->\s*<tr[^>]*>\s*<td[^>]*>([^<]+)<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
-    let commentMatch;
-    while ((commentMatch = commentPattern.exec(html)) !== null) {
-      tableColors.push({ name: commentMatch[2].trim(), hex: '#' + commentMatch[3] });
-    }
-  }
-
-  console.log('Bambu parser: found', tableColors.length, 'colors in spec table');
-
-  // Extract JP-prefixed gallery images in order
-  const jpImagePattern = /https:\/\/store\.bblcdn\.com\/s7\/default\/[^\/]+\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
-  const jpImages: Map<string, string> = new Map();
-  let jpMatch;
-  while ((jpMatch = jpImagePattern.exec(html)) !== null) {
-    const fullUrl = jpMatch[0].split('__op__')[0];
-    const jpCode = jpMatch[1].match(/^JP\d{5}/)?.[0];
-    if (jpCode && !jpImages.has(jpCode)) {
-      jpImages.set(jpCode, fullUrl);
-    }
-  }
-
-  if (jpImages.size === 0) {
-    const altJpPattern = /https:\/\/store\.bblcdn\.com[^"'\s<>]*\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
-    let altMatch;
-    while ((altMatch = altJpPattern.exec(html)) !== null) {
-      const fullUrl = altMatch[0].split('__op__')[0];
-      const jpCode = altMatch[1].match(/^JP\d{5}/)?.[0];
-      if (jpCode && !jpImages.has(jpCode)) {
-        jpImages.set(jpCode, fullUrl);
-      }
-    }
-  }
-
-  const orderedJpUrls = Array.from(jpImages.values());
-  console.log('Bambu parser: found', orderedJpUrls.length, 'JP variant images');
 
   const bambuColorArMap: Record<string, string> = {
     'gray': 'رمادي', 'grey': 'رمادي',
@@ -66,28 +21,75 @@ function parseBambuLabColors(html: string): Array<{name: string; name_ar: string
     'yellow': 'أصفر', 'white': 'أبيض',
     'black': 'أسود', 'gold': 'ذهبي',
     'silver': 'فضي', 'jade': 'أخضر يشمي',
-    'translucent': 'شفاف',
+    'translucent': 'شفاف', 'clear': 'شفاف',
   };
 
-  for (let i = 0; i < tableColors.length; i++) {
-    const { name, hex } = tableColors[i];
-    const imageUrl = i < orderedJpUrls.length ? orderedJpUrls[i] : null;
+  // Primary: Parse <li value="ColorName (SKU)"> with <img> inside
+  const swatchPattern = /<li[^>]*value="([^"]+)"[^>]*class="[^"]*(?:rounded-full|color)[^"]*"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>[\s\S]*?<\/li>/gi;
+  let swatchMatch;
+  const seenNames = new Set<string>();
+  
+  while ((swatchMatch = swatchPattern.exec(html)) !== null) {
+    const fullName = swatchMatch[1].trim();
+    const swatchImageUrl = swatchMatch[2].trim();
+    
+    if (seenNames.has(fullName.toLowerCase())) continue;
+    seenNames.add(fullName.toLowerCase());
 
-    const nameLower = name.toLowerCase();
-    let nameAr = name;
+    const nameLower = fullName.toLowerCase();
+    let nameAr = fullName;
     for (const [key, ar] of Object.entries(bambuColorArMap)) {
       if (nameLower.includes(key)) {
-        nameAr = nameLower.includes('translucent') && key !== 'translucent'
-          ? `شفاف ${ar}`
-          : ar;
+        nameAr = (nameLower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
         break;
       }
     }
 
-    colors.push({ name, name_ar: nameAr, hex_code: hex, image_url: imageUrl });
-    console.log(`  Color ${i + 1}: ${name} (${hex}) -> ${imageUrl ? 'has image' : 'no image'}`);
+    let hexCode = '#808080';
+    const matchStart = Math.max(0, swatchMatch.index - 500);
+    const matchEnd = Math.min(html.length, swatchMatch.index + swatchMatch[0].length + 500);
+    const nearbyHtml = html.substring(matchStart, matchEnd);
+    const hexMatch = nearbyHtml.match(/background-color:\s*#([0-9a-fA-F]{6})/i);
+    if (hexMatch) hexCode = '#' + hexMatch[1];
+
+    const imageUrl = swatchImageUrl.startsWith('http') ? swatchImageUrl : null;
+    colors.push({ name: fullName, name_ar: nameAr, hex_code: hexCode, image_url: imageUrl });
+    console.log(`  Bambu swatch: ${fullName} -> ${imageUrl ? 'has image' : 'no image'}`);
   }
 
+  // Fallback: spec table + JP images
+  if (colors.length === 0) {
+    const colorTablePattern = /<td[^>]*>\s*((?:Translucent|Matte|Glossy|Basic|Silk|Marble|Support|Clear)\s*\w[\w\s]*?)\s*<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
+    const tableColors: Array<{name: string; hex: string}> = [];
+    let tableMatch;
+    while ((tableMatch = colorTablePattern.exec(html)) !== null) {
+      tableColors.push({ name: tableMatch[1].trim(), hex: '#' + tableMatch[2] });
+    }
+    const jpImagePattern = /https:\/\/store\.bblcdn\.com[^"'\s<>]*\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
+    const jpImages: Map<string, string> = new Map();
+    let jpMatch;
+    while ((jpMatch = jpImagePattern.exec(html)) !== null) {
+      const fullUrl = jpMatch[0].split('__op__')[0];
+      const jpCode = jpMatch[1].match(/^JP\d{5}/)?.[0];
+      if (jpCode && !jpImages.has(jpCode)) jpImages.set(jpCode, fullUrl);
+    }
+    const orderedJpUrls = Array.from(jpImages.values());
+    for (let i = 0; i < tableColors.length; i++) {
+      const { name, hex } = tableColors[i];
+      const imageUrl = i < orderedJpUrls.length ? orderedJpUrls[i] : null;
+      const nameLower = name.toLowerCase();
+      let nameAr = name;
+      for (const [key, ar] of Object.entries(bambuColorArMap)) {
+        if (nameLower.includes(key)) {
+          nameAr = (nameLower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+          break;
+        }
+      }
+      colors.push({ name, name_ar: nameAr, hex_code: hex, image_url: imageUrl });
+    }
+  }
+
+  console.log('Bambu parser: found', colors.length, 'colors total');
   return colors;
 }
 
@@ -146,12 +148,38 @@ serve(async (req) => {
     if (!pageResponse.ok) {
       throw new Error(`Failed to fetch page: ${pageResponse.statusText}`);
     }
-
     const html = await pageResponse.text();
 
-    // ===== Try Bambu Lab deterministic parser first =====
+    // ===== Try Bambu Lab deterministic parser =====
     if (isBambuLab) {
-      const bambuColors = parseBambuLabColors(html);
+      // First try raw HTML
+      let bambuColors = parseBambuLabColors(html);
+      
+      // If raw HTML has no swatch data, try Firecrawl for rendered HTML
+      if (bambuColors.length === 0) {
+        console.log('Bambu parser found 0 in raw HTML, trying Firecrawl...');
+        const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+        if (firecrawlKey) {
+          try {
+            const fcResp = await fetch('https://api.firecrawl.dev/v1/scrape', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${firecrawlKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, formats: ['html'], waitFor: 5000 }),
+            });
+            if (fcResp.ok) {
+              const fcData = await fcResp.json();
+              const renderedHtml = fcData.data?.html || fcData.html || '';
+              console.log('Firecrawl returned HTML length:', renderedHtml.length);
+              if (renderedHtml.length > 1000) {
+                bambuColors = parseBambuLabColors(renderedHtml);
+              }
+            }
+          } catch (e) {
+            console.error('Firecrawl error:', e);
+          }
+        }
+      }
+
       if (bambuColors.length > 0) {
         console.log('Bambu Lab parser found', bambuColors.length, 'colors — using deterministic results');
 
@@ -169,20 +197,14 @@ serve(async (req) => {
                 
                 const { data: uploadData, error: uploadError } = await supabase.storage
                   .from('product-images')
-                  .upload(filename, arrayBuffer, {
-                    contentType: 'image/png',
-                    upsert: false
-                  });
+                  .upload(filename, arrayBuffer, { contentType: 'image/png', upsert: false });
 
                 if (!uploadError) {
                   const { data: { publicUrl } } = supabase.storage
                     .from('product-images')
                     .getPublicUrl(filename);
-                  
                   uploadedColors.push({ ...color, image_url: publicUrl });
-                  console.log(`Color ${color.name} image uploaded`);
                 } else {
-                  console.error('Upload error:', color.name, uploadError);
                   uploadedColors.push(color);
                 }
               } else {
@@ -204,7 +226,7 @@ serve(async (req) => {
             existingColors: existingColors?.length || 0,
             newColorsCount: uploadedColors.length,
             addedColors: uploadedColors,
-            mode: 'replace'  // Signal to frontend to replace all colors
+            mode: 'replace'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

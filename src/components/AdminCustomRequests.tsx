@@ -140,23 +140,26 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
       setRetryResult(data);
 
       if (data.newColorsCount > 0 || data.mode === 'replace') {
-        // Upsert: merge by normalized color name, replacing existing entries
-        const existingColorsArray = Array.isArray(existingColors) ? existingColors : [];
-        const colorMap = new Map<string, any>();
+        let updatedColors: any[];
         
-        // Add existing colors first
-        for (const c of existingColorsArray) {
-          const key = ((c as any).name || '').toLowerCase().trim();
-          if (key) colorMap.set(key, c);
+        if (data.mode === 'replace') {
+          // Full replace — discard old colors entirely
+          updatedColors = data.addedColors || [];
+        } else {
+          // Upsert: merge by normalized color name
+          const existingColorsArray = Array.isArray(existingColors) ? existingColors : [];
+          const colorMap = new Map<string, any>();
+          for (const c of existingColorsArray) {
+            const key = ((c as any).name || '').toLowerCase().trim();
+            if (key) colorMap.set(key, c);
+          }
+          for (const c of (data.addedColors || [])) {
+            const key = (c.name || '').toLowerCase().trim();
+            if (key) colorMap.set(key, { ...colorMap.get(key), ...c });
+          }
+          updatedColors = Array.from(colorMap.values());
         }
-        
-        // Upsert new colors (replace if same name exists)
-        for (const c of (data.addedColors || [])) {
-          const key = (c.name || '').toLowerCase().trim();
-          if (key) colorMap.set(key, { ...colorMap.get(key), ...c });
-        }
-        
-        const updatedColors = Array.from(colorMap.values());
+
         await supabase
           .from('products')
           .update({ colors: updatedColors })
