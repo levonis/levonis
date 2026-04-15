@@ -1,77 +1,31 @@
+# **حذف** زر إعادة استخراج الصور واستبداله بزر إخفاء/تحديث المنتج
 
+## الفكرة
 
-# تحويل آلة الغاتشا من 2D إلى 3D حقيقي باستخدام Three.js
-
-## الوصف
-إعادة بناء `GachaMachineVisual` و `GachaSpinReveal` باستخدام `@react-three/fiber` و `@react-three/drei` (الموجودين بالفعل) — بدلاً من CSS divs. كل جزء من الآلة سيكون mesh ثلاثي الأبعاد حقيقي (أسطوانات، كرات، boxes) مع إضاءة ومواد لامعة.
-
----
+النظام يستخدم بالفعل حقل `is_pricing_updated` لإخفاء المنتجات عن المستخدمين — المنتجات التي `is_pricing_updated = false` لا تظهر في الكتالوج ولا صفحات الأقسام. الزر الجديد سيُبدّل هذه القيمة مباشرة.
 
 ## التغييرات
 
-### 1) إنشاء `GachaMachine3D.tsx` — الآلة ثلاثية الأبعاد
-مكوّن R3F Canvas يرسم الآلة من أشكال هندسية Three.js:
+### 1) `src/pages/Admin.tsx`
 
-```text
-المكونات الثلاثية:
-├── GlassDome (CylinderGeometry + MeshPhysicalMaterial شفاف)
-│   └── Capsules[] (SphereGeometry بألوان مختلفة + physics bounce)
-├── MachineBody (BoxGeometry / RoundedBox بلون الثيم)
-│   ├── Knob (SphereGeometry + CylinderGeometry ذراع) — يدور عند الضغط
-│   └── DispensingSlot (BoxGeometry أسود)
-├── TopButton (SphereGeometry)
-└── Base (BoxGeometry ذهبي)
-```
+- **حذف** دالة `handleReExtractImages` وحالة `reExtractingImages`
+- **إضافة** دالة `handleTogglePricingUpdated(product)` التي تعمل toggle لقيمة `is_pricing_updated`
+- **استبدال** الزر في عرض الجدول (سطر ~3276-3289) وعرض الموبايل (سطر ~3360-3362):
+  - الأيقونة: `EyeOff` إذا المنتج ظاهر (سيتم إخفاؤه)، `Eye` إذا مخفي (سيتم إظهاره)
+  - اللون: أحمر/تحذيري إذا المنتج مخفي (`!is_pricing_updated`)
+  - Title: "إخفاء المنتج" أو "إظهار المنتج"
 
-- المواد: `MeshStandardMaterial` للجسم، `MeshPhysicalMaterial` مع `transmission` للزجاج
-- الإضاءة: `ambientLight` + `spotLight` + `pointLight`
-- الكبسولات داخل الزجاجة تتحرك عشوائياً عند الـ spin
-- المقبض يدور 360° مع animation عند الضغط
-- ألوان الثيم تُطبق على الجسم (`default`=أحمر، `coupon`=أخضر، `doll`=وردي، `premium`=ذهبي)
-- يستخدم `OrbitControls` اختياري أو زاوية ثابتة
+### 2) `src/components/admin/ProductsTable.tsx`
 
-### 2) إنشاء `GachaSpinReveal3D.tsx` — أنيميشن الكشف ثلاثي الأبعاد
-مكوّن R3F Canvas بتسلسل أنيميشن:
+- **استبدال** `onReExtract` بـ `onToggleVisibility` في الـ props والأزرار (سطور 190-191 و 238-239)
+- نفس منطق الأيقونة (Eye/EyeOff)
 
-**المرحلة 1 (knob):** الكاميرا تنظر للآلة، المقبض يدور مع اهتزاز الآلة
-**المرحلة 2 (drop):** كبسولة 3D (نصف كرة علوي + نصف كرة سفلي) تنزل من الآلة إلى الأسفل بتأثير gravity
-**المرحلة 3 (center):** الكاميرا تقترب من الكبسولة وتتوسط الشاشة
-**المرحلة 4 (split):** النصف العلوي يرتفع والسفلي ينزل بدوران ثلاثي الأبعاد (rotateX)
-**المرحلة 5 (reveal):** الجائزة تظهر بين النصفين مع إضاءة متوهجة (pointLight بلون الندرة) + جزيئات (particles)
+### 3) `src/components/admin/AdminProductsTab.tsx`
 
-الكبسولة مبنية من:
-- نصف كرة علوي: `SphereGeometry(r, 32, 16, 0, Math.PI*2, 0, Math.PI/2)` 
-- نصف كرة سفلي: مقلوب
-- خط الفصل: `RingGeometry` أو `TorusGeometry` رفيع
+- تحديث الـ prop من `onReExtract` إلى `onToggleVisibility`
 
-### 3) تحديث `GachaMachineDetail.tsx`
-- استبدال `<GachaMachineVisual>` بـ `<GachaMachine3D>` داخل `<Canvas>`
-- عند spinning، تشغيل أنيميشن المقبض
-- عند النتيجة، الانتقال لـ `<GachaSpinReveal3D>`
+## الملفات المتأثرة
 
-### 4) تحديث `GachaMachineCard.tsx`
-- عرض آلة 3D مصغرة (حجم صغير) بدون تفاعل
-- أو إبقاء النسخة 2D للبطاقات (أخف) — أقترح إبقاء 2D للبطاقات لأداء أفضل
-
-### 5) الإبقاء على `GachaMachineVisual.tsx` الحالي
-- يبقى للبطاقات الصغيرة والأماكن التي لا تحتاج 3D كامل
-
----
-
-## الملفات
-
-| ملف | عملية |
-|-----|-------|
-| `src/components/games/gacha/GachaMachine3D.tsx` | إنشاء |
-| `src/components/games/gacha/GachaSpinReveal3D.tsx` | إنشاء |
-| `src/components/games/gacha/GachaMachineDetail.tsx` | تعديل |
-| `src/components/games/gacha/GachaSpinReveal.tsx` | يبقى كـ fallback |
-
----
-
-## ملاحظات تقنية
-- المشروع يستخدم بالفعل `three@0.170`, `@react-three/fiber@8.18`, `@react-three/drei@9.122`
-- نفس البنية المستخدمة في CrossyRoad وStackGame
-- لا حاجة لملفات OBJ/GLB خارجية — كل الأجزاء ستُبنى من geometries أساسية لتجنب تحميل ملفات كبيرة
-- الكبسولات تستخدم ألوان الندرة: رمادي (Common)، أخضر (Uncommon)، أزرق (Rare)، بنفسجي (Epic)، ذهبي (Legendary)
-
+1. `src/pages/Admin.tsx` — حذف re-extract، إضافة toggle visibility
+2. `src/components/admin/ProductsTable.tsx` — تحديث الزر والـ prop
+3. `src/components/admin/AdminProductsTab.tsx` — تحديث الـ interface والتمرير
