@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { formatPrice, cn } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/lib/i18n';
+import { getLocalizedField } from '@/hooks/useLocalizedProduct';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface FavoriteProduct {
@@ -41,7 +42,7 @@ const FavoriteSkeleton = () => (
 );
 
 const Favorites = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -157,7 +158,7 @@ const Favorites = () => {
                     {productImage ? (
                       <img
                         src={productImage}
-                        alt={product.name_ar}
+                        alt={getLocalizedField(product as any, 'name', language)}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         decoding="async"
@@ -184,7 +185,7 @@ const Favorites = () => {
                   {/* Info */}
                   <div className="p-2.5">
                     <p className="text-xs font-bold text-foreground line-clamp-2 mb-1.5 leading-snug min-h-[2.25rem]">
-                      {product.name_ar}
+                      {getLocalizedField(product as any, 'name', language)}
                     </p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-sm font-black text-primary">{formatPrice(Number(product.price))}</span>
@@ -204,7 +205,7 @@ const Favorites = () => {
                     )}
                   >
                     <ShoppingCart className="h-3.5 w-3.5" />
-                    أضف للسلة
+                    {t('favorites_add_to_cart')}
                   </button>
                 </div>
               );
