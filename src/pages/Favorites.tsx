@@ -62,7 +62,7 @@ const Favorites = () => {
     try {
       const { data, error } = await supabase
         .from('favorites')
-        .select(`id, product_id, products (id, name_ar, slug, price, currency, image_url, images, in_stock)`)
+        .select(`id, product_id, products (id, name_ar, name_en, name_ku, slug, price, currency, image_url, images, in_stock)`)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
