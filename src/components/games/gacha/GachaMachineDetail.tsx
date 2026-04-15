@@ -7,8 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGachaMachinePrizes, useGachaGuaranteedRules } from "./useGachaData";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
-import GachaSpinReveal from "./GachaSpinReveal";
-import GachaMachineVisual from "./GachaMachineVisual";
+import GachaSpinReveal3D from "./GachaSpinReveal3D";
+import GachaMachine3D from "./GachaMachine3D";
 
 interface Props {
   machineId: string;
