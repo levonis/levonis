@@ -97,6 +97,7 @@ const ProductDetail = () => {
     }
   });
 
+  const { name: localizedName, description: localizedDescription } = useLocalizedProduct(product);
   const { discount: protectionDiscount } = useProtectionDiscount(product?.category_id);
 
   const { data: allLoyaltyLevels } = useQuery({
