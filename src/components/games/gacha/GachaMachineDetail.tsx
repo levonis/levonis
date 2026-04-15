@@ -92,7 +92,7 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
 
   if (spinResults) {
     return (
-      <GachaSpinReveal
+      <GachaSpinReveal3D
         results={spinResults}
         onDone={() => setSpinResults(null)}
         onSpinAgain={() => { setSpinResults(null); handleSpin(1); }}
@@ -134,9 +134,8 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
           
           {/* Machine */}
           <div className="relative mb-6 flex justify-center">
-            <GachaMachineVisual
+            <GachaMachine3D
               theme={theme}
-              size="lg"
               spinning={spinning}
               onKnobClick={() => !spinning && handleSpin(1)}
             />
