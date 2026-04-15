@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.reset-password-with-code]
 verify_jwt = false
+
+[functions.translate-product]
+verify_jwt = false

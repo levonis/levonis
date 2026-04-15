@@ -1485,6 +1485,32 @@ const Admin = () => {
       setProductColors([]);
       setProductFeatures([]);
       setProductCardDiscounts([]);
+
+      // Auto-translate product to English and Kurdish (non-blocking)
+      if (productId && values.name_ar) {
+        toast.info('جارٍ ترجمة المنتج...');
+        supabase.functions.invoke('translate-product', {
+          body: {
+            product_id: productId,
+            name_ar: values.name_ar,
+            description_ar: values.description_ar || null,
+          }
+        }).then(({ error: translateError }) => {
+          if (translateError) {
+            console.error('Translation error:', translateError);
+            toast.error('فشل في ترجمة المنتج تلقائياً');
+          } else {
+            toast.success('تم ترجمة المنتج بنجاح');
+            queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
+            queryClient.invalidateQueries({
+              predicate: (q) => {
+                const k = q.queryKey as unknown[];
+                return Array.isArray(k) && (k[0] === 'products' || k[0] === 'product');
+              },
+            });
+          }
+        });
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);

@@ -1,5 +1,7 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
+import { getLocalizedField } from '@/hooks/useLocalizedProduct';
+import { useLanguage } from '@/lib/i18n';
 
 interface FloatingProductCardProps {
   id: string;
@@ -11,6 +13,8 @@ interface FloatingProductCardProps {
   currency?: string;
   slug: string;
   featured?: boolean;
+  nameEn?: string | null;
+  nameKu?: string | null;
 }
 
 const FloatingProductCard = memo(({
@@ -21,7 +25,12 @@ const FloatingProductCard = memo(({
   currency = 'IQD',
   slug,
   featured = false,
+  nameEn = null,
+  nameKu = null,
 }: FloatingProductCardProps) => {
+  const { language } = useLanguage();
+  const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu };
+  const displayName = getLocalizedField(localProduct, 'name', language);
   const discount = originalPrice && originalPrice > price
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
@@ -34,7 +43,7 @@ const FloatingProductCard = memo(({
           <div className="relative h-64 w-64 md:h-80 md:w-80 z-20" style={{ marginBottom: '-2.5rem' }}>
             <img
               src={imageUrl || '/placeholder.svg'}
-              alt={nameAr}
+               alt={displayName}
               loading="eager"
               className="w-full h-full object-contain relative z-10"
             />
@@ -107,7 +116,7 @@ const FloatingProductCard = memo(({
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
           <img
             src={imageUrl || '/placeholder.svg'}
-            alt={nameAr}
+            alt={displayName}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
@@ -123,7 +132,7 @@ const FloatingProductCard = memo(({
         {/* Product info */}
         <div className="p-2.5 pt-2 text-center space-y-1 flex-1 flex flex-col justify-center">
           <h3 className="text-[11px] md:text-sm font-bold text-foreground/85 leading-tight line-clamp-2">
-            {nameAr}
+            {displayName}
           </h3>
           <div className="flex items-center justify-center gap-1">
             <span className="text-sm md:text-base font-black text-primary">

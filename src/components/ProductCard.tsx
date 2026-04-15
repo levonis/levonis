@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
 import { useProductCardDiscount } from '@/hooks/useProductCardDiscount';
+import { getLocalizedField } from '@/hooks/useLocalizedProduct';
+import { useLanguage } from '@/lib/i18n';
 
 interface ProductCardProps {
   id: string;
@@ -27,6 +29,10 @@ interface ProductCardProps {
   inStock?: boolean;
   soldCount?: number;
   cardDiscounts?: Array<{ level_id: string; discount_amount: number }> | null;
+  nameEn?: string | null;
+  nameKu?: string | null;
+  descriptionEn?: string | null;
+  descriptionKu?: string | null;
 }
 
 const ProductCard = ({ 
@@ -45,8 +51,13 @@ const ProductCard = ({
   inStock = true,
   hasDirectSale = false,
   soldCount = 0,
-  cardDiscounts = null
+  cardDiscounts = null,
+  nameEn = null,
+  nameKu = null,
+  descriptionEn = null,
+  descriptionKu = null,
 }: ProductCardProps) => {
+  const { language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const { getDiscount } = useProductCardDiscount();
@@ -54,6 +65,10 @@ const ProductCard = ({
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
   const cardPrice = cardDiscountInfo ? price - cardDiscountInfo.discountAmount : null;
+  
+  const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu, description_ar: descriptionAr, description_en: descriptionEn, description_ku: descriptionKu };
+  const displayName = getLocalizedField(localProduct, 'name', language);
+  const displayDescription = getLocalizedField(localProduct, 'description', language);
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
   // Compress image to 300px width with medium quality for cards
@@ -153,12 +168,12 @@ const ProductCard = ({
       </div>
       
       <h3 className="font-semibold text-xs leading-tight mb-0.5 text-foreground group-hover:text-primary transition-colors line-clamp-1">
-        {nameAr}
+        {displayName}
       </h3>
       
-      {descriptionAr && (
+      {displayDescription && (
         <p className="text-[10px] text-muted-foreground mb-1 line-clamp-1">
-          {descriptionAr}
+          {displayDescription}
         </p>
       )}
 

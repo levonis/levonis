@@ -794,4 +794,12 @@ export type TranslationKeys = {
   games_vs: string;
   games_round: string;
   games_not_enough_points: string;
+
+  // Profile quick actions
+  profile_quick_access: string;
+  profile_quick_access_desc: string;
+
+  // Product badges
+  ticket_badge_label: string;
+  delayed_shipping_label: string;
 };

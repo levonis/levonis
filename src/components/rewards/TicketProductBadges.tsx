@@ -1,5 +1,6 @@
 import { Ticket, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/lib/i18n";
 
 interface TicketProductBadgesProps {
   ticketCount: number;
@@ -12,6 +13,8 @@ export default function TicketProductBadges({
   showDelayedShipping = true,
   className = ""
 }: TicketProductBadgesProps) {
+  const { t } = useLanguage();
+  
   return (
     <div className={`flex flex-wrap gap-1.5 ${className}`}>
       {ticketCount > 0 && (
@@ -20,7 +23,7 @@ export default function TicketProductBadges({
           className="bg-purple-500/20 text-purple-700 border-purple-500/30 text-[10px] px-2 py-0.5 gap-1"
         >
           <Ticket className="h-3 w-3" />
-          +{ticketCount} تذكرة
+          +{ticketCount} {t('ticket_badge_label')}
         </Badge>
       )}
       {showDelayedShipping && (
@@ -29,7 +32,7 @@ export default function TicketProductBadges({
           className="border-amber-500/40 text-amber-600 text-[10px] px-2 py-0.5 gap-1"
         >
           <Package className="h-3 w-3" />
-          شحن لاحقًا
+          {t('delayed_shipping_label')}
         </Badge>
       )}
     </div>

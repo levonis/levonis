@@ -24,6 +24,7 @@ import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 import ProductRewardsSection from '@/components/ProductRewardsSection';
 import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
+import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd } from '@/lib/priceGuard';
@@ -86,7 +87,7 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories!products_category_id_fkey(name_ar, name)')
+        .select('*, categories!products_category_id_fkey(name_ar, name, name_ku)')
         .eq('slug', slug)
         .maybeSingle();
       if (data && !data.is_pricing_updated && !isAdmin) throw new Error('Product not found');
@@ -96,6 +97,7 @@ const ProductDetail = () => {
     }
   });
 
+  const { name: localizedName, description: localizedDescription } = useLocalizedProduct(product);
   const { discount: protectionDiscount } = useProtectionDiscount(product?.category_id);
 
   const { data: allLoyaltyLevels } = useQuery({
@@ -786,13 +788,13 @@ const ProductDetail = () => {
               {/* Category */}
               {product.categories && (
                 <Badge variant="outline" className="text-[11px] rounded-lg">
-                  {(product as any).categories.name_ar}
+                  {language === 'en' ? (product as any).categories.name : language === 'ku' ? ((product as any).categories.name_ku || (product as any).categories.name_ar) : (product as any).categories.name_ar}
                 </Badge>
               )}
 
               {/* Title */}
               <h1 className="text-xl md:text-2xl font-black text-foreground leading-tight flex items-center gap-2">
-                {product.name_ar}
+                {localizedName}
                 {isAdmin && (product as any).taobao_url && <TaobaoLinkButton taobaoUrl={(product as any).taobao_url} />}
               </h1>
 
@@ -806,12 +808,12 @@ const ProductDetail = () => {
               )}
 
               {/* Description */}
-              {product.description_ar && (
+              {localizedDescription && (
                 <div className="text-muted-foreground text-sm leading-relaxed">
-                  <p className={!showFullDescription && product.description_ar.length > 150 ? 'line-clamp-2' : ''}>
-                    {product.description_ar}
+                  <p className={!showFullDescription && localizedDescription.length > 150 ? 'line-clamp-2' : ''}>
+                    {localizedDescription}
                   </p>
-                  {product.description_ar.length > 150 && (
+                  {localizedDescription.length > 150 && (
                     <button onClick={() => setShowFullDescription(!showFullDescription)} className="text-primary text-xs mt-1 font-bold">
                       {showFullDescription ? t('product_show_less') : t('product_show_more')}
                     </button>
