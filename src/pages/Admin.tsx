@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users, Music, BadgeDollarSign, Star } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users, Music, BadgeDollarSign, Star, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -177,7 +177,7 @@ const Admin = () => {
   const [showManualInput, setShowManualInput] = useState(false);
   const [extractionItemId, setExtractionItemId] = useState<string>('');
   const [extractionPlatform, setExtractionPlatform] = useState<string>('');
-  const [reExtractingImages, setReExtractingImages] = useState<string | null>(null); // product id being re-extracted
+  
   const [pastedText, setPastedText] = useState<string>('');
   const [extractedUrlInfo, setExtractedUrlInfo] = useState<ExtractedUrlInfo | null>(null);
   
@@ -987,64 +987,20 @@ const Admin = () => {
 
   // Legacy shipping functions removed - now handled by AdminProductPricingSection
 
-  // Re-extract images only for a product using AI
-  const handleReExtractImages = async (product: any) => {
-    // Product must have a source URL stored - we'll try to extract from description or prompt user
-    const productUrl = prompt('أدخل رابط المنتج الأصلي لإعادة استخراج الصور:');
-    if (!productUrl || !productUrl.trim()) {
-      return;
-    }
-
-    setReExtractingImages(product.id);
+  // Toggle product visibility (is_pricing_updated)
+  const handleToggleVisibility = async (product: any) => {
+    const newValue = !product.is_pricing_updated;
     try {
-      const response = await supabase.functions.invoke('extract-product-info', {
-        body: { url: productUrl.trim() }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'فشل في استخراج الصور');
-      }
-
-      const { productInfo } = response.data;
-      
-      if (!productInfo || !productInfo.images || productInfo.images.length === 0) {
-        throw new Error('لم يتم العثور على صور للمنتج');
-      }
-
-      // Update the product with new images
-      const newImages = productInfo.images;
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('products')
-        .update({
-          images: newImages,
-          image_url: newImages[0] || product.image_url,
-          updated_at: new Date().toISOString()
-        })
+        .update({ is_pricing_updated: newValue, updated_at: new Date().toISOString() })
         .eq('id', product.id);
-
-      if (updateError) throw updateError;
-
-      // Invalidate queries to refresh the UI
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
-      queryClient.invalidateQueries({
-        predicate: (q) => {
-          const k = q.queryKey as unknown[];
-          return Array.isArray(k) && (
-            k[0] === 'products' ||
-            k[0] === 'featured-products' ||
-            k[0] === 'category-products' ||
-            k[0] === 'product' ||
-            k[0] === 'admin-products'
-          );
-        },
-      });
-
-      toast.success(`تم تحديث صور المنتج بنجاح! (${newImages.length} صور)`);
+      toast.success(newValue ? 'تم إظهار المنتج للمستخدمين' : 'تم إخفاء المنتج عن المستخدمين');
     } catch (error) {
-      console.error('Error re-extracting images:', error);
-      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء استخراج الصور');
-    } finally {
-      setReExtractingImages(null);
+      console.error('Error toggling visibility:', error);
+      toast.error('حدث خطأ أثناء تحديث حالة المنتج');
     }
   };
 
@@ -3276,15 +3232,14 @@ const Admin = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleReExtractImages(product)}
-                              disabled={reExtractingImages === product.id}
-                              title="إعادة استخراج الصور"
-                              className="text-primary hover:text-primary"
+                              onClick={() => handleToggleVisibility(product)}
+                              title={product.is_pricing_updated ? 'إخفاء المنتج' : 'إظهار المنتج'}
+                              className={!product.is_pricing_updated ? "text-destructive border-destructive/50 hover:text-destructive" : ""}
                             >
-                              {reExtractingImages === product.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                              {product.is_pricing_updated ? (
+                                <EyeOff className="h-4 w-4" />
                               ) : (
-                                <ImageIcon className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                               )}
                             </Button>
                             <Button
@@ -3357,8 +3312,8 @@ const Admin = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/30">
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleReExtractImages(product)} disabled={reExtractingImages === product.id} title="إعادة استخراج الصور">
-                        {reExtractingImages === product.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                      <Button size="sm" variant="outline" className={`h-8 w-8 p-0 ${!product.is_pricing_updated ? 'text-destructive border-destructive/50' : ''}`} onClick={() => handleToggleVisibility(product)} title={product.is_pricing_updated ? 'إخفاء المنتج' : 'إظهار المنتج'}>
+                        {product.is_pricing_updated ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </Button>
                       <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => { setEditingProduct(product); setProductFeatured(!!product.featured); setProductDialogOpen(true); }} title="تعديل">
                         <Pencil className="h-3.5 w-3.5" />

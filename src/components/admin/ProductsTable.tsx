@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Copy, Sparkles, Search } from 'lucide-react';
+import { Pencil, Trash2, Copy, Search, Eye, EyeOff } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import TaobaoLinkButton from './TaobaoLinkButton';
 
@@ -14,7 +14,7 @@ interface ProductsTableProps {
   onEdit: (product: any) => void;
   onDelete: (id: string) => void;
   onDuplicate: (product: any) => void;
-  onReExtract: (product: any) => void;
+  onToggleVisibility: (product: any) => void;
   onRefresh?: () => void;
   filters: {
     search: string;
@@ -39,7 +39,7 @@ const ProductsTable = memo(({
   onEdit, 
   onDelete, 
   onDuplicate,
-  onReExtract,
+  onToggleVisibility,
   onRefresh,
   filters 
 }: ProductsTableProps) => {
@@ -187,8 +187,8 @@ const ProductsTable = memo(({
                     <Button size="sm" variant="outline" onClick={() => onDuplicate(product)}>
                       <Copy className="h-3 w-3" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => onReExtract(product)}>
-                      <Sparkles className="h-3 w-3" />
+                    <Button size="sm" variant="outline" onClick={() => onToggleVisibility(product)} title={product.is_pricing_updated ? 'إخفاء المنتج' : 'إظهار المنتج'} className={!product.is_pricing_updated ? 'text-destructive border-destructive/50' : ''}>
+                      {product.is_pricing_updated ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => onDelete(product.id)}>
                       <Trash2 className="h-3 w-3" />
@@ -235,8 +235,8 @@ const ProductsTable = memo(({
               <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => onDuplicate(product)}>
                 <Copy className="h-3 w-3" />
               </Button>
-              <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => onReExtract(product)}>
-                <Sparkles className="h-3 w-3" />
+              <Button size="sm" variant="outline" className={`h-7 w-7 p-0 ${!product.is_pricing_updated ? 'text-destructive border-destructive/50' : ''}`} onClick={() => onToggleVisibility(product)} title={product.is_pricing_updated ? 'إخفاء المنتج' : 'إظهار المنتج'}>
+                {product.is_pricing_updated ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               </Button>
               <div className="flex-1" />
               <Button size="sm" variant="destructive" className="h-7 w-7 p-0" onClick={() => onDelete(product.id)}>
