@@ -8,202 +8,249 @@ interface Props {
   className?: string;
 }
 
-const THEME_COLORS: Record<string, { body: string; bodyDark: string; accent: string; knob: string }> = {
-  default: { body: "#DC2626", bodyDark: "#991B1B", accent: "#FCA5A5", knob: "#FBBF24" },
-  coupon: { body: "#16A34A", bodyDark: "#166534", accent: "#86EFAC", knob: "#FDE047" },
-  doll: { body: "#EC4899", bodyDark: "#9D174D", accent: "#F9A8D4", knob: "#C084FC" },
-  event: { body: "#EA580C", bodyDark: "#9A3412", accent: "#FDBA74", knob: "#FBBF24" },
-  premium: { body: "#D97706", bodyDark: "#92400E", accent: "#FDE68A", knob: "#F59E0B" },
+const THEME_COLORS: Record<string, { body: string; bodyDark: string; accent: string; knob: string; topBtn: string }> = {
+  default: { body: "#DC2626", bodyDark: "#B91C1C", accent: "#FDE68A", knob: "#FBBF24", topBtn: "#EF4444" },
+  coupon: { body: "#16A34A", bodyDark: "#15803D", accent: "#BBF7D0", knob: "#FDE047", topBtn: "#22C55E" },
+  doll: { body: "#EC4899", bodyDark: "#DB2777", accent: "#FBCFE8", knob: "#C084FC", topBtn: "#F472B6" },
+  event: { body: "#EA580C", bodyDark: "#C2410C", accent: "#FED7AA", knob: "#FBBF24", topBtn: "#F97316" },
+  premium: { body: "#D97706", bodyDark: "#B45309", accent: "#FDE68A", knob: "#F59E0B", topBtn: "#FBBF24" },
 };
 
-const CAPSULE_COLORS = ["#EF4444", "#3B82F6", "#22C55E", "#A855F7", "#F59E0B", "#EC4899", "#06B6D4", "#F97316"];
+const CAPSULE_COLORS = ["#F9A8D4", "#93C5FD", "#FDE68A", "#A7F3D0", "#E9D5FF", "#FCA5A5", "#FDBA74", "#F0ABFC"];
+
+const CAPSULE_POSITIONS = [
+  { x: 10, y: 8 }, { x: 38, y: 5 }, { x: 66, y: 10 },
+  { x: 5, y: 35 }, { x: 33, y: 30 }, { x: 60, y: 38 },
+  { x: 15, y: 58 }, { x: 42, y: 55 }, { x: 68, y: 62 },
+  { x: 8, y: 80 }, { x: 35, y: 78 }, { x: 62, y: 82 },
+];
 
 const SIZES = {
-  sm: { w: 80, h: 120, globe: 50, capsule: 8 },
-  md: { w: 160, h: 240, globe: 100, capsule: 14 },
-  lg: { w: 220, h: 330, globe: 140, capsule: 18 },
+  sm: { w: 80, h: 130, capsule: 14, dotSize: 3, knobSize: 16 },
+  md: { w: 150, h: 245, capsule: 22, dotSize: 5, knobSize: 28 },
+  lg: { w: 210, h: 340, capsule: 30, dotSize: 7, knobSize: 38 },
 };
-
-// Pre-generated capsule positions to avoid random on each render
-const CAPSULE_POSITIONS = [
-  { x: 15, y: 20 }, { x: 45, y: 15 }, { x: 70, y: 25 },
-  { x: 25, y: 45 }, { x: 55, y: 40 }, { x: 80, y: 50 },
-  { x: 10, y: 65 }, { x: 40, y: 70 }, { x: 65, y: 60 },
-  { x: 30, y: 85 }, { x: 60, y: 80 }, { x: 50, y: 55 },
-];
 
 export default function GachaMachineVisual({ theme = "default", size = "md", spinning = false, onKnobClick, className = "" }: Props) {
   const colors = THEME_COLORS[theme] || THEME_COLORS.default;
   const s = SIZES[size];
   const capsuleCount = size === "sm" ? 6 : size === "md" ? 9 : 12;
+  const dotCount = size === "sm" ? 8 : size === "md" ? 14 : 18;
+  const border = size === "sm" ? 2 : 3;
+
+  const windowW = s.w * 0.78;
+  const windowH = s.h * 0.48;
+  const bodyH = s.h * 0.3;
+  const baseH = s.h * 0.045;
+  const topBtnSize = size === "sm" ? 10 : size === "md" ? 18 : 24;
 
   return (
     <div className={`relative inline-flex flex-col items-center ${className}`} style={{ width: s.w, height: s.h }}>
-      {/* Top cap */}
+
+      {/* Top button */}
       <div
-        className="rounded-t-full relative z-10"
+        className="relative z-10 rounded-full"
         style={{
-          width: s.w * 0.7,
-          height: s.h * 0.06,
-          background: `linear-gradient(180deg, #555 0%, #333 100%)`,
+          width: topBtnSize,
+          height: topBtnSize,
+          background: colors.topBtn,
+          border: `${border}px solid ${colors.bodyDark}`,
+          marginBottom: -topBtnSize * 0.35,
+          boxShadow: `inset 0 -2px 4px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.3)`,
         }}
       />
 
-      {/* Glass globe */}
+      {/* Main frame */}
       <div
-        className="relative overflow-hidden"
+        className="relative flex flex-col items-center overflow-hidden"
         style={{
-          width: s.w * 0.65,
-          height: s.globe,
-          borderRadius: "50%",
-          background: "radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.35), rgba(255,255,255,0.08) 50%, rgba(0,0,0,0.05))",
-          border: "2px solid rgba(255,255,255,0.2)",
-          boxShadow: "inset 0 -8px 20px rgba(0,0,0,0.15), 0 2px 10px rgba(0,0,0,0.2)",
+          width: s.w,
+          borderRadius: s.w * 0.06,
+          background: colors.body,
+          border: `${border}px solid ${colors.bodyDark}`,
+          boxShadow: `0 4px 16px rgba(0,0,0,0.25)`,
         }}
       >
-        {/* Capsules inside globe */}
-        {CAPSULE_POSITIONS.slice(0, capsuleCount).map((pos, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: s.capsule,
-              height: s.capsule,
-              left: `${pos.x}%`,
-              top: `${pos.y}%`,
-              background: `radial-gradient(circle at 35% 35%, ${CAPSULE_COLORS[i % CAPSULE_COLORS.length]}dd, ${CAPSULE_COLORS[i % CAPSULE_COLORS.length]}88)`,
-              boxShadow: `inset -1px -1px 2px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)`,
-            }}
-            animate={spinning ? {
-              y: [0, 3, -2, 4, -1, 0],
-              x: [0, -2, 3, -1, 2, 0],
-            } : {}}
-            transition={spinning ? {
-              duration: 0.6,
-              repeat: Infinity,
-              delay: i * 0.05,
-            } : {}}
-          />
-        ))}
-
-        {/* Glass reflection */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.05) 100%)",
-            borderRadius: "50%",
-          }}
-        />
-      </div>
-
-      {/* Machine body */}
-      <div
-        className="relative flex flex-col items-center"
-        style={{
-          width: s.w * 0.75,
-          height: s.h * 0.45,
-          background: `linear-gradient(180deg, ${colors.body} 0%, ${colors.bodyDark} 100%)`,
-          borderRadius: `0 0 ${s.w * 0.08}px ${s.w * 0.08}px`,
-          boxShadow: `inset 2px 0 6px rgba(255,255,255,0.15), inset -2px 0 6px rgba(0,0,0,0.2), 0 4px 15px rgba(0,0,0,0.3)`,
-        }}
-      >
-        {/* Decorative strip */}
-        <div
-          className="absolute top-0 left-0 right-0"
-          style={{
-            height: s.h * 0.02,
-            background: colors.accent,
-            opacity: 0.6,
-          }}
-        />
-
-        {/* Coin slot area */}
-        <div className="flex items-center justify-center gap-1 mt-2" style={{ marginTop: s.h * 0.04 }}>
-          {/* Coin slot */}
+        {/* Glass window area */}
+        <div className="flex items-center justify-center" style={{ padding: s.w * 0.06, paddingBottom: 0 }}>
           <div
+            className="relative overflow-hidden"
             style={{
-              width: s.w * 0.15,
-              height: s.h * 0.015,
-              background: "#222",
-              borderRadius: 2,
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
+              width: windowW,
+              height: windowH,
+              borderRadius: s.w * 0.05,
+              background: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,245,255,0.9) 100%)",
+              border: `${border}px solid ${colors.bodyDark}`,
+              boxShadow: "inset 0 2px 8px rgba(0,0,0,0.08)",
             }}
-          />
+          >
+            {/* Capsules */}
+            {CAPSULE_POSITIONS.slice(0, capsuleCount).map((pos, i) => {
+              const color = CAPSULE_COLORS[i % CAPSULE_COLORS.length];
+              return (
+                <motion.div
+                  key={i}
+                  className="absolute"
+                  style={{
+                    width: s.capsule,
+                    height: s.capsule,
+                    left: `${pos.x}%`,
+                    top: `${pos.y}%`,
+                    borderRadius: "50%",
+                    background: color,
+                    border: `${Math.max(1, border - 1)}px solid rgba(0,0,0,0.12)`,
+                    boxShadow: `inset 0 -2px 4px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.1)`,
+                  }}
+                  animate={spinning ? {
+                    y: [0, 4, -3, 5, -2, 0],
+                    x: [0, -3, 4, -2, 3, 0],
+                    rotate: [0, 8, -5, 10, -3, 0],
+                  } : {}}
+                  transition={spinning ? { duration: 0.7, repeat: Infinity, delay: i * 0.06 } : {}}
+                >
+                  {/* Split line */}
+                  <div
+                    className="absolute left-0 right-0"
+                    style={{
+                      top: "48%",
+                      height: Math.max(1, border - 1),
+                      background: "rgba(0,0,0,0.15)",
+                    }}
+                  />
+                </motion.div>
+              );
+            })}
+
+            {/* Glass reflection */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 35%, transparent 65%, rgba(255,255,255,0.1) 100%)",
+                borderRadius: s.w * 0.05,
+              }}
+            />
+          </div>
         </div>
 
-        {/* Knob */}
-        <motion.button
-          onClick={onKnobClick}
-          className="relative cursor-pointer z-10"
-          style={{
-            width: s.w * 0.22,
-            height: s.w * 0.22,
-            borderRadius: "50%",
-            background: `radial-gradient(circle at 40% 35%, ${colors.knob}, ${colors.knob}cc)`,
-            border: `2px solid rgba(0,0,0,0.3)`,
-            boxShadow: `0 2px 8px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.3)`,
-            marginTop: s.h * 0.04,
-          }}
-          animate={spinning ? { rotate: 360 } : {}}
-          transition={spinning ? { duration: 0.8, ease: "easeInOut" } : {}}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {/* Knob cross mark */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div style={{ width: "40%", height: 2, background: "rgba(0,0,0,0.3)", borderRadius: 1 }} />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div style={{ width: 2, height: "40%", background: "rgba(0,0,0,0.3)", borderRadius: 1 }} />
-          </div>
-        </motion.button>
-
-        {/* Dispensing slot */}
+        {/* Decorative dot strip */}
         <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2"
+          className="flex items-center justify-center gap-0.5"
           style={{
-            width: s.w * 0.35,
-            height: s.h * 0.12,
-            background: "#111",
-            borderRadius: `${s.w * 0.04}px ${s.w * 0.04}px 0 0`,
-            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.6)",
-            marginBottom: s.h * 0.02,
-            bottom: s.h * 0.02,
+            width: windowW,
+            padding: `${s.h * 0.02}px 0`,
           }}
         >
-          {/* Inner slot shadow */}
-          <div
-            className="absolute inset-1 rounded"
-            style={{
-              background: "radial-gradient(ellipse at center, #222, #0a0a0a)",
-            }}
-          />
+          {Array.from({ length: dotCount }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full"
+              style={{
+                width: s.dotSize,
+                height: s.dotSize,
+                background: colors.accent,
+                border: `1px solid ${colors.bodyDark}`,
+                opacity: 0.9,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Lower body — knob + slot */}
+        <div
+          className="flex items-center justify-between w-full px-3"
+          style={{
+            height: bodyH,
+            paddingLeft: s.w * 0.08,
+            paddingRight: s.w * 0.08,
+          }}
+        >
+          {/* Dispensing slot (left side) */}
+          <div className="flex flex-col items-center gap-1">
+            <div
+              style={{
+                width: s.w * 0.3,
+                height: bodyH * 0.5,
+                background: "#1a1a1a",
+                borderRadius: s.w * 0.03,
+                border: `${border}px solid ${colors.bodyDark}`,
+                boxShadow: "inset 0 2px 6px rgba(0,0,0,0.5)",
+              }}
+            >
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{
+                  background: "radial-gradient(ellipse, #222, #111)",
+                  borderRadius: s.w * 0.02,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Knob (right side) */}
+          <div className="flex flex-col items-center">
+            {/* Knob arm */}
+            <div
+              style={{
+                width: s.knobSize * 1.2,
+                height: Math.max(3, border),
+                background: colors.bodyDark,
+                borderRadius: 2,
+                marginBottom: -1,
+              }}
+            />
+            <motion.button
+              onClick={onKnobClick}
+              className="relative cursor-pointer z-10"
+              style={{
+                width: s.knobSize,
+                height: s.knobSize,
+                borderRadius: "50%",
+                background: `radial-gradient(circle at 40% 35%, ${colors.knob}, ${colors.knob}cc)`,
+                border: `${border}px solid ${colors.bodyDark}`,
+                boxShadow: `0 2px 6px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.35)`,
+              }}
+              animate={spinning ? { rotate: 360 } : {}}
+              transition={spinning ? { duration: 0.8, ease: "easeInOut" } : {}}
+              whileHover={{ scale: 1.12 }}
+              whileTap={{ scale: 0.92 }}
+            >
+              {/* Knob cross */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div style={{ width: "45%", height: Math.max(1, border - 1), background: "rgba(0,0,0,0.25)", borderRadius: 1 }} />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div style={{ width: Math.max(1, border - 1), height: "45%", background: "rgba(0,0,0,0.25)", borderRadius: 1 }} />
+              </div>
+            </motion.button>
+          </div>
         </div>
       </div>
 
-      {/* Base */}
+      {/* Golden base */}
       <div
         style={{
-          width: s.w * 0.85,
-          height: s.h * 0.05,
-          background: "linear-gradient(180deg, #444, #222)",
-          borderRadius: `0 0 ${s.w * 0.06}px ${s.w * 0.06}px`,
-          boxShadow: "0 3px 10px rgba(0,0,0,0.4)",
+          width: s.w * 1.05,
+          height: baseH,
+          background: `linear-gradient(180deg, ${colors.accent}, ${colors.knob})`,
+          borderRadius: `0 0 ${s.w * 0.04}px ${s.w * 0.04}px`,
+          border: `${border}px solid ${colors.bodyDark}`,
+          borderTop: "none",
+          boxShadow: "0 3px 8px rgba(0,0,0,0.2)",
         }}
       />
 
-      {/* Neon glow under machine when spinning */}
+      {/* Spinning glow */}
       {spinning && (
         <motion.div
-          className="absolute -bottom-2 left-1/2 -translate-x-1/2"
+          className="absolute -bottom-3 left-1/2 -translate-x-1/2"
           style={{
             width: s.w * 0.6,
-            height: 6,
+            height: 8,
             borderRadius: "50%",
             background: colors.body,
-            filter: `blur(8px)`,
+            filter: "blur(10px)",
           }}
-          animate={{ opacity: [0.3, 0.8, 0.3] }}
+          animate={{ opacity: [0.2, 0.7, 0.2] }}
           transition={{ duration: 1, repeat: Infinity }}
         />
       )}
