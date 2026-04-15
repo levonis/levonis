@@ -12,7 +12,7 @@ interface AdminProductsTabProps {
   onEdit: (product: any) => void;
   onDelete: (id: string) => void;
   onDuplicate: (product: any) => void;
-  onReExtract: (product: any) => void;
+  onToggleVisibility: (product: any) => void;
   onRefresh?: () => void;
   filters: {
     search: string;
@@ -38,7 +38,7 @@ const AdminProductsTab = memo(({
   onEdit, 
   onDelete, 
   onDuplicate,
-  onReExtract,
+  onToggleVisibility,
   onRefresh,
   filters 
 }: AdminProductsTabProps) => {
@@ -63,7 +63,7 @@ const AdminProductsTab = memo(({
         onEdit={onEdit}
         onDelete={onDelete}
         onDuplicate={onDuplicate}
-        onReExtract={onReExtract}
+        onToggleVisibility={onToggleVisibility}
         onRefresh={onRefresh}
         filters={filters}
       />
