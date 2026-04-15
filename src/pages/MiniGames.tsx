@@ -109,7 +109,12 @@ export default function MiniGames() {
   });
 
   // Mark disabled games instead of filtering them out
+  // Crossy Road and Gacha are admin-only
+  const adminOnlyGames = ["crossy_road", "gacha"];
   const gamesWithStatus = GAME_NODES.map(game => {
+    if (adminOnlyGames.includes(game.node_name) && !isAdmin) {
+      return { ...game, _disabled: true, _hidden: true };
+    }
     if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
       return { ...game, _disabled: true };
     }
@@ -146,13 +151,15 @@ export default function MiniGames() {
     return { ...game, _disabled: false, _starting_soon: startingSoon };
   });
 
-  const filteredGames = filterGameNodes(gamesWithStatus, activeFilter).sort((a, b) => {
-    const aLive = !(a as any)._disabled && a.status !== GameStatus.COMING_SOON;
-    const bLive = !(b as any)._disabled && b.status !== GameStatus.COMING_SOON;
-    
-    if (aLive === bLive) return ((a as any).display_order ?? 99) - ((b as any).display_order ?? 99);
-    return aLive ? -1 : 1;
-  });
+  const filteredGames = filterGameNodes(gamesWithStatus, activeFilter)
+    .filter((g: any) => !g._hidden)
+    .sort((a, b) => {
+      const aLive = !(a as any)._disabled && a.status !== GameStatus.COMING_SOON;
+      const bLive = !(b as any)._disabled && b.status !== GameStatus.COMING_SOON;
+      
+      if (aLive === bLive) return ((a as any).display_order ?? 99) - ((b as any).display_order ?? 99);
+      return aLive ? -1 : 1;
+    });
 
   const handlePlay = (game: GameResource) => {
     setActiveGame(game.node_name);
