@@ -1,59 +1,61 @@
 import { ArrowRight, Bell, FileText, Heart, MapPin, Package, Trophy } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/lib/i18n";
 
 type ActionItem = {
   key: string;
-  label: string;
-  hint: string;
+  labelKey: string;
+  hintKey: string;
   to: string;
   icon: any;
 };
 
 export default function ProfileQuickActions() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const items = useMemo<ActionItem[]>(
     () => [
       {
         key: "orders",
-        label: "طلباتي",
-        hint: "تتبّع الطلبات والفواتير",
+        labelKey: "menu_my_orders",
+        hintKey: "order_desc",
         icon: Package,
         to: "/my-orders",
       },
       {
         key: "requests",
-        label: "طلباتي (طباعة)",
-        hint: "طلبات مجتمع الطباعة",
+        labelKey: "menu_custom_requests",
+        hintKey: "community_browse_requests",
         icon: FileText,
         to: "/community/customer/requests",
       },
       {
         key: "addresses",
-        label: "العناوين",
-        hint: "إدارة العنوان الافتراضي",
+        labelKey: "menu_addresses",
+        hintKey: "settings_default_address",
         icon: MapPin,
         to: "/addresses",
       },
       {
         key: "notifications",
-        label: "الإشعارات",
-        hint: "آخر التنبيهات",
+        labelKey: "menu_notifications",
+        hintKey: "notif_title",
         icon: Bell,
         to: "/notifications",
       },
       {
         key: "favorites",
-        label: "المفضلة",
-        hint: "منتجات محفوظة",
+        labelKey: "menu_favorites",
+        hintKey: "favorites_desc",
         icon: Heart,
         to: "/favorites",
       },
       {
         key: "rewards",
-        label: "المكافآت",
-        hint: "النقاط والجوائز",
+        labelKey: "menu_rewards",
+        hintKey: "rewards_title",
         icon: Trophy,
         to: "/rewards",
       },
@@ -62,11 +64,11 @@ export default function ProfileQuickActions() {
   );
 
   return (
-    <section aria-label="وصول سريع" className="mt-6">
+    <section aria-label={t('profile_quick_access')} className="mt-6">
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-sm font-black text-foreground">وصول سريع</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">اختصارات مرتبة لكل شيء مهم</p>
+          <h2 className="text-sm font-black text-foreground">{t('profile_quick_access')}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('profile_quick_access_desc')}</p>
         </div>
       </div>
 
@@ -86,8 +88,8 @@ export default function ProfileQuickActions() {
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </div>
-              <div className="mt-2.5 text-sm font-bold text-foreground leading-none">{a.label}</div>
-              <div className="mt-1 text-[11px] text-muted-foreground leading-snug">{a.hint}</div>
+              <div className="mt-2.5 text-sm font-bold text-foreground leading-none">{t(a.labelKey as any)}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground leading-snug">{t(a.hintKey as any)}</div>
             </button>
           );
         })}
