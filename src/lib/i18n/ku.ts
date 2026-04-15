@@ -792,4 +792,12 @@ export const ku: TranslationKeys = {
   games_vs: 'دژی',
   games_round: 'خول',
   games_not_enough_points: 'خاڵی پێویستت نییە بۆ یاری',
+
+  // Profile quick actions
+  profile_quick_access: 'دەستگەیشتنی خێرا',
+  profile_quick_access_desc: 'کورتەڕێ بۆ هەموو شتێکی گرنگ',
+
+  // Product badges
+  ticket_badge_label: 'بلیت',
+  delayed_shipping_label: 'بارکردن دواتر',
 };

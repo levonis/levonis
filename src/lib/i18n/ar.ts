@@ -792,4 +792,12 @@ export const ar: TranslationKeys = {
   games_vs: 'ضد',
   games_round: 'الجولة',
   games_not_enough_points: 'لا تملك نقاط كافية للعب',
+
+  // Profile quick actions
+  profile_quick_access: 'وصول سريع',
+  profile_quick_access_desc: 'اختصارات مرتبة لكل شيء مهم',
+
+  // Product badges
+  ticket_badge_label: 'تذكرة',
+  delayed_shipping_label: 'شحن لاحقًا',
 };

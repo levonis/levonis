@@ -792,4 +792,12 @@ export const en: TranslationKeys = {
   games_vs: 'VS',
   games_round: 'Round',
   games_not_enough_points: 'Not enough points to play',
+
+  // Profile quick actions
+  profile_quick_access: 'Quick Access',
+  profile_quick_access_desc: 'Shortcuts to everything important',
+
+  // Product badges
+  ticket_badge_label: 'ticket',
+  delayed_shipping_label: 'Ships later',
 };
