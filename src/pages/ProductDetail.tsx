@@ -24,6 +24,7 @@ import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 import ProductRewardsSection from '@/components/ProductRewardsSection';
 import PriceMatchForm from '@/components/PriceMatchForm';
 import { useLanguage } from '@/lib/i18n';
+import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd } from '@/lib/priceGuard';
@@ -86,7 +87,7 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories!products_category_id_fkey(name_ar, name)')
+        .select('*, categories!products_category_id_fkey(name_ar, name, name_ku)')
         .eq('slug', slug)
         .maybeSingle();
       if (data && !data.is_pricing_updated && !isAdmin) throw new Error('Product not found');
