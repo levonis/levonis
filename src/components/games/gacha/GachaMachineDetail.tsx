@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGachaMachinePrizes, useGachaGuaranteedRules } from "./useGachaData";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
 import GachaSpinReveal from "./GachaSpinReveal";
+import GachaMachineVisual from "./GachaMachineVisual";
 
 interface Props {
   machineId: string;
@@ -108,6 +109,7 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
   }
 
   const totalWeight = prizes.reduce((s: number, p: any) => s + Number(p.drop_weight), 0);
+  const theme = machine.theme || "default";
 
   return (
     <div className="min-h-screen pb-20" dir="rtl">
@@ -123,23 +125,21 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
 
       {/* Machine Visual */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-purple-600/20 via-card to-pink-600/10 border border-primary/20 p-8 text-center">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.1),transparent_70%)]" />
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-b from-zinc-900/80 via-card to-zinc-900/50 border border-border/30 p-8 text-center">
+          {/* Arcade background pattern */}
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }} />
           
           {/* Machine */}
-          <div className="relative mb-4">
-            {machine.image_url ? (
-              <img src={machine.image_url} alt={machine.name_ar} className="w-32 h-32 mx-auto object-contain drop-shadow-2xl" />
-            ) : (
-              <div className={`text-7xl mx-auto ${spinning ? "animate-bounce" : ""}`}>
-                🎰
-              </div>
-            )}
-            {spinning && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
-            )}
+          <div className="relative mb-6 flex justify-center">
+            <GachaMachineVisual
+              theme={theme}
+              size="lg"
+              spinning={spinning}
+              onKnobClick={() => !spinning && handleSpin(1)}
+            />
           </div>
 
           <h1 className="text-xl font-bold text-foreground mb-1">{machine.name_ar}</h1>

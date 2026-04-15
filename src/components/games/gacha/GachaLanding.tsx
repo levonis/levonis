@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Star, Ticket, Package, ShoppingBag, History, Gift } from "lucide-react";
+import { ArrowRight, Package, ShoppingBag, History, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGachaMachines, useGachaSettings } from "./useGachaData";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
@@ -9,6 +9,7 @@ import GachaCollection from "./GachaCollection";
 import GachaMarketplace from "./GachaMarketplace";
 import GachaSpinHistory from "./GachaSpinHistory";
 import GachaCoupons from "./GachaCoupons";
+import GachaMachineVisual from "./GachaMachineVisual";
 
 type GachaView = "landing" | "machine" | "collection" | "marketplace" | "history" | "coupons";
 
@@ -84,20 +85,25 @@ export default function GachaLanding({ onBack }: Props) {
         </div>
       </div>
 
-      {/* Hero Banner */}
+      {/* Hero Banner with machine visual */}
       <div className="max-w-2xl mx-auto px-4 pb-4">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600/20 via-pink-500/10 to-amber-500/20 border border-primary/20 p-6">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(168,85,247,0.15),transparent_60%)]" />
-          <div className="relative">
-            <div className="text-4xl mb-2">🎰</div>
-            <h1 className="text-xl font-bold text-foreground mb-1">صالة الغاتشا</h1>
-            <p className="text-sm text-muted-foreground">
-              أدِر الآلة واكسب دُمى نادرة، كوبونات، ونقاط!
-            </p>
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900/60 via-card to-red-900/20 border border-primary/20 p-6">
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundSize: "16px 16px",
+          }} />
+          <div className="relative flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <GachaMachineVisual theme="default" size="sm" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-foreground mb-1">صالة الغاتشا</h1>
+              <p className="text-sm text-muted-foreground">
+                أدِر الآلة واكسب دُمى نادرة، كوبونات، ونقاط!
+              </p>
+            </div>
           </div>
-          {/* Decorative capsules */}
-          <div className="absolute -left-4 -bottom-4 text-6xl opacity-20 rotate-12">🔮</div>
-          <div className="absolute left-16 -top-2 text-3xl opacity-15 -rotate-12">✨</div>
+          <div className="absolute -left-4 -bottom-4 text-5xl opacity-10 rotate-12">✨</div>
         </div>
       </div>
 
@@ -114,7 +120,7 @@ export default function GachaLanding({ onBack }: Props) {
           </div>
         ) : machines.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <div className="text-4xl mb-3">🎰</div>
+            <GachaMachineVisual theme="default" size="md" className="mx-auto mb-3 opacity-30" />
             <p className="text-sm">لا توجد آلات متاحة حالياً</p>
           </div>
         ) : (
