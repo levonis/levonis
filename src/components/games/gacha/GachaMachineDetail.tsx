@@ -7,8 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useGachaMachinePrizes, useGachaGuaranteedRules } from "./useGachaData";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
-import GachaSpinReveal from "./GachaSpinReveal";
-import GachaMachineVisual from "./GachaMachineVisual";
+import GachaSpinReveal3D from "./GachaSpinReveal3D";
+import GachaMachine3D from "./GachaMachine3D";
 
 interface Props {
   machineId: string;
@@ -92,7 +92,7 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
 
   if (spinResults) {
     return (
-      <GachaSpinReveal
+      <GachaSpinReveal3D
         results={spinResults}
         onDone={() => setSpinResults(null)}
         onSpinAgain={() => { setSpinResults(null); handleSpin(1); }}
@@ -134,9 +134,8 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
           
           {/* Machine */}
           <div className="relative mb-6 flex justify-center">
-            <GachaMachineVisual
+            <GachaMachine3D
               theme={theme}
-              size="lg"
               spinning={spinning}
               onKnobClick={() => !spinning && handleSpin(1)}
             />
