@@ -2725,12 +2725,15 @@ export type Database = {
       }
       delivery_methods: {
         Row: {
+          actual_cost: number
           base_price: number
           base_price_category_id: string | null
           base_price_units_per_delivery: number
           created_at: string
           description_ar: string | null
           display_order: number
+          free_delivery_enabled: boolean
+          free_delivery_min_order: number
           icon: string | null
           id: string
           is_active: boolean
@@ -2739,12 +2742,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actual_cost?: number
           base_price?: number
           base_price_category_id?: string | null
           base_price_units_per_delivery?: number
           created_at?: string
           description_ar?: string | null
           display_order?: number
+          free_delivery_enabled?: boolean
+          free_delivery_min_order?: number
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -2753,12 +2759,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          actual_cost?: number
           base_price?: number
           base_price_category_id?: string | null
           base_price_units_per_delivery?: number
           created_at?: string
           description_ar?: string | null
           display_order?: number
+          free_delivery_enabled?: boolean
+          free_delivery_min_order?: number
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -7995,6 +8004,7 @@ export type Database = {
           original_price: number | null
           original_price_usd: number | null
           other_costs_iqd: number | null
+          personal_delivery_cost: number
           points_reward: number | null
           pre_order_fast_shipping_price: number | null
           pre_order_free_shipping_price: number | null
@@ -8055,6 +8065,7 @@ export type Database = {
           original_price?: number | null
           original_price_usd?: number | null
           other_costs_iqd?: number | null
+          personal_delivery_cost?: number
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
@@ -8115,6 +8126,7 @@ export type Database = {
           original_price?: number | null
           original_price_usd?: number | null
           other_costs_iqd?: number | null
+          personal_delivery_cost?: number
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
