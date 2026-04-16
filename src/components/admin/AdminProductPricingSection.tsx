@@ -123,7 +123,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd;
+      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + personalDeliveryCost;
       results.push({
         label: 'حجز مسبق - بحري',
         type: 'sea',
@@ -132,6 +132,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         commission: commissionSeaIqd,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
+        personalDelivery: personalDeliveryCost,
       });
     }
 
@@ -140,7 +141,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd;
+      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + personalDeliveryCost;
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
@@ -153,6 +154,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         actualWeight: calc.actualWeight,
         volumetricWeight: calc.volumetricWeight,
         usedWeight: calc.usedWeight,
+        personalDelivery: personalDeliveryCost,
       });
     }
 
@@ -442,6 +444,25 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
           </div>
         )}
 
+        {/* ===== DELIVERY COST (global - all sale types) ===== */}
+        {(hasPreOrder || hasDirectSale) && (
+          <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+            <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
+              <Truck className="h-3 w-3 text-emerald-500" />
+              تكلفة التوصيل الشخصي أو الاعتيادي (د.ع)
+            </Label>
+            <Input
+              id="personal_delivery_cost"
+              type="number"
+              min="0"
+              value={personalDeliveryCost || ''}
+              onChange={(e) => setPersonalDeliveryCost(Number(e.target.value))}
+              placeholder="مثال: 38000"
+            />
+            <p className="text-xs text-muted-foreground">يُضاف للسعر النهائي لجميع أنواع البيع — يُخصم من العائد في القسم المالي</p>
+          </div>
+        )}
+
         {/* ===== DIRECT SALE SECTION ===== */}
         {hasDirectSale && (
           <div className="space-y-3 p-3 rounded-lg bg-card border border-border">
@@ -471,21 +492,6 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                 onChange={(e) => setCommissionDirectIqd(Number(e.target.value))}
                 placeholder="0"
               />
-            </div>
-            <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-              <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
-                <Truck className="h-3 w-3 text-emerald-500" />
-                تكلفة التوصيل الشخصي (د.ع)
-              </Label>
-              <Input
-                id="personal_delivery_cost"
-                type="number"
-                min="0"
-                value={personalDeliveryCost || ''}
-                onChange={(e) => setPersonalDeliveryCost(Number(e.target.value))}
-                placeholder="مثال: 38000"
-              />
-              <p className="text-xs text-muted-foreground">يُضاف للسعر النهائي ويظهر كتوصيل مجاني — يُخصم من العائد في القسم المالي</p>
             </div>
           </div>
         )}
@@ -523,9 +529,9 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                     <span>{formatPrice(otherCostsIqd)}</span>
                   </div>
                 )}
-                {r.type === 'direct' && (r.personalDelivery || 0) > 0 && (
+                {(r.personalDelivery || 0) > 0 && (
                   <div className="flex justify-between text-emerald-600">
-                    <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> تكلفة التوصيل الشخصي</span>
+                    <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> تكلفة التوصيل</span>
                     <span>{formatPrice(r.personalDelivery!)}</span>
                   </div>
                 )}
