@@ -523,6 +523,12 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                     <span>{formatPrice(otherCostsIqd)}</span>
                   </div>
                 )}
+                {r.type === 'direct' && (r.personalDelivery || 0) > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> تكلفة التوصيل الشخصي</span>
+                    <span>{formatPrice(r.personalDelivery!)}</span>
+                  </div>
+                )}
                 {r.commission > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">العمولة</span>
