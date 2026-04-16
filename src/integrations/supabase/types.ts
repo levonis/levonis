@@ -10903,7 +10903,7 @@ export type Database = {
       }
       admin_adjust_order_inventory: {
         Args: {
-          p_option_id?: string
+          p_option_name?: string
           p_product_id: string
           p_quantity_change?: number
           p_selected_color?: string
