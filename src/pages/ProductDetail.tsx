@@ -61,7 +61,7 @@ const ProductDetailSkeleton = () => (
 );
 
 const ProductDetail = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
