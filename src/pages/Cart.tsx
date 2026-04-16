@@ -441,7 +441,11 @@ const Cart = () => {
 
   const getDeliveryFee = (governorate: string | null) => {
     // Pickup = always free
-    if (selectedDeliveryMethod === 'pickup') return 0;
+    if (selectedDeliveryMethod === 'pickup') {
+      const pickupMethod = deliveryMethods.find((m: any) => m.method_key === 'pickup');
+      if (pickupMethod?.free_delivery_enabled) return 0;
+      return 0;
+    }
     // Free delivery for 2nd+ direct sale orders before 5PM
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
 
@@ -450,6 +454,14 @@ const Cart = () => {
     const basePrice = method ? Number(method.base_price) : 5000;
     const basePriceCatId = method?.base_price_category_id || null;
     const basePriceUnits = method?.base_price_units_per_delivery || 1;
+
+    // Check free delivery eligibility
+    if (method?.free_delivery_enabled) {
+      const minOrder = method.free_delivery_min_order || 0;
+      if (minOrder === 0 || total >= minOrder) {
+        return 0;
+      }
+    }
 
     // Group items by category_id and sum quantities
     const categoryQty: Record<string, number> = {};
@@ -539,6 +551,23 @@ const Cart = () => {
 
     return basePrice;
   };
+
+  // Check if free delivery is active for selected method
+  const isFreeDeliveryApplied = useMemo(() => {
+    const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+    if (!method?.free_delivery_enabled) return false;
+    const minOrder = method.free_delivery_min_order || 0;
+    return minOrder === 0 || total >= minOrder;
+  }, [deliveryMethods, selectedDeliveryMethod, total]);
+
+  // How much more needed for free delivery
+  const freeDeliveryRemaining = useMemo(() => {
+    const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+    if (!method?.free_delivery_enabled) return 0;
+    const minOrder = method.free_delivery_min_order || 0;
+    if (minOrder === 0 || total >= minOrder) return 0;
+    return minOrder - total;
+  }, [deliveryMethods, selectedDeliveryMethod, total]);
 
   // Use selected address governorate first, fallback to profile governorate
   const rawDeliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
