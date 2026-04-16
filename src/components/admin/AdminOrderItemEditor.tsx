@@ -92,11 +92,11 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         const stillExists = items.find(i => i.id === orig.id);
         if (!stillExists) {
           // Item was removed - restore stock
-          await supabase.rpc("admin_adjust_order_inventory" as any, {
+          await supabase.rpc("admin_adjust_order_inventory", {
             p_product_id: orig.product_id,
-            p_option_id: orig.selected_option || null,
+            p_option_name: orig.selected_option || null,
             p_selected_color: orig.selected_color || null,
-            p_quantity_change: orig.quantity, // positive = restore
+            p_quantity_change: orig.quantity,
           });
           // Delete the order item
           await supabase.from("order_items").delete().eq("id", orig.id);
