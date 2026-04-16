@@ -470,6 +470,45 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
           )}
         </div>
 
+        {/* Free delivery & actual cost */}
+        <div className="mt-4 space-y-3 p-3 rounded-xl bg-background/20 border border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gift className="h-4 w-4 text-green-400" />
+              <span className="text-xs font-bold">التوصيل المجاني</span>
+            </div>
+            <Switch checked={freeDeliveryEnabled} onCheckedChange={setFreeDeliveryEnabled} />
+          </div>
+          {freeDeliveryEnabled && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">الحد الأدنى لمجموع المنتجات (0 = مجاني بدون حد)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={freeDeliveryMinOrder || ''}
+                onChange={(e) => setFreeDeliveryMinOrder(Number(e.target.value))}
+                className="h-8 text-xs bg-background/40 border-white/10"
+                placeholder="مثال: 50000"
+              />
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Truck className="h-3 w-3" />
+              التكلفة الفعلية للتوصيل (تُخصم من الأرباح)
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={actualCost || ''}
+              onChange={(e) => setActualCost(Number(e.target.value))}
+              className="h-8 text-xs bg-background/40 border-white/10"
+              placeholder="مثال: 3000"
+            />
+            <p className="text-[10px] text-muted-foreground/60">المبلغ الفعلي الذي يُدفع لشركة التوصيل — يظهر في القسم المالي</p>
+          </div>
+        </div>
+
         {/* Exceptions for non-pickup methods */}
         {!isPickup && expanded && (
           <div className="mt-5 space-y-5 border-t border-white/5 pt-4">
