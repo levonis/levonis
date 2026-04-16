@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp } from 'lucide-react';
+import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 
