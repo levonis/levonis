@@ -1308,7 +1308,7 @@ const Admin = () => {
         }
 
         if (hasInStock) {
-          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal;
+          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal + personalDeliveryCostVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }
