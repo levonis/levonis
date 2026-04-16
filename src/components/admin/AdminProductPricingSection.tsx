@@ -75,6 +75,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       setHeightCm(editingProduct.height_cm || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
+      setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
 
       // Determine sale types
@@ -183,6 +184,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, commissionDirectIqd)} />
       <input type="hidden" name="other_costs_iqd" value={otherCostsIqd} />
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
+      <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
