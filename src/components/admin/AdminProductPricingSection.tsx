@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp } from 'lucide-react';
+import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 
@@ -40,6 +40,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
 
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
+  const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
   
   // CNY converter
@@ -74,6 +75,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       setHeightCm(editingProduct.height_cm || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
+      setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
 
       // Determine sale types
@@ -115,7 +117,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     if (!shippingSettings || !priceUsd) return null;
     const rate = shippingSettings.usd_to_iqd_rate;
     const priceIqd = Math.round(priceUsd * rate);
-    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number }> = [];
+    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number; personalDelivery?: number }> = [];
 
     if (hasPreOrder && hasSea) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
@@ -155,7 +157,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd;
+      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + personalDeliveryCost;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
@@ -164,11 +166,12 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         commission: commissionDirectIqd,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
+        personalDelivery: personalDeliveryCost,
       });
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, personalDeliveryCost, shippingSettings]);
 
   return (
     <div className="space-y-4 border-t pt-4">
@@ -182,6 +185,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
       <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, commissionDirectIqd)} />
       <input type="hidden" name="other_costs_iqd" value={otherCostsIqd} />
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
+      <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -468,6 +472,21 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                 placeholder="0"
               />
             </div>
+            <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+              <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
+                <Truck className="h-3 w-3 text-emerald-500" />
+                تكلفة التوصيل الشخصي (د.ع)
+              </Label>
+              <Input
+                id="personal_delivery_cost"
+                type="number"
+                min="0"
+                value={personalDeliveryCost || ''}
+                onChange={(e) => setPersonalDeliveryCost(Number(e.target.value))}
+                placeholder="مثال: 38000"
+              />
+              <p className="text-xs text-muted-foreground">يُضاف للسعر النهائي ويظهر كتوصيل مجاني — يُخصم من العائد في القسم المالي</p>
+            </div>
           </div>
         )}
 
@@ -502,6 +521,12 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">تكاليف أخرى</span>
                     <span>{formatPrice(otherCostsIqd)}</span>
+                  </div>
+                )}
+                {r.type === 'direct' && (r.personalDelivery || 0) > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> تكلفة التوصيل الشخصي</span>
+                    <span>{formatPrice(r.personalDelivery!)}</span>
                   </div>
                 )}
                 {r.commission > 0 && (

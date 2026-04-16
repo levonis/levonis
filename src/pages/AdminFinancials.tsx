@@ -179,7 +179,7 @@ const AdminFinancials = () => {
         *, order_type,
         profile:profiles!orders_user_id_fkey_profiles(username, full_name),
         order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id,
-          products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, category_id,
+          products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, category_id,
             categories!products_category_id_fkey(id, name_ar, main_section_id,
               main_sections!categories_main_section_id_fkey(id, name_ar)
             )
@@ -194,6 +194,32 @@ const AdminFinancials = () => {
     },
     enabled: isAdmin,
   });
+
+  // Fetch delivery methods for actual cost calculation
+  const { data: deliveryMethodsData = [] } = useQuery({
+    queryKey: ['delivery-methods-financials'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_methods').select('method_key, actual_cost, name_ar');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isAdmin,
+  });
+
+  // Calculate actual delivery cost for an order (what we actually pay to delivery company)
+  const calcActualDeliveryCost = (order: OrderWithDetails): number => {
+    // Check if any product has personal_delivery_cost
+    const personalCost = (order.order_items || []).reduce((sum, item: any) => {
+      const pdc = item.products?.personal_delivery_cost || 0;
+      return sum + (pdc * (item.quantity || 1));
+    }, 0);
+    if (personalCost > 0) return personalCost;
+    
+    // Use delivery method actual_cost
+    const deliveryMethod = (order as any).delivery_method || 'standard';
+    const methodData = deliveryMethodsData.find((m: any) => m.method_key === deliveryMethod);
+    return methodData?.actual_cost || 0;
+  };
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
@@ -933,9 +959,13 @@ const AdminFinancials = () => {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 border-t">
                 <div><Label className="text-muted-foreground">المبلغ الإجمالي</Label><p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p></div>
                 <div><Label className="text-muted-foreground">تكلفة التوصيل</Label><p className="font-bold text-orange-600">{formatPrice(calcDeliveryCost(selectedOrder))}</p></div>
+                <div>
+                  <Label className="text-muted-foreground">التكلفة الفعلية للتوصيل</Label>
+                  <p className="font-bold text-rose-600">-{formatPrice(calcActualDeliveryCost(selectedOrder))}</p>
+                </div>
                 <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
                 <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
               </div>

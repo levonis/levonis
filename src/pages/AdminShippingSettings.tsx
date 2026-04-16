@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Ship, Plane, Save, Loader2, Package, DollarSign, Percent, Calculator, MapPin, Trash2, Plus, Tag, Layers, Warehouse, Truck, User, ChevronDown, ChevronUp, Gift } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { calculateShippingCost, type ShippingSettings } from "@/hooks/useShippingCalculator";
 import AdminLayout, { AdminLoading } from "@/components/admin/AdminLayout";
 import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
@@ -346,6 +347,9 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
   const [editPrice, setEditPrice] = useState(Number(method.base_price));
   const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "__none__");
   const [editBaseUnits, setEditBaseUnits] = useState<number>(method.base_price_units_per_delivery || 1);
+  const [freeDeliveryEnabled, setFreeDeliveryEnabled] = useState<boolean>(method.free_delivery_enabled || false);
+  const [freeDeliveryMinOrder, setFreeDeliveryMinOrder] = useState<number>(method.free_delivery_min_order || 0);
+  const [actualCost, setActualCost] = useState<number>(method.actual_cost || 0);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-list"],
@@ -377,7 +381,10 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
   const effectiveCatId = editBaseCatId === "__none__" ? null : editBaseCatId;
   const hasChanges = editPrice !== Number(method.base_price)
     || (effectiveCatId || null) !== (method.base_price_category_id || null)
-    || editBaseUnits !== (method.base_price_units_per_delivery || 1);
+    || editBaseUnits !== (method.base_price_units_per_delivery || 1)
+    || freeDeliveryEnabled !== (method.free_delivery_enabled || false)
+    || freeDeliveryMinOrder !== (method.free_delivery_min_order || 0)
+    || actualCost !== (method.actual_cost || 0);
 
   return (
     <GlassCard gradient={cardGradientMap[method.method_key] || cardGradientMap.standard}>
@@ -452,12 +459,54 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
                 base_price: editPrice,
                 base_price_category_id: effectiveCatId,
                 base_price_units_per_delivery: editBaseUnits,
+                free_delivery_enabled: freeDeliveryEnabled,
+                free_delivery_min_order: freeDeliveryMinOrder,
+                actual_cost: actualCost,
               })}
             >
               <Save className="h-3 w-3" />
               حفظ
             </Button>
           )}
+        </div>
+
+        {/* Free delivery & actual cost */}
+        <div className="mt-4 space-y-3 p-3 rounded-xl bg-background/20 border border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gift className="h-4 w-4 text-green-400" />
+              <span className="text-xs font-bold">التوصيل المجاني</span>
+            </div>
+            <Switch checked={freeDeliveryEnabled} onCheckedChange={setFreeDeliveryEnabled} />
+          </div>
+          {freeDeliveryEnabled && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">الحد الأدنى لمجموع المنتجات (0 = مجاني بدون حد)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={freeDeliveryMinOrder || ''}
+                onChange={(e) => setFreeDeliveryMinOrder(Number(e.target.value))}
+                className="h-8 text-xs bg-background/40 border-white/10"
+                placeholder="مثال: 50000"
+              />
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Truck className="h-3 w-3" />
+              التكلفة الفعلية للتوصيل (تُخصم من الأرباح)
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={actualCost || ''}
+              onChange={(e) => setActualCost(Number(e.target.value))}
+              className="h-8 text-xs bg-background/40 border-white/10"
+              placeholder="مثال: 3000"
+            />
+            <p className="text-[10px] text-muted-foreground/60">المبلغ الفعلي الذي يُدفع لشركة التوصيل — يظهر في القسم المالي</p>
+          </div>
         </div>
 
         {/* Exceptions for non-pickup methods */}

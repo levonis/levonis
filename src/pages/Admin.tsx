@@ -1245,12 +1245,14 @@ const Admin = () => {
       const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
       const commissionDirectIqdVal = formData.get('commission_direct_iqd') ? Number(formData.get('commission_direct_iqd')) : 0;
       const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
+      const personalDeliveryCostVal = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
       
       values.commission_iqd = commissionIqdVal;
       values.commission_sea_iqd = commissionSeaIqdVal;
       values.commission_air_iqd = commissionAirIqdVal;
       values.commission_direct_iqd = commissionDirectIqdVal;
       values.other_costs_iqd = otherCostsIqdVal;
+      values.personal_delivery_cost = personalDeliveryCostVal;
 
       if (priceUsdVal && priceUsdVal > 0) {
         // Fetch shipping settings for calculation
@@ -1306,7 +1308,7 @@ const Admin = () => {
         }
 
         if (hasInStock) {
-          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal;
+          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal + personalDeliveryCostVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }
