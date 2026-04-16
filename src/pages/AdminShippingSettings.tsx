@@ -347,6 +347,9 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
   const [editPrice, setEditPrice] = useState(Number(method.base_price));
   const [editBaseCatId, setEditBaseCatId] = useState<string>(method.base_price_category_id || "__none__");
   const [editBaseUnits, setEditBaseUnits] = useState<number>(method.base_price_units_per_delivery || 1);
+  const [freeDeliveryEnabled, setFreeDeliveryEnabled] = useState<boolean>(method.free_delivery_enabled || false);
+  const [freeDeliveryMinOrder, setFreeDeliveryMinOrder] = useState<number>(method.free_delivery_min_order || 0);
+  const [actualCost, setActualCost] = useState<number>(method.actual_cost || 0);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-list"],
@@ -378,7 +381,10 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
   const effectiveCatId = editBaseCatId === "__none__" ? null : editBaseCatId;
   const hasChanges = editPrice !== Number(method.base_price)
     || (effectiveCatId || null) !== (method.base_price_category_id || null)
-    || editBaseUnits !== (method.base_price_units_per_delivery || 1);
+    || editBaseUnits !== (method.base_price_units_per_delivery || 1)
+    || freeDeliveryEnabled !== (method.free_delivery_enabled || false)
+    || freeDeliveryMinOrder !== (method.free_delivery_min_order || 0)
+    || actualCost !== (method.actual_cost || 0);
 
   return (
     <GlassCard gradient={cardGradientMap[method.method_key] || cardGradientMap.standard}>
