@@ -1,36 +1,41 @@
 
 
-# إضافة حقل "تكلفة التوصيل الشخصي/الاعتيادي" لجميع أنواع البيع
+# ربط التوصيل الشخصي بالطابعات فقط وتوضيح المنطق المالي
 
-## المشكلة الحالية
-- حقل `personal_delivery_cost` يظهر فقط في قسم "البيع المباشر"
-- يُضاف فقط لسعر البيع المباشر (`direct_sale_price`)
-- لا يُضاف لأسعار الحجز المسبق (بحري/جوي)
+## الوضع الحالي
+- حقل `personal_delivery_cost` يظهر لجميع المنتجات في تعديل/إضافة المنتج
+- في المالية، يتم خصم `personal_delivery_cost` من أي طلب بغض النظر عن نوع التوصيل
+- التوصيل الشخصي مربوط بقسم محدد (الطابعات) عبر `base_price_category_id` — يظهر فقط إذا السلة تحتوي طابعات ✓
 
-## الإصلاح
+## التغييرات المطلوبة
 
 ### 1. `AdminProductPricingSection.tsx`
-- **نقل** حقل "تكلفة التوصيل" من داخل قسم البيع المباشر إلى **خارج** أقسام البيع — يظهر دائماً بغض النظر عن نوع البيع
-- تغيير التسمية إلى **"تكلفة التوصيل الشخصي أو الاعتيادي (د.ع)"**
-- تعديل حساب المعاينة: إضافة `personalDeliveryCost` لأسعار الحجز المسبق (بحري + جوي) أيضاً
+- إظهار حقل `personal_delivery_cost` **فقط** عندما يكون المنتج ينتمي لقسم الطابعات (أو أي قسم مرتبط بالتوصيل الشخصي)
+- تغيير التسمية: **"تكلفة التوصيل الشخصي (د.ع)"** — بدون "الاعتيادي"
+- تغيير الوصف: "خاص بالطابعات — يُضاف للسعر النهائي ويُخصم من العائد في القسم المالي"
+- نحتاج تمرير `categoryId` أو `isPrinterCategory` للمكون لتحديد الإظهار
 
 ### 2. `Admin.tsx`
-- إضافة `personalDeliveryCostVal` لحساب `seaFinalPrice` و `airFinalPrice` (حالياً مضاف فقط لـ `directFinalPrice`)
+- عند الحفظ: إضافة `personalDeliveryCostVal` للسعر النهائي فقط إذا كان المنتج من قسم الطابعات
+- للمنتجات الأخرى: `personalDeliveryCostVal = 0` تلقائياً
+
+### 3. `AdminFinancials.tsx` — تحسين `calcActualDeliveryCost`
+- إذا التوصيل **شخصي** (`delivery_method === 'personal'`): استخدام `personal_delivery_cost` من المنتج
+- إذا التوصيل **اعتيادي** (`delivery_method === 'standard'`): استخدام `actual_cost` من `delivery_methods`
+- حالياً يفضّل `personal_delivery_cost` دائماً وهذا خطأ — يجب التفريق بنوع التوصيل
 
 ### التفاصيل التقنية
 
-**المعاينة (calculations):**
-```
-// بحري: priceIqd + shippingCost + commission + personalDeliveryCost
-// جوي: priceIqd + shippingCost + commission + personalDeliveryCost  
-// مباشر: priceIqd + otherCosts + commission + personalDeliveryCost (بدون تغيير)
-```
+**تحديد قسم الطابعات:**
+- نجلب `delivery_methods` التي لها `base_price_category_id` (التوصيل الشخصي)
+- إذا `category_id` للمنتج المحرر يطابق أي `base_price_category_id` → إظهار الحقل
 
-**Admin.tsx حفظ:**
+**المالية (calcActualDeliveryCost):**
 ```
-seaFinalPrice = priceIqd + seaShipping + commissionSea + personalDeliveryCostVal
-airFinalPrice = priceIqd + airShipping + commissionAir + personalDeliveryCostVal
-directFinalPrice = priceIqd + otherCosts + commissionDirect + personalDeliveryCostVal (كما هو)
+if delivery_method === 'personal':
+  cost = sum(item.products.personal_delivery_cost * quantity)
+else:
+  cost = delivery_methods[order.delivery_method].actual_cost
 ```
 
 ### الملفات المتأثرة
@@ -38,4 +43,5 @@ directFinalPrice = priceIqd + otherCosts + commissionDirect + personalDeliveryCo
 |-------|-------|
 | `src/components/admin/AdminProductPricingSection.tsx` | تعديل |
 | `src/pages/Admin.tsx` | تعديل |
+| `src/pages/AdminFinancials.tsx` | تعديل |
 
