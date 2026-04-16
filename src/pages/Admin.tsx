@@ -1245,7 +1245,21 @@ const Admin = () => {
       const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
       const commissionDirectIqdVal = formData.get('commission_direct_iqd') ? Number(formData.get('commission_direct_iqd')) : 0;
       const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
-      const personalDeliveryCostVal = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
+      const personalDeliveryCostRaw = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
+      
+      // Only apply personal delivery cost for printer categories (categories linked to personal delivery method)
+      const selectedCategoryId = values.category_id;
+      let personalDeliveryCostVal = 0;
+      if (personalDeliveryCostRaw > 0 && selectedCategoryId) {
+        const { data: pdMethods } = await supabase
+          .from('delivery_methods')
+          .select('base_price_category_id')
+          .not('base_price_category_id', 'is', null);
+        const printerCategoryIds = (pdMethods || []).map((m: any) => m.base_price_category_id);
+        if (printerCategoryIds.includes(selectedCategoryId)) {
+          personalDeliveryCostVal = personalDeliveryCostRaw;
+        }
+      }
       
       values.commission_iqd = commissionIqdVal;
       values.commission_sea_iqd = commissionSeaIqdVal;
