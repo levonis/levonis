@@ -471,6 +471,21 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
                 placeholder="0"
               />
             </div>
+            <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+              <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
+                <Truck className="h-3 w-3 text-emerald-500" />
+                تكلفة التوصيل الشخصي (د.ع)
+              </Label>
+              <Input
+                id="personal_delivery_cost"
+                type="number"
+                min="0"
+                value={personalDeliveryCost || ''}
+                onChange={(e) => setPersonalDeliveryCost(Number(e.target.value))}
+                placeholder="مثال: 38000"
+              />
+              <p className="text-xs text-muted-foreground">يُضاف للسعر النهائي ويظهر كتوصيل مجاني — يُخصم من العائد في القسم المالي</p>
+            </div>
           </div>
         )}
 
