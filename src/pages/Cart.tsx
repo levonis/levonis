@@ -2075,14 +2075,19 @@ const Cart = () => {
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    {cardFreeShippingApplied ? (
+                    {(cardFreeShippingApplied || isFreeDeliveryApplied) ? (
                       <span className="font-bold text-emerald-600">
-                        مجاناً <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>
+                        توصيل مجاني 🎉 {rawDeliveryFee > 0 && <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>}
                       </span>
                     ) : (
                       <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
                     )}
                   </div>
+                  {freeDeliveryRemaining > 0 && (
+                    <div className="text-xs text-emerald-600 bg-emerald-500/10 rounded-lg px-3 py-1.5 text-center">
+                      أضف {formatPrice(freeDeliveryRemaining)} دينار للحصول على توصيل مجاني 🚚
+                    </div>
+                  )}
                   
                   {/* Address selector for direct sale */}
                   {isDirectSaleCart && (
