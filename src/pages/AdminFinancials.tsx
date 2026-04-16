@@ -195,6 +195,32 @@ const AdminFinancials = () => {
     enabled: isAdmin,
   });
 
+  // Fetch delivery methods for actual cost calculation
+  const { data: deliveryMethodsData = [] } = useQuery({
+    queryKey: ['delivery-methods-financials'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_methods').select('method_key, actual_cost, name_ar');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isAdmin,
+  });
+
+  // Calculate actual delivery cost for an order (what we actually pay to delivery company)
+  const calcActualDeliveryCost = (order: OrderWithDetails): number => {
+    // Check if any product has personal_delivery_cost
+    const personalCost = (order.order_items || []).reduce((sum, item: any) => {
+      const pdc = item.products?.personal_delivery_cost || 0;
+      return sum + (pdc * (item.quantity || 1));
+    }, 0);
+    if (personalCost > 0) return personalCost;
+    
+    // Use delivery method actual_cost
+    const deliveryMethod = (order as any).delivery_method || 'standard';
+    const methodData = deliveryMethodsData.find((m: any) => m.method_key === deliveryMethod);
+    return methodData?.actual_cost || 0;
+  };
+
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
       const currentOrder = (orders || []).find(order => order.id === orderId);
