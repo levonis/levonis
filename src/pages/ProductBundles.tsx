@@ -43,7 +43,14 @@ const ProductBundles = () => {
             const colorEntry = colorArr.find((c: any) => c.name === item.selected_color || c.name_ar === item.selected_color);
             if (colorEntry) {
               const optStocks = colorEntry.option_stocks || {};
-              const stock = item.selected_option_id ? (optStocks[item.selected_option_id] ?? 0) : (colorEntry.stock ?? product.direct_stock ?? 0);
+              let stock = 0;
+              if (item.selected_option_id) {
+                stock = optStocks[item.selected_option_id] ?? 0;
+              } else if (Object.keys(optStocks).length > 0) {
+                stock = (Object.values(optStocks) as number[]).reduce((sum: number, v: number) => sum + Number(v), 0);
+              } else {
+                stock = colorEntry.stock ?? product.direct_stock ?? 0;
+              }
               if (stock < (item.quantity || 1)) { outOfStock = true; break; }
             }
           } else {
