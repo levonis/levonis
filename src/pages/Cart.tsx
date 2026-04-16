@@ -1021,6 +1021,7 @@ const Cart = () => {
         }
       }
 
+      await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
       setShowOrderSuccess(true);
