@@ -1,47 +1,72 @@
 
 
-# إصلاح أبعاد المنصة والصورة للمنتج المميز على الشاشات الصغيرة
+# ميزة التوصيل المجاني وتكلفة التوصيل الفعلية
 
-## المشكلة
-- صورة المنتج المميز ثابتة عند `h-64 w-64` (256px) على جميع الأحجام
-- المنصة ثلاثية الأبعاد ثابتة عند `260px` عرض
-- لكن الحاوية على الموبايل `w-32` (128px) فقط — كل شيء يفيض ويتداخل
+## ملخص الطلب
+1. **تفعيل توصيل مجاني** لكل طريقة توصيل (استلام/اعتيادي/شخصي) مع حد أدنى اختياري
+2. **تكلفة التوصيل الفعلية** تُخصم من العائد في القسم المالي (كرقم سالب)
+3. **تكلفة التوصيل الشخصي للمنتج** — حقل جديد في تعديل المنتج يُضاف للسعر النهائي ويظهر في المالية
 
-## الإصلاح
+---
 
-### 1. `src/components/FloatingProductCard.tsx`
-- تغيير أبعاد الصورة من `h-64 w-64 md:h-80 md:w-80` إلى `h-28 w-28 sm:h-48 sm:w-48 md:h-80 md:w-80`
-- تغيير ظل الصورة السفلي ليتناسب مع الحجم الصغير
-- تغيير انعكاس الأرض السفلي ليتناسب
+## التغييرات المطلوبة
 
-### 2. `src/index.css`
-- إضافة breakpoint صغير للمنصة: الأبعاد الافتراضية (mobile) تصبح أصغر (~160px عرض)
-- إضافة `@media (min-width: 640px)` بأبعاد متوسطة (~260px الحالية)
-- إبقاء `@media (min-width: 768px)` للشاشات الكبيرة (360px)
+### 1. قاعدة البيانات — Migration
 
-### التفاصيل التقنية
+**جدول `delivery_methods`** — إضافة 3 أعمدة:
+- `free_delivery_enabled` (boolean, default false) — تفعيل التوصيل المجاني
+- `free_delivery_min_order` (integer, default 0) — الحد الأدنى لمجموع المنتجات
+- `actual_cost` (integer, default 0) — التكلفة الفعلية التي تُخصم من العائد
 
-**CSS الافتراضي (mobile):**
-```
-.cube-top-highlight { width: 160px; height: 3px; }
-.cube-top-featured { width: 160px; height: 18px; }
-.cube-mid-featured { width: 160px; height: 3px; }
-.cube-front-featured { width: 160px; height: 36px; }
-.cube-bottom-edge { width: 150px; height: 4px; }
-.cube-bottom-reflection { width: 145px; height: 6px; }
-.cube-ambient-glow { width: 180px; height: 10px; }
-.cube-glow-ring { width: 160px; height: 8px; }
-```
+**جدول `products`** — إضافة عمود:
+- `personal_delivery_cost` (integer, default 0) — تكلفة التوصيل الشخصي الفعلية للمنتج
 
-**`@media (min-width: 640px)` — tablet:**
-القيم الحالية الافتراضية (260px)
+### 2. صفحة إعدادات الشحن — `AdminShippingSettings.tsx`
 
-**`@media (min-width: 768px)` — desktop:**
-يبقى كما هو (360px)
+في كل بطاقة طريقة توصيل (`DeliveryMethodCard`):
+- إضافة **Switch** لتفعيل التوصيل المجاني
+- عند التفعيل يظهر حقل **الحد الأدنى للطلب** (0 = مجاني بدون حد)
+- إضافة حقل **التكلفة الفعلية للتوصيل** (المبلغ الذي يُخصم من الأرباح)
+- حفظ هذه القيم مع الحفظ الحالي
 
-### الملفات المتأثرة
+### 3. صفحة السلة — `Cart.tsx`
+
+تعديل `getDeliveryFee`:
+- بعد حساب الرسوم العادية، فحص إذا كان `free_delivery_enabled` مفعّل للطريقة المختارة
+- إذا `free_delivery_min_order > 0`: مقارنة مجموع المنتجات (بدون توصيل) مع الحد الأدنى
+- إذا تحقق الشرط: إرجاع 0 مع عرض شارة "توصيل مجاني 🎉"
+- إذا لم يتحقق: عرض كم يحتاج المستخدم للوصول للحد الأدنى
+
+### 4. تعديل المنتج — `AdminProductPricingSection.tsx`
+
+إضافة حقل **تكلفة التوصيل الشخصي** (personal_delivery_cost):
+- يظهر فقط عندما المنتج `has_in_stock = true`
+- يُضاف هذا المبلغ لسعر البيع المباشر (`direct_sale_price += personal_delivery_cost`)
+- يظهر في معاينة السعر
+
+### 5. حفظ المنتج — `Admin.tsx`
+
+- قراءة `personal_delivery_cost` من الفورم
+- إضافته لـ `direct_sale_price` عند الحساب
+
+### 6. القسم المالي — `AdminFinancials.tsx` / `AdminOrders.tsx`
+
+- عرض عمود **تكلفة التوصيل** في تفاصيل الطلب المالي
+- حسابه: التكلفة الفعلية من `delivery_methods.actual_cost` (للاعتيادي) أو `products.personal_delivery_cost` (للشخصي)
+- عرضه **بالسالب** مخصوماً من العائد
+- العائد الصافي = سعر المنتج - تكلفة المنتج - تكلفة التوصيل الفعلية
+
+---
+
+## الملفات المتأثرة
+
 | الملف | النوع |
 |-------|-------|
-| `src/components/FloatingProductCard.tsx` | تعديل |
-| `src/index.css` | تعديل |
+| Migration SQL | إنشاء |
+| `src/pages/AdminShippingSettings.tsx` | تعديل |
+| `src/pages/Cart.tsx` | تعديل |
+| `src/components/admin/AdminProductPricingSection.tsx` | تعديل |
+| `src/pages/Admin.tsx` | تعديل |
+| `src/pages/AdminFinancials.tsx` | تعديل |
+| `src/pages/AdminOrders.tsx` | تعديل |
 
