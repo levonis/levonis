@@ -47,7 +47,7 @@ const ProductBundles = () => {
               if (item.selected_option_id) {
                 stock = optStocks[item.selected_option_id] ?? 0;
               } else if (Object.keys(optStocks).length > 0) {
-                stock = Object.values(optStocks).reduce((sum: number, v: any) => sum + Number(v), 0);
+                stock = (Object.values(optStocks) as number[]).reduce((sum: number, v: number) => sum + Number(v), 0);
               } else {
                 stock = colorEntry.stock ?? product.direct_stock ?? 0;
               }
