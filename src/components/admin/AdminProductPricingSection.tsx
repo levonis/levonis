@@ -117,7 +117,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     if (!shippingSettings || !priceUsd) return null;
     const rate = shippingSettings.usd_to_iqd_rate;
     const priceIqd = Math.round(priceUsd * rate);
-    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number }> = [];
+    const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number; personalDelivery?: number }> = [];
 
     if (hasPreOrder && hasSea) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
