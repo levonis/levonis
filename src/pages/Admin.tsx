@@ -190,6 +190,7 @@ const Admin = () => {
   const [productOptionsStockFilter, setProductOptionsStockFilter] = useState<string>('all');
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [productFeatured, setProductFeatured] = useState(false);
+  const [selectedCategoryForPricing, setSelectedCategoryForPricing] = useState<string>('');
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
