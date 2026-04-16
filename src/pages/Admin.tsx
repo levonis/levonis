@@ -2295,7 +2295,7 @@ const Admin = () => {
                     </div>
 
                     {/* New USD Pricing Section */}
-                    <AdminProductPricingSection editingProduct={editingProduct} />
+                    <AdminProductPricingSection editingProduct={editingProduct} categoryId={editingProduct?.category_id} />
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
