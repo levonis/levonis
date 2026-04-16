@@ -459,6 +459,9 @@ function DeliveryMethodCard({ method, onUpdate }: { method: any; onUpdate: (id: 
                 base_price: editPrice,
                 base_price_category_id: effectiveCatId,
                 base_price_units_per_delivery: editBaseUnits,
+                free_delivery_enabled: freeDeliveryEnabled,
+                free_delivery_min_order: freeDeliveryMinOrder,
+                actual_cost: actualCost,
               })}
             >
               <Save className="h-3 w-3" />
