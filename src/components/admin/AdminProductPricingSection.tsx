@@ -40,6 +40,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
 
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
+  const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
   
   // CNY converter
