@@ -157,7 +157,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd;
+      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + personalDeliveryCost;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
@@ -166,6 +166,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         commission: commissionDirectIqd,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
+        personalDelivery: personalDeliveryCost,
       });
     }
 
