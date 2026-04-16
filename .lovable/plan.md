@@ -1,35 +1,22 @@
 
 
-# إصلاح مشكلة "نفذ من المخزون" الخاطئة في صفحة البندلات
+# إصلاح عدم تفريغ السلة بعد إتمام الطلب (بيع مباشر)
 
 ## السبب
-في `ProductBundles.tsx`، عند فحص المخزون لعنصر بندل بدون `selected_option_id`، الكود يعمل fallback إلى `colorEntry.stock ?? product.direct_stock ?? 0`. لكن الألوان تستخدم `option_stocks` (مثل `{"تعبئة بدون روله": 7}`) وليس `stock`. فيرجع 0 دائماً ويعتبر المنتج نافذ.
-
-مثال: لون Yellow فيه `option_stocks: {"تعبئة بدون روله": 7}` لكن الكود يتجاهلها لأن `selected_option_id` فارغ.
+في `Cart.tsx`، دالة `handleDirectSaleCheckout` (سطر 802-1033) لا تستدعي `clearCart()` بعد نجاح الطلب. بينما `handleCheckout` (الطلب المسبق) يستدعيها في سطر 1443.
 
 ## الإصلاح
 
-### `src/pages/ProductBundles.tsx`
-تعديل منطق حساب المخزون (حوالي سطر 40-45):
-
-عندما `selected_option_id` فارغ **و** اللون يملك `option_stocks` → جمع كل قيم `option_stocks` كمخزون متاح بدلاً من الرجوع لـ `colorEntry.stock`.
+### `src/pages/Cart.tsx`
+إضافة `await clearCart()` في `handleDirectSaleCheckout` قبل سطر 1024 (`setShowDirectSaleDialog(false)`):
 
 ```typescript
-// Before:
-const stock = item.selected_option_id 
-  ? (optStocks[item.selected_option_id] ?? 0) 
-  : (colorEntry.stock ?? product.direct_stock ?? 0);
-
-// After:
-let stock = 0;
-if (item.selected_option_id) {
-  stock = optStocks[item.selected_option_id] ?? 0;
-} else if (Object.keys(optStocks).length > 0) {
-  stock = Object.values(optStocks).reduce((sum, v) => sum + Number(v), 0);
-} else {
-  stock = colorEntry.stock ?? product.direct_stock ?? 0;
-}
+// بعد نجاح إنشاء الطلب، قبل setShowDirectSaleDialog(false)
+await clearCart();
+setShowDirectSaleDialog(false);
+setSuccessOrderNumber(orderResult.order_number);
+setShowOrderSuccess(true);
 ```
 
-ملف واحد فقط يحتاج تعديل.
+ملف واحد فقط، سطر واحد مضاف.
 
