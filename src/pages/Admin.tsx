@@ -1284,14 +1284,14 @@ const Admin = () => {
 
           if (shippingType === 'sea' || shippingType === 'both') {
             const seaCalc = calculateShippingCost('china', 'sea', dims, null, settings);
-            const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal;
+            const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal + personalDeliveryCostVal;
             prices.push(seaFinalPrice);
             values.sea_price = seaFinalPrice;
             values.shipping_cost_iqd = seaCalc.shippingCost;
           }
           if (shippingType === 'air' || shippingType === 'both') {
             const airCalc = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings);
-            const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal;
+            const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal + personalDeliveryCostVal;
             prices.push(airFinalPrice);
             values.air_price = airFinalPrice;
             if (!values.shipping_cost_iqd) values.shipping_cost_iqd = airCalc.shippingCost;
