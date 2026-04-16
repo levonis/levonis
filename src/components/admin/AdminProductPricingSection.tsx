@@ -7,13 +7,30 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, Ship, Plane, Calculator, ShoppingBag, Package, ArrowUp, Truck } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminProductPricingSectionProps {
   editingProduct: any;
+  categoryId?: string;
 }
 
-const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSectionProps) => {
+const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProductPricingSectionProps) => {
   const { data: shippingSettings } = useShippingSettings();
+
+  // Fetch delivery methods to determine which categories support personal delivery
+  const { data: personalDeliveryCategoryIds = [] } = useQuery({
+    queryKey: ['personal-delivery-categories'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('delivery_methods')
+        .select('base_price_category_id')
+        .not('base_price_category_id', 'is', null);
+      return (data || []).map((d: any) => d.base_price_category_id).filter(Boolean);
+    },
+  });
+
+  const isPrinterCategory = categoryId ? personalDeliveryCategoryIds.includes(categoryId) : false;
   
   // Sale types (multi-select)
   const [hasPreOrder, setHasPreOrder] = useState(false);
@@ -113,17 +130,20 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
   // Calculations
   const roundUpToNearest = (value: number, nearest: number) => Math.ceil(value / nearest) * nearest;
 
+  const effectivePersonalDeliveryCost = isPrinterCategory ? personalDeliveryCost : 0;
+
   const calculations = useMemo(() => {
     if (!shippingSettings || !priceUsd) return null;
     const rate = shippingSettings.usd_to_iqd_rate;
     const priceIqd = Math.round(priceUsd * rate);
+    const pdc = effectivePersonalDeliveryCost;
     const results: Array<{ label: string; type: string; priceIqd: number; shipping: number; commission: number; final: number; finalRounded: number; breakdown?: any[]; actualWeight?: number; volumetricWeight?: number; usedWeight?: number; personalDelivery?: number }> = [];
 
     if (hasPreOrder && hasSea) {
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + personalDeliveryCost;
+      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + pdc;
       results.push({
         label: 'حجز مسبق - بحري',
         type: 'sea',
@@ -132,7 +152,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         commission: commissionSeaIqd,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
-        personalDelivery: personalDeliveryCost,
+        personalDelivery: pdc,
       });
     }
 
@@ -141,7 +161,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + personalDeliveryCost;
+      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + pdc;
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
@@ -154,12 +174,12 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         actualWeight: calc.actualWeight,
         volumetricWeight: calc.volumetricWeight,
         usedWeight: calc.usedWeight,
-        personalDelivery: personalDeliveryCost,
+        personalDelivery: pdc,
       });
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + personalDeliveryCost;
+      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + pdc;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
@@ -168,12 +188,12 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
         commission: commissionDirectIqd,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
-        personalDelivery: personalDeliveryCost,
+        personalDelivery: pdc,
       });
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, personalDeliveryCost, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, effectivePersonalDeliveryCost, shippingSettings]);
 
   return (
     <div className="space-y-4 border-t pt-4">
@@ -444,12 +464,12 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
           </div>
         )}
 
-        {/* ===== DELIVERY COST (global - all sale types) ===== */}
-        {(hasPreOrder || hasDirectSale) && (
+        {/* ===== DELIVERY COST (printers only) ===== */}
+        {isPrinterCategory && (hasPreOrder || hasDirectSale) && (
           <div className="space-y-2 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <Label htmlFor="personal_delivery_cost" className="flex items-center gap-1.5">
               <Truck className="h-3 w-3 text-emerald-500" />
-              تكلفة التوصيل الشخصي أو الاعتيادي (د.ع)
+              تكلفة التوصيل الشخصي (د.ع)
             </Label>
             <Input
               id="personal_delivery_cost"
@@ -459,7 +479,7 @@ const AdminProductPricingSection = ({ editingProduct }: AdminProductPricingSecti
               onChange={(e) => setPersonalDeliveryCost(Number(e.target.value))}
               placeholder="مثال: 38000"
             />
-            <p className="text-xs text-muted-foreground">يُضاف للسعر النهائي لجميع أنواع البيع — يُخصم من العائد في القسم المالي</p>
+            <p className="text-xs text-muted-foreground">خاص بالطابعات — يُضاف للسعر النهائي ويُخصم من العائد في القسم المالي</p>
           </div>
         )}
 

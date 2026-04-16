@@ -190,6 +190,7 @@ const Admin = () => {
   const [productOptionsStockFilter, setProductOptionsStockFilter] = useState<string>('all');
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [productFeatured, setProductFeatured] = useState(false);
+  const [selectedCategoryForPricing, setSelectedCategoryForPricing] = useState<string>('');
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
   const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
@@ -1245,7 +1246,21 @@ const Admin = () => {
       const commissionAirIqdVal = formData.get('commission_air_iqd') ? Number(formData.get('commission_air_iqd')) : 0;
       const commissionDirectIqdVal = formData.get('commission_direct_iqd') ? Number(formData.get('commission_direct_iqd')) : 0;
       const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
-      const personalDeliveryCostVal = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
+      const personalDeliveryCostRaw = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
+      
+      // Only apply personal delivery cost for printer categories (categories linked to personal delivery method)
+      const selectedCategoryId = values.category_id;
+      let personalDeliveryCostVal = 0;
+      if (personalDeliveryCostRaw > 0 && selectedCategoryId) {
+        const { data: pdMethods } = await supabase
+          .from('delivery_methods')
+          .select('base_price_category_id')
+          .not('base_price_category_id', 'is', null);
+        const printerCategoryIds = (pdMethods || []).map((m: any) => m.base_price_category_id);
+        if (printerCategoryIds.includes(selectedCategoryId)) {
+          personalDeliveryCostVal = personalDeliveryCostRaw;
+        }
+      }
       
       values.commission_iqd = commissionIqdVal;
       values.commission_sea_iqd = commissionSeaIqdVal;
@@ -2295,7 +2310,7 @@ const Admin = () => {
                     </div>
 
                     {/* New USD Pricing Section */}
-                    <AdminProductPricingSection editingProduct={editingProduct} />
+                    <AdminProductPricingSection editingProduct={editingProduct} categoryId={selectedCategoryForPricing || editingProduct?.category_id} />
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
@@ -2317,6 +2332,7 @@ const Admin = () => {
                         name="category_id"
                         defaultValue={editingProduct?.category_id}
                         required
+                        onChange={(e) => setSelectedCategoryForPricing(e.target.value)}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <option value="">اختر القسم</option>
