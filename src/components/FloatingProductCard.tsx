@@ -40,7 +40,7 @@ const FloatingProductCard = memo(({
       <Link to={`/product/${slug}`} className="block">
         <div className="flex flex-col items-center">
           {/* Product image */}
-          <div className="relative h-64 w-64 md:h-80 md:w-80 z-20" style={{ marginBottom: '-2.5rem' }}>
+          <div className="relative h-28 w-28 sm:h-48 sm:w-48 md:h-80 md:w-80 z-20" style={{ marginBottom: '-2.5rem' }}>
             <img
               src={imageUrl || '/placeholder.svg'}
                alt={displayName}
@@ -48,7 +48,7 @@ const FloatingProductCard = memo(({
               className="w-full h-full object-contain relative z-10"
             />
             {/* Contact shadow — tight at product base */}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-48 h-4 md:w-60 md:h-5 rounded-[50%] bg-black/50 blur-md" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-24 h-3 sm:w-36 sm:h-4 md:w-60 md:h-5 rounded-[50%] bg-black/50 blur-md" />
           </div>
 
           {/* Ambient glow — outer halo */}
@@ -101,7 +101,7 @@ const FloatingProductCard = memo(({
           <div className="cube-bottom-reflection" />
 
           {/* Ground reflection (larger) */}
-          <div className="w-80 h-7 md:w-[26rem] md:h-9 mx-auto rounded-[50%] blur-2xl" style={{ marginTop: '-2px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.45), transparent 60%)' }} />
+          <div className="w-44 h-5 sm:w-64 sm:h-6 md:w-[26rem] md:h-9 mx-auto rounded-[50%] blur-2xl" style={{ marginTop: '-2px', background: 'radial-gradient(ellipse, hsl(160 40% 18% / 0.45), transparent 60%)' }} />
 
         </div>
       </Link>
