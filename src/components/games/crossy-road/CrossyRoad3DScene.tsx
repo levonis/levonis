@@ -61,6 +61,9 @@ interface GameState {
   playerOffsetX: number;
   playerRotation: number;
   onRiver: boolean;
+  riderLogIndex: number | null;
+  riderLogRowIndex: number | null;
+  riderLogStickX: number;
 }
 
 // ── Render snapshot for declarative rendering ──
