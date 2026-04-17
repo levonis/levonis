@@ -948,10 +948,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     // Track logical lane center on X (not visual) to avoid jitter from log drift & jump easing.
     const targetCamX = g.playerLane * CELL + CELL / 2;
     const smoothZ = 1 - Math.exp(-18 * dt);
-    const smoothX = 1 - Math.exp(-6 * dt);
+    const smoothX = 1 - Math.exp(-8 * dt);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smoothZ);
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smoothX);
-    camera.lookAt(playerVisualX, 0, targetZ - 4);
+    // Look straight ahead (same X as camera) to prevent the camera from yawing/tilting sideways with the player.
+    camera.lookAt(camera.position.x, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
     frameCountRef.current++;
