@@ -145,7 +145,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + pdc;
+      const finalPrice = priceIqd + calc.shippingCost + commissionSeaIqd + pdc + referralEarningsIqd;
       results.push({
         label: 'حجز مسبق - بحري',
         type: 'sea',
@@ -163,7 +163,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         ? { length: lengthCm, width: widthCm, height: heightCm } : null;
       const weightNum = parseFloat(weightKg) || 0;
       const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + pdc;
+      const finalPrice = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
       results.push({
         label: 'حجز مسبق - جوي',
         type: 'air',
@@ -181,7 +181,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + pdc;
+      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + pdc + referralEarningsIqd;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
@@ -195,7 +195,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, effectivePersonalDeliveryCost, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
   return (
     <div className="space-y-4 border-t pt-4">
