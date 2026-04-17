@@ -256,7 +256,7 @@ export default function MyReferral() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl space-y-5 pb-24">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 p-6 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sidebar via-sidebar to-sidebar-accent p-6 shadow-2xl">
         <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
         <div className="relative">
