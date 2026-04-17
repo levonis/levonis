@@ -589,6 +589,11 @@ const Cart = () => {
     : 0;
   const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
+  // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
+  const referralOwnerEarnings = appliedReferral
+    ? items.reduce((sum: number, it: any) => sum + (Number(it.products?.referral_earnings_iqd || 0) * (it.quantity || 0)), 0)
+    : 0;
+  
   // Calculate discount
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
@@ -604,7 +609,7 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
-  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount;
+  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
