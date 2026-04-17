@@ -769,7 +769,7 @@ const AdminFinancials = () => {
                          ) : paginatedOrders.length === 0 ? (
                           <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
-                          const profit = calcOrderProfit(order, usdToIqdRate);
+                          const profit = calcOrderProfit(order, usdToIqdRate, deliveryMethodsData as any);
                           return (
                             <TableRow key={order.id}>
                               <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
