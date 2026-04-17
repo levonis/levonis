@@ -2512,6 +2512,14 @@ const Cart = () => {
                         </div>
                       </>
                     )}
+                    {referralOwnerEarnings > 0 && (
+                      <div className="flex justify-between text-sm mb-2 text-amber-600 dark:text-amber-400">
+                        <span className="flex items-center gap-1">
+                          🎁 دعم @{appliedReferral?.owner_username}
+                        </span>
+                        <span className="font-bold">+{formatPrice(referralOwnerEarnings)} د.ع</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
                         {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total')}
