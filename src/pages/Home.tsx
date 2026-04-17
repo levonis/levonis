@@ -209,12 +209,12 @@ const Home = () => {
             </div>
           ) : (
             <div className="space-y-10 md:space-y-16">
-              {mainSections?.map((mainSection) => {
+              {mainSections?.map((mainSection, idx) => {
                 const sectionCategories = categoriesByMainSection?.[mainSection.id] || [];
                 if (sectionCategories.length === 0) return null;
-                
-                return (
-                  <div key={mainSection.id}>
+
+                const sectionContent = (
+                  <div>
                     <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
                       <div className="w-1 h-5 md:h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
                       <h3 className="text-lg md:text-xl font-black text-primary">{getSectionName(mainSection)}</h3>
@@ -234,6 +234,18 @@ const Home = () => {
                       ))}
                     </div>
                   </div>
+                );
+
+                // First 2 sections render immediately; the rest load progressively on scroll
+                return (
+                  <ProgressiveSection
+                    key={mainSection.id}
+                    eager={idx < 2}
+                    minHeight={idx < 2 ? undefined : "260px"}
+                    rootMargin="400px"
+                  >
+                    {sectionContent}
+                  </ProgressiveSection>
                 );
               })}
             </div>
