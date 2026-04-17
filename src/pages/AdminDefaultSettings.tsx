@@ -105,7 +105,7 @@ export default function AdminDefaultSettings() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['default-settings'] }); toast.success('تم حفظ الإعدادات الافتراضية'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['default-settings'] }); },
     onError: (error: any) => { toast.error('فشل: ' + error.message); },
   });
 
@@ -126,24 +126,45 @@ export default function AdminDefaultSettings() {
 
   const updateReferralMutation = useMutation({
     mutationFn: async (minOrder: number) => {
-      const payload = { free_delivery_min_order_iqd: minOrder };
-      const { data: existing } = await supabase.from('default_settings').select('id').eq('setting_key', 'referral_settings').maybeSingle();
+      // Merge with existing referral_settings to preserve other keys (points_for_referred/referrer)
+      const { data: existing } = await supabase
+        .from('default_settings')
+        .select('id, setting_value')
+        .eq('setting_key', 'referral_settings')
+        .maybeSingle();
+      const merged = {
+        ...((existing?.setting_value as any) || {}),
+        free_delivery_min_order_iqd: minOrder,
+      };
       if (existing) {
-        const { error } = await supabase.from('default_settings').update({ setting_value: payload }).eq('setting_key', 'referral_settings');
+        const { error } = await supabase
+          .from('default_settings')
+          .update({ setting_value: merged })
+          .eq('setting_key', 'referral_settings');
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('default_settings').insert({ setting_key: 'referral_settings', setting_value: payload });
+        const { error } = await supabase
+          .from('default_settings')
+          .insert({ setting_key: 'referral_settings', setting_value: merged });
         if (error) throw error;
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['referral-settings'] }); },
+    onError: (error: any) => { toast.error('فشل حفظ إعدادات الإحالة: ' + error.message); },
   });
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (formData) updateMutation.mutate(formData);
-    updateNotifMutation.mutate();
-    updateReferralMutation.mutate(referralMinOrder);
+    try {
+      const promises: Promise<any>[] = [];
+      if (formData) promises.push(updateMutation.mutateAsync(formData));
+      if (notifSettings) promises.push(updateNotifMutation.mutateAsync());
+      promises.push(updateReferralMutation.mutateAsync(referralMinOrder));
+      await Promise.all(promises);
+      toast.success('تم حفظ جميع الإعدادات بنجاح');
+    } catch (err: any) {
+      // Individual error toasts already handled in onError
+    }
   };
 
   const toggleChannel = (channelKey: string, field: 'telegram' | 'push' | 'in_app') => {
@@ -194,9 +215,9 @@ export default function AdminDefaultSettings() {
       icon={<Settings className="h-5 w-5" />}
       description="تخصيص الإعدادات الافتراضية للمنتجات"
       actions={
-        <Button onClick={() => handleSubmit()} disabled={updateMutation.isPending || updateNotifMutation.isPending} className="admin-btn-primary gap-2">
+        <Button onClick={() => handleSubmit()} disabled={updateMutation.isPending || updateNotifMutation.isPending || updateReferralMutation.isPending} className="admin-btn-primary gap-2">
           <Save className="h-4 w-4" />
-          {updateMutation.isPending || updateNotifMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          {updateMutation.isPending || updateNotifMutation.isPending || updateReferralMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
         </Button>
       }
     >
