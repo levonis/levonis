@@ -10,7 +10,7 @@ import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import generatePDF, { Margin, Resolution } from 'react-to-pdf';
-import { OrderInvoice } from '@/components/OrderInvoice';
+import OrderInvoiceDialog from '@/components/OrderInvoiceDialog';
 import UnifiedChatButton from '@/components/UnifiedChatButton';
 import AdminUserChat from '@/components/AdminUserChat';
 import { useState } from 'react';
@@ -75,6 +75,7 @@ const OrderDetail = () => {
   const [showAdminChat, setShowAdminChat] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
   const queryClient = useQueryClient();
   
   useOrderRealtimeNotifications();
@@ -296,16 +297,10 @@ const OrderDetail = () => {
           <GlassCard className="p-3" delay={0.1}>
             <div className="flex flex-wrap gap-2">
               {(order.status === 'arrived_warehouse' || order.status === 'shipped' || order.status === 'arrived_iraq' || order.status === 'delivered') && (
-                <>
-                  <Button onClick={handleDirectPrint} variant="outline" size="sm" className="flex-1 min-w-[120px]">
-                    <Printer className="ml-1.5 h-3.5 w-3.5" />
-                    طباعة
-                  </Button>
-                  <Button onClick={handleDownloadPDF} disabled={isGeneratingPDF} size="sm" className="flex-1 min-w-[120px]">
-                    {isGeneratingPDF ? <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" /> : <FileText className="ml-1.5 h-3.5 w-3.5" />}
-                    تحميل PDF
-                  </Button>
-                </>
+                <Button onClick={() => setShowInvoice(true)} size="sm" className="flex-1 min-w-[120px]">
+                  <FileText className="ml-1.5 h-3.5 w-3.5" />
+                  فاتورة الطلب
+                </Button>
               )}
               {isAdmin && (
                 <Button onClick={() => setShowAdminChat(true)} variant="outline" size="sm" className="flex-1 min-w-[120px]">
@@ -573,8 +568,8 @@ const OrderDetail = () => {
         )}
       </main>
 
-      {/* Hidden Invoice */}
-      <div className="hidden"><OrderInvoice order={order} /></div>
+      {/* Invoice Dialog */}
+      <OrderInvoiceDialog order={order} open={showInvoice} onClose={() => setShowInvoice(false)} />
       
       {!isAdmin && <UnifiedChatButton />}
       
