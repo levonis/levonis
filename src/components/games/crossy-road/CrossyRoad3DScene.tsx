@@ -66,11 +66,11 @@ interface GameState {
 // ── Render snapshot for declarative rendering ──
 interface RenderGround { id: string; x: number; z: number; rowType: RowType; grassDark: boolean; biome: Biome; }
 interface RenderTrafficLight { id: string; x: number; z: number; isWarning: boolean; intensity: number; }
-interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; }
+interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; groundY: number; }
 interface RenderVehicle { id: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { id: string; x: number; z: number; }
 interface RenderLog { id: string; x: number; z: number; modelIdx: number; }
-interface RenderCoin { id: string; x: number; z: number; rotY: number; }
+interface RenderCoin { id: string; x: number; z: number; rotY: number; groundY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
 interface RenderSnapshot {
