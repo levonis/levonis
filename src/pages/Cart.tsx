@@ -2405,7 +2405,7 @@ const Cart = () => {
                       );
                     })()
                   ) : (
-                  <div className="rounded-lg bg-muted/30 border border-border/40 overflow-hidden">
+                  <div className="rounded-lg border border-border/40 overflow-hidden bg-sidebar">
                     {/* Selected method header - always visible */}
                     {(() => {
                       const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
@@ -2419,12 +2419,12 @@ const Cart = () => {
                         <button
                           type="button"
                           onClick={() => setDeliveryOptionsOpen(v => !v)}
-                          className="w-full flex items-center gap-2 py-3 px-4 text-right"
+                          className="w-full flex items-center gap-2 py-3 px-4 text-right bg-sidebar border-primary"
                         >
                           <Truck className="h-5 w-5 text-primary shrink-0" />
                           <span className="font-bold text-foreground flex-1">طريقة التوصيل</span>
                           {selectedMethod && (
-                            <span className="text-xs text-muted-foreground ml-1">
+                            <span className="text-xs text-muted-foreground ml-1 text-center">
                               {selectedMethod.name_ar} — {' '}
                               <span className={`font-bold ${selectedDeliveryMethod === 'pickup' ? 'text-green-500' : 'text-primary'}`}>
                                 {selectedDeliveryMethod === 'pickup' ? 'مجاناً' : `${formatPrice(selectedFee)} د.ع`}
