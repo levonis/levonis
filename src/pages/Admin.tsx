@@ -68,13 +68,26 @@ const mainSectionSchema = z.object({
   display_order: z.number().min(0, 'ترتيب العرض يجب أن يكون صفر أو أكبر'),
 });
 
+/** Convert option adjustment from stored IQD to admin USD input */
+function adjustmentIqdToUsd(adjustmentIqd: number, usdToIqd: number): number {
+  if (!adjustmentIqd) return 0;
+  if (!usdToIqd || usdToIqd <= 0) return adjustmentIqd;
+  return Math.round((Number(adjustmentIqd) / usdToIqd) * 100) / 100;
+}
+
+/** Convert admin USD input to stored IQD */
+function adjustmentUsdToIqd(adjustmentUsd: number, usdToIqd: number): number {
+  if (!adjustmentUsd) return 0;
+  if (!usdToIqd || usdToIqd <= 0) return Math.round(adjustmentUsd);
+  return Math.round(Number(adjustmentUsd) * usdToIqd);
+}
+
 /** Inline price preview for product options */
 function OptionPricePreview({ adjustment, editingProduct }: { adjustment: number; editingProduct: any }) {
   const { data: ss } = useShippingSettings();
   if (!ss || !editingProduct) return null;
   const rate = ss.usd_to_iqd_rate || 1410;
-  // price_adjustment is ALWAYS stored in IQD - never convert from USD
-  const adjIqd = Math.round(adjustment || 0);
+  const adjIqd = adjustmentUsdToIqd(adjustment || 0, rate);
   const prices: { label: string; value: number }[] = [];
   if (editingProduct.direct_sale_price) prices.push({ label: 'مباشر', value: editingProduct.direct_sale_price + adjIqd });
   if (editingProduct.sea_price) prices.push({ label: 'بحري', value: editingProduct.sea_price + adjIqd });
@@ -126,6 +139,8 @@ const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqdRate = shippingSettings?.usd_to_iqd_rate || 1410;
   const [activeTab, setActiveTab] = useState('products');
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
@@ -264,7 +279,7 @@ const Admin = () => {
                 data.map((opt) => ({
                   name: opt.name,
                   name_ar: opt.name_ar,
-                  price_adjustment: Number(opt.price_adjustment),
+                  price_adjustment: adjustmentIqdToUsd(Number(opt.price_adjustment), usdToIqdRate),
                   in_stock: opt.in_stock ?? true,
                   image_url: opt.image_url || undefined,
                   available_for_direct_sale: opt.available_for_direct_sale ?? true,
@@ -1432,7 +1447,7 @@ const Admin = () => {
         const optionsToInsert = productOptions
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => {
-            const adj = opt.price_adjustment;
+            const adj = adjustmentUsdToIqd(Number(opt.price_adjustment || 0), usdToIqdRate);
             return {
               product_id: productId,
               name: opt.name,
