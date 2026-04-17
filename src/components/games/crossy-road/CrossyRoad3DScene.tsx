@@ -61,16 +61,19 @@ interface GameState {
   playerOffsetX: number;
   playerRotation: number;
   onRiver: boolean;
+  riderLogIndex: number | null;
+  riderLogRowIndex: number | null;
+  riderLogStickX: number;
 }
 
 // ── Render snapshot for declarative rendering ──
 interface RenderGround { id: string; x: number; z: number; rowType: RowType; grassDark: boolean; biome: Biome; }
 interface RenderTrafficLight { id: string; x: number; z: number; isWarning: boolean; intensity: number; }
-interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; }
+interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; groundY: number; }
 interface RenderVehicle { id: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { id: string; x: number; z: number; }
 interface RenderLog { id: string; x: number; z: number; modelIdx: number; }
-interface RenderCoin { id: string; x: number; z: number; rotY: number; }
+interface RenderCoin { id: string; x: number; z: number; rotY: number; groundY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
 interface RenderSnapshot {
@@ -103,11 +106,19 @@ const TRAIN_EXIT_X = LANES * CELL + TRAIN_TOTAL_WIDTH + 5;
 // Warning timing
 const TRAIN_WARNING_DURATION = 3.0;
 
-// Player on-log Y offset
-const LOG_Y_OFFSET = 0.18;
+// Grass top elevation (matches grass model height)
+const GRASS_TOP = 0.375;
 
-// Log collision tolerance
-const LOG_TOLERANCE = 0.25;
+// Player on-log Y offset (above the log surface)
+const LOG_Y_OFFSET = 0.45;
+
+// Log collision tolerance (more forgiving for log-to-log jumps)
+const LOG_TOLERANCE = 0.45;
+
+// Returns the visual top elevation of a row's ground for placing objects
+function rowTopY(rowType: RowType): number {
+  return rowType === "grass" ? GRASS_TOP : 0.01;
+}
 
 // ── Biome colors ──
 const BIOME_COLORS: Record<Biome, { ground: number; groundDark: number; tree: number; sky: string }> = {
@@ -340,7 +351,7 @@ function TreeMesh({ data }: { data: RenderTree }) {
   return (
     <mesh geometry={m.geometry} material={tintedMat}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0, data.z]}
+      position={[data.x, data.groundY, data.z]}
     />
   );
 }
@@ -356,7 +367,7 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
   return (
     <mesh geometry={m.geometry} material={m.material}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0, data.z]}
+      position={[data.x, 0.05, data.z]}
       rotation={[0, baseRotY + flipRotY, 0]}
     />
   );
@@ -393,14 +404,14 @@ function LogMesh({ data }: { data: RenderLog }) {
   return (
     <mesh geometry={m.geometry} material={m.material}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0.08, data.z]}
+      position={[data.x, 0.18, data.z]}
     />
   );
 }
 
 function CoinMesh({ data }: { data: RenderCoin }) {
   return (
-    <mesh position={[data.x, 0.5, data.z]} rotation={[Math.PI / 2, data.rotY, 0]}>
+    <mesh position={[data.x, data.groundY + 0.5, data.z]} rotation={[Math.PI / 2, data.rotY, 0]}>
       <cylinderGeometry args={[0.15, 0.15, 0.05, 16]} />
       <meshLambertMaterial color={0xffd700} emissive={0xaa8800} />
     </mesh>
@@ -440,6 +451,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       fromLane: Math.floor(LANES / 2), fromRow: 3,
       hopAnim: 0, playerOffsetX: 0, playerRotation: 0,
       onRiver: false,
+      riderLogIndex: null, riderLogRowIndex: null, riderLogStickX: 0,
     };
 
     return () => { audio.dispose(); };
@@ -492,6 +504,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
       g.playerOffsetX = 0;
       g.onRiver = false;
+      g.riderLogIndex = null;
+      g.riderLogRowIndex = null;
     } else if (nowOnRiver) {
       let actualPx: number;
       if (wasOnRiver) {
@@ -502,25 +516,42 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         actualPx = g.playerLane * CELL + CELL / 2;
       }
 
-      let foundLog: LogObj | null = null;
-      for (const log of newRow.logs) {
+      // Find best (closest center) log on the destination row
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < newRow.logs.length; i++) {
+        const log = newRow.logs[i];
         const logLeft = log.x;
         const logRight = log.x + log.width;
-        if (actualPx >= logLeft - LOG_TOLERANCE && actualPx <= logRight + LOG_TOLERANCE) {
-          foundLog = log;
-          break;
+        const center = (logLeft + logRight) / 2;
+        const inside = actualPx >= logLeft - LOG_TOLERANCE && actualPx <= logRight + LOG_TOLERANCE;
+        const d = Math.abs(actualPx - center);
+        if (inside && d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
         }
       }
 
-      if (foundLog) {
-        g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
+      if (bestIdx >= 0) {
+        const log = newRow.logs[bestIdx];
+        // Stick player to a fixed X-offset relative to the log so they ride with it
+        const stickX = actualPx - log.x; // 0..log.width
+        g.riderLogIndex = bestIdx;
+        g.riderLogRowIndex = g.playerRow;
+        g.riderLogStickX = stickX;
+        const lockedPx = log.x + stickX;
+        g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
       } else {
+        g.riderLogIndex = null;
+        g.riderLogRowIndex = null;
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
       g.onRiver = true;
     } else {
       g.playerOffsetX = 0;
       g.onRiver = false;
+      g.riderLogIndex = null;
+      g.riderLogRowIndex = null;
     }
 
     if (dir === "up") g.playerRotation = 0;
@@ -676,16 +707,42 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
         if (currentRow.type === "river") {
           let onLog = false;
-          const riverPw = 0.3;
-          for (const log of currentRow.logs) {
+
+          // If we have a tracked rider log, follow it precisely
+          if (
+            !g.moving &&
+            g.riderLogIndex !== null &&
+            g.riderLogRowIndex === g.playerRow &&
+            currentRow.logs[g.riderLogIndex]
+          ) {
+            const log = currentRow.logs[g.riderLogIndex];
+            const lockedPx = log.x + g.riderLogStickX;
+            g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+            // Verify still on log
             const logLeft = log.x;
             const logRight = log.x + log.width;
-            if (px + riverPw / 2 > logLeft - LOG_TOLERANCE && px - riverPw / 2 < logRight + LOG_TOLERANCE) {
+            if (lockedPx >= logLeft - LOG_TOLERANCE && lockedPx <= logRight + LOG_TOLERANCE) {
               onLog = true;
-              if (!g.moving) g.playerOffsetX += log.speed * dt;
-              break;
+            }
+          } else {
+            const riverPw = 0.3;
+            for (let li = 0; li < currentRow.logs.length; li++) {
+              const log = currentRow.logs[li];
+              const logLeft = log.x;
+              const logRight = log.x + log.width;
+              if (px + riverPw / 2 > logLeft - LOG_TOLERANCE && px - riverPw / 2 < logRight + LOG_TOLERANCE) {
+                onLog = true;
+                if (!g.moving) {
+                  // Lock onto this log
+                  g.riderLogIndex = li;
+                  g.riderLogRowIndex = g.playerRow;
+                  g.riderLogStickX = px - log.x;
+                }
+                break;
+              }
             }
           }
+
           if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
           if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
@@ -733,16 +790,24 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark, biome: row.biome });
 
-      // Decorative trees on sides
-      if (row.type === "grass" || row.type === "road") {
-        trees.push({ id: `dl${r}_1`, x: -2, z, modelIdx: r * 3, biome: row.biome });
-        trees.push({ id: `dl${r}_2`, x: -4, z, modelIdx: r * 3 + 1, biome: row.biome });
-        if (r % 2 === 0) trees.push({ id: `dl${r}_3`, x: -6, z, modelIdx: r * 5, biome: row.biome });
-        if (r % 3 === 0) trees.push({ id: `dl${r}_4`, x: -8, z, modelIdx: r * 7 + 2, biome: row.biome });
-        trees.push({ id: `dr${r}_1`, x: LANES * CELL + 2, z, modelIdx: r * 3 + 2, biome: row.biome });
-        trees.push({ id: `dr${r}_2`, x: LANES * CELL + 4, z, modelIdx: r * 3, biome: row.biome });
-        if (r % 2 === 0) trees.push({ id: `dr${r}_3`, x: LANES * CELL + 6, z, modelIdx: r * 5 + 1, biome: row.biome });
-        if (r % 3 === 0) trees.push({ id: `dr${r}_4`, x: LANES * CELL + 8, z, modelIdx: r * 7, biome: row.biome });
+      // Decorative trees on sides — extend further to fill widescreen
+      // Side decorative trees always sit on grass-height base for visual consistency
+      const decoY = GRASS_TOP;
+      if (row.type === "grass" || row.type === "road" || row.type === "rail" || row.type === "river") {
+        const sideTreeOffsets = [-2, -4, -6, -8, -11, -14, -17, -20];
+        const rightBase = LANES * CELL;
+        const rightTreeOffsets = [2, 4, 6, 8, 11, 14, 17, 20].map(v => rightBase + v);
+        sideTreeOffsets.forEach((off, i) => {
+          // Skip some for variety on far columns
+          if (i >= 4 && (r + i) % 2 !== 0) return;
+          if (i >= 6 && (r + i) % 3 !== 0) return;
+          trees.push({ id: `dl${r}_${i}`, x: off, z, modelIdx: r * 3 + i, biome: row.biome, groundY: decoY });
+        });
+        rightTreeOffsets.forEach((x, i) => {
+          if (i >= 4 && (r + i) % 2 !== 0) return;
+          if (i >= 6 && (r + i) % 3 !== 0) return;
+          trees.push({ id: `dr${r}_${i}`, x, z, modelIdx: r * 3 + i + 1, biome: row.biome, groundY: decoY });
+        });
       }
 
       // Traffic lights on rail rows
@@ -757,7 +822,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       if (row.type === "grass") {
         for (const laneIdx of row.treeIndices) {
-          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r, biome: row.biome });
+          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r, biome: row.biome, groundY: GRASS_TOP });
         }
       }
 
@@ -781,7 +846,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
 
       if (row.coin && !row.coin.collected) {
-        coins.push({ id: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003 });
+        const coinGroundY = rowTopY(row.type);
+        coins.push({ id: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003, groundY: coinGroundY });
       }
     }
 
@@ -800,8 +866,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const hopOffset = Math.sin(g.hopAnim * Math.PI) * 0.3;
 
     const currentRow = g.rows[g.playerRow];
+    const fromRow = g.rows[g.fromRow];
     const isOnRiver = currentRow && currentRow.type === "river";
-    const baseY = isOnRiver ? LOG_Y_OFFSET + 0.15 : 0.15;
+    const destBaseY = isOnRiver ? LOG_Y_OFFSET + 0.05 : rowTopY(currentRow?.type ?? "grass") + 0.05;
+    const srcIsRiver = fromRow && fromRow.type === "river";
+    const srcBaseY = srcIsRiver ? LOG_Y_OFFSET + 0.05 : rowTopY(fromRow?.type ?? "grass") + 0.05;
+    const baseY = g.moving
+      ? srcBaseY + (destBaseY - srcBaseY) * g.moveProgress
+      : destBaseY;
 
     setSnapshot({
       grounds, trafficLights, trees, vehicles, trains, logs: logRenders, coins,
