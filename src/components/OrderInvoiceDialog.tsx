@@ -124,31 +124,49 @@ export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoic
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(invoiceRef.current, {
+
+      // Render an off-screen, full-size clone so html2canvas captures
+      // the actual A4 layout instead of the visually-scaled preview.
+      const offscreen = document.createElement('div');
+      offscreen.style.position = 'fixed';
+      offscreen.style.top = '0';
+      offscreen.style.left = '-10000px';
+      offscreen.style.width = '210mm';
+      offscreen.style.background = '#fff';
+      offscreen.setAttribute('dir', 'rtl');
+      offscreen.innerHTML = invoiceRef.current.innerHTML;
+      document.body.appendChild(offscreen);
+
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const canvas = await html2canvas(offscreen, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#fff',
+        windowWidth: offscreen.scrollWidth,
+        windowHeight: offscreen.scrollHeight,
       });
+
+      document.body.removeChild(offscreen);
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = 210;
       const pdfHeight = 297;
-      const margin = 5;
-      const contentWidth = pdfWidth - margin * 2;
-      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+      const contentHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      if (contentHeight <= pdfHeight - margin * 2) {
-        pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+      if (contentHeight <= pdfHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, contentHeight);
       } else {
-        let remainingHeight = contentHeight;
-        let position = margin;
-        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-        remainingHeight -= pdfHeight - margin * 2;
-        while (remainingHeight > 0) {
+        let position = 0;
+        let remaining = contentHeight;
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
+        remaining -= pdfHeight;
+        while (remaining > 0) {
           pdf.addPage();
-          position = margin - (contentHeight - remainingHeight);
-          pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-          remainingHeight -= pdfHeight - margin * 2;
+          position = -(contentHeight - remaining);
+          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, contentHeight);
+          remaining -= pdfHeight;
         }
       }
       pdf.save(`invoice-${data.invoiceNo}.pdf`);
@@ -187,6 +205,7 @@ export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoic
               transformOrigin: 'top center',
               width: '210mm',
               margin: '0 auto',
+              marginBottom: 'calc(297mm * -0.45)',
             }}
           >
             <div ref={invoiceRef}>
