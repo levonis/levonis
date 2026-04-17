@@ -17,17 +17,16 @@ interface ReauthenticationEmailProps {
 }
 
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="ar" dir="rtl">
     <Head />
-    <Preview>Your verification code</Preview>
+    <Preview>رمز التحقق الخاص بك</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm reauthentication</Heading>
-        <Text style={text}>Use the code below to confirm your identity:</Text>
+        <Heading style={h1}>تأكيد إعادة المصادقة</Heading>
+        <Text style={text}>استخدم الرمز التالي لتأكيد هويتك:</Text>
         <Text style={codeStyle}>{token}</Text>
         <Text style={footer}>
-          This code will expire shortly. If you didn't request this, you can
-          safely ignore this email.
+          سينتهي هذا الرمز قريباً. إذا لم تطلبه، يمكنك تجاهل هذه الرسالة بأمان.
         </Text>
       </Container>
     </Body>
@@ -36,25 +35,20 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
 export default ReauthenticationEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
+const main = { backgroundColor: '#ffffff', fontFamily: "'Cairo', Arial, sans-serif" }
+const container = { padding: '24px 28px', maxWidth: '560px' }
+const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#103d33', margin: '0 0 20px' }
+const text = { fontSize: '15px', color: '#3d4a45', lineHeight: '1.7', margin: '0 0 24px' }
 const codeStyle = {
   fontFamily: 'Courier, monospace',
-  fontSize: '22px',
+  fontSize: '28px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: '#c7b46c',
+  letterSpacing: '6px',
+  backgroundColor: '#f7f3e6',
+  padding: '16px 24px',
+  borderRadius: '12px',
+  display: 'inline-block',
   margin: '0 0 30px',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
