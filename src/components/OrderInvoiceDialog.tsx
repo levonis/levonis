@@ -62,7 +62,7 @@ export default function OrderInvoiceDialog({ order, open, onClose }: OrderInvoic
       'منتج';
     return {
       name: `${productName}${it.quantity > 1 ? ` × ${it.quantity}` : ''}`,
-      total: Number(it.total_price ?? it.unit_price * (it.quantity || 1) ?? 0),
+      total: Number(it.total_price ?? (it.unit_price ?? 0) * (it.quantity || 1)),
     };
   });
 
