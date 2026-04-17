@@ -548,14 +548,16 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.fromLane = g.playerLane;
     g.fromRow = g.playerRow;
     g.fromOffsetX = g.playerOffsetX; // remember actual visual start
+    // Preserve current rider state as the "from" so camera/player visual interpolation
+    // begins exactly at the player's current visual position (prevents camera snap).
+    g.fromRiderLogIndex = g.riderLogIndex;
+    g.fromRiderRowIndex = g.riderLogRowIndex;
+    g.fromRiderStickX = g.riderLogStickX;
     g.playerLane = targetLane;
     g.playerRow = targetRow;
     g.pendingRiderLogIndex = null;
     g.pendingRiderRowIndex = null;
     g.pendingRiderStickX = 0;
-    g.fromRiderLogIndex = null;
-    g.fromRiderRowIndex = null;
-    g.fromRiderStickX = 0;
     g.pendingExitSnap = false;
 
     if (dir === "up") {
