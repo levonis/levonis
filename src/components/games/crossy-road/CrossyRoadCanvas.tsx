@@ -28,17 +28,16 @@ function computeZoom() {
   const isMobile = w < h;
 
   if (isMobile) {
-    // Mobile: fill screen vertically, show ~12 rows
-    const z = h / 16;
-    return Math.max(35, Math.min(55, z));
+    // Mobile: slightly smaller zoom to fit wider playfield (~21 columns)
+    const z = h / 18;
+    return Math.max(30, Math.min(48, z));
   }
 
-  // Desktop / Tablet (Landscape) — keep gameplay area filling more screen
-  // Higher minimum keeps the camera closer so the playfield fills the view
-  const zFromH = h / 13;
-  const zFromW = w / 16;
+  // Desktop / Tablet — pull camera back a bit more for the wider playfield
+  const zFromH = h / 14.5;
+  const zFromW = w / 18;
   const z = Math.min(zFromH, zFromW);
-  return Math.max(60, Math.min(110, z));
+  return Math.max(52, Math.min(96, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {

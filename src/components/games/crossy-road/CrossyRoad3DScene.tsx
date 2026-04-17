@@ -98,6 +98,14 @@ const MODEL_SCALE = 1.0;
 const GROUND_SCALE_X = (LANES * CELL) / 25;
 const GROUND_SCALE_Z = CELL / 1;
 
+// Extended playable horizontal range (player can walk between these lanes).
+// LANES (=9) remains the visual "core" tile group used for ground rendering.
+const MIN_LANE = -6;
+const MAX_LANE = 14; // inclusive → 21 playable columns
+const PLAY_LEFT_X = MIN_LANE * CELL;
+const PLAY_RIGHT_X = (MAX_LANE + 1) * CELL;
+const PLAY_WIDTH = PLAY_RIGHT_X - PLAY_LEFT_X;
+
 // Spawn margin — cars/logs appear from well off-screen
 const SPAWN_MARGIN = 6;
 
@@ -105,8 +113,8 @@ const SPAWN_MARGIN = 6;
 const TRAIN_PART_WIDTH = 4.6;
 const TRAIN_TOTAL_PARTS = 5;
 const TRAIN_TOTAL_WIDTH = TRAIN_PART_WIDTH * TRAIN_TOTAL_PARTS;
-const TRAIN_SPAWN_X = -TRAIN_TOTAL_WIDTH - 5;
-const TRAIN_EXIT_X = LANES * CELL + TRAIN_TOTAL_WIDTH + 5;
+const TRAIN_SPAWN_X = PLAY_LEFT_X - TRAIN_TOTAL_WIDTH - 5;
+const TRAIN_EXIT_X = PLAY_RIGHT_X + TRAIN_TOTAL_WIDTH + 5;
 
 // Warning timing
 const TRAIN_WARNING_DURATION = 3.0;
@@ -213,20 +221,20 @@ function generateRow(index: number): Row {
 
   if (type === "road") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    // Fewer cars in early rows → bigger gaps
-    const baseCount = 1 + Math.floor(Math.random() * 2);
-    const count = Math.min(3, baseCount + (diff > 0.8 ? 1 : 0));
+    // Scale car count up with the wider playfield
+    const baseCount = 2 + Math.floor(Math.random() * 3);
+    const count = Math.min(6, baseCount + (diff > 0.8 ? 1 : 0));
     // ~30% slower base speed and gentler difficulty growth, capped lower
     const baseSpeed = 1.7 + Math.random() * 1.4;
     const rawSpeed = baseSpeed + diff * 1.8;
-    const speed = Math.min(rawSpeed, 5.5) * dir; // cap (was effectively ~7.5)
+    const speed = Math.min(rawSpeed, 5.5) * dir;
     const isTruck = Math.random() < 0.3;
 
-    // Spawn cars spread across a wide range, they enter/exit like trains
-    const totalRange = LANES * CELL + SPAWN_MARGIN * 2;
+    // Spawn cars spread across full extended range
+    const totalRange = PLAY_WIDTH + SPAWN_MARGIN * 2;
     const spacing = totalRange / count;
     for (let i = 0; i < count; i++) {
-      const startX = -SPAWN_MARGIN + spacing * i + Math.random() * (spacing * 0.5);
+      const startX = PLAY_LEFT_X - SPAWN_MARGIN + spacing * i + Math.random() * (spacing * 0.5);
       row.obstacles.push({
         x: startX,
         speed, width: isTruck ? 2 : 1,
@@ -239,22 +247,21 @@ function generateRow(index: number): Row {
     row.trainTimer = Math.max(4, (7 + Math.random() * 3) - diff * 1.5);
   } else if (type === "river") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    // More logs early on; slower depletion with difficulty
-    const baseLogCount = 3 - Math.floor(diff * 1);
-    const count = Math.max(2, baseLogCount);
-    const baseSpeed = 1.0 + Math.random() * 1.0; // ~30% slower
+    // More logs early on; scaled to wider playfield
+    const baseLogCount = 5 - Math.floor(diff * 1);
+    const count = Math.max(4, baseLogCount);
+    const baseSpeed = 1.0 + Math.random() * 1.0;
     const rawSpeed = baseSpeed + diff * 0.9;
     const speed = Math.min(rawSpeed, 3.0) * dir;
-    
-    // Space logs with guaranteed large gaps (≥2.5 units)
-    const logWidth = 1.5 + Math.random() * 1.0; // vary between 1.5 and 2.5
-    const totalRange = LANES * CELL + SPAWN_MARGIN * 2;
+
+    const logWidth = 1.5 + Math.random() * 1.0;
+    const totalRange = PLAY_WIDTH + SPAWN_MARGIN * 2;
     const spacing = totalRange / count;
     const minGap = 2.5;
-    
+
     for (let i = 0; i < count; i++) {
       const maxJitter = Math.max(0, spacing - logWidth - minGap);
-      const startX = -SPAWN_MARGIN + spacing * i + Math.random() * maxJitter;
+      const startX = PLAY_LEFT_X - SPAWN_MARGIN + spacing * i + Math.random() * maxJitter;
       row.logs.push({
         x: startX,
         speed, width: logWidth,
@@ -490,8 +497,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     if (dir === "up") { targetRow = g.playerRow + 1; }
     else if (dir === "down") { targetRow = Math.max(0, g.playerRow - 1); }
-    else if (dir === "left") { targetLane = Math.max(0, g.playerLane - 1); }
-    else if (dir === "right") { targetLane = Math.min(LANES - 1, g.playerLane + 1); }
+    else if (dir === "left") { targetLane = Math.max(MIN_LANE, g.playerLane - 1); }
+    else if (dir === "right") { targetLane = Math.min(MAX_LANE, g.playerLane + 1); }
 
     const destRow = g.rows[targetRow];
     if (destRow && destRow.type === "grass" && destRow.treeIndices.includes(targetLane)) {
@@ -687,12 +694,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (row.type === "road") {
           for (const obs of row.obstacles) {
             obs.x += obs.speed * dt;
-            // Off-screen respawn like train (not wrap)
-            if (obs.speed > 0 && obs.x > LANES * CELL + SPAWN_MARGIN) {
-              obs.x = -obs.width - SPAWN_MARGIN;
+            if (obs.speed > 0 && obs.x > PLAY_RIGHT_X + SPAWN_MARGIN) {
+              obs.x = PLAY_LEFT_X - obs.width - SPAWN_MARGIN;
             }
-            if (obs.speed < 0 && obs.x < -obs.width - SPAWN_MARGIN) {
-              obs.x = LANES * CELL + SPAWN_MARGIN;
+            if (obs.speed < 0 && obs.x < PLAY_LEFT_X - obs.width - SPAWN_MARGIN) {
+              obs.x = PLAY_RIGHT_X + SPAWN_MARGIN;
             }
           }
         }
@@ -729,12 +735,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (row.type === "river") {
           for (const log of row.logs) {
             log.x += log.speed * dt;
-            // Off-screen respawn like train
-            if (log.speed > 0 && log.x > LANES * CELL + SPAWN_MARGIN) {
-              log.x = -log.width - SPAWN_MARGIN;
+            if (log.speed > 0 && log.x > PLAY_RIGHT_X + SPAWN_MARGIN) {
+              log.x = PLAY_LEFT_X - log.width - SPAWN_MARGIN;
             }
-            if (log.speed < 0 && log.x < -log.width - SPAWN_MARGIN) {
-              log.x = LANES * CELL + SPAWN_MARGIN;
+            if (log.speed < 0 && log.x < PLAY_LEFT_X - log.width - SPAWN_MARGIN) {
+              log.x = PLAY_RIGHT_X + SPAWN_MARGIN;
             }
           }
         }
@@ -797,7 +802,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
           }
 
           if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
-          if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
+          if (px < PLAY_LEFT_X - CELL || px > PLAY_RIGHT_X + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
 
         if (currentRow.coin && !currentRow.coin.collected && currentRow.coin.lane === g.playerLane) {
@@ -814,10 +819,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
     }
 
-    // Camera follow — player at ~25% from bottom
+    // Camera follow — player at ~25% from bottom; track horizontally too.
     const targetZ = -(g.playerRow - 3) * CELL;
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ + 8, 0.05);
-    camera.position.x = (LANES * CELL) / 2;
+    const baseCamX = (LANES * CELL) / 2; // 4.5
+    const playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+    const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
+    camera.lookAt(camera.position.x, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
     frameCountRef.current++;
@@ -865,6 +874,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         const minCol = -SIDE_EXTEND_TILES * LANES;
         const maxCol = (SIDE_EXTEND_TILES + 1) * LANES;
         for (let col = minCol; col < maxCol; col++) {
+          if (col >= MIN_LANE && col <= MAX_LANE) continue;
           if (seededTree(col, backRowVirtual, density)) {
             trees.push({
               id: `tB${br}_${col}`,
@@ -903,12 +913,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
 
       // Decorative side trees ONLY on grass rows — deterministic, regular.
+      // Skip the extended playable zone so the player always has free lanes.
       if (row.type === "grass") {
         const density = row.biome === "dark_forest" ? 0.42 : 0.28;
         for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
           for (let lane = 0; lane < LANES; lane++) {
             const colL = -s * LANES + lane;
-            if (seededTree(colL, r, density)) {
+            if (colL < MIN_LANE && seededTree(colL, r, density)) {
               trees.push({
                 id: `dl${r}_${s}_${lane}`,
                 x: colL * CELL + CELL / 2, z,
@@ -917,7 +928,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               });
             }
             const colR = LANES + (s - 1) * LANES + lane;
-            if (seededTree(colR, r, density)) {
+            if (colR > MAX_LANE && seededTree(colR, r, density)) {
               trees.push({
                 id: `dr${r}_${s}_${lane}`,
                 x: colR * CELL + CELL / 2, z,
