@@ -178,6 +178,7 @@ function AppContent() {
 
   return (
     <>
+      <ScrollRestoration />
       {!isReelsPage && <AnnouncementBar />}
       <main style={{ paddingTop: 0 }}>
         <Suspense fallback={<SuspenseLoader />}>

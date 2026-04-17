@@ -116,7 +116,6 @@ const ProductCard = ({
   return (
     <Link 
       to={`/product/${slug}`}
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       className="group block product-card-glass p-1.5 relative"
     >
       {/* Direct sale ribbon */}
