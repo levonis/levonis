@@ -35,21 +35,23 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   const [savingsOpen, setSavingsOpen] = useState(false);
   const [couponsOpen, setCouponsOpen] = useState(false);
 
-  // Detect VIP+ to switch CTA → "إدارة كود الإحالة"
-  const { data: vipPlusActive } = useQuery({
-    queryKey: ["profile-header-vip-plus", userId],
+  // Detect active card → drives both VIP+ CTA and the card background color
+  const { data: activeCard } = useQuery({
+    queryKey: ["profile-header-active-card", userId],
     enabled: !!userId,
     staleTime: 60_000,
     queryFn: async () => {
       const { data } = await supabase
         .from("user_cards")
-        .select("loyalty_levels:level_id(is_vip_plus)")
+        .select("level_id, loyalty_levels:level_id(level_key, name_ar, color, min_points, is_vip_plus)")
         .eq("user_id", userId)
         .eq("is_active", true)
         .maybeSingle();
-      return !!(data?.loyalty_levels as any)?.is_vip_plus;
+      return data;
     },
   });
+  const vipPlusActive = !!(activeCard?.loyalty_levels as any)?.is_vip_plus;
+  const cardLevelData = (activeCard?.loyalty_levels as any) || null;
 
   const { data: userPoints, isLoading: pointsLoading } = useQuery({
     queryKey: ["profile-user-points", userId],
