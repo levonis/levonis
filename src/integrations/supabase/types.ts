@@ -8578,8 +8578,10 @@ export type Database = {
       }
       referral_coupons: {
         Row: {
+          banner_style: string
           code: string
           created_at: string
+          custom_message: string | null
           expires_at: string | null
           id: string
           is_active: boolean
@@ -8589,8 +8591,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          banner_style?: string
           code: string
           created_at?: string
+          custom_message?: string | null
           expires_at?: string | null
           id?: string
           is_active?: boolean
@@ -8600,8 +8604,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          banner_style?: string
           code?: string
           created_at?: string
+          custom_message?: string | null
           expires_at?: string | null
           id?: string
           is_active?: boolean

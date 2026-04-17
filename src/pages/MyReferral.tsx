@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Copy, Check, Share2, Crown, Users, Coins, Calendar, Wallet, Pencil, Loader2, Gift, TrendingUp } from "lucide-react";
+import { Copy, Check, Share2, Crown, Users, Coins, Calendar, Wallet, Pencil, Loader2, Gift, TrendingUp, Palette, Save } from "lucide-react";
 import { useVipPlusStatus } from "@/hooks/useVipPlus";
 import { formatPrice } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { REFERRAL_BANNER_STYLES, getReferralBannerStyle, type ReferralBannerStyleKey } from "@/lib/referralBannerStyles";
 
 export default function MyReferral() {
   const { user } = useAuth();
@@ -27,6 +29,9 @@ export default function MyReferral() {
   const [creating, setCreating] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [freeDeliveryMin, setFreeDeliveryMin] = useState<number>(100000);
+  const [customMessage, setCustomMessage] = useState<string>("");
+  const [bannerStyle, setBannerStyle] = useState<ReferralBannerStyleKey>("amber");
+  const [savingCustom, setSavingCustom] = useState(false);
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -72,6 +77,8 @@ export default function MyReferral() {
 
     setCoupon(activeCoupon);
     setNewCode(activeCoupon?.code || "");
+    setCustomMessage((activeCoupon as any)?.custom_message || "");
+    setBannerStyle(((activeCoupon as any)?.banner_style as ReferralBannerStyleKey) || "amber");
 
     if (activeCoupon) {
       const { data: u } = await supabase
@@ -157,6 +164,29 @@ export default function MyReferral() {
     }
     toast.success("تم تحديث الكود");
     setEditingCode(false);
+    loadData();
+  };
+
+  const saveCustomization = async () => {
+    if (!coupon?.id) return;
+    if (customMessage.length > 140) {
+      toast.error("الرسالة طويلة جداً (الحد الأقصى 140 حرفاً)");
+      return;
+    }
+    setSavingCustom(true);
+    const { error } = await supabase
+      .from("referral_coupons")
+      .update({
+        custom_message: customMessage.trim() || null,
+        banner_style: bannerStyle,
+      } as any)
+      .eq("id", coupon.id);
+    setSavingCustom(false);
+    if (error) {
+      toast.error("فشل حفظ التخصيص");
+      return;
+    }
+    toast.success("تم حفظ التخصيص");
     loadData();
   };
 
@@ -295,7 +325,90 @@ export default function MyReferral() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Customization Card */}
+      <Card className="border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Palette className="h-4 w-4 text-primary" />
+            تخصيص بطاقة الكوبون
+          </CardTitle>
+          <CardDescription className="text-xs">
+            خصّص الرسالة والخلفية التي ستظهر للمشتري في سلته عند استخدام كودك.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Message */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-foreground">رسالتك للمشتري</label>
+            <Textarea
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value.slice(0, 140))}
+              placeholder="مثال: شكراً لاختيارك كودي! استمتع بتسوقك 💛"
+              className="resize-none"
+              rows={2}
+            />
+            <p className="text-[10px] text-muted-foreground text-left">{customMessage.length}/140</p>
+          </div>
+
+          {/* Style picker */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-foreground">خلفية البطاقة</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {Object.values(REFERRAL_BANNER_STYLES).map((style) => {
+                const selected = bannerStyle === style.key;
+                return (
+                  <button
+                    key={style.key}
+                    type="button"
+                    onClick={() => setBannerStyle(style.key)}
+                    className={`relative rounded-lg p-3 text-right transition-all ${style.container} ${
+                      selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "ring-1 ring-border/40"
+                    }`}
+                  >
+                    <p className={`text-xs font-bold ${style.title}`}>{style.label}</p>
+                    <div className={`mt-2 h-1.5 rounded-full ${style.progressTrack} overflow-hidden`}>
+                      <div className={`h-full w-2/3 ${style.progressFill}`} />
+                    </div>
+                    {selected && (
+                      <Check className="absolute top-1.5 left-1.5 h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Live preview */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-foreground">معاينة</label>
+            {(() => {
+              const s = getReferralBannerStyle(bannerStyle);
+              return (
+                <div className={`rounded-xl ${s.container} ${s.border} p-3 space-y-2`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎁</span>
+                    <div className="min-w-0">
+                      <p className={`text-xs font-bold ${s.title} truncate`}>
+                        {customMessage.trim() || `شكراً لدعمك @${coupon?.code || "you"}!`}
+                      </p>
+                      <p className="text-[11px] text-emerald-600 font-semibold">✅ توصيل مجاني</p>
+                    </div>
+                  </div>
+                  <div className={`h-2 rounded-full ${s.progressTrack} overflow-hidden`}>
+                    <div className={`h-full w-3/4 ${s.progressFill}`} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <Button onClick={saveCustomization} disabled={savingCustom} className="w-full">
+            {savingCustom ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Save className="h-4 w-4 ml-2" />}
+            حفظ التخصيص
+          </Button>
+        </CardContent>
+      </Card>
+
         <StatCard icon={Users} label="عدد الاستخدامات" value={stats.uses.toLocaleString()} color="text-blue-600" />
         <StatCard icon={TrendingUp} label="إجمالي الأرباح" value={`${formatPrice(stats.totalEarnings)} د.ع`} color="text-emerald-600" />
         <StatCard icon={Wallet} label="الرصيد القابل للسحب" value={`${formatPrice(stats.available)} د.ع`} color="text-amber-600" />
