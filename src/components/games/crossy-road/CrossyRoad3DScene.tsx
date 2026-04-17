@@ -747,7 +747,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
           }
         }
 
-        if (currentRow.type === "river") {
+        if (currentRow.type === "river" && !g.moving) {
           let onLog = false;
 
           // If we have a tracked rider log, follow it precisely
