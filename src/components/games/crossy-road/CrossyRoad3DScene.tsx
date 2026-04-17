@@ -846,7 +846,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
 
       if (row.coin && !row.coin.collected) {
-        coins.push({ id: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003 });
+        const coinGroundY = rowTopY(row.type);
+        coins.push({ id: `c${r}`, x: row.coin.lane * CELL + CELL / 2, z, rotY: now * 0.003, groundY: coinGroundY });
       }
     }
 
@@ -865,8 +866,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const hopOffset = Math.sin(g.hopAnim * Math.PI) * 0.3;
 
     const currentRow = g.rows[g.playerRow];
+    const fromRow = g.rows[g.fromRow];
     const isOnRiver = currentRow && currentRow.type === "river";
-    const baseY = isOnRiver ? LOG_Y_OFFSET + 0.15 : 0.15;
+    const destBaseY = isOnRiver ? LOG_Y_OFFSET + 0.05 : rowTopY(currentRow?.type ?? "grass") + 0.05;
+    const srcIsRiver = fromRow && fromRow.type === "river";
+    const srcBaseY = srcIsRiver ? LOG_Y_OFFSET + 0.05 : rowTopY(fromRow?.type ?? "grass") + 0.05;
+    const baseY = g.moving
+      ? srcBaseY + (destBaseY - srcBaseY) * g.moveProgress
+      : destBaseY;
 
     setSnapshot({
       grounds, trafficLights, trees, vehicles, trains, logs: logRenders, coins,
