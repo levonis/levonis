@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v8';
+const CACHE_NAME = 'levonis-v9';
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 const IS_PREVIEW_HOST =
   self.location.hostname.includes('lovableproject.com') ||
@@ -44,17 +44,24 @@ self.addEventListener('fetch', (event) => {
 
   const isHtml = request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html');
   if (isHtml) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
+    // Network-first with 5s timeout, fall back to cache so mobile never hangs on a blank screen
+    event.respondWith((async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(request, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      } catch (e) {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        return new Response('<!doctype html><meta charset="utf-8"><title>LEVONIS</title><body style="background:#103d33;color:#d8c887;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:20px"><div><p>تعذر الاتصال بالخادم</p><button onclick="location.reload()" style="background:#c7b46c;color:#0b3028;border:0;padding:12px 24px;border-radius:8px;font-weight:700;margin-top:12px">إعادة المحاولة</button></div>', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      }
+    })());
     return;
   }
 
