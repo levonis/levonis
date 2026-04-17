@@ -140,6 +140,16 @@ const Cart = () => {
     },
   });
 
+  // جلب جميع استثناءات الأقسام (لعرض السعر التقريبي لكل طريقة)
+  const { data: allCatExceptions = [] } = useQuery({
+    queryKey: ['delivery-all-cat-exceptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_category_exceptions').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // فلترة طرق التوصيل: إخفاء الطرق المخصصة لقسم معين إذا لم يكن في السلة منتج من ذلك القسم
   const visibleDeliveryMethods = useMemo(() => {
     const cartCategoryIds = new Set<string>();
@@ -164,26 +174,93 @@ const Cart = () => {
     }
   }, [visibleDeliveryMethods, selectedDeliveryMethod]);
 
-  // حساب سعر تقريبي لطريقة توصيل معينة (للعرض فقط)
+  // حساب سعر تقريبي لطريقة توصيل معينة (للعرض فقط) - يطابق منطق getDeliveryFee
   const getMethodPreviewPrice = (methodKey: string) => {
     if (methodKey === 'pickup') return 0;
     if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
     const method = deliveryMethods.find((m: any) => m.method_key === methodKey);
     if (!method) return 0;
     const basePrice = Number(method.base_price) || 0;
+    const basePriceCatId = method?.base_price_category_id || null;
+    const basePriceUnits = method?.base_price_units_per_delivery || 1;
     const gov = selectedAddress?.governorate || profile?.governorate || null;
-    let price = basePrice;
-    if (gov) {
-      const govExc = allGovExceptions.find((e: any) => e.delivery_method_key === methodKey && e.governorate === gov);
-      if (govExc) price = Number(govExc.delivery_price);
-    }
-    // فحص التوصيل المجاني لهذه الطريقة
+
+    // التوصيل المجاني
     if (method.free_delivery_enabled) {
       const minOrder = Number(method.free_delivery_min_order) || 0;
       if (minOrder === 0 || total >= minOrder) return 0;
     }
-    return price;
+
+    // تجميع الكميات حسب القسم
+    const categoryQty: Record<string, number> = {};
+    items.forEach(item => {
+      const catId = item.products?.category_id;
+      if (catId) categoryQty[catId] = (categoryQty[catId] || 0) + (item.quantity || 1);
+    });
+
+    // استثناءات الأقسام لهذه الطريقة
+    const methodCatExc = (allCatExceptions as any[]).filter((e: any) => e.delivery_method_key === methodKey);
+    let totalFee = 0;
+    const handled = new Set<string>();
+
+    for (const exc of methodCatExc) {
+      const catId = exc.category_id;
+      if (handled.has(catId) || !categoryQty[catId]) continue;
+
+      if (exc.governorate === '__follow_gov__') {
+        handled.add(catId);
+        const qty = categoryQty[catId];
+        const unitsPerDelivery = exc.units_per_delivery || 1;
+        const deliveryCount = Math.ceil(qty / unitsPerDelivery);
+        const matchingGov = (allGovExceptions as any[]).find((g: any) => g.delivery_method_key === methodKey && g.governorate === gov);
+        const govPrice = matchingGov ? Number(matchingGov.delivery_price) : basePrice;
+        totalFee += govPrice * deliveryCount;
+        continue;
+      }
+
+      const matchesGov = !exc.governorate || exc.governorate === gov;
+      if (!matchesGov) continue;
+
+      handled.add(catId);
+      const qty = categoryQty[catId];
+      const unitsPerDelivery = exc.units_per_delivery || 1;
+      const deliveryCount = Math.ceil(qty / unitsPerDelivery);
+      totalFee += Number(exc.delivery_price) * deliveryCount;
+    }
+
+    // base_price مرتبط بقسم محدد
+    if (basePriceCatId) {
+      if (!handled.has(basePriceCatId) && categoryQty[basePriceCatId]) {
+        handled.add(basePriceCatId);
+        const qty = categoryQty[basePriceCatId];
+        const deliveryCount = Math.ceil(qty / basePriceUnits);
+        totalFee += basePrice * deliveryCount;
+      }
+      const hasUncovered = Object.keys(categoryQty).some(c => !handled.has(c)) || items.some(i => !i.products?.category_id);
+      if (hasUncovered) {
+        const standardMethod = deliveryMethods.find((m: any) => m.method_key === 'standard' && !m.base_price_category_id);
+        const standardBasePrice = standardMethod ? Number(standardMethod.base_price) : 0;
+        const standardGovExc = (allGovExceptions as any[]).find((e: any) => e.delivery_method_key === 'standard' && e.governorate === gov);
+        totalFee += standardGovExc ? Number(standardGovExc.delivery_price) : standardBasePrice;
+      }
+      return totalFee;
+    }
+
+    // عناصر غير مغطاة
+    const hasUncovered = Object.keys(categoryQty).some(c => !handled.has(c)) || items.some(i => !i.products?.category_id);
+    if (handled.size > 0) {
+      if (hasUncovered) {
+        const govExc = (allGovExceptions as any[]).find((e: any) => e.delivery_method_key === methodKey && e.governorate === gov);
+        totalFee += govExc ? Number(govExc.delivery_price) : basePrice;
+      }
+      return totalFee;
+    }
+
+    // لا استثناءات قسم → استخدم استثناء المحافظة أو السعر الأساسي
+    const govExc = (allGovExceptions as any[]).find((e: any) => e.delivery_method_key === methodKey && e.governorate === gov);
+    return govExc ? Number(govExc.delivery_price) : basePrice;
   };
+
 
   const { data: wallet } = useQuery({
     queryKey: ['wallet', user?.id],
