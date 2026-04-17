@@ -282,6 +282,19 @@ export default function MyReferral() {
         </div>
       </div>
 
+      <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+        <CardContent className="p-4 flex items-start gap-3">
+          <Gift className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed">
+            <p className="font-bold text-foreground mb-1">شروط التوصيل المجاني</p>
+            <p className="text-muted-foreground">
+              كودك يمنح أصدقاءك <span className="font-bold text-amber-600">توصيلاً مجانياً</span> عند الطلبات التي يبلغ مجموعها <span className="font-bold text-foreground">{formatPrice(freeDeliveryMin)} د.ع</span> فأكثر.
+              في جميع الحالات أنت تحصل على عمولتك من كل منتج باعه عبر كودك.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={Users} label="عدد الاستخدامات" value={stats.uses.toLocaleString()} color="text-blue-600" />
         <StatCard icon={TrendingUp} label="إجمالي الأرباح" value={`${formatPrice(stats.totalEarnings)} د.ع`} color="text-emerald-600" />
