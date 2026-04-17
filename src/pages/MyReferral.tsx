@@ -215,11 +215,11 @@ export default function MyReferral() {
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("username, full_name, phone")
+        .select("username, full_name, phone_number")
         .eq("id", user!.id)
         .maybeSingle();
       const ownerLabel = profile?.username ? `@${profile.username}` : (profile?.full_name || user!.id.slice(0, 8));
-      const phoneLine = profile?.phone ? `\n📞 <code>${profile.phone}</code>` : "";
+      const phoneLine = profile?.phone_number ? `\n📞 <code>${profile.phone_number}</code>` : "";
       const codeLine = coupon?.code ? `\n🎟️ كود: <code>${coupon.code}</code>` : "";
       const message =
         `💸 <b>طلب سحب أرباح إحالة جديد</b>\n` +

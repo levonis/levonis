@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2 } from "lucide-react";
+import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2, Globe } from "lucide-react";
+import SeasonAdminFields from "./SeasonAdminFields";
 
 interface ProductPickerValue {
   product_id: string | null;
@@ -178,6 +179,14 @@ export default function KnifeRainTab() {
     },
   });
 
+  const { data: allTimeScores = [] } = useQuery({
+    queryKey: ["admin-knife-rain-alltime-scores"],
+    queryFn: async () => {
+      const { data } = await supabase.from("knife_rain_high_scores" as any).select("*").gt("all_time_high_score", 0).order("all_time_high_score", { ascending: false }).limit(10);
+      return (data || []) as any[];
+    },
+  });
+
   const { data: winners = [] } = useQuery({
     queryKey: ["admin-knife-rain-winners"],
     queryFn: async () => {
@@ -214,12 +223,15 @@ export default function KnifeRainTab() {
         game_points_per_knife: s.game_points_per_knife,
         game_combo_multiplier: s.game_combo_multiplier,
         max_daily_plays: s.max_daily_plays || null,
+        season_name: s.season_name,
+        season_starts_at: s.season_starts_at,
+        season_ends_at: s.season_ends_at,
         updated_at: new Date().toISOString(),
-      }).eq("id", settings.id).select("id").single();
+      } as any).eq("id", settings.id).select("id").single();
       if (error) throw error;
       if (!data) throw new Error("لم يتم التحديث");
     },
-    onSuccess: () => { toast.success("تم حفظ الإعدادات"); queryClient.invalidateQueries({ queryKey: ["admin-knife-rain-settings"] }); queryClient.invalidateQueries({ queryKey: ["knife-rain-enabled"] }); setForm(null); },
+    onSuccess: () => { toast.success("تم حفظ الإعدادات"); queryClient.invalidateQueries({ queryKey: ["admin-knife-rain-settings"] }); queryClient.invalidateQueries({ queryKey: ["knife-rain-enabled"] }); queryClient.invalidateQueries({ queryKey: ["knife-rain-settings"] }); setForm(null); },
     onError: (e: any) => toast.error(e?.message || "فشل حفظ الإعدادات"),
   });
 
@@ -363,6 +375,13 @@ export default function KnifeRainTab() {
               </div>
             </div>
           </div>
+
+          <SeasonAdminFields
+            seasonName={s.season_name}
+            seasonStartsAt={s.season_starts_at}
+            seasonEndsAt={s.season_ends_at}
+            onChange={(k, v) => update(k, v)}
+          />
 
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">
             {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ الإعدادات

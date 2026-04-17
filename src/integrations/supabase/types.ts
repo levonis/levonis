@@ -2315,6 +2315,8 @@ export type Database = {
           score_per_coin: number | null
           score_per_step: number | null
           season_ends_at: string | null
+          season_name: string | null
+          season_starts_at: string | null
           total_plays: number
           total_points_distributed: number
           updated_at: string
@@ -2331,6 +2333,8 @@ export type Database = {
           score_per_coin?: number | null
           score_per_step?: number | null
           season_ends_at?: string | null
+          season_name?: string | null
+          season_starts_at?: string | null
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
@@ -2347,6 +2351,8 @@ export type Database = {
           score_per_coin?: number | null
           score_per_step?: number | null
           season_ends_at?: string | null
+          season_name?: string | null
+          season_starts_at?: string | null
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
@@ -4321,23 +4327,29 @@ export type Database = {
       }
       knife_rain_high_scores: {
         Row: {
+          all_time_high_score: number | null
           best_stage: number
           high_score: number
           id: string
+          season: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          all_time_high_score?: number | null
           best_stage?: number
           high_score?: number
           id?: string
+          season?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          all_time_high_score?: number | null
           best_stage?: number
           high_score?: number
           id?: string
+          season?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -4534,6 +4546,9 @@ export type Database = {
           id: string
           max_daily_plays: number | null
           points_per_knife: number
+          season_ends_at: string | null
+          season_name: string | null
+          season_starts_at: string | null
           stage_clear_bonus: number
           total_plays: number
           total_points_distributed: number
@@ -4549,6 +4564,9 @@ export type Database = {
           id?: string
           max_daily_plays?: number | null
           points_per_knife?: number
+          season_ends_at?: string | null
+          season_name?: string | null
+          season_starts_at?: string | null
           stage_clear_bonus?: number
           total_plays?: number
           total_points_distributed?: number
@@ -4564,6 +4582,9 @@ export type Database = {
           id?: string
           max_daily_plays?: number | null
           points_per_knife?: number
+          season_ends_at?: string | null
+          season_name?: string | null
+          season_starts_at?: string | null
           stage_clear_bonus?: number
           total_plays?: number
           total_points_distributed?: number
@@ -9342,6 +9363,7 @@ export type Database = {
       stack_game_high_scores: {
         Row: {
           achieved_at: string
+          all_time_high_score: number | null
           high_score: number
           id: string
           season: number
@@ -9349,6 +9371,7 @@ export type Database = {
         }
         Insert: {
           achieved_at?: string
+          all_time_high_score?: number | null
           high_score?: number
           id?: string
           season?: number
@@ -9356,6 +9379,7 @@ export type Database = {
         }
         Update: {
           achieved_at?: string
+          all_time_high_score?: number | null
           high_score?: number
           id?: string
           season?: number
@@ -9560,6 +9584,9 @@ export type Database = {
           max_daily_plays: number | null
           perfect_bonus_points: number
           points_per_block: number
+          season_ends_at: string | null
+          season_name: string | null
+          season_starts_at: string | null
           total_plays: number
           total_points_distributed: number
           updated_at: string
@@ -9576,6 +9603,9 @@ export type Database = {
           max_daily_plays?: number | null
           perfect_bonus_points?: number
           points_per_block?: number
+          season_ends_at?: string | null
+          season_name?: string | null
+          season_starts_at?: string | null
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
@@ -9592,6 +9622,9 @@ export type Database = {
           max_daily_plays?: number | null
           perfect_bonus_points?: number
           points_per_block?: number
+          season_ends_at?: string | null
+          season_name?: string | null
+          season_starts_at?: string | null
           total_plays?: number
           total_points_distributed?: number
           updated_at?: string
