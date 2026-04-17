@@ -2060,7 +2060,7 @@ const Cart = () => {
                     <Ticket className="h-4 w-4" />
                     {t('cart_coupon_label')}
                   </Label>
-                  {!appliedCoupon ? (
+                  {!appliedCoupon && !appliedReferral ? (
                     <div className="flex gap-2">
                       <Input
                         id="coupon"
@@ -2077,6 +2077,48 @@ const Cart = () => {
                       >
                         {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('cart_coupon_apply')}
                       </Button>
+                    </div>
+                  ) : appliedReferral ? (
+                    <div className="rounded-xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15 border-2 border-amber-500/40 p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-lg">🎁</span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400 truncate">
+                              شكراً لدعمك @{appliedReferral.owner_username}!
+                            </p>
+                            {referralFreeShippingApplied ? (
+                              <p className="text-[11px] text-emerald-600 font-semibold">✅ حصلت على توصيل مجاني</p>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">
+                                أضف <span className="font-bold text-amber-600">{formatPrice(referralRemainingForFreeDelivery)} د.ع</span> للتوصيل المجاني
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={removeCoupon}
+                          className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                          title="إزالة الكوبون"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {!referralFreeShippingApplied && (
+                        <div className="space-y-1">
+                          <div className="h-2 rounded-full bg-amber-500/15 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                              style={{ width: `${Math.min(100, (total / (appliedReferral.free_delivery_min_order_iqd || 100000)) * 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground text-center">
+                            {formatPrice(total)} / {formatPrice(appliedReferral.free_delivery_min_order_iqd || 100000)} د.ع
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30">
