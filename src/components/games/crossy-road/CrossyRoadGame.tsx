@@ -360,7 +360,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
 
       {activeView === "main" && (
         <div className="max-w-sm mx-auto space-y-5 text-center">
-          <div className="text-5xl mt-4 font-black">CROSSY ROAD</div>
+          <div className="text-5xl mt-4">CROSSY ROAD</div>
           <h1 className="text-2xl font-bold text-foreground">اعبر الطريق</h1>
           <p className="text-sm text-muted-foreground">تحرّك عبر الطرق والأنهار وسكك الحديد! تجنب السيارات والقطارات ولا تسقط في الماء.</p>
 
