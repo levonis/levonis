@@ -301,7 +301,7 @@ function InvoiceTemplate({
             <span style={{ fontSize: '13px', color: '#666', marginRight: '20px' }}>Invoice from</span>
             <div style={{ marginTop: '5px' }}>
               <div style={{ fontWeight: 700, fontSize: '14px' }}>LEVONIS IQ</div>
-              <div style={{ fontSize: '13px', color: '#555' }}>متجر ليفونيس</div>
+              <div style={{ fontSize: '13px', color: '#555' }}>ليفو</div>
             </div>
           </div>
 
