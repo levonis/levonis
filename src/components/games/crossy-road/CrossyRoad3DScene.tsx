@@ -435,13 +435,36 @@ function TrainMeshGroup({ data }: { data: RenderTrain }) {
 
 function LogMesh({ data }: { data: RenderLog }) {
   const models = useGameModels();
-  if (!models) return null;
-  const m = models.logs[data.modelIdx % models.logs.length];
+  // Hooks must be called unconditionally — compute native width even if models null.
+  const m = models ? models.logs[data.modelIdx % models.logs.length] : null;
+  const nativeWidth = useMemo(() => {
+    if (!m) return 1;
+    if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+    const bb = m.geometry.boundingBox!;
+    return Math.max(0.001, (bb.max.x - bb.min.x) * MODEL_SCALE);
+  }, [m]);
+  if (!m) return null;
+
+  // Tile enough segments to cover the logical width without visual stretching.
+  const segments = Math.max(1, Math.ceil(data.width / nativeWidth));
+  const totalNative = segments * nativeWidth;
+  // Slight uniform X scale so tiled segments exactly fit data.width (≤1, no stretching).
+  const fitScale = data.width / totalNative;
+  const segWidthRendered = nativeWidth * fitScale;
+  const startX = -data.width / 2 + segWidthRendered / 2;
+
   return (
-    <mesh geometry={m.geometry} material={m.material}
-      scale={[data.width * MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0.18, data.z]}
-    />
+    <group position={[data.x, 0.18, data.z]}>
+      {Array.from({ length: segments }).map((_, i) => (
+        <mesh
+          key={i}
+          geometry={m.geometry}
+          material={m.material}
+          scale={[fitScale * MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+          position={[startX + i * segWidthRendered, 0, 0]}
+        />
+      ))}
+    </group>
   );
 }
 
