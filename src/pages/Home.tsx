@@ -8,11 +8,12 @@ import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
-import StoriesBar from '@/components/stories/StoriesBar';
-import BundlesSection from '@/components/BundlesSection';
-import ReelsBar from '@/components/reels/ReelsBar';
 import { useLanguage } from '@/lib/i18n';
 
+// Lazy load below-the-fold sections to reduce initial bundle
+const StoriesBar = lazy(() => import('@/components/stories/StoriesBar'));
+const BundlesSection = lazy(() => import('@/components/BundlesSection'));
+const ReelsBar = lazy(() => import('@/components/reels/ReelsBar'));
 const CommunitySection = lazy(() => import('@/components/community/CommunitySection').catch(() => {
   // Retry once on dynamic import failure (common with HMR/cache issues)
   return import('@/components/community/CommunitySection');
@@ -63,25 +64,19 @@ const Home = () => {
   });
 
   // Fetch category IDs that have at least one direct-sale product with available stock
+  // Uses server-side RPC to avoid pulling all products to client
   const { data: directSaleCategoryIds } = useQuery({
-    queryKey: ['direct-sale-categories-v2'],
+    queryKey: ['direct-sale-categories-rpc'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('category_id, direct_stock, colors')
-        .eq('has_in_stock', true)
-        .eq('is_pricing_updated', true);
+      const { data, error } = await (supabase as any).rpc('get_direct_sale_category_ids');
       if (error) throw error;
       const ids = new Set<string>();
-      for (const p of (data || [])) {
-        if (!p.category_id) continue;
-        if (!isAllDirectStockDepleted(p)) {
-          ids.add(p.category_id);
-        }
+      for (const row of (data || [])) {
+        if (row?.category_id) ids.add(row.category_id);
       }
       return ids;
     },
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -140,7 +135,9 @@ const Home = () => {
         </section>
 
         <section className="container mx-auto px-0">
-          <ReelsBar />
+          <Suspense fallback={<div className="h-24" />}>
+            <ReelsBar />
+          </Suspense>
         </section>
 
         <section className="container mx-auto px-4 py-6 md:py-10 text-center">
@@ -179,10 +176,14 @@ const Home = () => {
         </section>
 
         <section className="container mx-auto px-0">
-          <StoriesBar />
+          <Suspense fallback={<div className="h-24" />}>
+            <StoriesBar />
+          </Suspense>
         </section>
 
-        <BundlesSection />
+        <Suspense fallback={<div className="h-32" />}>
+          <BundlesSection />
+        </Suspense>
 
         <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout' }}>
           <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
