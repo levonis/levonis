@@ -33,11 +33,12 @@ function computeZoom() {
     return Math.max(35, Math.min(55, z));
   }
 
-  // Desktop / Tablet (Landscape)
-  const zFromH = h / 14;
-  const zFromW = w / 20;
+  // Desktop / Tablet (Landscape) — keep gameplay area filling more screen
+  // Higher minimum keeps the camera closer so the playfield fills the view
+  const zFromH = h / 13;
+  const zFromW = w / 16;
   const z = Math.min(zFromH, zFromW);
-  return Math.max(45, Math.min(90, z));
+  return Math.max(60, Math.min(110, z));
 }
 
 export default function CrossyRoadCanvas({ onGameOver, onScoreUpdate, scoreSettings }: Props) {
