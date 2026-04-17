@@ -127,8 +127,8 @@ export default function MiniGames() {
   });
 
   // Mark disabled games instead of filtering them out
-  // Crossy Road and Gacha are admin-only
-  const adminOnlyGames = ["crossy_road", "gacha"];
+  // Gacha is admin-only
+  const adminOnlyGames = ["gacha"];
   const gamesWithStatus = GAME_NODES.map(game => {
     if (adminOnlyGames.includes(game.node_name) && !isAdmin) {
       return { ...game, _disabled: true, _hidden: true };
