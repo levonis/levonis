@@ -171,11 +171,17 @@ const Cart = () => {
     if (!method) return 0;
     const basePrice = Number(method.base_price) || 0;
     const gov = selectedAddress?.governorate || profile?.governorate || null;
+    let price = basePrice;
     if (gov) {
       const govExc = allGovExceptions.find((e: any) => e.delivery_method_key === methodKey && e.governorate === gov);
-      if (govExc) return Number(govExc.delivery_price);
+      if (govExc) price = Number(govExc.delivery_price);
     }
-    return basePrice;
+    // فحص التوصيل المجاني لهذه الطريقة
+    if (method.free_delivery_enabled) {
+      const minOrder = Number(method.free_delivery_min_order) || 0;
+      if (minOrder === 0 || total >= minOrder) return 0;
+    }
+    return price;
   };
 
   const { data: wallet } = useQuery({
