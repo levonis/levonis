@@ -117,8 +117,8 @@ export default function MiniGames() {
         supabase.from("stack_game_leaderboard_prizes").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("knife_rain_leaderboard_prizes").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("crossy_road_milestones").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("stack_game_milestones" as any).select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("knife_rain_milestones" as any).select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("stack_game_milestones").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("knife_rain_milestones").select("id", { count: "exact", head: true }).eq("is_active", true),
       ]);
       return {
         crossy_road: (cr.count || 0) + (crM.count || 0),
