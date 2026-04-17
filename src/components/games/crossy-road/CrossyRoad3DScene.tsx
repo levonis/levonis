@@ -898,6 +898,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     } else {
       g.deathTimer += dt;
       if (g.deathTimer > 1.5) {
+        console.log("[CrossyRoad] Game over! score:", g.score, "steps:", g.steps, "coins:", g.coins);
         onGameOverRef.current(g.score, g.steps, g.coins);
         return;
       }
