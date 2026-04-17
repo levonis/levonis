@@ -771,9 +771,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     frameCountRef.current++;
     if (frameCountRef.current % 2 !== 0) return;
 
-    const startRow = Math.max(0, g.playerRow - 8);
-    const endRow = Math.min(g.rows.length - 1, g.playerRow + 15);
+    const startRow = Math.max(0, g.playerRow - 14);
+    const endRow = Math.min(g.rows.length - 1, g.playerRow + 18);
     const now = Date.now();
+
+    // Side-fill widths (in CELL units) to extend ground tiles off-playfield
+    // Generous to cover ultra-wide / landscape viewports without sky gaps.
+    const SIDE_EXTEND_TILES = 6; // each side tile spans LANES*CELL width
 
     const grounds: RenderGround[] = [];
     const trafficLights: RenderTrafficLight[] = [];
