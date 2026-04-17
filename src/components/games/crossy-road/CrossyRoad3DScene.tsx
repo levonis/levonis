@@ -828,12 +828,20 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const logRenders: RenderLog[] = [];
     const coins: RenderCoin[] = [];
 
-    // Decorative back-fill rows behind row 0 to cover the bottom of the screen.
-    // These are pure-grass tiles spanning the full extended width.
+    // Deterministic hash → tree placement decision (stable across frames).
+    const seededTree = (col: number, rowIdx: number, density: number): boolean => {
+      let h = (col * 73856093) ^ (rowIdx * 19349663);
+      h = (h ^ (h >>> 13)) * 1274126177;
+      h = h ^ (h >>> 16);
+      const v = (h >>> 0) / 0xffffffff;
+      return v < density;
+    };
+
+    // Decorative back-fill rows behind row 0 — pure grass with deterministic trees.
     if (startRow === 0) {
       const cx = (LANES * CELL) / 2;
       for (let br = 1; br <= 14; br++) {
-        const z = br * CELL; // positive z = behind the player
+        const z = br * CELL;
         const dark = br % 2 === 0;
         grounds.push({ id: `gB${br}`, x: cx, z, rowType: "grass", grassDark: dark, biome: "green" });
         for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
@@ -841,11 +849,21 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
           grounds.push({ id: `gBL${br}_${s}`, x: cx - offset, z, rowType: "grass", grassDark: !dark, biome: "green" });
           grounds.push({ id: `gBR${br}_${s}`, x: cx + offset, z, rowType: "grass", grassDark: !dark, biome: "green" });
         }
-        // Sparse decorative trees on back rows
-        if (br % 2 === 0) {
-          [-6, -3, 1, 4, 7, 10, 13].forEach((lane, i) => {
-            trees.push({ id: `tB${br}_${i}`, x: lane * CELL + CELL / 2, z, modelIdx: br * 5 + i, biome: "green", groundY: GRASS_TOP });
-          });
+        const backRowVirtual = -br;
+        const density = Math.max(0.12, 0.32 - br * 0.015);
+        const minCol = -SIDE_EXTEND_TILES * LANES;
+        const maxCol = (SIDE_EXTEND_TILES + 1) * LANES;
+        for (let col = minCol; col < maxCol; col++) {
+          if (seededTree(col, backRowVirtual, density)) {
+            trees.push({
+              id: `tB${br}_${col}`,
+              x: col * CELL + CELL / 2,
+              z,
+              modelIdx: ((col * 7 + br * 13) >>> 0) % 8,
+              biome: "green",
+              groundY: GRASS_TOP,
+            });
+          }
         }
       }
     }
@@ -858,37 +876,46 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark, biome: row.biome });
 
-      // Mirror ground tiles on both sides to fill sky gaps on wide viewports.
-      // Sides always render as grass (decorative) so road/river/rail don't bleed off-playfield.
+      // Mirror ground tiles on both sides — continue SAME row type for clean
+      // road/rail/river continuity to the edges.
       for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
         const offset = s * LANES * CELL;
+        const sideDark = (row.type === "grass") ? (row.grassDark !== (s % 2 === 0)) : row.grassDark;
         grounds.push({
           id: `gL${r}_${s}`, x: cx - offset, z,
-          rowType: "grass", grassDark: (row.grassDark !== (s % 2 === 0)), biome: row.biome,
+          rowType: row.type, grassDark: sideDark, biome: row.biome,
         });
         grounds.push({
           id: `gR${r}_${s}`, x: cx + offset, z,
-          rowType: "grass", grassDark: (row.grassDark !== (s % 2 === 0)), biome: row.biome,
+          rowType: row.type, grassDark: sideDark, biome: row.biome,
         });
       }
 
-      // Decorative trees on sides — extend further to fill widescreen
-      // Side decorative trees always sit on grass-height base for visual consistency
-      const decoY = GRASS_TOP;
-      if (row.type === "grass" || row.type === "road" || row.type === "rail" || row.type === "river") {
-        const sideTreeOffsets = [-2, -4, -6, -8, -11, -14, -17, -20, -24, -28, -33, -38];
-        const rightBase = LANES * CELL;
-        const rightTreeOffsets = [2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 33, 38].map(v => rightBase + v);
-        sideTreeOffsets.forEach((off, i) => {
-          if (i >= 4 && (r + i) % 2 !== 0) return;
-          if (i >= 6 && (r + i) % 3 !== 0) return;
-          trees.push({ id: `dl${r}_${i}`, x: off, z, modelIdx: r * 3 + i, biome: row.biome, groundY: decoY });
-        });
-        rightTreeOffsets.forEach((x, i) => {
-          if (i >= 4 && (r + i) % 2 !== 0) return;
-          if (i >= 6 && (r + i) % 3 !== 0) return;
-          trees.push({ id: `dr${r}_${i}`, x, z, modelIdx: r * 3 + i + 1, biome: row.biome, groundY: decoY });
-        });
+      // Decorative side trees ONLY on grass rows — deterministic, regular.
+      if (row.type === "grass") {
+        const density = row.biome === "dark_forest" ? 0.42 : 0.28;
+        for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
+          for (let lane = 0; lane < LANES; lane++) {
+            const colL = -s * LANES + lane;
+            if (seededTree(colL, r, density)) {
+              trees.push({
+                id: `dl${r}_${s}_${lane}`,
+                x: colL * CELL + CELL / 2, z,
+                modelIdx: ((colL * 7 + r * 13) >>> 0) % 8,
+                biome: row.biome, groundY: GRASS_TOP,
+              });
+            }
+            const colR = LANES + (s - 1) * LANES + lane;
+            if (seededTree(colR, r, density)) {
+              trees.push({
+                id: `dr${r}_${s}_${lane}`,
+                x: colR * CELL + CELL / 2, z,
+                modelIdx: ((colR * 7 + r * 13) >>> 0) % 8,
+                biome: row.biome, groundY: GRASS_TOP,
+              });
+            }
+          }
+        }
       }
 
       // Traffic lights on rail rows — positioned just outside playfield edges
