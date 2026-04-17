@@ -50,10 +50,47 @@
   <meta name="twitter:title" content="LEVONIS — iq">
   <meta property="og:description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
   <meta name="twitter:description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
+    <style>
+      html, body { background-color: #09090b; margin: 0; }
+      #initial-loader {
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        background-color: #09090b;
+        transition: opacity 0.3s ease;
+      }
+      #initial-loader.fade-out { opacity: 0; pointer-events: none; }
+      #initial-loader .il-logo {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-weight: 700; font-size: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        box-shadow: 0 8px 32px rgba(22, 163, 74, 0.4);
+        animation: il-pulse 1.4s ease-in-out infinite;
+      }
+      #initial-loader .il-ring {
+        position: absolute;
+        width: 96px; height: 96px; border-radius: 50%;
+        border: 2px solid rgba(22, 163, 74, 0.3);
+        border-top-color: #16a34a;
+        animation: il-spin 1s linear infinite;
+      }
+      @keyframes il-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(0.92); opacity: 0.85; }
+      }
+      @keyframes il-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
 
   <body>
     <div id="root"></div>
+    <div id="initial-loader">
+      <div class="il-ring"></div>
+      <div class="il-logo">L</div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
