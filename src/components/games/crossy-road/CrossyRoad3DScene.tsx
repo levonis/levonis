@@ -504,6 +504,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
       g.playerOffsetX = 0;
       g.onRiver = false;
+      g.riderLogIndex = null;
+      g.riderLogRowIndex = null;
     } else if (nowOnRiver) {
       let actualPx: number;
       if (wasOnRiver) {
@@ -514,25 +516,42 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         actualPx = g.playerLane * CELL + CELL / 2;
       }
 
-      let foundLog: LogObj | null = null;
-      for (const log of newRow.logs) {
+      // Find best (closest center) log on the destination row
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < newRow.logs.length; i++) {
+        const log = newRow.logs[i];
         const logLeft = log.x;
         const logRight = log.x + log.width;
-        if (actualPx >= logLeft - LOG_TOLERANCE && actualPx <= logRight + LOG_TOLERANCE) {
-          foundLog = log;
-          break;
+        const center = (logLeft + logRight) / 2;
+        const inside = actualPx >= logLeft - LOG_TOLERANCE && actualPx <= logRight + LOG_TOLERANCE;
+        const d = Math.abs(actualPx - center);
+        if (inside && d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
         }
       }
 
-      if (foundLog) {
-        g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
+      if (bestIdx >= 0) {
+        const log = newRow.logs[bestIdx];
+        // Stick player to a fixed X-offset relative to the log so they ride with it
+        const stickX = actualPx - log.x; // 0..log.width
+        g.riderLogIndex = bestIdx;
+        g.riderLogRowIndex = g.playerRow;
+        g.riderLogStickX = stickX;
+        const lockedPx = log.x + stickX;
+        g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
       } else {
+        g.riderLogIndex = null;
+        g.riderLogRowIndex = null;
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
       g.onRiver = true;
     } else {
       g.playerOffsetX = 0;
       g.onRiver = false;
+      g.riderLogIndex = null;
+      g.riderLogRowIndex = null;
     }
 
     if (dir === "up") g.playerRotation = 0;
