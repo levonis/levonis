@@ -109,9 +109,31 @@ const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderW
   return (orderProductCost * itemRevenue) / subtotal;
 };
 
-// Total costs = |delivery| + product costs (negative delivery still counts as cost)
-const calcOrderCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
-  return Math.abs(calcDeliveryCost(order)) + calcProductCost(order, usdToIqdRate);
+// Actual delivery cost paid to delivery company (from delivery_methods.actual_cost or per-product personal_delivery_cost)
+const calcActualDeliveryCostFor = (
+  order: OrderWithDetails,
+  deliveryMethods: Array<{ method_key: string; actual_cost: number }>
+): number => {
+  const deliveryMethod = (order as any).delivery_method || 'standard';
+  if (deliveryMethod === 'personal') {
+    return (order.order_items || []).reduce((sum, item: any) => {
+      const pdc = item.products?.personal_delivery_cost || 0;
+      return sum + (pdc * (item.quantity || 1));
+    }, 0);
+  }
+  const methodData = deliveryMethods.find((m) => m.method_key === deliveryMethod);
+  return methodData?.actual_cost || 0;
+};
+
+// Total costs = |delivery| + product costs + actual delivery paid to company
+const calcOrderCost = (
+  order: OrderWithDetails,
+  usdToIqdRate: number,
+  deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
+): number => {
+  return Math.abs(calcDeliveryCost(order))
+    + calcProductCost(order, usdToIqdRate)
+    + calcActualDeliveryCostFor(order, deliveryMethods);
 };
 
 // Referral commission paid out to VIP+ coupon owner (deducted from net revenue)
@@ -120,9 +142,13 @@ const calcReferralCommission = (order: OrderWithDetails): number => {
 };
 
 // Profit (commission) = total_amount - all costs - referral commission (delivered only)
-const calcOrderProfit = (order: OrderWithDetails, usdToIqdRate: number): number => {
+const calcOrderProfit = (
+  order: OrderWithDetails,
+  usdToIqdRate: number,
+  deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
+): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate) - calcReferralCommission(order);
+  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
 };
 
 const AdminFinancials = () => {
@@ -213,21 +239,9 @@ const AdminFinancials = () => {
   });
 
   // Calculate actual delivery cost for an order (what we actually pay to delivery company)
-  const calcActualDeliveryCost = (order: OrderWithDetails): number => {
-    const deliveryMethod = (order as any).delivery_method || 'standard';
-    
-    // Personal delivery: use product-level personal_delivery_cost (printers)
-    if (deliveryMethod === 'personal') {
-      return (order.order_items || []).reduce((sum, item: any) => {
-        const pdc = item.products?.personal_delivery_cost || 0;
-        return sum + (pdc * (item.quantity || 1));
-      }, 0);
-    }
-    
-    // Standard/other: use delivery method actual_cost
-    const methodData = deliveryMethodsData.find((m: any) => m.method_key === deliveryMethod);
-    return methodData?.actual_cost || 0;
-  };
+  const calcActualDeliveryCost = (order: OrderWithDetails): number =>
+    calcActualDeliveryCostFor(order, deliveryMethodsData as any);
+
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
@@ -335,8 +349,8 @@ const AdminFinancials = () => {
 
   // Global totals (all delivered orders, shipping excluded)
   const globalProfit = useMemo(() => {
-    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o, usdToIqdRate), 0);
-  }, [orders, usdToIqdRate]);
+    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o, usdToIqdRate, deliveryMethodsData as any), 0);
+  }, [orders, usdToIqdRate, deliveryMethodsData]);
 
   // Totals for current filtered view
   const totals = useMemo(() => {
@@ -344,14 +358,15 @@ const AdminFinancials = () => {
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
         totalDeliveryCost: acc.totalDeliveryCost + calcDeliveryCost(order),
+        totalActualDeliveryCost: acc.totalActualDeliveryCost + calcActualDeliveryCostFor(order, deliveryMethodsData as any),
           totalProductCost: acc.totalProductCost + calcProductCost(order, usdToIqdRate),
-          totalCost: acc.totalCost + calcOrderCost(order, usdToIqdRate),
-          totalProfit: acc.totalProfit + calcOrderProfit(order, usdToIqdRate),
+          totalCost: acc.totalCost + calcOrderCost(order, usdToIqdRate, deliveryMethodsData as any),
+          totalProfit: acc.totalProfit + calcOrderProfit(order, usdToIqdRate, deliveryMethodsData as any),
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
-    }, { totalRevenue: 0, totalDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
-  }, [filteredOrders, usdToIqdRate]);
+    }, { totalRevenue: 0, totalDeliveryCost: 0, totalActualDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+  }, [filteredOrders, usdToIqdRate, deliveryMethodsData]);
 
   // Monthly chart data (delivered only, shipping excluded)
   const monthlyChartData = useMemo(() => {
@@ -361,8 +376,8 @@ const AdminFinancials = () => {
       const m = format(new Date(o.created_at), 'yyyy-MM');
       if (!map[m]) map[m] = { month: m, revenue: 0, cost: 0, profit: 0 };
       map[m].revenue += (o.total_amount || 0);
-      map[m].cost += calcOrderCost(o, usdToIqdRate);
-      map[m].profit += calcOrderProfit(o, usdToIqdRate);
+      map[m].cost += calcOrderCost(o, usdToIqdRate, deliveryMethodsData as any);
+      map[m].profit += calcOrderProfit(o, usdToIqdRate, deliveryMethodsData as any);
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).map(d => ({
       ...d, month: format(new Date(d.month + '-01'), 'MMM yyyy', { locale: ar }),
@@ -449,8 +464,8 @@ const AdminFinancials = () => {
   // Tab totals for display
   const tabTotals = tabFilteredOrders.filter(o => o.status === 'delivered').reduce((acc, o) => ({
     revenue: acc.revenue + (o.total_amount || 0),
-    cost: acc.cost + calcOrderCost(o, usdToIqdRate),
-    profit: acc.profit + calcOrderProfit(o, usdToIqdRate),
+    cost: acc.cost + calcOrderCost(o, usdToIqdRate, deliveryMethodsData as any),
+    profit: acc.profit + calcOrderProfit(o, usdToIqdRate, deliveryMethodsData as any),
     count: acc.count + 1,
   }), { revenue: 0, cost: 0, profit: 0, count: 0 });
 
@@ -693,7 +708,8 @@ const AdminFinancials = () => {
       {/* ===== 4. Stats Cards ===== */}
       <div className="mt-6"><AdminStatsGrid>
         <AdminStatCard icon={<DollarSign className="h-5 w-5" />} value={formatPrice(totals.totalRevenue)} label="إجمالي الإيرادات" colorClass="text-green-600" bgClass="bg-green-500/10" />
-        <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalDeliveryCost)} label="تكلفة التوصيل" colorClass="text-orange-600" bgClass="bg-orange-500/10" />
+        <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalDeliveryCost)} label="تكلفة التوصيل (المحصّلة)" colorClass="text-orange-600" bgClass="bg-orange-500/10" />
+        <AdminStatCard icon={<Truck className="h-5 w-5" />} value={formatPrice(totals.totalActualDeliveryCost)} label="التكلفة الفعلية للتوصيل" colorClass="text-rose-600" bgClass="bg-rose-500/10" />
         <AdminStatCard icon={<Package className="h-5 w-5" />} value={formatPrice(totals.totalProductCost)} label="تكلفة المنتجات" colorClass="text-red-600" bgClass="bg-red-500/10" />
         <AdminStatCard icon={<TrendingUp className="h-5 w-5" />} value={formatPrice(totals.totalProfit)} label={`العمولة (${totals.deliveredCount} مسلّم)`} colorClass="text-primary" bgClass="bg-primary/10" />
       </AdminStatsGrid></div>
@@ -754,7 +770,7 @@ const AdminFinancials = () => {
                          ) : paginatedOrders.length === 0 ? (
                           <TableRow><TableCell colSpan={mainTab === 'preorder' ? 14 : mainTab === 'direct' ? 12 : 10} className="text-center py-8 text-muted-foreground">لا توجد طلبات</TableCell></TableRow>
                         ) : paginatedOrders.map(order => {
-                          const profit = calcOrderProfit(order, usdToIqdRate);
+                          const profit = calcOrderProfit(order, usdToIqdRate, deliveryMethodsData as any);
                           return (
                             <TableRow key={order.id}>
                               <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
@@ -812,7 +828,7 @@ const AdminFinancials = () => {
                             acc.adminShipping += order.admin_shipping_cost || 0;
                             acc.shippingCost += calcDeliveryCost(order);
                             acc.productCost += calcProductCost(order, usdToIqdRate);
-                            acc.profit += order.status === 'delivered' ? calcOrderProfit(order, usdToIqdRate) : 0;
+                            acc.profit += order.status === 'delivered' ? calcOrderProfit(order, usdToIqdRate, deliveryMethodsData as any) : 0;
                             return acc;
                           }, { totalAmount: 0, customerPaid: 0, remaining: 0, adminShipping: 0, shippingCost: 0, productCost: 0, profit: 0 });
                           return (
@@ -975,7 +991,7 @@ const AdminFinancials = () => {
                   <p className="font-bold text-rose-600">-{formatPrice(calcActualDeliveryCost(selectedOrder))}</p>
                 </div>
                 <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
-                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate, deliveryMethodsData as any) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate, deliveryMethodsData as any)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
