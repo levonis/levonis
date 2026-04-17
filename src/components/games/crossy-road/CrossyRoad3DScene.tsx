@@ -918,49 +918,6 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         }
       }
 
-    }
-
-    for (let r = startRow; r <= endRow; r++) {
-      const row = g.rows[r];
-      if (!row) continue;
-      const z = -r * CELL;
-      const cx = (LANES * CELL) / 2;
-
-      grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark, biome: row.biome });
-
-      // Mirror ground tiles on both sides to fill sky gaps on wide viewports.
-      // Sides always render as grass (decorative) so road/river/rail don't bleed off-playfield.
-      for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
-        const offset = s * LANES * CELL;
-        grounds.push({
-          id: `gL${r}_${s}`, x: cx - offset, z,
-          rowType: "grass", grassDark: (row.grassDark !== (s % 2 === 0)), biome: row.biome,
-        });
-        grounds.push({
-          id: `gR${r}_${s}`, x: cx + offset, z,
-          rowType: "grass", grassDark: (row.grassDark !== (s % 2 === 0)), biome: row.biome,
-        });
-      }
-
-      // Decorative trees on sides — extend further to fill widescreen
-      // Side decorative trees always sit on grass-height base for visual consistency
-      const decoY = GRASS_TOP;
-      if (row.type === "grass" || row.type === "road" || row.type === "rail" || row.type === "river") {
-        const sideTreeOffsets = [-2, -4, -6, -8, -11, -14, -17, -20, -24, -28, -33, -38];
-        const rightBase = LANES * CELL;
-        const rightTreeOffsets = [2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 33, 38].map(v => rightBase + v);
-        sideTreeOffsets.forEach((off, i) => {
-          if (i >= 4 && (r + i) % 2 !== 0) return;
-          if (i >= 6 && (r + i) % 3 !== 0) return;
-          trees.push({ id: `dl${r}_${i}`, x: off, z, modelIdx: r * 3 + i, biome: row.biome, groundY: decoY });
-        });
-        rightTreeOffsets.forEach((x, i) => {
-          if (i >= 4 && (r + i) % 2 !== 0) return;
-          if (i >= 6 && (r + i) % 3 !== 0) return;
-          trees.push({ id: `dr${r}_${i}`, x, z, modelIdx: r * 3 + i + 1, biome: row.biome, groundY: decoY });
-        });
-      }
-
       // Traffic lights on rail rows — positioned just outside playfield edges
       // but close enough to remain visible on narrow (mobile) viewports.
       if (row.type === "rail") {
