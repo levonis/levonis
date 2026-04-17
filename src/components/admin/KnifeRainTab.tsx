@@ -430,6 +430,17 @@ export default function KnifeRainTab() {
       {subTab === "leaderboard" && (
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground">حدد جوائز لأعلى المراكز. عند التتويج يتم سحب المخزون وتصفير النقاط.</p>
+          <div className="space-y-2">
+            <SeasonAdminFields
+              seasonName={s.season_name}
+              seasonStartsAt={s.season_starts_at}
+              seasonEndsAt={s.season_ends_at}
+              onChange={(k, v) => update(k, v)}
+            />
+            <Button size="sm" variant="outline" onClick={() => save.mutate()} disabled={save.isPending} className="w-full">
+              {save.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} حفظ بيانات الموسم
+            </Button>
+          </div>
           <div className="bg-muted/20 rounded-lg p-4 space-y-3">
             <h4 className="text-sm font-semibold text-foreground flex items-center gap-1"><Plus className="h-4 w-4" /> جائزة مركز</h4>
             <div><label className="text-[10px] text-muted-foreground">المركز</label><Input type="number" min={1} max={10} value={newLbPrize.position} onChange={e => setNewLbPrize(p => ({ ...p, position: parseInt(e.target.value) || 1 }))} /></div>
