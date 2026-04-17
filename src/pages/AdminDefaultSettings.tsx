@@ -215,9 +215,9 @@ export default function AdminDefaultSettings() {
       icon={<Settings className="h-5 w-5" />}
       description="تخصيص الإعدادات الافتراضية للمنتجات"
       actions={
-        <Button onClick={() => handleSubmit()} disabled={updateMutation.isPending || updateNotifMutation.isPending} className="admin-btn-primary gap-2">
+        <Button onClick={() => handleSubmit()} disabled={updateMutation.isPending || updateNotifMutation.isPending || updateReferralMutation.isPending} className="admin-btn-primary gap-2">
           <Save className="h-4 w-4" />
-          {updateMutation.isPending || updateNotifMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          {updateMutation.isPending || updateNotifMutation.isPending || updateReferralMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
         </Button>
       }
     >
