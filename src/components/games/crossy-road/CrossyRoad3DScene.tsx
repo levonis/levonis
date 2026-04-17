@@ -451,6 +451,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       fromLane: Math.floor(LANES / 2), fromRow: 3,
       hopAnim: 0, playerOffsetX: 0, playerRotation: 0,
       onRiver: false,
+      riderLogIndex: null, riderLogRowIndex: null, riderLogStickX: 0,
     };
 
     return () => { audio.dispose(); };
