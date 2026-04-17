@@ -236,12 +236,35 @@ const Cart = () => {
         const deliveryCount = Math.ceil(qty / basePriceUnits);
         totalFee += basePrice * deliveryCount;
       }
-      const hasUncovered = Object.keys(categoryQty).some(c => !handled.has(c)) || items.some(i => !i.products?.category_id);
-      if (hasUncovered) {
+      const uncoveredCats = Object.keys(categoryQty).filter(c => !handled.has(c));
+      const hasNoCategoryItems = items.some(i => !i.products?.category_id);
+      if (uncoveredCats.length > 0 || hasNoCategoryItems) {
         const standardMethod = deliveryMethods.find((m: any) => m.method_key === 'standard' && !m.base_price_category_id);
         const standardBasePrice = standardMethod ? Number(standardMethod.base_price) : 0;
         const standardGovExc = (allGovExceptions as any[]).find((e: any) => e.delivery_method_key === 'standard' && e.governorate === gov);
-        totalFee += standardGovExc ? Number(standardGovExc.delivery_price) : standardBasePrice;
+        const standardGovPrice = standardGovExc ? Number(standardGovExc.delivery_price) : standardBasePrice;
+        const stdCatExc = (allCatExceptions as any[]).filter((e: any) => e.delivery_method_key === 'standard');
+
+        let addedFlatFallback = false;
+        for (const catId of uncoveredCats) {
+          const qty = categoryQty[catId];
+          const exc =
+            stdCatExc.find((e: any) => e.category_id === catId && e.governorate === gov) ||
+            stdCatExc.find((e: any) => e.category_id === catId && e.governorate === '__follow_gov__') ||
+            stdCatExc.find((e: any) => e.category_id === catId && !e.governorate);
+          if (exc) {
+            const unitsPerDelivery = exc.units_per_delivery || 1;
+            const deliveryCount = Math.ceil(qty / unitsPerDelivery);
+            const price = exc.governorate === '__follow_gov__' ? standardGovPrice : Number(exc.delivery_price);
+            totalFee += price * deliveryCount;
+          } else if (!addedFlatFallback) {
+            totalFee += standardGovPrice;
+            addedFlatFallback = true;
+          }
+        }
+        if (uncoveredCats.length === 0 && hasNoCategoryItems) {
+          totalFee += standardGovPrice;
+        }
       }
       return totalFee;
     }
@@ -597,19 +620,37 @@ const Cart = () => {
         totalCatFee += basePrice * deliveryCount;
       }
 
-      // Uncovered items (non-printer items) should use standard delivery method's price
-      const hasUncoveredItems = Object.keys(categoryQty).some(catId => !handledCategories.has(catId));
+      // Uncovered items: apply standard-method category exceptions per category (honors units_per_delivery)
+      const uncoveredCats = Object.keys(categoryQty).filter(catId => !handledCategories.has(catId));
       const hasNoCategoryItems = items.some(item => !item.products?.category_id);
 
-      if (hasUncoveredItems || hasNoCategoryItems) {
-        // Find the standard (non-category-specific) delivery method to get its price
+      if (uncoveredCats.length > 0 || hasNoCategoryItems) {
         const standardMethod = deliveryMethods.find((m: any) => m.method_key === 'standard' && !m.base_price_category_id);
         const standardBasePrice = standardMethod ? Number(standardMethod.base_price) : 0;
-        
-        // Check governorate exceptions for the standard method
         const standardGovExc = allGovExceptions.find((e: any) => e.delivery_method_key === 'standard' && e.governorate === governorate);
-        const uncoveredFee = standardGovExc ? Number(standardGovExc.delivery_price) : standardBasePrice;
-        totalCatFee += uncoveredFee;
+        const standardGovPrice = standardGovExc ? Number(standardGovExc.delivery_price) : standardBasePrice;
+        const stdCatExc = (allCatExceptions as any[]).filter((e: any) => e.delivery_method_key === 'standard');
+
+        let addedFlatFallback = false;
+        for (const catId of uncoveredCats) {
+          const qty = categoryQty[catId];
+          const exc =
+            stdCatExc.find((e: any) => e.category_id === catId && e.governorate === governorate) ||
+            stdCatExc.find((e: any) => e.category_id === catId && e.governorate === '__follow_gov__') ||
+            stdCatExc.find((e: any) => e.category_id === catId && !e.governorate);
+          if (exc) {
+            const unitsPerDelivery = exc.units_per_delivery || 1;
+            const deliveryCount = Math.ceil(qty / unitsPerDelivery);
+            const price = exc.governorate === '__follow_gov__' ? standardGovPrice : Number(exc.delivery_price);
+            totalCatFee += price * deliveryCount;
+          } else if (!addedFlatFallback) {
+            totalCatFee += standardGovPrice;
+            addedFlatFallback = true;
+          }
+        }
+        if (uncoveredCats.length === 0 && hasNoCategoryItems) {
+          totalCatFee += standardGovPrice;
+        }
       }
       return totalCatFee;
     }
