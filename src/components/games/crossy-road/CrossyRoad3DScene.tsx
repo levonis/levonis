@@ -489,6 +489,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       onRiver: false,
       riderLogIndex: null, riderLogRowIndex: null, riderLogStickX: 0,
       pendingRiderLogIndex: null, pendingRiderRowIndex: null, pendingRiderStickX: 0,
+      fromRiderLogIndex: null, fromRiderRowIndex: null, fromRiderStickX: 0,
       pendingExitSnap: false,
     };
 
