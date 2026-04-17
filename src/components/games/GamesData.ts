@@ -1,3 +1,5 @@
+import crossyRoadImage from "@/assets/crossy-road-logo.jpg";
+
 const gameRpsImage = '/placeholder.svg';
 
 /**
@@ -111,6 +113,7 @@ export const GAME_NODES: GameResource[] = [
     title: "اعبر الطريق",
     description: "تحرّك عبر الطرق والأنهار وسكك الحديد! تجنب السيارات والقطارات.",
     icon: "🐔",
+    image: crossyRoadImage,
     status: GameStatus.LIVE,
     category: GameCategory.STRATEGY,
     reward: "+1 ~ +50",
