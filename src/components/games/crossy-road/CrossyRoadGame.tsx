@@ -363,8 +363,8 @@ export default function CrossyRoadGame({ onBack }: Props) {
           <h1 className="text-2xl font-bold text-foreground">اعبر الطريق</h1>
           <p className="text-sm text-muted-foreground">تحرّك عبر الطرق والأنهار وسكك الحديد! تجنب السيارات والقطارات ولا تسقط في الماء.</p>
 
-          {/* Season countdown */}
-          <SeasonCountdownBanner endsAt={settings?.season_ends_at} />
+          {/* Season banner */}
+          <SeasonCountdownBanner endsAt={settings?.season_ends_at} seasonName={(settings as any)?.season_name} startsAt={(settings as any)?.season_starts_at} />
 
           {userHighScore && userHighScore.high_score > 0 && (
             <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20">
@@ -463,8 +463,8 @@ export default function CrossyRoadGame({ onBack }: Props) {
             </button>
           </div>
 
-          {/* Season countdown */}
-          <SeasonCountdownBanner endsAt={settings?.season_ends_at} />
+          {/* Season banner */}
+          <SeasonCountdownBanner endsAt={settings?.season_ends_at} seasonName={(settings as any)?.season_name} startsAt={(settings as any)?.season_starts_at} />
 
           {lbView === "season" && lbPrizes.length > 0 && (
             <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-right space-y-1">
