@@ -610,25 +610,22 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       if (bestIdx >= 0) {
         const log = newRow.logs[bestIdx];
-        const stickX = actualPx - log.x;
-        // Save as pending — actual rider lock happens when animation completes,
-        // so toX tracks the moving log dynamically during the hop.
+        // Clamp stickX strictly inside log bounds — no phantom edges.
+        const stickX = Math.max(0, Math.min(log.width, actualPx - log.x));
         g.pendingRiderLogIndex = bestIdx;
         g.pendingRiderRowIndex = g.playerRow;
         g.pendingRiderStickX = stickX;
-        // Initial offset (will be recomputed each frame during the hop).
         const lockedPx = log.x + stickX;
         g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
       } else {
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
-      // Save the departing log so the hop start tracks it dynamically.
       if (wasOnRiver && currentRow && g.riderLogIndex !== null) {
         const fromLog = currentRow.logs[g.riderLogIndex];
         if (fromLog) {
           g.fromRiderLogIndex = g.riderLogIndex;
           g.fromRiderRowIndex = g.fromRow;
-          g.fromRiderStickX = g.riderLogStickX;
+          g.fromRiderStickX = Math.max(0, Math.min(fromLog.width, g.riderLogStickX));
         }
       }
       // Don't lock riderLog yet; clear previous lock so river-check uses pending logic.
