@@ -891,6 +891,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (currentRow.coin && !currentRow.coin.collected && currentRow.coin.lane === g.playerLane) {
           currentRow.coin.collected = true;
           g.coins++;
+          console.log("[CrossyRoad] Coin collected! Total coins:", g.coins);
           audio?.playCoin();
         }
       }
