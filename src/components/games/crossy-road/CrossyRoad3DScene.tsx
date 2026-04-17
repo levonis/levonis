@@ -141,8 +141,13 @@ function getBiome(index: number): Biome {
 }
 
 function getDifficulty(index: number): number {
-  // Ramps from 0 to 1 over 50 rows, then slowly continues
-  return Math.min(index / 50, 1) + Math.max(0, (index - 50) / 150);
+  // Safe "learning" zone for first 15 rows, then slow ramp.
+  // Reaches 1.0 only around row 165, then continues very slowly.
+  if (index < 15) return 0;
+  const ramp = (index - 15) / 150; // 0 → 1 across 150 rows
+  const base = Math.min(ramp, 1);
+  const tail = Math.max(0, (index - 165) / 400); // very slow growth past 1
+  return Math.min(base + tail, 1.6); // hard cap (was effectively higher)
 }
 
 interface Props {
@@ -154,7 +159,8 @@ function generateRow(index: number): Row {
   const biome = getBiome(index);
   const diff = getDifficulty(index);
 
-  if (index < 4) {
+  // Extended safe zone: first 8 rows are guaranteed grass (was 4)
+  if (index < 8) {
     return {
       type: "grass", obstacles: [], logs: [], coin: null,
       trainWarning: false, trainTimer: 0, trainWarningPhase: false,
@@ -165,10 +171,11 @@ function generateRow(index: number): Row {
   const rand = Math.random();
   let type: RowType;
 
-  // More dangerous rows at higher difficulty
-  const grassChance = Math.max(0.15, 0.35 - diff * 0.15);
-  const roadChance = grassChance + 0.30 + diff * 0.05;
-  const railChance = roadChance + 0.15 + diff * 0.05;
+  // Early rows (8-25) heavily favor grass; danger ramps slowly afterwards
+  const earlyFactor = Math.max(0, Math.min(1, (index - 8) / 20)); // 0 → 1 across rows 8-28
+  const grassChance = Math.max(0.25, 0.55 - diff * 0.15) * (1 - earlyFactor * 0.3 + 0.3);
+  const roadChance = grassChance + (0.20 + diff * 0.05) * earlyFactor + 0.05;
+  const railChance = roadChance + (0.10 + diff * 0.05) * earlyFactor;
 
   if (rand < grassChance) type = "grass";
   else if (rand < roadChance) type = "road";
@@ -206,10 +213,13 @@ function generateRow(index: number): Row {
 
   if (type === "road") {
     const dir = Math.random() > 0.5 ? 1 : -1;
+    // Fewer cars in early rows → bigger gaps
     const baseCount = 1 + Math.floor(Math.random() * 2);
-    const count = Math.min(4, baseCount + (diff > 0.6 ? 1 : 0));
-    const baseSpeed = 2.5 + Math.random() * 2;
-    const speed = (baseSpeed + diff * 3) * dir;
+    const count = Math.min(3, baseCount + (diff > 0.8 ? 1 : 0));
+    // ~30% slower base speed and gentler difficulty growth, capped lower
+    const baseSpeed = 1.7 + Math.random() * 1.4;
+    const rawSpeed = baseSpeed + diff * 1.8;
+    const speed = Math.min(rawSpeed, 5.5) * dir; // cap (was effectively ~7.5)
     const isTruck = Math.random() < 0.3;
 
     // Spawn cars spread across a wide range, they enter/exit like trains
@@ -225,15 +235,16 @@ function generateRow(index: number): Row {
       });
     }
   } else if (type === "rail") {
-    // Faster trains at higher difficulty
-    row.trainTimer = Math.max(2, (3 + Math.random() * 5) - diff * 2);
+    // Much longer first train cooldown (7-10s), shrinking slowly with difficulty
+    row.trainTimer = Math.max(4, (7 + Math.random() * 3) - diff * 1.5);
   } else if (type === "river") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    // Fewer logs = harder; minimum 1
-    const baseLogCount = 3 - Math.floor(diff * 1.5);
-    const count = Math.max(1, baseLogCount);
-    const baseSpeed = 1.5 + Math.random() * 1.5;
-    const speed = (baseSpeed + diff * 1.5) * dir;
+    // More logs early on; slower depletion with difficulty
+    const baseLogCount = 3 - Math.floor(diff * 1);
+    const count = Math.max(2, baseLogCount);
+    const baseSpeed = 1.0 + Math.random() * 1.0; // ~30% slower
+    const rawSpeed = baseSpeed + diff * 0.9;
+    const speed = Math.min(rawSpeed, 3.0) * dir;
     
     // Space logs with guaranteed large gaps (≥2.5 units)
     const logWidth = 1.5 + Math.random() * 1.0; // vary between 1.5 and 2.5
@@ -711,7 +722,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               row.obstacles = [];
               row.trainWarning = false;
               row.trainWarningPhase = false;
-              row.trainTimer = Math.max(2, (4 + Math.random() * 6) - getDifficulty(g.playerRow) * 2);
+              row.trainTimer = Math.max(4, (8 + Math.random() * 4) - getDifficulty(g.playerRow) * 1.5);
             }
           }
         }
