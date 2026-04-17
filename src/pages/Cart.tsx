@@ -589,6 +589,11 @@ const Cart = () => {
     : 0;
   const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
+  // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
+  const referralOwnerEarnings = appliedReferral
+    ? items.reduce((sum: number, it: any) => sum + (Number(it.products?.referral_earnings_iqd || 0) * (it.quantity || 0)), 0)
+    : 0;
+  
   // Calculate discount
   const calculateDiscount = () => {
     if (!appliedCoupon) return 0;
@@ -604,7 +609,7 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
-  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount;
+  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
@@ -1185,14 +1190,12 @@ const Cart = () => {
       
       // Calculate payment info for pre-orders
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
-      const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount;
+      // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
+      const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
       const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
       const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
       
       const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
-      const referralOwnerEarnings = appliedReferral
-        ? items.reduce((sum, it: any) => sum + (Number(it.products?.referral_earnings_iqd || 0) * (it.quantity || 0)), 0)
-        : 0;
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
@@ -2508,6 +2511,14 @@ const Cart = () => {
                           <span className="font-bold">{formatPrice(remainingAmount)} دينار عراقي</span>
                         </div>
                       </>
+                    )}
+                    {referralOwnerEarnings > 0 && (
+                      <div className="flex justify-between text-sm mb-2 text-amber-600 dark:text-amber-400">
+                        <span className="flex items-center gap-1">
+                          🎁 دعم @{appliedReferral?.owner_username}
+                        </span>
+                        <span className="font-bold">+{formatPrice(referralOwnerEarnings)} د.ع</span>
+                      </div>
                     )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
