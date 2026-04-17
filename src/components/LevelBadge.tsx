@@ -129,7 +129,7 @@ export default function LevelBadge({
     >
       {getLevelIcon(levelInfo.level_key, badgeSize.icon, isVipPlus)}
       {showLabel && (
-        <span className="mr-1">{isVipPlus ? 'VIP+' : levelInfo.name_ar}</span>
+        <span className="mr-1">{isVipPlus ? 'VIP+' : `مستوى ${levelNumber ?? 1}`}</span>
       )}
     </Badge>
   );
