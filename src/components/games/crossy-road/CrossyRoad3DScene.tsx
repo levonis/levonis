@@ -128,8 +128,8 @@ const GRASS_TOP = 0.375;
 // Player on-log Y offset (above the log surface)
 const LOG_Y_OFFSET = 0.45;
 
-// Log collision tolerance (more forgiving for log-to-log jumps)
-const LOG_TOLERANCE = 0.45;
+// Log collision tolerance (small grace edge after visual/logical width unification)
+const LOG_TOLERANCE = 0.15;
 
 // Returns the visual top elevation of a row's ground for placing objects
 function rowTopY(rowType: RowType): number {
