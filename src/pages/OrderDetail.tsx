@@ -9,7 +9,7 @@ import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRigh
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import generatePDF, { Margin, Resolution } from 'react-to-pdf';
+
 import OrderInvoiceDialog from '@/components/OrderInvoiceDialog';
 import UnifiedChatButton from '@/components/UnifiedChatButton';
 import AdminUserChat from '@/components/AdminUserChat';
@@ -71,7 +71,6 @@ const OrderDetail = () => {
   const { orderId } = useParams();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showAdminChat, setShowAdminChat] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -100,38 +99,6 @@ const OrderDetail = () => {
     },
     enabled: canQuery
   });
-
-  const handleDownloadPDF = async () => {
-    if (!order) return;
-    setIsGeneratingPDF(true);
-    try {
-      const element = document.getElementById('invoice-content');
-      const invoiceHTML = element?.outerHTML || '';
-      const warrantyExpiresAt = new Date();
-      warrantyExpiresAt.setFullYear(warrantyExpiresAt.getFullYear() + 1);
-      const { data: template } = await supabase.from("invoice_templates").select("id").eq("is_default", true).single();
-      await supabase.from("saved_invoices").insert({ order_id: order.id, invoice_html: invoiceHTML, template_id: template?.id || null, warranty_expires_at: warrantyExpiresAt.toISOString(), notes: null });
-      const getTargetElement = () => element;
-      await generatePDF(getTargetElement, { filename: `invoice-${order.order_number}.pdf`, resolution: Resolution.HIGH, page: { margin: Margin.SMALL, format: 'A4', orientation: 'portrait' }, canvas: { mimeType: 'image/jpeg', qualityRatio: 0.98 } });
-      toast.success('تم حفظ الفاتورة وتنزيلها بنجاح');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('حدث خطأ في توليد الفاتورة');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
-
-  const handleDirectPrint = () => {
-    const printContents = document.getElementById('invoice-content');
-    if (!printContents) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) { toast.error('يرجى السماح بالنوافذ المنبثقة للطباعة'); return; }
-    printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>فاتورة - ${order?.order_number}</title><style>* { box-sizing: border-box; margin: 0; padding: 0; } body { font-family: 'Cairo', Arial, sans-serif; direction: rtl; padding: 20px; } @media print { body { padding: 0; } } table { width: 100%; border-collapse: collapse; }</style></head><body>${printContents.outerHTML}</body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
-  };
 
   const handleCancelOrder = async () => {
     if (!orderId || isCancelling) return;
