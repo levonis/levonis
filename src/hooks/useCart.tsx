@@ -326,24 +326,47 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
-      .channel(`cart-items-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'cart_items',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchCart();
-        }
-      )
-      .subscribe();
+    let channel: any = null;
+    let pendingRefresh = false;
+
+    const handleChange = () => {
+      // Skip refetch when tab is hidden — refetch once on visibility return
+      if (typeof document !== 'undefined' && document.hidden) {
+        pendingRefresh = true;
+        return;
+      }
+      fetchCart();
+    };
+
+    const subscribe = () => {
+      channel = supabase
+        .channel(`cart-items-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'cart_items',
+            filter: `user_id=eq.${user.id}`,
+          },
+          handleChange
+        )
+        .subscribe();
+    };
+
+    subscribe();
+
+    const onVisibility = () => {
+      if (!document.hidden && pendingRefresh) {
+        pendingRefresh = false;
+        fetchCart();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [user?.id, fetchCart]);
 

@@ -11426,6 +11426,12 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_direct_sale_category_ids: {
+        Args: never
+        Returns: {
+          category_id: string
+        }[]
+      }
       get_merchant_debt: {
         Args: { p_merchant_user_id: string }
         Returns: number
