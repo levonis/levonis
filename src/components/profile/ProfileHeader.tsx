@@ -161,7 +161,8 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
     ? Math.min(100, Math.round(((currentPoints - currentMin) / (nextMin - currentMin)) * 100))
     : 100;
 
-  const levelColor = currentLevelData?.color ?? "hsl(var(--primary))";
+  // Active purchased card overrides the points-based level color
+  const levelColor = cardLevelData?.color ?? currentLevelData?.color ?? "hsl(var(--primary))";
 
   const stats = [
     {
