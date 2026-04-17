@@ -574,7 +574,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (fromLog) {
           g.fromRiderLogIndex = g.riderLogIndex;
           g.fromRiderRowIndex = g.fromRow;
-          g.fromRiderStickX = g.riderLogStickX;
+          // Clamp stickX strictly inside the visible log bounds.
+          g.fromRiderStickX = Math.max(0, Math.min(fromLog.width, g.riderLogStickX));
         }
       }
       // Clear rider lock immediately — we're leaving the river.
