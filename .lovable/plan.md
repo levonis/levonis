@@ -1,60 +1,58 @@
 
-## خطة تحسين أداء الموقع وتخفيف الضغط
+## خطة: عداد الموسم + الأفضل على الإطلاق لكل الألعاب
 
-### التحليل الأولي
-الموقع كبير جداً (مئات الميزات: ألعاب، مجتمع، إدارة، صيانة...). الضغط يأتي من:
-1. **استعلامات قاعدة البيانات الثقيلة** على الصفحة الرئيسية (categories, products, sections...)
-2. **Real-time subscriptions** متعددة (cart, notifications, orders) 
-3. **حجم Bundle JavaScript** كبير بسبب تحميل المكونات دفعة واحدة
-4. **Re-renders** متكررة في بعض المكونات
+### الوضع الحالي
+- **Crossy Road**: يحتوي بالفعل على `season_ends_at` + عدّاد + تبويب "الموسم/الأفضل على الإطلاق" (`all_time_high_score`) ✅
+- **Stack Tower**: عمود `season` موجود في `stack_game_high_scores`، لكن **لا يوجد**: `season_ends_at`، `season_name`، حقل all-time، عدّاد في الواجهة، تبويب "الأفضل على الإطلاق"
+- **Knife Rain**: **لا يوجد**: `season`, `season_ends_at`, `season_name`, all-time، عدّاد، تبويب
+- **MyReferral.tsx**: خطأ بناء — العمود الصحيح `phone_number` وليس `phone`
 
-### المشاكل المعروفة المحتملة
-- الاستعلام `direct-sale-categories-v2` يجلب كل المنتجات (`has_in_stock=true`) ثم يفلتر في الكلاينت — مكلف جداً
-- `staleTime` قصير في بعض الاستعلامات → إعادة جلب متكررة
-- صور بدون lazy loading أو أحجام محددة
-- Console.log في الإنتاج
-- مكونات ثقيلة (Three.js, html2canvas) تُحمَّل مع الصفحات
+### التنفيذ
 
-### الخطة المقترحة (5 محاور)
+**1. إصلاح خطأ البناء في `MyReferral.tsx`**
+- تغيير `select("username, full_name, phone")` → `select("username, full_name, phone_number")`
+- استخدام `profile?.phone_number` في رسالة التليكرام
 
-**1. تحسين استعلامات الصفحة الرئيسية (الأهم)**
-- نقل فلترة `direct-sale-categories` إلى دالة RPC في قاعدة البيانات بدل جلب كل المنتجات للعميل
-- زيادة `staleTime` و `gcTime` للبيانات شبه الثابتة (categories, banners, sections) إلى 10-15 دقيقة
-- تفعيل `refetchOnWindowFocus: false` بشكل عام في `QueryClient`
+**2. Migration: توحيد حقول الموسم**
+أضف لكل من `stack_game_settings`، `knife_rain_settings`، `crossy_road_settings`:
+- `season_starts_at TIMESTAMPTZ` (موعد بدء الموسم)
+- `season_name TEXT DEFAULT 'الموسم الأول'`
+- (`crossy_road_settings.season_ends_at` موجود؛ نضيفها لـ Stack/KnifeRain أيضاً)
+- `season_ends_at TIMESTAMPTZ` لـ Stack/KnifeRain
 
-**2. Code Splitting أعمق**
-- Lazy load: `BannerCarousel`, `ReelsBar`, `StoriesBar`, `BundlesSection` في الصفحة الرئيسية
-- Lazy load صفحات الإدارة/الألعاب/الصيانة (إذا لم تكن كذلك)
-- فصل مكتبات ثقيلة (`html2canvas`, `jspdf`, `three`, `html5-qrcode`) في chunks منفصلة عبر `vite.config`
+أضف لـ `stack_game_high_scores` و `knife_rain_high_scores`:
+- `all_time_high_score INTEGER DEFAULT 0` (يُحدَّث عند تسجيل نتيجة ≥ السابقة)
+- لـ knife: عمود `season INTEGER DEFAULT 1` أيضاً
 
-**3. تحسين Real-time والـ Polling**
-- مراجعة `useCart` real-time: استخدام channel واحد بدل قنوات متعددة
-- تقليل `refetchInterval` للـ stock validation من 10s إلى 30s
-- إيقاف الـ subscriptions عند `document.hidden`
+Trigger يُحدِّث `all_time_high_score = GREATEST(OLD.all_time_high_score, NEW.high_score)` تلقائياً عند UPDATE/INSERT.
 
-**4. تحسين الصور والأصول**
-- إضافة `loading="lazy"` و `decoding="async"` لكل الصور غير الحرجة
-- إضافة `width/height` لمنع layout shift
-- Service Worker: تحسين استراتيجية الكاش للصور (stale-while-revalidate)
+**3. إعدادات الأدمن (`StackGameTab`, `KnifeRainTab`, `CrossyRoadTab`)**
+أضف حقول قابلة للتحرير:
+- اسم الموسم (مثل "الموسم الثاني")
+- تاريخ بدء الموسم (datetime-local)
+- تاريخ انتهاء الموسم (datetime-local)
+حفظ في الجداول المعنية.
 
-**5. تنظيف وإصلاح**
-- إزالة `console.log` غير الضرورية في الإنتاج (عبر `vite.config` define)
-- إصلاح أي memory leaks (event listeners، intervals بدون cleanup)
-- Memoize المكونات الثقيلة في القوائم الطويلة
+**4. واجهة اللعبة (`StackGame.tsx`, `KnifeRainGame.tsx`)**
+أضف لكل لعبة في تبويب "المتصدرين":
+- مكوّن `SeasonHeader` يعرض: اسم الموسم + موعد البدء + عدّاد تنازلي حيّ لانتهاء الموسم
+- شريط تبديل "الموسم الحالي / الأفضل على الإطلاق" (مثل Crossy Road)
+- استعلام إضافي يجلب أعلى 10 على `all_time_high_score`
+- عند `lbView === "alltime"` نعرض `all_time_high_score` بدل `high_score`
+
+**5. Crossy Road**
+- إضافة عرض **اسم الموسم** و **موعد البدء** بجانب العدّاد الموجود (تحديث `SeasonCountdownBanner`).
 
 ### الملفات المتأثرة
-- `src/pages/Home.tsx` — lazy loading، تحسين queries
-- `src/App.tsx` أو حيث `QueryClient` — إعدادات افتراضية أفضل
-- `src/hooks/useCart.tsx` — تحسين real-time
-- `vite.config.ts` — manual chunks، drop console
-- `supabase/migrations/...` — RPC جديد لـ direct-sale categories
-- مكونات الصور (`CategoryCard`, `BannerCarousel`...) — lazy attrs
+- `src/pages/MyReferral.tsx` (إصلاح phone)
+- `supabase/migrations/...` (جديد)
+- `src/components/admin/StackGameTab.tsx`, `KnifeRainTab.tsx`, `CrossyRoadTab.tsx`
+- `src/components/games/stack-game/StackGame.tsx`
+- `src/components/games/knife-rain/KnifeRainGame.tsx`
+- `src/components/games/crossy-road/CrossyRoadGame.tsx`
 
-### النتيجة المتوقعة
-- تقليل وقت التحميل الأولي ~40-50%
-- تقليل استهلاك RAM على الموبايل
-- تقليل الضغط على قاعدة البيانات (استعلامات أقل وأخف)
-- تقليل عدد الـ re-renders
-
-### ما الذي تريد تنفيذه؟
-يمكنني تنفيذ الكل دفعة واحدة، أو بدء بالأهم (محور 1 + 2) لأنهما الأعلى أثراً.
+### النتيجة
+كل لعبة (Stack، Knife Rain، Crossy Road) ستعرض في قائمة المتصدرين:
+- اسم الموسم + موعد البدء + عدّاد تنازلي للانتهاء
+- تبديل بين "الموسم الحالي" و "الأفضل على الإطلاق"
+- الأدمن يتحكم بكل شيء من لوحة الإدارة
