@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2, Timer, Globe } from "lucide-react";
+import SeasonAdminFields from "./SeasonAdminFields";
 
 interface ProductPickerValue { product_id: string | null; selected_color: string | null; selected_option_id: string | null; }
 
@@ -218,11 +219,14 @@ export default function CrossyRoadTab() {
         score_per_step: s.score_per_step, score_per_coin: s.score_per_coin,
         max_daily_plays: s.max_daily_plays || null, 
         max_daily_points: s.max_daily_points || null,
+        season_name: s.season_name,
+        season_starts_at: s.season_starts_at,
+        season_ends_at: s.season_ends_at,
         updated_at: new Date().toISOString(),
-      }).eq("id", settings.id).select("id").single();
+      } as any).eq("id", settings.id).select("id").single();
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("تم حفظ الإعدادات"); queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-settings"] }); setForm(null); },
+    onSuccess: () => { toast.success("تم حفظ الإعدادات"); queryClient.invalidateQueries({ queryKey: ["admin-crossy-road-settings"] }); queryClient.invalidateQueries({ queryKey: ["crossy-road-enabled"] }); setForm(null); },
     onError: (e: any) => toast.error(e?.message || "فشل الحفظ"),
   });
 
@@ -394,6 +398,13 @@ export default function CrossyRoadTab() {
             <label className="text-xs font-medium text-muted-foreground">الحد اليومي للمحاولات (اتركه فارغاً = لا حد)</label>
             <Input type="number" min={0} value={s.max_daily_plays ?? ""} onChange={e => update("max_daily_plays", e.target.value ? parseInt(e.target.value) : null)} className="w-48" />
           </div>
+
+          <SeasonAdminFields
+            seasonName={s.season_name}
+            seasonStartsAt={s.season_starts_at}
+            seasonEndsAt={s.season_ends_at}
+            onChange={(k, v) => update(k, v)}
+          />
 
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">
             {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} حفظ الإعدادات
