@@ -274,7 +274,7 @@ export default function MyReferral() {
             <p className="text-xs text-white/80 mb-1">الكود الخاص بك</p>
             {!editingCode ? (
               <div className="flex items-center justify-between gap-2">
-                <p className="text-3xl font-bold text-white tracking-wider font-mono uppercase truncate">
+                <p className="font-bold text-white tracking-wider font-mono uppercase truncate text-2xl">
                   {coupon?.code || "—"}
                 </p>
                 <div className="flex gap-1.5">
