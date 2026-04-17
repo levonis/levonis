@@ -410,7 +410,7 @@ export default function MyReferral() {
             {savingCustom ? <Loader2 className="h-3.5 w-3.5 animate-spin ml-2" /> : <Save className="h-3.5 w-3.5 ml-2" />}
             حفظ التخصيص
           </Button>
-        </CardField>
+        </CardContent>
         )}
       </Card>
 
