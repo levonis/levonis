@@ -77,6 +77,8 @@ export default function MyReferral() {
 
     setCoupon(activeCoupon);
     setNewCode(activeCoupon?.code || "");
+    setCustomMessage((activeCoupon as any)?.custom_message || "");
+    setBannerStyle(((activeCoupon as any)?.banner_style as ReferralBannerStyleKey) || "amber");
 
     if (activeCoupon) {
       const { data: u } = await supabase
@@ -162,6 +164,29 @@ export default function MyReferral() {
     }
     toast.success("تم تحديث الكود");
     setEditingCode(false);
+    loadData();
+  };
+
+  const saveCustomization = async () => {
+    if (!coupon?.id) return;
+    if (customMessage.length > 140) {
+      toast.error("الرسالة طويلة جداً (الحد الأقصى 140 حرفاً)");
+      return;
+    }
+    setSavingCustom(true);
+    const { error } = await supabase
+      .from("referral_coupons")
+      .update({
+        custom_message: customMessage.trim() || null,
+        banner_style: bannerStyle,
+      } as any)
+      .eq("id", coupon.id);
+    setSavingCustom(false);
+    if (error) {
+      toast.error("فشل حفظ التخصيص");
+      return;
+    }
+    toast.success("تم حفظ التخصيص");
     loadData();
   };
 
