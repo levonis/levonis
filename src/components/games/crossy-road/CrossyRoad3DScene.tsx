@@ -68,6 +68,9 @@ interface GameState {
   pendingRiderLogIndex: number | null;
   pendingRiderRowIndex: number | null;
   pendingRiderStickX: number;
+  fromRiderLogIndex: number | null;
+  fromRiderRowIndex: number | null;
+  fromRiderStickX: number;
   pendingExitSnap: boolean;
 }
 
@@ -486,6 +489,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       onRiver: false,
       riderLogIndex: null, riderLogRowIndex: null, riderLogStickX: 0,
       pendingRiderLogIndex: null, pendingRiderRowIndex: null, pendingRiderStickX: 0,
+      fromRiderLogIndex: null, fromRiderRowIndex: null, fromRiderStickX: 0,
       pendingExitSnap: false,
     };
 
@@ -526,6 +530,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.pendingRiderLogIndex = null;
     g.pendingRiderRowIndex = null;
     g.pendingRiderStickX = 0;
+    g.fromRiderLogIndex = null;
+    g.fromRiderRowIndex = null;
+    g.fromRiderStickX = 0;
     g.pendingExitSnap = false;
 
     if (dir === "up") {
@@ -543,12 +550,33 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     if (wasOnRiver && !nowOnRiver) {
       // Defer snap to grass center until animation completes,
       // so the jump animates from the actual log position.
-      const snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
-      g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
+      let snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
+      snappedLane = Math.max(MIN_LANE, Math.min(MAX_LANE, snappedLane));
+      // If destination grass lane has a tree, pick nearest free lane in playable range.
+      if (newRow && newRow.type === "grass" && newRow.treeIndices.includes(snappedLane)) {
+        let found = snappedLane;
+        for (let off = 1; off <= (MAX_LANE - MIN_LANE); off++) {
+          const left = snappedLane - off;
+          const right = snappedLane + off;
+          if (left >= MIN_LANE && !newRow.treeIndices.includes(left)) { found = left; break; }
+          if (right <= MAX_LANE && !newRow.treeIndices.includes(right)) { found = right; break; }
+        }
+        snappedLane = found;
+      }
+      g.playerLane = snappedLane;
       // Keep playerOffsetX as-is (relative to old lane center).
       // Recompute relative to new lane so visualXBefore is preserved.
       g.playerOffsetX = visualXBefore - (g.playerLane * CELL + CELL / 2);
       g.pendingExitSnap = true;
+      // Save the departing log so the hop start tracks it dynamically while it drifts.
+      if (currentRow && currentRow.type === "river" && g.riderLogIndex !== null) {
+        const fromLog = currentRow.logs[g.riderLogIndex];
+        if (fromLog) {
+          g.fromRiderLogIndex = g.riderLogIndex;
+          g.fromRiderRowIndex = g.fromRow;
+          g.fromRiderStickX = g.riderLogStickX;
+        }
+      }
       // Clear rider lock immediately — we're leaving the river.
       g.riderLogIndex = null;
       g.riderLogRowIndex = null;
@@ -592,6 +620,15 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
       } else {
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
+      }
+      // Save the departing log so the hop start tracks it dynamically.
+      if (wasOnRiver && currentRow && g.riderLogIndex !== null) {
+        const fromLog = currentRow.logs[g.riderLogIndex];
+        if (fromLog) {
+          g.fromRiderLogIndex = g.riderLogIndex;
+          g.fromRiderRowIndex = g.fromRow;
+          g.fromRiderStickX = g.riderLogStickX;
+        }
       }
       // Don't lock riderLog yet; clear previous lock so river-check uses pending logic.
       g.riderLogIndex = null;
@@ -667,16 +704,26 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (g.moveProgress >= 1) {
           g.moving = false;
           g.moveProgress = 0;
-          // Commit pending rider lock now that the hop has finished.
+          // Commit pending rider lock now that the hop has finished — validate the player is still over the log.
           if (g.pendingRiderLogIndex !== null && g.pendingRiderRowIndex === g.playerRow) {
             const dRow = g.rows[g.playerRow];
-            if (dRow && dRow.logs[g.pendingRiderLogIndex]) {
-              const log = dRow.logs[g.pendingRiderLogIndex];
-              g.riderLogIndex = g.pendingRiderLogIndex;
-              g.riderLogRowIndex = g.pendingRiderRowIndex;
-              g.riderLogStickX = g.pendingRiderStickX;
-              const lockedPx = log.x + g.riderLogStickX;
-              g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+            const log = dRow?.logs[g.pendingRiderLogIndex];
+            if (log) {
+              const lockedPx = log.x + g.pendingRiderStickX;
+              const stillOnLog = lockedPx >= log.x - LOG_TOLERANCE && lockedPx <= log.x + log.width + LOG_TOLERANCE;
+              if (stillOnLog) {
+                g.riderLogIndex = g.pendingRiderLogIndex;
+                g.riderLogRowIndex = g.pendingRiderRowIndex;
+                g.riderLogStickX = g.pendingRiderStickX;
+                g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+              } else {
+                // Log drifted away mid-hop → fall in the water.
+                g.dead = true;
+                audio?.playWater();
+              }
+            } else {
+              g.dead = true;
+              audio?.playWater();
             }
           }
           g.pendingRiderLogIndex = null;
@@ -687,6 +734,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
             g.pendingExitSnap = false;
           }
           g.fromOffsetX = 0;
+          g.fromRiderLogIndex = null;
+          g.fromRiderRowIndex = null;
+          g.fromRiderStickX = 0;
         }
       }
 
@@ -1000,7 +1050,19 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     let px: number, pz: number;
     if (g.moving) {
       const t = g.moveProgress;
-      const fromX = g.fromLane * CELL + CELL / 2 + g.fromOffsetX;
+      // Track the departing log dynamically if we were standing on one.
+      let fromX: number;
+      if (g.fromRiderLogIndex !== null && g.fromRiderRowIndex !== null) {
+        const sRow = g.rows[g.fromRiderRowIndex];
+        const sLog = sRow?.logs[g.fromRiderLogIndex];
+        if (sLog) {
+          fromX = sLog.x + g.fromRiderStickX;
+        } else {
+          fromX = g.fromLane * CELL + CELL / 2 + g.fromOffsetX;
+        }
+      } else {
+        fromX = g.fromLane * CELL + CELL / 2 + g.fromOffsetX;
+      }
       // Dynamically track moving log destination so the player lands on it.
       let toX: number;
       if (g.pendingRiderLogIndex !== null && g.pendingRiderRowIndex === g.playerRow) {
