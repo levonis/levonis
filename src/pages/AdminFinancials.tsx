@@ -109,9 +109,31 @@ const calcAllocatedItemCost = (order: OrderWithDetails, item: NonNullable<OrderW
   return (orderProductCost * itemRevenue) / subtotal;
 };
 
-// Total costs = |delivery| + product costs (negative delivery still counts as cost)
-const calcOrderCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
-  return Math.abs(calcDeliveryCost(order)) + calcProductCost(order, usdToIqdRate);
+// Actual delivery cost paid to delivery company (from delivery_methods.actual_cost or per-product personal_delivery_cost)
+const calcActualDeliveryCostFor = (
+  order: OrderWithDetails,
+  deliveryMethods: Array<{ method_key: string; actual_cost: number }>
+): number => {
+  const deliveryMethod = (order as any).delivery_method || 'standard';
+  if (deliveryMethod === 'personal') {
+    return (order.order_items || []).reduce((sum, item: any) => {
+      const pdc = item.products?.personal_delivery_cost || 0;
+      return sum + (pdc * (item.quantity || 1));
+    }, 0);
+  }
+  const methodData = deliveryMethods.find((m) => m.method_key === deliveryMethod);
+  return methodData?.actual_cost || 0;
+};
+
+// Total costs = |delivery| + product costs + actual delivery paid to company
+const calcOrderCost = (
+  order: OrderWithDetails,
+  usdToIqdRate: number,
+  deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
+): number => {
+  return Math.abs(calcDeliveryCost(order))
+    + calcProductCost(order, usdToIqdRate)
+    + calcActualDeliveryCostFor(order, deliveryMethods);
 };
 
 // Referral commission paid out to VIP+ coupon owner (deducted from net revenue)
@@ -120,9 +142,13 @@ const calcReferralCommission = (order: OrderWithDetails): number => {
 };
 
 // Profit (commission) = total_amount - all costs - referral commission (delivered only)
-const calcOrderProfit = (order: OrderWithDetails, usdToIqdRate: number): number => {
+const calcOrderProfit = (
+  order: OrderWithDetails,
+  usdToIqdRate: number,
+  deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
+): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate) - calcReferralCommission(order);
+  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
 };
 
 const AdminFinancials = () => {
