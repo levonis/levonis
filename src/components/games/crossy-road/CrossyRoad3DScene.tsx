@@ -912,12 +912,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
 
       // Decorative side trees ONLY on grass rows — deterministic, regular.
+      // Skip the extended playable zone so the player always has free lanes.
       if (row.type === "grass") {
         const density = row.biome === "dark_forest" ? 0.42 : 0.28;
         for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
           for (let lane = 0; lane < LANES; lane++) {
             const colL = -s * LANES + lane;
-            if (seededTree(colL, r, density)) {
+            if (colL < MIN_LANE && seededTree(colL, r, density)) {
               trees.push({
                 id: `dl${r}_${s}_${lane}`,
                 x: colL * CELL + CELL / 2, z,
@@ -926,7 +927,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
               });
             }
             const colR = LANES + (s - 1) * LANES + lane;
-            if (seededTree(colR, r, density)) {
+            if (colR > MAX_LANE && seededTree(colR, r, density)) {
               trees.push({
                 id: `dr${r}_${s}_${lane}`,
                 x: colR * CELL + CELL / 2, z,
