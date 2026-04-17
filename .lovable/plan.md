@@ -1,20 +1,17 @@
 
-Continuing from the prior plan to fix featured product card alignment on mobile (`< 640px`).
+User wants the featured product to also appear in the regular products grid below (not just in the hero section).
 
-## Changes
+In `src/pages/CategoryDetail.tsx`, currently:
+```ts
+const otherProducts = products?.filter(p => p.id !== featuredProduct?.id) || [];
+```
+This excludes the featured product from the grid.
 
-**1. `src/index.css`** — Add mobile-first sizes for cube elements (currently sized for desktop, overflow the 112px image container):
-- `.cube-top-featured`, `.cube-mid-featured`, `.cube-front-featured`, `.cube-top-highlight`: width `120px`, reduced heights (top `14px`, front `30px`)
-- `.cube-bottom-edge`: width `110px`
-- `.cube-bottom-reflection`: width `108px`
-- `.cube-glow-ring`: width `150px`
-- `.cube-ambient-glow`: width `170px`
+## Change
+In `src/pages/CategoryDetail.tsx`, replace `otherProducts` with the full `products` list so the featured product appears both in the hero and in the grid below.
 
-Keep existing `@media (min-width: 640px)` and `(min-width: 768px)` overrides intact.
+```ts
+const otherProducts = products || [];
+```
 
-**2. `src/components/FloatingProductCard.tsx`**:
-- Replace inline `style={{ marginBottom: '-2.5rem' }}` on the image wrapper with responsive Tailwind: `mb-[-1rem] sm:mb-[-2.5rem]` so image sits correctly on the smaller mobile platform.
-- Change ground reflection width `w-44` → `w-36 sm:w-64 md:w-[26rem]` to match scaled platform.
-
-## Result
-Image, pedestal, glow, and reflection stay proportional across mobile / tablet / desktop. Text content untouched.
+That's the only change needed. The hero section keeps showing the featured product on top, and the grid below now includes all products including the featured one.
