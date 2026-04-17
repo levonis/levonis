@@ -1248,6 +1248,7 @@ const Admin = () => {
       const commissionDirectIqdVal = formData.get('commission_direct_iqd') ? Number(formData.get('commission_direct_iqd')) : 0;
       const otherCostsIqdVal = formData.get('other_costs_iqd') ? Number(formData.get('other_costs_iqd')) : 0;
       const personalDeliveryCostRaw = formData.get('personal_delivery_cost') ? Number(formData.get('personal_delivery_cost')) : 0;
+      const referralEarningsIqdVal = formData.get('referral_earnings_iqd') ? Number(formData.get('referral_earnings_iqd')) : 0;
       
       // Only apply personal delivery cost for printer categories (categories linked to personal delivery method)
       const selectedCategoryId = values.category_id;
@@ -1269,7 +1270,7 @@ const Admin = () => {
       values.commission_direct_iqd = commissionDirectIqdVal;
       values.other_costs_iqd = otherCostsIqdVal;
       values.personal_delivery_cost = personalDeliveryCostVal;
-      values.referral_earnings_iqd = formData.get('referral_earnings_iqd') ? Number(formData.get('referral_earnings_iqd')) : 0;
+      values.referral_earnings_iqd = referralEarningsIqdVal;
 
       if (priceUsdVal && priceUsdVal > 0) {
         // Fetch shipping settings for calculation
@@ -1301,14 +1302,14 @@ const Admin = () => {
 
           if (shippingType === 'sea' || shippingType === 'both') {
             const seaCalc = calculateShippingCost('china', 'sea', dims, null, settings);
-            const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal + personalDeliveryCostVal;
+            const seaFinalPrice = priceIqd + seaCalc.shippingCost + commissionSeaIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
             prices.push(seaFinalPrice);
             values.sea_price = seaFinalPrice;
             values.shipping_cost_iqd = seaCalc.shippingCost;
           }
           if (shippingType === 'air' || shippingType === 'both') {
             const airCalc = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings);
-            const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal + personalDeliveryCostVal;
+            const airFinalPrice = priceIqd + airCalc.shippingCost + commissionAirIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
             prices.push(airFinalPrice);
             values.air_price = airFinalPrice;
             if (!values.shipping_cost_iqd) values.shipping_cost_iqd = airCalc.shippingCost;
@@ -1325,7 +1326,7 @@ const Admin = () => {
         }
 
         if (hasInStock) {
-          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal + personalDeliveryCostVal;
+          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }
