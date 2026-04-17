@@ -1683,19 +1683,19 @@
 
 /* Outer ambient glow — soft wide halo */
 .cube-ambient-glow {
-  width: 170px;
-  height: 10px;
-  margin: 0 auto -8px;
+  width: 230px;
+  height: 14px;
+  margin: 0 auto -10px;
   border-radius: 50%;
   background: radial-gradient(ellipse, hsl(155 60% 35% / 0.2), transparent 70%);
-  filter: blur(12px);
+  filter: blur(14px);
 }
 
 /* Glow ring above platform — triple layer */
 .cube-glow-ring {
-  width: 150px;
-  height: 8px;
-  margin: 0 auto -5px;
+  width: 200px;
+  height: 10px;
+  margin: 0 auto -6px;
   border-radius: 50%;
   background:
     radial-gradient(ellipse, hsl(155 80% 45% / 0.5), transparent 55%),
@@ -1706,7 +1706,7 @@
 
 /* Top highlight edge — luminous rim */
 .cube-top-highlight {
-  width: 120px;
+  width: 175px;
   height: 3px;
   margin: 0 auto -2px;
   border-radius: 8px;
@@ -1724,10 +1724,10 @@
 
 /* Top face — 3D tilted rectangular platform surface */
 .cube-top-featured {
-  width: 120px;
-  height: 14px;
+  width: 175px;
+  height: 18px;
   margin: 0 auto;
-  border-radius: 8px;
+  border-radius: 10px;
   background:
     linear-gradient(
       180deg,
@@ -1746,7 +1746,7 @@
 
 /* Mid section — thin separator between top and front */
 .cube-mid-featured {
-  width: 120px;
+  width: 175px;
   height: 3px;
   margin: -4px auto 0;
   border-radius: 0;
@@ -1763,10 +1763,10 @@
 
 /* Front face — body of the pedestal with price/discount */
 .cube-front-featured {
-  width: 120px;
-  height: 30px;
+  width: 175px;
+  height: 38px;
   margin: 0 auto 0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 10px 10px;
   background:
     linear-gradient(
       180deg,
@@ -1783,10 +1783,10 @@
 
 /* Bottom edge — rectangular metallic accent */
 .cube-bottom-edge {
-  width: 110px;
+  width: 165px;
   height: 4px;
   margin: -2px auto 0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 10px 10px;
   background: linear-gradient(90deg,
     transparent 0%,
     hsl(155 55% 40% / 0.5) 20%,
@@ -1798,8 +1798,8 @@
 
 /* Bottom reflection strip — rectangular glow */
 .cube-bottom-reflection {
-  width: 108px;
-  height: 6px;
+  width: 160px;
+  height: 7px;
   margin: 2px auto 0;
   border-radius: 8px;
   background: radial-gradient(ellipse, hsl(155 40% 20% / 0.25), transparent 70%);
@@ -1807,25 +1807,25 @@
 }
 
 @media (min-width: 640px) {
-  .cube-ambient-glow { width: 320px; height: 20px; }
-  .cube-glow-ring { width: 290px; height: 16px; }
-  .cube-top-highlight { width: 260px; height: 4px; }
-  .cube-top-featured { width: 260px; height: 28px; }
-  .cube-mid-featured { width: 260px; height: 5px; }
-  .cube-front-featured { width: 260px; height: 55px; }
-  .cube-bottom-edge { width: 250px; height: 6px; }
-  .cube-bottom-reflection { width: 240px; height: 10px; }
+  .cube-ambient-glow { width: 360px; height: 22px; }
+  .cube-glow-ring { width: 320px; height: 18px; }
+  .cube-top-highlight { width: 290px; height: 4px; }
+  .cube-top-featured { width: 290px; height: 32px; }
+  .cube-mid-featured { width: 290px; height: 5px; }
+  .cube-front-featured { width: 290px; height: 62px; }
+  .cube-bottom-edge { width: 280px; height: 6px; }
+  .cube-bottom-reflection { width: 270px; height: 10px; }
 }
 
 @media (min-width: 768px) {
-  .cube-ambient-glow { width: 400px; height: 24px; }
-  .cube-glow-ring { width: 360px; height: 16px; }
-  .cube-top-highlight { width: 360px; height: 5px; }
-  .cube-top-featured { width: 360px; height: 34px; }
-  .cube-mid-featured { width: 360px; height: 6px; }
-  .cube-front-featured { width: 360px; height: 68px; }
-  .cube-bottom-edge { width: 350px; height: 8px; }
-  .cube-bottom-reflection { width: 340px; height: 12px; }
+  .cube-ambient-glow { width: 440px; height: 26px; }
+  .cube-glow-ring { width: 400px; height: 18px; }
+  .cube-top-highlight { width: 400px; height: 5px; }
+  .cube-top-featured { width: 400px; height: 38px; }
+  .cube-mid-featured { width: 400px; height: 6px; }
+  .cube-front-featured { width: 400px; height: 75px; }
+  .cube-bottom-edge { width: 390px; height: 8px; }
+  .cube-bottom-reflection { width: 380px; height: 12px; }
 }
 
 /* ── Product Card — Glassmorphism 3D ── */
