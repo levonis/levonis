@@ -530,6 +530,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.pendingRiderLogIndex = null;
     g.pendingRiderRowIndex = null;
     g.pendingRiderStickX = 0;
+    g.fromRiderLogIndex = null;
+    g.fromRiderRowIndex = null;
+    g.fromRiderStickX = 0;
     g.pendingExitSnap = false;
 
     if (dir === "up") {
