@@ -80,7 +80,7 @@ interface RenderTrafficLight { id: string; x: number; z: number; isWarning: bool
 interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; groundY: number; }
 interface RenderVehicle { id: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { id: string; x: number; z: number; }
-interface RenderLog { id: string; x: number; z: number; modelIdx: number; }
+interface RenderLog { id: string; x: number; z: number; modelIdx: number; width: number; }
 interface RenderCoin { id: string; x: number; z: number; rotY: number; groundY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
@@ -128,8 +128,8 @@ const GRASS_TOP = 0.375;
 // Player on-log Y offset (above the log surface)
 const LOG_Y_OFFSET = 0.45;
 
-// Log collision tolerance (more forgiving for log-to-log jumps)
-const LOG_TOLERANCE = 0.45;
+// Log collision tolerance (small grace edge after visual/logical width unification)
+const LOG_TOLERANCE = 0.15;
 
 // Returns the visual top elevation of a row's ground for placing objects
 function rowTopY(rowType: RowType): number {
@@ -439,7 +439,7 @@ function LogMesh({ data }: { data: RenderLog }) {
   const m = models.logs[data.modelIdx % models.logs.length];
   return (
     <mesh geometry={m.geometry} material={m.material}
-      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+      scale={[data.width * MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
       position={[data.x, 0.18, data.z]}
     />
   );
@@ -574,7 +574,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (fromLog) {
           g.fromRiderLogIndex = g.riderLogIndex;
           g.fromRiderRowIndex = g.fromRow;
-          g.fromRiderStickX = g.riderLogStickX;
+          // Clamp stickX strictly inside the visible log bounds.
+          g.fromRiderStickX = Math.max(0, Math.min(fromLog.width, g.riderLogStickX));
         }
       }
       // Clear rider lock immediately — we're leaving the river.
@@ -609,25 +610,22 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       if (bestIdx >= 0) {
         const log = newRow.logs[bestIdx];
-        const stickX = actualPx - log.x;
-        // Save as pending — actual rider lock happens when animation completes,
-        // so toX tracks the moving log dynamically during the hop.
+        // Clamp stickX strictly inside log bounds — no phantom edges.
+        const stickX = Math.max(0, Math.min(log.width, actualPx - log.x));
         g.pendingRiderLogIndex = bestIdx;
         g.pendingRiderRowIndex = g.playerRow;
         g.pendingRiderStickX = stickX;
-        // Initial offset (will be recomputed each frame during the hop).
         const lockedPx = log.x + stickX;
         g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
       } else {
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
-      // Save the departing log so the hop start tracks it dynamically.
       if (wasOnRiver && currentRow && g.riderLogIndex !== null) {
         const fromLog = currentRow.logs[g.riderLogIndex];
         if (fromLog) {
           g.fromRiderLogIndex = g.riderLogIndex;
           g.fromRiderRowIndex = g.fromRow;
-          g.fromRiderStickX = g.riderLogStickX;
+          g.fromRiderStickX = Math.max(0, Math.min(fromLog.width, g.riderLogStickX));
         }
       }
       // Don't lock riderLog yet; clear previous lock so river-check uses pending logic.
@@ -1043,7 +1041,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       for (let li = 0; li < row.logs.length; li++) {
         const log = row.logs[li];
-        logRenders.push({ id: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
+        logRenders.push({ id: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex, width: log.width });
       }
 
       if (row.coin && !row.coin.collected) {
