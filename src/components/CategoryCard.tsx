@@ -19,7 +19,7 @@ const CategoryCard = ({ name, nameAr, slug, icon, description, descriptionAr, ha
   return (
     <Link
       to={`/category/${slug}`}
-      className="group block bg-card/92 backdrop-blur-sm rounded-xl border border-border/45 hover:border-primary/65 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg relative overflow-hidden h-[160px] sm:h-[172px] p-3 sm:p-4"
+      className="group block bg-card rounded-xl border border-border/45 hover:border-primary/65 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg relative overflow-hidden h-[160px] sm:h-[172px] p-3 sm:p-4"
       aria-label={nameAr || name}
     >
       {hasDirectSale && <DirectSaleRibbon />}
