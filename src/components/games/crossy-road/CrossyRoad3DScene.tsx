@@ -771,9 +771,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     frameCountRef.current++;
     if (frameCountRef.current % 2 !== 0) return;
 
-    const startRow = Math.max(0, g.playerRow - 8);
-    const endRow = Math.min(g.rows.length - 1, g.playerRow + 15);
+    const startRow = Math.max(0, g.playerRow - 14);
+    const endRow = Math.min(g.rows.length - 1, g.playerRow + 18);
     const now = Date.now();
+
+    // Side-fill widths (in CELL units) to extend ground tiles off-playfield
+    // Generous to cover ultra-wide / landscape viewports without sky gaps.
+    const SIDE_EXTEND_TILES = 6; // each side tile spans LANES*CELL width
 
     const grounds: RenderGround[] = [];
     const trafficLights: RenderTrafficLight[] = [];
@@ -783,6 +787,28 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const logRenders: RenderLog[] = [];
     const coins: RenderCoin[] = [];
 
+    // Decorative back-fill rows behind row 0 to cover the bottom of the screen.
+    // These are pure-grass tiles spanning the full extended width.
+    if (startRow === 0) {
+      const cx = (LANES * CELL) / 2;
+      for (let br = 1; br <= 14; br++) {
+        const z = br * CELL; // positive z = behind the player
+        const dark = br % 2 === 0;
+        grounds.push({ id: `gB${br}`, x: cx, z, rowType: "grass", grassDark: dark, biome: "green" });
+        for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
+          const offset = s * LANES * CELL;
+          grounds.push({ id: `gBL${br}_${s}`, x: cx - offset, z, rowType: "grass", grassDark: !dark, biome: "green" });
+          grounds.push({ id: `gBR${br}_${s}`, x: cx + offset, z, rowType: "grass", grassDark: !dark, biome: "green" });
+        }
+        // Sparse decorative trees on back rows
+        if (br % 2 === 0) {
+          [-6, -3, 1, 4, 7, 10, 13].forEach((lane, i) => {
+            trees.push({ id: `tB${br}_${i}`, x: lane * CELL + CELL / 2, z, modelIdx: br * 5 + i, biome: "green", groundY: GRASS_TOP });
+          });
+        }
+      }
+    }
+
     for (let r = startRow; r <= endRow; r++) {
       const row = g.rows[r];
       if (!row) continue;
@@ -791,15 +817,28 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark, biome: row.biome });
 
+      // Mirror ground tiles on both sides to fill sky gaps on wide viewports.
+      // Sides always render as grass (decorative) so road/river/rail don't bleed off-playfield.
+      for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
+        const offset = s * LANES * CELL;
+        grounds.push({
+          id: `gL${r}_${s}`, x: cx - offset, z,
+          rowType: "grass", grassDark: (row.grassDark !== (s % 2 === 0)), biome: row.biome,
+        });
+        grounds.push({
+          id: `gR${r}_${s}`, x: cx + offset, z,
+          rowType: "grass", grassDark: (row.grassDark !== (s % 2 === 0)), biome: row.biome,
+        });
+      }
+
       // Decorative trees on sides — extend further to fill widescreen
       // Side decorative trees always sit on grass-height base for visual consistency
       const decoY = GRASS_TOP;
       if (row.type === "grass" || row.type === "road" || row.type === "rail" || row.type === "river") {
-        const sideTreeOffsets = [-2, -4, -6, -8, -11, -14, -17, -20];
+        const sideTreeOffsets = [-2, -4, -6, -8, -11, -14, -17, -20, -24, -28, -33, -38];
         const rightBase = LANES * CELL;
-        const rightTreeOffsets = [2, 4, 6, 8, 11, 14, 17, 20].map(v => rightBase + v);
+        const rightTreeOffsets = [2, 4, 6, 8, 11, 14, 17, 20, 24, 28, 33, 38].map(v => rightBase + v);
         sideTreeOffsets.forEach((off, i) => {
-          // Skip some for variety on far columns
           if (i >= 4 && (r + i) % 2 !== 0) return;
           if (i >= 6 && (r + i) % 3 !== 0) return;
           trees.push({ id: `dl${r}_${i}`, x: off, z, modelIdx: r * 3 + i, biome: row.biome, groundY: decoY });
@@ -811,7 +850,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         });
       }
 
-      // Traffic lights on rail rows
+      // Traffic lights on rail rows — positioned just outside playfield edges
+      // but close enough to remain visible on narrow (mobile) viewports.
       if (row.type === "rail") {
         const isWarning = row.trainWarningPhase && row.obstacles.length === 0;
         const intensity = isWarning
