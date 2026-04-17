@@ -722,7 +722,7 @@ const ProductDetail = () => {
                       {productImages.map((img, idx) => (
                         <CarouselItem key={idx} className="pl-0">
                           <div className="aspect-square overflow-hidden md:rounded-2xl bg-muted">
-                            <img src={img} alt={`${product.name_ar} - ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" draggable={false} />
+                            <img src={img} alt={`${product.name_ar} - ${idx + 1}`} className="w-full h-full object-cover bg-background text-inherit" loading="lazy" decoding="async" draggable={false} />
                           </div>
                         </CarouselItem>
                       ))}
@@ -908,7 +908,7 @@ const ProductDetail = () => {
                   const fallbackOptions: any[] = [];
                   if (preOrderOpts.length === 0 && (shippingType === 'both' || shippingType === 'sea' || shippingType === 'air')) {
                     if ((shippingType === 'both' || shippingType === 'sea') && (product as any).sea_price) {
-                      fallbackOptions.push({ name_ar: '🚢 شحن بحري', description: 'توصيل خلال 25-40 يوم', price_adjustment: 0, type: 'sea' });
+                      fallbackOptions.push({ name_ar: '🚢 شحن بحري', description: 'توصيل خلال 45-55 يوم', price_adjustment: 0, type: 'sea' });
                     }
                     if ((shippingType === 'both' || shippingType === 'air') && (product as any).air_price) {
                       const seaP = Number((product as any).sea_price || 0);
@@ -936,7 +936,7 @@ const ProductDetail = () => {
                             <button key={index} onClick={() => setSelectedShippingOption(index)}
                               className={cn("w-full flex items-center gap-2 p-2.5 rounded-xl border transition-all text-right backdrop-blur-sm active:scale-[0.98]",
                                 selectedShippingOption === index
-                                  ? 'border-primary/40 bg-primary/10 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
+                                  ? 'border-primary/40 bg-sidebar-primary shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
                                   : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]')}>
                               <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
                                 selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30')}>
