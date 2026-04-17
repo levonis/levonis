@@ -59,11 +59,16 @@ interface GameState {
   fromRow: number;
   hopAnim: number;
   playerOffsetX: number;
+  fromOffsetX: number;
   playerRotation: number;
   onRiver: boolean;
   riderLogIndex: number | null;
   riderLogRowIndex: number | null;
   riderLogStickX: number;
+  pendingRiderLogIndex: number | null;
+  pendingRiderRowIndex: number | null;
+  pendingRiderStickX: number;
+  pendingExitSnap: boolean;
 }
 
 // ── Render snapshot for declarative rendering ──
