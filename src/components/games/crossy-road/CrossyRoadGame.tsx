@@ -354,13 +354,13 @@ export default function CrossyRoadGame({ onBack }: Props) {
           <Button variant="ghost" size="sm" onClick={activeView !== "main" ? () => setActiveView("main") : onBack} className="gap-1 text-muted-foreground text-xs">
             <ArrowRight className="h-4 w-4" /> رجوع
           </Button>
-          <span className="text-primary font-bold text-sm tracking-widest">🐔 CROSSY ROAD</span>
+          <span className="text-primary font-bold text-sm tracking-widest">CROSSY ROAD</span>
         </div>
       </div>
 
       {activeView === "main" && (
         <div className="max-w-sm mx-auto space-y-5 text-center">
-          <div className="text-7xl mt-4">🐔</div>
+          <div className="text-5xl mt-4">CROSSY ROAD</div>
           <h1 className="text-2xl font-bold text-foreground">اعبر الطريق</h1>
           <p className="text-sm text-muted-foreground">تحرّك عبر الطرق والأنهار وسكك الحديد! تجنب السيارات والقطارات ولا تسقط في الماء.</p>
 
