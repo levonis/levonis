@@ -51,6 +51,7 @@ const Cart = () => {
   const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -656,9 +657,34 @@ const Cart = () => {
 
     setCouponLoading(true);
     try {
-      // Use secure RPC function with rate limiting to validate coupon
+      // 1) Try referral coupon first (VIP+ owner gives free delivery)
+      const codeTrim = couponCode.trim();
+      const { data: refResult } = await supabase.rpc('apply_referral_coupon', {
+        p_code: codeTrim,
+        p_buyer_user_id: user?.id,
+      });
+      const ref = refResult as any;
+      if (ref?.valid) {
+        setAppliedReferral({
+          coupon_id: ref.coupon_id,
+          owner_username: ref.owner_username,
+          owner_user_id: ref.owner_user_id,
+        });
+        setAppliedCoupon(null);
+        toast({
+          title: '🎁 توصيل مجاني!',
+          description: `شكراً لدعمك @${ref.owner_username}! لقد أهدى لك توصيلاً مجانياً`,
+        });
+        return;
+      }
+      if (ref?.reason === 'self_use_not_allowed') {
+        toast({ title: 'غير مسموح', description: 'لا يمكنك استخدام كودك الخاص', variant: 'destructive' });
+        return;
+      }
+
+      // 2) Fall back to standard coupon validation
       const { data: result, error } = await supabase
-        .rpc('validate_coupon_with_rate_limit', { coupon_code: couponCode.toUpperCase().trim() });
+        .rpc('validate_coupon_with_rate_limit', { coupon_code: codeTrim.toUpperCase() });
 
       if (error) {
         toast({
@@ -716,6 +742,7 @@ const Cart = () => {
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
+    setAppliedReferral(null);
     setCouponCode('');
     toast({
       title: t('cart_coupon_removed'),
