@@ -802,7 +802,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
           }
 
           if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
-          if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
+          if (px < PLAY_LEFT_X - CELL || px > PLAY_RIGHT_X + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
 
         if (currentRow.coin && !currentRow.coin.collected && currentRow.coin.lane === g.playerLane) {
