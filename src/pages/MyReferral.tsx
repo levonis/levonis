@@ -409,6 +409,7 @@ export default function MyReferral() {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={Users} label="عدد الاستخدامات" value={stats.uses.toLocaleString()} color="text-blue-600" />
         <StatCard icon={TrendingUp} label="إجمالي الأرباح" value={`${formatPrice(stats.totalEarnings)} د.ع`} color="text-emerald-600" />
         <StatCard icon={Wallet} label="الرصيد القابل للسحب" value={`${formatPrice(stats.available)} د.ع`} color="text-amber-600" />
