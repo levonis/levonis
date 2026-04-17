@@ -1184,7 +1184,11 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
-      };
+      } as any;
+      if (appliedReferral) {
+        orderData.referral_coupon_id = appliedReferral.coupon_id;
+        orderData.referral_owner_earnings_iqd = referralOwnerEarnings;
+      }
 
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
         p_user_id: user.id,
