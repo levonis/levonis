@@ -1,4 +1,5 @@
 import crossyRoadImage from "@/assets/crossy-road-logo.jpg";
+import stackTowerImage from "@/assets/stack-tower-logo.png";
 
 const gameRpsImage = '/placeholder.svg';
 
@@ -85,6 +86,7 @@ export const GAME_NODES: GameResource[] = [
     title: "البرج",
     description: "كدّس الطوابق فوق بعضها بدقة وابنِ أعلى برج!",
     icon: "🏙️",
+    image: stackTowerImage,
     status: GameStatus.LIVE,
     category: GameCategory.STRATEGY,
     reward: "+1 ~ +100",
