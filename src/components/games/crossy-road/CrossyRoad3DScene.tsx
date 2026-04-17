@@ -293,8 +293,18 @@ function GroundTile({ data }: { data: RenderGround }) {
     material = new THREE.MeshLambertMaterial({ map: tex, color: data.grassDark ? biomeColors.groundDark : biomeColors.ground });
   } else if (data.rowType === "road") {
     geometry = models.road.obj.geometry;
-    const tex = Math.random() > 0.5 ? models.road.stripesTex : models.road.blankTex;
-    material = new THREE.MeshLambertMaterial({ map: tex });
+    // Deterministic texture choice per tile id — prevents flicker between
+    // re-renders (stripes vs blank flipping randomly each snapshot).
+    let h = 0;
+    for (let i = 0; i < data.id.length; i++) h = (h * 31 + data.id.charCodeAt(i)) >>> 0;
+    const useStripes = (h & 1) === 1;
+    const tex = useStripes ? models.road.stripesTex : models.road.blankTex;
+    material = new THREE.MeshLambertMaterial({
+      map: tex,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
   } else if (data.rowType === "rail") {
     geometry = models.railroad.geometry;
     material = models.railroad.material;
