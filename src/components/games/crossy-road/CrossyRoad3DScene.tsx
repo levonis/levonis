@@ -874,6 +874,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         const minCol = -SIDE_EXTEND_TILES * LANES;
         const maxCol = (SIDE_EXTEND_TILES + 1) * LANES;
         for (let col = minCol; col < maxCol; col++) {
+          if (col >= MIN_LANE && col <= MAX_LANE) continue;
           if (seededTree(col, backRowVirtual, density)) {
             trees.push({
               id: `tB${br}_${col}`,
