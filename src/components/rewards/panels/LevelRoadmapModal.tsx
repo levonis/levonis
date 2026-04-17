@@ -129,13 +129,25 @@ export default function LevelRoadmapModal({
                       >
                         {/* Level Header */}
                         <div className="flex items-center justify-between mb-1.5">
-                          <div>
-                            <p className="font-bold text-sm" style={{ color: level.color }}>
-                              {level.name_ar}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {xpReq > 0 ? `${xpReq.toLocaleString()} XP` : 'المستوى الأساسي'}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-base shadow-sm"
+                              style={{
+                                backgroundColor: level.color + '20',
+                                color: level.color,
+                                border: `2px solid ${level.color}60`,
+                              }}
+                            >
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm" style={{ color: level.color }}>
+                                مستوى {index + 1}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {xpReq > 0 ? `${xpReq.toLocaleString()} XP` : 'المستوى الأساسي'}
+                              </p>
+                            </div>
                           </div>
                           <div className="flex gap-1">
                             {hasCard && (
@@ -147,70 +159,10 @@ export default function LevelRoadmapModal({
                           </div>
                         </div>
 
-                        {/* Quick Benefits */}
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {level.bonus_points_percentage > 0 && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600">
-                              +{level.bonus_points_percentage}% نقاط
-                            </span>
-                          )}
-                          {level.free_shipping && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600">
-                              شحن مجاني
-                            </span>
-                          )}
-                          {level.purchase_price_points > 0 && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600">
-                              {level.purchase_price_points.toLocaleString()} نقطة
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Prizes */}
-                        {prizes.length > 0 && (
-                          <div className="space-y-1.5 border-t border-border/30 pt-2">
-                            <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
-                              <Gift className="h-3 w-3 text-purple-500" />
-                              جوائز المستوى:
-                            </p>
-                            {prizes.map(prize => (
-                              <div
-                                key={prize.id}
-                                className={`flex items-center gap-2 p-2 rounded-lg text-[11px] ${
-                                  isUnlocked
-                                    ? 'bg-purple-500/8 border border-purple-500/15'
-                                    : 'bg-muted/40 border border-border/20 opacity-60'
-                                }`}
-                              >
-                                {prize.image_url ? (
-                                  <img
-                                    src={prize.image_url}
-                                    alt=""
-                                    className="w-8 h-8 rounded-lg object-cover shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center shrink-0">
-                                    <Gift className="h-4 w-4 text-purple-500" />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium truncate">{prize.title_ar}</p>
-                                  {prize.description_ar && (
-                                    <p className="text-[9px] text-muted-foreground truncate">{prize.description_ar}</p>
-                                  )}
-                                </div>
-                                {isUnlocked ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                                ) : (
-                                  <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Prizes section temporarily hidden — to be re-added later */}
 
                         {/* XP Progress for locked */}
-                        {!isUnlocked && (
+                        {!isUnlocked && xpReq > 0 && (
                           <div className="mt-2">
                             <div className="flex justify-between text-[9px] text-muted-foreground mb-1">
                               <span>{totalXp.toLocaleString()} XP</span>
