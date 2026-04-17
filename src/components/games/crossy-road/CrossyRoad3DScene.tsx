@@ -887,13 +887,42 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const targetZ = -(visualRow - 3) * CELL;
     const targetCamZ = targetZ + 8;
     const baseCamX = (LANES * CELL) / 2; // 4.5
-    const playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+
+    // Compute eased visual X (matches the player's render position) so the camera
+    // glides smoothly during side hops instead of snapping when playerOffsetX updates.
+    let playerVisualX: number;
+    if (g.moving) {
+      let fromXc: number;
+      if (g.fromRiderLogIndex !== null && g.fromRiderRowIndex !== null) {
+        const sRow = g.rows[g.fromRiderRowIndex];
+        const sLog = sRow?.logs[g.fromRiderLogIndex];
+        fromXc = sLog
+          ? sLog.x + g.fromRiderStickX
+          : g.fromLane * CELL + CELL / 2 + g.fromOffsetX;
+      } else {
+        fromXc = g.fromLane * CELL + CELL / 2 + g.fromOffsetX;
+      }
+      let toXc: number;
+      if (g.pendingRiderLogIndex !== null && g.pendingRiderRowIndex === g.playerRow) {
+        const dRow = g.rows[g.playerRow];
+        const log = dRow?.logs[g.pendingRiderLogIndex];
+        toXc = log
+          ? log.x + g.pendingRiderStickX
+          : g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      } else {
+        toXc = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      }
+      playerVisualX = fromXc + (toXc - fromXc) * g.moveProgress;
+    } else {
+      playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+    }
+
     const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
-    // Framerate-independent smoothing — single layer of easing on top of already-eased target
+    // Framerate-independent smoothing on both axes
     const smooth = 1 - Math.exp(-14 * dt);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smooth);
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smooth);
-    camera.lookAt(targetCamX, 0, targetZ - 4);
+    camera.lookAt(playerVisualX, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
     frameCountRef.current++;
