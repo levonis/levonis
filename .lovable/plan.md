@@ -1,44 +1,35 @@
 
-## خطة: توسيع الخريطة وتحريك الكاميرا أفقياً مع اللاعب
+## خطة: إصلاح "الأفضل على الإطلاق" في لعبة THE TOWER
 
-### الوضع الحالي
-- عرض اللعب محدود بـ ~9 أعمدة (column 0-8) مع الكاميرا ثابتة على `lookAt(4.5, 0, -4)`.
-- اللاعب لا يستطيع تجاوز هذا النطاق يميناً/يساراً.
-- الامتداد الجانبي حالياً تزييني فقط (أشجار + استمرار الصفوف).
+### المشكلة
+لوحة "الأفضل على الإطلاق" لا تعرض اللاعبين القدامى لأن العمود `all_time_high_score` يساوي 0 لجميع السجلات في `stack_game_high_scores`. السبب أن إعادة تصفير الموسم (Season Reset) صفّرت `high_score` قبل أن يقوم الـ trigger بنقل القيم إلى `all_time_high_score`، فضاعت قمم اللاعبين القدامى من اللوحة (لكنها ما زالت محفوظة في `stack_game_sessions`).
 
-### الحل
+نفس المشكلة محتملة في:
+- `knife_rain_high_scores` (نفس بنية الـ trigger).
+- `crossy_road_high_scores` (إن وُجد جدول runs مماثل).
 
-**1. توسيع نطاق الحركة الأفقية للاعب**
-- توسيع الحدود من `0..8` إلى `-6..14` (21 عمود قابل للعب) في `CrossyRoad3DScene.tsx`.
-- تعديل فحص حدود الحركة في `handleMove` (left/right) ليسمح بالنطاق الجديد.
+### الحل (3 خطوات عبر migration واحد)
 
-**2. توليد العقبات على كامل العرض الجديد**
-- تحديث `generateRow` لتوليد سيارات/جدوع/قطارات تغطي النطاق `-6..14` بدل `0..8` فقط، بحيث الجوانب لم تعد آمنة مجاناً.
-- استمرار نسيج الصف (طريق/سكة/نهر) على كامل العرض الموسّع.
+**1. ترحيل (Backfill) القيم التاريخية من جداول الجلسات**
+   - `stack_game_high_scores.all_time_high_score` ← `MAX(score)` لكل user_id من `stack_game_sessions`.
+   - تحديث فقط إذا كانت القيمة الجديدة أكبر من الحالية.
+   - إدراج صفوف ناقصة لأي مستخدم له جلسات لكن بلا سجل high_score.
+   - تطبيق نفس المنطق على `knife_rain_high_scores` من جدول جلسات Knife Rain (إن وُجد) و`crossy_road_high_scores` من `crossy_road_sessions` (إن وُجد).
 
-**3. كاميرا تتبع أفقي**
-- في `CrossyRoad3DScene.tsx` (داخل `useFrame` أو ما يماثله)، تحديث موضع الكاميرا أفقياً ليتبع `playerCol` بسلاسة:
-  ```
-  targetX = basePlayerX + (playerCol - 4) * 1.0  // tile width
-  camera.position.x = lerp(camera.position.x, targetX, 0.1)
-  camera.lookAt(targetX, 0, camera_lookAt_z)
-  ```
-- معامل lerp ~0.08-0.12 لحركة سلسة بدون اهتزاز.
-- الكاميرا تستمر بالتقدم للأمام مع اللاعب كما هي حالياً (بدون تغيير المحور Z).
+**2. تحصين منطق إعادة تصفير الموسم**
+   - تعديل أي دالة/كود يقوم بـ season reset (مثل `reset_stack_season` أو UPDATE في `StackGameTab.tsx`) لتضمن:
+     `all_time_high_score = GREATEST(all_time_high_score, high_score)` **قبل** تصفير `high_score = 0`.
+   - فحص المهاجرات (migrations) والكود الإداري (`StackGameTab.tsx`, `KnifeRainTab.tsx`, `CrossyRoadTab.tsx`) للعثور على نقاط التصفير وتعديلها.
 
-**4. تعديل التوسعة الجانبية (الأشجار)**
-- نقل حدود زراعة الأشجار من `<0 || >8` إلى `<-6 || >14` بحيث تظل الأشجار خارج منطقة اللعب الموسّعة.
-- استمرار التوزيع الحتمي (`seededTree`) كما هو.
+**3. تحسين الـ trigger ليكون مقاوماً للتصفير المباشر**
+   - تعديل `update_all_time_high_score()`: إذا كانت `NEW.high_score < OLD.high_score` (تصفير)، نأخذ `OLD.high_score` بعين الاعتبار في حساب القمة قبل التصفير. يضمن هذا أن أي تصفير مستقبلي لن يفقد القمة.
 
-**5. ضبط التكبير (Zoom)**
-- تقليل `zoom` بسيطاً في `CrossyRoadCanvas.tsx` (~10-15%) لاستيعاب مساحة الحركة الأكبر دون أن يخرج اللاعب من الإطار، مع الحفاظ على ملء الشاشة.
-
-### الملفات المتأثرة
-- `src/components/games/crossy-road/CrossyRoad3DScene.tsx` (حدود الحركة، توليد العقبات، كاميرا متتبعة)
-- `src/components/games/crossy-road/CrossyRoadCanvas.tsx` (ضبط zoom)
+### الملفات/المكونات المتأثرة
+- migration جديد:
+  - Backfill `all_time_high_score` من `stack_game_sessions` / `knife_rain_sessions` / `crossy_road_sessions` (إن وُجدت).
+  - تحديث دالة الـ trigger `update_all_time_high_score`.
+- `src/components/admin/StackGameTab.tsx` و`KnifeRainTab.tsx` و`CrossyRoadTab.tsx`: مراجعة منطق "Season Reset" لضمان حفظ القمم قبل التصفير.
 
 ### النتيجة
-- نطاق لعب أوسع بكثير (21 عمود بدل 9).
-- الكاميرا تنزلق بسلاسة مع اللاعب يميناً ويساراً.
-- العقبات تغطي كامل العرض فلا تكون الأطراف ملاذاً آمناً.
-- تجربة استكشاف ومراوغة أكثر ثراءً.
+- لوحة "الأفضل على الإطلاق" في THE TOWER (وKnife Rain/Crossy Road) ستعرض جميع اللاعبين القدامى بقممهم الحقيقية المستردّة من الجلسات.
+- لن تتكرر الكارثة عند أي تصفير موسم مستقبلي.
