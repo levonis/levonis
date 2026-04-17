@@ -327,33 +327,33 @@ export default function MyReferral() {
 
       {/* Customization Card */}
       <Card className="border-primary/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Palette className="h-4 w-4 text-primary" />
+        <CardHeader className="pb-2 pt-3 px-3">
+          <CardTitle className="text-sm flex items-center gap-1.5">
+            <Palette className="h-3.5 w-3.5 text-primary" />
             تخصيص بطاقة الكوبون
           </CardTitle>
-          <CardDescription className="text-xs">
-            خصّص الرسالة والخلفية التي ستظهر للمشتري في سلته عند استخدام كودك.
+          <CardDescription className="text-[10px] leading-tight">
+            خصّص الرسالة والخلفية التي تظهر للمشتري في سلته.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 px-3 pb-3">
           {/* Message */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">رسالتك للمشتري</label>
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-foreground">رسالتك للمشتري</label>
             <Textarea
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value.slice(0, 140))}
-              placeholder="مثال: شكراً لاختيارك كودي! استمتع بتسوقك 💛"
-              className="resize-none"
+              placeholder="مثال: شكراً لاختيارك كودي! 💛"
+              className="resize-none text-xs min-h-0 py-1.5"
               rows={2}
             />
-            <p className="text-[10px] text-muted-foreground text-left">{customMessage.length}/140</p>
+            <p className="text-[9px] text-muted-foreground text-left">{customMessage.length}/140</p>
           </div>
 
           {/* Style picker */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">خلفية البطاقة</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-foreground">خلفية البطاقة</label>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
               {Object.values(REFERRAL_BANNER_STYLES).map((style) => {
                 const selected = bannerStyle === style.key;
                 return (
@@ -361,16 +361,16 @@ export default function MyReferral() {
                     key={style.key}
                     type="button"
                     onClick={() => setBannerStyle(style.key)}
-                    className={`relative rounded-lg p-3 text-right transition-all ${style.container} ${
-                      selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "ring-1 ring-border/40"
+                    className={`relative rounded-md p-1.5 text-right transition-all ${style.container} ${
+                      selected ? "ring-2 ring-primary" : "ring-1 ring-border/40"
                     }`}
                   >
-                    <p className={`text-xs font-bold ${style.title}`}>{style.label}</p>
-                    <div className={`mt-2 h-1.5 rounded-full ${style.progressTrack} overflow-hidden`}>
+                    <p className={`text-[10px] font-bold truncate ${style.title}`}>{style.label}</p>
+                    <div className={`mt-1 h-1 rounded-full ${style.progressTrack} overflow-hidden`}>
                       <div className={`h-full w-2/3 ${style.progressFill}`} />
                     </div>
                     {selected && (
-                      <Check className="absolute top-1.5 left-1.5 h-3.5 w-3.5 text-primary" />
+                      <Check className="absolute top-0.5 left-0.5 h-3 w-3 text-primary" />
                     )}
                   </button>
                 );
@@ -379,22 +379,22 @@ export default function MyReferral() {
           </div>
 
           {/* Live preview */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-foreground">معاينة</label>
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold text-foreground">معاينة</label>
             {(() => {
               const s = getReferralBannerStyle(bannerStyle);
               return (
-                <div className={`rounded-xl ${s.container} ${s.border} p-3 space-y-2`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎁</span>
+                <div className={`rounded-lg ${s.container} ${s.border} p-2 space-y-1.5`}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">🎁</span>
                     <div className="min-w-0">
-                      <p className={`text-xs font-bold ${s.title} truncate`}>
+                      <p className={`text-[11px] font-bold ${s.title} truncate`}>
                         {customMessage.trim() || `شكراً لدعمك @${coupon?.code || "you"}!`}
                       </p>
-                      <p className="text-[11px] text-emerald-600 font-semibold">✅ توصيل مجاني</p>
+                      <p className="text-[10px] text-emerald-600 font-semibold">✅ توصيل مجاني</p>
                     </div>
                   </div>
-                  <div className={`h-2 rounded-full ${s.progressTrack} overflow-hidden`}>
+                  <div className={`h-1.5 rounded-full ${s.progressTrack} overflow-hidden`}>
                     <div className={`h-full w-3/4 ${s.progressFill}`} />
                   </div>
                 </div>
@@ -402,8 +402,8 @@ export default function MyReferral() {
             })()}
           </div>
 
-          <Button onClick={saveCustomization} disabled={savingCustom} className="w-full">
-            {savingCustom ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Save className="h-4 w-4 ml-2" />}
+          <Button onClick={saveCustomization} disabled={savingCustom} size="sm" className="w-full h-8 text-xs">
+            {savingCustom ? <Loader2 className="h-3.5 w-3.5 animate-spin ml-2" /> : <Save className="h-3.5 w-3.5 ml-2" />}
             حفظ التخصيص
           </Button>
         </CardContent>
