@@ -1206,6 +1206,20 @@ const Cart = () => {
         return;
       }
 
+      // Record referral coupon usage
+      if (appliedReferral) {
+        await supabase.from('referral_coupon_usages').insert({
+          coupon_id: appliedReferral.coupon_id,
+          order_id: orderId,
+          buyer_user_id: user.id,
+          delivery_discount_iqd: rawDeliveryFee,
+          owner_earnings_iqd: referralOwnerEarnings,
+          status: 'pending',
+        });
+        // Update aggregates on coupon
+        await supabase.rpc('apply_referral_coupon', { p_code: '', p_buyer_user_id: user.id }).catch(() => {});
+      }
+
       // Fetch the created order to get order_number
       const { data: order, error: fetchOrderError } = await supabase
         .from('orders')
