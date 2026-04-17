@@ -492,8 +492,13 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.moveProgress = 0;
     g.fromLane = g.playerLane;
     g.fromRow = g.playerRow;
+    g.fromOffsetX = g.playerOffsetX; // remember actual visual start
     g.playerLane = targetLane;
     g.playerRow = targetRow;
+    g.pendingRiderLogIndex = null;
+    g.pendingRiderRowIndex = null;
+    g.pendingRiderStickX = 0;
+    g.pendingExitSnap = false;
 
     if (dir === "up") {
       // Only count a step when the player advances beyond their furthest row
@@ -508,12 +513,18 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const nowOnRiver = newRow && newRow.type === "river";
 
     if (wasOnRiver && !nowOnRiver) {
+      // Defer snap to grass center until animation completes,
+      // so the jump animates from the actual log position.
       const snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
       g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
-      g.playerOffsetX = 0;
-      g.onRiver = false;
+      // Keep playerOffsetX as-is (relative to old lane center).
+      // Recompute relative to new lane so visualXBefore is preserved.
+      g.playerOffsetX = visualXBefore - (g.playerLane * CELL + CELL / 2);
+      g.pendingExitSnap = true;
+      // Clear rider lock immediately — we're leaving the river.
       g.riderLogIndex = null;
       g.riderLogRowIndex = null;
+      g.onRiver = false;
     } else if (nowOnRiver) {
       let actualPx: number;
       if (wasOnRiver) {
@@ -542,18 +553,21 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       if (bestIdx >= 0) {
         const log = newRow.logs[bestIdx];
-        // Stick player to a fixed X-offset relative to the log so they ride with it
-        const stickX = actualPx - log.x; // 0..log.width
-        g.riderLogIndex = bestIdx;
-        g.riderLogRowIndex = g.playerRow;
-        g.riderLogStickX = stickX;
+        const stickX = actualPx - log.x;
+        // Save as pending — actual rider lock happens when animation completes,
+        // so toX tracks the moving log dynamically during the hop.
+        g.pendingRiderLogIndex = bestIdx;
+        g.pendingRiderRowIndex = g.playerRow;
+        g.pendingRiderStickX = stickX;
+        // Initial offset (will be recomputed each frame during the hop).
         const lockedPx = log.x + stickX;
         g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
       } else {
-        g.riderLogIndex = null;
-        g.riderLogRowIndex = null;
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
+      // Don't lock riderLog yet; clear previous lock so river-check uses pending logic.
+      g.riderLogIndex = null;
+      g.riderLogRowIndex = null;
       g.onRiver = true;
     } else {
       g.playerOffsetX = 0;
