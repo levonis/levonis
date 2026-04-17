@@ -329,6 +329,7 @@ export default function MiniGames() {
               onClickSound={playClick}
               disabled={(game as any)._disabled}
               startingSoon={(game as any)._starting_soon}
+              prizeCount={prizeCounts?.[game.node_name] ?? 0}
             />
           ))}
         </div>
