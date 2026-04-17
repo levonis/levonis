@@ -1,5 +1,5 @@
 /** Individual Game Card – pixel frame style with sprite sheet assets */
-import { Lock, Clock } from "lucide-react";
+import { Lock, Clock, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GameResource, GameStatus } from "./GamesData";
 import DifficultyBadge from "./DifficultyBadge";
@@ -12,9 +12,10 @@ interface GameCardProps {
   onClickSound: () => void;
   disabled?: boolean;
   startingSoon?: string;
+  prizeCount?: number;
 }
 
-export default function GameCard({ game, onPlay, onClickSound, disabled, startingSoon }: GameCardProps) {
+export default function GameCard({ game, onPlay, onClickSound, disabled, startingSoon, prizeCount = 0 }: GameCardProps) {
   const isLive = game.status === GameStatus.LIVE;
 
   // Locked / Coming Soon card or admin-disabled card
@@ -55,9 +56,18 @@ export default function GameCard({ game, onPlay, onClickSound, disabled, startin
       onClick={() => { onClickSound(); onPlay(); }}
       className={cn(
         "group text-right p-4 transition-all duration-200 relative overflow-hidden w-full",
-        "pixel-frame hover:pixel-frame-active cursor-pointer active:scale-[0.98]"
+        "pixel-frame hover:pixel-frame-active cursor-pointer active:scale-[0.98]",
+        prizeCount > 0 && "pt-7"
       )}
     >
+      {/* Prize ribbon */}
+      {prizeCount > 0 && (
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground py-1 px-2 flex items-center justify-center gap-1.5 font-mono text-[9px] font-black tracking-wider uppercase shadow-md z-10 animate-pulse">
+          <Gift className="h-3 w-3" />
+          <span>{prizeCount} {prizeCount === 1 ? 'جائزة' : 'جوائز'}</span>
+          <Gift className="h-3 w-3" />
+        </div>
+      )}
       {/* Status badges */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         <span className="pixel-badge-live text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
