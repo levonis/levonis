@@ -707,16 +707,42 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
         if (currentRow.type === "river") {
           let onLog = false;
-          const riverPw = 0.3;
-          for (const log of currentRow.logs) {
+
+          // If we have a tracked rider log, follow it precisely
+          if (
+            !g.moving &&
+            g.riderLogIndex !== null &&
+            g.riderLogRowIndex === g.playerRow &&
+            currentRow.logs[g.riderLogIndex]
+          ) {
+            const log = currentRow.logs[g.riderLogIndex];
+            const lockedPx = log.x + g.riderLogStickX;
+            g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+            // Verify still on log
             const logLeft = log.x;
             const logRight = log.x + log.width;
-            if (px + riverPw / 2 > logLeft - LOG_TOLERANCE && px - riverPw / 2 < logRight + LOG_TOLERANCE) {
+            if (lockedPx >= logLeft - LOG_TOLERANCE && lockedPx <= logRight + LOG_TOLERANCE) {
               onLog = true;
-              if (!g.moving) g.playerOffsetX += log.speed * dt;
-              break;
+            }
+          } else {
+            const riverPw = 0.3;
+            for (let li = 0; li < currentRow.logs.length; li++) {
+              const log = currentRow.logs[li];
+              const logLeft = log.x;
+              const logRight = log.x + log.width;
+              if (px + riverPw / 2 > logLeft - LOG_TOLERANCE && px - riverPw / 2 < logRight + LOG_TOLERANCE) {
+                onLog = true;
+                if (!g.moving) {
+                  // Lock onto this log
+                  g.riderLogIndex = li;
+                  g.riderLogRowIndex = g.playerRow;
+                  g.riderLogStickX = px - log.x;
+                }
+                break;
+              }
             }
           }
+
           if (!onLog) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
           if (px < -CELL || px > LANES * CELL + CELL) { g.dead = true; g.deathTimer = 0; audio?.playWater(); return; }
         }
