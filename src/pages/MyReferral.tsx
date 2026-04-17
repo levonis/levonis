@@ -320,7 +320,7 @@ export default function MyReferral() {
                 <Input
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
-                  className="bg-white/90 text-foreground font-mono uppercase"
+                  className="bg-emerald-950 text-primary font-mono uppercase text-right"
                   maxLength={20}
                 />
                 <Button onClick={saveCode} disabled={creating} size="sm">
