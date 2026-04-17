@@ -1,35 +1,50 @@
 
-## خطة: إصلاح "الأفضل على الإطلاق" في لعبة THE TOWER
+## خطة: إصلاح ثلاث مشاكل بصرية في Crossy Road
 
-### المشكلة
-لوحة "الأفضل على الإطلاق" لا تعرض اللاعبين القدامى لأن العمود `all_time_high_score` يساوي 0 لجميع السجلات في `stack_game_high_scores`. السبب أن إعادة تصفير الموسم (Season Reset) صفّرت `high_score` قبل أن يقوم الـ trigger بنقل القيم إلى `all_time_high_score`، فضاعت قمم اللاعبين القدامى من اللوحة (لكنها ما زالت محفوظة في `stack_game_sessions`).
+### المشاكل المرصودة (من الصورة)
+1. **العشب الجانبي**: فجوات سوداء/فارغة على الحواف اليمنى واليسرى لا تُملأ بالكامل بصفوف العشب.
+2. **اهتزاز الكاميرا للأمام/الخلف**: عند الحركة على المحور Z، الكاميرا ترتجف بدل أن تنزلق بسلاسة.
+3. **خطوط الشارع البيضاء تومض**: z-fighting بين خطوط الفصل الأبيض وسطح الإسفلت لأنهما على نفس ارتفاع Y.
 
-نفس المشكلة محتملة في:
-- `knife_rain_high_scores` (نفس بنية الـ trigger).
-- `crossy_road_high_scores` (إن وُجد جدول runs مماثل).
+### السبب الجذري
+1. **العشب**: نطاق صفوف العشب الجانبي (`grass extension`) أضيق من مدى رؤية الكاميرا بعد توسيع نطاق اللعب لـ 21 عمود + تحرّك الكاميرا أفقياً يكشف الفراغات.
+2. **الاهتزاز**: بعد إضافة `lookAt(camera.position.x, ...)` المعتمد على موضع الكاميرا الحالي (الذي يُحدَّث بـ lerp كل فريم)، أصبح الـ lookAt يطارد قيمة متغيرة ويستخدم نفس الإطار بدل القيمة الهدف المستقرة.
+3. **خطوط الشارع**: كلاهما عند `y=0.01` تقريباً (أو نفس Y)، ما يسبب z-fighting.
 
-### الحل (3 خطوات عبر migration واحد)
+### الحل
 
-**1. ترحيل (Backfill) القيم التاريخية من جداول الجلسات**
-   - `stack_game_high_scores.all_time_high_score` ← `MAX(score)` لكل user_id من `stack_game_sessions`.
-   - تحديث فقط إذا كانت القيمة الجديدة أكبر من الحالية.
-   - إدراج صفوف ناقصة لأي مستخدم له جلسات لكن بلا سجل high_score.
-   - تطبيق نفس المنطق على `knife_rain_high_scores` من جدول جلسات Knife Rain (إن وُجد) و`crossy_road_high_scores` من `crossy_road_sessions` (إن وُجد).
+**1. توسيع تغطية العشب الجانبي**
+- في `CrossyRoad3DScene.tsx`: زيادة عدد أعمدة العشب الجانبي من النطاق الحالي إلى تغطية كاملة من `MIN_LANE - 12` إلى `MAX_LANE + 12` (أي من -18 إلى 26).
+- التأكد أن صفوف العشب الخلفية (خلف اللاعب) تمتد بنفس العرض.
+- استمرار العشب على كامل صفوف الطرق/السكك أيضاً (خارج نطاق اللعب) بدل تركها سوداء.
 
-**2. تحصين منطق إعادة تصفير الموسم**
-   - تعديل أي دالة/كود يقوم بـ season reset (مثل `reset_stack_season` أو UPDATE في `StackGameTab.tsx`) لتضمن:
-     `all_time_high_score = GREATEST(all_time_high_score, high_score)` **قبل** تصفير `high_score = 0`.
-   - فحص المهاجرات (migrations) والكود الإداري (`StackGameTab.tsx`, `KnifeRainTab.tsx`, `CrossyRoadTab.tsx`) للعثور على نقاط التصفير وتعديلها.
+**2. إصلاح اهتزاز الكاميرا**
+- استخدام **القيمة الهدف** (`targetCamX`) في `lookAt` بدلاً من `camera.position.x` المتحرك كل فريم:
+  ```ts
+  camera.position.x = lerp(camera.position.x, targetCamX, 0.1);
+  camera.position.z = lerp(camera.position.z, targetCamZ, 0.1);
+  camera.lookAt(targetCamX, 0, targetCamZ - 4); // استخدم target مباشرة
+  ```
+- تخفيض معامل lerp قليلاً (من 0.1 إلى 0.08) لزيادة السلاسة.
+- تطبيق نفس المنطق على المحور Z (إن كان يُلَرَّب أيضاً).
 
-**3. تحسين الـ trigger ليكون مقاوماً للتصفير المباشر**
-   - تعديل `update_all_time_high_score()`: إذا كانت `NEW.high_score < OLD.high_score` (تصفير)، نأخذ `OLD.high_score` بعين الاعتبار في حساب القمة قبل التصفير. يضمن هذا أن أي تصفير مستقبلي لن يفقد القمة.
+**3. إصلاح وميض خطوط الشارع (z-fighting)**
+- رفع خطوط الفصل البيضاء قليلاً عن سطح الإسفلت: من `y=0.01` إلى `y=0.02` (فرق واضح).
+- تفعيل `polygonOffset` على مادة الخطوط:
+  ```ts
+  <meshStandardMaterial
+    color="white"
+    polygonOffset
+    polygonOffsetFactor={-1}
+    polygonOffsetUnits={-1}
+  />
+  ```
+- أو/و إضافة `depthWrite={false}` على الخطوط مع `renderOrder={1}` لضمان رسمها بعد الإسفلت.
 
-### الملفات/المكونات المتأثرة
-- migration جديد:
-  - Backfill `all_time_high_score` من `stack_game_sessions` / `knife_rain_sessions` / `crossy_road_sessions` (إن وُجدت).
-  - تحديث دالة الـ trigger `update_all_time_high_score`.
-- `src/components/admin/StackGameTab.tsx` و`KnifeRainTab.tsx` و`CrossyRoadTab.tsx`: مراجعة منطق "Season Reset" لضمان حفظ القمم قبل التصفير.
+### الملف المتأثر
+- `src/components/games/crossy-road/CrossyRoad3DScene.tsx`
 
 ### النتيجة
-- لوحة "الأفضل على الإطلاق" في THE TOWER (وKnife Rain/Crossy Road) ستعرض جميع اللاعبين القدامى بقممهم الحقيقية المستردّة من الجلسات.
-- لن تتكرر الكارثة عند أي تصفير موسم مستقبلي.
+- لا فراغات سوداء — العشب يملأ الحواف على كامل عرض الكاميرا.
+- حركة كاميرا سلسة بدون اهتزاز للأمام/الخلف.
+- خطوط الشارع ثابتة ونظيفة بدون وميض.
