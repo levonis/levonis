@@ -66,6 +66,26 @@ export default function LevelBadge({
     enabled: !!userPoints?.level,
   });
 
+  // Resolve numeric level (display_order) — fallback to ordering all levels
+  const { data: levelNumber } = useQuery({
+    queryKey: ["levelNumber", levelInfo?.id],
+    queryFn: async () => {
+      if (!levelInfo) return null;
+      if ((levelInfo as any).display_order && (levelInfo as any).display_order > 0) {
+        return (levelInfo as any).display_order as number;
+      }
+      const { data, error } = await supabase
+        .from("loyalty_levels")
+        .select("id, display_order")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      const idx = (data || []).findIndex((l: any) => l.id === levelInfo.id);
+      return idx >= 0 ? idx + 1 : 1;
+    },
+    enabled: !!levelInfo,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Check if user has active VIP Plus card
   const { data: activeCard } = useQuery({
     queryKey: ["user-active-card-badge", userId],
