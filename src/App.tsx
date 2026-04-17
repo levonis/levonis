@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import LanguageProvider from "@/components/LanguageProvider";
+import ScrollRestoration from "@/components/ScrollRestoration";
 import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
