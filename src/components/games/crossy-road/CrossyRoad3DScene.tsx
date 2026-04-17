@@ -694,12 +694,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (row.type === "road") {
           for (const obs of row.obstacles) {
             obs.x += obs.speed * dt;
-            // Off-screen respawn like train (not wrap)
-            if (obs.speed > 0 && obs.x > LANES * CELL + SPAWN_MARGIN) {
-              obs.x = -obs.width - SPAWN_MARGIN;
+            if (obs.speed > 0 && obs.x > PLAY_RIGHT_X + SPAWN_MARGIN) {
+              obs.x = PLAY_LEFT_X - obs.width - SPAWN_MARGIN;
             }
-            if (obs.speed < 0 && obs.x < -obs.width - SPAWN_MARGIN) {
-              obs.x = LANES * CELL + SPAWN_MARGIN;
+            if (obs.speed < 0 && obs.x < PLAY_LEFT_X - obs.width - SPAWN_MARGIN) {
+              obs.x = PLAY_RIGHT_X + SPAWN_MARGIN;
             }
           }
         }
@@ -736,12 +735,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (row.type === "river") {
           for (const log of row.logs) {
             log.x += log.speed * dt;
-            // Off-screen respawn like train
-            if (log.speed > 0 && log.x > LANES * CELL + SPAWN_MARGIN) {
-              log.x = -log.width - SPAWN_MARGIN;
+            if (log.speed > 0 && log.x > PLAY_RIGHT_X + SPAWN_MARGIN) {
+              log.x = PLAY_LEFT_X - log.width - SPAWN_MARGIN;
             }
-            if (log.speed < 0 && log.x < -log.width - SPAWN_MARGIN) {
-              log.x = LANES * CELL + SPAWN_MARGIN;
+            if (log.speed < 0 && log.x < PLAY_LEFT_X - log.width - SPAWN_MARGIN) {
+              log.x = PLAY_RIGHT_X + SPAWN_MARGIN;
             }
           }
         }
