@@ -1,47 +1,41 @@
 
 
-# ربط التوصيل الشخصي بالطابعات فقط وتوضيح المنطق المالي
+# إصلاح عرض رسوم التوصيل والتوصيل المجاني في السلة
 
-## الوضع الحالي
-- حقل `personal_delivery_cost` يظهر لجميع المنتجات في تعديل/إضافة المنتج
-- في المالية، يتم خصم `personal_delivery_cost` من أي طلب بغض النظر عن نوع التوصيل
-- التوصيل الشخصي مربوط بقسم محدد (الطابعات) عبر `base_price_category_id` — يظهر فقط إذا السلة تحتوي طابعات ✓
+## المشاكل المكتشفة
 
-## التغييرات المطلوبة
+### 1. قائمة طرق التوصيل لا تتفاعل مع التوصيل المجاني
+الدالة `getMethodPreviewPrice` (السطر 167) تُرجع السعر الأساسي للطريقة دون فحص `free_delivery_enabled` ولا `free_delivery_min_order`. لذلك حتى عند تحقق شرط التوصيل المجاني، تستمر القائمة في عرض السعر الأصلي (مثلاً 6000 د.ع) بدلاً من "مجاناً".
 
-### 1. `AdminProductPricingSection.tsx`
-- إظهار حقل `personal_delivery_cost` **فقط** عندما يكون المنتج ينتمي لقسم الطابعات (أو أي قسم مرتبط بالتوصيل الشخصي)
-- تغيير التسمية: **"تكلفة التوصيل الشخصي (د.ع)"** — بدون "الاعتيادي"
-- تغيير الوصف: "خاص بالطابعات — يُضاف للسعر النهائي ويُخصم من العائد في القسم المالي"
-- نحتاج تمرير `categoryId` أو `isPrinterCategory` للمكون لتحديد الإظهار
+### 2. ظهور "0" بدلاً من سعر التوصيل
+عند اختيار طريقة "التوصيل الشخصي" (`personal`) المرتبطة بقسم الطابعات (`base_price_category_id`)، إذا كانت السلة لا تحتوي منتجات طابعات، فإن `getDeliveryFee` تخرج عند السطر 530 بقيمة `totalCatFee = 0` لأن لا يوجد ما يطبّق عليه السعر الأساسي. النتيجة: تظهر "0 د.ع" خطأً، حتى عندما `free_delivery_enabled = false`.
 
-### 2. `Admin.tsx`
-- عند الحفظ: إضافة `personalDeliveryCostVal` للسعر النهائي فقط إذا كان المنتج من قسم الطابعات
-- للمنتجات الأخرى: `personalDeliveryCostVal = 0` تلقائياً
+### 3. طلب المستخدم: إخفاء قائمة طرق التوصيل عند تحقق التوصيل المجاني
+حالياً قائمة الطرق تبقى ظاهرة وقابلة للتغيير حتى لو حصل المستخدم على توصيل مجاني تلقائياً.
 
-### 3. `AdminFinancials.tsx` — تحسين `calcActualDeliveryCost`
-- إذا التوصيل **شخصي** (`delivery_method === 'personal'`): استخدام `personal_delivery_cost` من المنتج
-- إذا التوصيل **اعتيادي** (`delivery_method === 'standard'`): استخدام `actual_cost` من `delivery_methods`
-- حالياً يفضّل `personal_delivery_cost` دائماً وهذا خطأ — يجب التفريق بنوع التوصيل
+---
 
-### التفاصيل التقنية
+## الإصلاحات
 
-**تحديد قسم الطابعات:**
-- نجلب `delivery_methods` التي لها `base_price_category_id` (التوصيل الشخصي)
-- إذا `category_id` للمنتج المحرر يطابق أي `base_price_category_id` → إظهار الحقل
+### في `src/pages/Cart.tsx`
 
-**المالية (calcActualDeliveryCost):**
-```
-if delivery_method === 'personal':
-  cost = sum(item.products.personal_delivery_cost * quantity)
-else:
-  cost = delivery_methods[order.delivery_method].actual_cost
-```
+**أ. تحديث `getMethodPreviewPrice`** (سطر 167-179):
+- إضافة فحص `free_delivery_enabled` + `free_delivery_min_order` مقابل `total` لكل طريقة وإرجاع `0` عند تحقق الشرط — حتى تعكس قائمة الطرق الحالة الصحيحة.
+
+**ب. إصلاح حالة "0" غير المنطقية في `getDeliveryFee`**:
+- عند طريقة مرتبطة بـ `base_price_category_id` ولا توجد منتجات من ذلك القسم في السلة، يجب اعتبار هذه الطريقة **غير متاحة** (إخفاؤها من `visibleDeliveryMethods`) بدلاً من إرجاع 0 مضلل.
+- إضافة فلترة في `visibleDeliveryMethods` تستثني أي طريقة `base_price_category_id` لا تتطابق مع أي منتج في السلة.
+
+**ج. إخفاء قائمة طرق التوصيل عند تحقق التوصيل المجاني**:
+- عندما `isFreeDeliveryApplied === true`: استبدال البطاقة الكاملة لطرق التوصيل ببطاقة مدمجة تعرض فقط "🎉 توصيل مجاني — تم تجاوز الحد الأدنى" مع اسم الطريقة المختارة.
+- إخفاء الزر `setDeliveryOptionsOpen` ومنع التوسيع.
+
+**د. تحديث رسالة "أضف X للحصول على توصيل مجاني"**:
+- التأكد من أن `freeDeliveryRemaining` يعمل فقط عند `free_delivery_enabled = true` (موجود ✓).
 
 ### الملفات المتأثرة
-| الملف | النوع |
-|-------|-------|
-| `src/components/admin/AdminProductPricingSection.tsx` | تعديل |
-| `src/pages/Admin.tsx` | تعديل |
-| `src/pages/AdminFinancials.tsx` | تعديل |
+
+| الملف | التغيير |
+|-------|---------|
+| `src/pages/Cart.tsx` | تعديل `getMethodPreviewPrice`، فلترة `visibleDeliveryMethods`، إخفاء قائمة الطرق عند التوصيل المجاني |
 
