@@ -543,12 +543,33 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     if (wasOnRiver && !nowOnRiver) {
       // Defer snap to grass center until animation completes,
       // so the jump animates from the actual log position.
-      const snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
-      g.playerLane = Math.max(0, Math.min(LANES - 1, snappedLane));
+      let snappedLane = Math.round((visualXBefore - CELL / 2) / CELL);
+      snappedLane = Math.max(MIN_LANE, Math.min(MAX_LANE, snappedLane));
+      // If destination grass lane has a tree, pick nearest free lane in playable range.
+      if (newRow && newRow.type === "grass" && newRow.treeIndices.includes(snappedLane)) {
+        let found = snappedLane;
+        for (let off = 1; off <= (MAX_LANE - MIN_LANE); off++) {
+          const left = snappedLane - off;
+          const right = snappedLane + off;
+          if (left >= MIN_LANE && !newRow.treeIndices.includes(left)) { found = left; break; }
+          if (right <= MAX_LANE && !newRow.treeIndices.includes(right)) { found = right; break; }
+        }
+        snappedLane = found;
+      }
+      g.playerLane = snappedLane;
       // Keep playerOffsetX as-is (relative to old lane center).
       // Recompute relative to new lane so visualXBefore is preserved.
       g.playerOffsetX = visualXBefore - (g.playerLane * CELL + CELL / 2);
       g.pendingExitSnap = true;
+      // Save the departing log so the hop start tracks it dynamically while it drifts.
+      if (currentRow && currentRow.type === "river" && g.riderLogIndex !== null) {
+        const fromLog = currentRow.logs[g.riderLogIndex];
+        if (fromLog) {
+          g.fromRiderLogIndex = g.riderLogIndex;
+          g.fromRiderRowIndex = g.fromRow;
+          g.fromRiderStickX = g.riderLogStickX;
+        }
+      }
       // Clear rider lock immediately — we're leaving the river.
       g.riderLogIndex = null;
       g.riderLogRowIndex = null;
