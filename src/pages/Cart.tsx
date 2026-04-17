@@ -51,7 +51,7 @@ const Cart = () => {
   const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
-  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string } | null>(null);
+  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -581,7 +581,12 @@ const Cart = () => {
   
   // Apply card free shipping if eligible
   const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
-  const referralFreeShippingApplied = !!appliedReferral;
+  // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
+  const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
+  const referralFreeShippingApplied = !!appliedReferral && total >= referralMinOrder;
+  const referralRemainingForFreeDelivery = appliedReferral
+    ? Math.max(0, referralMinOrder - total)
+    : 0;
   const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
   // Calculate discount
@@ -666,16 +671,34 @@ const Cart = () => {
       });
       const ref = refResult as any;
       if (ref?.valid) {
+        // Fetch admin-defined min order for free delivery
+        const { data: settingsRow } = await supabase
+          .from('default_settings')
+          .select('setting_value')
+          .eq('setting_key', 'referral_settings')
+          .maybeSingle();
+        const minOrder = Number((settingsRow?.setting_value as any)?.free_delivery_min_order_iqd) || 100000;
+
         setAppliedReferral({
           coupon_id: ref.coupon_id,
           owner_username: ref.owner_username,
           owner_user_id: ref.owner_user_id,
-        });
+          free_delivery_min_order_iqd: minOrder,
+        } as any);
         setAppliedCoupon(null);
-        toast({
-          title: '🎁 توصيل مجاني!',
-          description: `شكراً لدعمك @${ref.owner_username}! لقد أهدى لك توصيلاً مجانياً`,
-        });
+
+        if (total >= minOrder) {
+          toast({
+            title: '🎁 توصيل مجاني!',
+            description: `شكراً لدعمك @${ref.owner_username}! لقد حصلت على توصيل مجاني`,
+          });
+        } else {
+          const remaining = minOrder - total;
+          toast({
+            title: `🎁 شكراً لدعمك @${ref.owner_username}!`,
+            description: `أضف ${formatPrice(remaining)} د.ع للحصول على توصيل مجاني — تابع التسوق`,
+          });
+        }
         return;
       }
       if (ref?.reason === 'self_use_not_allowed') {
