@@ -105,7 +105,8 @@ export default function MyReferral() {
   }, [user?.id, vipLoading, vipStatus?.isVipPlus]);
 
   const stats = useMemo(() => {
-    const confirmed = usages.filter((u) => u.status !== "cancelled");
+    // Earnings only count after the order is delivered (status: confirmed or paid)
+    const confirmed = usages.filter((u) => u.status === "confirmed" || u.status === "paid");
     const totalEarnings = confirmed.reduce((s, u) => s + Number(u.owner_earnings_iqd || 0), 0);
     const paidOut = withdrawals
       .filter((w) => w.status === "paid")
