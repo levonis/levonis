@@ -239,21 +239,9 @@ const AdminFinancials = () => {
   });
 
   // Calculate actual delivery cost for an order (what we actually pay to delivery company)
-  const calcActualDeliveryCost = (order: OrderWithDetails): number => {
-    const deliveryMethod = (order as any).delivery_method || 'standard';
-    
-    // Personal delivery: use product-level personal_delivery_cost (printers)
-    if (deliveryMethod === 'personal') {
-      return (order.order_items || []).reduce((sum, item: any) => {
-        const pdc = item.products?.personal_delivery_cost || 0;
-        return sum + (pdc * (item.quantity || 1));
-      }, 0);
-    }
-    
-    // Standard/other: use delivery method actual_cost
-    const methodData = deliveryMethodsData.find((m: any) => m.method_key === deliveryMethod);
-    return methodData?.actual_cost || 0;
-  };
+  const calcActualDeliveryCost = (order: OrderWithDetails): number =>
+    calcActualDeliveryCostFor(order, deliveryMethodsData as any);
+
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
