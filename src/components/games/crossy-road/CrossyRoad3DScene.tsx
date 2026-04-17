@@ -790,16 +790,24 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       grounds.push({ id: `g${r}`, x: cx, z, rowType: row.type, grassDark: row.grassDark, biome: row.biome });
 
-      // Decorative trees on sides
-      if (row.type === "grass" || row.type === "road") {
-        trees.push({ id: `dl${r}_1`, x: -2, z, modelIdx: r * 3, biome: row.biome });
-        trees.push({ id: `dl${r}_2`, x: -4, z, modelIdx: r * 3 + 1, biome: row.biome });
-        if (r % 2 === 0) trees.push({ id: `dl${r}_3`, x: -6, z, modelIdx: r * 5, biome: row.biome });
-        if (r % 3 === 0) trees.push({ id: `dl${r}_4`, x: -8, z, modelIdx: r * 7 + 2, biome: row.biome });
-        trees.push({ id: `dr${r}_1`, x: LANES * CELL + 2, z, modelIdx: r * 3 + 2, biome: row.biome });
-        trees.push({ id: `dr${r}_2`, x: LANES * CELL + 4, z, modelIdx: r * 3, biome: row.biome });
-        if (r % 2 === 0) trees.push({ id: `dr${r}_3`, x: LANES * CELL + 6, z, modelIdx: r * 5 + 1, biome: row.biome });
-        if (r % 3 === 0) trees.push({ id: `dr${r}_4`, x: LANES * CELL + 8, z, modelIdx: r * 7, biome: row.biome });
+      // Decorative trees on sides — extend further to fill widescreen
+      // Side decorative trees always sit on grass-height base for visual consistency
+      const decoY = GRASS_TOP;
+      if (row.type === "grass" || row.type === "road" || row.type === "rail" || row.type === "river") {
+        const sideTreeOffsets = [-2, -4, -6, -8, -11, -14, -17, -20];
+        const rightBase = LANES * CELL;
+        const rightTreeOffsets = [2, 4, 6, 8, 11, 14, 17, 20].map(v => rightBase + v);
+        sideTreeOffsets.forEach((off, i) => {
+          // Skip some for variety on far columns
+          if (i >= 4 && (r + i) % 2 !== 0) return;
+          if (i >= 6 && (r + i) % 3 !== 0) return;
+          trees.push({ id: `dl${r}_${i}`, x: off, z, modelIdx: r * 3 + i, biome: row.biome, groundY: decoY });
+        });
+        rightTreeOffsets.forEach((x, i) => {
+          if (i >= 4 && (r + i) % 2 !== 0) return;
+          if (i >= 6 && (r + i) % 3 !== 0) return;
+          trees.push({ id: `dr${r}_${i}`, x, z, modelIdx: r * 3 + i + 1, biome: row.biome, groundY: decoY });
+        });
       }
 
       // Traffic lights on rail rows
@@ -814,7 +822,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       if (row.type === "grass") {
         for (const laneIdx of row.treeIndices) {
-          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r, biome: row.biome });
+          trees.push({ id: `t${r}_${laneIdx}`, x: laneIdx * CELL + CELL / 2, z, modelIdx: r, biome: row.biome, groundY: GRASS_TOP });
         }
       }
 
