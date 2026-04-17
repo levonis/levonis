@@ -827,7 +827,7 @@ const AdminFinancials = () => {
                             acc.adminShipping += order.admin_shipping_cost || 0;
                             acc.shippingCost += calcDeliveryCost(order);
                             acc.productCost += calcProductCost(order, usdToIqdRate);
-                            acc.profit += order.status === 'delivered' ? calcOrderProfit(order, usdToIqdRate) : 0;
+                            acc.profit += order.status === 'delivered' ? calcOrderProfit(order, usdToIqdRate, deliveryMethodsData as any) : 0;
                             return acc;
                           }, { totalAmount: 0, customerPaid: 0, remaining: 0, adminShipping: 0, shippingCost: 0, productCost: 0, profit: 0 });
                           return (
@@ -990,7 +990,7 @@ const AdminFinancials = () => {
                   <p className="font-bold text-rose-600">-{formatPrice(calcActualDeliveryCost(selectedOrder))}</p>
                 </div>
                 <div><Label className="text-muted-foreground">تكلفة المنتج</Label><p className="font-bold text-red-600">{formatPrice(calcProductCost(selectedOrder, usdToIqdRate))}</p></div>
-                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate)) : 'غير محسوب'}</p></div>
+                <div><Label className="text-muted-foreground">العمولة</Label><p className={`font-bold ${calcOrderProfit(selectedOrder, usdToIqdRate, deliveryMethodsData as any) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedOrder.status === 'delivered' ? formatPrice(calcOrderProfit(selectedOrder, usdToIqdRate, deliveryMethodsData as any)) : 'غير محسوب'}</p></div>
               </div>
               {selectedOrder.financial_notes && (
                 <div className="pt-4 border-t"><Label className="text-muted-foreground">ملاحظات مالية</Label><p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p></div>
