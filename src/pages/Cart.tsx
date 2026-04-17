@@ -2202,20 +2202,25 @@ const Cart = () => {
                         {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('cart_coupon_apply')}
                       </Button>
                     </div>
-                  ) : appliedReferral ? (
-                    <div className="rounded-xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15 border-2 border-amber-500/40 p-3 space-y-2">
+                  ) : appliedReferral ? (() => {
+                    const refStyle = getReferralBannerStyle(appliedReferral.banner_style);
+                    const headlineMessage = appliedReferral.custom_message?.trim()
+                      ? appliedReferral.custom_message
+                      : `شكراً لدعمك @${appliedReferral.owner_username}!`;
+                    return (
+                    <div className={`rounded-xl ${refStyle.container} ${refStyle.border} p-3 space-y-2`}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-lg">🎁</span>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400 truncate">
-                              شكراً لدعمك @{appliedReferral.owner_username}!
+                            <p className={`text-xs font-bold ${refStyle.title} truncate`}>
+                              {headlineMessage}
                             </p>
                             {referralFreeShippingApplied ? (
                               <p className="text-[11px] text-emerald-600 font-semibold">✅ حصلت على توصيل مجاني</p>
                             ) : (
                               <p className="text-[11px] text-muted-foreground">
-                                أضف <span className="font-bold text-amber-600">{formatPrice(referralRemainingForFreeDelivery)} د.ع</span> للتوصيل المجاني
+                                أضف <span className={`font-bold ${refStyle.highlight}`}>{formatPrice(referralRemainingForFreeDelivery)} د.ع</span> للتوصيل المجاني
                               </p>
                             )}
                           </div>
@@ -2232,9 +2237,9 @@ const Cart = () => {
                       </div>
                       {!referralFreeShippingApplied && (
                         <div className="space-y-1">
-                          <div className="h-2 rounded-full bg-amber-500/15 overflow-hidden">
+                          <div className={`h-2 rounded-full ${refStyle.progressTrack} overflow-hidden`}>
                             <div
-                              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                              className={`h-full ${refStyle.progressFill} transition-all duration-500`}
                               style={{ width: `${Math.min(100, (total / (appliedReferral.free_delivery_min_order_iqd || 100000)) * 100)}%` }}
                             />
                           </div>
@@ -2244,7 +2249,8 @@ const Cart = () => {
                         </div>
                       )}
                     </div>
-                  ) : (
+                    );
+                  })() : (
                     <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30">
                       <div className="flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-green-600" />
