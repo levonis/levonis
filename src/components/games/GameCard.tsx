@@ -1,5 +1,5 @@
 /** Individual Game Card – pixel frame style with sprite sheet assets */
-import { Lock, Clock } from "lucide-react";
+import { Lock, Clock, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GameResource, GameStatus } from "./GamesData";
 import DifficultyBadge from "./DifficultyBadge";
@@ -12,9 +12,10 @@ interface GameCardProps {
   onClickSound: () => void;
   disabled?: boolean;
   startingSoon?: string;
+  prizeCount?: number;
 }
 
-export default function GameCard({ game, onPlay, onClickSound, disabled, startingSoon }: GameCardProps) {
+export default function GameCard({ game, onPlay, onClickSound, disabled, startingSoon, prizeCount = 0 }: GameCardProps) {
   const isLive = game.status === GameStatus.LIVE;
 
   // Locked / Coming Soon card or admin-disabled card
