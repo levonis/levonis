@@ -74,3 +74,12 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </StrictMode>
 );
+
+// Remove initial HTML loader after React mounts
+requestAnimationFrame(() => {
+  const loader = document.getElementById('initial-loader');
+  if (loader) {
+    loader.classList.add('fade-out');
+    setTimeout(() => loader.remove(), 300);
+  }
+});
