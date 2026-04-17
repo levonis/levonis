@@ -819,10 +819,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
     }
 
-    // Camera follow — player at ~25% from bottom
+    // Camera follow — player at ~25% from bottom; track horizontally too.
     const targetZ = -(g.playerRow - 3) * CELL;
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ + 8, 0.05);
-    camera.position.x = (LANES * CELL) / 2;
+    const baseCamX = (LANES * CELL) / 2; // 4.5
+    const playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+    const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
+    camera.lookAt(camera.position.x, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
     frameCountRef.current++;
