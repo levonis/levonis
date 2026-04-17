@@ -80,7 +80,7 @@ interface RenderTrafficLight { id: string; x: number; z: number; isWarning: bool
 interface RenderTree { id: string; x: number; z: number; modelIdx: number; biome: Biome; groundY: number; }
 interface RenderVehicle { id: string; x: number; z: number; modelIdx: number; isTruck: boolean; flipY: boolean; }
 interface RenderTrain { id: string; x: number; z: number; }
-interface RenderLog { id: string; x: number; z: number; modelIdx: number; }
+interface RenderLog { id: string; x: number; z: number; modelIdx: number; width: number; }
 interface RenderCoin { id: string; x: number; z: number; rotY: number; groundY: number; }
 interface PlayerSnapshot { x: number; y: number; z: number; visible: boolean; opacity: number; rotationY: number; }
 
