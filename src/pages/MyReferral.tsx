@@ -198,9 +198,10 @@ export default function MyReferral() {
       return;
     }
     setWithdrawing(true);
+    const amount = stats.available;
     const { error } = await supabase.from("referral_earnings_withdrawals").insert({
       owner_user_id: user!.id,
-      amount_iqd: stats.available,
+      amount_iqd: amount,
       status: "pending",
     });
     setWithdrawing(false);
@@ -209,6 +210,30 @@ export default function MyReferral() {
       return;
     }
     toast.success("تم إرسال طلب السحب — سيتم مراجعته من قبل الإدارة");
+
+    // Notify admin via Telegram (non-blocking)
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, full_name, phone")
+        .eq("id", user!.id)
+        .maybeSingle();
+      const ownerLabel = profile?.username ? `@${profile.username}` : (profile?.full_name || user!.id.slice(0, 8));
+      const phoneLine = profile?.phone ? `\n📞 <code>${profile.phone}</code>` : "";
+      const codeLine = coupon?.code ? `\n🎟️ كود: <code>${coupon.code}</code>` : "";
+      const message =
+        `💸 <b>طلب سحب أرباح إحالة جديد</b>\n` +
+        `👤 ${ownerLabel}${phoneLine}${codeLine}\n` +
+        `💰 المبلغ: <b>${formatPrice(amount)} د.ع</b>\n` +
+        `📊 إجمالي الأرباح: ${formatPrice(stats.totalEarnings)} د.ع\n` +
+        `🛒 عدد الطلبات المُسلَّمة: ${stats.uses}`;
+      await supabase.functions.invoke("send-telegram-notification", {
+        body: { message, parse_mode: "HTML", channel_key: "withdrawals" },
+      });
+    } catch (e) {
+      console.warn("Failed to notify admin via Telegram:", e);
+    }
+
     loadData();
   };
 
