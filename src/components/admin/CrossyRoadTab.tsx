@@ -106,7 +106,7 @@ function SeasonCountdown({ endsAt }: { endsAt: string | null }) {
 
   if (!endsAt) return null;
   const diff = new Date(endsAt).getTime() - now;
-  if (diff <= 0) return <span className="text-xs text-primary font-bold">الموسم الجديد بدأ!</span>;
+  if (diff <= 0) return <span className="text-xs text-primary font-bold">انتهى الموسم — جاري توزيع الجوائز</span>;
 
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
@@ -116,7 +116,7 @@ function SeasonCountdown({ endsAt }: { endsAt: string | null }) {
   return (
     <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg p-3">
       <Timer className="h-4 w-4 text-primary shrink-0" />
-      <div className="text-xs text-muted-foreground">الموسم الجديد يبدأ بعد:</div>
+      <div className="text-xs text-muted-foreground">ينتهي الموسم خلال:</div>
       <div className="font-mono font-bold text-primary text-sm">
         {d > 0 && `${d}ي `}{h}س {m}د {s}ث
       </div>
