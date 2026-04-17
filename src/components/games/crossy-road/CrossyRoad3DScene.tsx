@@ -221,20 +221,20 @@ function generateRow(index: number): Row {
 
   if (type === "road") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    // Fewer cars in early rows → bigger gaps
-    const baseCount = 1 + Math.floor(Math.random() * 2);
-    const count = Math.min(3, baseCount + (diff > 0.8 ? 1 : 0));
+    // Scale car count up with the wider playfield
+    const baseCount = 2 + Math.floor(Math.random() * 3);
+    const count = Math.min(6, baseCount + (diff > 0.8 ? 1 : 0));
     // ~30% slower base speed and gentler difficulty growth, capped lower
     const baseSpeed = 1.7 + Math.random() * 1.4;
     const rawSpeed = baseSpeed + diff * 1.8;
-    const speed = Math.min(rawSpeed, 5.5) * dir; // cap (was effectively ~7.5)
+    const speed = Math.min(rawSpeed, 5.5) * dir;
     const isTruck = Math.random() < 0.3;
 
-    // Spawn cars spread across a wide range, they enter/exit like trains
-    const totalRange = LANES * CELL + SPAWN_MARGIN * 2;
+    // Spawn cars spread across full extended range
+    const totalRange = PLAY_WIDTH + SPAWN_MARGIN * 2;
     const spacing = totalRange / count;
     for (let i = 0; i < count; i++) {
-      const startX = -SPAWN_MARGIN + spacing * i + Math.random() * (spacing * 0.5);
+      const startX = PLAY_LEFT_X - SPAWN_MARGIN + spacing * i + Math.random() * (spacing * 0.5);
       row.obstacles.push({
         x: startX,
         speed, width: isTruck ? 2 : 1,
@@ -247,22 +247,21 @@ function generateRow(index: number): Row {
     row.trainTimer = Math.max(4, (7 + Math.random() * 3) - diff * 1.5);
   } else if (type === "river") {
     const dir = Math.random() > 0.5 ? 1 : -1;
-    // More logs early on; slower depletion with difficulty
-    const baseLogCount = 3 - Math.floor(diff * 1);
-    const count = Math.max(2, baseLogCount);
-    const baseSpeed = 1.0 + Math.random() * 1.0; // ~30% slower
+    // More logs early on; scaled to wider playfield
+    const baseLogCount = 5 - Math.floor(diff * 1);
+    const count = Math.max(4, baseLogCount);
+    const baseSpeed = 1.0 + Math.random() * 1.0;
     const rawSpeed = baseSpeed + diff * 0.9;
     const speed = Math.min(rawSpeed, 3.0) * dir;
-    
-    // Space logs with guaranteed large gaps (≥2.5 units)
-    const logWidth = 1.5 + Math.random() * 1.0; // vary between 1.5 and 2.5
-    const totalRange = LANES * CELL + SPAWN_MARGIN * 2;
+
+    const logWidth = 1.5 + Math.random() * 1.0;
+    const totalRange = PLAY_WIDTH + SPAWN_MARGIN * 2;
     const spacing = totalRange / count;
     const minGap = 2.5;
-    
+
     for (let i = 0; i < count; i++) {
       const maxJitter = Math.max(0, spacing - logWidth - minGap);
-      const startX = -SPAWN_MARGIN + spacing * i + Math.random() * maxJitter;
+      const startX = PLAY_LEFT_X - SPAWN_MARGIN + spacing * i + Math.random() * maxJitter;
       row.logs.push({
         x: startX,
         speed, width: logWidth,
