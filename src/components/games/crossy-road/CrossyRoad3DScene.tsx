@@ -497,8 +497,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     if (dir === "up") { targetRow = g.playerRow + 1; }
     else if (dir === "down") { targetRow = Math.max(0, g.playerRow - 1); }
-    else if (dir === "left") { targetLane = Math.max(0, g.playerLane - 1); }
-    else if (dir === "right") { targetLane = Math.min(LANES - 1, g.playerLane + 1); }
+    else if (dir === "left") { targetLane = Math.max(MIN_LANE, g.playerLane - 1); }
+    else if (dir === "right") { targetLane = Math.min(MAX_LANE, g.playerLane + 1); }
 
     const destRow = g.rows[targetRow];
     if (destRow && destRow.type === "grass" && destRow.treeIndices.includes(targetLane)) {
