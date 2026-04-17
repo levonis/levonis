@@ -9,6 +9,7 @@ import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import { useLanguage } from '@/lib/i18n';
+import ProgressiveSection from '@/components/ProgressiveSection';
 
 // Lazy load below-the-fold sections to reduce initial bundle
 const StoriesBar = lazy(() => import('@/components/stories/StoriesBar'));
