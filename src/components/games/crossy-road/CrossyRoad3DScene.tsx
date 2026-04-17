@@ -879,17 +879,22 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       }
     }
 
-    // Camera follow — player at ~25% from bottom; track horizontally too.
-    // Use stable target values for lookAt to prevent jitter (don't read
-    // camera.position which is being lerped this same frame).
-    const targetZ = -(g.playerRow - 3) * CELL;
+    // Camera follow — compute eased visual row (matches player render position) so the camera
+    // glides smoothly during hops instead of snapping when playerRow updates.
+    let visualRow = g.playerRow;
+    if (g.moving) {
+      const dz = g.moveDir === "up" ? 1 : g.moveDir === "down" ? -1 : 0;
+      visualRow = g.fromRow + dz * g.moveProgress;
+    }
+    const targetZ = -(visualRow - 3) * CELL;
     const targetCamZ = targetZ + 8;
     const baseCamX = (LANES * CELL) / 2; // 4.5
     const playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
     const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
-    // Both axes: follow directly — player visual position is already eased during hops, double-lerp causes jitter
-    camera.position.z = targetCamZ;
-    camera.position.x = targetCamX;
+    // Framerate-independent smoothing — single layer of easing on top of already-eased target
+    const smooth = 1 - Math.exp(-14 * dt);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smooth);
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smooth);
     camera.lookAt(targetCamX, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
