@@ -103,11 +103,19 @@ const TRAIN_EXIT_X = LANES * CELL + TRAIN_TOTAL_WIDTH + 5;
 // Warning timing
 const TRAIN_WARNING_DURATION = 3.0;
 
-// Player on-log Y offset
-const LOG_Y_OFFSET = 0.18;
+// Grass top elevation (matches grass model height)
+const GRASS_TOP = 0.375;
 
-// Log collision tolerance
-const LOG_TOLERANCE = 0.25;
+// Player on-log Y offset (above the log surface)
+const LOG_Y_OFFSET = 0.45;
+
+// Log collision tolerance (more forgiving for log-to-log jumps)
+const LOG_TOLERANCE = 0.45;
+
+// Returns the visual top elevation of a row's ground for placing objects
+function rowTopY(rowType: RowType): number {
+  return rowType === "grass" ? GRASS_TOP : 0.01;
+}
 
 // ── Biome colors ──
 const BIOME_COLORS: Record<Biome, { ground: number; groundDark: number; tree: number; sky: string }> = {
