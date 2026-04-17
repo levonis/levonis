@@ -358,7 +358,7 @@ export default function StackGame({ onBack }: Props) {
       {/* Main Menu */}
       {activeView === "main" && (
         <div className="max-w-sm mx-auto space-y-5 text-center">
-          <div className="text-7xl mt-4">🏙️</div>
+          <div className="text-4xl font-black tracking-tighter text-primary mt-4">THE TOWER</div>
           <h1 className="text-2xl font-bold text-foreground">البرج</h1>
           <p className="text-sm text-muted-foreground">ابنِ أعلى برج بدقة! كل طابق يتحرك وعليك إيقافه في الوقت المناسب.</p>
 
@@ -618,7 +618,7 @@ export default function StackGame({ onBack }: Props) {
               </>
             ) : (
               <>
-                <div className="text-5xl">🏙️</div>
+                <div className="text-2xl font-black tracking-tighter text-primary">THE TOWER</div>
                 <h2 className="text-xl font-bold text-foreground">انتهت اللعبة!</h2>
               </>
             )}
