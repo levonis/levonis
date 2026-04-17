@@ -945,10 +945,10 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
     }
 
-    const targetCamX = playerVisualX;
-    // Framerate-independent smoothing. Use a gentler factor on X for silky lateral motion.
+    // Track logical lane center on X (not visual) to avoid jitter from log drift & jump easing.
+    const targetCamX = g.playerLane * CELL + CELL / 2;
     const smoothZ = 1 - Math.exp(-18 * dt);
-    const smoothX = 1 - Math.exp(-10 * dt);
+    const smoothX = 1 - Math.exp(-6 * dt);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smoothZ);
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smoothX);
     camera.lookAt(playerVisualX, 0, targetZ - 4);
