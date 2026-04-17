@@ -182,9 +182,11 @@ const Home = () => {
           </Suspense>
         </section>
 
-        <Suspense fallback={<div className="h-32" />}>
-          <BundlesSection />
-        </Suspense>
+        <ProgressiveSection minHeight="180px" rootMargin="500px">
+          <Suspense fallback={<div className="h-32" />}>
+            <BundlesSection />
+          </Suspense>
+        </ProgressiveSection>
 
         <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout' }}>
           <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
