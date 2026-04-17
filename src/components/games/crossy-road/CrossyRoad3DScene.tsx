@@ -887,8 +887,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const baseCamX = (LANES * CELL) / 2; // 4.5
     const playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
     const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.08);
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.08);
+    // Z: follow directly — playerVisualZ is already eased, double-lerp causes jitter
+    camera.position.z = targetCamZ;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
     camera.lookAt(targetCamX, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
