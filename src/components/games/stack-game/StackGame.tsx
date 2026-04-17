@@ -5,10 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe } from "lucide-react";
 import StackGameCanvas from "./StackGameCanvas";
 import type { GameScoreSettings } from "./StackScene";
 import { useVipFreePlay } from "@/hooks/useVipPlus";
+import SeasonHeader from "@/components/games/SeasonHeader";
 
 interface Props {
   onBack: () => void;
@@ -35,6 +36,7 @@ export default function StackGame({ onBack }: Props) {
   const [liveCombo, setLiveCombo] = useState(0);
   const [livePerfects, setLivePerfects] = useState(0);
   const [profileDialogUserId, setProfileDialogUserId] = useState<string | null>(null);
+  const [lbView, setLbView] = useState<"season" | "alltime">("season");
 
 
   const { data: settings } = useQuery({
@@ -71,6 +73,14 @@ export default function StackGame({ onBack }: Props) {
     },
   });
 
+  const { data: allTimeLeaderboard = [] } = useQuery({
+    queryKey: ["stack-alltime-leaderboard"],
+    queryFn: async () => {
+      const { data } = await supabase.from("stack_game_high_scores" as any).select("*").gt("all_time_high_score", 0).order("all_time_high_score", { ascending: false }).limit(10);
+      return (data || []) as any[];
+    },
+  });
+
   const { data: userHighScore } = useQuery({
     queryKey: ["stack-high-score", user?.id],
     queryFn: async () => {
@@ -98,17 +108,18 @@ export default function StackGame({ onBack }: Props) {
   });
 
   const { data: userProfiles = [] } = useQuery({
-    queryKey: ["stack-user-profiles", leaderboard, recentWinners],
+    queryKey: ["stack-user-profiles", leaderboard, allTimeLeaderboard, recentWinners],
     queryFn: async () => {
       const ids = [...new Set([
         ...leaderboard.map((l: any) => l.user_id),
+        ...allTimeLeaderboard.map((l: any) => l.user_id),
         ...recentWinners.map((w: any) => w.user_id),
       ])].filter(Boolean);
       if (ids.length === 0) return [];
       const { data } = await supabase.rpc("get_public_profiles", { p_user_ids: ids } as any);
       return (data || []) as any[];
     },
-    enabled: leaderboard.length > 0 || recentWinners.length > 0,
+    enabled: leaderboard.length > 0 || allTimeLeaderboard.length > 0 || recentWinners.length > 0,
   });
 
   const getProfileName = (userId: string) => {
@@ -469,7 +480,23 @@ export default function StackGame({ onBack }: Props) {
             <p className="text-xs text-muted-foreground mt-1">أعلى 10 لاعبين - نافس للفوز بالجوائز!</p>
           </div>
 
-          {lbPrizes.length > 0 && (
+          <SeasonHeader
+            seasonName={(settings as any)?.season_name}
+            seasonStartsAt={(settings as any)?.season_starts_at}
+            seasonEndsAt={(settings as any)?.season_ends_at}
+          />
+
+          {/* Season / All-Time toggle */}
+          <div className="flex gap-2 bg-muted/20 rounded-lg p-1">
+            <button onClick={() => setLbView("season")} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${lbView === "season" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <Crown className="h-3 w-3 inline ml-1" /> الموسم الحالي
+            </button>
+            <button onClick={() => setLbView("alltime")} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${lbView === "alltime" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <Globe className="h-3 w-3 inline ml-1" /> الأفضل على الإطلاق
+            </button>
+          </div>
+
+          {lbView === "season" && lbPrizes.length > 0 && (
             <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-right space-y-1">
               <h4 className="text-xs font-bold text-primary flex items-center gap-1 justify-end"><Gift className="h-3.5 w-3.5" /> جوائز المراكز</h4>
               {lbPrizes.map((p: any) => (
@@ -481,55 +508,59 @@ export default function StackGame({ onBack }: Props) {
             </div>
           )}
 
-          {leaderboard.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground text-sm">لا توجد نقاط بعد. كن أول المتصدرين!</div>
-          ) : (
-            <div className="space-y-2">
-              {leaderboard.map((entry: any, i: number) => {
-                const prize = lbPrizes.find((p: any) => p.position === i + 1);
-                const isUser = user && entry.user_id === user.id;
-                const posEmoji = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
-
-                return (
-                  <div
-                    key={entry.id}
-                    onClick={() => setProfileDialogUserId(entry.user_id)}
-                    className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer hover:scale-[1.02] ${
-                      i === 0
-                        ? "bg-gradient-to-l from-yellow-500/10 to-transparent border-2 border-yellow-500/30"
-                        : prize
-                        ? "bg-primary/5 border border-primary/20"
-                        : isUser
-                        ? "bg-accent/10 border border-accent/20"
-                        : "bg-muted/20 border border-border"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground text-lg">{entry.high_score}</span>
-                      {prize && <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">🎁 {prize.prize_name_ar}</span>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <div className={`text-sm font-medium ${isUser ? "text-primary" : "text-foreground"}`}>
-                          {getProfileName(entry.user_id)} {isUser && "(أنت)"}
-                        </div>
+          {(() => {
+            const list = lbView === "season" ? leaderboard : allTimeLeaderboard;
+            const scoreField = lbView === "season" ? "high_score" : "all_time_high_score";
+            if (list.length === 0) {
+              return <div className="text-center py-10 text-muted-foreground text-sm">لا توجد نقاط بعد. كن أول المتصدرين!</div>;
+            }
+            return (
+              <div className="space-y-2">
+                {list.map((entry: any, i: number) => {
+                  const prize = lbView === "season" ? lbPrizes.find((p: any) => p.position === i + 1) : null;
+                  const isUser = user && entry.user_id === user.id;
+                  const posEmoji = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+                  return (
+                    <div
+                      key={entry.id}
+                      onClick={() => setProfileDialogUserId(entry.user_id)}
+                      className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer hover:scale-[1.02] ${
+                        i === 0
+                          ? "bg-gradient-to-l from-yellow-500/10 to-transparent border-2 border-yellow-500/30"
+                          : prize
+                          ? "bg-primary/5 border border-primary/20"
+                          : isUser
+                          ? "bg-accent/10 border border-accent/20"
+                          : "bg-muted/20 border border-border"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground text-lg">{entry[scoreField]}</span>
+                        {prize && <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">🎁 {prize.prize_name_ar}</span>}
                       </div>
-                      {getProfileAvatar(entry.user_id) ? (
-                        <img src={getProfileAvatar(entry.user_id)!} alt="" className="w-7 h-7 rounded-full object-cover border border-border/40" />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                          {getProfileName(entry.user_id)[0]}
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className={`text-sm font-medium ${isUser ? "text-primary" : "text-foreground"}`}>
+                            {getProfileName(entry.user_id)} {isUser && "(أنت)"}
+                          </div>
                         </div>
-                      )}
-                      <span className="text-lg">{posEmoji}</span>
+                        {getProfileAvatar(entry.user_id) ? (
+                          <img src={getProfileAvatar(entry.user_id)!} alt="" className="w-7 h-7 rounded-full object-cover border border-border/40" />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                            {getProfileName(entry.user_id)[0]}
+                          </div>
+                        )}
+                        <span className="text-lg">{posEmoji}</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            );
+          })()}
 
-          {userPosition > 0 && (
+          {lbView === "season" && userPosition > 0 && (
             <div className="text-center text-xs text-muted-foreground bg-muted/20 rounded-xl p-2">
               مركزك الحالي: <span className="font-bold text-primary">#{userPosition}</span>
             </div>
