@@ -578,8 +578,8 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
     if (dir === "up") g.playerRotation = Math.PI;
     else if (dir === "down") g.playerRotation = 0;
-    else if (dir === "left") g.playerRotation = Math.PI / 2;
-    else if (dir === "right") g.playerRotation = -Math.PI / 2;
+    else if (dir === "left") g.playerRotation = -Math.PI / 2;
+    else if (dir === "right") g.playerRotation = Math.PI / 2;
 
     g.hopAnim = 1;
     audio?.playHop();
