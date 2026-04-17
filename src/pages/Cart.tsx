@@ -2196,6 +2196,22 @@ const Cart = () => {
                   )}
 
                   {/* خيارات التوصيل */}
+                  {isFreeDeliveryApplied && !cardFreeShippingApplied ? (
+                    (() => {
+                      const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
+                      return (
+                        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/40 py-3 px-4 flex items-center gap-2">
+                          <Truck className="h-5 w-5 text-emerald-600 shrink-0" />
+                          <div className="flex-1 text-right">
+                            <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">🎉 توصيل مجاني — تم تجاوز الحد الأدنى</div>
+                            {selectedMethod && (
+                              <div className="text-xs text-muted-foreground">{selectedMethod.name_ar}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
                   <div className="rounded-lg bg-muted/30 border border-border/40 overflow-hidden">
                     {/* Selected method header - always visible */}
                     {(() => {
@@ -2244,6 +2260,9 @@ const Cart = () => {
                             user: <UserCheck className="h-4 w-4" />,
                           };
                           const previewFee = getMethodPreviewPrice(method.method_key);
+                          const methodFreeApplied = method.free_delivery_enabled && (
+                            (Number(method.free_delivery_min_order) || 0) === 0 || total >= (Number(method.free_delivery_min_order) || 0)
+                          );
                           return (
                             <div
                               key={method.id}
@@ -2263,8 +2282,8 @@ const Cart = () => {
                                 <div className="font-bold text-sm text-foreground">{method.name_ar}</div>
                                 {method.description_ar && <div className="text-[11px] text-muted-foreground">{method.description_ar}</div>}
                               </Label>
-                              <span className={`text-sm font-bold ${method.method_key === 'pickup' ? 'text-green-500' : 'text-primary'}`}>
-                                {method.method_key === 'pickup' ? 'مجاناً' : `${formatPrice(previewFee)} د.ع`}
+                              <span className={`text-sm font-bold ${(method.method_key === 'pickup' || methodFreeApplied) ? 'text-green-500' : 'text-primary'}`}>
+                                {method.method_key === 'pickup' || methodFreeApplied ? 'مجاناً' : `${formatPrice(previewFee)} د.ع`}
                               </span>
                             </div>
                           );
@@ -2272,6 +2291,7 @@ const Cart = () => {
                       </RadioGroup>
                     </div>
                   </div>
+                  )}
 
                   {/* خيارات الدفع للطلب المسبق */}
                   {hasPreOrderItems && (
