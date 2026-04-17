@@ -349,8 +349,8 @@ const AdminFinancials = () => {
 
   // Global totals (all delivered orders, shipping excluded)
   const globalProfit = useMemo(() => {
-    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o, usdToIqdRate), 0);
-  }, [orders, usdToIqdRate]);
+    return (orders || []).filter(o => o.status === 'delivered').reduce((s, o) => s + calcOrderProfit(o, usdToIqdRate, deliveryMethodsData as any), 0);
+  }, [orders, usdToIqdRate, deliveryMethodsData]);
 
   // Totals for current filtered view
   const totals = useMemo(() => {
@@ -358,14 +358,15 @@ const AdminFinancials = () => {
       return {
         totalRevenue: acc.totalRevenue + (order.total_amount || 0),
         totalDeliveryCost: acc.totalDeliveryCost + calcDeliveryCost(order),
+        totalActualDeliveryCost: acc.totalActualDeliveryCost + calcActualDeliveryCostFor(order, deliveryMethodsData as any),
           totalProductCost: acc.totalProductCost + calcProductCost(order, usdToIqdRate),
-          totalCost: acc.totalCost + calcOrderCost(order, usdToIqdRate),
-          totalProfit: acc.totalProfit + calcOrderProfit(order, usdToIqdRate),
+          totalCost: acc.totalCost + calcOrderCost(order, usdToIqdRate, deliveryMethodsData as any),
+          totalProfit: acc.totalProfit + calcOrderProfit(order, usdToIqdRate, deliveryMethodsData as any),
         orderCount: acc.orderCount + 1,
         deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
       };
-    }, { totalRevenue: 0, totalDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
-  }, [filteredOrders, usdToIqdRate]);
+    }, { totalRevenue: 0, totalDeliveryCost: 0, totalActualDeliveryCost: 0, totalProductCost: 0, totalCost: 0, totalProfit: 0, orderCount: 0, deliveredCount: 0 });
+  }, [filteredOrders, usdToIqdRate, deliveryMethodsData]);
 
   // Monthly chart data (delivered only, shipping excluded)
   const monthlyChartData = useMemo(() => {
