@@ -1305,7 +1305,8 @@ const AdminOrders = () => {
                 const referralCouponId = (editingOrder as any).referral_coupon_id;
                 const referralOwnerEarnings = Number((editingOrder as any).referral_owner_earnings_iqd) || 0;
                 const originalDelivery = Number((editingOrder as any).original_delivery_fee) || 0;
-                const isReferralFreeDelivery = !!referralCouponId;
+                const isReferralFreeDelivery = !!referralCouponId && deliveryCalc === 0;
+                const isReferralCommissionOnly = !!referralCouponId && deliveryCalc > 0;
 
                 return (
                   <div className="p-3 rounded-xl border border-border/60 bg-muted/20 space-y-2">
@@ -1320,7 +1321,10 @@ const AdminOrders = () => {
                           🎟️ كوبون إحالة VIP Plus
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          توصيل مجاني • أرباح صاحب الكوبون: {formatPrice(referralOwnerEarnings)} د.ع
+                          {isReferralFreeDelivery
+                            ? <>توصيل مجاني (تجاوز الحد) • أرباح صاحب الكوبون: <span className="font-bold text-emerald-600">{formatPrice(referralOwnerEarnings)} د.ع</span></>
+                            : <>عمولة فقط (لم يصل للحد) • أرباح صاحب الكوبون: <span className="font-bold text-emerald-600">{formatPrice(referralOwnerEarnings)} د.ع</span></>
+                          }
                         </div>
                       </div>
                     )}
