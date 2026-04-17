@@ -348,7 +348,7 @@ function TreeMesh({ data }: { data: RenderTree }) {
   return (
     <mesh geometry={m.geometry} material={tintedMat}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0, data.z]}
+      position={[data.x, data.groundY, data.z]}
     />
   );
 }
