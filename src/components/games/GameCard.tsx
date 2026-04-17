@@ -62,7 +62,7 @@ export default function GameCard({ game, onPlay, onClickSound, disabled, startin
     >
       {/* Prize ribbon */}
       {prizeCount > 0 && (
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground py-1 px-2 flex items-center justify-center gap-1.5 font-mono text-[9px] font-black tracking-wider uppercase shadow-md z-10 animate-pulse">
+        <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground py-1 px-2 flex items-center justify-center gap-1.5 font-mono text-[9px] font-black tracking-wider uppercase border-b-2 border-foreground z-10">
           <Gift className="h-3 w-3" />
           <span>{prizeCount} {prizeCount === 1 ? 'جائزة' : 'جوائز'}</span>
           <Gift className="h-3 w-3" />
