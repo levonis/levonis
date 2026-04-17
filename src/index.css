@@ -1693,7 +1693,7 @@
 
 /* Glow ring above platform — triple layer */
 .cube-glow-ring {
-  width: 160px;
+  width: 150px;
   height: 8px;
   margin: 0 auto -5px;
   border-radius: 50%;
@@ -1706,7 +1706,7 @@
 
 /* Top highlight edge — luminous rim */
 .cube-top-highlight {
-  width: 160px;
+  width: 120px;
   height: 3px;
   margin: 0 auto -2px;
   border-radius: 8px;
@@ -1724,8 +1724,8 @@
 
 /* Top face — 3D tilted rectangular platform surface */
 .cube-top-featured {
-  width: 160px;
-  height: 18px;
+  width: 120px;
+  height: 14px;
   margin: 0 auto;
   border-radius: 8px;
   background:
@@ -1746,7 +1746,7 @@
 
 /* Mid section — thin separator between top and front */
 .cube-mid-featured {
-  width: 160px;
+  width: 120px;
   height: 3px;
   margin: -4px auto 0;
   border-radius: 0;
@@ -1763,8 +1763,8 @@
 
 /* Front face — body of the pedestal with price/discount */
 .cube-front-featured {
-  width: 160px;
-  height: 36px;
+  width: 120px;
+  height: 30px;
   margin: 0 auto 0;
   border-radius: 0 0 8px 8px;
   background:
@@ -1783,7 +1783,7 @@
 
 /* Bottom edge — rectangular metallic accent */
 .cube-bottom-edge {
-  width: 150px;
+  width: 110px;
   height: 4px;
   margin: -2px auto 0;
   border-radius: 0 0 8px 8px;
@@ -1798,7 +1798,7 @@
 
 /* Bottom reflection strip — rectangular glow */
 .cube-bottom-reflection {
-  width: 145px;
+  width: 108px;
   height: 6px;
   margin: 2px auto 0;
   border-radius: 8px;
