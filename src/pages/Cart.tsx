@@ -140,6 +140,16 @@ const Cart = () => {
     },
   });
 
+  // جلب جميع استثناءات الأقسام (لعرض السعر التقريبي لكل طريقة)
+  const { data: allCatExceptions = [] } = useQuery({
+    queryKey: ['delivery-all-cat-exceptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('delivery_category_exceptions').select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // فلترة طرق التوصيل: إخفاء الطرق المخصصة لقسم معين إذا لم يكن في السلة منتج من ذلك القسم
   const visibleDeliveryMethods = useMemo(() => {
     const cartCategoryIds = new Set<string>();
