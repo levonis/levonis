@@ -1217,7 +1217,6 @@ const Cart = () => {
           status: 'pending',
         });
         // Update aggregates on coupon
-        await supabase.rpc('apply_referral_coupon', { p_code: '', p_buyer_user_id: user.id }).catch(() => {});
       }
 
       // Fetch the created order to get order_number
