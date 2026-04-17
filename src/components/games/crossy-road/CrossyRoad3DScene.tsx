@@ -639,6 +639,26 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (g.moveProgress >= 1) {
           g.moving = false;
           g.moveProgress = 0;
+          // Commit pending rider lock now that the hop has finished.
+          if (g.pendingRiderLogIndex !== null && g.pendingRiderRowIndex === g.playerRow) {
+            const dRow = g.rows[g.playerRow];
+            if (dRow && dRow.logs[g.pendingRiderLogIndex]) {
+              const log = dRow.logs[g.pendingRiderLogIndex];
+              g.riderLogIndex = g.pendingRiderLogIndex;
+              g.riderLogRowIndex = g.pendingRiderRowIndex;
+              g.riderLogStickX = g.pendingRiderStickX;
+              const lockedPx = log.x + g.riderLogStickX;
+              g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+            }
+          }
+          g.pendingRiderLogIndex = null;
+          g.pendingRiderRowIndex = null;
+          // Snap to grass center after dismount animation completed.
+          if (g.pendingExitSnap) {
+            g.playerOffsetX = 0;
+            g.pendingExitSnap = false;
+          }
+          g.fromOffsetX = 0;
         }
       }
 
