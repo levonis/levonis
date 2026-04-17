@@ -1683,7 +1683,7 @@
 
 /* Outer ambient glow — soft wide halo */
 .cube-ambient-glow {
-  width: 180px;
+  width: 170px;
   height: 10px;
   margin: 0 auto -8px;
   border-radius: 50%;
