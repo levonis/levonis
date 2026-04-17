@@ -105,7 +105,7 @@ export default function AdminDefaultSettings() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['default-settings'] }); toast.success('تم حفظ الإعدادات الافتراضية'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['default-settings'] }); },
     onError: (error: any) => { toast.error('فشل: ' + error.message); },
   });
 
