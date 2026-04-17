@@ -65,6 +65,7 @@ const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
+const MyReferral = lazy(() => import("./pages/MyReferral"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const ProductShop = lazy(() => import("./pages/ProductShop"));
 const ProductsWithGifts = lazy(() => import("./pages/ProductsWithGifts"));
@@ -275,6 +276,7 @@ function AppContent() {
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
+            <Route path="/my-referral" element={<RequireAuth><MyReferral /></RequireAuth>} />
             <Route path="/games" element={<MiniGames />} />
             <Route path="/games/winners" element={<GameWinnersPage />} />
             <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
