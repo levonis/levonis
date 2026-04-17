@@ -489,8 +489,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     g.playerRow = targetRow;
 
     if (dir === "up") {
-      g.steps++;
+      // Only count a step when the player advances beyond their furthest row
       if (g.playerRow > g.maxRow) {
+        g.steps++;
         g.maxRow = g.playerRow;
         g.score = g.maxRow;
       }
