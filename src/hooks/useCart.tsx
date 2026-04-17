@@ -36,6 +36,7 @@ export interface CartItem {
     pre_order_shipping_options?: any;
     shipping_type?: string | null;
     category_id?: string | null;
+    referral_earnings_iqd?: number | null;
     categories?: {
       id: string;
       tax_rate: number | null;
@@ -253,6 +254,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             shipping_type,
             category_id,
             card_discounts,
+            referral_earnings_iqd,
             categories!products_category_id_fkey (
               id,
               tax_rate,
