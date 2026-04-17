@@ -253,6 +253,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             shipping_type,
             category_id,
             card_discounts,
+            referral_earnings_iqd,
             categories!products_category_id_fkey (
               id,
               tax_rate,
