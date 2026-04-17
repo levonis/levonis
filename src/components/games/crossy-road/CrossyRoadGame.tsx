@@ -13,7 +13,7 @@ interface Props {
   onBack: () => void;
 }
 
-function SeasonCountdownBanner({ endsAt }: { endsAt: string | null }) {
+function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: string | null; seasonName?: string | null; startsAt?: string | null }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (!endsAt) return;
@@ -21,22 +21,41 @@ function SeasonCountdownBanner({ endsAt }: { endsAt: string | null }) {
     return () => clearInterval(iv);
   }, [endsAt]);
 
-  if (!endsAt) return null;
-  const diff = new Date(endsAt).getTime() - now;
-  if (diff <= 0) return null;
+  const fmt = (iso?: string | null) => {
+    if (!iso) return "";
+    try { return new Date(iso).toLocaleDateString("ar-IQ", { year: "numeric", month: "short", day: "numeric" }); } catch { return ""; }
+  };
 
+  if (!endsAt && !seasonName && !startsAt) return null;
+  const diff = endsAt ? new Date(endsAt).getTime() - now : 0;
+  const ended = endsAt ? diff <= 0 : false;
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
   const s = Math.floor((diff % 60000) / 1000);
 
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20">
-      <Timer className="h-4 w-4 text-primary" />
-      <span className="text-xs text-muted-foreground">ينتهي الموسم بعد:</span>
-      <span className="font-mono font-bold text-primary text-sm">
-        {d > 0 && `${d}ي `}{h}س {m}د {s}ث
-      </span>
+    <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 space-y-1.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <Trophy className="h-4 w-4 text-primary" />
+          <span className="text-sm font-bold text-primary">{seasonName || "الموسم الحالي"}</span>
+        </div>
+        {startsAt && <span className="text-[10px] text-muted-foreground">بدأ: {fmt(startsAt)}</span>}
+      </div>
+      {endsAt && !ended && (
+        <div className="flex items-center justify-between gap-2 bg-background/50 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Timer className="h-3 w-3 text-primary" /> ينتهي خلال:
+          </div>
+          <span className="font-mono font-bold text-primary text-xs">
+            {d > 0 && `${d}ي `}{h}س {m}د {s}ث
+          </span>
+        </div>
+      )}
+      {endsAt && ended && (
+        <div className="text-xs text-primary font-bold text-center">انتهى الموسم — جاري التوزيع</div>
+      )}
     </div>
   );
 }
