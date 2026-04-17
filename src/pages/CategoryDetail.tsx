@@ -59,7 +59,7 @@ const CategoryDetail = () => {
     }
     return products[0];
   })();
-  const otherProducts = products?.filter(p => p.id !== featuredProduct?.id) || [];
+  const otherProducts = products || [];
 
   // No longer needed — using flat responsive grid
 
