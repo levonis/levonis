@@ -244,7 +244,7 @@ export default function CrossyRoadGame({ onBack }: Props) {
         }
       } catch (e) { console.error("end_crossy_road error:", e); }
 
-      try { await supabase.rpc("update_crossy_road_high_score" as any, { p_score: gameScore, p_steps: steps }); } catch (e) { console.error(e); }
+      // High score is now updated atomically inside end_crossy_road using the calculated game_score
 
       queryClient.invalidateQueries({ queryKey: ["crossy-road-leaderboard"] });
       queryClient.invalidateQueries({ queryKey: ["crossy-road-alltime-leaderboard"] });
