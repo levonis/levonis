@@ -51,7 +51,7 @@ const Cart = () => {
   const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
-  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string } | null>(null);
+  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -581,7 +581,12 @@ const Cart = () => {
   
   // Apply card free shipping if eligible
   const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
-  const referralFreeShippingApplied = !!appliedReferral;
+  // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
+  const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
+  const referralFreeShippingApplied = !!appliedReferral && total >= referralMinOrder;
+  const referralRemainingForFreeDelivery = appliedReferral
+    ? Math.max(0, referralMinOrder - total)
+    : 0;
   const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
   // Calculate discount
@@ -666,16 +671,34 @@ const Cart = () => {
       });
       const ref = refResult as any;
       if (ref?.valid) {
+        // Fetch admin-defined min order for free delivery
+        const { data: settingsRow } = await supabase
+          .from('default_settings')
+          .select('setting_value')
+          .eq('setting_key', 'referral_settings')
+          .maybeSingle();
+        const minOrder = Number((settingsRow?.setting_value as any)?.free_delivery_min_order_iqd) || 100000;
+
         setAppliedReferral({
           coupon_id: ref.coupon_id,
           owner_username: ref.owner_username,
           owner_user_id: ref.owner_user_id,
-        });
+          free_delivery_min_order_iqd: minOrder,
+        } as any);
         setAppliedCoupon(null);
-        toast({
-          title: '🎁 توصيل مجاني!',
-          description: `شكراً لدعمك @${ref.owner_username}! لقد أهدى لك توصيلاً مجانياً`,
-        });
+
+        if (total >= minOrder) {
+          toast({
+            title: '🎁 توصيل مجاني!',
+            description: `شكراً لدعمك @${ref.owner_username}! لقد حصلت على توصيل مجاني`,
+          });
+        } else {
+          const remaining = minOrder - total;
+          toast({
+            title: `🎁 شكراً لدعمك @${ref.owner_username}!`,
+            description: `أضف ${formatPrice(remaining)} د.ع للحصول على توصيل مجاني — تابع التسوق`,
+          });
+        }
         return;
       }
       if (ref?.reason === 'self_use_not_allowed') {
@@ -2037,7 +2060,7 @@ const Cart = () => {
                     <Ticket className="h-4 w-4" />
                     {t('cart_coupon_label')}
                   </Label>
-                  {!appliedCoupon ? (
+                  {!appliedCoupon && !appliedReferral ? (
                     <div className="flex gap-2">
                       <Input
                         id="coupon"
@@ -2054,6 +2077,48 @@ const Cart = () => {
                       >
                         {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('cart_coupon_apply')}
                       </Button>
+                    </div>
+                  ) : appliedReferral ? (
+                    <div className="rounded-xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15 border-2 border-amber-500/40 p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-lg">🎁</span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400 truncate">
+                              شكراً لدعمك @{appliedReferral.owner_username}!
+                            </p>
+                            {referralFreeShippingApplied ? (
+                              <p className="text-[11px] text-emerald-600 font-semibold">✅ حصلت على توصيل مجاني</p>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">
+                                أضف <span className="font-bold text-amber-600">{formatPrice(referralRemainingForFreeDelivery)} د.ع</span> للتوصيل المجاني
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={removeCoupon}
+                          className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                          title="إزالة الكوبون"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {!referralFreeShippingApplied && (
+                        <div className="space-y-1">
+                          <div className="h-2 rounded-full bg-amber-500/15 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                              style={{ width: `${Math.min(100, (total / (appliedReferral.free_delivery_min_order_iqd || 100000)) * 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground text-center">
+                            {formatPrice(total)} / {formatPrice(appliedReferral.free_delivery_min_order_iqd || 100000)} د.ع
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30">

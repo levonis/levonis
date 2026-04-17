@@ -26,10 +26,20 @@ export default function MyReferral() {
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [freeDeliveryMin, setFreeDeliveryMin] = useState<number>(100000);
 
   const loadData = async () => {
     if (!user?.id) return;
     setLoading(true);
+
+    // Load free delivery min order setting
+    const { data: settingsRow } = await supabase
+      .from("default_settings")
+      .select("setting_value")
+      .eq("setting_key", "referral_settings")
+      .maybeSingle();
+    const minOrder = Number((settingsRow?.setting_value as any)?.free_delivery_min_order_iqd) || 100000;
+    setFreeDeliveryMin(minOrder);
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -271,6 +281,19 @@ export default function MyReferral() {
           </div>
         </div>
       </div>
+
+      <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+        <CardContent className="p-4 flex items-start gap-3">
+          <Gift className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed">
+            <p className="font-bold text-foreground mb-1">شروط التوصيل المجاني</p>
+            <p className="text-muted-foreground">
+              كودك يمنح أصدقاءك <span className="font-bold text-amber-600">توصيلاً مجانياً</span> عند الطلبات التي يبلغ مجموعها <span className="font-bold text-foreground">{formatPrice(freeDeliveryMin)} د.ع</span> فأكثر.
+              في جميع الحالات أنت تحصل على عمولتك من كل منتج باعه عبر كودك.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={Users} label="عدد الاستخدامات" value={stats.uses.toLocaleString()} color="text-blue-600" />
