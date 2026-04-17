@@ -364,7 +364,7 @@ function VehicleMesh({ data }: { data: RenderVehicle }) {
   return (
     <mesh geometry={m.geometry} material={m.material}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0, data.z]}
+      position={[data.x, 0.05, data.z]}
       rotation={[0, baseRotY + flipRotY, 0]}
     />
   );
@@ -401,14 +401,14 @@ function LogMesh({ data }: { data: RenderLog }) {
   return (
     <mesh geometry={m.geometry} material={m.material}
       scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
-      position={[data.x, 0.08, data.z]}
+      position={[data.x, 0.18, data.z]}
     />
   );
 }
 
 function CoinMesh({ data }: { data: RenderCoin }) {
   return (
-    <mesh position={[data.x, 0.5, data.z]} rotation={[Math.PI / 2, data.rotY, 0]}>
+    <mesh position={[data.x, data.groundY + 0.5, data.z]} rotation={[Math.PI / 2, data.rotY, 0]}>
       <cylinderGeometry args={[0.15, 0.15, 0.05, 16]} />
       <meshLambertMaterial color={0xffd700} emissive={0xaa8800} />
     </mesh>
