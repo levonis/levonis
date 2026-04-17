@@ -1218,6 +1218,18 @@ const Cart = () => {
         });
       }
 
+      // Record referral coupon usage (direct sale path)
+      if (appliedReferral) {
+        await supabase.from('referral_coupon_usages').insert({
+          coupon_id: appliedReferral.coupon_id,
+          order_id: orderResult.id,
+          buyer_user_id: user.id,
+          delivery_discount_iqd: rawDeliveryFee,
+          owner_earnings_iqd: referralOwnerEarnings,
+          status: 'pending',
+        });
+      }
+
       // Record card discount usage if applied (per category)
       if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory) {
         const categoryIds = Object.keys(cardDiscount.discountsByCategory);
