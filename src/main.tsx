@@ -75,8 +75,12 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-// Remove initial HTML loader after React mounts
+// Remove initial HTML loader after React mounts and signal success to safety net
 requestAnimationFrame(() => {
+  try {
+    window.dispatchEvent(new Event('levo:mounted'));
+    sessionStorage.removeItem('__levo_auto_recovered');
+  } catch {}
   const loader = document.getElementById('initial-loader');
   if (loader) {
     loader.classList.add('fade-out');
