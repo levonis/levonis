@@ -937,16 +937,20 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       } else {
         toXc = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
       }
-      playerVisualX = fromXc + (toXc - fromXc) * g.moveProgress;
+      // Ease the X interpolation (smoothstep) so lateral hops glide instead of starting/ending abruptly.
+      const t = g.moveProgress;
+      const easedX = t * t * (3 - 2 * t);
+      playerVisualX = fromXc + (toXc - fromXc) * easedX;
     } else {
       playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
     }
 
     const targetCamX = playerVisualX;
-    // Framerate-independent smoothing on both axes
-    const smooth = 1 - Math.exp(-18 * dt);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smooth);
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smooth);
+    // Framerate-independent smoothing. Use a gentler factor on X for silky lateral motion.
+    const smoothZ = 1 - Math.exp(-18 * dt);
+    const smoothX = 1 - Math.exp(-10 * dt);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smoothZ);
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smoothX);
     camera.lookAt(playerVisualX, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
