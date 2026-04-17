@@ -614,6 +614,15 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       } else {
         g.playerOffsetX = actualPx - (g.playerLane * CELL + CELL / 2);
       }
+      // Save the departing log so the hop start tracks it dynamically.
+      if (wasOnRiver && currentRow && g.riderLogIndex !== null) {
+        const fromLog = currentRow.logs[g.riderLogIndex];
+        if (fromLog) {
+          g.fromRiderLogIndex = g.riderLogIndex;
+          g.fromRiderRowIndex = g.fromRow;
+          g.fromRiderStickX = g.riderLogStickX;
+        }
+      }
       // Don't lock riderLog yet; clear previous lock so river-check uses pending logic.
       g.riderLogIndex = null;
       g.riderLogRowIndex = null;
