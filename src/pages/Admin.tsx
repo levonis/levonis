@@ -73,7 +73,8 @@ function OptionPricePreview({ adjustment, editingProduct }: { adjustment: number
   const { data: ss } = useShippingSettings();
   if (!ss || !editingProduct) return null;
   const rate = ss.usd_to_iqd_rate || 1410;
-  const adjIqd = adjustment ? (Math.abs(adjustment) < 500 ? Math.round(adjustment * rate) : Math.round(adjustment)) : 0;
+  // price_adjustment is ALWAYS stored in IQD - never convert from USD
+  const adjIqd = Math.round(adjustment || 0);
   const prices: { label: string; value: number }[] = [];
   if (editingProduct.direct_sale_price) prices.push({ label: 'مباشر', value: editingProduct.direct_sale_price + adjIqd });
   if (editingProduct.sea_price) prices.push({ label: 'بحري', value: editingProduct.sea_price + adjIqd });
@@ -102,8 +103,8 @@ function ColorPricePreview({ color, editingProduct }: { color: any; editingProdu
   if (color.direct_sale_price) {
     prices.push({ label: 'بيع مباشر', value: color.direct_sale_price });
   } else if (color.price) {
-    const v = Math.abs(color.price) < 500 ? Math.round(color.price * rate) : Math.round(color.price);
-    prices.push({ label: 'سعر اللون', value: v });
+    // color.price is stored in IQD - never convert from USD
+    prices.push({ label: 'سعر اللون', value: Math.round(color.price) });
   } else {
     if (editingProduct.direct_sale_price) prices.push({ label: 'مباشر (افتراضي)', value: editingProduct.direct_sale_price });
     if (editingProduct.sea_price) prices.push({ label: 'بحري', value: editingProduct.sea_price });
