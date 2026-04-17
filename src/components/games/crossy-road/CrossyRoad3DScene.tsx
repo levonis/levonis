@@ -439,7 +439,7 @@ function LogMesh({ data }: { data: RenderLog }) {
   const m = models.logs[data.modelIdx % models.logs.length];
   return (
     <mesh geometry={m.geometry} material={m.material}
-      scale={[MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
+      scale={[data.width * MODEL_SCALE, MODEL_SCALE, MODEL_SCALE]}
       position={[data.x, 0.18, data.z]}
     />
   );
