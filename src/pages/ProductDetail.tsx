@@ -936,7 +936,7 @@ const ProductDetail = () => {
                             <button key={index} onClick={() => setSelectedShippingOption(index)}
                               className={cn("w-full flex items-center gap-2 p-2.5 rounded-xl border transition-all text-right backdrop-blur-sm active:scale-[0.98]",
                                 selectedShippingOption === index
-                                  ? 'border-primary/40 bg-sidebar-primary shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)]'
+                                  ? 'border-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.15),inset_0_1px_0_hsl(var(--primary)/0.2)] bg-sidebar'
                                   : 'border-border/30 bg-card/30 hover:border-primary/30 hover:bg-card/50 shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]')}>
                               <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
                                 selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30')}>
