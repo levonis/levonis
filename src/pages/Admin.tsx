@@ -1268,6 +1268,7 @@ const Admin = () => {
       values.commission_direct_iqd = commissionDirectIqdVal;
       values.other_costs_iqd = otherCostsIqdVal;
       values.personal_delivery_cost = personalDeliveryCostVal;
+      values.referral_earnings_iqd = formData.get('referral_earnings_iqd') ? Number(formData.get('referral_earnings_iqd')) : 0;
 
       if (priceUsdVal && priceUsdVal > 0) {
         // Fetch shipping settings for calculation
