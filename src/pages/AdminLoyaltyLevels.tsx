@@ -170,6 +170,25 @@ export default function AdminLoyaltyLevels() {
     },
   });
 
+  const updateExpiryMutation = useMutation({
+    mutationFn: async ({ holderId, newDate }: { holderId: string; newDate: Date }) => {
+      const isActive = newDate.getTime() > Date.now();
+      const { error } = await supabase
+        .from("user_cards")
+        .update({ expires_at: newDate.toISOString(), is_active: isActive })
+        .eq("id", holderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cardHolders"] });
+      queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
+      toast.success("تم تحديث تاريخ الانتهاء");
+    },
+    onError: (err: any) => {
+      toast.error("فشل التحديث: " + (err?.message || "خطأ غير معروف"));
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       let displayOrder = 1;
