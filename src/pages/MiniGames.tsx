@@ -112,15 +112,18 @@ export default function MiniGames() {
   const { data: prizeCounts } = useQuery({
     queryKey: ["game-prize-counts"],
     queryFn: async () => {
-      const [cr, st, kr] = await Promise.all([
+      const [cr, st, kr, crM, stM, krM] = await Promise.all([
         supabase.from("crossy_road_leaderboard_prizes").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("stack_game_leaderboard_prizes").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("knife_rain_leaderboard_prizes").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("crossy_road_milestones").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("stack_game_milestones" as any).select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("knife_rain_milestones" as any).select("id", { count: "exact", head: true }).eq("is_active", true),
       ]);
       return {
-        crossy_road: cr.count || 0,
-        stack_tower: st.count || 0,
-        knife_rain: kr.count || 0,
+        crossy_road: (cr.count || 0) + (crM.count || 0),
+        stack_tower: (st.count || 0) + (stM.count || 0),
+        knife_rain: (kr.count || 0) + (krM.count || 0),
       } as Record<string, number>;
     },
     staleTime: 5 * 60 * 1000,
