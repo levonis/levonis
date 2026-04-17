@@ -111,18 +111,29 @@ export default function AdminLoyaltyLevels() {
   const { data: cardHolders } = useQuery({
     queryKey: ["cardHolders"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: cards, error } = await supabase
         .from("user_cards")
         .select(`
           *,
-          profiles:user_id(full_name, username, email),
           loyalty_levels:level_id(name_ar, color)
         `)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      if (!cards || cards.length === 0) return [];
+
+      const userIds = Array.from(new Set(cards.map((c: any) => c.user_id).filter(Boolean)));
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, email")
+        .in("id", userIds);
+
+      const profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+      return cards.map((c: any) => ({
+        ...c,
+        profiles: profileMap.get(c.user_id) || null,
+      }));
     },
   });
 
