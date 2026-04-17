@@ -891,12 +891,14 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (currentRow.coin && !currentRow.coin.collected && currentRow.coin.lane === g.playerLane) {
           currentRow.coin.collected = true;
           g.coins++;
+          console.log("[CrossyRoad] Coin collected! Total coins:", g.coins);
           audio?.playCoin();
         }
       }
     } else {
       g.deathTimer += dt;
       if (g.deathTimer > 1.5) {
+        console.log("[CrossyRoad] Game over! score:", g.score, "steps:", g.steps, "coins:", g.coins);
         onGameOverRef.current(g.score, g.steps, g.coins);
         return;
       }
