@@ -1,125 +1,63 @@
 
 
-# نظام كوبون الإحالة الخاص ببطاقة Levo VIP Plus + إصلاح البندلات
+# شرط الحد الأدنى لتوصيل مجاني عبر كوبون الإحالة
 
-## نظرة عامة
-استبدال خيار "الاستثمار في التطبيق" في بطاقة VIP Plus بنظام **كود دعوة شخصي** يمنح الأصدقاء توصيلاً مجانياً ويُعيد لصاحب البطاقة عمولة من كل منتج. مع لوحة تحكم خاصة، إدارة كاملة من الأدمن، وانعكاس صحيح في القسم المالي. بالإضافة لإصلاح ظهور منتجات البندل في إدارة الطلبات.
+## المنطق الجديد
+كوبون الإحالة يبقى **فعالاً دائماً** (يُحسب العمولة لصاحب البطاقة)، لكن **التوصيل المجاني مشروط** بحد أدنى للمشتريات يحدده الأدمن.
 
 ---
 
-## 1. قاعدة البيانات (Migration)
+## 1. قاعدة البيانات
 
-### جداول جديدة
-```sql
--- كوبونات الإحالة الخاصة بأصحاب VIP Plus
-referral_coupons (
-  id uuid PK,
-  owner_user_id uuid (صاحب البطاقة),
-  code text UNIQUE (افتراضياً = username),
-  is_active bool,
-  expires_at timestamptz,
-  total_uses int default 0,
-  total_earnings_iqd numeric default 0,
-  created_at, updated_at
-)
+### عمود جديد في `referral_program_settings` (أو إنشاء جدول إعدادات إن لم يوجد)
+- `free_delivery_min_order_iqd` numeric default 100000
 
--- استخدامات الكوبون (سجل لكل طلب)
-referral_coupon_usages (
-  id uuid PK,
-  coupon_id uuid FK,
-  order_id uuid FK,
-  buyer_user_id uuid,
-  delivery_discount_iqd numeric (قيمة التوصيل المجاني),
-  owner_earnings_iqd numeric (مجموع الأرباح من المنتجات),
-  status text ('pending'|'confirmed'|'paid'|'cancelled'),
-  created_at
-)
+أو إضافته إلى جدول `default_settings` كمفتاح `referral_free_delivery_min_order`.
 
--- طلبات سحب الأرباح
-referral_earnings_withdrawals (
-  id uuid PK, owner_user_id, amount_iqd, status, requested_at, processed_at
-)
+---
+
+## 2. صفحة إعدادات الأدمن
+أضف حقلاً في صفحة إعدادات الموقع (`/admin/settings` أو ضمن إعدادات المكافآت):
+- **"الحد الأدنى للطلب لتفعيل التوصيل المجاني عبر كوبون الإحالة (د.ع)"** — افتراضي 100,000
+
+---
+
+## 3. السلة (`src/pages/Cart.tsx`)
+
+### عند تطبيق كوبون إحالة صالح:
+```
+if (subtotal >= min_order):
+  freeDelivery = true
+  message: "🎁 شكراً لدعمك @username! حصلت على توصيل مجاني"
+else:
+  freeDelivery = false
+  remaining = min_order - subtotal
+  message: "🎁 شكراً لدعمك @username! أضف X د.ع للحصول على توصيل مجاني — تابع التسوق"
+  (التوصيل يبقى كما هو، الكوبون يبقى مطبقاً، العمولة تُحسب)
 ```
 
-### أعمدة جديدة
-- `products.referral_earnings_iqd` numeric default 0 — ربح صاحب البطاقة لكل وحدة
-- `orders.referral_coupon_id` uuid nullable
-- `orders.referral_owner_earnings_iqd` numeric default 0
+### السلوك:
+- الكوبون **يبقى مطبقاً** حتى لو لم يصل للحد — لحفظ العمولة لصاحب البطاقة
+- زر **× إزالة الكوبون** يبقى ظاهراً
+- شريط تقدّم بصري: "أضفت X من Y د.ع لتوصيل مجاني" مع progress bar
+- عند تحقق الحد لاحقاً (إضافة منتج) → التوصيل يصبح 0 تلقائياً + رسالة احتفالية
 
-### RLS
-- صاحب الكوبون: يقرأ كوبوناته واستخداماته فقط
-- المشتري: يقرأ المستخدمات لطلبه فقط
-- الأدمن: كامل الصلاحيات
-- دالة `apply_referral_coupon(p_code, p_order_total)` SECURITY DEFINER ترجع `{valid, owner_username, free_delivery: true}`
-
----
-
-## 2. لوحة الأدمن
-
-### في تعديل/إضافة منتج (`AdminProductPricingSection.tsx`)
-- حقل جديد: **"ربح صاحب بطاقة VIP Plus من كوبون الإحالة (د.ع لكل وحدة)"**
-- يُحفظ في `products.referral_earnings_iqd`
-
-### في إدارة الطلبات (`AdminOrders.tsx` / `OrderDetailsDialog`)
-عند وجود `referral_coupon_id`:
-- شارة: 🎟️ "كوبون إحالة: @username"
-- "التوصيل: 0 د.ع (كان 6,000) — مجاني عبر الكوبون"
-- "أرباح صاحب الكوبون: 1,250 د.ع"
-- **المبلغ المتبقي للدفع نقداً = 96,250** (واضح في الأعلى)
-
-### تفاصيل الدفع الموسعة (زر "إظهار تفاصيل الدفع")
-- إذا دُفع من المحفظة: **"رصيد قبل: 100,000 → بعد: 50,000 (دُفع: 50,000)"**
-- تاريخ آخر شحن للمحفظة قبل الطلب + المبلغ المشحون
-- تفصيل: نقد / محفظة / كوبون
+### في حفظ الطلب:
+- `referral_owner_earnings_iqd` = يُحسب دائماً (عند وجود الكوبون)
+- التوصيل المجاني فقط إذا `subtotal >= min_order`
 
 ---
 
-## 3. صفحة المالك (`/my-referral` — رابط مشفر)
-
-تفتح بعد شراء بطاقة VIP Plus بدلاً من "ترقية العضوية":
-- **الكود الحالي** (افتراضياً username) + زر تعديل + نسخ + مشاركة
-- إحصائيات: عدد الاستخدامات، إجمالي الأرباح، الرصيد القابل للسحب
-- **جدول المستخدمين**: المستخدم • التاريخ • قيمة الطلب • أرباحك
-- تاريخ انتهاء صلاحية الكوبون (مرتبط بانتهاء البطاقة)
-- زر **سحب الأرباح** → ينشئ `referral_earnings_withdrawals`
-- تصميم أنيق ثلاثي الأبعاد بنفس روح بطاقة VIP+
-
-### تعديل بطاقة VIP Plus (`UserLoyaltyCard` / Rewards Panels)
-- إزالة "الاستثمار في التطبيق" من ميزات VIP+
-- إضافة "كود دعوة خاص + عمولة من المبيعات"
-- زر CTA: "إدارة كود الدعوة" → `/my-referral`
+## 4. لوحة الأدمن — تفاصيل الطلب
+حدّث الشارة في `AdminOrders.tsx` / `OrderDetailsDialog`:
+- إذا حصل على توصيل مجاني: 🎟️ "كوبون @username — توصيل مجاني (تجاوز الحد X)"
+- إذا لم يحصل: 🎟️ "كوبون @username — عمولة فقط (لم يصل للحد X)"
 
 ---
 
-## 4. السلة (`Cart.tsx`)
-
-في حقل كوبون الخصم الحالي:
-- عند إدخال كود إحالة صالح → استدعاء `apply_referral_coupon`
-- إذا صالح: تطبيق توصيل مجاني + رسالة:
-  > 🎁 **شكراً لدعمك @username! لقد أهدى لك توصيلاً مجانياً**
-- المنع: لا يمكن استخدام كود المستخدم لنفسه
-- عند إنشاء الطلب: حفظ `referral_coupon_id` + حساب `referral_owner_earnings_iqd = Σ(item.qty × product.referral_earnings_iqd)`
-
----
-
-## 5. القسم المالي (`AdminFinancials.tsx`)
-
-تحديث `calcNetRevenue` لكل طلب:
-```
-العائد الصافي = total - cost - actual_delivery_cost - referral_owner_earnings_iqd
-```
-عرض سطر منفصل: **"عمولة كوبون الإحالة: -1,250 د.ع"**
-
----
-
-## 6. إصلاح البندلات في إدارة الطلبات
-
-**المشكلة**: `AdminOrders` يجلب `order_items.products` فقط؛ عناصر البندل تأتي بـ `bundle_id` و `product_id = null` فتظهر "لا توجد منتجات".
-
-**الحل**:
-- تعديل استعلام `order_items` ليجلب: `products(*), bundles:bundle_id(id, name_ar, image_url, bundle_items(product_id, quantity, products(name_ar, image_url)))`
-- في عرض العنصر: إذا `bundle_id` موجود → عرض اسم البندل + قائمة منتجاته الفرعية (الاسم، الكمية، الصورة)
-- نفس التعديل في `OrderDetailsDialog` و `AdminOrderItemEditor` إذا لزم
+## 5. صفحة المالك `/my-referral`
+عرض الحد الأدنى الحالي للمستخدمين كي يخبروا أصدقاءهم:
+> "كودك يمنح توصيلاً مجانياً للطلبات فوق 100,000 د.ع"
 
 ---
 
@@ -127,14 +65,10 @@ referral_earnings_withdrawals (
 
 | الملف | التغيير |
 |-------|---------|
-| Migration SQL | جداول + أعمدة + RLS + RPC |
-| `src/components/admin/AdminProductPricingSection.tsx` | حقل referral_earnings_iqd |
-| `src/pages/Admin.tsx` | حفظ الحقل |
-| `src/pages/Cart.tsx` | تطبيق كود الإحالة + رسالة الشكر |
-| `src/pages/MyReferral.tsx` | جديد — لوحة المالك |
-| `src/App.tsx` | route `/my-referral` |
-| `src/components/UserLoyaltyCard.tsx` + Rewards panels | استبدال الاستثمار بالإحالة |
-| `src/pages/AdminOrders.tsx` + `OrderDetailsDialog` | عرض كوبون الإحالة + تفاصيل الدفع + إصلاح البندلات |
-| `src/pages/AdminFinancials.tsx` | خصم عمولة الإحالة من العائد |
-| `src/i18n/*` | مفاتيح الترجمة الجديدة |
+| Migration SQL | عمود `free_delivery_min_order_iqd` في إعدادات الإحالة |
+| `src/pages/Admin*Settings.tsx` (أو ما يناسب) | حقل إدخال الحد الأدنى |
+| `src/pages/Cart.tsx` | منطق شرطي للتوصيل المجاني + رسالة + progress bar |
+| `src/pages/AdminOrders.tsx` | تحديث شارة الكوبون |
+| `src/pages/MyReferral.tsx` | عرض الحد الأدنى |
+| `src/i18n/*` | مفاتيح ترجمة جديدة |
 
