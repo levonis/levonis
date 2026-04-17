@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2 } from "lucide-react";
+import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2, Globe } from "lucide-react";
+import SeasonAdminFields from "./SeasonAdminFields";
 
 interface ProductPickerValue {
   product_id: string | null;
@@ -298,6 +299,14 @@ export default function StackGameTab() {
     },
   });
 
+  const { data: allTimeScores = [] } = useQuery({
+    queryKey: ["admin-stack-alltime-scores"],
+    queryFn: async () => {
+      const { data } = await supabase.from("stack_game_high_scores" as any).select("*").gt("all_time_high_score", 0).order("all_time_high_score", { ascending: false }).limit(10);
+      return (data || []) as any[];
+    },
+  });
+
   const { data: winners = [] } = useQuery({
     queryKey: ["admin-stack-winners"],
     queryFn: async () => {
@@ -343,8 +352,11 @@ export default function StackGameTab() {
           perfect_bonus_points: s.perfect_bonus_points,
           combo_bonus_multiplier: s.combo_bonus_multiplier,
           max_daily_plays: s.max_daily_plays || null,
+          season_name: s.season_name,
+          season_starts_at: s.season_starts_at,
+          season_ends_at: s.season_ends_at,
           updated_at: new Date().toISOString(),
-        })
+        } as any)
         .eq("id", settings.id)
         .select("id")
         .single();
@@ -355,6 +367,7 @@ export default function StackGameTab() {
       toast.success("تم حفظ الإعدادات");
       queryClient.invalidateQueries({ queryKey: ["admin-stack-game-settings"] });
       queryClient.invalidateQueries({ queryKey: ["stack-game-enabled"] });
+      queryClient.invalidateQueries({ queryKey: ["stack-game-settings"] });
       setForm(null);
     },
     onError: (e: any) => toast.error(e?.message || "فشل حفظ الإعدادات"),
@@ -605,6 +618,13 @@ export default function StackGameTab() {
               </div>
             </div>
           </div>
+
+          <SeasonAdminFields
+            seasonName={s.season_name}
+            seasonStartsAt={s.season_starts_at}
+            seasonEndsAt={s.season_ends_at}
+            onChange={(k, v) => update(k, v)}
+          />
 
           <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full">
             {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
