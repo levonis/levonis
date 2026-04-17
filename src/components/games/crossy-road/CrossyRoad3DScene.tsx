@@ -1043,7 +1043,7 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
 
       for (let li = 0; li < row.logs.length; li++) {
         const log = row.logs[li];
-        logRenders.push({ id: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex });
+        logRenders.push({ id: `l${r}_${li}`, x: log.x + log.width / 2, z, modelIdx: log.modelIndex, width: log.width });
       }
 
       if (row.coin && !row.coin.collected) {
