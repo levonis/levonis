@@ -618,7 +618,7 @@ export default function StackGame({ onBack }: Props) {
               </>
             ) : (
               <>
-                <div className="text-5xl">🏙️</div>
+                <div className="text-2xl font-black tracking-tighter text-primary">THE TOWER</div>
                 <h2 className="text-xl font-bold text-foreground">انتهت اللعبة!</h2>
               </>
             )}
