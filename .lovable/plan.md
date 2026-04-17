@@ -1,41 +1,140 @@
 
 
-# إصلاح عرض رسوم التوصيل والتوصيل المجاني في السلة
+# نظام كوبون الإحالة الخاص ببطاقة Levo VIP Plus + إصلاح البندلات
 
-## المشاكل المكتشفة
-
-### 1. قائمة طرق التوصيل لا تتفاعل مع التوصيل المجاني
-الدالة `getMethodPreviewPrice` (السطر 167) تُرجع السعر الأساسي للطريقة دون فحص `free_delivery_enabled` ولا `free_delivery_min_order`. لذلك حتى عند تحقق شرط التوصيل المجاني، تستمر القائمة في عرض السعر الأصلي (مثلاً 6000 د.ع) بدلاً من "مجاناً".
-
-### 2. ظهور "0" بدلاً من سعر التوصيل
-عند اختيار طريقة "التوصيل الشخصي" (`personal`) المرتبطة بقسم الطابعات (`base_price_category_id`)، إذا كانت السلة لا تحتوي منتجات طابعات، فإن `getDeliveryFee` تخرج عند السطر 530 بقيمة `totalCatFee = 0` لأن لا يوجد ما يطبّق عليه السعر الأساسي. النتيجة: تظهر "0 د.ع" خطأً، حتى عندما `free_delivery_enabled = false`.
-
-### 3. طلب المستخدم: إخفاء قائمة طرق التوصيل عند تحقق التوصيل المجاني
-حالياً قائمة الطرق تبقى ظاهرة وقابلة للتغيير حتى لو حصل المستخدم على توصيل مجاني تلقائياً.
+## نظرة عامة
+استبدال خيار "الاستثمار في التطبيق" في بطاقة VIP Plus بنظام **كود دعوة شخصي** يمنح الأصدقاء توصيلاً مجانياً ويُعيد لصاحب البطاقة عمولة من كل منتج. مع لوحة تحكم خاصة، إدارة كاملة من الأدمن، وانعكاس صحيح في القسم المالي. بالإضافة لإصلاح ظهور منتجات البندل في إدارة الطلبات.
 
 ---
 
-## الإصلاحات
+## 1. قاعدة البيانات (Migration)
 
-### في `src/pages/Cart.tsx`
+### جداول جديدة
+```sql
+-- كوبونات الإحالة الخاصة بأصحاب VIP Plus
+referral_coupons (
+  id uuid PK,
+  owner_user_id uuid (صاحب البطاقة),
+  code text UNIQUE (افتراضياً = username),
+  is_active bool,
+  expires_at timestamptz,
+  total_uses int default 0,
+  total_earnings_iqd numeric default 0,
+  created_at, updated_at
+)
 
-**أ. تحديث `getMethodPreviewPrice`** (سطر 167-179):
-- إضافة فحص `free_delivery_enabled` + `free_delivery_min_order` مقابل `total` لكل طريقة وإرجاع `0` عند تحقق الشرط — حتى تعكس قائمة الطرق الحالة الصحيحة.
+-- استخدامات الكوبون (سجل لكل طلب)
+referral_coupon_usages (
+  id uuid PK,
+  coupon_id uuid FK,
+  order_id uuid FK,
+  buyer_user_id uuid,
+  delivery_discount_iqd numeric (قيمة التوصيل المجاني),
+  owner_earnings_iqd numeric (مجموع الأرباح من المنتجات),
+  status text ('pending'|'confirmed'|'paid'|'cancelled'),
+  created_at
+)
 
-**ب. إصلاح حالة "0" غير المنطقية في `getDeliveryFee`**:
-- عند طريقة مرتبطة بـ `base_price_category_id` ولا توجد منتجات من ذلك القسم في السلة، يجب اعتبار هذه الطريقة **غير متاحة** (إخفاؤها من `visibleDeliveryMethods`) بدلاً من إرجاع 0 مضلل.
-- إضافة فلترة في `visibleDeliveryMethods` تستثني أي طريقة `base_price_category_id` لا تتطابق مع أي منتج في السلة.
+-- طلبات سحب الأرباح
+referral_earnings_withdrawals (
+  id uuid PK, owner_user_id, amount_iqd, status, requested_at, processed_at
+)
+```
 
-**ج. إخفاء قائمة طرق التوصيل عند تحقق التوصيل المجاني**:
-- عندما `isFreeDeliveryApplied === true`: استبدال البطاقة الكاملة لطرق التوصيل ببطاقة مدمجة تعرض فقط "🎉 توصيل مجاني — تم تجاوز الحد الأدنى" مع اسم الطريقة المختارة.
-- إخفاء الزر `setDeliveryOptionsOpen` ومنع التوسيع.
+### أعمدة جديدة
+- `products.referral_earnings_iqd` numeric default 0 — ربح صاحب البطاقة لكل وحدة
+- `orders.referral_coupon_id` uuid nullable
+- `orders.referral_owner_earnings_iqd` numeric default 0
 
-**د. تحديث رسالة "أضف X للحصول على توصيل مجاني"**:
-- التأكد من أن `freeDeliveryRemaining` يعمل فقط عند `free_delivery_enabled = true` (موجود ✓).
+### RLS
+- صاحب الكوبون: يقرأ كوبوناته واستخداماته فقط
+- المشتري: يقرأ المستخدمات لطلبه فقط
+- الأدمن: كامل الصلاحيات
+- دالة `apply_referral_coupon(p_code, p_order_total)` SECURITY DEFINER ترجع `{valid, owner_username, free_delivery: true}`
 
-### الملفات المتأثرة
+---
+
+## 2. لوحة الأدمن
+
+### في تعديل/إضافة منتج (`AdminProductPricingSection.tsx`)
+- حقل جديد: **"ربح صاحب بطاقة VIP Plus من كوبون الإحالة (د.ع لكل وحدة)"**
+- يُحفظ في `products.referral_earnings_iqd`
+
+### في إدارة الطلبات (`AdminOrders.tsx` / `OrderDetailsDialog`)
+عند وجود `referral_coupon_id`:
+- شارة: 🎟️ "كوبون إحالة: @username"
+- "التوصيل: 0 د.ع (كان 6,000) — مجاني عبر الكوبون"
+- "أرباح صاحب الكوبون: 1,250 د.ع"
+- **المبلغ المتبقي للدفع نقداً = 96,250** (واضح في الأعلى)
+
+### تفاصيل الدفع الموسعة (زر "إظهار تفاصيل الدفع")
+- إذا دُفع من المحفظة: **"رصيد قبل: 100,000 → بعد: 50,000 (دُفع: 50,000)"**
+- تاريخ آخر شحن للمحفظة قبل الطلب + المبلغ المشحون
+- تفصيل: نقد / محفظة / كوبون
+
+---
+
+## 3. صفحة المالك (`/my-referral` — رابط مشفر)
+
+تفتح بعد شراء بطاقة VIP Plus بدلاً من "ترقية العضوية":
+- **الكود الحالي** (افتراضياً username) + زر تعديل + نسخ + مشاركة
+- إحصائيات: عدد الاستخدامات، إجمالي الأرباح، الرصيد القابل للسحب
+- **جدول المستخدمين**: المستخدم • التاريخ • قيمة الطلب • أرباحك
+- تاريخ انتهاء صلاحية الكوبون (مرتبط بانتهاء البطاقة)
+- زر **سحب الأرباح** → ينشئ `referral_earnings_withdrawals`
+- تصميم أنيق ثلاثي الأبعاد بنفس روح بطاقة VIP+
+
+### تعديل بطاقة VIP Plus (`UserLoyaltyCard` / Rewards Panels)
+- إزالة "الاستثمار في التطبيق" من ميزات VIP+
+- إضافة "كود دعوة خاص + عمولة من المبيعات"
+- زر CTA: "إدارة كود الدعوة" → `/my-referral`
+
+---
+
+## 4. السلة (`Cart.tsx`)
+
+في حقل كوبون الخصم الحالي:
+- عند إدخال كود إحالة صالح → استدعاء `apply_referral_coupon`
+- إذا صالح: تطبيق توصيل مجاني + رسالة:
+  > 🎁 **شكراً لدعمك @username! لقد أهدى لك توصيلاً مجانياً**
+- المنع: لا يمكن استخدام كود المستخدم لنفسه
+- عند إنشاء الطلب: حفظ `referral_coupon_id` + حساب `referral_owner_earnings_iqd = Σ(item.qty × product.referral_earnings_iqd)`
+
+---
+
+## 5. القسم المالي (`AdminFinancials.tsx`)
+
+تحديث `calcNetRevenue` لكل طلب:
+```
+العائد الصافي = total - cost - actual_delivery_cost - referral_owner_earnings_iqd
+```
+عرض سطر منفصل: **"عمولة كوبون الإحالة: -1,250 د.ع"**
+
+---
+
+## 6. إصلاح البندلات في إدارة الطلبات
+
+**المشكلة**: `AdminOrders` يجلب `order_items.products` فقط؛ عناصر البندل تأتي بـ `bundle_id` و `product_id = null` فتظهر "لا توجد منتجات".
+
+**الحل**:
+- تعديل استعلام `order_items` ليجلب: `products(*), bundles:bundle_id(id, name_ar, image_url, bundle_items(product_id, quantity, products(name_ar, image_url)))`
+- في عرض العنصر: إذا `bundle_id` موجود → عرض اسم البندل + قائمة منتجاته الفرعية (الاسم، الكمية، الصورة)
+- نفس التعديل في `OrderDetailsDialog` و `AdminOrderItemEditor` إذا لزم
+
+---
+
+## الملفات المتأثرة
 
 | الملف | التغيير |
 |-------|---------|
-| `src/pages/Cart.tsx` | تعديل `getMethodPreviewPrice`، فلترة `visibleDeliveryMethods`، إخفاء قائمة الطرق عند التوصيل المجاني |
+| Migration SQL | جداول + أعمدة + RLS + RPC |
+| `src/components/admin/AdminProductPricingSection.tsx` | حقل referral_earnings_iqd |
+| `src/pages/Admin.tsx` | حفظ الحقل |
+| `src/pages/Cart.tsx` | تطبيق كود الإحالة + رسالة الشكر |
+| `src/pages/MyReferral.tsx` | جديد — لوحة المالك |
+| `src/App.tsx` | route `/my-referral` |
+| `src/components/UserLoyaltyCard.tsx` + Rewards panels | استبدال الاستثمار بالإحالة |
+| `src/pages/AdminOrders.tsx` + `OrderDetailsDialog` | عرض كوبون الإحالة + تفاصيل الدفع + إصلاح البندلات |
+| `src/pages/AdminFinancials.tsx` | خصم عمولة الإحالة من العائد |
+| `src/i18n/*` | مفاتيح الترجمة الجديدة |
 
