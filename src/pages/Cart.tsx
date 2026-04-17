@@ -51,7 +51,7 @@ const Cart = () => {
   const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
-  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number } | null>(null);
+  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number; custom_message?: string | null; banner_style?: string | null } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -807,6 +807,8 @@ const Cart = () => {
           owner_username: ref.owner_username,
           owner_user_id: ref.owner_user_id,
           free_delivery_min_order_iqd: minOrder,
+          custom_message: ref.custom_message ?? null,
+          banner_style: ref.banner_style ?? null,
         } as any);
         setAppliedCoupon(null);
 
