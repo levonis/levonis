@@ -1,43 +1,20 @@
 
+Continuing from the prior plan to fix featured product card alignment on mobile (`< 640px`).
 
-# تبسيط نظام المستويات: أرقام بدلاً من الأسماء
+## Changes
 
-## الفهم
-- خريطة المستويات الحالية تعرض مستويات بأسماء (برونزي، فضي، ذهبي، بلاتيني، VIP+) مع جوائز
-- المطلوب: عرض المستويات كأرقام فقط (مستوى 1، 2، 3...) بدون جوائز حالياً
-- بجانب اسم المستخدم: عرض رقم المستوى بدلاً من "برونزي" أو الأيقونة
+**1. `src/index.css`** — Add mobile-first sizes for cube elements (currently sized for desktop, overflow the 112px image container):
+- `.cube-top-featured`, `.cube-mid-featured`, `.cube-front-featured`, `.cube-top-highlight`: width `120px`, reduced heights (top `14px`, front `30px`)
+- `.cube-bottom-edge`: width `110px`
+- `.cube-bottom-reflection`: width `108px`
+- `.cube-glow-ring`: width `150px`
+- `.cube-ambient-glow`: width `170px`
 
-## التغييرات
+Keep existing `@media (min-width: 640px)` and `(min-width: 768px)` overrides intact.
 
-### 1. `src/components/LevelBadge.tsx`
-- استبدال عرض `levelInfo.name_ar` ("برونزي/فضي/ذهبي") بـ **"مستوى N"** حيث N هو `display_order` من `loyalty_levels`
-- إبقاء الأيقونات الحالية كما هي (Award/Star/Crown/Trophy) أو استبدالها برقم داخل دائرة ملونة
-- VIP+ يبقى كما هو (شارة خاصة)
-- استخدام `display_order` كرقم المستوى المعروض
+**2. `src/components/FloatingProductCard.tsx`**:
+- Replace inline `style={{ marginBottom: '-2.5rem' }}` on the image wrapper with responsive Tailwind: `mb-[-1rem] sm:mb-[-2.5rem]` so image sits correctly on the smaller mobile platform.
+- Change ground reflection width `w-44` → `w-36 sm:w-64 md:w-[26rem]` to match scaled platform.
 
-### 2. خريطة المستويات (`src/components/rewards/panels/LoyaltyLevelsPanel.tsx` أو ما يقابلها)
-- إخفاء/إزالة قسم الجوائز مؤقتاً (التعليق فقط، ليُعاد لاحقاً)
-- عرض كل مستوى كبطاقة بسيطة:
-  - رقم كبير "1"، "2"، "3"...
-  - النقاط المطلوبة (`points_required`)
-  - شريط تقدم نحو المستوى التالي
-- إبقاء التصميم الأنيق ثلاثي الأبعاد لكن بدون قسم الجوائز
-
-### 3. أماكن أخرى تستخدم اسم المستوى
-- `PlayerProfileDialog.tsx` — يستخدم `LevelBadge` (سيتحدث تلقائياً)
-- أي مكون آخر يعرض `name_ar` للمستوى → استبداله بـ `مستوى ${display_order}`
-
-## استكشاف مطلوب قبل التنفيذ
-سأبحث عن:
-- ملف خريطة المستويات الحالية في `src/components/rewards/panels/`
-- جميع أماكن استخدام `loyalty_levels.name_ar` و `LevelBadge`
-- بنية جدول `loyalty_levels` للتأكد من وجود `display_order`
-
-## الملفات المتأثرة (مبدئياً)
-
-| الملف | التغيير |
-|-------|---------|
-| `src/components/LevelBadge.tsx` | عرض "مستوى N" بدل الاسم |
-| `src/components/rewards/panels/LoyaltyLevelsPanel.tsx` | تبسيط الخريطة + إخفاء الجوائز |
-| ملفات i18n | مفتاح `level_number` = "مستوى {n}" |
-
+## Result
+Image, pedestal, glow, and reflection stay proportional across mobile / tablet / desktop. Text content untouched.
