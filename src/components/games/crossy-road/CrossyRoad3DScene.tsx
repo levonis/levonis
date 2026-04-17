@@ -937,8 +937,22 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     let px: number, pz: number;
     if (g.moving) {
       const t = g.moveProgress;
-      const fromX = g.fromLane * CELL + CELL / 2;
-      const toX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      const fromX = g.fromLane * CELL + CELL / 2 + g.fromOffsetX;
+      // Dynamically track moving log destination so the player lands on it.
+      let toX: number;
+      if (g.pendingRiderLogIndex !== null && g.pendingRiderRowIndex === g.playerRow) {
+        const dRow = g.rows[g.playerRow];
+        const log = dRow?.logs[g.pendingRiderLogIndex];
+        if (log) {
+          const lockedPx = log.x + g.pendingRiderStickX;
+          g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+          toX = lockedPx;
+        } else {
+          toX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+        }
+      } else {
+        toX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
+      }
       px = fromX + (toX - fromX) * t;
       pz = -g.fromRow * CELL + (-g.playerRow * CELL - (-g.fromRow * CELL)) * t;
     } else {
