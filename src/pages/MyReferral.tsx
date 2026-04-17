@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Copy, Check, Share2, Crown, Users, Coins, Calendar, Wallet, Pencil, Loader2, Gift, TrendingUp, Palette, Save } from "lucide-react";
+import { Copy, Check, Share2, Crown, Users, Coins, Calendar, Wallet, Pencil, Loader2, Gift, TrendingUp, Palette, Save, ChevronDown } from "lucide-react";
 import { useVipPlusStatus } from "@/hooks/useVipPlus";
 import { formatPrice } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,7 @@ export default function MyReferral() {
   const [customMessage, setCustomMessage] = useState<string>("");
   const [bannerStyle, setBannerStyle] = useState<ReferralBannerStyleKey>("amber");
   const [savingCustom, setSavingCustom] = useState(false);
+  const [customizationOpen, setCustomizationOpen] = useState(false);
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -327,16 +328,19 @@ export default function MyReferral() {
 
       {/* Customization Card */}
       <Card className="border-primary/20">
-        <CardHeader className="pb-2 pt-3 px-3">
-          <CardTitle className="text-sm flex items-center gap-1.5">
-            <Palette className="h-3.5 w-3.5 text-primary" />
-            تخصيص بطاقة الكوبون
-          </CardTitle>
-          <CardDescription className="text-[10px] leading-tight">
-            خصّص الرسالة والخلفية التي تظهر للمشتري في سلته.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 px-3 pb-3">
+        <button
+          type="button"
+          onClick={() => setCustomizationOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-right"
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Palette className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="text-sm font-semibold truncate">تخصيص بطاقة الكوبون</span>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${customizationOpen ? "rotate-180" : ""}`} />
+        </button>
+        {customizationOpen && (
+        <CardContent className="space-y-3 px-3 pb-3 pt-0">
           {/* Message */}
           <div className="space-y-1">
             <label className="text-[11px] font-semibold text-foreground">رسالتك للمشتري</label>
@@ -406,7 +410,8 @@ export default function MyReferral() {
             {savingCustom ? <Loader2 className="h-3.5 w-3.5 animate-spin ml-2" /> : <Save className="h-3.5 w-3.5 ml-2" />}
             حفظ التخصيص
           </Button>
-        </CardContent>
+        </CardField>
+        )}
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
