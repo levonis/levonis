@@ -68,6 +68,9 @@ interface GameState {
   pendingRiderLogIndex: number | null;
   pendingRiderRowIndex: number | null;
   pendingRiderStickX: number;
+  fromRiderLogIndex: number | null;
+  fromRiderRowIndex: number | null;
+  fromRiderStickX: number;
   pendingExitSnap: boolean;
 }
 
