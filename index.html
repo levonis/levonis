@@ -132,8 +132,9 @@
       // Safety net: if React doesn't mount within 8s, show recovery UI.
       // If user clicks retry, clear all caches + service workers, then hard reload.
       (function () {
-        var SHOW_RECOVERY_AFTER = 8000;
-        var FORCE_RELOAD_AFTER = 20000;
+        var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 5000 : 8000;
+        var FORCE_RELOAD_AFTER = IS_MOBILE ? 12000 : 20000;
 
         window.__levoMounted = false;
 
