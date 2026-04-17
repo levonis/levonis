@@ -830,13 +830,16 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     }
 
     // Camera follow — player at ~25% from bottom; track horizontally too.
+    // Use stable target values for lookAt to prevent jitter (don't read
+    // camera.position which is being lerped this same frame).
     const targetZ = -(g.playerRow - 3) * CELL;
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ + 8, 0.05);
+    const targetCamZ = targetZ + 8;
     const baseCamX = (LANES * CELL) / 2; // 4.5
     const playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
     const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
-    camera.lookAt(camera.position.x, 0, targetZ - 4);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.08);
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.08);
+    camera.lookAt(targetCamX, 0, targetZ - 4);
 
     // Build render snapshot (throttled to ~30fps)
     frameCountRef.current++;
@@ -846,9 +849,10 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const endRow = Math.min(g.rows.length - 1, g.playerRow + 18);
     const now = Date.now();
 
-    // Side-fill widths (in CELL units) to extend ground tiles off-playfield
-    // Generous to cover ultra-wide / landscape viewports without sky gaps.
-    const SIDE_EXTEND_TILES = 6; // each side tile spans LANES*CELL width
+    // Side-fill widths (in CELL units) to extend ground tiles off-playfield.
+    // Generous to cover ultra-wide / landscape viewports + horizontal camera
+    // tracking without exposing sky/black gaps at the edges.
+    const SIDE_EXTEND_TILES = 10; // each side tile spans LANES*CELL width
 
     const grounds: RenderGround[] = [];
     const trafficLights: RenderTrafficLight[] = [];
