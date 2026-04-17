@@ -36,6 +36,7 @@ export interface CartItem {
     pre_order_shipping_options?: any;
     shipping_type?: string | null;
     category_id?: string | null;
+    referral_earnings_iqd?: number | null;
     categories?: {
       id: string;
       tax_rate: number | null;
