@@ -98,6 +98,14 @@ const MODEL_SCALE = 1.0;
 const GROUND_SCALE_X = (LANES * CELL) / 25;
 const GROUND_SCALE_Z = CELL / 1;
 
+// Extended playable horizontal range (player can walk between these lanes).
+// LANES (=9) remains the visual "core" tile group used for ground rendering.
+const MIN_LANE = -6;
+const MAX_LANE = 14; // inclusive → 21 playable columns
+const PLAY_LEFT_X = MIN_LANE * CELL;
+const PLAY_RIGHT_X = (MAX_LANE + 1) * CELL;
+const PLAY_WIDTH = PLAY_RIGHT_X - PLAY_LEFT_X;
+
 // Spawn margin — cars/logs appear from well off-screen
 const SPAWN_MARGIN = 6;
 
@@ -105,8 +113,8 @@ const SPAWN_MARGIN = 6;
 const TRAIN_PART_WIDTH = 4.6;
 const TRAIN_TOTAL_PARTS = 5;
 const TRAIN_TOTAL_WIDTH = TRAIN_PART_WIDTH * TRAIN_TOTAL_PARTS;
-const TRAIN_SPAWN_X = -TRAIN_TOTAL_WIDTH - 5;
-const TRAIN_EXIT_X = LANES * CELL + TRAIN_TOTAL_WIDTH + 5;
+const TRAIN_SPAWN_X = PLAY_LEFT_X - TRAIN_TOTAL_WIDTH - 5;
+const TRAIN_EXIT_X = PLAY_RIGHT_X + TRAIN_TOTAL_WIDTH + 5;
 
 // Warning timing
 const TRAIN_WARNING_DURATION = 3.0;
