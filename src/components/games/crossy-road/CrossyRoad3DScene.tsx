@@ -942,9 +942,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       playerVisualX = g.playerLane * CELL + CELL / 2 + g.playerOffsetX;
     }
 
-    const targetCamX = baseCamX + (playerVisualX - baseCamX) * 0.85;
+    const targetCamX = playerVisualX;
     // Framerate-independent smoothing on both axes
-    const smooth = 1 - Math.exp(-14 * dt);
+    const smooth = 1 - Math.exp(-18 * dt);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, smooth);
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, smooth);
     camera.lookAt(playerVisualX, 0, targetZ - 4);
