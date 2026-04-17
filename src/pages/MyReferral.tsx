@@ -442,15 +442,15 @@ export default function MyReferral() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Gift className="h-4 w-4 text-primary" />
-            سجل استخدام الكود ({usages.length})
+            سجل الطلبات المُسلَّمة ({usages.filter((u) => u.status === "confirmed" || u.status === "paid").length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {usages.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">لم يستخدم أحد كودك بعد. شاركه مع أصدقائك!</p>
+          {usages.filter((u) => u.status === "confirmed" || u.status === "paid").length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">لا توجد طلبات مُسلَّمة بعد. تظهر الأرباح هنا بعد تأكيد توصيل الطلب.</p>
           ) : (
             <div className="space-y-2">
-              {usages.map((u) => (
+              {usages.filter((u) => u.status === "confirmed" || u.status === "paid").map((u) => (
                 <div key={u.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-muted/30">
                   <div className="text-xs">
                     <p className="font-medium">{new Date(u.created_at).toLocaleDateString("ar-IQ")}</p>
