@@ -11224,6 +11224,7 @@ export type Database = {
         Args: { p_buyer_user_id: string; p_code: string }
         Returns: Json
       }
+      auto_award_expired_seasons: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
         | { Args: { p_merchant_id: string }; Returns: string }
