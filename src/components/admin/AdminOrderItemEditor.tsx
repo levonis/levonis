@@ -13,6 +13,7 @@ import { formatPrice } from "@/lib/utils";
 interface OrderItem {
   id: string;
   product_id: string;
+  bundle_id?: string | null;
   product_name_ar?: string;
   product_name?: string;
   quantity: number;
@@ -22,6 +23,7 @@ interface OrderItem {
   selected_option?: string | null;
   color_image_url?: string | null;
   products?: any;
+  product_bundles?: { id: string; title_ar?: string; image_url?: string; bundle_items?: Array<{ quantity: number; products?: { name_ar?: string; image_url?: string } }> } | null;
 }
 
 interface Props {
@@ -198,8 +200,9 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
           {items.map((item, index) => (
             <div key={item.id} className="p-3 rounded-xl border border-border/40 bg-card space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold truncate flex-1">
-                  {item.product_name_ar || item.product_name || "منتج"}
+                <span className="text-sm font-bold truncate flex-1 flex items-center gap-1.5">
+                  {item.bundle_id && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 font-bold">📦 بندل</span>}
+                  {item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"}
                 </span>
                 <Button
                   variant="ghost"
@@ -251,6 +254,23 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
                   className="h-8 text-sm rounded-lg"
                 />
               </div>
+
+              {item.bundle_id && item.product_bundles?.bundle_items && item.product_bundles.bundle_items.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-border/30">
+                  <Label className="text-[10px] text-muted-foreground mb-1.5 block">📦 محتويات البندل:</Label>
+                  <div className="space-y-1">
+                    {item.product_bundles.bundle_items.map((bi, bIdx) => (
+                      <div key={bIdx} className="flex items-center gap-2 text-xs bg-muted/30 rounded p-1.5">
+                        {bi.products?.image_url && (
+                          <img src={bi.products.image_url} alt="" className="w-7 h-7 rounded object-cover" />
+                        )}
+                        <span className="flex-1 truncate">{bi.products?.name_ar || 'منتج'}</span>
+                        <span className="text-muted-foreground">×{bi.quantity * item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 

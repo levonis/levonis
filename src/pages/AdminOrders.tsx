@@ -1301,7 +1301,11 @@ const AdminOrders = () => {
                 const deliveryCalc = subtotal > 0 ? Math.max(0, totalAmt - subtotal + discountAmt) : 0;
                 const walletPaid = Number(editingOrder.customer_paid_amount) || Number(editingOrder.paid_amount) || 0;
                 const remainingAmt = Number(editingOrder.remaining_amount) ?? Math.max(0, totalAmt - walletPaid);
-                const couponCode = null;
+                const couponCode = (editingOrder as any).coupon_code || null;
+                const referralCouponId = (editingOrder as any).referral_coupon_id;
+                const referralOwnerEarnings = Number((editingOrder as any).referral_owner_earnings_iqd) || 0;
+                const originalDelivery = Number((editingOrder as any).original_delivery_fee) || 0;
+                const isReferralFreeDelivery = !!referralCouponId;
 
                 return (
                   <div className="p-3 rounded-xl border border-border/60 bg-muted/20 space-y-2">
@@ -1310,22 +1314,35 @@ const AdminOrders = () => {
                       ملخص الطلب المالي
                     </h4>
 
+                    {referralCouponId && (
+                      <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-700">
+                          🎟️ كوبون إحالة VIP Plus
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          توصيل مجاني • أرباح صاحب الكوبون: {formatPrice(referralOwnerEarnings)} د.ع
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-1.5 text-sm">
-                      {/* Products subtotal */}
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">سعر المنتجات</span>
                         <span className="font-medium">{formatPrice(subtotal || totalAmt)}</span>
                       </div>
 
-                      {/* Delivery */}
-                      {deliveryCalc > 0 && (
+                      {isReferralFreeDelivery ? (
+                        <div className="flex justify-between items-center text-emerald-600">
+                          <span>التوصيل {originalDelivery > 0 && <span className="text-[10px] line-through text-muted-foreground">{formatPrice(originalDelivery)}</span>}</span>
+                          <span className="font-bold">مجاني عبر الكوبون</span>
+                        </div>
+                      ) : deliveryCalc > 0 && (
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">التوصيل</span>
                           <span className="font-medium">{formatPrice(deliveryCalc)}</span>
                         </div>
                       )}
 
-                      {/* Coupon / Discount */}
                       {discountAmt > 0 && (
                         <div className="flex justify-between items-center text-red-500">
                           <span>خصم {couponCode ? `(${couponCode})` : '(كوبون)'}</span>
@@ -1333,7 +1350,6 @@ const AdminOrders = () => {
                         </div>
                       )}
 
-                      {/* Card loyalty discount */}
                       {Number((editingOrder as any).card_discount_amount) > 0 && (
                         <div className="flex justify-between items-center text-amber-600">
                           <span className="flex items-center gap-1">
@@ -1345,25 +1361,36 @@ const AdminOrders = () => {
 
                       <div className="border-t border-border/40 my-1" />
 
-                      {/* Grand total */}
                       <div className="flex justify-between items-center font-bold">
                         <span>المجموع الكلي</span>
                         <span>{formatPrice(totalAmt)}</span>
                       </div>
 
-                      {/* Wallet payment */}
-                      {walletPaid > 0 && (
+                      {walletPaid > 0 ? (
                         <>
                           <div className="border-t border-border/40 my-1" />
-                          <div className="flex justify-between items-center text-emerald-600">
-                            <span>مدفوع من المحفظة</span>
-                            <span className="font-bold">- {formatPrice(walletPaid)}</span>
+                          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 space-y-1">
+                            <div className="flex justify-between items-center text-emerald-700 text-xs font-bold">
+                              <span>💳 تفاصيل الدفع من المحفظة</span>
+                              <span>- {formatPrice(walletPaid)}</span>
+                            </div>
+                            {(editingOrder as any).wallet_balance_before != null && (
+                              <div className="text-[10px] text-muted-foreground flex justify-between">
+                                <span>قبل: {formatPrice(Number((editingOrder as any).wallet_balance_before))}</span>
+                                <span>← بعد: {formatPrice(Math.max(0, Number((editingOrder as any).wallet_balance_before) - walletPaid))}</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex justify-between items-center font-bold text-amber-600">
-                            <span>المتبقي عند الاستلام</span>
+                          <div className="flex justify-between items-center font-bold text-amber-600 mt-1">
+                            <span>💵 المتبقي نقداً</span>
                             <span>{formatPrice(remainingAmt)}</span>
                           </div>
                         </>
+                      ) : (
+                        <div className="flex justify-between items-center font-bold text-amber-600 mt-1">
+                          <span>💵 المبلغ المطلوب نقداً</span>
+                          <span>{formatPrice(totalAmt)}</span>
+                        </div>
                       )}
                     </div>
                   </div>

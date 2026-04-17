@@ -114,10 +114,15 @@ const calcOrderCost = (order: OrderWithDetails, usdToIqdRate: number): number =>
   return Math.abs(calcDeliveryCost(order)) + calcProductCost(order, usdToIqdRate);
 };
 
-// Profit (commission) = total_amount - all costs (delivered only)
+// Referral commission paid out to VIP+ coupon owner (deducted from net revenue)
+const calcReferralCommission = (order: OrderWithDetails): number => {
+  return Number((order as any).referral_owner_earnings_iqd) || 0;
+};
+
+// Profit (commission) = total_amount - all costs - referral commission (delivered only)
 const calcOrderProfit = (order: OrderWithDetails, usdToIqdRate: number): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate);
+  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate) - calcReferralCommission(order);
 };
 
 const AdminFinancials = () => {
