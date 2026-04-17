@@ -223,7 +223,8 @@ export default function LoyaltyLevelsPanel() {
     if (level.priority_packaging) benefits.push({ icon: Package, text: 'أولوية التغليف', color: 'text-orange-600' });
     if (level.priority_support) benefits.push({ icon: Headphones, text: 'أولوية الدعم الفني', color: 'text-purple-600' });
     if (level.free_daily_games > 0) benefits.push({ icon: Gamepad2, text: `لعب مجاني ${level.free_daily_games} مرة يومياً`, color: 'text-pink-600' });
-    if (level.investment_enabled) benefits.push({ icon: TrendingUp, text: 'خيار الاستثمار في التطبيق', color: 'text-amber-600' });
+    // استبدال الاستثمار بكود الإحالة الخاص
+    benefits.push({ icon: TrendingUp, text: 'كود دعوة شخصي + عمولة من كل عملية بيع لأصدقائك', color: 'text-amber-600' });
     return benefits;
   };
 

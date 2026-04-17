@@ -35,6 +35,22 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   const [savingsOpen, setSavingsOpen] = useState(false);
   const [couponsOpen, setCouponsOpen] = useState(false);
 
+  // Detect VIP+ to switch CTA → "إدارة كود الإحالة"
+  const { data: vipPlusActive } = useQuery({
+    queryKey: ["profile-header-vip-plus", userId],
+    enabled: !!userId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_cards")
+        .select("loyalty_levels:level_id(is_vip_plus)")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle();
+      return !!(data?.loyalty_levels as any)?.is_vip_plus;
+    },
+  });
+
   const { data: userPoints, isLoading: pointsLoading } = useQuery({
     queryKey: ["profile-user-points", userId],
     enabled: !!userId,
@@ -264,10 +280,10 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
 
           {/* CTA */}
           <button
-            onClick={() => navigate("/rewards?tab=cards")}
+            onClick={() => navigate(vipPlusActive ? "/my-referral" : "/rewards?tab=cards")}
             className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.97] hover:bg-white/25"
           >
-            <span>ترقية العضوية</span>
+            <span>{vipPlusActive ? "إدارة كود الإحالة" : "ترقية العضوية"}</span>
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>

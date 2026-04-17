@@ -51,6 +51,7 @@ const Cart = () => {
   const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -580,7 +581,8 @@ const Cart = () => {
   
   // Apply card free shipping if eligible
   const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
-  const deliveryFee = cardFreeShippingApplied ? 0 : rawDeliveryFee;
+  const referralFreeShippingApplied = !!appliedReferral;
+  const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
   // Calculate discount
   const calculateDiscount = () => {
@@ -656,9 +658,34 @@ const Cart = () => {
 
     setCouponLoading(true);
     try {
-      // Use secure RPC function with rate limiting to validate coupon
+      // 1) Try referral coupon first (VIP+ owner gives free delivery)
+      const codeTrim = couponCode.trim();
+      const { data: refResult } = await supabase.rpc('apply_referral_coupon', {
+        p_code: codeTrim,
+        p_buyer_user_id: user?.id,
+      });
+      const ref = refResult as any;
+      if (ref?.valid) {
+        setAppliedReferral({
+          coupon_id: ref.coupon_id,
+          owner_username: ref.owner_username,
+          owner_user_id: ref.owner_user_id,
+        });
+        setAppliedCoupon(null);
+        toast({
+          title: '🎁 توصيل مجاني!',
+          description: `شكراً لدعمك @${ref.owner_username}! لقد أهدى لك توصيلاً مجانياً`,
+        });
+        return;
+      }
+      if (ref?.reason === 'self_use_not_allowed') {
+        toast({ title: 'غير مسموح', description: 'لا يمكنك استخدام كودك الخاص', variant: 'destructive' });
+        return;
+      }
+
+      // 2) Fall back to standard coupon validation
       const { data: result, error } = await supabase
-        .rpc('validate_coupon_with_rate_limit', { coupon_code: couponCode.toUpperCase().trim() });
+        .rpc('validate_coupon_with_rate_limit', { coupon_code: codeTrim.toUpperCase() });
 
       if (error) {
         toast({
@@ -716,6 +743,7 @@ const Cart = () => {
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
+    setAppliedReferral(null);
     setCouponCode('');
     toast({
       title: t('cart_coupon_removed'),
@@ -1138,7 +1166,10 @@ const Cart = () => {
       const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
       const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
       
-      const orderDeliveryFee = cardFreeShippingApplied ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const referralOwnerEarnings = appliedReferral
+        ? items.reduce((sum, it: any) => sum + (Number(it.products?.referral_earnings_iqd || 0) * (it.quantity || 0)), 0)
+        : 0;
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
@@ -1153,7 +1184,11 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
-      };
+      } as any;
+      if (appliedReferral) {
+        orderData.referral_coupon_id = appliedReferral.coupon_id;
+        orderData.referral_owner_earnings_iqd = referralOwnerEarnings;
+      }
 
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
         p_user_id: user.id,
@@ -1169,6 +1204,19 @@ const Cart = () => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Record referral coupon usage
+      if (appliedReferral) {
+        await supabase.from('referral_coupon_usages').insert({
+          coupon_id: appliedReferral.coupon_id,
+          order_id: orderId,
+          buyer_user_id: user.id,
+          delivery_discount_iqd: rawDeliveryFee,
+          owner_earnings_iqd: referralOwnerEarnings,
+          status: 'pending',
+        });
+        // Update aggregates on coupon
       }
 
       // Fetch the created order to get order_number

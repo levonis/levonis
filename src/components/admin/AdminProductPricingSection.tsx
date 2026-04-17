@@ -58,6 +58,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Direct sale
   const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
   const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
+  const [referralEarningsIqd, setReferralEarningsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
   
   // CNY converter
@@ -93,6 +94,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
       setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
       setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
+      setReferralEarningsIqd(editingProduct.referral_earnings_iqd || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
 
       // Determine sale types
@@ -208,6 +210,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="other_costs_iqd" value={otherCostsIqd} />
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
       <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
+      <input type="hidden" name="referral_earnings_iqd" value={referralEarningsIqd} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -482,6 +485,23 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
             <p className="text-xs text-muted-foreground">خاص بالطابعات — يُضاف للسعر النهائي ويُخصم من العائد في القسم المالي</p>
           </div>
         )}
+
+        {/* ===== VIP+ REFERRAL EARNINGS ===== */}
+        <div className="space-y-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+          <Label htmlFor="referral_earnings_iqd" className="flex items-center gap-1.5">
+            <DollarSign className="h-3 w-3 text-amber-500" />
+            ربح صاحب بطاقة VIP Plus من كوبون الإحالة (د.ع لكل وحدة)
+          </Label>
+          <Input
+            id="referral_earnings_iqd"
+            type="number"
+            min="0"
+            value={referralEarningsIqd || ''}
+            onChange={(e) => setReferralEarningsIqd(Number(e.target.value))}
+            placeholder="مثال: 250"
+          />
+          <p className="text-xs text-muted-foreground">عند استخدام كود إحالة على هذا المنتج، يحصل صاحب الكود على هذا المبلغ × الكمية. يُخصم من العائد المالي.</p>
+        </div>
 
         {/* ===== DIRECT SALE SECTION ===== */}
         {hasDirectSale && (

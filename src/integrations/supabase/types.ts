@@ -6641,6 +6641,8 @@ export type Database = {
           processing_at: string | null
           profit_amount: number | null
           purchased_at: string | null
+          referral_coupon_id: string | null
+          referral_owner_earnings_iqd: number
           remaining_amount: number | null
           serial_number_image_url: string | null
           shipped_at: string | null
@@ -6699,6 +6701,8 @@ export type Database = {
           processing_at?: string | null
           profit_amount?: number | null
           purchased_at?: string | null
+          referral_coupon_id?: string | null
+          referral_owner_earnings_iqd?: number
           remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
@@ -6757,6 +6761,8 @@ export type Database = {
           processing_at?: string | null
           profit_amount?: number | null
           purchased_at?: string | null
+          referral_coupon_id?: string | null
+          referral_owner_earnings_iqd?: number
           remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
@@ -8012,6 +8018,7 @@ export type Database = {
           pre_order_stock: number | null
           price: number
           price_usd: number | null
+          referral_earnings_iqd: number
           round_up_price: boolean | null
           sea_price: number | null
           shipping_cost_iqd: number | null
@@ -8073,6 +8080,7 @@ export type Database = {
           pre_order_stock?: number | null
           price: number
           price_usd?: number | null
+          referral_earnings_iqd?: number
           round_up_price?: boolean | null
           sea_price?: number | null
           shipping_cost_iqd?: number | null
@@ -8134,6 +8142,7 @@ export type Database = {
           pre_order_stock?: number | null
           price?: number
           price_usd?: number | null
+          referral_earnings_iqd?: number
           round_up_price?: boolean | null
           sea_price?: number | null
           shipping_cost_iqd?: number | null
@@ -8525,6 +8534,113 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_coupon_usages: {
+        Row: {
+          buyer_user_id: string
+          coupon_id: string
+          created_at: string
+          delivery_discount_iqd: number
+          id: string
+          order_id: string | null
+          owner_earnings_iqd: number
+          status: string
+        }
+        Insert: {
+          buyer_user_id: string
+          coupon_id: string
+          created_at?: string
+          delivery_discount_iqd?: number
+          id?: string
+          order_id?: string | null
+          owner_earnings_iqd?: number
+          status?: string
+        }
+        Update: {
+          buyer_user_id?: string
+          coupon_id?: string
+          created_at?: string
+          delivery_discount_iqd?: number
+          id?: string
+          order_id?: string | null
+          owner_earnings_iqd?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_coupon_usages_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "referral_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          owner_user_id: string
+          total_earnings_iqd: number
+          total_uses: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          owner_user_id: string
+          total_earnings_iqd?: number
+          total_uses?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          owner_user_id?: string
+          total_earnings_iqd?: number
+          total_uses?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_earnings_withdrawals: {
+        Row: {
+          amount_iqd: number
+          id: string
+          notes: string | null
+          owner_user_id: string
+          processed_at: string | null
+          requested_at: string
+          status: string
+        }
+        Insert: {
+          amount_iqd: number
+          id?: string
+          notes?: string | null
+          owner_user_id: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+        }
+        Update: {
+          amount_iqd?: number
+          id?: string
+          notes?: string | null
+          owner_user_id?: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+        }
+        Relationships: []
       }
       request_edit_history: {
         Row: {
@@ -10954,6 +11070,10 @@ export type Database = {
       }
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
+      apply_referral_coupon: {
+        Args: { p_buyer_user_id: string; p_code: string }
+        Returns: Json
+      }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
         | { Args: { p_merchant_id: string }; Returns: string }
