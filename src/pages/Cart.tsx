@@ -581,7 +581,8 @@ const Cart = () => {
   
   // Apply card free shipping if eligible
   const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
-  const deliveryFee = cardFreeShippingApplied ? 0 : rawDeliveryFee;
+  const referralFreeShippingApplied = !!appliedReferral;
+  const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
   // Calculate discount
   const calculateDiscount = () => {
@@ -1165,7 +1166,10 @@ const Cart = () => {
       const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
       const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
       
-      const orderDeliveryFee = cardFreeShippingApplied ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const referralOwnerEarnings = appliedReferral
+        ? items.reduce((sum, it: any) => sum + (Number(it.products?.referral_earnings_iqd || 0) * (it.quantity || 0)), 0)
+        : 0;
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
