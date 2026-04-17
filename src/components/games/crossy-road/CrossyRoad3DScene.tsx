@@ -454,9 +454,11 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
       rows, dead: false, deathTimer: 0,
       moving: false, moveDir: null, moveProgress: 0,
       fromLane: Math.floor(LANES / 2), fromRow: 3,
-      hopAnim: 0, playerOffsetX: 0, playerRotation: 0,
+      hopAnim: 0, playerOffsetX: 0, fromOffsetX: 0, playerRotation: 0,
       onRiver: false,
       riderLogIndex: null, riderLogRowIndex: null, riderLogStickX: 0,
+      pendingRiderLogIndex: null, pendingRiderRowIndex: null, pendingRiderStickX: 0,
+      pendingExitSnap: false,
     };
 
     return () => { audio.dispose(); };
