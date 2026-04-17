@@ -697,16 +697,26 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
         if (g.moveProgress >= 1) {
           g.moving = false;
           g.moveProgress = 0;
-          // Commit pending rider lock now that the hop has finished.
+          // Commit pending rider lock now that the hop has finished — validate the player is still over the log.
           if (g.pendingRiderLogIndex !== null && g.pendingRiderRowIndex === g.playerRow) {
             const dRow = g.rows[g.playerRow];
-            if (dRow && dRow.logs[g.pendingRiderLogIndex]) {
-              const log = dRow.logs[g.pendingRiderLogIndex];
-              g.riderLogIndex = g.pendingRiderLogIndex;
-              g.riderLogRowIndex = g.pendingRiderRowIndex;
-              g.riderLogStickX = g.pendingRiderStickX;
-              const lockedPx = log.x + g.riderLogStickX;
-              g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+            const log = dRow?.logs[g.pendingRiderLogIndex];
+            if (log) {
+              const lockedPx = log.x + g.pendingRiderStickX;
+              const stillOnLog = lockedPx >= log.x - LOG_TOLERANCE && lockedPx <= log.x + log.width + LOG_TOLERANCE;
+              if (stillOnLog) {
+                g.riderLogIndex = g.pendingRiderLogIndex;
+                g.riderLogRowIndex = g.pendingRiderRowIndex;
+                g.riderLogStickX = g.pendingRiderStickX;
+                g.playerOffsetX = lockedPx - (g.playerLane * CELL + CELL / 2);
+              } else {
+                // Log drifted away mid-hop → fall in the water.
+                g.dead = true;
+                audio?.playWater();
+              }
+            } else {
+              g.dead = true;
+              audio?.playWater();
             }
           }
           g.pendingRiderLogIndex = null;
@@ -717,6 +727,9 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
             g.pendingExitSnap = false;
           }
           g.fromOffsetX = 0;
+          g.fromRiderLogIndex = null;
+          g.fromRiderRowIndex = null;
+          g.fromRiderStickX = 0;
         }
       }
 
