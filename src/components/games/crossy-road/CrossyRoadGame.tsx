@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe, Timer } from "lucide-react";
 import CrossyRoadCanvas from "./CrossyRoadCanvas";
 import { useVipFreePlay } from "@/hooks/useVipPlus";
+import SeasonHeader from "@/components/games/SeasonHeader";
 
 interface Props {
   onBack: () => void;
@@ -464,7 +465,11 @@ export default function CrossyRoadGame({ onBack }: Props) {
           </div>
 
           {/* Season banner */}
-          <SeasonCountdownBanner endsAt={settings?.season_ends_at} seasonName={(settings as any)?.season_name} startsAt={(settings as any)?.season_starts_at} />
+          <SeasonHeader
+            seasonName={(settings as any)?.season_name}
+            seasonStartsAt={(settings as any)?.season_starts_at}
+            seasonEndsAt={(settings as any)?.season_ends_at}
+          />
 
           {lbView === "season" && lbPrizes.length > 0 && (
             <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-right space-y-1">
