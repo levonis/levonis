@@ -1074,7 +1074,55 @@ export default function AdminLoyaltyLevels() {
                               </Badge>
                             </TableCell>
                             <TableCell>{new Date(holder.purchased_at).toLocaleDateString('ar-IQ')}</TableCell>
-                            <TableCell>{new Date(holder.expires_at).toLocaleDateString('ar-IQ')}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <span>{new Date(holder.expires_at).toLocaleDateString('ar-IQ')}</span>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-3 space-y-2" align="start">
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const base = new Date(holder.expires_at);
+                                          const next = base.getTime() > Date.now() ? base : new Date();
+                                          next.setDate(next.getDate() + 30);
+                                          updateExpiryMutation.mutate({ holderId: holder.id, newDate: next });
+                                        }}
+                                      >
+                                        +30 يوم
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const base = new Date(holder.expires_at);
+                                          const next = base.getTime() > Date.now() ? base : new Date();
+                                          next.setFullYear(next.getFullYear() + 1);
+                                          updateExpiryMutation.mutate({ holderId: holder.id, newDate: next });
+                                        }}
+                                      >
+                                        +1 سنة
+                                      </Button>
+                                    </div>
+                                    <Calendar
+                                      mode="single"
+                                      selected={new Date(holder.expires_at)}
+                                      onSelect={(d) => {
+                                        if (d) updateExpiryMutation.mutate({ holderId: holder.id, newDate: d });
+                                      }}
+                                      initialFocus
+                                      className={cn("p-3 pointer-events-auto")}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <Badge variant={daysLeft < 7 ? 'destructive' : 'secondary'}>
                                 {daysLeft} يوم
