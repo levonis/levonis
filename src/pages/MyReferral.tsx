@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Copy, Check, Share2, Crown, Users, Coins, Calendar, Wallet, Pencil, Loader2, Gift, TrendingUp } from "lucide-react";
+import { Copy, Check, Share2, Crown, Users, Coins, Calendar, Wallet, Pencil, Loader2, Gift, TrendingUp, Palette, Save } from "lucide-react";
 import { useVipPlusStatus } from "@/hooks/useVipPlus";
 import { formatPrice } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { REFERRAL_BANNER_STYLES, getReferralBannerStyle, type ReferralBannerStyleKey } from "@/lib/referralBannerStyles";
 
 export default function MyReferral() {
   const { user } = useAuth();
@@ -27,6 +29,9 @@ export default function MyReferral() {
   const [creating, setCreating] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [freeDeliveryMin, setFreeDeliveryMin] = useState<number>(100000);
+  const [customMessage, setCustomMessage] = useState<string>("");
+  const [bannerStyle, setBannerStyle] = useState<ReferralBannerStyleKey>("amber");
+  const [savingCustom, setSavingCustom] = useState(false);
 
   const loadData = async () => {
     if (!user?.id) return;
