@@ -26,10 +26,20 @@ export default function MyReferral() {
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [freeDeliveryMin, setFreeDeliveryMin] = useState<number>(100000);
 
   const loadData = async () => {
     if (!user?.id) return;
     setLoading(true);
+
+    // Load free delivery min order setting
+    const { data: settingsRow } = await supabase
+      .from("default_settings")
+      .select("setting_value")
+      .eq("setting_key", "referral_settings")
+      .maybeSingle();
+    const minOrder = Number((settingsRow?.setting_value as any)?.free_delivery_min_order_iqd) || 100000;
+    setFreeDeliveryMin(minOrder);
 
     const { data: profile } = await supabase
       .from("profiles")

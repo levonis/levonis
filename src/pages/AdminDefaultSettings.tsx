@@ -28,6 +28,7 @@ export default function AdminDefaultSettings() {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<any>(null);
   const [notifSettings, setNotifSettings] = useState<any>(null);
+  const [referralMinOrder, setReferralMinOrder] = useState<number>(100000);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['default-settings'],
@@ -54,6 +55,26 @@ export default function AdminDefaultSettings() {
       return data;
     },
   });
+
+  const { data: referralSettingsRow } = useQuery({
+    queryKey: ['referral-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('*')
+        .eq('setting_key', 'referral_settings')
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (referralSettingsRow?.setting_value) {
+      const v = (referralSettingsRow.setting_value as any)?.free_delivery_min_order_iqd;
+      if (typeof v === 'number') setReferralMinOrder(v);
+    }
+  }, [referralSettingsRow]);
 
   useEffect(() => {
     if (notificationSettings?.setting_value) {
@@ -103,10 +124,26 @@ export default function AdminDefaultSettings() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notification-settings'] }); },
   });
 
+  const updateReferralMutation = useMutation({
+    mutationFn: async (minOrder: number) => {
+      const payload = { free_delivery_min_order_iqd: minOrder };
+      const { data: existing } = await supabase.from('default_settings').select('id').eq('setting_key', 'referral_settings').maybeSingle();
+      if (existing) {
+        const { error } = await supabase.from('default_settings').update({ setting_value: payload }).eq('setting_key', 'referral_settings');
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('default_settings').insert({ setting_key: 'referral_settings', setting_value: payload });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['referral-settings'] }); },
+  });
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (formData) updateMutation.mutate(formData);
     updateNotifMutation.mutate();
+    updateReferralMutation.mutate(referralMinOrder);
   };
 
   const toggleChannel = (channelKey: string, field: 'telegram' | 'push' | 'in_app') => {
@@ -264,6 +301,31 @@ export default function AdminDefaultSettings() {
               {(!formData.pre_order_shipping_options || formData.pre_order_shipping_options.length === 0) && (
                 <p className="text-center text-muted-foreground py-8">لا توجد خيارات شحن.</p>
               )}
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+
+        {/* Referral Coupon Settings */}
+        <AdminCard>
+          <AdminCardHeader
+            title="🎟️ إعدادات كوبون الإحالة (VIP Plus)"
+            description="الحد الأدنى للطلب الذي يُفعّل التوصيل المجاني عند استخدام كود إحالة صاحب بطاقة VIP Plus. الكوبون يبقى فعّالاً ويحسب العمولة لصاحب البطاقة حتى لو لم يتحقق هذا الحد."
+          />
+          <AdminCardContent>
+            <div className="admin-form-group max-w-md">
+              <Label htmlFor="referral_min_order">الحد الأدنى للطلب لتفعيل التوصيل المجاني (د.ع)</Label>
+              <Input
+                id="referral_min_order"
+                type="number"
+                min={0}
+                step={1000}
+                value={referralMinOrder}
+                onChange={(e) => setReferralMinOrder(Math.max(0, parseInt(e.target.value) || 0))}
+                placeholder="100000"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                الافتراضي: 100,000 د.ع. الطلبات الأقل من هذا المبلغ تبقى تحتسب رسوم التوصيل، لكن صاحب البطاقة يحصل على العمولة عادياً.
+              </p>
             </div>
           </AdminCardContent>
         </AdminCard>
