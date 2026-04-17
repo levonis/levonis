@@ -787,6 +787,28 @@ export default function CrossyRoad3DScene({ onGameOver, onScoreUpdate }: Props) 
     const logRenders: RenderLog[] = [];
     const coins: RenderCoin[] = [];
 
+    // Decorative back-fill rows behind row 0 to cover the bottom of the screen.
+    // These are pure-grass tiles spanning the full extended width.
+    if (startRow === 0) {
+      const cx = (LANES * CELL) / 2;
+      for (let br = 1; br <= 14; br++) {
+        const z = br * CELL; // positive z = behind the player
+        const dark = br % 2 === 0;
+        grounds.push({ id: `gB${br}`, x: cx, z, rowType: "grass", grassDark: dark, biome: "green" });
+        for (let s = 1; s <= SIDE_EXTEND_TILES; s++) {
+          const offset = s * LANES * CELL;
+          grounds.push({ id: `gBL${br}_${s}`, x: cx - offset, z, rowType: "grass", grassDark: !dark, biome: "green" });
+          grounds.push({ id: `gBR${br}_${s}`, x: cx + offset, z, rowType: "grass", grassDark: !dark, biome: "green" });
+        }
+        // Sparse decorative trees on back rows
+        if (br % 2 === 0) {
+          [-6, -3, 1, 4, 7, 10, 13].forEach((lane, i) => {
+            trees.push({ id: `tB${br}_${i}`, x: lane * CELL + CELL / 2, z, modelIdx: br * 5 + i, biome: "green", groundY: GRASS_TOP });
+          });
+        }
+      }
+    }
+
     for (let r = startRow; r <= endRow; r++) {
       const row = g.rows[r];
       if (!row) continue;
