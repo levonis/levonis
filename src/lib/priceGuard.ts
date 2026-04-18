@@ -140,6 +140,7 @@ export function computeLinkedDirectSalePrice(
     commission_air_iqd?: number | null;
     sea_price?: number | null;
     air_price?: number | null;
+    shipping_cost_iqd?: number | null;
     round_up_price?: boolean | null;
   },
   shippingSettings: { usd_to_iqd_rate: number } | null | undefined,
@@ -165,34 +166,21 @@ export function computeLinkedDirectSalePrice(
   const hasSea = st === 'sea' || st === 'both';
   const hasAir = st === 'air' || st === 'both';
 
-  // Determine pre-order final (sea preferred, else air) for the percentage base
-  let preorderFinal = priceIqd + pdc + referral;
-  if (hasPreOrder && hasSea && product.sea_price != null) {
-    // sea_price already includes priceIqd + shipping + sea commission + pdc + referral
-    preorderFinal = Number(product.sea_price);
-  } else if (hasPreOrder && hasAir && product.air_price != null) {
-    preorderFinal = Number(product.air_price);
-  }
+  // Use stored raw shipping cost (matches what admin form computed at save time)
+  // rather than deriving from sea_price/air_price (which may be rounded up).
+  const shippingCost = Number(product.shipping_cost_iqd || 0);
+
+  const seaCommissionAddon = hasPreOrder && hasSea ? seaCommission : 0;
+  const airCommissionAddon = hasPreOrder && hasAir && !hasSea ? airCommission : 0;
+
+  // Pre-order base for the COD percentage (raw, unrounded — matches admin form logic)
+  const preorderFinal = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + pdc + referral;
 
   let directPortion: number;
   if (codDefaults.type === 'fixed') {
     directPortion = Math.ceil(codDefaults.value);
   } else {
     directPortion = Math.ceil((preorderFinal * codDefaults.value) / 100);
-  }
-
-  // Direct sale = priceIqd + shipping (derived from sea/air price) + (sea commission addon) + directPortion + pdc + referral
-  const seaCommissionAddon = hasPreOrder && hasSea ? seaCommission : 0;
-  const airCommissionAddon = hasPreOrder && hasAir && !hasSea ? airCommission : 0;
-
-  // Derive shipping cost from stored sea_price/air_price
-  // sea_price = priceIqd + shipping + seaCommission + pdc + referral
-  // => shipping = sea_price - priceIqd - seaCommission - pdc - referral
-  let shippingCost = 0;
-  if (hasPreOrder && hasSea && product.sea_price != null) {
-    shippingCost = Math.max(0, Number(product.sea_price) - priceIqd - seaCommission - pdc - referral);
-  } else if (hasPreOrder && hasAir && product.air_price != null) {
-    shippingCost = Math.max(0, Number(product.air_price) - priceIqd - airCommission - pdc - referral);
   }
 
   let total = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + directPortion + pdc + referral;
