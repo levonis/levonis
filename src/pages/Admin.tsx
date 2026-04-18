@@ -1287,8 +1287,6 @@ const Admin = () => {
       values.personal_delivery_cost = personalDeliveryCostVal;
       values.referral_earnings_iqd = referralEarningsIqdVal;
       values.cod_enabled = formData.get('cod_enabled') === 'true';
-      values.cod_fee_type = (formData.get('cod_fee_type') as string) === 'fixed' ? 'fixed' : 'percentage';
-      values.cod_fee_value = formData.get('cod_fee_value') ? Number(formData.get('cod_fee_value')) : 0;
 
       if (priceUsdVal && priceUsdVal > 0) {
         // Fetch shipping settings for calculation
