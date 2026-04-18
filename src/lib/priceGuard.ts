@@ -181,9 +181,21 @@ export function computeLinkedDirectSalePrice(
     directPortion = Math.ceil((preorderFinal * codDefaults.value) / 100);
   }
 
-  // Direct sale = priceIqd + (pre-order sea commission addon) + directPortion + pdc + referral
+  // Direct sale = priceIqd + shipping (derived from sea/air price) + (sea commission addon) + directPortion + pdc + referral
   const seaCommissionAddon = hasPreOrder && hasSea ? seaCommission : 0;
-  let total = priceIqd + seaCommissionAddon + directPortion + pdc + referral;
+  const airCommissionAddon = hasPreOrder && hasAir && !hasSea ? airCommission : 0;
+
+  // Derive shipping cost from stored sea_price/air_price
+  // sea_price = priceIqd + shipping + seaCommission + pdc + referral
+  // => shipping = sea_price - priceIqd - seaCommission - pdc - referral
+  let shippingCost = 0;
+  if (hasPreOrder && hasSea && product.sea_price != null) {
+    shippingCost = Math.max(0, Number(product.sea_price) - priceIqd - seaCommission - pdc - referral);
+  } else if (hasPreOrder && hasAir && product.air_price != null) {
+    shippingCost = Math.max(0, Number(product.air_price) - priceIqd - airCommission - pdc - referral);
+  }
+
+  let total = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + directPortion + pdc + referral;
 
   if (product.round_up_price) {
     total = Math.ceil(total / 250) * 250;
