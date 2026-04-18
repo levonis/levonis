@@ -178,6 +178,7 @@ function AppContent() {
             <Route path="/my-orders/:orderId/confirm" element={<RequireAuth><ConfirmDelivery /></RequireAuth>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/download-app" element={<DownloadApp />} />
+            <Route path="/download" element={<DownloadApp />} />
             <Route path="/admin/app-versions" element={<RequireAuth><AdminAppVersions /></RequireAuth>} />
             
             {/* Secure Admin Routes - Using obfuscated path */}
