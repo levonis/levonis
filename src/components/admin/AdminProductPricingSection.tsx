@@ -31,7 +31,24 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   });
 
   const isPrinterCategory = categoryId ? personalDeliveryCategoryIds.includes(categoryId) : false;
-  
+
+  // Global COD default settings (used when linking direct commission to COD %)
+  const { data: codDefaults } = useQuery({
+    queryKey: ['cod-default-settings-product-form'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'partial_payment_settings')
+        .single();
+      const v: any = data?.setting_value || {};
+      return {
+        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
+        value: Number(v.cod_default_fee_value) || 0,
+      };
+    },
+  });
+
   // Sale types (multi-select)
   const [hasPreOrder, setHasPreOrder] = useState(false);
   const [hasDirectSale, setHasDirectSale] = useState(false);
@@ -56,10 +73,10 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   const [commissionDirectIqd, setCommissionDirectIqd] = useState<number>(0);
 
   // Direct sale
-  const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
   const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
   const [referralEarningsIqd, setReferralEarningsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
+  const [linkDirectCommissionToCod, setLinkDirectCommissionToCod] = useState<boolean>(false);
 
   // Cash on Delivery (Pre-order only) — toggle only; fee comes from global settings
   const [codEnabled, setCodEnabled] = useState<boolean>(false);
@@ -95,7 +112,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setWidthCm(editingProduct.width_cm || 0);
       setHeightCm(editingProduct.height_cm || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
-      setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
+      // other_costs_iqd is deprecated for direct sale — kept at 0
       setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
       setReferralEarningsIqd(editingProduct.referral_earnings_iqd || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
@@ -139,6 +156,17 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   const roundUpToNearest = (value: number, nearest: number) => Math.ceil(value / nearest) * nearest;
 
   const effectivePersonalDeliveryCost = isPrinterCategory ? personalDeliveryCost : 0;
+
+  // Effective direct-sale commission: linked to global COD setting if toggle is on
+  const effectiveCommissionDirect = useMemo(() => {
+    if (!linkDirectCommissionToCod || !codDefaults) return commissionDirectIqd;
+    if (!shippingSettings || !priceUsd) return commissionDirectIqd;
+    const priceIqd = Math.round(priceUsd * shippingSettings.usd_to_iqd_rate);
+    if (codDefaults.type === 'percentage') {
+      return Math.ceil(priceIqd * codDefaults.value / 100);
+    }
+    return Math.ceil(codDefaults.value);
+  }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd]);
 
   const calculations = useMemo(() => {
     if (!shippingSettings || !priceUsd) return null;
@@ -187,13 +215,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + effectiveCommissionDirect + pdc + referralEarningsIqd;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
         priceIqd,
         shipping: 0,
-        commission: commissionDirectIqd,
+        commission: effectiveCommissionDirect,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         personalDelivery: pdc,
@@ -201,7 +229,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
   return (
     <div className="space-y-4 border-t pt-4">
@@ -211,9 +239,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="shipping_type" value={shippingTypeValue} />
       <input type="hidden" name="commission_sea_iqd" value={commissionSeaIqd} />
       <input type="hidden" name="commission_air_iqd" value={commissionAirIqd} />
-      <input type="hidden" name="commission_direct_iqd" value={commissionDirectIqd} />
-      <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, commissionDirectIqd)} />
-      <input type="hidden" name="other_costs_iqd" value={otherCostsIqd} />
+      <input type="hidden" name="commission_direct_iqd" value={effectiveCommissionDirect} />
+      <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect)} />
+      <input type="hidden" name="other_costs_iqd" value={0} />
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
       <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
       <input type="hidden" name="referral_earnings_iqd" value={referralEarningsIqd} />
@@ -532,28 +560,45 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               <ShoppingBag className="h-3 w-3" />
               <span>إعدادات البيع المباشر</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="other_costs_iqd">تكاليف أخرى (د.ع)</Label>
-              <Input
-                id="other_costs_iqd"
-                type="number"
-                min="0"
-                value={otherCostsIqd || ''}
-                onChange={(e) => setOtherCostsIqd(Number(e.target.value))}
-                placeholder="0"
+
+            <label className="flex items-start gap-2 cursor-pointer p-2 rounded-md bg-muted/30 border border-border">
+              <Checkbox
+                checked={linkDirectCommissionToCod}
+                onCheckedChange={(checked) => setLinkDirectCommissionToCod(!!checked)}
+                className="mt-0.5"
               />
-              <p className="text-xs text-muted-foreground">تكاليف إضافية مثل الشحن الداخلي أو التغليف</p>
-            </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium flex items-center gap-1.5">
+                  <Truck className="h-3.5 w-3.5 text-primary" />
+                  ربط العمولة بنسبة الدفع عند الاستلام
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {codDefaults
+                    ? `يتم احتساب العمولة تلقائياً حسب الإعداد العام (${codDefaults.type === 'percentage' ? `${codDefaults.value}%` : `${codDefaults.value.toLocaleString()} د.ع`}).`
+                    : 'سيتم احتساب العمولة تلقائياً حسب إعدادات الدفع عند الاستلام.'}
+                </p>
+                {linkDirectCommissionToCod && priceUsd > 0 && shippingSettings && (
+                  <div className="text-xs mt-1 text-primary font-medium">
+                    العمولة المحسوبة: {formatPrice(effectiveCommissionDirect)}
+                  </div>
+                )}
+              </div>
+            </label>
+
             <div className="space-y-2">
               <Label htmlFor="commission_direct_iqd">العمولة - بيع مباشر (د.ع)</Label>
               <Input
                 id="commission_direct_iqd"
                 type="number"
                 min="0"
-                value={commissionDirectIqd || ''}
+                value={linkDirectCommissionToCod ? effectiveCommissionDirect : (commissionDirectIqd || '')}
                 onChange={(e) => setCommissionDirectIqd(Number(e.target.value))}
                 placeholder="0"
+                disabled={linkDirectCommissionToCod}
               />
+              <p className="text-xs text-muted-foreground">
+                تشمل تكاليف الشحن الداخلي والتغليف وأي تكاليف أخرى — هذه القيمة هي الوحيدة المستخدمة لحساب البيع المباشر.
+              </p>
             </div>
           </div>
         )}
@@ -585,12 +630,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                     <div className="font-medium text-foreground">الوزن المستخدم (الأكبر + هامش أمان): {(r.usedWeight * 1.05).toFixed(2)} كغ</div>
                   </div>
                 )}
-                {r.type === 'direct' && otherCostsIqd > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">تكاليف أخرى</span>
-                    <span>{formatPrice(otherCostsIqd)}</span>
-                  </div>
-                )}
+                {/* تكاليف أخرى مدمجة الآن في العمولة */}
                 {(r.personalDelivery || 0) > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> تكلفة التوصيل</span>
