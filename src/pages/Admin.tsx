@@ -1342,7 +1342,9 @@ const Admin = () => {
         }
 
         if (hasInStock) {
-          const directFinalPrice = priceIqd + otherCostsIqdVal + commissionDirectIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
+          // Direct sale final price includes pre-order sea commission (if pre-order + sea enabled)
+          const seaCommissionAddon = (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) ? commissionSeaIqdVal : 0;
+          const directFinalPrice = priceIqd + otherCostsIqdVal + seaCommissionAddon + commissionDirectIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }
