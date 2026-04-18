@@ -12,8 +12,10 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    // Wipe ALL old caches (not just non-matching names) — old versions may
+    // have cached index.html with stale chunk hashes, causing blank screens.
     const names = await caches.keys();
-    await Promise.all(names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n)));
+    await Promise.all(names.map((n) => caches.delete(n)));
 
     // Safety valve: preview hosts should never keep a controlling SW
     if (IS_PREVIEW_HOST) {
@@ -21,6 +23,12 @@ self.addEventListener('activate', (event) => {
     }
 
     await clients.claim();
+
+    // Force all open tabs to reload with fresh HTML/assets
+    const allClients = await clients.matchAll({ type: 'window' });
+    allClients.forEach((client) => {
+      try { client.navigate(client.url); } catch {}
+    });
   })());
 });
 
