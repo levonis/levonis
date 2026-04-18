@@ -1,65 +1,74 @@
 
 
-The user wants:
-1. A direct "Download APK" button on the website
-2. Any website update reflects immediately in the app (no rebuild needed)
+The user says skeleton loading is inaccurate — appears randomly and doesn't match the actual content shape. Let me check the current skeleton system.
+<lov-tool-use id="toolu_vrtx_01MfqUxoEHiKaKEsArGSsQWr" name="code--search_files" integration-id="code" data="{\"query\": \"RouteAwareSkeleton\", \"include_patterns\": \"*.tsx,*.ts\"}">
+</lov-tool-use>
 
-For #2 — that's already handled by the current `capacitor.config.ts` which uses `server.url` pointing to the Lovable preview URL. Any code change updates instantly because the app loads the live web version.
+<lov-tool-use id="toolu_vrtx_01KUw6iLjgDnn1FLZAGjjhP8" name="code--search_files" integration-id="code" data="{\"query\": \"RouteAwareSkeleton\", \"include_patterns\": \"*.tsx,*.ts\"}">
+</lov-tool-use>
 
-For #1 — Lovable can't compile an APK file. APK building requires Android Studio + Java + Gradle on a local machine. But we can:
-- Create a `/download-app` page with a styled download button
-- Host the APK file (user uploads it to Supabase Storage after building it once locally)
-- The button serves the APK link
+<lov-tool-use id="toolu_vrtx_018AJDjEoz8ZpbMw4Ub2Qoqi" name="code--search_files" integration-id="code" data="{\"query\": \"Skeleton\", \"include_patterns\": \"src/App.tsx,src/components/RouteAware*,src/components/skeleton*\"}">
+</lov-tool-use>
 
-I should ask the user a clarifying question because there are two paths and they have different implications.
+<lov-tool-use id="toolu_vrtx_01HPpDwJN2veMAThNRzZafhD" name="code--search_files" integration-id="code" data="{\"query\": \"Suspense fallback\", \"include_patterns\": \"src/App.tsx\"}">
+</lov-tool-use>
 
-## الخطة: زر تحميل APK + تحديثات فورية
+<lov-tool-use id="toolu_vrtx_01EdCc7zdj5QX9prcqYVx9qi" name="code--view" integration-id="code" data="{\"file_path\": \"src/App.tsx\", \"lines\": \"138-200\"}">
+</lov-tool-use>
+Now I understand. The single generic `SuspenseLoader` shows the same skeleton (header + image card + 4 grid tiles) for every route — cart, profile, admin pages, settings, etc. — so it rarely matches the actual content layout, looking "random/inaccurate." Let me check existing route-specific skeletons.
+<lov-tool-use id="toolu_vrtx_011DVtX4EHqpSodabmHFnZhP" name="code--search_files" integration-id="code" data="{\"include_patterns\": \"src/components/**/*.tsx\", \"query\": \"export.*Skeleton\"}">
+</lov-tool-use>
+I have enough context. The skeleton library already exists with route-appropriate variants — they're just not wired into the route-level Suspense fallback.
 
-### الجزء الأول: التحديث الفوري (جاهز بالفعل ✅)
-ملف `capacitor.config.ts` الحالي يحتوي على:
-```ts
-server: {
-  url: 'https://eae9743e-f7d4-438d-bfb8-c27f25184241.lovableproject.com?forceHideBadge=true',
-  cleartext: true,
-}
+<lov-plan>
+
+## المشكلة
+كل الصفحات (~120) تعرض **نفس الـ skeleton الافتراضي** (هيدر + صورة كبيرة + 4 بطاقات شبكة) من `SuspenseLoader` في `src/App.tsx`. النتيجة: عند فتح صفحة السلة، الإعدادات، الإشعارات، أو لوحة الأدمن → يظهر skeleton لمنتجات لا علاقة له بالمحتوى الفعلي → يبدو "عشوائياً".
+
+## الحل: Skeleton حسب نوع الصفحة (Route-Aware)
+
+### الفكرة
+نستفيد من مكتبة `PageSkeletons.tsx` الموجودة بالفعل (بها `CartSkeleton`, `ProfileSkeleton`, `ChatSkeleton`, `AdminPageSkeleton`, `DetailPageSkeleton`, `OrderListSkeleton`, `FormSkeleton`, `NotificationsSkeleton`, `ProductGridSkeleton`...) ونربط كل مسار بالـ skeleton المناسب.
+
+### التنفيذ في `src/App.tsx`
+
+**1. تحويل `SuspenseLoader` ليقرأ المسار الحالي**
+بما أنه داخل `AppContent` (الذي يستخدم `useLocation` مسبقاً)، سنمرر `pathname` للـ fallback ليختار الشكل المناسب:
+
+```tsx
+const RouteSkeleton = ({ pathname }: { pathname: string }) => {
+  // Map: cart→CartSkeleton, /orders→OrderListSkeleton,
+  // /notifications→NotificationsSkeleton, /admin/*→AdminPageSkeleton,
+  // /profile|/user-info→ProfileSkeleton, /chat|/messages→ChatSkeleton,
+  // /product/:slug→DetailPageSkeleton, /products|/category/*→ProductGridSkeleton,
+  // /settings|/notification-settings→FormSkeleton,
+  // default→الشكل الحالي البسيط
+};
 ```
-هذا يعني أن التطبيق **يحمّل الموقع المباشر**، فأي تعديل في Lovable يظهر فوراً في التطبيق بدون إعادة بناء. ✅
 
-⚠️ **ملاحظة مهمة**: للنشر النهائي على Google Play، سيتم تغيير الرابط لرابط الإنتاج (`levonisiq.com`) بدلاً من رابط المعاينة، حتى يبقى التطبيق يعمل حتى لو حُذفت معاينة Lovable.
+**2. خريطة المسارات** (~15 نمط) تغطي:
+- `/cart` → `CartSkeleton`
+- `/orders`, `/my-orders` → `OrderListSkeleton`
+- `/notifications` → `NotificationsSkeleton`
+- `/notification-settings`, `/settings`, `/user-info` → `FormSkeleton`
+- `/profile/*`, `/profile-settings` → `ProfileSkeleton`
+- `/chat`, `/messages`, `/maintenance-chat` → `ChatSkeleton`
+- `/product/:slug`, `/bundles/:id`, `/category/:slug` → `DetailPageSkeleton`
+- `/products`, `/shop`, `/favorites`, `/offers` → `ProductGridSkeleton`
+- `/admin/*`, `/inventory`, `/financial-*`, `/games-settings` → `AdminPageSkeleton`
+- `/rewards`, `/competitions` → `CompetitionGridSkeleton`
+- `/download-app` → skeleton مخصص بسيط (زر كبير + نص)
+- باقي المسارات → الشكل العام الحالي
 
-### الجزء الثاني: زر تحميل APK من الموقع
+**3. منع وميض غير ضروري**: عرض الـ skeleton فقط بعد 80ms (delay) باستخدام state مع `setTimeout` — إذا حُمّلت الصفحة من الكاش بسرعة، لن يظهر أي skeleton أصلاً.
 
-**القيد التقني**: Lovable لا يستطيع توليد ملف APK مباشرة (يحتاج Android Studio + Gradle محلياً). الحل عملي بخطوتين:
+### الملفات المعدّلة
+- `src/App.tsx` فقط — حوالي 40 سطر يستبدل `SuspenseLoader` بمكون `RouteSkeleton` ذكي يقرأ `useLocation` ويختار من `PageSkeletons`.
 
-#### ما سأنفذه في Lovable:
-1. **صفحة جديدة** `/download-app` بتصميم احترافي:
-   - شعار LEVONIS الذهبي
-   - عنوان "حمّل تطبيق LEVONIS"
-   - زر تحميل APK كبير (للأندرويد)
-   - زر App Store (يُفعّل لاحقاً عند توفر النسخة)
-   - تعليمات التثبيت بالعربية (تفعيل "السماح من مصادر غير معروفة")
-   - رقم الإصدار + تاريخ آخر تحديث
-2. **زر مختصر** في الـ Header / القائمة الجانبية: "تحميل التطبيق 📱"
-3. **اكتشاف ذكي**: إذا كان المستخدم على Android Chrome → يظهر الزر بوضوح. إذا كان iOS → يظهر زر App Store. إذا كان داخل التطبيق فعلاً → يُخفى الزر تلقائياً.
-4. **رابط APK**: سيُحفظ في **Lovable Cloud Storage** (bucket باسم `app-releases`) ليتمكن المستخدم من رفع نسخ جديدة بسهولة.
-5. **جدول `app_versions`** بسيط في قاعدة البيانات لتتبع الإصدارات (رقم الإصدار، الرابط، ملاحظات التحديث، التاريخ) — يسمح بإظهار "آخر إصدار" تلقائياً.
-
-#### ما تحتاج تنفيذه مرة واحدة فقط:
-1. تصدير المشروع لـ GitHub
-2. تشغيل `npx cap add android` ثم `npx cap sync` ثم بناء APK من Android Studio (أو استخدام GitHub Actions لبناء آلي)
-3. رفع ملف `app-release.apk` لزر "إدارة الإصدارات" في الموقع
-
-**بعد ذلك**: لن تحتاج لبناء APK جديد إلا نادراً، لأن التطبيق يحمّل الموقع المباشر — كل تحديثاتك تصل فوراً للمستخدمين بدون APK جديد. ستحتاج APK جديد فقط لو:
-- غيّرت الأيقونة أو شاشة البداية
-- أضفت Plugin أصلي جديد (كاميرا، إشعارات Push، إلخ)
-
-### خيار بديل (تلقائي بالكامل): GitHub Actions
-يمكن إعداد GitHub Action يبني APK تلقائياً عند كل تحديث ويرفعه على الموقع. لكن يحتاج إعداد أولي محلي + متغيرات توقيع. أنصح بتأجيله للمرحلة التالية.
-
-### الملفات التي ستُنشأ/تُعدّل:
-- `src/pages/DownloadApp.tsx` (جديد)
-- `src/App.tsx` (إضافة المسار)
-- `src/components/Header.tsx` (زر مختصر)
-- Migration: جدول `app_versions` + bucket `app-releases`
-- لوحة إدارة بسيطة لرفع APK (للأدمن فقط)
+### النتيجة المتوقعة
+- صفحة السلة → skeleton على شكل عناصر سلة
+- صفحة الإشعارات → skeleton على شكل قائمة إشعارات
+- صفحة منتج → skeleton على شكل صفحة تفاصيل
+- لوحة الأدمن → skeleton على شكل إحصائيات + جدول
+- الانتقالات السريعة (<80ms) → بدون أي skeleton (تجربة فورية)
 
