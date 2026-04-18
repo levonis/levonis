@@ -1,74 +1,58 @@
 
+## المشكلة الجذرية
 
-The user says skeleton loading is inaccurate — appears randomly and doesn't match the actual content shape. Let me check the current skeleton system.
-<lov-tool-use id="toolu_vrtx_01MfqUxoEHiKaKEsArGSsQWr" name="code--search_files" integration-id="code" data="{\"query\": \"RouteAwareSkeleton\", \"include_patterns\": \"*.tsx,*.ts\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_01KUw6iLjgDnn1FLZAGjjhP8" name="code--search_files" integration-id="code" data="{\"query\": \"RouteAwareSkeleton\", \"include_patterns\": \"*.tsx,*.ts\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_018AJDjEoz8ZpbMw4Ub2Qoqi" name="code--search_files" integration-id="code" data="{\"query\": \"Skeleton\", \"include_patterns\": \"src/App.tsx,src/components/RouteAware*,src/components/skeleton*\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_01HPpDwJN2veMAThNRzZafhD" name="code--search_files" integration-id="code" data="{\"query\": \"Suspense fallback\", \"include_patterns\": \"src/App.tsx\"}">
-</lov-tool-use>
-
-<lov-tool-use id="toolu_vrtx_01EdCc7zdj5QX9prcqYVx9qi" name="code--view" integration-id="code" data="{\"file_path\": \"src/App.tsx\", \"lines\": \"138-200\"}">
-</lov-tool-use>
-Now I understand. The single generic `SuspenseLoader` shows the same skeleton (header + image card + 4 grid tiles) for every route — cart, profile, admin pages, settings, etc. — so it rarely matches the actual content layout, looking "random/inaccurate." Let me check existing route-specific skeletons.
-<lov-tool-use id="toolu_vrtx_011DVtX4EHqpSodabmHFnZhP" name="code--search_files" integration-id="code" data="{\"include_patterns\": \"src/components/**/*.tsx\", \"query\": \"export.*Skeleton\"}">
-</lov-tool-use>
-I have enough context. The skeleton library already exists with route-appropriate variants — they're just not wired into the route-level Suspense fallback.
-
-<lov-plan>
-
-## المشكلة
-كل الصفحات (~120) تعرض **نفس الـ skeleton الافتراضي** (هيدر + صورة كبيرة + 4 بطاقات شبكة) من `SuspenseLoader` في `src/App.tsx`. النتيجة: عند فتح صفحة السلة، الإعدادات، الإشعارات، أو لوحة الأدمن → يظهر skeleton لمنتجات لا علاقة له بالمحتوى الفعلي → يبدو "عشوائياً".
-
-## الحل: Skeleton حسب نوع الصفحة (Route-Aware)
-
-### الفكرة
-نستفيد من مكتبة `PageSkeletons.tsx` الموجودة بالفعل (بها `CartSkeleton`, `ProfileSkeleton`, `ChatSkeleton`, `AdminPageSkeleton`, `DetailPageSkeleton`, `OrderListSkeleton`, `FormSkeleton`, `NotificationsSkeleton`, `ProductGridSkeleton`...) ونربط كل مسار بالـ skeleton المناسب.
-
-### التنفيذ في `src/App.tsx`
-
-**1. تحويل `SuspenseLoader` ليقرأ المسار الحالي**
-بما أنه داخل `AppContent` (الذي يستخدم `useLocation` مسبقاً)، سنمرر `pathname` للـ fallback ليختار الشكل المناسب:
-
-```tsx
-const RouteSkeleton = ({ pathname }: { pathname: string }) => {
-  // Map: cart→CartSkeleton, /orders→OrderListSkeleton,
-  // /notifications→NotificationsSkeleton, /admin/*→AdminPageSkeleton,
-  // /profile|/user-info→ProfileSkeleton, /chat|/messages→ChatSkeleton,
-  // /product/:slug→DetailPageSkeleton, /products|/category/*→ProductGridSkeleton,
-  // /settings|/notification-settings→FormSkeleton,
-  // default→الشكل الحالي البسيط
-};
+الموقع لا يفتح بسبب خطأ JavaScript في الـ production bundle:
+```
+TypeError: Class extends value undefined is not a constructor or null
+at vendor-jspdf-DGAuUzlQ.js
 ```
 
-**2. خريطة المسارات** (~15 نمط) تغطي:
-- `/cart` → `CartSkeleton`
-- `/orders`, `/my-orders` → `OrderListSkeleton`
-- `/notifications` → `NotificationsSkeleton`
-- `/notification-settings`, `/settings`, `/user-info` → `FormSkeleton`
-- `/profile/*`, `/profile-settings` → `ProfileSkeleton`
-- `/chat`, `/messages`, `/maintenance-chat` → `ChatSkeleton`
-- `/product/:slug`, `/bundles/:id`, `/category/:slug` → `DetailPageSkeleton`
-- `/products`, `/shop`, `/favorites`, `/offers` → `ProductGridSkeleton`
-- `/admin/*`, `/inventory`, `/financial-*`, `/games-settings` → `AdminPageSkeleton`
-- `/rewards`, `/competitions` → `CompetitionGridSkeleton`
-- `/download-app` → skeleton مخصص بسيط (زر كبير + نص)
-- باقي المسارات → الشكل العام الحالي
+هذا الخطأ يحدث **قبل** أن يصل React إلى `createRoot()`، فيبقى المستخدم عالقاً على شاشة التحميل الذهبية إلى الأبد — على كل الأجهزة، وحتى في وضع التصفح المتخفي. هذا ليس له علاقة بالـ cache أو الإنترنت.
 
-**3. منع وميض غير ضروري**: عرض الـ skeleton فقط بعد 80ms (delay) باستخدام state مع `setTimeout` — إذا حُمّلت الصفحة من الكاش بسرعة، لن يظهر أي skeleton أصلاً.
+## السبب
 
-### الملفات المعدّلة
-- `src/App.tsx` فقط — حوالي 40 سطر يستبدل `SuspenseLoader` بمكون `RouteSkeleton` ذكي يقرأ `useLocation` ويختار من `PageSkeletons`.
+في `vite.config.ts` يتم تجميع `jspdf` + `canvg` + `pako` معاً في chunk واحد (`vendor-jspdf`):
 
-### النتيجة المتوقعة
-- صفحة السلة → skeleton على شكل عناصر سلة
-- صفحة الإشعارات → skeleton على شكل قائمة إشعارات
-- صفحة منتج → skeleton على شكل صفحة تفاصيل
-- لوحة الأدمن → skeleton على شكل إحصائيات + جدول
-- الانتقالات السريعة (<80ms) → بدون أي skeleton (تجربة فورية)
+```js
+if (id.includes('jspdf') || id.includes('canvg') || id.includes('pako')) return 'vendor-jspdf';
+```
 
+المشكلتان:
+1. `pako` يستخدمه `three.js` و `html2canvas` أيضاً، فيُسحب بطريقة تكسر ترتيب التهيئة
+2. السلسلة `'jspdf'` تطابق أيضاً `jspdf-autotable` ومسارات فرعية، مما يخلط الـ class hierarchy
+3. النتيجة: عند تنفيذ الـ chunk، يحاول كلاس داخلي أن يرث من قيمة لم تُعرَّف بعد → الخطأ
+
+## الإصلاح
+
+```text
+vite.config.ts → دالة manualChunks
+```
+
+**التغيير** (سطر واحد فقط، آمن وحاسم):
+
+عزل `jspdf` بدقة في chunk منفصل وعدم خلطه مع `pako`/`canvg`/`html2canvas`. الـ matching يجب أن يكون على مسار `node_modules/jspdf/` تحديداً وليس على substring.
+
+```js
+// قبل (مكسور):
+if (id.includes('jspdf') || id.includes('canvg') || id.includes('pako')) return 'vendor-jspdf';
+
+// بعد (سليم):
+if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
+if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
+// pako: ندعه يذهب مع vendor-misc تلقائياً (لأن three.js/html2canvas يحتاجونه قبل jspdf)
+```
+
+## الخطوات
+
+1. تعديل `vite.config.ts`: تصحيح شرط `manualChunks` لـ jspdf (سطر 48) — فصل pako وcanvg
+2. **النشر**: التغيير في الواجهة، لذا يجب الضغط على زر **Update / تحديث** في حوار النشر بعد التطبيق ليصل الإصلاح للموقع المباشر
+
+## النتيجة المتوقعة
+
+- الموقع سيفتح طبيعياً على levonisiq.com
+- شاشة التحميل ستختفي خلال ثانية
+- صفحة `/financial-drafts` ستستمر بالعمل (jsPDF لا يزال محمّلاً بشكل lazy عند الحاجة فقط)
+
+## ملاحظة
+
+بعد موافقتك على الخطة سأطبق التعديل وأطلب منك ضغط **Update** في حوار النشر — الإصلاح لن يصل للمستخدمين قبل ذلك.
