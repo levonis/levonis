@@ -45,13 +45,15 @@
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>
-    // KILL SWITCH (runs on EVERY page load until removed) — guarantees stuck users recover.
-    // Unregister any existing Service Worker + wipe Cache API + reset recovery counter
-    // BEFORE the app entry script even loads. Frees users whose old SW serves stale HTML
-    // pointing to chunk hashes that no longer exist after a deploy.
+    // One-shot SW + cache cleanup for users stuck on old chunk hashes.
+    // Runs ONCE per browser (guarded by localStorage flag) instead of every load,
+    // so it doesn't destroy the cache and slow down repeat visits.
     (function () {
+      try {
+        if (localStorage.getItem('__levo_sw_cleaned_v14') === '1') return;
+        localStorage.setItem('__levo_sw_cleaned_v14', '1');
+      } catch (e) {}
       try { localStorage.removeItem('__levo_recovery_attempts'); } catch (e) {}
-      try { sessionStorage.removeItem('__levo_self_healed_v13'); } catch (e) {}
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           regs.forEach(function (r) { r.unregister(); });

@@ -4,26 +4,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Service Worker: enable only for real production, never on Lovable preview hosts
-const isLovablePreview =
-  window.location.hostname.includes('lovableproject.com') ||
-  window.location.hostname.startsWith('id-preview--') ||
-  window.location.search.includes('__lovable_token=');
-
-// KILL SWITCH (one deploy cycle): unconditionally unregister any existing
-// Service Worker and wipe caches. Many users are stuck with a stale SW
-// from before v13 that points to chunk hashes that no longer exist.
-// Do NOT register a new SW for this cycle — let users run SW-free until
-// we're confident every existing client has been cleaned up. Re-enable later.
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(async (regs) => {
-    await Promise.all(regs.map((reg) => reg.unregister()));
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
-    }
-  }).catch(() => {});
-}
+// Service Worker kill-switch removed — it was wiping caches on every load,
+// forcing every asset to be re-downloaded and making the site very slow.
+// Old stuck users have already self-healed via the index.html one-shot cleaner.
 
 // Telegram Mini App: expand viewport to full height
 declare global {
