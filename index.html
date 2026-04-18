@@ -151,7 +151,12 @@
 
   <body>
     <div id="root"></div>
-    <div id="initial-loader" style="display:none;">
+    <div id="initial-loader">
+      <div class="il-wrap">
+        <div class="il-ring"></div>
+        <div class="il-ring-inner"></div>
+        <div class="il-logo">L</div>
+      </div>
       <div id="il-recover">
         <p>التحميل يستغرق وقتاً أطول من المعتاد</p>
         <button onclick="window.__levoRecover()">إعادة المحاولة</button>
@@ -177,8 +182,6 @@
         }
 
         function showRecovery(message) {
-          var loader = document.getElementById('initial-loader');
-          if (loader) loader.style.display = 'flex';
           var rec = document.getElementById('il-recover');
           if (!rec) return;
           if (message) {
