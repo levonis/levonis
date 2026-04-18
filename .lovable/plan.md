@@ -1,58 +1,82 @@
 
-## المشكلة الجذرية
+المستخدم يريد إضافة خيار **إدخال يدوي** لمنتج جديد (اسم + سعر) في حوار "تعديل منتجات الطلب" داخل `AdminOrderItemEditor.tsx`، بدلاً من الاقتصار على اختيار منتج موجود من القائمة.
 
-الموقع لا يفتح بسبب خطأ JavaScript في الـ production bundle:
-```
-TypeError: Class extends value undefined is not a constructor or null
-at vendor-jspdf-DGAuUzlQ.js
-```
+## الوضع الحالي
 
-هذا الخطأ يحدث **قبل** أن يصل React إلى `createRoot()`، فيبقى المستخدم عالقاً على شاشة التحميل الذهبية إلى الأبد — على كل الأجهزة، وحتى في وضع التصفح المتخفي. هذا ليس له علاقة بالـ cache أو الإنترنت.
+في `src/components/admin/AdminOrderItemEditor.tsx` قسم "إضافة منتج جديد" يحتوي فقط على Select لاختيار منتج موجود من جدول `products`. عند الإضافة يستدعي `addItem(productId)` الذي يجلب بيانات المنتج ويضيفه للقائمة.
 
-## السبب
+عند الحفظ، المنتجات الجديدة:
+- تستدعي `admin_adjust_order_inventory` (تعديل مخزون) — وهذا يتطلب `product_id` حقيقي
+- تُدرج في `order_items` مع `product_id`
 
-في `vite.config.ts` يتم تجميع `jspdf` + `canvg` + `pako` معاً في chunk واحد (`vendor-jspdf`):
+ملاحظة من الذاكرة (`order-items-constraint-v2`): قيد `order_items_product_or_custom_or_bundle_check` تم إسقاطه، لذا يمكن إدراج صفوف يدوية بدون `product_id`.
 
-```js
-if (id.includes('jspdf') || id.includes('canvg') || id.includes('pako')) return 'vendor-jspdf';
-```
+## التصميم المقترح
 
-المشكلتان:
-1. `pako` يستخدمه `three.js` و `html2canvas` أيضاً، فيُسحب بطريقة تكسر ترتيب التهيئة
-2. السلسلة `'jspdf'` تطابق أيضاً `jspdf-autotable` ومسارات فرعية، مما يخلط الـ class hierarchy
-3. النتيجة: عند تنفيذ الـ chunk، يحاول كلاس داخلي أن يرث من قيمة لم تُعرَّف بعد → الخطأ
+إضافة **تبويبين (Tabs)** داخل صندوق "إضافة منتج جديد":
+1. **منتج موجود** (الحالي) — اختيار من القائمة
+2. **إدخال يدوي** (جديد) — حقول: اسم المنتج + السعر + الكمية
 
-## الإصلاح
+### سلوك "الإدخال اليدوي"
+- المنتج اليدوي يُضاف بـ `product_id: null` و `id: manual-{timestamp}`
+- يحمل علامة داخلية `is_manual: true` لتمييزه
+- عند الحفظ:
+  - **لا** يستدعي `admin_adjust_order_inventory` (لا يوجد مخزون مرتبط)
+  - يُدرج في `order_items` مع `product_id: null`، `product_name_ar` = الاسم المُدخل، `unit_price`/`quantity`/`total_price` من النموذج
+- في عرض السطر: شارة صغيرة "✏️ يدوي" بدل شارة البندل لتمييزه، وحقل اللون يبقى متاحاً اختيارياً
 
-```text
-vite.config.ts → دالة manualChunks
-```
+### تغييرات الكود (ملف واحد فقط)
 
-**التغيير** (سطر واحد فقط، آمن وحاسم):
+**`src/components/admin/AdminOrderItemEditor.tsx`**:
 
-عزل `jspdf` بدقة في chunk منفصل وعدم خلطه مع `pako`/`canvg`/`html2canvas`. الـ matching يجب أن يكون على مسار `node_modules/jspdf/` تحديداً وليس على substring.
+1. إضافة state للنموذج اليدوي:
+   ```ts
+   const [manualName, setManualName] = useState("");
+   const [manualPrice, setManualPrice] = useState<number>(0);
+   const [manualQty, setManualQty] = useState<number>(1);
+   const [addMode, setAddMode] = useState<"existing"|"manual">("existing");
+   ```
 
-```js
-// قبل (مكسور):
-if (id.includes('jspdf') || id.includes('canvg') || id.includes('pako')) return 'vendor-jspdf';
+2. دالة `addManualItem()`:
+   ```ts
+   setItems(prev => [...prev, {
+     id: `manual-${Date.now()}`,
+     product_id: null as any,
+     product_name_ar: manualName.trim(),
+     product_name: manualName.trim(),
+     quantity: manualQty,
+     unit_price: manualPrice,
+     total_price: manualQty * manualPrice,
+     selected_color: null,
+     selected_option: null,
+     is_manual: true,
+   }]);
+   ```
 
-// بعد (سليم):
-if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
-if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
-// pako: ندعه يذهب مع vendor-misc تلقائياً (لأن three.js/html2canvas يحتاجونه قبل jspdf)
-```
+3. تعديل منطق `handleSave` للعناصر الجديدة:
+   - إذا كان `item.is_manual === true` أو `item.product_id == null` → تخطي استدعاء `admin_adjust_order_inventory`
+   - إدراج الصف في `order_items` مع `product_id: null`
 
-## الخطوات
+4. تحديث واجهة قسم "إضافة منتج جديد": أزرار toggle بين الوضعين + الحقول المناسبة لكل وضع، وزر "إضافة" واحد يستدعي الدالة المناسبة.
 
-1. تعديل `vite.config.ts`: تصحيح شرط `manualChunks` لـ jspdf (سطر 48) — فصل pako وcanvg
-2. **النشر**: التغيير في الواجهة، لذا يجب الضغط على زر **Update / تحديث** في حوار النشر بعد التطبيق ليصل الإصلاح للموقع المباشر
+5. إضافة شارة "✏️ يدوي" في سطر العنصر إذا كان `is_manual` (أو `!product_id` للعناصر القديمة اليدوية).
 
-## النتيجة المتوقعة
+### تحقق من الإدخال
+- الاسم: `trim()` غير فارغ، حد أقصى 200 حرف
+- السعر: ≥ 0
+- الكمية: ≥ 1
+- زر الإضافة معطّل حتى تكتمل الشروط
 
-- الموقع سيفتح طبيعياً على levonisiq.com
-- شاشة التحميل ستختفي خلال ثانية
-- صفحة `/financial-drafts` ستستمر بالعمل (jsPDF لا يزال محمّلاً بشكل lazy عند الحاجة فقط)
+### ما لا يتغير
+- لا تعديل على قاعدة البيانات (القيد مُسقط مسبقاً)
+- لا تعديل على `admin_adjust_order_inventory`
+- منطق الحذف/التعديل للعناصر الموجودة يبقى كما هو
 
-## ملاحظة
+## التأكيد
+الإصلاح ضمن ملف واحد، لا migrations مطلوبة، ولا يؤثر على الطلبات الحالية أو منطق المخزون للمنتجات الفعلية.
 
-بعد موافقتك على الخطة سأطبق التعديل وأطلب منك ضغط **Update** في حوار النشر — الإصلاح لن يصل للمستخدمين قبل ذلك.
+<lov-actions>
+<lov-suggestion message="جرب إضافة منتج يدوي لطلب موجود وتأكد من حفظه بدون التأثير على المخزون">تحقق أن الإضافة اليدوية تعمل</lov-suggestion>
+<lov-suggestion message="أضف إمكانية تعديل اسم المنتج اليدوي بعد إضافته للسطر بدون حذفه وإعادة إضافته">تعديل اسم المنتج اليدوي لاحقاً</lov-suggestion>
+<lov-suggestion message="أظهر المنتجات اليدوية في تقارير المبيعات والأرباح بقسم منفصل (بدون تكلفة شراء)">إدراج المنتجات اليدوية في التقارير المالية</lov-suggestion>
+</lov-actions>
