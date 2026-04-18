@@ -141,6 +141,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
       // COD settings (toggle only)
       setCodEnabled(!!editingProduct.cod_enabled);
+
+      // Persisted "link direct commission to COD %" toggle
+      setLinkDirectCommissionToCod(!!editingProduct.link_direct_commission_to_cod);
     }
   }, [editingProduct]);
 
@@ -285,6 +288,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
       <input type="hidden" name="referral_earnings_iqd" value={referralEarningsIqd} />
       <input type="hidden" name="cod_enabled" value={codEnabled ? 'true' : 'false'} />
+      <input type="hidden" name="link_direct_commission_to_cod" value={linkDirectCommissionToCod ? 'true' : 'false'} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">

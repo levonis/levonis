@@ -27,7 +27,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamic icon map for features
@@ -81,6 +81,24 @@ const ProductDetail = () => {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+
+  // Global COD default settings (for products linked to COD %)
+  const { data: codDefaults } = useQuery({
+    queryKey: ['cod-default-settings-product-detail'],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'partial_payment_settings')
+        .single();
+      const v: any = data?.setting_value || {};
+      return {
+        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
+        value: Number(v.cod_default_fee_value) || 0,
+      };
+    },
+  });
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     staleTime: 5 * 60 * 1000,
@@ -443,6 +461,17 @@ const ProductDetail = () => {
   const selectedColorData = allColors.find((c: any) => c.name_ar === selectedColor);
   // Guard all product prices through USD→IQD safeguard
   const guardedPrices = guardProductPrices(product as any, usdToIqd);
+
+  // If the product is linked to global COD %, recompute direct_sale_price live
+  // so it adjusts with exchange rate / sea shipping / COD setting changes.
+  const liveDirectSalePrice = computeLinkedDirectSalePrice(
+    product as any,
+    shippingSettings as any,
+    codDefaults as any,
+  );
+  if (liveDirectSalePrice != null) {
+    guardedPrices.direct_sale_price = liveDirectSalePrice;
+  }
 
   const getPrice = () => {
     if (activeSaleType === 'direct') {

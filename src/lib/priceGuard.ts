@@ -121,6 +121,77 @@ export function guardProductPrices(
 }
 
 /**
+ * Computes the live direct-sale price when `link_direct_commission_to_cod` is enabled.
+ * The commission portion is derived from global COD settings applied to the live pre-order price,
+ * so the returned value adjusts automatically when exchange rate / shipping / COD settings change.
+ *
+ * Returns null if the flag is not set or required inputs are missing — caller should fall back
+ * to the stored `direct_sale_price`.
+ */
+export function computeLinkedDirectSalePrice(
+  product: {
+    link_direct_commission_to_cod?: boolean | null;
+    has_pre_order?: boolean | null;
+    shipping_type?: string | null;
+    price_usd?: number | null;
+    personal_delivery_cost?: number | null;
+    referral_earnings_iqd?: number | null;
+    commission_sea_iqd?: number | null;
+    commission_air_iqd?: number | null;
+    sea_price?: number | null;
+    air_price?: number | null;
+    round_up_price?: boolean | null;
+  },
+  shippingSettings: { usd_to_iqd_rate: number } | null | undefined,
+  codDefaults: { type: 'percentage' | 'fixed'; value: number } | null | undefined
+): number | null {
+  if (!product?.link_direct_commission_to_cod) return null;
+  if (!shippingSettings || !codDefaults) return null;
+
+  const priceUsd = Number(product.price_usd || 0);
+  if (priceUsd <= 0) return null;
+
+  const rate = Number(shippingSettings.usd_to_iqd_rate) || 0;
+  if (rate <= 0) return null;
+
+  const priceIqd = Math.round(priceUsd * rate);
+  const pdc = Number(product.personal_delivery_cost || 0);
+  const referral = Number(product.referral_earnings_iqd || 0);
+  const seaCommission = Number(product.commission_sea_iqd || 0);
+  const airCommission = Number(product.commission_air_iqd || 0);
+
+  const hasPreOrder = !!product.has_pre_order;
+  const st = product.shipping_type;
+  const hasSea = st === 'sea' || st === 'both';
+  const hasAir = st === 'air' || st === 'both';
+
+  // Determine pre-order final (sea preferred, else air) for the percentage base
+  let preorderFinal = priceIqd + pdc + referral;
+  if (hasPreOrder && hasSea && product.sea_price != null) {
+    // sea_price already includes priceIqd + shipping + sea commission + pdc + referral
+    preorderFinal = Number(product.sea_price);
+  } else if (hasPreOrder && hasAir && product.air_price != null) {
+    preorderFinal = Number(product.air_price);
+  }
+
+  let directPortion: number;
+  if (codDefaults.type === 'fixed') {
+    directPortion = Math.ceil(codDefaults.value);
+  } else {
+    directPortion = Math.ceil((preorderFinal * codDefaults.value) / 100);
+  }
+
+  // Direct sale = priceIqd + (pre-order sea commission addon) + directPortion + pdc + referral
+  const seaCommissionAddon = hasPreOrder && hasSea ? seaCommission : 0;
+  let total = priceIqd + seaCommissionAddon + directPortion + pdc + referral;
+
+  if (product.round_up_price) {
+    total = Math.ceil(total / 250) * 250;
+  }
+  return total;
+}
+
+/**
  * Calculates the correct IQD price for a cart item, applying USD→IQD conversion
  * to ALL price sources (product base, color override, sea/air prices).
  * Option price_adjustment is already in IQD and added directly.

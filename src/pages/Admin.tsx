@@ -1287,6 +1287,7 @@ const Admin = () => {
       values.personal_delivery_cost = personalDeliveryCostVal;
       values.referral_earnings_iqd = referralEarningsIqdVal;
       values.cod_enabled = formData.get('cod_enabled') === 'true';
+      values.link_direct_commission_to_cod = formData.get('link_direct_commission_to_cod') === 'true';
 
       if (priceUsdVal && priceUsdVal > 0) {
         // Fetch shipping settings for calculation
