@@ -1,40 +1,69 @@
 
 
-## Plan: Fix infinite loading screen on mobile
+The user wants to convert the existing web app into native Android (APK / AAB for Google Play) and iOS (for App Store) apps. This requires Capacitor since the project is React/Vite. PWA alone won't get them into the stores.
 
-### Root cause
-The mobile screenshot shows the static HTML loader with the "Retry" button visible — meaning React never mounted within 5 seconds. After repeated optimizations the bundle is still too heavy because `src/App.tsx` declares ~120 routes and **eagerly imports the entire `Home.tsx` page** plus heavy chrome (`Header`, `AppNavBar`, `CommunityTopBar`, `AnnouncementBar`) and 3 always-on hooks (`useDailyLogin`, `useMessageNotifications`, `useOnlineHeartbeat`). On a slow Iraqi mobile connection the initial JS chunk takes >5s to download/parse, the recovery UI appears, the user taps "Retry", caches are wiped, and the same cold-load happens again — a permanent loop.
+Current state: The project already has PWA setup (manifest.json, service worker, icons). No Capacitor yet.
 
-The auto-reload safety net (12s on mobile) makes things worse: it can fire before React even finishes parsing on a slow phone, then wipes the cache, forcing another cold download.
+## الخطة: تحويل الموقع إلى تطبيق جوال للنشر على Google Play و App Store
 
-### Fix strategy
+سنستخدم **Capacitor** (من شركة Ionic) لتغليف الموقع الحالي كتطبيق أصلي (Native) لنظامي Android و iOS، مع الحفاظ على نفس الكود.
 
-**1. Slim the eager bundle** (`src/App.tsx`)
-- Lazy-load `Home` (currently eager) — the Suspense fallback already exists
-- Lazy-load `Header`, `AppNavBar`, `CommunityTopBar`, `AnnouncementBar` (route-independent chrome that can render after first paint)
-- Defer `useDailyLogin`, `useMessageNotifications`, `useOnlineHeartbeat` until **after** the user is authenticated AND idle (move into a separate `<DeferredEffects/>` component mounted with `requestIdleCallback`)
+### ما سيتم تنفيذه في Lovable
 
-**2. Prevent the reload loop** (`index.html`)
-- Increase mobile auto-reload from 12s → 25s (give slow phones time)
-- Track recovery attempts in `localStorage` (not just sessionStorage). After 2 failed auto-recoveries, **stop auto-reloading** and just show the manual retry button with a clearer message ("اتصالك بطيء — جرّب شبكة أخرى")
-- Don't trigger recovery on a single chunk-load `error` event — require 2 within 3s, since transient image/css errors currently mark the whole page as broken
+**1. تثبيت حزم Capacitor الأساسية**
+- `@capacitor/core` و `@capacitor/cli`
+- `@capacitor/android` (لـ Google Play)
+- `@capacitor/ios` (لـ App Store)
+- `@capacitor/splash-screen` و `@capacitor/status-bar` و `@capacitor/app` (تجربة أصلية أفضل)
+- `@capacitor/push-notifications` (لتفعيل الإشعارات الأصلية لاحقاً، بديلاً عن إشعارات الويب)
 
-**3. Faster fail-open for HTML** (`public/sw.js`)
-- Bump cache to `levonis-v10`
-- Reduce HTML network timeout from 5s → 3s so cached HTML is served faster on flaky connections
-- On `activate`, also delete IndexedDB Workbox caches if present
+**2. إنشاء ملف `capacitor.config.ts`** بالإعدادات التالية:
+- `appId`: `app.lovable.eae9743ef7d4438dbfb8c27f25184241`
+- `appName`: `LEVONIS`
+- شاشة بداية (Splash) بنفس لون الموقع `#103d33` مع الشعار الذهبي
+- شريط الحالة (Status Bar) بلون `#16a34a`
+- اتجاه RTL مدعوم
+- `server.url` يشير إلى رابط Lovable للسماح بالتحديث الفوري أثناء التطوير (Hot Reload)، مع إمكانية إزالته للنشر النهائي
 
-**4. Mark React mounted earlier** (`src/main.tsx`)
-- Dispatch `levo:mounted` synchronously after `createRoot().render()` returns (not in `requestAnimationFrame`) so the safety timers clear the moment React has begun rendering, even if the first paint is still pending. This alone removes ~50% of false-positive "stuck" detections.
+**3. تحسين الواجهة للأجهزة الأصلية**
+- إضافة `safe-area-inset` لدعم iPhone notch
+- إخفاء عناصر التثبيت كـ PWA (`InstallPrompt`) عند التشغيل داخل التطبيق الأصلي (نكتشف ذلك عبر `Capacitor.isNativePlatform()`)
+- التأكد أن زر الرجوع في Android يعمل بشكل صحيح مع React Router
 
-### Files to change
-- `src/App.tsx` — lazy-load Home + chrome, defer hooks
-- `src/main.tsx` — fire `levo:mounted` immediately after render
-- `index.html` — softer recovery loop, attempt limit
-- `public/sw.js` — v10, faster HTML timeout
+**4. إعداد الأيقونات وشاشة البداية**
+- استخدام الأيقونات الموجودة (`/icons/icon-512.png`) كمصدر
+- توليد الأحجام المطلوبة لكل من Android و iOS
 
-### Expected outcome
-- First-paint JS bundle drops significantly (Home + chrome are ~40% of current eager bundle on this project)
-- Mobile users on slow connections see the React app within 2-3s instead of timing out
-- If they still time out, they see ONE retry attempt then a clear message — no infinite reload loop
+### ما يجب على المستخدم تنفيذه (لا يمكن تنفيذه داخل Lovable)
+
+> **مهم**: بناء ملف APK/AAB للنشر يتطلب أدوات تطوير محلية (Android Studio و Xcode). Lovable لا يستطيع توليد الملف النهائي مباشرة.
+
+**خطوات البناء:**
+1. تصدير المشروع إلى GitHub عبر زر "Export to Github"
+2. استنساخ المشروع محلياً: `git clone <repo>`
+3. تثبيت الحزم: `npm install`
+4. إضافة المنصات: `npx cap add android` و `npx cap add ios`
+5. بناء الموقع: `npm run build`
+6. مزامنة مع Capacitor: `npx cap sync`
+7. فتح المشروع في الأداة الأصلية:
+   - Android: `npx cap open android` ← يفتح Android Studio لبناء APK/AAB
+   - iOS: `npx cap open ios` ← يفتح Xcode (يتطلب جهاز Mac)
+
+**للنشر على المتاجر:**
+- **Google Play**: حساب Google Play Developer ($25 لمرة واحدة) + ملف AAB موقّع رقمياً
+- **Apple App Store**: حساب Apple Developer ($99/سنة) + جهاز Mac لاستخدام Xcode
+
+### ملاحظات تقنية
+
+- التطبيق الأصلي سيستخدم نفس الـ Backend (Lovable Cloud / Supabase) بدون تغيير
+- المصادقة (Auth) ستحتاج تعديلاً بسيطاً لـ OAuth لاحقاً (Deep Links) — يمكن إضافته لاحقاً عند الحاجة
+- خيار بديل أبسط: إذا كان الهدف فقط جعل التطبيق "قابل للتثبيت" دون الحاجة لمتاجر التطبيقات، فالموقع يدعم بالفعل PWA ويمكن تثبيته من المتصفح مباشرة
+
+### الملفات التي ستتم إضافتها/تعديلها
+
+- `capacitor.config.ts` (جديد)
+- `package.json` (إضافة الحزم)
+- `src/main.tsx` (تهيئة Capacitor plugins)
+- `src/components/pwa/InstallPrompt.tsx` (إخفاؤه على المنصات الأصلية)
+- `src/index.css` (دعم safe-area)
 
