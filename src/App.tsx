@@ -60,6 +60,8 @@ const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates")
 const AdminSavedInvoices = lazy(() => import("./pages/AdminSavedInvoices"));
 const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
+const DownloadApp = lazy(() => import("./pages/DownloadApp"));
+const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
 
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
 const MyReferral = lazy(() => import("./pages/MyReferral"));
@@ -203,6 +205,8 @@ function AppContent() {
             <Route path="/order/:orderId" element={<RequireAuth><OrderDetail /></RequireAuth>} />
             <Route path="/my-orders/:orderId/confirm" element={<RequireAuth><ConfirmDelivery /></RequireAuth>} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/download-app" element={<DownloadApp />} />
+            <Route path="/admin/app-versions" element={<RequireAuth><AdminAppVersions /></RequireAuth>} />
             
             {/* Secure Admin Routes - Using obfuscated path */}
             <Route path={ADMIN_BASE_PATH} element={<AdminRoute><Admin /></AdminRoute>} />
