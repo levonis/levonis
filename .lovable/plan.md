@@ -1,4 +1,9 @@
 
-The user reports the live site still shows green loading screen with "إعادة المحاولة" button. The Stack Overflow knowledge confirms my real root cause: **`@react-three/fiber` v9 requires React 19, but project uses React 18**. Bundle re-chunking won't fix this — only downgrading the package will.
+The user is clarifying the previous declined plan. Key differences:
+- COD applies to **بيع مسبق (Preorder)** sale type, not direct sale
+- Fee calculated on **final price including options/colors adjustments**
+- Per-product config + fallback in `/cp-x9A3kL7m/partial-payment-settings`
+- Cart shows COD option only if ALL items have it enabled
+- Each item's fee calculated independently (% or fixed) then summed
 
-Let me verify by checking package.json.
+Let me check preorder logic briefly to confirm.
