@@ -18,17 +18,39 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true,
     cssMinify: true,
     target: 'es2020',
+    // Trim modulepreload graph: the initial HTML must NOT preload heavy lazy chunks
+    // (three.js, html2canvas, jspdf, qr, charts, motion, sanitize, day-picker) — they
+    // should load only when the route that needs them is visited. This dramatically
+    // improves LCP on the homepage (saves ~493 KiB of unused JS preloaded eagerly).
+    modulePreload: {
+      resolveDependencies: (_filename, deps) => {
+        const HEAVY = [
+          'vendor-three',
+          'vendor-html2canvas',
+          'vendor-jspdf',
+          'vendor-qr',
+          'vendor-charts',
+          'vendor-motion',
+          'vendor-sanitize',
+          'vendor-carousel',
+          'vendor-capacitor',
+          'vendor-daypicker',
+        ];
+        return deps.filter((d) => !HEAVY.some((h) => d.includes(h)));
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return undefined;
           // Heavy, lazy-loaded libs into their own chunks
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
-          if (id.includes('jspdf')) return 'vendor-jspdf';
+          if (id.includes('jspdf') || id.includes('canvg') || id.includes('pako')) return 'vendor-jspdf';
           if (id.includes('three') || id.includes('@react-three')) return 'vendor-three';
           if (id.includes('html5-qrcode') || id.includes('jsqr')) return 'vendor-qr';
-          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'vendor-motion';
           if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('react-day-picker')) return 'vendor-daypicker';
           if (id.includes('@supabase') || id.includes('postgrest') || id.includes('gotrue') || id.includes('realtime-js')) return 'vendor-supabase';
           if (id.includes('lucide-react') || id.includes('react-icons')) return 'vendor-icons';
           if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-date';
