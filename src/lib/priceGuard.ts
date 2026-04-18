@@ -148,6 +148,8 @@ export function computeLinkedDirectSalePrice(
 ): number | null {
   if (!product?.link_direct_commission_to_cod) return null;
   if (!shippingSettings || !codDefaults) return null;
+  // If COD value is 0 (e.g. anon user can't read settings due to RLS), don't override stored price
+  if (!codDefaults.value || codDefaults.value <= 0) return null;
 
   const priceUsd = Number(product.price_usd || 0);
   if (priceUsd <= 0) return null;
