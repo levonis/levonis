@@ -77,24 +77,25 @@ import('@capacitor/core').then(({ Capacitor }) => {
   }).catch(() => {});
 }).catch(() => {});
 
-// Telegram WebApp SDK is loaded asynchronously after page load (see index.html)
-// Wait for it to become available before initializing
-const initTelegramWebApp = () => {
+// Telegram WebApp SDK is loaded only inside Telegram (see index.html).
+// Poll briefly, then give up so we never keep timers alive on regular browsers.
+const initTelegramWebApp = (attempts = 0) => {
   if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
     try {
+      tg.ready();
+      tg.expand();
       tg.setHeaderColor?.('#09090b');
       tg.setBackgroundColor?.('#09090b');
     } catch {}
-  } else {
-    setTimeout(initTelegramWebApp, 200);
+    return;
   }
+  if (attempts >= 15) return; // ~3s max
+  setTimeout(() => initTelegramWebApp(attempts + 1), 200);
 };
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && /Telegram/i.test(navigator.userAgent)) {
   if (document.readyState === 'complete') initTelegramWebApp();
-  else window.addEventListener('load', initTelegramWebApp);
+  else window.addEventListener('load', () => initTelegramWebApp());
 }
 
 createRoot(document.getElementById("root")!).render(
