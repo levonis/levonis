@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    sourcemap: mode === "development",
+    sourcemap: true,
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     cssMinify: true,
