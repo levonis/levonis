@@ -560,28 +560,45 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               <ShoppingBag className="h-3 w-3" />
               <span>إعدادات البيع المباشر</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="other_costs_iqd">تكاليف أخرى (د.ع)</Label>
-              <Input
-                id="other_costs_iqd"
-                type="number"
-                min="0"
-                value={otherCostsIqd || ''}
-                onChange={(e) => setOtherCostsIqd(Number(e.target.value))}
-                placeholder="0"
+
+            <label className="flex items-start gap-2 cursor-pointer p-2 rounded-md bg-muted/30 border border-border">
+              <Checkbox
+                checked={linkDirectCommissionToCod}
+                onCheckedChange={(checked) => setLinkDirectCommissionToCod(!!checked)}
+                className="mt-0.5"
               />
-              <p className="text-xs text-muted-foreground">تكاليف إضافية مثل الشحن الداخلي أو التغليف</p>
-            </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium flex items-center gap-1.5">
+                  <Truck className="h-3.5 w-3.5 text-primary" />
+                  ربط العمولة بنسبة الدفع عند الاستلام
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {codDefaults
+                    ? `يتم احتساب العمولة تلقائياً حسب الإعداد العام (${codDefaults.type === 'percentage' ? `${codDefaults.value}%` : `${codDefaults.value.toLocaleString()} د.ع`}).`
+                    : 'سيتم احتساب العمولة تلقائياً حسب إعدادات الدفع عند الاستلام.'}
+                </p>
+                {linkDirectCommissionToCod && priceUsd > 0 && shippingSettings && (
+                  <div className="text-xs mt-1 text-primary font-medium">
+                    العمولة المحسوبة: {formatPrice(effectiveCommissionDirect)}
+                  </div>
+                )}
+              </div>
+            </label>
+
             <div className="space-y-2">
               <Label htmlFor="commission_direct_iqd">العمولة - بيع مباشر (د.ع)</Label>
               <Input
                 id="commission_direct_iqd"
                 type="number"
                 min="0"
-                value={commissionDirectIqd || ''}
+                value={linkDirectCommissionToCod ? effectiveCommissionDirect : (commissionDirectIqd || '')}
                 onChange={(e) => setCommissionDirectIqd(Number(e.target.value))}
                 placeholder="0"
+                disabled={linkDirectCommissionToCod}
               />
+              <p className="text-xs text-muted-foreground">
+                تشمل تكاليف الشحن الداخلي والتغليف وأي تكاليف أخرى — هذه القيمة هي الوحيدة المستخدمة لحساب البيع المباشر.
+              </p>
             </div>
           </div>
         )}
@@ -613,12 +630,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                     <div className="font-medium text-foreground">الوزن المستخدم (الأكبر + هامش أمان): {(r.usedWeight * 1.05).toFixed(2)} كغ</div>
                   </div>
                 )}
-                {r.type === 'direct' && otherCostsIqd > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">تكاليف أخرى</span>
-                    <span>{formatPrice(otherCostsIqd)}</span>
-                  </div>
-                )}
+                {/* تكاليف أخرى مدمجة الآن في العمولة */}
                 {(r.personalDelivery || 0) > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span className="flex items-center gap-1"><Truck className="h-3 w-3" /> تكلفة التوصيل</span>
