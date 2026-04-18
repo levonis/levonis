@@ -31,7 +31,24 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   });
 
   const isPrinterCategory = categoryId ? personalDeliveryCategoryIds.includes(categoryId) : false;
-  
+
+  // Global COD default settings (used when linking direct commission to COD %)
+  const { data: codDefaults } = useQuery({
+    queryKey: ['cod-default-settings-product-form'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'partial_payment_settings')
+        .single();
+      const v: any = data?.setting_value || {};
+      return {
+        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
+        value: Number(v.cod_default_fee_value) || 0,
+      };
+    },
+  });
+
   // Sale types (multi-select)
   const [hasPreOrder, setHasPreOrder] = useState(false);
   const [hasDirectSale, setHasDirectSale] = useState(false);
