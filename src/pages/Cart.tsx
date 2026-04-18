@@ -2761,7 +2761,7 @@ const Cart = () => {
                     )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
-                        {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total')}
+                        {isCodPayment ? 'المطلوب الآن' : (hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total'))}
                       </span>
                       <span className="text-primary"><AnimatedPrice value={grandTotal} formatFn={formatPrice} /> دينار عراقي</span>
                     </div>
