@@ -20,6 +20,9 @@ interface PartialPaymentSettings {
   fee_label_ar: string;
   fee_label_en: string;
   fee_tiers: FeeTier[];
+  cod_label_ar?: string;
+  cod_default_fee_type?: 'percentage' | 'fixed';
+  cod_default_fee_value?: number;
 }
 
 const defaultSettings: PartialPaymentSettings = {
@@ -30,7 +33,10 @@ const defaultSettings: PartialPaymentSettings = {
     { min_amount: 250001, max_amount: 500000, fee_percentage: 7 },
     { min_amount: 500001, max_amount: 1000000, fee_percentage: 5 },
     { min_amount: 1000001, max_amount: 2000000, fee_percentage: 3 },
-  ]
+  ],
+  cod_label_ar: 'رسوم الدفع عند الاستلام',
+  cod_default_fee_type: 'percentage',
+  cod_default_fee_value: 5,
 };
 
 export default function AdminPartialPaymentSettings() {
@@ -263,6 +269,50 @@ export default function AdminPartialPaymentSettings() {
                   value={formData.fee_label_en}
                   onChange={(e) => setFormData({ ...formData, fee_label_en: e.target.value })}
                   placeholder="Partial Payment Fee"
+                />
+              </div>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+
+        {/* إعدادات الدفع عند الاستلام */}
+        <AdminCard>
+          <AdminCardHeader
+            title="إعدادات الدفع عند الاستلام (افتراضية للطلب المسبق)"
+            description="تُستخدم كقيم احتياطية للمنتجات التي تُفعّل ميزة الدفع عند الاستلام دون تحديد قيمة عمولة. يمكن تخصيص العمولة لكل منتج من صفحة تعديل المنتج."
+            icon={<Percent className="h-5 w-5" />}
+          />
+          <AdminCardContent>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>نوع العمولة الافتراضي</Label>
+                <select
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  value={formData.cod_default_fee_type || 'percentage'}
+                  onChange={(e) => setFormData({ ...formData, cod_default_fee_type: e.target.value as 'percentage' | 'fixed' })}
+                >
+                  <option value="percentage">نسبة %</option>
+                  <option value="fixed">مبلغ ثابت (د.ع)</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>
+                  {(formData.cod_default_fee_type || 'percentage') === 'percentage' ? 'النسبة الافتراضية %' : 'القيمة الافتراضية (د.ع)'}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step={(formData.cod_default_fee_type || 'percentage') === 'percentage' ? '0.5' : '500'}
+                  value={formData.cod_default_fee_value ?? 0}
+                  onChange={(e) => setFormData({ ...formData, cod_default_fee_value: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>تسمية رسوم الدفع عند الاستلام (تظهر للعميل)</Label>
+                <Input
+                  value={formData.cod_label_ar || ''}
+                  onChange={(e) => setFormData({ ...formData, cod_label_ar: e.target.value })}
+                  placeholder="رسوم الدفع عند الاستلام"
                 />
               </div>
             </div>

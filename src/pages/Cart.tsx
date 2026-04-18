@@ -56,7 +56,7 @@ const Cart = () => {
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter'>('full');
+  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter' | 'cod'>('full');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
@@ -477,6 +477,9 @@ const Cart = () => {
     fee_label_en: string;
     fee_tiers?: FeeTier[];
     quarter_payment_fee_percentage?: number; // للتوافق مع الإعدادات القديمة
+    cod_label_ar?: string;
+    cod_default_fee_type?: 'percentage' | 'fixed';
+    cod_default_fee_value?: number;
   }
   
   const { data: partialPaymentSettings } = useQuery({
@@ -758,22 +761,66 @@ const Cart = () => {
   };
   
   const partialPaymentFee = calculatePartialPaymentFee();
-  
-  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? Math.ceil(subtotalWithTax * 0.25) 
-    : subtotalWithTax;
-  
-  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي لأنها تُدفع لاحقاً)
-  const walletDeduction = useWalletBalance && wallet?.balance 
+
+  // ===== الدفع عند الاستلام (للطلب المسبق فقط) =====
+  // متاح فقط إذا كان كل المنتجات في السلة تدعم الدفع عند الاستلام
+  const allItemsSupportCod = hasPreOrderItems && items.length > 0 && items.every((item: any) => {
+    return item.products?.cod_enabled === true;
+  });
+  const showCodOption = allItemsSupportCod;
+
+  // إعادة ضبط الخيار إذا اختفى الشرط
+  useEffect(() => {
+    if (preOrderPaymentOption === 'cod' && !showCodOption) {
+      setPreOrderPaymentOption('full');
+    }
+  }, [showCodOption, preOrderPaymentOption]);
+
+  // حساب رسوم الدفع عند الاستلام: لكل منتج على حدة (نسبة أو ثابت) ثم الجمع
+  const codFee = useMemo(() => {
+    if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
+    const defaultType = partialPaymentSettings?.cod_default_fee_type || 'percentage';
+    const defaultVal = partialPaymentSettings?.cod_default_fee_value ?? 0;
+    return items.reduce((sum: number, item: any) => {
+      const unitPrice = getCartItemPrice(item); // السعر النهائي شامل تعديلات الخيارات/الألوان
+      const qty = item.quantity || 1;
+      const lineTotal = unitPrice * qty;
+      const product = item.products || {};
+      const type = (product.cod_fee_type === 'fixed' || product.cod_fee_type === 'percentage')
+        ? product.cod_fee_type
+        : defaultType;
+      const valRaw = (product.cod_fee_value !== undefined && product.cod_fee_value !== null && Number(product.cod_fee_value) > 0)
+        ? Number(product.cod_fee_value)
+        : Number(defaultVal);
+      if (!valRaw || valRaw <= 0) return sum;
+      const fee = type === 'percentage'
+        ? Math.ceil(lineTotal * valRaw / 100)
+        : Math.ceil(valRaw * qty);
+      return sum + fee;
+    }, 0);
+  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings, usdToIqd]);
+
+  const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
+
+  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter'
+    ? Math.ceil(subtotalWithTax * 0.25)
+    : (isCodPayment ? 0 : subtotalWithTax);
+
+  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي/COD لأنها تُدفع لاحقاً)
+  const walletDeduction = useWalletBalance && wallet?.balance && !isCodPayment
     ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
     : 0;
-  
-  const grandTotal = Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
-  
-  // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي)
-  const remainingAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
-    : 0;
+
+  const grandTotal = isCodPayment
+    ? 0
+    : Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
+
+  // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
+  const remainingAmount = isCodPayment
+    ? subtotalWithTax + codFee
+    : (hasPreOrderItems && preOrderPaymentOption === 'quarter'
+        ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
+        : 0);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -1323,19 +1370,22 @@ const Cart = () => {
       
       // Calculate payment info for pre-orders
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
+      const isPreOrderCod = hasPreOrderItems && isCodPayment;
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
       const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
-      const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
-      const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
-      
+      const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal);
+      const orderRemaining = isPreOrderCod
+        ? orderSubtotal + codFee
+        : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
+
       const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
-        total_amount: orderSubtotal + orderDeliveryFee,
+        total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0),
         subtotal: orderSubtotal,
-        paid_amount: paidNow + orderDeliveryFee,
-        remaining_amount: orderRemaining,
+        paid_amount: isPreOrderCod ? 0 : (paidNow + orderDeliveryFee),
+        remaining_amount: orderRemaining + (isPreOrderCod ? orderDeliveryFee : 0),
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
@@ -1343,6 +1393,7 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
+        payment_method: isPreOrderCod ? 'cod' : 'wallet',
       } as any;
       if (appliedReferral) {
         orderData.referral_coupon_id = appliedReferral.coupon_id;
@@ -1352,7 +1403,7 @@ const Cart = () => {
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
         p_user_id: user.id,
         p_order_data: orderData,
-        p_payment_amount: requiredPaymentNow,
+        p_payment_amount: isPreOrderCod ? 0 : requiredPaymentNow,
       });
 
       if (orderError || !orderId) {
@@ -2557,7 +2608,7 @@ const Cart = () => {
                       </div>
                       <RadioGroup 
                         value={preOrderPaymentOption} 
-                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'quarter')}
+                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'quarter' | 'cod')}
                         className="space-y-3"
                       >
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
@@ -2585,10 +2636,33 @@ const Cart = () => {
                               {t('cart_preorder_quarter_pay', { amount: formatPrice(Math.ceil(subtotalWithTax * 0.25)) })}
                             </div>
                             <div className="text-xs text-orange-500 mt-1">
-                              {t('cart_preorder_remaining', { amount: formatPrice(remainingAmount) })}
+                              {t('cart_preorder_remaining', { amount: formatPrice((subtotalWithTax - Math.ceil(subtotalWithTax * 0.25)) + partialPaymentFee) })}
                             </div>
                           </Label>
                         </div>
+                        {showCodOption && (
+                          <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                            preOrderPaymentOption === 'cod'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border/40 hover:border-primary/50'
+                          }`}>
+                            <RadioGroupItem value="cod" id="payment-cod" />
+                            <Label htmlFor="payment-cod" className="flex-1 cursor-pointer">
+                              <div className="font-bold text-foreground flex items-center gap-2">
+                                <Truck className="h-4 w-4" />
+                                الدفع عند الاستلام
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                لا تدفع شيئاً الآن — تدفع المبلغ كاملاً عند استلام الطلب
+                              </div>
+                              {preOrderPaymentOption === 'cod' && codFee > 0 && (
+                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                  + {formatPrice(codFee)} د.ع رسوم الدفع عند الاستلام
+                                </div>
+                              )}
+                            </Label>
+                          </div>
+                        )}
                       </RadioGroup>
                     </div>
                   )}
@@ -2601,6 +2675,14 @@ const Cart = () => {
                         <span className="font-bold text-primary">الدفع عند الاستلام</span>
                       </div>
                       <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب</p>
+                    </div>
+                  ) : isCodPayment ? (
+                    <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="h-5 w-5 text-primary" />
+                        <span className="font-bold text-primary">الدفع عند الاستلام</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب — لا يتم خصم أي مبلغ من المحفظة الآن.</p>
                     </div>
                   ) : (
                     <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-card border-primary/30' : 'bg-card border-destructive/30'}`}>
@@ -2651,6 +2733,28 @@ const Cart = () => {
                         </div>
                       </>
                     )}
+                    {isCodPayment && (
+                      <>
+                        <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                          <span>قيمة المنتجات</span>
+                          <span className="font-bold">{formatPrice(subtotalWithTax)} د.ع</span>
+                        </div>
+                        {codFee > 0 && (
+                          <div className="flex justify-between text-sm text-amber-600 mb-2">
+                            <span>{partialPaymentSettings?.cod_label_ar || 'رسوم الدفع عند الاستلام'}</span>
+                            <span className="font-bold">+{formatPrice(codFee)} د.ع</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                          <span>التوصيل</span>
+                          <span className="font-bold">{formatPrice(deliveryFee)} د.ع</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-orange-500 mb-3">
+                          <span>الإجمالي عند الاستلام</span>
+                          <span className="font-bold">{formatPrice(remainingAmount + deliveryFee)} دينار عراقي</span>
+                        </div>
+                      </>
+                    )}
                     {referralOwnerEarnings > 0 && (
                       <div className="flex justify-between text-sm mb-2 text-amber-600 dark:text-amber-400">
                         <span className="flex items-center gap-1">
@@ -2661,7 +2765,7 @@ const Cart = () => {
                     )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
-                        {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total')}
+                        {isCodPayment ? 'المطلوب الآن' : (hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total'))}
                       </span>
                       <span className="text-primary"><AnimatedPrice value={grandTotal} formatFn={formatPrice} /> دينار عراقي</span>
                     </div>

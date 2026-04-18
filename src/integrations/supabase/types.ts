@@ -8128,6 +8128,9 @@ export type Database = {
           availability_type: string
           card_discounts: Json | null
           category_id: string | null
+          cod_enabled: boolean
+          cod_fee_type: string
+          cod_fee_value: number
           colors: Json | null
           commission_air_iqd: number | null
           commission_direct_iqd: number | null
@@ -8190,6 +8193,9 @@ export type Database = {
           availability_type?: string
           card_discounts?: Json | null
           category_id?: string | null
+          cod_enabled?: boolean
+          cod_fee_type?: string
+          cod_fee_value?: number
           colors?: Json | null
           commission_air_iqd?: number | null
           commission_direct_iqd?: number | null
@@ -8252,6 +8258,9 @@ export type Database = {
           availability_type?: string
           card_discounts?: Json | null
           category_id?: string | null
+          cod_enabled?: boolean
+          cod_fee_type?: string
+          cod_fee_value?: number
           colors?: Json | null
           commission_air_iqd?: number | null
           commission_direct_iqd?: number | null

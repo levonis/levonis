@@ -60,6 +60,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
   const [referralEarningsIqd, setReferralEarningsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
+
+  // Cash on Delivery (Pre-order only)
+  const [codEnabled, setCodEnabled] = useState<boolean>(false);
+  const [codFeeType, setCodFeeType] = useState<'percentage' | 'fixed'>('percentage');
+  const [codFeeValue, setCodFeeValue] = useState<number>(0);
   
   // CNY converter
   const [showCnyInput, setShowCnyInput] = useState(false);
@@ -118,6 +123,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
       setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
       setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
+
+      // COD settings
+      setCodEnabled(!!editingProduct.cod_enabled);
+      setCodFeeType((editingProduct.cod_fee_type === 'fixed' ? 'fixed' : 'percentage'));
+      setCodFeeValue(Number(editingProduct.cod_fee_value) || 0);
     }
   }, [editingProduct]);
 
@@ -211,6 +221,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
       <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
       <input type="hidden" name="referral_earnings_iqd" value={referralEarningsIqd} />
+      <input type="hidden" name="cod_enabled" value={codEnabled ? 'true' : 'false'} />
+      <input type="hidden" name="cod_fee_type" value={codFeeType} />
+      <input type="hidden" name="cod_fee_value" value={codFeeValue} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -464,6 +477,49 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                 </div>
               </div>
             )}
+
+            {/* COD for Pre-order */}
+            <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={codEnabled}
+                  onCheckedChange={(checked) => setCodEnabled(!!checked)}
+                />
+                <Truck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">تفعيل الدفع عند الاستلام لهذا المنتج (للطلب المسبق)</span>
+              </label>
+              {codEnabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">نوع العمولة</Label>
+                    <select
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      value={codFeeType}
+                      onChange={(e) => setCodFeeType(e.target.value as 'percentage' | 'fixed')}
+                    >
+                      <option value="percentage">نسبة %</option>
+                      <option value="fixed">مبلغ ثابت (د.ع)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      {codFeeType === 'percentage' ? 'النسبة %' : 'القيمة (د.ع)'}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step={codFeeType === 'percentage' ? '0.5' : '500'}
+                      value={codFeeValue || ''}
+                      onChange={(e) => setCodFeeValue(Number(e.target.value) || 0)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground sm:col-span-2">
+                    تُحسب على السعر النهائي للقطعة (شامل تعديلات الخيارات والألوان) × الكمية. يُجمع مع رسوم باقي المنتجات في السلة.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
