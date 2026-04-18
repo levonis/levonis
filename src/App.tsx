@@ -156,7 +156,7 @@ function AppContent() {
         </Suspense>
       )}
       <main style={{ paddingTop: 0 }}>
-        <Suspense fallback={<SuspenseLoader />}>
+        <Suspense fallback={<RouteAwareSkeleton />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
