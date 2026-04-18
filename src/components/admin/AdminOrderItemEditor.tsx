@@ -190,6 +190,30 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   };
 
   const [addProductId, setAddProductId] = useState("");
+  const [addMode, setAddMode] = useState<"existing" | "manual">("existing");
+  const [manualName, setManualName] = useState("");
+  const [manualPrice, setManualPrice] = useState<number>(0);
+  const [manualQty, setManualQty] = useState<number>(1);
+
+  const addManualItem = () => {
+    const name = manualName.trim();
+    if (!name || manualPrice < 0 || manualQty < 1) return;
+    setItems(prev => [...prev, {
+      id: `manual-${Date.now()}`,
+      product_id: null as any,
+      product_name_ar: name,
+      product_name: name,
+      quantity: manualQty,
+      unit_price: manualPrice,
+      total_price: manualQty * manualPrice,
+      selected_color: null,
+      selected_option: null,
+      is_manual: true,
+    } as any]);
+    setManualName("");
+    setManualPrice(0);
+    setManualQty(1);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
