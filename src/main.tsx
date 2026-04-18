@@ -59,6 +59,24 @@ declare global {
   }
 }
 
+// Capacitor: initialize native platform UI (status bar, splash, back button)
+import('@capacitor/core').then(({ Capacitor }) => {
+  if (!Capacitor.isNativePlatform()) return;
+  import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+    StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+    StatusBar.setBackgroundColor({ color: '#103d33' }).catch(() => {});
+  }).catch(() => {});
+  import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+    setTimeout(() => SplashScreen.hide().catch(() => {}), 500);
+  }).catch(() => {});
+  import('@capacitor/app').then(({ App }) => {
+    App.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) window.history.back();
+      else App.exitApp();
+    });
+  }).catch(() => {});
+}).catch(() => {});
+
 if (window.Telegram?.WebApp) {
   const tg = window.Telegram.WebApp;
   tg.ready();
