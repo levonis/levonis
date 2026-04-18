@@ -9,14 +9,12 @@ import { AuthProvider } from "@/hooks/useAuth";
 import LanguageProvider from "@/components/LanguageProvider";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import { CartProvider } from "@/hooks/useCart";
-import { useDailyLogin } from "@/hooks/useDailyLogin";
-import { useMessageNotifications } from "@/hooks/useMessageNotifications";
-import { useOnlineHeartbeat } from "@/hooks/useOnlineHeartbeat";
-import Header from "@/components/Header";
-import AppNavBar from "@/components/AppNavBar";
-import CommunityTopBar from "@/components/community/CommunityTopBar";
-import AnnouncementBar from "@/components/AnnouncementBar";
 import AdminRoute from "@/components/AdminRoute";
+
+// Defer chrome and non-critical hooks for faster first paint on mobile
+const AppNavBar = lazy(() => import("@/components/AppNavBar"));
+const AnnouncementBar = lazy(() => import("@/components/AnnouncementBar"));
+const DeferredEffects = lazy(() => import("@/components/DeferredEffects"));
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
@@ -29,10 +27,8 @@ const LevoHelpBot = lazy(() => import("@/components/LevoHelpBot"));
 const InstallPrompt = lazy(() => import("@/components/pwa/InstallPrompt"));
 const SpriteDebugPage = lazy(() => import("@/components/games/SpriteDebug"));
 
-// Eager load Home page for best initial load
-import Home from "./pages/Home";
-
-// Lazy load all other routes
+// Lazy load all routes (including Home) to keep initial bundle small
+const Home = lazy(() => import("./pages/Home"));
 const Products = lazy(() => import("./pages/Products"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const Categories = lazy(() => import("./pages/Categories"));
@@ -169,9 +165,6 @@ const SuspenseLoader = () => {
 
 
 function AppContent() {
-  useDailyLogin();
-  useMessageNotifications();
-  useOnlineHeartbeat();
   const location = useLocation();
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
@@ -180,7 +173,14 @@ function AppContent() {
   return (
     <>
       <ScrollRestoration />
-      {!isReelsPage && <AnnouncementBar />}
+      <Suspense fallback={null}>
+        <DeferredEffects />
+      </Suspense>
+      {!isReelsPage && (
+        <Suspense fallback={null}>
+          <AnnouncementBar />
+        </Suspense>
+      )}
       <main style={{ paddingTop: 0 }}>
         <Suspense fallback={<SuspenseLoader />}>
           <Routes>
@@ -309,7 +309,11 @@ function AppContent() {
         </Suspense>
       </main>
       {/* Bottom/Side Navigation Bar */}
-      {!hideChrome && <AppNavBar />}
+      {!hideChrome && (
+        <Suspense fallback={null}>
+          <AppNavBar />
+        </Suspense>
+      )}
       {!hideChrome && <div className="h-16 md:hidden" />}
       {!hideChrome &&
       <>

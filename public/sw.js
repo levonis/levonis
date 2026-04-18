@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v9';
+const CACHE_NAME = 'levonis-v10';
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 const IS_PREVIEW_HOST =
   self.location.hostname.includes('lovableproject.com') ||
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => controller.abort(), 3000);
         const response = await fetch(request, { signal: controller.signal });
         clearTimeout(timeout);
         if (response.ok) {
