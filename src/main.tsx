@@ -10,35 +10,19 @@ const isLovablePreview =
   window.location.hostname.startsWith('id-preview--') ||
   window.location.search.includes('__lovable_token=');
 
+// KILL SWITCH (one deploy cycle): unconditionally unregister any existing
+// Service Worker and wipe caches. Many users are stuck with a stale SW
+// from before v13 that points to chunk hashes that no longer exist.
+// Do NOT register a new SW for this cycle — let users run SW-free until
+// we're confident every existing client has been cleaned up. Re-enable later.
 if ('serviceWorker' in navigator) {
-  const shouldRegisterSW = import.meta.env.PROD && !isLovablePreview;
-
-  if (shouldRegisterSW) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') reg.update();
-        });
-      }).catch(() => {});
-    });
-
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    });
-  } else {
-    // Aggressively clean stale SW/cache in preview to prevent blank-screen chunk mismatches
-    navigator.serviceWorker.getRegistrations().then(async (regs) => {
-      await Promise.all(regs.map((reg) => reg.unregister()));
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      }
-    }).catch(() => {});
-  }
+  navigator.serviceWorker.getRegistrations().then(async (regs) => {
+    await Promise.all(regs.map((reg) => reg.unregister()));
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  }).catch(() => {});
 }
 
 // Telegram Mini App: expand viewport to full height
