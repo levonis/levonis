@@ -2672,6 +2672,14 @@ const Cart = () => {
                       </div>
                       <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب</p>
                     </div>
+                  ) : isCodPayment ? (
+                    <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="h-5 w-5 text-primary" />
+                        <span className="font-bold text-primary">الدفع عند الاستلام</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب — لا يتم خصم أي مبلغ من المحفظة الآن.</p>
+                    </div>
                   ) : (
                     <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-card border-primary/30' : 'bg-card border-destructive/30'}`}>
                       <div className="flex items-center gap-2 mb-2">
@@ -2718,6 +2726,28 @@ const Cart = () => {
                         <div className="flex justify-between text-sm text-orange-500 mb-3">
                           <span>المتبقي عند الاستلام</span>
                           <span className="font-bold">{formatPrice(remainingAmount)} دينار عراقي</span>
+                        </div>
+                      </>
+                    )}
+                    {isCodPayment && (
+                      <>
+                        <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                          <span>قيمة المنتجات</span>
+                          <span className="font-bold">{formatPrice(subtotalWithTax)} د.ع</span>
+                        </div>
+                        {codFee > 0 && (
+                          <div className="flex justify-between text-sm text-amber-600 mb-2">
+                            <span>{partialPaymentSettings?.cod_label_ar || 'رسوم الدفع عند الاستلام'}</span>
+                            <span className="font-bold">+{formatPrice(codFee)} د.ع</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                          <span>التوصيل</span>
+                          <span className="font-bold">{formatPrice(deliveryFee)} د.ع</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-orange-500 mb-3">
+                          <span>الإجمالي عند الاستلام</span>
+                          <span className="font-bold">{formatPrice(remainingAmount + deliveryFee)} دينار عراقي</span>
                         </div>
                       </>
                     )}
