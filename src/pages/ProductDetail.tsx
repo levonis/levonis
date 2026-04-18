@@ -468,18 +468,6 @@ const ProductDetail = () => {
     shippingSettings as any,
     codDefaults as any,
   );
-  if (typeof window !== 'undefined' && (product as any)?.slug === 'bambu-lab-x2d') {
-    console.log('[DBG bambu-lab-x2d]', {
-      stored_direct_sale_price: (product as any)?.direct_sale_price,
-      stored_shipping_cost_iqd: (product as any)?.shipping_cost_iqd,
-      price_usd: (product as any)?.price_usd,
-      link_direct_commission_to_cod: (product as any)?.link_direct_commission_to_cod,
-      shippingSettings,
-      codDefaults,
-      liveDirectSalePrice,
-      guarded_direct_sale_price_before: guardedPrices.direct_sale_price,
-    });
-  }
   if (liveDirectSalePrice != null) {
     guardedPrices.direct_sale_price = liveDirectSalePrice;
   }
