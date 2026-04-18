@@ -42,7 +42,7 @@ export default function ReviewQASection({ reviewId, productId, reviewerId, revie
 
       const userIds = Array.from(new Set(data.map(q => q.asker_id)));
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id, full_name, username, avatar_url')
         .in('id', userIds);
       const pMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -58,7 +58,7 @@ export default function ReviewQASection({ reviewId, productId, reviewerId, revie
       const answerUserIds = Array.from(new Set((answers || []).map(a => a.answerer_id)));
       const allUserIds = Array.from(new Set([...userIds, ...answerUserIds]));
       const { data: allProfiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id, full_name, username, avatar_url')
         .in('id', allUserIds);
       const allPMap = new Map(allProfiles?.map(p => [p.id, p]) || []);

@@ -72,7 +72,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       // Fetch profiles separately
       const userIds = Array.from(new Set(data.map((r) => r.user_id)));
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id, full_name, username, avatar_url')
         .in('id', userIds);
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
