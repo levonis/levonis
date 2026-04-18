@@ -77,14 +77,24 @@ import('@capacitor/core').then(({ Capacitor }) => {
   }).catch(() => {});
 }).catch(() => {});
 
-if (window.Telegram?.WebApp) {
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
-  try {
-    tg.setHeaderColor?.('#09090b');
-    tg.setBackgroundColor?.('#09090b');
-  } catch {}
+// Telegram WebApp SDK is loaded asynchronously after page load (see index.html)
+// Wait for it to become available before initializing
+const initTelegramWebApp = () => {
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    try {
+      tg.setHeaderColor?.('#09090b');
+      tg.setBackgroundColor?.('#09090b');
+    } catch {}
+  } else {
+    setTimeout(initTelegramWebApp, 200);
+  }
+};
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'complete') initTelegramWebApp();
+  else window.addEventListener('load', initTelegramWebApp);
 }
 
 createRoot(document.getElementById("root")!).render(
