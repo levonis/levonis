@@ -20,6 +20,9 @@ interface PartialPaymentSettings {
   fee_label_ar: string;
   fee_label_en: string;
   fee_tiers: FeeTier[];
+  cod_label_ar?: string;
+  cod_default_fee_type?: 'percentage' | 'fixed';
+  cod_default_fee_value?: number;
 }
 
 const defaultSettings: PartialPaymentSettings = {
@@ -30,7 +33,10 @@ const defaultSettings: PartialPaymentSettings = {
     { min_amount: 250001, max_amount: 500000, fee_percentage: 7 },
     { min_amount: 500001, max_amount: 1000000, fee_percentage: 5 },
     { min_amount: 1000001, max_amount: 2000000, fee_percentage: 3 },
-  ]
+  ],
+  cod_label_ar: 'رسوم الدفع عند الاستلام',
+  cod_default_fee_type: 'percentage',
+  cod_default_fee_value: 5,
 };
 
 export default function AdminPartialPaymentSettings() {
