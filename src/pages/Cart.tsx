@@ -776,29 +776,22 @@ const Cart = () => {
     }
   }, [showCodOption, preOrderPaymentOption]);
 
-  // حساب رسوم الدفع عند الاستلام: لكل منتج على حدة (نسبة أو ثابت) ثم الجمع
+  // حساب رسوم الدفع عند الاستلام: تُطبَّق إعدادات COD الافتراضية الموحدة على كل منتج
   const codFee = useMemo(() => {
     if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
     const defaultType = partialPaymentSettings?.cod_default_fee_type || 'percentage';
-    const defaultVal = partialPaymentSettings?.cod_default_fee_value ?? 0;
+    const defaultVal = Number(partialPaymentSettings?.cod_default_fee_value ?? 0);
+    if (!defaultVal || defaultVal <= 0) return 0;
     return items.reduce((sum: number, item: any) => {
       const unitPrice = getCartItemPrice(item); // السعر النهائي شامل تعديلات الخيارات/الألوان
       const qty = item.quantity || 1;
       const lineTotal = unitPrice * qty;
-      const product = item.products || {};
-      const type = (product.cod_fee_type === 'fixed' || product.cod_fee_type === 'percentage')
-        ? product.cod_fee_type
-        : defaultType;
-      const valRaw = (product.cod_fee_value !== undefined && product.cod_fee_value !== null && Number(product.cod_fee_value) > 0)
-        ? Number(product.cod_fee_value)
-        : Number(defaultVal);
-      if (!valRaw || valRaw <= 0) return sum;
-      const fee = type === 'percentage'
-        ? Math.ceil(lineTotal * valRaw / 100)
-        : Math.ceil(valRaw * qty);
+      const fee = defaultType === 'percentage'
+        ? Math.ceil(lineTotal * defaultVal / 100)
+        : Math.ceil(defaultVal * qty);
       return sum + fee;
     }, 0);
-  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings, usdToIqd]);
+  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings]);
 
   const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
 
