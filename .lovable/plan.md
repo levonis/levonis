@@ -1,69 +1,65 @@
 
 
-The user wants to convert the existing web app into native Android (APK / AAB for Google Play) and iOS (for App Store) apps. This requires Capacitor since the project is React/Vite. PWA alone won't get them into the stores.
+The user wants:
+1. A direct "Download APK" button on the website
+2. Any website update reflects immediately in the app (no rebuild needed)
 
-Current state: The project already has PWA setup (manifest.json, service worker, icons). No Capacitor yet.
+For #2 — that's already handled by the current `capacitor.config.ts` which uses `server.url` pointing to the Lovable preview URL. Any code change updates instantly because the app loads the live web version.
 
-## الخطة: تحويل الموقع إلى تطبيق جوال للنشر على Google Play و App Store
+For #1 — Lovable can't compile an APK file. APK building requires Android Studio + Java + Gradle on a local machine. But we can:
+- Create a `/download-app` page with a styled download button
+- Host the APK file (user uploads it to Supabase Storage after building it once locally)
+- The button serves the APK link
 
-سنستخدم **Capacitor** (من شركة Ionic) لتغليف الموقع الحالي كتطبيق أصلي (Native) لنظامي Android و iOS، مع الحفاظ على نفس الكود.
+I should ask the user a clarifying question because there are two paths and they have different implications.
 
-### ما سيتم تنفيذه في Lovable
+## الخطة: زر تحميل APK + تحديثات فورية
 
-**1. تثبيت حزم Capacitor الأساسية**
-- `@capacitor/core` و `@capacitor/cli`
-- `@capacitor/android` (لـ Google Play)
-- `@capacitor/ios` (لـ App Store)
-- `@capacitor/splash-screen` و `@capacitor/status-bar` و `@capacitor/app` (تجربة أصلية أفضل)
-- `@capacitor/push-notifications` (لتفعيل الإشعارات الأصلية لاحقاً، بديلاً عن إشعارات الويب)
+### الجزء الأول: التحديث الفوري (جاهز بالفعل ✅)
+ملف `capacitor.config.ts` الحالي يحتوي على:
+```ts
+server: {
+  url: 'https://eae9743e-f7d4-438d-bfb8-c27f25184241.lovableproject.com?forceHideBadge=true',
+  cleartext: true,
+}
+```
+هذا يعني أن التطبيق **يحمّل الموقع المباشر**، فأي تعديل في Lovable يظهر فوراً في التطبيق بدون إعادة بناء. ✅
 
-**2. إنشاء ملف `capacitor.config.ts`** بالإعدادات التالية:
-- `appId`: `app.lovable.eae9743ef7d4438dbfb8c27f25184241`
-- `appName`: `LEVONIS`
-- شاشة بداية (Splash) بنفس لون الموقع `#103d33` مع الشعار الذهبي
-- شريط الحالة (Status Bar) بلون `#16a34a`
-- اتجاه RTL مدعوم
-- `server.url` يشير إلى رابط Lovable للسماح بالتحديث الفوري أثناء التطوير (Hot Reload)، مع إمكانية إزالته للنشر النهائي
+⚠️ **ملاحظة مهمة**: للنشر النهائي على Google Play، سيتم تغيير الرابط لرابط الإنتاج (`levonisiq.com`) بدلاً من رابط المعاينة، حتى يبقى التطبيق يعمل حتى لو حُذفت معاينة Lovable.
 
-**3. تحسين الواجهة للأجهزة الأصلية**
-- إضافة `safe-area-inset` لدعم iPhone notch
-- إخفاء عناصر التثبيت كـ PWA (`InstallPrompt`) عند التشغيل داخل التطبيق الأصلي (نكتشف ذلك عبر `Capacitor.isNativePlatform()`)
-- التأكد أن زر الرجوع في Android يعمل بشكل صحيح مع React Router
+### الجزء الثاني: زر تحميل APK من الموقع
 
-**4. إعداد الأيقونات وشاشة البداية**
-- استخدام الأيقونات الموجودة (`/icons/icon-512.png`) كمصدر
-- توليد الأحجام المطلوبة لكل من Android و iOS
+**القيد التقني**: Lovable لا يستطيع توليد ملف APK مباشرة (يحتاج Android Studio + Gradle محلياً). الحل عملي بخطوتين:
 
-### ما يجب على المستخدم تنفيذه (لا يمكن تنفيذه داخل Lovable)
+#### ما سأنفذه في Lovable:
+1. **صفحة جديدة** `/download-app` بتصميم احترافي:
+   - شعار LEVONIS الذهبي
+   - عنوان "حمّل تطبيق LEVONIS"
+   - زر تحميل APK كبير (للأندرويد)
+   - زر App Store (يُفعّل لاحقاً عند توفر النسخة)
+   - تعليمات التثبيت بالعربية (تفعيل "السماح من مصادر غير معروفة")
+   - رقم الإصدار + تاريخ آخر تحديث
+2. **زر مختصر** في الـ Header / القائمة الجانبية: "تحميل التطبيق 📱"
+3. **اكتشاف ذكي**: إذا كان المستخدم على Android Chrome → يظهر الزر بوضوح. إذا كان iOS → يظهر زر App Store. إذا كان داخل التطبيق فعلاً → يُخفى الزر تلقائياً.
+4. **رابط APK**: سيُحفظ في **Lovable Cloud Storage** (bucket باسم `app-releases`) ليتمكن المستخدم من رفع نسخ جديدة بسهولة.
+5. **جدول `app_versions`** بسيط في قاعدة البيانات لتتبع الإصدارات (رقم الإصدار، الرابط، ملاحظات التحديث، التاريخ) — يسمح بإظهار "آخر إصدار" تلقائياً.
 
-> **مهم**: بناء ملف APK/AAB للنشر يتطلب أدوات تطوير محلية (Android Studio و Xcode). Lovable لا يستطيع توليد الملف النهائي مباشرة.
+#### ما تحتاج تنفيذه مرة واحدة فقط:
+1. تصدير المشروع لـ GitHub
+2. تشغيل `npx cap add android` ثم `npx cap sync` ثم بناء APK من Android Studio (أو استخدام GitHub Actions لبناء آلي)
+3. رفع ملف `app-release.apk` لزر "إدارة الإصدارات" في الموقع
 
-**خطوات البناء:**
-1. تصدير المشروع إلى GitHub عبر زر "Export to Github"
-2. استنساخ المشروع محلياً: `git clone <repo>`
-3. تثبيت الحزم: `npm install`
-4. إضافة المنصات: `npx cap add android` و `npx cap add ios`
-5. بناء الموقع: `npm run build`
-6. مزامنة مع Capacitor: `npx cap sync`
-7. فتح المشروع في الأداة الأصلية:
-   - Android: `npx cap open android` ← يفتح Android Studio لبناء APK/AAB
-   - iOS: `npx cap open ios` ← يفتح Xcode (يتطلب جهاز Mac)
+**بعد ذلك**: لن تحتاج لبناء APK جديد إلا نادراً، لأن التطبيق يحمّل الموقع المباشر — كل تحديثاتك تصل فوراً للمستخدمين بدون APK جديد. ستحتاج APK جديد فقط لو:
+- غيّرت الأيقونة أو شاشة البداية
+- أضفت Plugin أصلي جديد (كاميرا، إشعارات Push، إلخ)
 
-**للنشر على المتاجر:**
-- **Google Play**: حساب Google Play Developer ($25 لمرة واحدة) + ملف AAB موقّع رقمياً
-- **Apple App Store**: حساب Apple Developer ($99/سنة) + جهاز Mac لاستخدام Xcode
+### خيار بديل (تلقائي بالكامل): GitHub Actions
+يمكن إعداد GitHub Action يبني APK تلقائياً عند كل تحديث ويرفعه على الموقع. لكن يحتاج إعداد أولي محلي + متغيرات توقيع. أنصح بتأجيله للمرحلة التالية.
 
-### ملاحظات تقنية
-
-- التطبيق الأصلي سيستخدم نفس الـ Backend (Lovable Cloud / Supabase) بدون تغيير
-- المصادقة (Auth) ستحتاج تعديلاً بسيطاً لـ OAuth لاحقاً (Deep Links) — يمكن إضافته لاحقاً عند الحاجة
-- خيار بديل أبسط: إذا كان الهدف فقط جعل التطبيق "قابل للتثبيت" دون الحاجة لمتاجر التطبيقات، فالموقع يدعم بالفعل PWA ويمكن تثبيته من المتصفح مباشرة
-
-### الملفات التي ستتم إضافتها/تعديلها
-
-- `capacitor.config.ts` (جديد)
-- `package.json` (إضافة الحزم)
-- `src/main.tsx` (تهيئة Capacitor plugins)
-- `src/components/pwa/InstallPrompt.tsx` (إخفاؤه على المنصات الأصلية)
-- `src/index.css` (دعم safe-area)
+### الملفات التي ستُنشأ/تُعدّل:
+- `src/pages/DownloadApp.tsx` (جديد)
+- `src/App.tsx` (إضافة المسار)
+- `src/components/Header.tsx` (زر مختصر)
+- Migration: جدول `app_versions` + bucket `app-releases`
+- لوحة إدارة بسيطة لرفع APK (للأدمن فقط)
 
