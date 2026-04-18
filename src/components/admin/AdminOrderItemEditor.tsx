@@ -231,7 +231,17 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold truncate flex-1 flex items-center gap-1.5">
                   {item.bundle_id && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 font-bold">📦 بندل</span>}
-                  {item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"}
+                  {((item as any).is_manual || (!item.product_id && !item.bundle_id)) && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 font-bold">✏️ يدوي</span>}
+                  {((item as any).is_manual || (!item.product_id && !item.bundle_id)) ? (
+                    <Input
+                      value={item.product_name_ar || ""}
+                      onChange={e => updateItem(index, "product_name_ar", e.target.value)}
+                      placeholder="اسم المنتج"
+                      className="h-7 text-sm rounded-lg flex-1"
+                    />
+                  ) : (
+                    item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"
+                  )}
                 </span>
                 <Button
                   variant="ghost"
