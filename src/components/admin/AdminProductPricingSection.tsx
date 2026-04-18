@@ -60,6 +60,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
   const [referralEarningsIqd, setReferralEarningsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
+
+  // Cash on Delivery (Pre-order only)
+  const [codEnabled, setCodEnabled] = useState<boolean>(false);
+  const [codFeeType, setCodFeeType] = useState<'percentage' | 'fixed'>('percentage');
+  const [codFeeValue, setCodFeeValue] = useState<number>(0);
   
   // CNY converter
   const [showCnyInput, setShowCnyInput] = useState(false);
