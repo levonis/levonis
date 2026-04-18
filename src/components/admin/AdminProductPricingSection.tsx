@@ -204,13 +204,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + otherCostsIqd + commissionDirectIqd + pdc + referralEarningsIqd;
+      const finalPrice = priceIqd + effectiveCommissionDirect + pdc + referralEarningsIqd;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
         priceIqd,
         shipping: 0,
-        commission: commissionDirectIqd,
+        commission: effectiveCommissionDirect,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
         personalDelivery: pdc,
@@ -218,7 +218,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     return { rate, priceIqd, results };
-  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, commissionDirectIqd, otherCostsIqd, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
+  }, [priceUsd, hasPreOrder, hasDirectSale, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect, effectivePersonalDeliveryCost, referralEarningsIqd, shippingSettings]);
 
   return (
     <div className="space-y-4 border-t pt-4">
