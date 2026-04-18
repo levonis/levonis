@@ -56,7 +56,7 @@ const Cart = () => {
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter'>('full');
+  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter' | 'cod'>('full');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
