@@ -8156,6 +8156,7 @@ export type Database = {
           in_stock: boolean | null
           is_pricing_updated: boolean | null
           length_cm: number | null
+          link_direct_commission_to_cod: boolean
           name: string
           name_ar: string
           name_en: string | null
@@ -8221,6 +8222,7 @@ export type Database = {
           in_stock?: boolean | null
           is_pricing_updated?: boolean | null
           length_cm?: number | null
+          link_direct_commission_to_cod?: boolean
           name: string
           name_ar: string
           name_en?: string | null
@@ -8286,6 +8288,7 @@ export type Database = {
           in_stock?: boolean | null
           is_pricing_updated?: boolean | null
           length_cm?: number | null
+          link_direct_commission_to_cod?: boolean
           name?: string
           name_ar?: string
           name_en?: string | null
