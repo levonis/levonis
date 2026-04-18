@@ -43,35 +43,21 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return undefined;
-          // Heavy, lazy-loaded libs into their own chunks
+          // Heavy, lazy-loaded libs into their own chunks (NONE import React at top level)
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
           if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
           if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
           if (id.includes('node_modules/three/')) return 'vendor-three';
           if (id.includes('html5-qrcode') || id.includes('jsqr')) return 'vendor-qr';
-          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'vendor-motion';
-          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
-          if (id.includes('react-day-picker')) return 'vendor-daypicker';
           if (id.includes('@supabase') || id.includes('postgrest') || id.includes('gotrue') || id.includes('realtime-js')) return 'vendor-supabase';
-          if (id.includes('lucide-react') || id.includes('react-icons')) return 'vendor-icons';
           if (id.includes('date-fns') || id.includes('dayjs')) return 'vendor-date';
-          if (id.includes('embla-carousel') || id.includes('swiper')) return 'vendor-carousel';
           if (id.includes('dompurify') || id.includes('sanitize-html')) return 'vendor-sanitize';
           if (id.includes('@capacitor')) return 'vendor-capacitor';
-          // CRITICAL: Bundle React + all React-dependent UI libs together to guarantee load order.
-          // Radix, router, query, forms, etc. import React at module top-level — splitting them
-          // causes "Cannot read properties of undefined (reading 'forwardRef')" if React loads after.
-          if (
-            id.includes('/react/') || id.includes('/react-dom/') ||
-            id.includes('react/jsx-runtime') || id.includes('scheduler') ||
-            id.includes('@radix-ui') ||
-            id.includes('@react-three') ||
-            id.includes('react-router') ||
-            id.includes('@tanstack') ||
-            id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod') ||
-            id.includes('sonner') || id.includes('cmdk') || id.includes('vaul') || id.includes('input-otp')
-          ) return 'vendor-react';
-          return 'vendor';
+          // CRITICAL: Bundle React + ALL OTHER node_modules together to guarantee load order.
+          // Many libs import React at module top-level — splitting causes
+          // "Cannot read properties of undefined (reading 'createContext'/'forwardRef'/'useLayoutEffect')"
+          // when React loads after them. One big vendor-react chunk is safer than breakage.
+          return 'vendor-react';
         },
       },
     },
