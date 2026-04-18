@@ -112,7 +112,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setWidthCm(editingProduct.width_cm || 0);
       setHeightCm(editingProduct.height_cm || 0);
       setWeightKg(editingProduct.weight_kg ? String(editingProduct.weight_kg) : '');
-      setOtherCostsIqd(editingProduct.other_costs_iqd || 0);
+      // other_costs_iqd is deprecated for direct sale — kept at 0
       setPersonalDeliveryCost(editingProduct.personal_delivery_cost || 0);
       setReferralEarningsIqd(editingProduct.referral_earnings_iqd || 0);
       setRoundUp(editingProduct.round_up_price ?? true);
