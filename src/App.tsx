@@ -179,7 +179,7 @@ function AppContent() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/download-app" element={<DownloadApp />} />
             <Route path="/download" element={<DownloadApp />} />
-            <Route path="/admin/app-versions" element={<RequireAuth><AdminAppVersions /></RequireAuth>} />
+            <Route path={`${ADMIN_BASE_PATH}/app-versions`} element={<AdminRoute><AdminAppVersions /></AdminRoute>} />
             
             {/* Secure Admin Routes - Using obfuscated path */}
             <Route path={ADMIN_BASE_PATH} element={<AdminRoute><Admin /></AdminRoute>} />
