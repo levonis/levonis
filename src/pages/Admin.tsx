@@ -1343,9 +1343,23 @@ const Admin = () => {
         }
 
         if (hasInStock) {
-          // Direct sale final price includes pre-order sea commission (if pre-order + sea enabled)
-          const seaCommissionAddon = (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) ? commissionSeaIqdVal : 0;
-          const directFinalPrice = priceIqd + otherCostsIqdVal + seaCommissionAddon + commissionDirectIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
+          // Direct sale final price reuses the pre-order shipping (sea preferred, else air)
+          // and includes the corresponding pre-order commission addon.
+          const dims = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
+            ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 }
+            : null;
+          let directShipping = 0;
+          let preOrderCommissionAddon = 0;
+          if (hasPreOrder) {
+            if (shippingType === 'sea' || shippingType === 'both') {
+              directShipping = calculateShippingCost('china', 'sea', dims, null, settings).shippingCost;
+              preOrderCommissionAddon = commissionSeaIqdVal;
+            } else if (shippingType === 'air') {
+              directShipping = calculateShippingCost('china', 'air', dims, values.weight_kg > 0 ? values.weight_kg : null, settings).shippingCost;
+              preOrderCommissionAddon = commissionAirIqdVal;
+            }
+          }
+          const directFinalPrice = priceIqd + otherCostsIqdVal + directShipping + preOrderCommissionAddon + commissionDirectIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }
