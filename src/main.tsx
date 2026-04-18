@@ -75,12 +75,16 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-// Remove initial HTML loader after React mounts and signal success to safety net
+// Signal mount IMMEDIATELY (synchronously) to clear the safety-net timers
+// so slow phones don't trigger a false-positive cache wipe before first paint.
+try {
+  window.dispatchEvent(new Event('levo:mounted'));
+  sessionStorage.removeItem('__levo_auto_recovered');
+  localStorage.removeItem('__levo_recovery_attempts');
+} catch {}
+
+// Remove initial HTML loader after first paint
 requestAnimationFrame(() => {
-  try {
-    window.dispatchEvent(new Event('levo:mounted'));
-    sessionStorage.removeItem('__levo_auto_recovered');
-  } catch {}
   const loader = document.getElementById('initial-loader');
   if (loader) {
     loader.classList.add('fade-out');

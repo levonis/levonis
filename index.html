@@ -129,26 +129,51 @@
       </div>
     </div>
     <script>
-      // Safety net: if React doesn't mount within 8s, show recovery UI.
-      // If user clicks retry, clear all caches + service workers, then hard reload.
+      // Safety net: if React doesn't mount in time, show recovery UI.
+      // Auto-recover only twice — after that show a clear "slow connection" message
+      // instead of looping cache wipes (which makes things worse on flaky networks).
       (function () {
         var IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 5000 : 8000;
-        var FORCE_RELOAD_AFTER = IS_MOBILE ? 12000 : 20000;
+        var SHOW_RECOVERY_AFTER = IS_MOBILE ? 6000 : 8000;
+        var FORCE_RELOAD_AFTER = IS_MOBILE ? 25000 : 30000;
+        var MAX_AUTO_RECOVERIES = 2;
 
         window.__levoMounted = false;
 
+        function getAttempts() {
+          try { return parseInt(localStorage.getItem('__levo_recovery_attempts') || '0', 10) || 0; } catch (e) { return 0; }
+        }
+        function setAttempts(n) {
+          try { localStorage.setItem('__levo_recovery_attempts', String(n)); } catch (e) {}
+        }
+
+        function showRecovery(message) {
+          var rec = document.getElementById('il-recover');
+          if (!rec) return;
+          if (message) {
+            var p = rec.querySelector('p');
+            if (p) p.textContent = message;
+          }
+          rec.classList.add('show');
+        }
+
         var showTimer = setTimeout(function () {
           if (window.__levoMounted) return;
-          var rec = document.getElementById('il-recover');
-          if (rec) rec.classList.add('show');
+          if (getAttempts() >= MAX_AUTO_RECOVERIES) {
+            showRecovery('اتصالك بطيء — جرّب شبكة أخرى ثم اضغط إعادة المحاولة');
+          } else {
+            showRecovery();
+          }
         }, SHOW_RECOVERY_AFTER);
 
-        // Auto-recover once after 20s of no mount (network/chunk failure)
         var autoTimer = setTimeout(function () {
           if (window.__levoMounted) return;
-          if (sessionStorage.getItem('__levo_auto_recovered')) return;
-          sessionStorage.setItem('__levo_auto_recovered', '1');
+          var attempts = getAttempts();
+          if (attempts >= MAX_AUTO_RECOVERIES) {
+            showRecovery('اتصالك بطيء — جرّب شبكة أخرى ثم اضغط إعادة المحاولة');
+            return;
+          }
+          setAttempts(attempts + 1);
           window.__levoRecover();
         }, FORCE_RELOAD_AFTER);
 
@@ -156,6 +181,7 @@
           window.__levoMounted = true;
           clearTimeout(showTimer);
           clearTimeout(autoTimer);
+          setAttempts(0);
         });
 
         window.__levoRecover = function () {
@@ -183,17 +209,23 @@
             });
         };
 
-        // Catch chunk-load failures (common cause of green-screen hang on flaky networks)
+        // Require 2 chunk-load errors within 3s before showing recovery —
+        // a single transient image/css failure shouldn't mark the whole app as broken.
+        var chunkErrorCount = 0;
+        var chunkErrorReset = null;
         window.addEventListener('error', function (e) {
           var msg = (e && e.message) || '';
           var src = (e && e.target && (e.target.src || e.target.href)) || '';
-          if (
+          var isChunkErr =
             msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
             msg.indexOf('Importing a module script failed') !== -1 ||
-            (src && /\.(js|mjs|css)(\?|$)/.test(src))
-          ) {
-            var rec = document.getElementById('il-recover');
-            if (rec && !window.__levoMounted) rec.classList.add('show');
+            (src && /\.(js|mjs)(\?|$)/.test(src));
+          if (!isChunkErr) return;
+          chunkErrorCount++;
+          if (chunkErrorReset) clearTimeout(chunkErrorReset);
+          chunkErrorReset = setTimeout(function () { chunkErrorCount = 0; }, 3000);
+          if (chunkErrorCount >= 2 && !window.__levoMounted) {
+            showRecovery();
           }
         }, true);
       })();
