@@ -45,6 +45,26 @@
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>
+    // KILL SWITCH (runs on EVERY page load until removed) — guarantees stuck users recover.
+    // Unregister any existing Service Worker + wipe Cache API + reset recovery counter
+    // BEFORE the app entry script even loads. Frees users whose old SW serves stale HTML
+    // pointing to chunk hashes that no longer exist after a deploy.
+    (function () {
+      try { localStorage.removeItem('__levo_recovery_attempts'); } catch (e) {}
+      try { sessionStorage.removeItem('__levo_self_healed_v13'); } catch (e) {}
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        }).catch(function () {});
+      }
+      if ('caches' in window) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (k) { caches.delete(k); });
+        }).catch(function () {});
+      }
+    })();
+  </script>
+  <script>
     // Load Telegram WebApp SDK ONLY when running inside Telegram (avoids blocking
     // load on networks where telegram.org is unreachable, e.g. some IQ ISPs).
     (function () {
