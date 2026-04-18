@@ -315,31 +315,96 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
 
           {/* Add new product */}
           <div className="p-3 rounded-xl border border-dashed border-border/50 space-y-2">
-            <Label className="text-xs text-muted-foreground">إضافة منتج جديد</Label>
-            <div className="flex gap-2">
-              <Select value={addProductId} onValueChange={setAddProductId}>
-                <SelectTrigger className="flex-1 h-8 text-sm rounded-lg">
-                  <SelectValue placeholder="اختر منتج" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allProducts?.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 rounded-lg gap-1"
-                disabled={!addProductId}
-                onClick={() => { addItem(addProductId); setAddProductId(""); }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                إضافة
-              </Button>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">إضافة منتج جديد</Label>
+              <div className="flex gap-1 p-0.5 rounded-lg bg-muted/40">
+                <button
+                  type="button"
+                  onClick={() => setAddMode("existing")}
+                  className={`px-2 py-1 text-[11px] rounded-md font-bold transition ${addMode === "existing" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+                >
+                  منتج موجود
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddMode("manual")}
+                  className={`px-2 py-1 text-[11px] rounded-md font-bold transition ${addMode === "manual" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+                >
+                  ✏️ إدخال يدوي
+                </button>
+              </div>
             </div>
+
+            {addMode === "existing" ? (
+              <div className="flex gap-2">
+                <Select value={addProductId} onValueChange={setAddProductId}>
+                  <SelectTrigger className="flex-1 h-8 text-sm rounded-lg">
+                    <SelectValue placeholder="اختر منتج" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allProducts?.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-lg gap-1"
+                  disabled={!addProductId}
+                  onClick={() => { addItem(addProductId); setAddProductId(""); }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  إضافة
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  value={manualName}
+                  onChange={e => setManualName(e.target.value.slice(0, 200))}
+                  placeholder="اسم المنتج"
+                  className="h-8 text-sm rounded-lg"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">السعر</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={manualPrice}
+                      onChange={e => setManualPrice(parseFloat(e.target.value) || 0)}
+                      className="h-8 text-sm rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">الكمية</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={manualQty}
+                      onChange={e => setManualQty(parseInt(e.target.value) || 1)}
+                      className="h-8 text-sm rounded-lg"
+                    />
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-8 rounded-lg gap-1"
+                  disabled={!manualName.trim() || manualPrice < 0 || manualQty < 1}
+                  onClick={addManualItem}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  إضافة منتج يدوي
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  ⓘ المنتج اليدوي لا يؤثر على المخزون
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Total */}
