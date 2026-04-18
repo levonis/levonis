@@ -761,22 +761,66 @@ const Cart = () => {
   };
   
   const partialPaymentFee = calculatePartialPaymentFee();
-  
-  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? Math.ceil(subtotalWithTax * 0.25) 
-    : subtotalWithTax;
-  
-  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي لأنها تُدفع لاحقاً)
-  const walletDeduction = useWalletBalance && wallet?.balance 
+
+  // ===== الدفع عند الاستلام (للطلب المسبق فقط) =====
+  // متاح فقط إذا كان كل المنتجات في السلة تدعم الدفع عند الاستلام
+  const allItemsSupportCod = hasPreOrderItems && items.length > 0 && items.every((item: any) => {
+    return item.products?.cod_enabled === true;
+  });
+  const showCodOption = allItemsSupportCod;
+
+  // إعادة ضبط الخيار إذا اختفى الشرط
+  useEffect(() => {
+    if (preOrderPaymentOption === 'cod' && !showCodOption) {
+      setPreOrderPaymentOption('full');
+    }
+  }, [showCodOption, preOrderPaymentOption]);
+
+  // حساب رسوم الدفع عند الاستلام: لكل منتج على حدة (نسبة أو ثابت) ثم الجمع
+  const codFee = useMemo(() => {
+    if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
+    const defaultType = partialPaymentSettings?.cod_default_fee_type || 'percentage';
+    const defaultVal = partialPaymentSettings?.cod_default_fee_value ?? 0;
+    return items.reduce((sum: number, item: any) => {
+      const unitPrice = getCartItemPrice(item); // السعر النهائي شامل تعديلات الخيارات/الألوان
+      const qty = item.quantity || 1;
+      const lineTotal = unitPrice * qty;
+      const product = item.products || {};
+      const type = (product.cod_fee_type === 'fixed' || product.cod_fee_type === 'percentage')
+        ? product.cod_fee_type
+        : defaultType;
+      const valRaw = (product.cod_fee_value !== undefined && product.cod_fee_value !== null && Number(product.cod_fee_value) > 0)
+        ? Number(product.cod_fee_value)
+        : Number(defaultVal);
+      if (!valRaw || valRaw <= 0) return sum;
+      const fee = type === 'percentage'
+        ? Math.ceil(lineTotal * valRaw / 100)
+        : Math.ceil(valRaw * qty);
+      return sum + fee;
+    }, 0);
+  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings, usdToIqd]);
+
+  const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
+
+  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter'
+    ? Math.ceil(subtotalWithTax * 0.25)
+    : (isCodPayment ? 0 : subtotalWithTax);
+
+  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي/COD لأنها تُدفع لاحقاً)
+  const walletDeduction = useWalletBalance && wallet?.balance && !isCodPayment
     ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
     : 0;
-  
-  const grandTotal = Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
-  
-  // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي)
-  const remainingAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
-    : 0;
+
+  const grandTotal = isCodPayment
+    ? 0
+    : Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
+
+  // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
+  const remainingAmount = isCodPayment
+    ? subtotalWithTax + codFee
+    : (hasPreOrderItems && preOrderPaymentOption === 'quarter'
+        ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
+        : 0);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
