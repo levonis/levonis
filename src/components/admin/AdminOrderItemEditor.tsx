@@ -93,13 +93,15 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
       for (const orig of originalItems) {
         const stillExists = items.find(i => i.id === orig.id);
         if (!stillExists) {
-          // Item was removed - restore stock
-          await supabase.rpc("admin_adjust_order_inventory", {
-            p_product_id: orig.product_id,
-            p_option_name: orig.selected_option || null,
-            p_selected_color: orig.selected_color || null,
-            p_quantity_change: orig.quantity,
-          });
+          // Only restore stock if there's a real product_id (skip manual items)
+          if (orig.product_id) {
+            await supabase.rpc("admin_adjust_order_inventory", {
+              p_product_id: orig.product_id,
+              p_option_name: orig.selected_option || null,
+              p_selected_color: orig.selected_color || null,
+              p_quantity_change: orig.quantity,
+            });
+          }
           // Delete the order item
           await supabase.from("order_items").delete().eq("id", orig.id);
         }
@@ -108,34 +110,35 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
       // 2. Handle modified items - adjust stock difference
       for (const item of items) {
         const orig = originalItems.find(o => o.id === item.id);
+        const isManual = (item as any).is_manual === true || !item.product_id;
         
         if (orig) {
-          // Existing item - check for changes
-          const qtyDiff = orig.quantity - item.quantity; // positive = restoring, negative = deducting
-          const colorChanged = orig.selected_color !== item.selected_color;
-          
-          if (colorChanged) {
-            // Restore old color stock
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: orig.product_id,
-              p_option_name: orig.selected_option || null,
-              p_selected_color: orig.selected_color || null,
-              p_quantity_change: orig.quantity,
-            });
-            // Deduct new color stock
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: item.product_id,
-              p_option_name: item.selected_option || null,
-              p_selected_color: item.selected_color || null,
-              p_quantity_change: -item.quantity,
-            });
-          } else if (qtyDiff !== 0) {
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: item.product_id,
-              p_option_name: item.selected_option || null,
-              p_selected_color: item.selected_color || null,
-              p_quantity_change: qtyDiff,
-            });
+          // Existing item - check for changes (skip stock for manual items)
+          if (!isManual && orig.product_id) {
+            const qtyDiff = orig.quantity - item.quantity;
+            const colorChanged = orig.selected_color !== item.selected_color;
+            
+            if (colorChanged) {
+              await supabase.rpc("admin_adjust_order_inventory", {
+                p_product_id: orig.product_id,
+                p_option_name: orig.selected_option || null,
+                p_selected_color: orig.selected_color || null,
+                p_quantity_change: orig.quantity,
+              });
+              await supabase.rpc("admin_adjust_order_inventory", {
+                p_product_id: item.product_id,
+                p_option_name: item.selected_option || null,
+                p_selected_color: item.selected_color || null,
+                p_quantity_change: -item.quantity,
+              });
+            } else if (qtyDiff !== 0) {
+              await supabase.rpc("admin_adjust_order_inventory", {
+                p_product_id: item.product_id,
+                p_option_name: item.selected_option || null,
+                p_selected_color: item.selected_color || null,
+                p_quantity_change: qtyDiff,
+              });
+            }
           }
 
           // Update the order item
@@ -147,17 +150,19 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
             selected_option: item.selected_option,
           }).eq("id", item.id);
         } else {
-          // New item - deduct stock and insert
-          await supabase.rpc("admin_adjust_order_inventory", {
-            p_product_id: item.product_id,
-            p_option_name: item.selected_option || null,
-            p_selected_color: item.selected_color || null,
-            p_quantity_change: -item.quantity,
-          });
+          // New item - deduct stock only for real products
+          if (!isManual) {
+            await supabase.rpc("admin_adjust_order_inventory", {
+              p_product_id: item.product_id,
+              p_option_name: item.selected_option || null,
+              p_selected_color: item.selected_color || null,
+              p_quantity_change: -item.quantity,
+            });
+          }
 
           await supabase.from("order_items").insert({
             order_id: orderId,
-            product_id: item.product_id,
+            product_id: isManual ? null : item.product_id,
             product_name_ar: item.product_name_ar,
             product_name: item.product_name,
             quantity: item.quantity,
@@ -185,6 +190,30 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
   };
 
   const [addProductId, setAddProductId] = useState("");
+  const [addMode, setAddMode] = useState<"existing" | "manual">("existing");
+  const [manualName, setManualName] = useState("");
+  const [manualPrice, setManualPrice] = useState<number>(0);
+  const [manualQty, setManualQty] = useState<number>(1);
+
+  const addManualItem = () => {
+    const name = manualName.trim();
+    if (!name || manualPrice < 0 || manualQty < 1) return;
+    setItems(prev => [...prev, {
+      id: `manual-${Date.now()}`,
+      product_id: null as any,
+      product_name_ar: name,
+      product_name: name,
+      quantity: manualQty,
+      unit_price: manualPrice,
+      total_price: manualQty * manualPrice,
+      selected_color: null,
+      selected_option: null,
+      is_manual: true,
+    } as any]);
+    setManualName("");
+    setManualPrice(0);
+    setManualQty(1);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -202,7 +231,17 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold truncate flex-1 flex items-center gap-1.5">
                   {item.bundle_id && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 font-bold">📦 بندل</span>}
-                  {item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"}
+                  {((item as any).is_manual || (!item.product_id && !item.bundle_id)) && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 font-bold">✏️ يدوي</span>}
+                  {((item as any).is_manual || (!item.product_id && !item.bundle_id)) ? (
+                    <Input
+                      value={item.product_name_ar || ""}
+                      onChange={e => updateItem(index, "product_name_ar", e.target.value)}
+                      placeholder="اسم المنتج"
+                      className="h-7 text-sm rounded-lg flex-1"
+                    />
+                  ) : (
+                    item.product_bundles?.title_ar || item.product_name_ar || item.product_name || "منتج"
+                  )}
                 </span>
                 <Button
                   variant="ghost"
@@ -276,31 +315,96 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
 
           {/* Add new product */}
           <div className="p-3 rounded-xl border border-dashed border-border/50 space-y-2">
-            <Label className="text-xs text-muted-foreground">إضافة منتج جديد</Label>
-            <div className="flex gap-2">
-              <Select value={addProductId} onValueChange={setAddProductId}>
-                <SelectTrigger className="flex-1 h-8 text-sm rounded-lg">
-                  <SelectValue placeholder="اختر منتج" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allProducts?.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 rounded-lg gap-1"
-                disabled={!addProductId}
-                onClick={() => { addItem(addProductId); setAddProductId(""); }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                إضافة
-              </Button>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">إضافة منتج جديد</Label>
+              <div className="flex gap-1 p-0.5 rounded-lg bg-muted/40">
+                <button
+                  type="button"
+                  onClick={() => setAddMode("existing")}
+                  className={`px-2 py-1 text-[11px] rounded-md font-bold transition ${addMode === "existing" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+                >
+                  منتج موجود
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddMode("manual")}
+                  className={`px-2 py-1 text-[11px] rounded-md font-bold transition ${addMode === "manual" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
+                >
+                  ✏️ إدخال يدوي
+                </button>
+              </div>
             </div>
+
+            {addMode === "existing" ? (
+              <div className="flex gap-2">
+                <Select value={addProductId} onValueChange={setAddProductId}>
+                  <SelectTrigger className="flex-1 h-8 text-sm rounded-lg">
+                    <SelectValue placeholder="اختر منتج" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allProducts?.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name_ar || p.name} ({(p as any).direct_stock ?? 0} متاح)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-lg gap-1"
+                  disabled={!addProductId}
+                  onClick={() => { addItem(addProductId); setAddProductId(""); }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  إضافة
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  value={manualName}
+                  onChange={e => setManualName(e.target.value.slice(0, 200))}
+                  placeholder="اسم المنتج"
+                  className="h-8 text-sm rounded-lg"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">السعر</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={manualPrice}
+                      onChange={e => setManualPrice(parseFloat(e.target.value) || 0)}
+                      className="h-8 text-sm rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">الكمية</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={manualQty}
+                      onChange={e => setManualQty(parseInt(e.target.value) || 1)}
+                      className="h-8 text-sm rounded-lg"
+                    />
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-8 rounded-lg gap-1"
+                  disabled={!manualName.trim() || manualPrice < 0 || manualQty < 1}
+                  onClick={addManualItem}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  إضافة منتج يدوي
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center">
+                  ⓘ المنتج اليدوي لا يؤثر على المخزون
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Total */}
