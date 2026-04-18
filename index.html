@@ -46,13 +46,20 @@
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>
-    // Defer Telegram WebApp SDK to avoid forced reflow during initial render
-    window.addEventListener('load', function () {
-      var s = document.createElement('script');
-      s.src = 'https://telegram.org/js/telegram-web-app.js';
-      s.async = true;
-      document.head.appendChild(s);
-    });
+    // Load Telegram WebApp SDK ONLY when running inside Telegram (avoids blocking
+    // load on networks where telegram.org is unreachable, e.g. some IQ ISPs).
+    (function () {
+      var inTelegram = /Telegram/i.test(navigator.userAgent) ||
+        window.location.search.indexOf('tgWebApp') !== -1 ||
+        window.location.hash.indexOf('tgWebApp') !== -1;
+      if (!inTelegram) return;
+      window.addEventListener('load', function () {
+        var s = document.createElement('script');
+        s.src = 'https://telegram.org/js/telegram-web-app.js';
+        s.async = true;
+        document.head.appendChild(s);
+      });
+    })();
   </script>
   <meta property="og:title" content="LEVONIS — iq">
   <meta name="twitter:title" content="LEVONIS — iq">
