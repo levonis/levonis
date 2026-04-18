@@ -1,82 +1,46 @@
 
-المستخدم يريد إضافة خيار **إدخال يدوي** لمنتج جديد (اسم + سعر) في حوار "تعديل منتجات الطلب" داخل `AdminOrderItemEditor.tsx`، بدلاً من الاقتصار على اختيار منتج موجود من القائمة.
+المستخدم لا يزال يرى شاشة "اتصالك بطيء — جرّب شبكة أخرى ثم اضغط إعادة المحاولة" مع زر إعادة المحاولة. هذه ليست شاشة التحميل العادية — هذه شاشة **Offline/Timeout fallback** تظهر عندما يفشل تحميل أصول JavaScript.
 
-## الوضع الحالي
+## التشخيص الحقيقي
 
-في `src/components/admin/AdminOrderItemEditor.tsx` قسم "إضافة منتج جديد" يحتوي فقط على Select لاختيار منتج موجود من جدول `products`. عند الإضافة يستدعي `addItem(productId)` الذي يجلب بيانات المنتج ويضيفه للقائمة.
+الإصلاح السابق لـ `vite.config.ts` (فصل jspdf/canvg/pako) صحيح تقنياً، لكن المشكلة الآن **مختلفة**:
 
-عند الحفظ، المنتجات الجديدة:
-- تستدعي `admin_adjust_order_inventory` (تعديل مخزون) — وهذا يتطلب `product_id` حقيقي
-- تُدرج في `order_items` مع `product_id`
+1. الصورة تُظهر شاشة Fallback مع نص عربي ("اتصالك بطيء") وزر "إعادة المحاولة" — هذه ليست `PageLoader` الافتراضية، بل شاشة timeout مدمجة في `index.html` أو Service Worker.
 
-ملاحظة من الذاكرة (`order-items-constraint-v2`): قيد `order_items_product_or_custom_or_bundle_check` تم إسقاطه، لذا يمكن إدراج صفوف يدوية بدون `product_id`.
+2. السبب الأرجح: **Service Worker قديم** مخزّن في متصفح المستخدم يحاول تقديم ملفات chunks قديمة (مثل `vendor-jspdf-DGAuUzlQ.js` المكسور) من الـ cache، ويفشل لأن الملفات الجديدة لها hashes مختلفة (مثلاً `vendor-jspdf-XYZ.js`). النتيجة: المتصفح يطلب ملفاً غير موجود → timeout → شاشة "اتصالك بطيء".
 
-## التصميم المقترح
+3. حتى في Incognito قد تظهر إذا كان `index.html` يُحمّل من cache CDN قديم يشير لـ chunks لم تعد موجودة.
 
-إضافة **تبويبين (Tabs)** داخل صندوق "إضافة منتج جديد":
-1. **منتج موجود** (الحالي) — اختيار من القائمة
-2. **إدخال يدوي** (جديد) — حقول: اسم المنتج + السعر + الكمية
+## خطة الإصلاح (طبقتان)
 
-### سلوك "الإدخال اليدوي"
-- المنتج اليدوي يُضاف بـ `product_id: null` و `id: manual-{timestamp}`
-- يحمل علامة داخلية `is_manual: true` لتمييزه
-- عند الحفظ:
-  - **لا** يستدعي `admin_adjust_order_inventory` (لا يوجد مخزون مرتبط)
-  - يُدرج في `order_items` مع `product_id: null`، `product_name_ar` = الاسم المُدخل، `unit_price`/`quantity`/`total_price` من النموذج
-- في عرض السطر: شارة صغيرة "✏️ يدوي" بدل شارة البندل لتمييزه، وحقل اللون يبقى متاحاً اختيارياً
+### الطبقة 1: تحديث Service Worker ليُنظّف الـ caches القديمة فوراً
+- في `public/sw.js` (أو حيث يُسجَّل): رفع رقم الإصدار، استدعاء `self.skipWaiting()` و `clients.claim()`، وحذف كل الـ caches القديمة في `activate`.
+- إضافة استراتيجية **Network-first لـ `index.html`** بدلاً من cache-first، حتى يحصل المستخدم دائماً على HTML طازج يشير لأحدث chunks.
 
-### تغييرات الكود (ملف واحد فقط)
+### الطبقة 2: في `index.html` — إلغاء تسجيل أي SW قديم تلقائياً مرة واحدة
+إضافة سكربت inline صغير في `<head>` يكتشف عدم تطابق الإصدار ويُجبر:
+```js
+// إذا فشل تحميل أي module-script، unregister all SWs + clear caches + reload
+```
 
-**`src/components/admin/AdminOrderItemEditor.tsx`**:
+أو أبسط: bump رقم build عبر query string على module entry لكسر الـ cache.
 
-1. إضافة state للنموذج اليدوي:
-   ```ts
-   const [manualName, setManualName] = useState("");
-   const [manualPrice, setManualPrice] = useState<number>(0);
-   const [manualQty, setManualQty] = useState<number>(1);
-   const [addMode, setAddMode] = useState<"existing"|"manual">("existing");
-   ```
+### الطبقة 3 (تأكيدية): التحقق من شاشة "اتصالك بطيء"
+البحث عن المصدر الفعلي لهذا النص في الكود (قد تكون في `index.html` أو في hook offline detection) لفهم متى تظهر بالضبط — هل تظهر بعد timeout على fetch؟ هل تظهر عند `navigator.onLine === false`؟
 
-2. دالة `addManualItem()`:
-   ```ts
-   setItems(prev => [...prev, {
-     id: `manual-${Date.now()}`,
-     product_id: null as any,
-     product_name_ar: manualName.trim(),
-     product_name: manualName.trim(),
-     quantity: manualQty,
-     unit_price: manualPrice,
-     total_price: manualQty * manualPrice,
-     selected_color: null,
-     selected_option: null,
-     is_manual: true,
-   }]);
-   ```
+## الخطوات في وضع التنفيذ
 
-3. تعديل منطق `handleSave` للعناصر الجديدة:
-   - إذا كان `item.is_manual === true` أو `item.product_id == null` → تخطي استدعاء `admin_adjust_order_inventory`
-   - إدراج الصف في `order_items` مع `product_id: null`
+1. **استكشاف**: قراءة `public/sw.js`، `index.html`، والبحث عن نص "اتصالك بطيء" لمعرفة أين يُعرض ولماذا.
+2. **إصلاح SW**: تحديث `public/sw.js` — bump `CACHE_VERSION`، حذف caches قديمة في `activate`، network-first لـ HTML.
+3. **سكربت Self-heal**: إضافة snippet في `index.html` يلتقط فشل تحميل الـ entry chunk ويُلغي تسجيل SW + يعيد التحميل مرة واحدة.
+4. **النشر**: ضغط Update في حوار النشر.
 
-4. تحديث واجهة قسم "إضافة منتج جديد": أزرار toggle بين الوضعين + الحقول المناسبة لكل وضع، وزر "إضافة" واحد يستدعي الدالة المناسبة.
+## ملاحظة مهمة
+إذا كان رفع الموقع يتم عبر Lovable publish وليس عبر hosting تقليدي، فالـ HTML يُقدَّم من Lovable مباشرة، والمشكلة محصورة في:
+- Service Worker قديم في متصفح المستخدم (نُصلحه بـ skipWaiting + claim)
+- chunks JS قديمة في Cache API (نُصلحها بحذف caches في activate)
 
-5. إضافة شارة "✏️ يدوي" في سطر العنصر إذا كان `is_manual` (أو `!product_id` للعناصر القديمة اليدوية).
-
-### تحقق من الإدخال
-- الاسم: `trim()` غير فارغ، حد أقصى 200 حرف
-- السعر: ≥ 0
-- الكمية: ≥ 1
-- زر الإضافة معطّل حتى تكتمل الشروط
-
-### ما لا يتغير
-- لا تعديل على قاعدة البيانات (القيد مُسقط مسبقاً)
-- لا تعديل على `admin_adjust_order_inventory`
-- منطق الحذف/التعديل للعناصر الموجودة يبقى كما هو
+هذه المعالجة تعمل لكل المستخدمين تلقائياً عند أول زيارة بعد النشر — مرة واحدة فقط.
 
 ## التأكيد
-الإصلاح ضمن ملف واحد، لا migrations مطلوبة، ولا يؤثر على الطلبات الحالية أو منطق المخزون للمنتجات الفعلية.
-
-<lov-actions>
-<lov-suggestion message="جرب إضافة منتج يدوي لطلب موجود وتأكد من حفظه بدون التأثير على المخزون">تحقق أن الإضافة اليدوية تعمل</lov-suggestion>
-<lov-suggestion message="أضف إمكانية تعديل اسم المنتج اليدوي بعد إضافته للسطر بدون حذفه وإعادة إضافته">تعديل اسم المنتج اليدوي لاحقاً</lov-suggestion>
-<lov-suggestion message="أظهر المنتجات اليدوية في تقارير المبيعات والأرباح بقسم منفصل (بدون تكلفة شراء)">إدراج المنتجات اليدوية في التقارير المالية</lov-suggestion>
-</lov-actions>
+لن أُجري تعديلات على schema قاعدة البيانات. التغييرات محصورة في `public/sw.js` و `index.html` (سطور قليلة في كل ملف).
