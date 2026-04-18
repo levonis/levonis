@@ -157,33 +157,40 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
   const effectivePersonalDeliveryCost = isPrinterCategory ? personalDeliveryCost : 0;
 
-  // Effective direct-sale commission: linked to global COD setting if toggle is on
-  // The percentage applies to the pre-order FINAL price (price + shipping + commission + delivery + referral)
+  // Effective direct-sale commission: 
+  // = pre-order sea commission + direct sale commission entered
+  // If COD link toggle is on, the "direct" portion is computed from global COD settings
+  // applied to the pre-order final price (sea preferred, else air)
   const effectiveCommissionDirect = useMemo(() => {
-    if (!linkDirectCommissionToCod || !codDefaults) return commissionDirectIqd;
-    if (!shippingSettings || !priceUsd) return commissionDirectIqd;
-    if (codDefaults.type === 'fixed') return Math.ceil(codDefaults.value);
+    let directPortion = commissionDirectIqd;
 
-    const priceIqd = Math.round(priceUsd * shippingSettings.usd_to_iqd_rate);
-    const pdc = effectivePersonalDeliveryCost;
-
-    // Pick pre-order base: sea preferred, else air, else direct base price
-    let preorderFinal = priceIqd + pdc + referralEarningsIqd;
-    if (hasPreOrder && hasSea) {
-      const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
-        ? { length: lengthCm, width: widthCm, height: heightCm } : null;
-      const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
-      preorderFinal = priceIqd + calc.shippingCost + commissionSeaIqd + pdc + referralEarningsIqd;
-    } else if (hasPreOrder && hasAir) {
-      const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
-        ? { length: lengthCm, width: widthCm, height: heightCm } : null;
-      const weightNum = parseFloat(weightKg) || 0;
-      const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
-      preorderFinal = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+    if (linkDirectCommissionToCod && codDefaults && shippingSettings && priceUsd) {
+      if (codDefaults.type === 'fixed') {
+        directPortion = Math.ceil(codDefaults.value);
+      } else {
+        const priceIqd = Math.round(priceUsd * shippingSettings.usd_to_iqd_rate);
+        const pdc = effectivePersonalDeliveryCost;
+        let preorderFinal = priceIqd + pdc + referralEarningsIqd;
+        if (hasPreOrder && hasSea) {
+          const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
+            ? { length: lengthCm, width: widthCm, height: heightCm } : null;
+          const calc = calculateShippingCost('china', 'sea', dims, null, shippingSettings);
+          preorderFinal = priceIqd + calc.shippingCost + commissionSeaIqd + pdc + referralEarningsIqd;
+        } else if (hasPreOrder && hasAir) {
+          const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
+            ? { length: lengthCm, width: widthCm, height: heightCm } : null;
+          const weightNum = parseFloat(weightKg) || 0;
+          const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
+          preorderFinal = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
+        }
+        directPortion = Math.ceil(preorderFinal * codDefaults.value / 100);
+      }
     }
 
-    return Math.ceil(preorderFinal * codDefaults.value / 100);
+    // Always add the pre-order sea commission to the direct sale commission
+    return (hasPreOrder && hasSea ? commissionSeaIqd : 0) + directPortion;
   }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
+
 
 
   const calculations = useMemo(() => {
