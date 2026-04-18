@@ -278,8 +278,8 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="shipping_type" value={shippingTypeValue} />
       <input type="hidden" name="commission_sea_iqd" value={commissionSeaIqd} />
       <input type="hidden" name="commission_air_iqd" value={commissionAirIqd} />
-      <input type="hidden" name="commission_direct_iqd" value={effectiveCommissionDirect} />
-      <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, effectiveCommissionDirect)} />
+      <input type="hidden" name="commission_direct_iqd" value={directCommissionPortion} />
+      <input type="hidden" name="commission_iqd" value={Math.max(commissionSeaIqd, commissionAirIqd, directCommissionPortion)} />
       <input type="hidden" name="other_costs_iqd" value={0} />
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
       <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
