@@ -123,6 +123,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       setCommissionSeaIqd(editingProduct.commission_sea_iqd || editingProduct.commission_iqd || 0);
       setCommissionAirIqd(editingProduct.commission_air_iqd || editingProduct.commission_iqd || 0);
       setCommissionDirectIqd(editingProduct.commission_direct_iqd || editingProduct.commission_iqd || 0);
+
+      // COD settings
+      setCodEnabled(!!editingProduct.cod_enabled);
+      setCodFeeType((editingProduct.cod_fee_type === 'fixed' ? 'fixed' : 'percentage'));
+      setCodFeeValue(Number(editingProduct.cod_fee_value) || 0);
     }
   }, [editingProduct]);
 
@@ -216,6 +221,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       <input type="hidden" name="round_up_price" value={roundUp ? 'true' : 'false'} />
       <input type="hidden" name="personal_delivery_cost" value={personalDeliveryCost} />
       <input type="hidden" name="referral_earnings_iqd" value={referralEarningsIqd} />
+      <input type="hidden" name="cod_enabled" value={codEnabled ? 'true' : 'false'} />
+      <input type="hidden" name="cod_fee_type" value={codFeeType} />
+      <input type="hidden" name="cod_fee_value" value={codFeeValue} />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
