@@ -477,6 +477,9 @@ const Cart = () => {
     fee_label_en: string;
     fee_tiers?: FeeTier[];
     quarter_payment_fee_percentage?: number; // للتوافق مع الإعدادات القديمة
+    cod_label_ar?: string;
+    cod_default_fee_type?: 'percentage' | 'fixed';
+    cod_default_fee_value?: number;
   }
   
   const { data: partialPaymentSettings } = useQuery({
