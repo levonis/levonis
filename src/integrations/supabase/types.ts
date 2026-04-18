@@ -124,6 +124,48 @@ export type Database = {
         }
         Relationships: []
       }
+      app_versions: {
+        Row: {
+          created_at: string
+          download_url: string
+          file_size_mb: number | null
+          id: string
+          is_active: boolean
+          is_latest: boolean
+          min_android_version: string | null
+          platform: string
+          release_notes_ar: string | null
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          download_url: string
+          file_size_mb?: number | null
+          id?: string
+          is_active?: boolean
+          is_latest?: boolean
+          min_android_version?: string | null
+          platform?: string
+          release_notes_ar?: string | null
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          download_url?: string
+          file_size_mb?: number | null
+          id?: string
+          is_active?: boolean
+          is_latest?: boolean
+          min_android_version?: string | null
+          platform?: string
+          release_notes_ar?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       assistance_coupon_claims: {
         Row: {
           coupon_code: string

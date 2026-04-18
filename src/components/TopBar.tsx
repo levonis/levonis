@@ -2,7 +2,7 @@ import { memo, useState, useEffect } from 'react';
 const logoNew = '/og-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Globe } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Globe, Download } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import AdminPendingOrdersSheet from './admin/AdminPendingOrdersSheet';
 import WalletDialog from './WalletDialog';
@@ -239,6 +239,20 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Download App Button (hidden inside native app) */}
+            {typeof window !== 'undefined' && !(window as any).Capacitor?.isNativePlatform?.() && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/download-app')}
+                className="rounded-full border-primary/30 hover:border-primary hidden sm:inline-flex"
+                title="تحميل التطبيق"
+                aria-label="تحميل التطبيق"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
 
             {/* Rewards Hub Button */}
             <Button
