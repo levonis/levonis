@@ -45,7 +45,8 @@ export default defineConfig(({ mode }) => ({
           if (!id.includes('node_modules')) return undefined;
           // Heavy, lazy-loaded libs into their own chunks
           if (id.includes('html2canvas')) return 'vendor-html2canvas';
-          if (id.includes('jspdf') || id.includes('canvg') || id.includes('pako')) return 'vendor-jspdf';
+          if (id.includes('node_modules/jspdf/') || id.includes('node_modules/jspdf-autotable/')) return 'vendor-jspdf';
+          if (id.includes('node_modules/canvg/')) return 'vendor-canvg';
           if (id.includes('three') || id.includes('@react-three')) return 'vendor-three';
           if (id.includes('html5-qrcode') || id.includes('jsqr')) return 'vendor-qr';
           if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'vendor-motion';
