@@ -444,6 +444,17 @@ const ProductDetail = () => {
   // Guard all product prices through USD→IQD safeguard
   const guardedPrices = guardProductPrices(product as any, usdToIqd);
 
+  // If the product is linked to global COD %, recompute direct_sale_price live
+  // so it adjusts with exchange rate / sea shipping / COD setting changes.
+  const liveDirectSalePrice = computeLinkedDirectSalePrice(
+    product as any,
+    shippingSettings as any,
+    codDefaults as any,
+  );
+  if (liveDirectSalePrice != null) {
+    guardedPrices.direct_sale_price = liveDirectSalePrice;
+  }
+
   const getPrice = () => {
     if (activeSaleType === 'direct') {
       // For direct sale: use color's direct_sale_price, then product's direct_sale_price, then fall back to regular price
