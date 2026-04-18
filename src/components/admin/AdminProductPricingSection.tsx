@@ -73,10 +73,10 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   const [commissionDirectIqd, setCommissionDirectIqd] = useState<number>(0);
 
   // Direct sale
-  const [otherCostsIqd, setOtherCostsIqd] = useState<number>(0);
   const [personalDeliveryCost, setPersonalDeliveryCost] = useState<number>(0);
   const [referralEarningsIqd, setReferralEarningsIqd] = useState<number>(0);
   const [roundUp, setRoundUp] = useState<boolean>(true);
+  const [linkDirectCommissionToCod, setLinkDirectCommissionToCod] = useState<boolean>(false);
 
   // Cash on Delivery (Pre-order only) — toggle only; fee comes from global settings
   const [codEnabled, setCodEnabled] = useState<boolean>(false);
