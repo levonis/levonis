@@ -1,5 +1,7 @@
-const CACHE_NAME = 'levonis-v10';
+const CACHE_NAME = 'levonis-v11';
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
+// Vite hashed assets (JS/CSS) live under /assets/ with content hashes — safe to cache forever
+const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
 const IS_PREVIEW_HOST =
   self.location.hostname.includes('lovableproject.com') ||
   self.location.hostname.startsWith('id-preview--');
@@ -65,7 +67,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (!STATIC_EXTENSIONS.test(url.pathname)) return;
+  if (!STATIC_EXTENSIONS.test(url.pathname) && !HASHED_ASSET_PATH.test(url.pathname)) return;
 
   event.respondWith(
     caches.match(request).then((cached) => {
