@@ -2604,7 +2604,7 @@ const Cart = () => {
                       </div>
                       <RadioGroup 
                         value={preOrderPaymentOption} 
-                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'quarter')}
+                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'quarter' | 'cod')}
                         className="space-y-3"
                       >
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
@@ -2632,10 +2632,33 @@ const Cart = () => {
                               {t('cart_preorder_quarter_pay', { amount: formatPrice(Math.ceil(subtotalWithTax * 0.25)) })}
                             </div>
                             <div className="text-xs text-orange-500 mt-1">
-                              {t('cart_preorder_remaining', { amount: formatPrice(remainingAmount) })}
+                              {t('cart_preorder_remaining', { amount: formatPrice((subtotalWithTax - Math.ceil(subtotalWithTax * 0.25)) + partialPaymentFee) })}
                             </div>
                           </Label>
                         </div>
+                        {showCodOption && (
+                          <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                            preOrderPaymentOption === 'cod'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border/40 hover:border-primary/50'
+                          }`}>
+                            <RadioGroupItem value="cod" id="payment-cod" />
+                            <Label htmlFor="payment-cod" className="flex-1 cursor-pointer">
+                              <div className="font-bold text-foreground flex items-center gap-2">
+                                <Truck className="h-4 w-4" />
+                                الدفع عند الاستلام
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                لا تدفع شيئاً الآن — تدفع المبلغ كاملاً عند استلام الطلب
+                              </div>
+                              {preOrderPaymentOption === 'cod' && codFee > 0 && (
+                                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                  + {formatPrice(codFee)} د.ع رسوم الدفع عند الاستلام
+                                </div>
+                              )}
+                            </Label>
+                          </div>
+                        )}
                       </RadioGroup>
                     </div>
                   )}
