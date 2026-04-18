@@ -177,6 +177,8 @@
         }
 
         function showRecovery(message) {
+          var loader = document.getElementById('initial-loader');
+          if (loader) loader.style.display = 'flex';
           var rec = document.getElementById('il-recover');
           if (!rec) return;
           if (message) {
