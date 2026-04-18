@@ -1370,19 +1370,22 @@ const Cart = () => {
       
       // Calculate payment info for pre-orders
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
+      const isPreOrderCod = hasPreOrderItems && isCodPayment;
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
       const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
-      const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
-      const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
-      
+      const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal);
+      const orderRemaining = isPreOrderCod
+        ? orderSubtotal + codFee
+        : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
+
       const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       const orderData = {
-        total_amount: orderSubtotal + orderDeliveryFee,
+        total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0),
         subtotal: orderSubtotal,
-        paid_amount: paidNow + orderDeliveryFee,
-        remaining_amount: orderRemaining,
+        paid_amount: isPreOrderCod ? 0 : (paidNow + orderDeliveryFee),
+        remaining_amount: orderRemaining + (isPreOrderCod ? orderDeliveryFee : 0),
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
@@ -1390,6 +1393,7 @@ const Cart = () => {
         discount_amount: discount + protectionDiscountAmount + cardDiscountAmount,
         card_discount_amount: cardDiscountAmount,
         card_discount_level_name: cardDiscountAmount > 0 ? (cardDiscount?.levelName || null) : null,
+        payment_method: isPreOrderCod ? 'cod' : 'wallet',
       } as any;
       if (appliedReferral) {
         orderData.referral_coupon_id = appliedReferral.coupon_id;
@@ -1399,7 +1403,7 @@ const Cart = () => {
       const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
         p_user_id: user.id,
         p_order_data: orderData,
-        p_payment_amount: requiredPaymentNow,
+        p_payment_amount: isPreOrderCod ? 0 : requiredPaymentNow,
       });
 
       if (orderError || !orderId) {
