@@ -10,17 +10,18 @@
     <!-- Preconnect hints - placed early for maximum effect -->
     <link rel="preconnect" href="https://sajlfpygebpqwzpotrsg.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://sajlfpygebpqwzpotrsg.supabase.co">
-    
+
+    <!-- Preload the Cairo 900 font used by the initial loader logo (cuts longest critical chain) -->
+    <link rel="preload" href="/fonts/cairo-900.ttf" as="font" type="font/ttf" crossorigin>
+
     <link rel="canonical" href="https://levonisiq.com/" />
     <link rel="alternate" href="https://levonisiq.com/" hreflang="ar-IQ" />
     <link rel="alternate" href="https://levonisiq.com/" hreflang="x-default" />
 
-    <!-- Preload critical resources -->
+    <!-- Preload critical app entry -->
     <link rel="modulepreload" href="/src/main.tsx">
-    
-    <!-- Preload LCP banner image - dynamically added, but we can hint -->
-    <link rel="preconnect" href="https://sajlfpygebpqwzpotrsg.supabase.co/storage" crossorigin>
-    
+
+
 
     
     
