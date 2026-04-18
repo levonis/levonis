@@ -141,6 +141,9 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
       // COD settings (toggle only)
       setCodEnabled(!!editingProduct.cod_enabled);
+
+      // Persisted "link direct commission to COD %" toggle
+      setLinkDirectCommissionToCod(!!editingProduct.link_direct_commission_to_cod);
     }
   }, [editingProduct]);
 
