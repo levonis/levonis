@@ -45,7 +45,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LEVONIS">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <script src="https://telegram.org/js/telegram-web-app.js" defer async></script>
+  <script>
+    // Defer Telegram WebApp SDK to avoid forced reflow during initial render
+    window.addEventListener('load', function () {
+      var s = document.createElement('script');
+      s.src = 'https://telegram.org/js/telegram-web-app.js';
+      s.async = true;
+      document.head.appendChild(s);
+    });
+  </script>
   <meta property="og:title" content="LEVONIS — iq">
   <meta name="twitter:title" content="LEVONIS — iq">
   <meta property="og:description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
