@@ -110,34 +110,35 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
       // 2. Handle modified items - adjust stock difference
       for (const item of items) {
         const orig = originalItems.find(o => o.id === item.id);
+        const isManual = (item as any).is_manual === true || !item.product_id;
         
         if (orig) {
-          // Existing item - check for changes
-          const qtyDiff = orig.quantity - item.quantity; // positive = restoring, negative = deducting
-          const colorChanged = orig.selected_color !== item.selected_color;
-          
-          if (colorChanged) {
-            // Restore old color stock
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: orig.product_id,
-              p_option_name: orig.selected_option || null,
-              p_selected_color: orig.selected_color || null,
-              p_quantity_change: orig.quantity,
-            });
-            // Deduct new color stock
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: item.product_id,
-              p_option_name: item.selected_option || null,
-              p_selected_color: item.selected_color || null,
-              p_quantity_change: -item.quantity,
-            });
-          } else if (qtyDiff !== 0) {
-            await supabase.rpc("admin_adjust_order_inventory", {
-              p_product_id: item.product_id,
-              p_option_name: item.selected_option || null,
-              p_selected_color: item.selected_color || null,
-              p_quantity_change: qtyDiff,
-            });
+          // Existing item - check for changes (skip stock for manual items)
+          if (!isManual && orig.product_id) {
+            const qtyDiff = orig.quantity - item.quantity;
+            const colorChanged = orig.selected_color !== item.selected_color;
+            
+            if (colorChanged) {
+              await supabase.rpc("admin_adjust_order_inventory", {
+                p_product_id: orig.product_id,
+                p_option_name: orig.selected_option || null,
+                p_selected_color: orig.selected_color || null,
+                p_quantity_change: orig.quantity,
+              });
+              await supabase.rpc("admin_adjust_order_inventory", {
+                p_product_id: item.product_id,
+                p_option_name: item.selected_option || null,
+                p_selected_color: item.selected_color || null,
+                p_quantity_change: -item.quantity,
+              });
+            } else if (qtyDiff !== 0) {
+              await supabase.rpc("admin_adjust_order_inventory", {
+                p_product_id: item.product_id,
+                p_option_name: item.selected_option || null,
+                p_selected_color: item.selected_color || null,
+                p_quantity_change: qtyDiff,
+              });
+            }
           }
 
           // Update the order item
@@ -149,17 +150,19 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
             selected_option: item.selected_option,
           }).eq("id", item.id);
         } else {
-          // New item - deduct stock and insert
-          await supabase.rpc("admin_adjust_order_inventory", {
-            p_product_id: item.product_id,
-            p_option_name: item.selected_option || null,
-            p_selected_color: item.selected_color || null,
-            p_quantity_change: -item.quantity,
-          });
+          // New item - deduct stock only for real products
+          if (!isManual) {
+            await supabase.rpc("admin_adjust_order_inventory", {
+              p_product_id: item.product_id,
+              p_option_name: item.selected_option || null,
+              p_selected_color: item.selected_color || null,
+              p_quantity_change: -item.quantity,
+            });
+          }
 
           await supabase.from("order_items").insert({
             order_id: orderId,
-            product_id: item.product_id,
+            product_id: isManual ? null : item.product_id,
             product_name_ar: item.product_name_ar,
             product_name: item.product_name,
             quantity: item.quantity,
