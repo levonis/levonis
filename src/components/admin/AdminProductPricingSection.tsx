@@ -512,20 +512,6 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
               </div>
             )}
 
-            {/* COD for Pre-order — toggle only; fee from global settings */}
-            <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={codEnabled}
-                  onCheckedChange={(checked) => setCodEnabled(!!checked)}
-                />
-                <Truck className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">تفعيل الدفع عند الاستلام لهذا المنتج (للطلب المسبق)</span>
-              </label>
-              <p className="text-xs text-muted-foreground pr-6">
-                النسبة/القيمة تُؤخذ تلقائياً من إعدادات الدفع عند الاستلام الافتراضية في صفحة إعدادات الدفع الجزئي.
-              </p>
-            </div>
           </div>
         )}
 
