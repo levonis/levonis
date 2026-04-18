@@ -215,12 +215,24 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
 
     if (hasDirectSale) {
-      const finalPrice = priceIqd + effectiveCommissionDirect + pdc + referralEarningsIqd;
+      // Use the same shipping cost as pre-order (sea preferred, else air)
+      let directShipping = 0;
+      if (hasPreOrder) {
+        const dims = (lengthCm > 0 || widthCm > 0 || heightCm > 0)
+          ? { length: lengthCm, width: widthCm, height: heightCm } : null;
+        if (hasSea) {
+          directShipping = calculateShippingCost('china', 'sea', dims, null, shippingSettings).shippingCost;
+        } else if (hasAir) {
+          const weightNum = parseFloat(weightKg) || 0;
+          directShipping = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings).shippingCost;
+        }
+      }
+      const finalPrice = priceIqd + directShipping + effectiveCommissionDirect + pdc + referralEarningsIqd;
       results.push({
         label: 'بيع مباشر',
         type: 'direct',
         priceIqd,
-        shipping: 0,
+        shipping: directShipping,
         commission: effectiveCommissionDirect,
         final: finalPrice,
         finalRounded: roundUpToNearest(finalPrice, 250),
