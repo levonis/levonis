@@ -223,10 +223,17 @@
             });
         };
 
-        // Require 2 chunk-load errors within 3s before showing recovery —
-        // a single transient image/css failure shouldn't mark the whole app as broken.
-        var chunkErrorCount = 0;
-        var chunkErrorReset = null;
+        // Self-heal: if ANY JS chunk fails to load before mount, it almost always
+        // means a stale Service Worker is serving a stale index.html that points to
+        // chunk hashes that no longer exist after a deploy. Auto-nuke SW + caches
+        // and reload ONCE — far faster than the 25s force-reload timer.
+        var SELF_HEAL_KEY = '__levo_self_healed_v13';
+        function selfHealOnce() {
+          if (window.__levoMounted) return;
+          try { if (sessionStorage.getItem(SELF_HEAL_KEY)) return; } catch (e) {}
+          try { sessionStorage.setItem(SELF_HEAL_KEY, '1'); } catch (e) {}
+          window.__levoRecover();
+        }
         window.addEventListener('error', function (e) {
           var msg = (e && e.message) || '';
           var src = (e && e.target && (e.target.src || e.target.href)) || '';
@@ -235,13 +242,22 @@
             msg.indexOf('Importing a module script failed') !== -1 ||
             (src && /\.(js|mjs)(\?|$)/.test(src));
           if (!isChunkErr) return;
-          chunkErrorCount++;
-          if (chunkErrorReset) clearTimeout(chunkErrorReset);
-          chunkErrorReset = setTimeout(function () { chunkErrorCount = 0; }, 3000);
-          if (chunkErrorCount >= 2 && !window.__levoMounted) {
+          if (!window.__levoMounted) {
             showRecovery();
+            selfHealOnce();
           }
         }, true);
+        window.addEventListener('unhandledrejection', function (e) {
+          var msg = (e && e.reason && (e.reason.message || String(e.reason))) || '';
+          if (msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
+              msg.indexOf('Importing a module script failed') !== -1 ||
+              msg.indexOf('error loading dynamically imported module') !== -1) {
+            if (!window.__levoMounted) {
+              showRecovery();
+              selfHealOnce();
+            }
+          }
+        });
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>

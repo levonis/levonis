@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v12';
+const CACHE_NAME = 'levonis-v13';
 const STATIC_EXTENSIONS = /\.(woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|mp3|mp4|webm)$/i;
 // Vite hashed assets (JS/CSS) live under /assets/ with content hashes — safe to cache forever
 const HASHED_ASSET_PATH = /^\/assets\/.+\.(js|css)$/i;
