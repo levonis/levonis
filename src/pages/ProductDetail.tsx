@@ -81,6 +81,24 @@ const ProductDetail = () => {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+
+  // Global COD default settings (for products linked to COD %)
+  const { data: codDefaults } = useQuery({
+    queryKey: ['cod-default-settings-product-detail'],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'partial_payment_settings')
+        .single();
+      const v: any = data?.setting_value || {};
+      return {
+        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
+        value: Number(v.cod_default_fee_value) || 0,
+      };
+    },
+  });
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     staleTime: 5 * 60 * 1000,
