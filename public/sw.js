@@ -67,7 +67,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (!STATIC_EXTENSIONS.test(url.pathname)) return;
+  if (!STATIC_EXTENSIONS.test(url.pathname) && !HASHED_ASSET_PATH.test(url.pathname)) return;
 
   event.respondWith(
     caches.match(request).then((cached) => {
