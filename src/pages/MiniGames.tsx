@@ -137,19 +137,19 @@ export default function MiniGames() {
       return { ...game, _disabled: true, _hidden: true };
     }
     if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
-      return { ...game, _disabled: true };
+      return { ...game, _disabled: true, _hidden: !isAdmin };
     }
     if (game.node_name === "space_blaster" && spaceSettings && !spaceSettings.game_enabled) {
-      return { ...game, _disabled: true };
+      return { ...game, _disabled: true, _hidden: !isAdmin };
     }
     if (game.node_name === "mystery_case" && mysterySettings && !mysterySettings.game_enabled) {
-      return { ...game, _disabled: true };
+      return { ...game, _disabled: true, _hidden: !isAdmin };
     }
     if (game.node_name === "knife_rain" && knifeRainSettings && !knifeRainSettings.game_enabled) {
-      return { ...game, _disabled: true };
+      return { ...game, _disabled: true, _hidden: !isAdmin };
     }
     if (game.node_name === "crossy_road" && crossyRoadSettings && !crossyRoadSettings.game_enabled) {
-      return { ...game, _disabled: true };
+      return { ...game, _disabled: true, _hidden: !isAdmin };
     }
     let startingSoon: string | undefined = undefined;
     if (game.node_name === "crossy_road" && crossyRoadSettings?.next_season_starts_at) {
