@@ -711,6 +711,49 @@ function parseBambuLabRSC(html: string): {
   return { colors, options };
 }
 
+// Sample dominant RGB color from a remote swatch image (PNG/JPG).
+// Returns "#RRGGBB" or null on any failure (timeout, size limit, decode fail).
+async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 4000);
+    const resp = await fetch(imageUrl, { signal: ctrl.signal });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    if (buf.length < 100 || buf.length > 1_000_000) return null;
+    return dominantRgbFromBytes(buf);
+  } catch {
+    return null;
+  }
+}
+
+// Approximate dominant RGB by histogramming bytes in the image payload.
+// Good enough for solid-color swatches like Bambulab's PNGs.
+function dominantRgbFromBytes(bytes: Uint8Array): string | null {
+  const counts = new Map<number, number>();
+  // Skip first 200 bytes (PNG/JPEG headers); sample every 24 bytes
+  for (let i = 200; i < bytes.length - 3; i += 24) {
+    const r = bytes[i], g = bytes[i + 1], b = bytes[i + 2];
+    // Skip near-white, near-black, near-transparent placeholders
+    if (r > 245 && g > 245 && b > 245) continue;
+    if (r < 10 && g < 10 && b < 10) continue;
+    // Quantize to 16 levels per channel to bin similar shades together
+    const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  if (counts.size === 0) return null;
+  let bestKey = 0, bestCount = 0;
+  for (const [k, c] of counts) {
+    if (c > bestCount) { bestCount = c; bestKey = k; }
+  }
+  if (bestCount < 3) return null;
+  const r = ((bestKey >> 8) & 0xF) * 16 + 8;
+  const g = ((bestKey >> 4) & 0xF) * 16 + 8;
+  const b = (bestKey & 0xF) * 16 + 8;
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
 // Currency conversion rates to USD
 const CURRENCY_TO_USD: Record<string, number> = {
   'USD': 1,
