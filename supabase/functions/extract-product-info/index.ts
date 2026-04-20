@@ -1503,16 +1503,20 @@ Return ONLY JSON:
 
     // ===== Bambu Lab deterministic color-image override =====
     if (platform === 'bambulab') {
-      // Use Firecrawl rendered HTML first (has swatch <li> elements), fall back to raw HTML
       let bambuHtml = pageContent;
-      
-      // Check if Firecrawl was already called and we have rendered HTML
-      // The Firecrawl section above (Strategy 3) runs but doesn't save renderedHtml to outer scope
-      // So we try Firecrawl specifically for Bambu here if swatch parsing fails on raw HTML
-      let bambuColors = parseBambuLabColors(bambuHtml);
-      
+
+      // Try RSC parser first (US/EU stores), then legacy <li> parser (China store / hydrated)
+      let rscResult = parseBambuLabRSC(bambuHtml);
+      let bambuColors = rscResult.colors;
+      let bambuOptions = rscResult.options;
+
       if (bambuColors.length === 0) {
-        console.log('Bambu parser found 0 colors in raw HTML, trying Firecrawl for rendered HTML...');
+        bambuColors = parseBambuLabColors(bambuHtml);
+      }
+
+      // If still nothing, try Firecrawl rendered HTML and retry both parsers
+      if (bambuColors.length === 0) {
+        console.log('Bambu parsers found 0 colors in raw HTML, trying Firecrawl for rendered HTML...');
         const fcKey = Deno.env.get('FIRECRAWL_API_KEY');
         if (fcKey) {
           try {
@@ -1526,7 +1530,12 @@ Return ONLY JSON:
               const renderedHtml = fcData.data?.html || fcData.html || '';
               console.log('Firecrawl for Bambu returned HTML length:', renderedHtml.length);
               if (renderedHtml.length > 1000) {
-                bambuColors = parseBambuLabColors(renderedHtml);
+                rscResult = parseBambuLabRSC(renderedHtml);
+                bambuColors = rscResult.colors;
+                bambuOptions = rscResult.options;
+                if (bambuColors.length === 0) {
+                  bambuColors = parseBambuLabColors(renderedHtml);
+                }
               }
             }
           } catch (e) {
@@ -1534,7 +1543,7 @@ Return ONLY JSON:
           }
         }
       }
-      
+
       if (bambuColors.length > 0) {
         console.log('Bambu Lab parser found', bambuColors.length, 'colors — replacing AI-guessed colors');
         productInfo.colors = bambuColors.map(c => ({
@@ -1550,6 +1559,20 @@ Return ONLY JSON:
         }
       } else {
         console.log('Bambu Lab parser found no colors, keeping AI results');
+      }
+
+      // Replace AI-extracted options with deterministic RSC options when available
+      if (bambuOptions.length > 0) {
+        console.log('Bambu RSC found', bambuOptions.length, 'non-color options — replacing AI options');
+        productInfo.options = bambuOptions.map(o => ({
+          name: o.name,
+          name_ar: o.name_ar,
+          image_url: o.image_url,
+          price_adjustment: 0,
+          in_stock: true,
+          available_for_direct_sale: true,
+          available_for_pre_order: false,
+        }));
       }
     }
 
