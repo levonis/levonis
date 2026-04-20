@@ -1625,11 +1625,26 @@ Return ONLY JSON:
 
       if (bambuColors.length > 0) {
         console.log('Bambu Lab parser found', bambuColors.length, 'colors — replacing AI-guessed colors');
+
+        // Sample real hex codes in parallel from swatch images (when hex is missing/placeholder)
+        const needsSampling = bambuColors.filter(c => c.image_url && (!c.hex_code || c.hex_code === '#808080'));
+        if (needsSampling.length > 0) {
+          console.log(`Bambu: sampling hex codes for ${needsSampling.length} swatches in parallel`);
+          const sampled = await Promise.all(
+            needsSampling.map(c => sampleSwatchColor(c.image_url!))
+          );
+          needsSampling.forEach((c, i) => {
+            if (sampled[i]) c.hex_code = sampled[i] as string;
+          });
+        }
+
+        // IMPORTANT: do NOT hardcode availability flags here — leave undefined so that
+        // the admin's defaultSettings (default_color_available_for_pre_order, etc.) take effect.
         productInfo.colors = bambuColors.map(c => ({
-          ...c,
-          in_stock: true,
-          available_for_direct_sale: true,
-          available_for_pre_order: false
+          name: c.name,
+          name_ar: c.name_ar,
+          hex_code: c.hex_code,
+          image_url: c.image_url,
         }));
         for (const c of bambuColors) {
           if (c.image_url) {
@@ -1643,14 +1658,12 @@ Return ONLY JSON:
       // Replace AI-extracted options with deterministic RSC options when available
       if (bambuOptions.length > 0) {
         console.log('Bambu RSC found', bambuOptions.length, 'non-color options — replacing AI options');
+        // Same as colors: omit availability flags so admin defaults apply
         productInfo.options = bambuOptions.map(o => ({
           name: o.name,
           name_ar: o.name_ar,
           image_url: o.image_url,
           price_adjustment: 0,
-          in_stock: true,
-          available_for_direct_sale: true,
-          available_for_pre_order: false,
         }));
       }
     }
