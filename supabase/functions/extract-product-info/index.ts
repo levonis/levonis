@@ -557,6 +557,124 @@ function parseBambuLabColors(html: string): Array<{name: string; name_ar: string
   return colors;
 }
 
+// ===== Bambu Lab RSC (React Server Components) parser =====
+// Handles US/EU stores (Next.js) where product data ships inside
+//   <script>self.__next_f.push([1,"...escaped JSON..."])</script>
+// Returns colors AND non-color options (Type, Size, Nozzle, etc.)
+function parseBambuLabRSC(html: string): {
+  colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }>;
+  options: Array<{ name: string; name_ar: string; image_url: string | null; property_key: string }>;
+} {
+  const colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }> = [];
+  const options: Array<{ name: string; name_ar: string; image_url: string | null; property_key: string }> = [];
+
+  const bambuColorArMap: Record<string, string> = {
+    'gray': 'رمادي', 'grey': 'رمادي',
+    'light blue': 'أزرق فاتح', 'blue': 'أزرق',
+    'olive': 'زيتي', 'brown': 'بني',
+    'teal': 'أزرق مخضر', 'orange': 'برتقالي',
+    'purple': 'بنفسجي', 'pink': 'وردي',
+    'red': 'أحمر', 'green': 'أخضر',
+    'yellow': 'أصفر', 'white': 'أبيض',
+    'black': 'أسود', 'gold': 'ذهبي',
+    'silver': 'فضي', 'jade': 'أخضر يشمي',
+    'translucent': 'شفاف', 'clear': 'شفاف',
+    'champagne': 'شمبانيا', 'mint': 'نعناعي',
+    'rose gold': 'وردي ذهبي', 'titan': 'تيتانيوم',
+    'baby blue': 'أزرق فاتح', 'cream': 'كريمي',
+    'beige': 'بيج', 'ivory': 'عاجي',
+  };
+
+  const optionArMap: Record<string, string> = {
+    'refill': 'إعادة تعبئة',
+    'standard': 'قياسي',
+    'filament with spool': 'خيط مع بكرة',
+    'with spool': 'مع بكرة',
+    'without spool': 'بدون بكرة',
+    '1 kg': '1 كغم',
+    '500 g': '500 غم',
+    '250 g': '250 غم',
+    '0.2 mm': '0.2 ملم',
+    '0.4 mm': '0.4 ملم',
+    '0.6 mm': '0.6 ملم',
+    '0.8 mm': '0.8 ملم',
+  };
+
+  const translateColorName = (name: string): string => {
+    const lower = name.toLowerCase();
+    for (const [key, ar] of Object.entries(bambuColorArMap)) {
+      if (lower.includes(key)) {
+        return (lower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+      }
+    }
+    return name;
+  };
+
+  const translateOption = (name: string): string => {
+    const lower = name.toLowerCase().trim();
+    if (optionArMap[lower]) return optionArMap[lower];
+    for (const [key, ar] of Object.entries(optionArMap)) {
+      if (lower.includes(key)) return ar;
+    }
+    return name;
+  };
+
+  // Concatenate all __next_f.push payloads
+  const pushPattern = /self\.__next_f\.push\(\[1,\s*"((?:\\.|[^"\\])*)"\]\)/g;
+  let combined = '';
+  let pushMatch;
+  while ((pushMatch = pushPattern.exec(html)) !== null) {
+    try {
+      const decoded = JSON.parse('"' + pushMatch[1] + '"');
+      combined += decoded;
+    } catch {
+      combined += pushMatch[1];
+    }
+  }
+
+  console.log('Bambu RSC: combined payload length:', combined.length);
+  if (combined.length === 0) return { colors, options };
+
+  // Find every block with propertyKey + propertyValue (+ optional colorUrl)
+  // Looks like: "propertyKey":"Color","propertyValue":"Titan Gray (32301)","colorUrl":"https://..."
+  const blockPattern = /"propertyKey"\s*:\s*"([^"]+)"\s*,\s*"propertyValue"\s*:\s*"([^"]+)"(?:[^}]*?"colorUrl"\s*:\s*"?([^",}]*)"?)?/g;
+  const seenColors = new Set<string>();
+  const seenOptions = new Set<string>();
+  let m;
+
+  while ((m = blockPattern.exec(combined)) !== null) {
+    const propertyKey = m[1].trim();
+    const propertyValue = m[2].trim();
+    const colorUrlRaw = m[3]?.trim();
+    const colorUrl = colorUrlRaw && colorUrlRaw !== 'null' && colorUrlRaw.startsWith('http') ? colorUrlRaw : null;
+
+    const dedupeKey = `${propertyKey}::${propertyValue.toLowerCase()}`;
+
+    if (propertyKey.toLowerCase() === 'color') {
+      if (seenColors.has(dedupeKey)) continue;
+      seenColors.add(dedupeKey);
+      colors.push({
+        name: propertyValue,
+        name_ar: translateColorName(propertyValue),
+        hex_code: '#808080',
+        image_url: colorUrl,
+      });
+    } else {
+      if (seenOptions.has(dedupeKey)) continue;
+      seenOptions.add(dedupeKey);
+      options.push({
+        name: propertyValue,
+        name_ar: translateOption(propertyValue),
+        image_url: colorUrl,
+        property_key: propertyKey,
+      });
+    }
+  }
+
+  console.log(`Bambu RSC: found ${colors.length} colors, ${options.length} options`);
+  return { colors, options };
+}
+
 // Currency conversion rates to USD
 const CURRENCY_TO_USD: Record<string, number> = {
   'USD': 1,
