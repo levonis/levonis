@@ -568,10 +568,10 @@ function parseBambuLabRSC(html: string): {
   const colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }> = [];
   const options: Array<{ name: string; name_ar: string; image_url: string | null; property_key: string }> = [];
 
-  const bambuColorArMap: Record<string, string> = {
+  // Base colors (keys checked LAST as single-word fallback)
+  const bambuBaseColorMap: Record<string, string> = {
     'gray': 'رمادي', 'grey': 'رمادي',
-    'light blue': 'أزرق فاتح', 'blue': 'أزرق',
-    'olive': 'زيتي', 'brown': 'بني',
+    'blue': 'أزرق', 'olive': 'زيتي', 'brown': 'بني',
     'teal': 'أزرق مخضر', 'orange': 'برتقالي',
     'purple': 'بنفسجي', 'pink': 'وردي',
     'red': 'أحمر', 'green': 'أخضر',
@@ -580,10 +580,33 @@ function parseBambuLabRSC(html: string): {
     'silver': 'فضي', 'jade': 'أخضر يشمي',
     'translucent': 'شفاف', 'clear': 'شفاف',
     'champagne': 'شمبانيا', 'mint': 'نعناعي',
-    'rose gold': 'وردي ذهبي', 'titan': 'تيتانيوم',
-    'baby blue': 'أزرق فاتح', 'cream': 'كريمي',
-    'beige': 'بيج', 'ivory': 'عاجي',
+    'cream': 'كريمي', 'beige': 'بيج', 'ivory': 'عاجي',
+    'cyan': 'سماوي', 'magenta': 'ماجنتا',
+    'bronze': 'برونزي', 'copper': 'نحاسي',
   };
+
+  // Multi-word qualifiers checked FIRST (so "Rose Gold" beats "gold", "Baby Blue" beats "blue")
+  const bambuQualifierMap: Array<[string, string]> = [
+    ['rose gold', 'وردي ذهبي'],
+    ['baby blue', 'أزرق فاتح'],
+    ['light blue', 'أزرق فاتح'],
+    ['dark blue', 'أزرق غامق'],
+    ['sky blue', 'أزرق سماوي'],
+    ['light gray', 'رمادي فاتح'],
+    ['light grey', 'رمادي فاتح'],
+    ['dark gray', 'رمادي غامق'],
+    ['dark grey', 'رمادي غامق'],
+    ['titan gray', 'رمادي تيتانيوم'],
+    ['titan grey', 'رمادي تيتانيوم'],
+    ['hot pink', 'وردي فاقع'],
+    ['matte black', 'أسود مطفي'],
+    ['matte white', 'أبيض مطفي'],
+    ['mint green', 'أخضر نعناعي'],
+    ['forest green', 'أخضر غابات'],
+    ['lime green', 'أخضر ليموني'],
+    ['blood red', 'أحمر دموي'],
+    ['wine red', 'أحمر نبيذي'],
+  ];
 
   const optionArMap: Record<string, string> = {
     'refill': 'إعادة تعبئة',
@@ -600,13 +623,26 @@ function parseBambuLabRSC(html: string): {
     '0.8 mm': '0.8 ملم',
   };
 
+  // Translate Bambu color name while PRESERVING SKU code like "(13108)"
   const translateColorName = (name: string): string => {
-    const lower = name.toLowerCase();
-    for (const [key, ar] of Object.entries(bambuColorArMap)) {
+    // Extract SKU code if present, e.g. "Titan Gray (13108)" -> sku = "(13108)"
+    const skuMatch = name.match(/\s*(\([^)]+\))\s*$/);
+    const sku = skuMatch ? ` ${skuMatch[1]}` : '';
+    const baseName = skuMatch ? name.slice(0, skuMatch.index).trim() : name.trim();
+    const lower = baseName.toLowerCase();
+
+    // 1) Multi-word qualifier match
+    for (const [key, ar] of bambuQualifierMap) {
+      if (lower.includes(key)) return `${ar}${sku}`;
+    }
+    // 2) Single-word fallback
+    for (const [key, ar] of Object.entries(bambuBaseColorMap)) {
       if (lower.includes(key)) {
-        return (lower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+        const result = (lower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+        return `${result}${sku}`;
       }
     }
+    // 3) No translation: keep original (with SKU intact)
     return name;
   };
 
@@ -673,6 +709,49 @@ function parseBambuLabRSC(html: string): {
 
   console.log(`Bambu RSC: found ${colors.length} colors, ${options.length} options`);
   return { colors, options };
+}
+
+// Sample dominant RGB color from a remote swatch image (PNG/JPG).
+// Returns "#RRGGBB" or null on any failure (timeout, size limit, decode fail).
+async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 4000);
+    const resp = await fetch(imageUrl, { signal: ctrl.signal });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    if (buf.length < 100 || buf.length > 1_000_000) return null;
+    return dominantRgbFromBytes(buf);
+  } catch {
+    return null;
+  }
+}
+
+// Approximate dominant RGB by histogramming bytes in the image payload.
+// Good enough for solid-color swatches like Bambulab's PNGs.
+function dominantRgbFromBytes(bytes: Uint8Array): string | null {
+  const counts = new Map<number, number>();
+  // Skip first 200 bytes (PNG/JPEG headers); sample every 24 bytes
+  for (let i = 200; i < bytes.length - 3; i += 24) {
+    const r = bytes[i], g = bytes[i + 1], b = bytes[i + 2];
+    // Skip near-white, near-black, near-transparent placeholders
+    if (r > 245 && g > 245 && b > 245) continue;
+    if (r < 10 && g < 10 && b < 10) continue;
+    // Quantize to 16 levels per channel to bin similar shades together
+    const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  if (counts.size === 0) return null;
+  let bestKey = 0, bestCount = 0;
+  for (const [k, c] of counts) {
+    if (c > bestCount) { bestCount = c; bestKey = k; }
+  }
+  if (bestCount < 3) return null;
+  const r = ((bestKey >> 8) & 0xF) * 16 + 8;
+  const g = ((bestKey >> 4) & 0xF) * 16 + 8;
+  const b = (bestKey & 0xF) * 16 + 8;
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
 // Currency conversion rates to USD
@@ -1546,11 +1625,26 @@ Return ONLY JSON:
 
       if (bambuColors.length > 0) {
         console.log('Bambu Lab parser found', bambuColors.length, 'colors — replacing AI-guessed colors');
+
+        // Sample real hex codes in parallel from swatch images (when hex is missing/placeholder)
+        const needsSampling = bambuColors.filter(c => c.image_url && (!c.hex_code || c.hex_code === '#808080'));
+        if (needsSampling.length > 0) {
+          console.log(`Bambu: sampling hex codes for ${needsSampling.length} swatches in parallel`);
+          const sampled = await Promise.all(
+            needsSampling.map(c => sampleSwatchColor(c.image_url!))
+          );
+          needsSampling.forEach((c, i) => {
+            if (sampled[i]) c.hex_code = sampled[i] as string;
+          });
+        }
+
+        // IMPORTANT: do NOT hardcode availability flags here — leave undefined so that
+        // the admin's defaultSettings (default_color_available_for_pre_order, etc.) take effect.
         productInfo.colors = bambuColors.map(c => ({
-          ...c,
-          in_stock: true,
-          available_for_direct_sale: true,
-          available_for_pre_order: false
+          name: c.name,
+          name_ar: c.name_ar,
+          hex_code: c.hex_code,
+          image_url: c.image_url,
         }));
         for (const c of bambuColors) {
           if (c.image_url) {
@@ -1564,14 +1658,12 @@ Return ONLY JSON:
       // Replace AI-extracted options with deterministic RSC options when available
       if (bambuOptions.length > 0) {
         console.log('Bambu RSC found', bambuOptions.length, 'non-color options — replacing AI options');
+        // Same as colors: omit availability flags so admin defaults apply
         productInfo.options = bambuOptions.map(o => ({
           name: o.name,
           name_ar: o.name_ar,
           image_url: o.image_url,
           price_adjustment: 0,
-          in_stock: true,
-          available_for_direct_sale: true,
-          available_for_pre_order: false,
         }));
       }
     }
