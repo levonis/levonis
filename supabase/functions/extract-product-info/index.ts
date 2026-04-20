@@ -568,10 +568,10 @@ function parseBambuLabRSC(html: string): {
   const colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }> = [];
   const options: Array<{ name: string; name_ar: string; image_url: string | null; property_key: string }> = [];
 
-  const bambuColorArMap: Record<string, string> = {
+  // Base colors (keys checked LAST as single-word fallback)
+  const bambuBaseColorMap: Record<string, string> = {
     'gray': 'رمادي', 'grey': 'رمادي',
-    'light blue': 'أزرق فاتح', 'blue': 'أزرق',
-    'olive': 'زيتي', 'brown': 'بني',
+    'blue': 'أزرق', 'olive': 'زيتي', 'brown': 'بني',
     'teal': 'أزرق مخضر', 'orange': 'برتقالي',
     'purple': 'بنفسجي', 'pink': 'وردي',
     'red': 'أحمر', 'green': 'أخضر',
@@ -580,10 +580,33 @@ function parseBambuLabRSC(html: string): {
     'silver': 'فضي', 'jade': 'أخضر يشمي',
     'translucent': 'شفاف', 'clear': 'شفاف',
     'champagne': 'شمبانيا', 'mint': 'نعناعي',
-    'rose gold': 'وردي ذهبي', 'titan': 'تيتانيوم',
-    'baby blue': 'أزرق فاتح', 'cream': 'كريمي',
-    'beige': 'بيج', 'ivory': 'عاجي',
+    'cream': 'كريمي', 'beige': 'بيج', 'ivory': 'عاجي',
+    'cyan': 'سماوي', 'magenta': 'ماجنتا',
+    'bronze': 'برونزي', 'copper': 'نحاسي',
   };
+
+  // Multi-word qualifiers checked FIRST (so "Rose Gold" beats "gold", "Baby Blue" beats "blue")
+  const bambuQualifierMap: Array<[string, string]> = [
+    ['rose gold', 'وردي ذهبي'],
+    ['baby blue', 'أزرق فاتح'],
+    ['light blue', 'أزرق فاتح'],
+    ['dark blue', 'أزرق غامق'],
+    ['sky blue', 'أزرق سماوي'],
+    ['light gray', 'رمادي فاتح'],
+    ['light grey', 'رمادي فاتح'],
+    ['dark gray', 'رمادي غامق'],
+    ['dark grey', 'رمادي غامق'],
+    ['titan gray', 'رمادي تيتانيوم'],
+    ['titan grey', 'رمادي تيتانيوم'],
+    ['hot pink', 'وردي فاقع'],
+    ['matte black', 'أسود مطفي'],
+    ['matte white', 'أبيض مطفي'],
+    ['mint green', 'أخضر نعناعي'],
+    ['forest green', 'أخضر غابات'],
+    ['lime green', 'أخضر ليموني'],
+    ['blood red', 'أحمر دموي'],
+    ['wine red', 'أحمر نبيذي'],
+  ];
 
   const optionArMap: Record<string, string> = {
     'refill': 'إعادة تعبئة',
@@ -600,13 +623,26 @@ function parseBambuLabRSC(html: string): {
     '0.8 mm': '0.8 ملم',
   };
 
+  // Translate Bambu color name while PRESERVING SKU code like "(13108)"
   const translateColorName = (name: string): string => {
-    const lower = name.toLowerCase();
-    for (const [key, ar] of Object.entries(bambuColorArMap)) {
+    // Extract SKU code if present, e.g. "Titan Gray (13108)" -> sku = "(13108)"
+    const skuMatch = name.match(/\s*(\([^)]+\))\s*$/);
+    const sku = skuMatch ? ` ${skuMatch[1]}` : '';
+    const baseName = skuMatch ? name.slice(0, skuMatch.index).trim() : name.trim();
+    const lower = baseName.toLowerCase();
+
+    // 1) Multi-word qualifier match
+    for (const [key, ar] of bambuQualifierMap) {
+      if (lower.includes(key)) return `${ar}${sku}`;
+    }
+    // 2) Single-word fallback
+    for (const [key, ar] of Object.entries(bambuBaseColorMap)) {
       if (lower.includes(key)) {
-        return (lower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+        const result = (lower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+        return `${result}${sku}`;
       }
     }
+    // 3) No translation: keep original (with SKU intact)
     return name;
   };
 
