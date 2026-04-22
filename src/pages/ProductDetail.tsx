@@ -79,6 +79,7 @@ const ProductDetail = () => {
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
+  const [userManuallySelected, setUserManuallySelected] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
@@ -272,18 +273,31 @@ const ProductDetail = () => {
   const hasDirectSale = rawHasDirectSale;
   const hasBothTypes = hasDirectSale && hasPreOrder;
 
+  // Restore user's saved sale-type choice for this product (per-product persistence)
+  useEffect(() => {
+    if (!product?.id) return;
+    try {
+      const saved = localStorage.getItem(`product:${product.id}:saleType`);
+      if (saved === 'direct' || saved === 'preorder') {
+        setSelectedSaleType(saved);
+        setUserManuallySelected(true);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
   const activeSaleType = useMemo(() => {
     if (selectedSaleType === 'direct' && !hasDirectSale) return hasPreOrder ? 'preorder' : 'direct';
     if (selectedSaleType === 'preorder' && !hasPreOrder) return hasDirectSale ? 'direct' : 'preorder';
-    // Auto-switch direct → preorder when direct stock is depleted and preorder is available
-    if (selectedSaleType === 'direct' && directStockDepleted && hasPreOrder) return 'preorder';
+    // Auto-switch direct → preorder when direct stock is depleted (only if user hasn't manually chosen direct)
+    if (selectedSaleType === 'direct' && directStockDepleted && hasPreOrder && !userManuallySelected) return 'preorder';
     if (selectedSaleType) return selectedSaleType;
     // Default: prefer direct only when it has stock; otherwise fall back to preorder
     if (hasDirectSale && !directStockDepleted) return 'direct';
     if (hasPreOrder) return 'preorder';
     if (hasDirectSale) return 'direct';
     return 'direct';
-  }, [selectedSaleType, hasDirectSale, hasPreOrder, directStockDepleted]);
+  }, [selectedSaleType, hasDirectSale, hasPreOrder, directStockDepleted, userManuallySelected]);
 
   // Auto-select first available option when options load
   useEffect(() => {
@@ -658,7 +672,12 @@ const ProductDetail = () => {
   const decrementQuantity = () => { if (quantity > 1) setQuantity(prev => prev - 1); };
 
   const handleSaleTypeChange = (type: string) => {
-    setSelectedSaleType(type as 'direct' | 'preorder');
+    const t = type as 'direct' | 'preorder';
+    setSelectedSaleType(t);
+    setUserManuallySelected(true);
+    try {
+      if (product?.id) localStorage.setItem(`product:${product.id}:saleType`, t);
+    } catch {}
     setSelectedColor(null);
     setColorImageUrl(null);
     setSelectedShippingOption(null);
