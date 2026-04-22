@@ -112,7 +112,14 @@ const CategoryDetail = () => {
       'best-selling': (a, b) => (b.sold_count ?? 0) - (a.sold_count ?? 0),
       'name-asc': (a, b) => String(a.name_ar || '').localeCompare(String(b.name_ar || ''), 'ar'),
     };
-    arr = [...arr].sort(sorters[sortBy]);
+    // Always prioritize direct-sale products first, then apply chosen sort as tie-breaker
+    const directRank = (p: any) =>
+      (p.has_in_stock ?? false) && !isAllDirectStockDepleted(p) ? 0 : 1;
+    arr = [...arr].sort((a, b) => {
+      const d = directRank(a) - directRank(b);
+      if (d !== 0) return d;
+      return sorters[sortBy](a, b);
+    });
     return arr;
   }, [products, sortBy, stockFilter, directOnly, minPrice, maxPrice]);
 
