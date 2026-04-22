@@ -79,6 +79,7 @@ const ProductDetail = () => {
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [selectedSaleType, setSelectedSaleType] = useState<'direct' | 'preorder' | null>(null);
+  const [userManuallySelected, setUserManuallySelected] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
