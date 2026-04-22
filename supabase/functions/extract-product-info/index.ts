@@ -754,18 +754,26 @@ export function normalizeVariantName(input: string): string {
 // swatch thumbnails so the displayed image actually matches the selected variant.
 export function buildBambuVariantImageMap(html: string): Map<string, string> {
   const map = new Map<string, string>();
+  // Bambu's RSC stream embeds JSON either as plain JSON or escaped (\"...\").
+  // Image keys observed: imageUrl, mainImage, productImage, picUrl, image,
+  // AND colorUrl (per-color hero on filament pages).
+  const IMG_KEYS = '(?:imageUrl|mainImage|productImage|picUrl|image|colorUrl)';
   const patterns = [
-    /"propertyValue"\s*:\s*"([^"]+)"[^{}]*?"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"/gi,
-    /"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"[^{}]*?"propertyValue"\s*:\s*"([^"]+)"/gi,
+    new RegExp(`"propertyValue"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"${IMG_KEYS}"\\s*:\\s*"([^"]+)"`, 'gi'),
+    new RegExp(`"${IMG_KEYS}"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"propertyValue"\\s*:\\s*"([^"]+)"`, 'gi'),
+    new RegExp(`\\\\"propertyValue\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"[^{}]{0,800}?\\\\"${IMG_KEYS}\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"`, 'gi'),
+    new RegExp(`\\\\"${IMG_KEYS}\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"[^{}]{0,800}?\\\\"propertyValue\\\\"\\s*:\\s*\\\\"([^\\\\"]+)\\\\"`, 'gi'),
   ];
+  const nameFirst = [true, false, true, false];
   for (let p = 0; p < patterns.length; p++) {
     const re = patterns[p];
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(html)) !== null) {
-      const rawName = (p === 0 ? mm[1] : mm[2]);
-      let url = (p === 0 ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
+      const rawName = nameFirst[p] ? mm[1] : mm[2];
+      let url = (nameFirst[p] ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
       const key = normalizeVariantName(rawName);
       if (!key || !url) continue;
+      if (url === 'null' || url.length < 4) continue;
       if (url.startsWith('//')) url = 'https:' + url;
       if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
       if (!/^https?:\/\//i.test(url)) continue;
@@ -798,7 +806,7 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
     if (/^\d+$/.test(rawName)) continue;
 
     const imgMatch = body.match(/<img[^>]*\bsrc="([^"]+)"/i);
-    const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
+    const looksLikeColor = !!imgMatch && /(?:store(?:-fe)?|store-fe)\.bblcdn\.(?:com|eu|net)/i.test(imgMatch[1]);
     const key = normalizeVariantName(rawName);
 
     if (looksLikeColor) {
