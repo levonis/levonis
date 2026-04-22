@@ -142,15 +142,65 @@ export function normalizeVariantName(input: string): string {
   return s.trim().toLowerCase();
 }
 
+function extractVariantKeyFromProductName(name: string): string {
+  if (!name) return '';
+  const trimmed = String(name).trim();
+  const afterDash = trimmed.includes(' - ') ? trimmed.split(' - ').slice(1).join(' - ') : trimmed;
+  const firstSegment = afterDash.split('/')[0]?.trim() || afterDash;
+  return normalizeVariantName(firstSegment);
+}
+
+function collectJsonLdProducts(node: unknown): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  const visit = (value: unknown) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (typeof value !== 'object') return;
+    const obj = value as Record<string, unknown>;
+    if (obj['@type'] === 'Product') out.push(obj);
+    if (Array.isArray(obj.hasVariant)) visit(obj.hasVariant);
+    if (Array.isArray(obj['@graph'])) visit(obj['@graph']);
+  };
+  visit(node);
+  return out;
+}
+
 // Build a map of variant name -> main product image by scanning RSC/JSON payloads
 // for objects that pair "propertyValue" with an image-bearing key.
 export function buildBambuVariantImageMap(html: string): Map<string, string> {
   const map = new Map<string, string>();
-  // Bambu's RSC stream embeds JSON either as plain JSON or escaped (\"...\").
-  // For each shape we look for "propertyValue" paired with an image-bearing key.
-  // Image keys observed in the wild: imageUrl, mainImage, productImage, picUrl,
-  // image, AND colorUrl (used for the per-color hero image on filament pages).
-  const IMG_KEYS = '(?:imageUrl|mainImage|productImage|picUrl|image|colorUrl)';
+  const setIfValid = (rawName: string, rawUrl: string) => {
+    let url = String(rawUrl || '').trim().replace(/\\\//g, '/');
+    const key = normalizeVariantName(rawName);
+    if (!key || !url) return;
+    if (url === 'null' || url.length < 4) return;
+    if (url.startsWith('//')) url = 'https:' + url;
+    if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) return;
+    if (!/^https?:\/\//i.test(url)) return;
+    if (!map.has(key)) map.set(key, url);
+  };
+
+  // Highest-signal source: JSON-LD Product variants carry the real product photo
+  // in `image` and the full variant label in `name`.
+  for (const match of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const data = JSON.parse(match[1]);
+      for (const variant of collectJsonLdProducts(data)) {
+        const key = extractVariantKeyFromProductName(String(variant.name || ''));
+        const image = typeof variant.image === 'string' ? variant.image : Array.isArray(variant.image) ? variant.image[0] : '';
+        if (key && image) setIfValid(key, image);
+      }
+    } catch {
+      // ignore malformed blocks
+    }
+  }
+
+  // Secondary source: Bambu's RSC stream embeds JSON either as plain JSON or escaped.
+  // Exclude `colorUrl` here because it is a swatch thumbnail, not the real product photo.
+  const IMG_KEYS = '(?:imageUrl|mainImage|productImage|picUrl|image)';
   const patterns = [
     new RegExp(`"propertyValue"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"${IMG_KEYS}"\\s*:\\s*"([^"]+)"`, 'gi'),
     new RegExp(`"${IMG_KEYS}"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"propertyValue"\\s*:\\s*"([^"]+)"`, 'gi'),
@@ -164,14 +214,8 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(html)) !== null) {
       const rawName = nameFirst[p] ? mm[1] : mm[2];
-      let url = (nameFirst[p] ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
-      const key = normalizeVariantName(rawName);
-      if (!key || !url) continue;
-      if (url === 'null' || url.length < 4) continue;
-      if (url.startsWith('//')) url = 'https:' + url;
-      if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
-      if (!/^https?:\/\//i.test(url)) continue;
-      if (!map.has(key)) map.set(key, url);
+      const rawUrl = nameFirst[p] ? mm[2] : mm[1];
+      setIfValid(rawName, rawUrl);
     }
   }
   return map;

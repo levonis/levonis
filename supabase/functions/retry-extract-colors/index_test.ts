@@ -72,6 +72,31 @@ Deno.test("buildBambuVariantImageMap: ignores duplicate, keeps first", () => {
   assertEquals(map.get("red"), "https://store.bblcdn.com/p/red1.png");
 });
 
+Deno.test("buildBambuVariantImageMap: prefers JSON-LD variant product images over swatch colorUrl", () => {
+  const html = `
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "ProductGroup",
+            "hasVariant": [
+              {
+                "@type": "Product",
+                "name": "PLA Silk+ - Titan Gray (13108) / Filament with spool / 1 kg",
+                "image": "https://store.bblcdn.com/products/titan-gray-main.jpg"
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+    {"propertyValue":"Titan Gray (13108)","colorUrl":"https://store.bblcdn.com/swatch/titan-gray.png"}
+  `;
+  const map = buildBambuVariantImageMap(html);
+  assertEquals(map.get("titan gray(13108)"), "https://store.bblcdn.com/products/titan-gray-main.jpg");
+});
+
 Deno.test({
   name:
     "parseBambuLabUnified: never returns a /swatch/ image_url when a mapped main image exists",
