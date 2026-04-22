@@ -1,72 +1,101 @@
 
+المشكلة الفعلية ليست فقط في الاستخراج الأساسي، بل في وجود مسارين مختلفين ما زالا غير متطابقين:
 
-## Fix Bambulab US Store Extraction (Colors & Options)
+1. `extract-product-info` تم تعديله جزئياً، لكنه ما زال يربط بعض بيانات Bambu بطريقة غير دقيقة:
+   - يقرأ RSC عبر Regex عام يخلط الحقول أحياناً
+   - يستعمل `colorUrl` كسورة اللون/السواتش بدل صورة المنتج الأصلية الخاصة بالمتغير
+   - يستخرج `hex_code` من bytes الصورة المضغوطة، وهذا سبب تكرار الأكواد اللونية وخطئها
 
-### Problem
-For URLs like `https://us.store.bambulab.com/products/pla-silk-upgrade`:
-- **Colors are wrong**: hex codes are AI-guessed (often inaccurate) and color names mix in unrelated values
-- **Options are wrong / missing**: variant types like "Refill / Standard" and sizes like "1 kg" are either lumped into colors or skipped entirely
+2. `retry-extract-colors` ما زال على المنطق القديم بالكامل، لذلك عند “إعادة استخراج الألوان” تظهر نفس المشاكل القديمة في الشاشة التي أرسلتها:
+   - ترجمة عربية خاطئة
+   - فقدان الرقم/الكود
+   - صور غير مطابقة
+   - عدم احترام إعدادات التوفر/الطلب المسبق
 
-### Root Cause
-The Bambulab US/EU stores are Next.js apps that ship product data as **React Server Components (RSC) streams** inside `<script>self.__next_f.push([1,"..."])</script>` chunks — not as standard `<li value="…">` swatches and not via the `/api/spu/product` endpoint (that endpoint only works on the China store and currently returns a 404 HTML page on the US store).
+3. هناك أيضاً خطأ بناء حالي يمنع التطبيق من الاستقرار:
+   - مكونات عديدة تستورد `@radix-ui/react-visually-hidden` والاعتماد غير متوفر حالياً
 
-The existing `parseBambuLabColors` in `supabase/functions/extract-product-info/index.ts` only handles:
-1. `<li value="ColorName" …><img …></li>` swatches (only present after client-side JS hydration)
-2. A spec-table fallback that doesn't exist on the US store
+خطة الإصلاح:
 
-So both pathways yield **0 colors** on the US store, the function falls back to the AI extractor, and the AI:
-- guesses hex codes (wrong shades)
-- conflates the `Type` and `Size` properties with `Color`
-- misses the `colorUrl` swatch images embedded in the RSC payload
+1. إصلاح البناء أولاً
+- إعادة توفير `@radix-ui/react-visually-hidden` بشكل صحيح أو استبداله بحل محلي متوافق
+- مراجعة الملفات المتأثرة المذكورة في رسالة البناء حتى يرجع المشروع يبني بدون أخطاء
 
-### Fix
+2. توحيد منطق Bambu بين الدالتين
+- نقل منطق Bambu إلى parser موحد يُستخدم في:
+  - `supabase/functions/extract-product-info/index.ts`
+  - `supabase/functions/retry-extract-colors/index.ts`
+- هذا parser لن يعتمد على Regex سطحي فقط، بل سيبني mapping أوضح بين:
+  - `propertyKey`
+  - `propertyValue`
+  - رقم/كود المتغير
+  - swatch url
+  - صورة المنتج الفعلية الخاصة بالمتغير
+  - أي معرف variant / sku ظاهر في RSC
 
-**1. New RSC parser in `supabase/functions/extract-product-info/index.ts`**
+3. تصحيح الترجمة العربية مع الحفاظ على الرقم
+- تحديث ترجمة أسماء Bambu بحيث:
+  - تُترجم الصفة المركبة أولاً مثل `Titan Gray`, `Rose Gold`, `Baby Blue`
+  - يبقى الكود/الرقم في نهاية الاسم العربي إذا كان موجوداً
+- مثال الهدف:
+  - `Titan Gray (13108)` → `رمادي تيتانيوم (13108)`
+- تطبيق نفس المنطق في `retry-extract-colors` أيضاً، وليس فقط في الاستخراج الأساسي
 
-Add `parseBambuLabRSC(html)` that:
-- Concatenates all `self.__next_f.push([1,"…"])` payloads into a single string (unescaping `\"` and `\n`)
-- Finds every chunk of shape `{"id":"…","value":"<Name>","…"colorUrl":"<url>"…}` → these are **Color values** with their official swatch image
-- Finds every `{"propertyKey":"<Color|Type|Size|…>","propertyValue":"<value>","colorUrl":<url|null>…}` block to learn which property each value belongs to
-- Returns `{ colors: [...], options: [...] }`:
-  - **Colors** (propertyKey === "Color"): `{ name, name_ar, hex_code, image_url }`
-    - `image_url` = the `colorUrl` PNG swatch (deterministic, exact)
-    - `hex_code` = sample the swatch image server-side using a tiny canvas-free pixel read OR mark as `null` (preferred: leave the existing `parseBambuLabColors` table-hex pathway as a hint and otherwise default to `#808080` so the UI uses the swatch image, not the hex)
-    - `name_ar` derived from the existing `bambuColorArMap` (keep SKU code in parentheses)
-  - **Options** (propertyKey in `["Type","Size","Nozzle","Material","Spool","Variant",...]`): `{ name, name_ar, image_url: null }`, with translations for the common cases ("Refill"→"إعادة تعبئة", "Filament with spool"→"خيط مع بكرة", "1 kg"→"1 كغم", etc.)
+4. إيقاف استخراج `hex_code` بالطريقة الحالية الخاطئة
+- إزالة/استبدال منطق `sampleSwatchColor` الحالي لأنه يقرأ bytes الصورة المضغوطة وليس لون البكسلات الحقيقي
+- اعتماد ترتيب أدق:
+  1. hex مباشر من بيانات الصفحة/RSC/CSS إذا كان موجوداً
+  2. لون swatch من style/background إن وجد
+  3. إذا لم يوجد مصدر موثوق، لا يتم اختراع hex عام مكرر
+- الهدف: لا يعود كل لون يأخذ نفس الكود أو كوداً عاماً مضللاً
 
-**2. Wire it into the existing Bambulab override block (around line 1386)**
+5. استخدام صورة المتغير الأصلية بدلاً من swatch
+- `colorUrl` سيُعامل كسواتش فقط، وليس كصورة المنتج النهائية
+- سيتم استخراج `image_url` من media/gallery المرتبط بالمتغير نفسه داخل RSC أو HTML المRendered
+- التحقق أن الصورة:
+  - موجودة فعلاً في الصفحة/الـ payload
+  - مرتبطة بنفس اللون أو الخيار
+- النتيجة: الصورة المعروضة لكل لون/خيار تكون صورة المنتج الأصلية، لا صورة لون مسطحة ولا صورة مولدة
 
-Replace the current call:
+6. فصل الألوان عن الخيارات بشكل صارم
+- عدم خلط `Type`, `Size`, `Nozzle`, `Spool` مع الألوان
+- الألوان تذهب إلى `colors`
+- الخيارات غير اللونية تذهب إلى `options`
+- تطبيق ذلك في `extract-product-info` وفي `retry-extract-colors` إن كانت الدالة ستدعم الخيارات أيضاً
 
-```text
-parseBambuLabColors(html)
-   │
-   ▼
-returns 0 → AI fallback runs
-```
+7. إصلاح تطبيق إعدادات التوفر والطلب المسبق
+- المسار العادي في `Admin.tsx` يطبق default settings عند ملء الفورم
+- لكن مسار `AdminCustomRequests.tsx` في `handleRetryColors` يحدّث `products.colors` مباشرة، لذلك الإعدادات الافتراضية لا تُطبّق هناك
+- سيتم تعديل هذا المسار بحيث:
+  - يجلب إعدادات الألوان الافتراضية من `default_settings`
+  - يطبعها على الألوان المستخرجة عند غياب القيم
+  - يحترم `default_color_available_for_pre_order` و `default_color_available_for_direct_sale` و `default_color_in_stock`
+- بهذا إذا كانت الإعدادات الافتراضية “متوفر للطلب المسبق” ستظهر فعلاً بعد إعادة الاستخراج
 
-with:
+8. تحديث واجهة إعادة الاستخراج لتعرض البيانات الصحيحة
+- مراجعة `src/components/AdminCustomRequests.tsx` حتى يعرض:
+  - الاسم الإنجليزي مع الكود
+  - الاسم العربي الصحيح مع الكود
+  - الصورة الأصلية الخاصة باللون
+  - كود لوني موثوق فقط
+- وعدم الاعتماد على بيانات قديمة مدموجة خطأ
 
-```text
-parseBambuLabRSC(html)               ← NEW (handles US/EU stores)
-   │ if 0 colors
-   ▼
-parseBambuLabColors(html)            ← existing (handles China store + hydrated HTML)
-   │ if still 0 colors
-   ▼
-Firecrawl rendered HTML → retry both parsers
-```
+الملفات المتأثرة:
+- `supabase/functions/extract-product-info/index.ts`
+- `supabase/functions/retry-extract-colors/index.ts`
+- `src/components/AdminCustomRequests.tsx`
+- ملفات الاستيراد التي تستخدم `@radix-ui/react-visually-hidden`
+- وقد يلزم تحديث `package.json`/القفل الخاص بالحزم لمعالجة خطأ البناء
 
-When the new parser returns options too, **replace** `productInfo.options` with them (currently options also come from the AI and get duplicated/wrong).
-
-**3. Keep behavior safe for non-Bambulab platforms**
-
-The new parser is only invoked when `platform === 'bambulab'`. Other extractors are untouched.
-
-### Files to Edit
-- `supabase/functions/extract-product-info/index.ts` — add `parseBambuLabRSC()` (~80 lines) and update the override block (~15 lines changed)
-
-### Verification (after deploy)
-1. Test URL: `https://us.store.bambulab.com/products/pla-silk-upgrade` → expect 13 colors (Titan Gray, Rose Gold, Baby Blue, Champagne, Mint, …) each with the official `store.bblcdn.eu/...png` swatch image, plus options `Type: Refill / Standard` and `Size: 1 kg`.
-2. Re-test an existing China-store Bambulab URL (e.g. `bambulab.tmall.com/...`) → should still extract via the legacy `parseBambuLabColors` path.
-
+التحقق بعد التنفيذ:
+1. تجربة الرابط:
+   `https://us.store.bambulab.com/products/pla-silk-upgrade`
+2. التحقق في الاستخراج الأساسي وفي “إعادة استخراج الألوان”
+3. التأكد من:
+   - الاسم العربي صحيح
+   - الرقم/الكود موجود
+   - كل `hex_code` يختلف حسب اللون فعلاً
+   - الصورة تخص اللون/الخيار نفسه وليست swatch فقط
+   - عدم خلط Type/Size مع colors
+   - تطبيق الإعداد الافتراضي للتوفر/الطلب المسبق
+4. التأكد أن البناء ينجح بدون أخطاء TypeScript الحالية
