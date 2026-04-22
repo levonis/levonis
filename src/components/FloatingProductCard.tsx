@@ -115,6 +115,7 @@ const FloatingProductCard = memo(({
   return (
     <Link to={`/product/${slug}`} className="block group h-full">
       <div className="relative h-full flex flex-col rounded-xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300">
+        {hasDirectSale && <DirectSaleRibbon />}
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
           <img
