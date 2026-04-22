@@ -94,6 +94,31 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
   } catch { swatchHexCache.set(imageUrl, null); return null; }
 }
 
+// Build a map of variant name -> main product image by scanning RSC/JSON payloads
+// for objects that pair "propertyValue" with an image-bearing key.
+function buildBambuVariantImageMap(html: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const patterns = [
+    /"propertyValue"\s*:\s*"([^"]+)"[^{}]*?"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"/gi,
+    /"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"[^{}]*?"propertyValue"\s*:\s*"([^"]+)"/gi,
+  ];
+  for (let p = 0; p < patterns.length; p++) {
+    const re = patterns[p];
+    let mm: RegExpExecArray | null;
+    while ((mm = re.exec(html)) !== null) {
+      const name = (p === 0 ? mm[1] : mm[2]).trim();
+      let url = (p === 0 ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
+      if (!name || !url) continue;
+      // Skip swatch-style thumbnails
+      if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
+      if (!/^https?:\/\//i.test(url)) continue;
+      const key = name.toLowerCase();
+      if (!map.has(key)) map.set(key, url);
+    }
+  }
+  return map;
+}
+
 async function parseBambuLabUnified(html: string): Promise<{
   colors: Array<{ name: string; name_ar: string; hex_code: string | null; image_url: string | null }>;
   options: Array<{ name: string; name_ar: string; image_url: string | null }>;
@@ -101,6 +126,7 @@ async function parseBambuLabUnified(html: string): Promise<{
   const colors: any[] = [], options: any[] = [];
   const seenC = new Set<string>(), seenO = new Set<string>();
   const jobs: Array<{ idx: number; url: string }> = [];
+  const variantImages = buildBambuVariantImageMap(html);
   const liPattern = /<li\s+[^>]*\bvalue="([^"]+)"[^>]*>([\s\S]*?)<\/li>/gi;
   let m: RegExpExecArray | null;
   while ((m = liPattern.exec(html)) !== null) {
@@ -112,22 +138,27 @@ async function parseBambuLabUnified(html: string): Promise<{
     if (looksLikeColor) {
       if (seenC.has(key)) continue;
       seenC.add(key);
-      const url = imgMatch![1].trim();
+      const swatchUrl = imgMatch![1].trim();
+      // Prefer the variant's main product image; fall back to swatch only if no main image is available.
+      const productImg = variantImages.get(key) || null;
+      const finalImg = productImg || (swatchUrl.startsWith('http') ? swatchUrl : null);
       const idx = colors.length;
-      colors.push({ name: rawName, name_ar: translateBambuColorName(rawName), hex_code: null, image_url: url.startsWith('http') ? url : null });
-      if (colors[idx].image_url) jobs.push({ idx, url: colors[idx].image_url });
+      colors.push({ name: rawName, name_ar: translateBambuColorName(rawName), hex_code: null, image_url: finalImg });
+      // Always sample hex from the swatch (more accurate than the full product photo)
+      if (swatchUrl.startsWith('http')) jobs.push({ idx, url: swatchUrl });
     } else {
       if (seenO.has(key)) continue;
       seenO.add(key);
       if (/^\$|^¥|^€|^د\.ع/i.test(rawName)) continue;
-      options.push({ name: rawName, name_ar: translateBambuOption(rawName), image_url: null });
+      const productImg = variantImages.get(key) || null;
+      options.push({ name: rawName, name_ar: translateBambuOption(rawName), image_url: productImg });
     }
   }
   if (jobs.length > 0) {
     const sampled = await Promise.all(jobs.map(j => sampleSwatchColor(j.url)));
     jobs.forEach((j, i) => { if (sampled[i]) colors[j.idx].hex_code = sampled[i]; });
   }
-  console.log(`Bambu unified parser: ${colors.length} colors, ${options.length} options`);
+  console.log(`Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped), ${options.length} options`);
   return { colors, options };
 }
 
@@ -191,8 +222,9 @@ serve(async (req) => {
     // ===== Try Bambu Lab deterministic parser =====
     if (isBambuLab) {
       // First try raw HTML
-      let bambuColors = parseBambuLabColors(html);
-      
+      let bambuParsed = await parseBambuLabUnified(html);
+      let bambuColors = bambuParsed.colors;
+
       // If raw HTML has no swatch data, try Firecrawl for rendered HTML
       if (bambuColors.length === 0) {
         console.log('Bambu parser found 0 in raw HTML, trying Firecrawl...');
@@ -209,7 +241,8 @@ serve(async (req) => {
               const renderedHtml = fcData.data?.html || fcData.html || '';
               console.log('Firecrawl returned HTML length:', renderedHtml.length);
               if (renderedHtml.length > 1000) {
-                bambuColors = parseBambuLabColors(renderedHtml);
+                bambuParsed = await parseBambuLabUnified(renderedHtml);
+                bambuColors = bambuParsed.colors;
               }
             }
           } catch (e) {

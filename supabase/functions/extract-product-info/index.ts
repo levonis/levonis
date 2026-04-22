@@ -714,13 +714,40 @@ export interface BambuExtractResult {
   options: Array<{ name: string; name_ar: string; image_url: string | null }>;
 }
 
+// Build a map of variant name -> main product image by scanning RSC/JSON payloads
+// for objects pairing "propertyValue" with an image-bearing key. We exclude obvious
+// swatch thumbnails so the displayed image actually matches the selected variant.
+function buildBambuVariantImageMap(html: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const patterns = [
+    /"propertyValue"\s*:\s*"([^"]+)"[^{}]*?"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"/gi,
+    /"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"[^{}]*?"propertyValue"\s*:\s*"([^"]+)"/gi,
+  ];
+  for (let p = 0; p < patterns.length; p++) {
+    const re = patterns[p];
+    let mm: RegExpExecArray | null;
+    while ((mm = re.exec(html)) !== null) {
+      const name = (p === 0 ? mm[1] : mm[2]).trim();
+      let url = (p === 0 ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
+      if (!name || !url) continue;
+      if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
+      if (!/^https?:\/\//i.test(url)) continue;
+      const key = name.toLowerCase();
+      if (!map.has(key)) map.set(key, url);
+    }
+  }
+  return map;
+}
+
 // Robust parser: extracts every <li value="..."> block in HTML, classifies
-// color (has <img>) vs non-color option (text only).
+// color (has <img>) vs non-color option (text only). Maps each variant to its
+// real product image (not the swatch) when one is available in the RSC payload.
 async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   const colors: BambuExtractResult['colors'] = [];
   const options: BambuExtractResult['options'] = [];
   const seenColorNames = new Set<string>();
   const seenOptionNames = new Set<string>();
+  const variantImages = buildBambuVariantImageMap(html);
 
   const liPattern = /<li\s+[^>]*\bvalue="([^"]+)"[^>]*>([\s\S]*?)<\/li>/gi;
   let m: RegExpExecArray | null;
@@ -736,32 +763,37 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
 
     const imgMatch = body.match(/<img[^>]*\bsrc="([^"]+)"/i);
     const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
+    const key = rawName.toLowerCase();
 
     if (looksLikeColor) {
-      const key = rawName.toLowerCase();
       if (seenColorNames.has(key)) continue;
       seenColorNames.add(key);
-      const imageUrl = imgMatch![1].trim();
+      const swatchUrl = imgMatch![1].trim();
+      // Prefer the variant's main product photo; fall back to the swatch only
+      // when no main image is available.
+      const productImg = variantImages.get(key) || null;
+      const finalImg = productImg || (swatchUrl.startsWith('http') ? swatchUrl : null);
       const idx = colors.length;
       colors.push({
         name: rawName,
         name_ar: translateBambuColorName(rawName),
         hex_code: null,
-        image_url: imageUrl.startsWith('http') ? imageUrl : null,
+        image_url: finalImg,
       });
-      if (colors[idx].image_url) {
-        colorImageJobs.push({ idx, url: colors[idx].image_url! });
+      // Always sample hex from the swatch — it's a flat color and yields an accurate hex.
+      if (swatchUrl.startsWith('http')) {
+        colorImageJobs.push({ idx, url: swatchUrl });
       }
     } else {
-      const key = rawName.toLowerCase();
       if (seenOptionNames.has(key)) continue;
       seenOptionNames.add(key);
       // Filter out things that look like prices or quantities
       if (/^\$|^¥|^€|^د\.ع/i.test(rawName)) continue;
+      const productImg = variantImages.get(key) || null;
       options.push({
         name: rawName,
         name_ar: translateBambuOption(rawName),
-        image_url: null,
+        image_url: productImg,
       });
     }
   }
@@ -775,7 +807,7 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
     });
   }
 
-  console.log(`Bambu unified parser: ${colors.length} colors, ${options.length} options`);
+  console.log(`Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped), ${options.length} options`);
   return { colors, options };
 }
 
