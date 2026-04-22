@@ -760,6 +760,24 @@ function extractVariantKeyFromProductName(name: string): string {
   return normalizeVariantName(firstSegment);
 }
 
+function collectJsonLdProducts(node: unknown): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  const visit = (value: unknown) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (typeof value !== 'object') return;
+    const obj = value as Record<string, unknown>;
+    if (obj['@type'] === 'Product') out.push(obj);
+    if (Array.isArray(obj.hasVariant)) visit(obj.hasVariant);
+    if (Array.isArray(obj['@graph'])) visit(obj['@graph']);
+  };
+  visit(node);
+  return out;
+}
+
 // Build a map of variant name -> main product image by scanning RSC/JSON payloads
 // for objects pairing "propertyValue" with an image-bearing key. We exclude obvious
 // swatch thumbnails so the displayed image actually matches the selected variant.
@@ -779,19 +797,10 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
   for (const match of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
     try {
       const data = JSON.parse(match[1]);
-      const items = Array.isArray(data) ? data : [data];
-      for (const item of items) {
-        const variants = Array.isArray(item?.hasVariant)
-          ? item.hasVariant
-          : Array.isArray(item)
-            ? item
-            : (item?.['@type'] === 'Product' ? [item] : []);
-        for (const variant of variants) {
-          if (variant?.['@type'] !== 'Product') continue;
-          const key = extractVariantKeyFromProductName(String(variant?.name || ''));
-          const image = typeof variant?.image === 'string' ? variant.image : Array.isArray(variant?.image) ? variant.image[0] : '';
-          if (key && image) setIfValid(key, image);
-        }
+      for (const variant of collectJsonLdProducts(data)) {
+        const key = extractVariantKeyFromProductName(String(variant.name || ''));
+        const image = typeof variant.image === 'string' ? variant.image : Array.isArray(variant.image) ? variant.image[0] : '';
+        if (key && image) setIfValid(key, image);
       }
     } catch {}
   }
