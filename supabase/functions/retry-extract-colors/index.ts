@@ -131,7 +131,7 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
   return map;
 }
 
-async function parseBambuLabUnified(html: string): Promise<{
+export async function parseBambuLabUnified(html: string): Promise<{
   colors: Array<{ name: string; name_ar: string; hex_code: string | null; image_url: string | null }>;
   options: Array<{ name: string; name_ar: string; image_url: string | null }>;
 }> {
