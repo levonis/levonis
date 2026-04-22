@@ -140,11 +140,27 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
       setRetryResult(data);
 
       if (data.newColorsCount > 0 || data.mode === 'replace') {
+        // Fetch admin default settings so newly extracted colors respect them
+        const { data: defaultsRow } = await supabase
+          .from('default_settings')
+          .select('setting_value')
+          .eq('setting_key', 'product_defaults')
+          .maybeSingle();
+        const defaults: any = (defaultsRow?.setting_value as any) || {};
+        const applyDefaults = (c: any) => ({
+          ...c,
+          available_for_pre_order:
+            c?.available_for_pre_order ?? defaults.default_color_available_for_pre_order ?? true,
+          available_for_direct_sale:
+            c?.available_for_direct_sale ?? defaults.default_color_available_for_direct_sale ?? false,
+          in_stock: c?.in_stock ?? defaults.has_in_stock ?? false,
+        });
+
         let updatedColors: any[];
         
         if (data.mode === 'replace') {
           // Full replace — discard old colors entirely
-          updatedColors = data.addedColors || [];
+          updatedColors = (data.addedColors || []).map(applyDefaults);
         } else {
           // Upsert: merge by normalized color name
           const existingColorsArray = Array.isArray(existingColors) ? existingColors : [];
@@ -155,7 +171,11 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
           }
           for (const c of (data.addedColors || [])) {
             const key = (c.name || '').toLowerCase().trim();
-            if (key) colorMap.set(key, { ...colorMap.get(key), ...c });
+            if (!key) continue;
+            const prev = colorMap.get(key);
+            const merged = { ...prev, ...c };
+            // Only apply defaults for brand-new colors (no prior entry)
+            colorMap.set(key, prev ? merged : applyDefaults(merged));
           }
           updatedColors = Array.from(colorMap.values());
         }
