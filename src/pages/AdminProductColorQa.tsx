@@ -56,6 +56,7 @@ const AdminProductColorQa = () => {
     { open: false, colorName: '', reason: '' }
   );
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   // Search products by name/slug. Limit to 25 for snappy UI.
   const { data: products = [], isLoading: searchLoading } = useQuery({
