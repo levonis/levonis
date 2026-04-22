@@ -29,6 +29,7 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
@@ -1129,7 +1130,7 @@ const ProductDetail = () => {
                             <div className="relative">
                               <div className={cn("w-7 h-7 rounded-full border-2 transition-transform group-hover:scale-110",
                                 selectedColor === color.name_ar ? 'border-primary ring-2 ring-primary/30' : 'border-border')}
-                                style={{ backgroundColor: color.hex_code }} />
+                                style={getColorSwatchStyle(color.hex_code)} />
                               {selectedColor === color.name_ar && (
                                 <motion.div
                                   initial={{ scale: 0 }}

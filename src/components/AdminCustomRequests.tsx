@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface AdminCustomRequestsProps {
   requests: any[] | undefined;
@@ -512,7 +513,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                           {color.hex_code && (
                             <div 
                               className="w-8 h-8 rounded border"
-                              style={{ backgroundColor: color.hex_code }}
+                              style={getColorSwatchStyle(color.hex_code)}
                             />
                           )}
                         </div>

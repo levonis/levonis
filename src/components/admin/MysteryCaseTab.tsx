@@ -12,6 +12,7 @@ import {
   ToggleLeft, Pencil, AlertTriangle, CheckCircle2, Timer, Volume2, Gamepad2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 // ── Rarity System ──────────────────────────────────────────────
 const RARITIES = [
@@ -181,7 +182,7 @@ function ProductVariantSelector({
                   {colorHex && (
                     <span
                       className="w-4 h-4 rounded-full border border-border/50 shrink-0"
-                      style={{ backgroundColor: colorHex }}
+                      style={getColorSwatchStyle(colorHex)}
                     />
                   )}
                   {colorImage && !colorHex && (

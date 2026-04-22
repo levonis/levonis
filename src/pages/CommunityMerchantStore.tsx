@@ -28,6 +28,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface MerchantProduct {
   id: string;
@@ -728,7 +729,7 @@ export default function CommunityMerchantStore() {
                     <div className="flex flex-wrap gap-2">
                       {(selectedProduct.colors as any[]).map((c: any, i: number) => (
                         <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/50 bg-muted/10">
-                          <span className="h-4 w-4 rounded-full border border-border/50" style={{ backgroundColor: c.hex_code }} />
+                          <span className="h-4 w-4 rounded-full border border-border/50" style={getColorSwatchStyle(c.hex_code)} />
                           <span className="text-xs">{c.name || "بدون اسم"}</span>
                           {c.stock_quantity !== null && <span className="text-[9px] text-muted-foreground">(مخزون: {c.stock_quantity})</span>}
                         </div>

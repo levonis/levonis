@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle, X, Palette, Settings2 } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface ProductOption {
   name_ar: string;
@@ -208,7 +209,7 @@ export default function ProductOfferDetailModal({
                             ? 'border-primary ring-2 ring-primary/30 scale-110' 
                             : 'border-border hover:scale-105'
                         }`}
-                        style={{ backgroundColor: color.hex_code }}
+                        style={getColorSwatchStyle(color.hex_code)}
                         onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
                         title={`${color.name_ar}${color.stock_quantity ? ` (${color.stock_quantity})` : ''}`}
                       />
@@ -336,7 +337,7 @@ export default function ProductOfferDetailModal({
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>اللون:</span>
                       <span className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: selectedColor.hex_code }} />
+                        <span className="w-3 h-3 rounded-full border" style={getColorSwatchStyle(selectedColor.hex_code)} />
                         {selectedColor.name_ar}
                       </span>
                     </div>

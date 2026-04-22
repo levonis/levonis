@@ -15,6 +15,7 @@ import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import SocialActions from "@/components/community/SocialActions";
 import CommentsSection from "@/components/community/CommentsSection";
 import AddToCartSheet from "@/components/community/AddToCartSheet";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface ProductColor {
   name: string;
@@ -347,7 +348,7 @@ export default function CommunityProductDetailModal({
                     <div className="flex flex-wrap gap-1">
                       {productColors.map((c, i) => (
                         <div key={i} className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/10">
-                          <span className="h-3 w-3 rounded-full border border-border/50" style={{ backgroundColor: c.hex_code }} />
+                          <span className="h-3 w-3 rounded-full border border-border/50" style={getColorSwatchStyle(c.hex_code)} />
                           <span className="text-[9px]">{c.name}</span>
                         </div>
                       ))}

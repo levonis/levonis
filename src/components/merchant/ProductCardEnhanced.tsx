@@ -2,6 +2,7 @@ import { Clock, BadgePercent, Play, Droplets, Layers, Eye, Edit2, EyeOff, Sparkl
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface ProductCardEnhancedProps {
   product: {
@@ -215,7 +216,7 @@ export default function ProductCardEnhanced({
             {colorsCount > 0 && (
               <div className="flex items-center gap-0.5">
                 {(product.colors as any[]).slice(0, 5).map((c: any, i: number) => (
-                  <span key={i} className="h-3 w-3 rounded-full border border-border/50" style={{ backgroundColor: c.hex_code }} />
+                  <span key={i} className="h-3 w-3 rounded-full border border-border/50" style={getColorSwatchStyle(c.hex_code)} />
                 ))}
                 {colorsCount > 5 && <span className="text-[9px] text-muted-foreground">+{colorsCount - 5}</span>}
               </div>

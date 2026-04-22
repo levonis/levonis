@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
 import { normalizeVariantName, isSwatchUrl } from '@/lib/variantNameNormalize';
+import { getColorSwatchStyle } from '@/lib/colorSwatch';
 
 type ColorVariant = {
   name?: string;
@@ -383,7 +384,7 @@ const AdminProductColorQa = () => {
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <div
                                   className="h-4 w-4 rounded border flex-shrink-0"
-                                  style={{ background: c.hex_code || 'transparent' }}
+                                  style={c.hex_code ? getColorSwatchStyle(c.hex_code) : { background: 'transparent' }}
                                   title={c.hex_code || 'لا يوجد hex'}
                                 />
                                 <div className="text-xs truncate" title={name}>{name}</div>
@@ -482,7 +483,7 @@ const AdminProductColorQa = () => {
                                       <div className="flex items-center gap-1">
                                         <span
                                           className="inline-block h-3 w-3 rounded border"
-                                          style={{ background: c.hex_code || 'transparent' }}
+                                          style={c.hex_code ? getColorSwatchStyle(c.hex_code) : { background: 'transparent' }}
                                         />
                                         <span>{c.hex_code || '—'}</span>
                                       </div>

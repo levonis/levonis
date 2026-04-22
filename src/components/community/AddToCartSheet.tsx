@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface ProductColor {
   name: string;
@@ -407,7 +408,7 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
                             : "bg-card border-border hover:border-primary/50"
                         }`}
                       >
-                        <span className="h-5 w-5 rounded-full border-2 border-border/50 shrink-0" style={{ backgroundColor: color.hex_code }} />
+                        <span className="h-5 w-5 rounded-full border-2 border-border/50 shrink-0" style={getColorSwatchStyle(color.hex_code)} />
                         <span>{color.name}</span>
                       </button>
                     ))}

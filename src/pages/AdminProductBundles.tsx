@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Package, X, Search, Upload, ImageIcon, AlertTriangle, Layers, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 type BundleSaleType = 'direct' | 'preorder-air' | 'preorder-sea';
 
@@ -1051,7 +1052,7 @@ const AdminProductBundles = () => {
                               />
                               {colorImg && <img src={colorImg} className="w-8 h-8 rounded object-cover" />}
                               {!colorImg && c.hex_code && (
-                                <span className="w-6 h-6 rounded-full border border-border shrink-0" style={{ backgroundColor: c.hex_code }} />
+                                <span className="w-6 h-6 rounded-full border border-border shrink-0" style={getColorSwatchStyle(c.hex_code)} />
                               )}
                               <div className="flex-1 min-w-0">
                                 <span className="text-sm block truncate">{c.name_ar || colorName}</span>

@@ -31,6 +31,7 @@ import {
 import OptimizedImage from "@/components/OptimizedImage";
 import { toast } from "sonner";
 import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, Palette, Settings2 } from "lucide-react";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 const PAGE_SIZE = 10;
 
@@ -488,7 +489,7 @@ export default function AllOffersPanel() {
                               ? 'border-primary ring-2 ring-primary/30 scale-110' 
                               : 'border-border hover:scale-105'
                           }`}
-                          style={{ backgroundColor: color.hex_code }}
+                          style={getColorSwatchStyle(color.hex_code)}
                           onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
                           title={color.name_ar}
                         />
@@ -643,7 +644,7 @@ export default function AllOffersPanel() {
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
                       <span className="text-muted-foreground">اللون</span>
                       <span className="flex items-center gap-1">
-                        <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: selectedColor.hex_code }} />
+                        <span className="w-3 h-3 rounded-full border" style={getColorSwatchStyle(selectedColor.hex_code)} />
                         <span className="font-medium">{selectedColor.name_ar}</span>
                       </span>
                     </div>

@@ -32,6 +32,7 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { ensurePriceIqd, getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
@@ -2075,7 +2076,7 @@ const Cart = () => {
                                     )}
                                     {colorData && (
                                       <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                        <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={{ backgroundColor: colorData.hex_code }} />
+                                        <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={getColorSwatchStyle(colorData.hex_code)} />
                                         {colorData.name_ar}
                                       </span>
                                     )}
