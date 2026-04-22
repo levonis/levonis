@@ -118,8 +118,6 @@ const ProductCard = ({
       to={`/product/${slug}`}
       className="group block product-card-glass p-1.5 relative"
     >
-      {/* Direct sale ribbon */}
-      {hasDirectSale && <DirectSaleRibbon />}
 
       {/* Sale badge - above image */}
       {hasSale && !hasDirectSale && (
