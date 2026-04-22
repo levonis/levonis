@@ -1447,12 +1447,7 @@ Return JSON ONLY:
         if (c.image_url) {
           variantImageUrls.add(getImageBaseUrl(c.image_url));
         }
-        productInfo.colors.push({
-          ...c,
-          in_stock: true,
-          available_for_direct_sale: true,
-          available_for_pre_order: false
-        });
+        productInfo.colors.push({ ...c });
       }
     }
     
@@ -1462,13 +1457,7 @@ Return JSON ONLY:
         if (o.image_url) {
           variantImageUrls.add(getImageBaseUrl(o.image_url));
         }
-        productInfo.options.push({
-          ...o,
-          price_adjustment: 0,
-          in_stock: true,
-          available_for_direct_sale: true,
-          available_for_pre_order: false
-        });
+        productInfo.options.push({ ...o, price_adjustment: 0 });
       }
     }
 
@@ -1580,9 +1569,6 @@ Return ONLY JSON:
                             ? c.hex_code 
                             : (info ? info[1].hex : '#808080'),
                           image_url: colorImageUrl,
-                          in_stock: true,
-                          available_for_direct_sale: true,
-                          available_for_pre_order: false
                         });
                       }
                     }
