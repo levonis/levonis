@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { getLocalizedField } from '@/hooks/useLocalizedProduct';
 import { useLanguage } from '@/lib/i18n';
+import DirectSaleRibbon from './ui/DirectSaleRibbon';
 
 interface FloatingProductCardProps {
   id: string;
@@ -15,6 +16,7 @@ interface FloatingProductCardProps {
   featured?: boolean;
   nameEn?: string | null;
   nameKu?: string | null;
+  hasDirectSale?: boolean;
 }
 
 const FloatingProductCard = memo(({
@@ -27,6 +29,7 @@ const FloatingProductCard = memo(({
   featured = false,
   nameEn = null,
   nameKu = null,
+  hasDirectSale = false,
 }: FloatingProductCardProps) => {
   const { language } = useLanguage();
   const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu };
