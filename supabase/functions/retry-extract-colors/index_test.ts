@@ -132,4 +132,4 @@ Deno.test({
     // Yellow has no main mapping, swatch fallback is acceptable.
     assert(byName["Yellow"]?.includes("/swatch/"));
   },
-);
+});
