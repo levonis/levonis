@@ -142,6 +142,7 @@ const CategoryDetail = () => {
                         imageUrl={product.image_url || undefined}
                         currency={product.currency || undefined}
                         slug={product.slug}
+                        hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                       />
                     ))}
                   </div>
