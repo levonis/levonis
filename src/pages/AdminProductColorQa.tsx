@@ -13,8 +13,10 @@ import {
 import { toast } from 'sonner';
 import {
   Loader2, Search, Flag, FlagOff, RefreshCw, ImageOff, AlertTriangle, ExternalLink,
+  Bug, Copy, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
+import { normalizeVariantName, isSwatchUrl } from '@/lib/variantNameNormalize';
 
 type ColorVariant = {
   name?: string;
@@ -54,6 +56,7 @@ const AdminProductColorQa = () => {
     { open: false, colorName: '', reason: '' }
   );
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   // Search products by name/slug. Limit to 25 for snappy UI.
   const { data: products = [], isLoading: searchLoading } = useQuery({
@@ -421,6 +424,115 @@ const AdminProductColorQa = () => {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Debug panel */}
+                  {selectedProduct.colors && selectedProduct.colors.length > 0 && (
+                    <div className="mt-4 border rounded-lg bg-muted/30">
+                      <button
+                        type="button"
+                        onClick={() => setDebugOpen((v) => !v)}
+                        className="w-full flex items-center justify-between gap-2 p-2.5 text-xs font-medium hover:bg-muted/60 transition rounded-t-lg"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Bug className="h-3.5 w-3.5 text-primary" />
+                          لوحة تصحيح الألوان (Debug)
+                          <Badge variant="secondary" className="h-4 text-[10px]">
+                            {selectedProduct.colors.length}
+                          </Badge>
+                          {(() => {
+                            const swatchCount = selectedProduct.colors!.filter((c) =>
+                              isSwatchUrl(c.image_url)
+                            ).length;
+                            return swatchCount > 0 ? (
+                              <Badge variant="destructive" className="h-4 text-[10px]">
+                                {swatchCount} swatch fallback
+                              </Badge>
+                            ) : null;
+                          })()}
+                        </span>
+                        {debugOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      </button>
+                      {debugOpen && (
+                        <div className="p-2 overflow-x-auto">
+                          <table className="w-full text-[11px] font-mono">
+                            <thead>
+                              <tr className="text-muted-foreground border-b">
+                                <th className="text-right p-1.5 font-normal">#</th>
+                                <th className="text-right p-1.5 font-normal">Raw name</th>
+                                <th className="text-right p-1.5 font-normal">Normalized key</th>
+                                <th className="text-right p-1.5 font-normal">Hex</th>
+                                <th className="text-right p-1.5 font-normal">Image URL</th>
+                                <th className="text-right p-1.5 font-normal">Source</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedProduct.colors.map((c, idx) => {
+                                const raw = c.name || c.name_ar || '';
+                                const key = normalizeVariantName(raw);
+                                const swatch = isSwatchUrl(c.image_url);
+                                const url = c.image_url || '';
+                                return (
+                                  <tr key={`dbg-${idx}`} className="border-b border-border/40 hover:bg-muted/40">
+                                    <td className="p-1.5 text-muted-foreground">{idx + 1}</td>
+                                    <td className="p-1.5 break-all">{raw || <span className="text-muted-foreground">—</span>}</td>
+                                    <td className="p-1.5 break-all text-primary">{key || <span className="text-muted-foreground">—</span>}</td>
+                                    <td className="p-1.5">
+                                      <div className="flex items-center gap-1">
+                                        <span
+                                          className="inline-block h-3 w-3 rounded border"
+                                          style={{ background: c.hex_code || 'transparent' }}
+                                        />
+                                        <span>{c.hex_code || '—'}</span>
+                                      </div>
+                                    </td>
+                                    <td className="p-1.5 max-w-[260px]">
+                                      {url ? (
+                                        <div className="flex items-center gap-1">
+                                          <a
+                                            href={url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="truncate inline-block max-w-[210px] underline text-primary"
+                                            title={url}
+                                          >
+                                            {url}
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(url);
+                                              toast.success('تم النسخ');
+                                            }}
+                                            className="text-muted-foreground hover:text-foreground"
+                                            title="نسخ"
+                                          >
+                                            <Copy className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                    </td>
+                                    <td className="p-1.5">
+                                      {!url ? (
+                                        <Badge variant="outline" className="h-4 text-[9px]">none</Badge>
+                                      ) : swatch ? (
+                                        <Badge variant="destructive" className="h-4 text-[9px]">swatch fallback</Badge>
+                                      ) : (
+                                        <Badge variant="secondary" className="h-4 text-[9px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                                          main image
+                                        </Badge>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
