@@ -2,19 +2,52 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { useLanguage } from '@/lib/i18n';
+
+type SortKey =
+  | 'default'
+  | 'price-asc'
+  | 'price-desc'
+  | 'newest'
+  | 'best-selling'
+  | 'name-asc';
 
 const CategoryDetail = () => {
   const { t } = useLanguage();
-  
+
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
+
+  // Sort & filter state
+  const [sortBy, setSortBy] = useState<SortKey>('default');
+  const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>('all');
+  const [directOnly, setDirectOnly] = useState(false);
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ['category', slug],
@@ -26,7 +59,7 @@ const CategoryDetail = () => {
         .maybeSingle();
       if (error) throw error;
       return data;
-    }
+    },
   });
 
   const { data: products, isLoading: productsLoading } = useQuery({
@@ -52,17 +85,66 @@ const CategoryDetail = () => {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Apply filters & sort
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    const minP = minPrice ? Number(minPrice) : null;
+    const maxP = maxPrice ? Number(maxPrice) : null;
+
+    let arr = products.filter((p: any) => {
+      const priceNum = Number(p.price) || 0;
+      const hasDirect = (p.has_in_stock ?? false) && !isAllDirectStockDepleted(p);
+
+      if (stockFilter === 'in-stock' && !p.in_stock) return false;
+      if (stockFilter === 'out-of-stock' && p.in_stock) return false;
+      if (directOnly && !hasDirect) return false;
+      if (minP != null && priceNum < minP) return false;
+      if (maxP != null && priceNum > maxP) return false;
+      return true;
+    });
+
+    const sorters: Record<SortKey, (a: any, b: any) => number> = {
+      'default': () => 0,
+      'price-asc': (a, b) => Number(a.price) - Number(b.price),
+      'price-desc': (a, b) => Number(b.price) - Number(a.price),
+      'newest': (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      'best-selling': (a, b) => (b.sold_count ?? 0) - (a.sold_count ?? 0),
+      'name-asc': (a, b) => String(a.name_ar || '').localeCompare(String(b.name_ar || ''), 'ar'),
+    };
+    arr = [...arr].sort(sorters[sortBy]);
+    return arr;
+  }, [products, sortBy, stockFilter, directOnly, minPrice, maxPrice]);
+
   const featuredProduct = (() => {
     if (!products?.length) return undefined;
     if (category?.featured_product_id) {
-      const found = products.find(p => p.id === category.featured_product_id);
+      const found = products.find((p) => p.id === category.featured_product_id);
       if (found) return found;
     }
     return products[0];
   })();
-  const otherProducts = products || [];
 
-  // No longer needed — using flat responsive grid
+  // Exclude featured product from grid to avoid duplication
+  const otherProducts = useMemo(
+    () => filteredProducts.filter((p: any) => p.id !== featuredProduct?.id),
+    [filteredProducts, featuredProduct?.id]
+  );
+
+  const resetFilters = () => {
+    setSortBy('default');
+    setStockFilter('all');
+    setDirectOnly(false);
+    setMinPrice('');
+    setMaxPrice('');
+  };
+
+  const filtersActive =
+    sortBy !== 'default' ||
+    stockFilter !== 'all' ||
+    directOnly ||
+    minPrice !== '' ||
+    maxPrice !== '';
 
   return (
     <div className="min-h-screen category-luxury-bg">
@@ -85,7 +167,7 @@ const CategoryDetail = () => {
             {productsLoading ? (
               <ProductGridSkeleton count={8} />
             ) : products && products.length > 0 ? (
-              <div className="space-y-16">
+              <div className="space-y-10 md:space-y-16">
                 {/* Hero section: Title + Featured product side by side */}
                 {featuredProduct && (
                   <div className="flex flex-row items-center gap-4 md:gap-16">
@@ -127,9 +209,115 @@ const CategoryDetail = () => {
                   </div>
                 )}
 
+                {/* Sort & Filter toolbar */}
+                <div className="flex items-center justify-between gap-2 flex-wrap border-b border-border/40 pb-3">
+                  <div className="text-xs md:text-sm text-foreground/60">
+                    {filteredProducts.length} منتج
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+                      <SelectTrigger className="h-9 text-xs md:text-sm w-40">
+                        <SelectValue placeholder="ترتيب" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">الترتيب الافتراضي</SelectItem>
+                        <SelectItem value="price-asc">السعر: الأقل أولاً</SelectItem>
+                        <SelectItem value="price-desc">السعر: الأعلى أولاً</SelectItem>
+                        <SelectItem value="newest">الأحدث</SelectItem>
+                        <SelectItem value="best-selling">الأكثر مبيعاً</SelectItem>
+                        <SelectItem value="name-asc">الاسم: أ-ي</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs md:text-sm relative">
+                          <SlidersHorizontal className="h-3.5 w-3.5" />
+                          فلترة
+                          {filtersActive && (
+                            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
+                          )}
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="w-full sm:max-w-sm">
+                        <SheetHeader>
+                          <SheetTitle className="text-right">خيارات الفلترة</SheetTitle>
+                        </SheetHeader>
+
+                        <div className="mt-6 space-y-6 text-right" dir="rtl">
+                          {/* Availability */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-bold">التوفر</Label>
+                            <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as any)}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">الكل</SelectItem>
+                                <SelectItem value="in-stock">متوفر</SelectItem>
+                                <SelectItem value="out-of-stock">غير متوفر</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Direct sale */}
+                          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 p-3">
+                            <div>
+                              <Label htmlFor="direct-only" className="text-sm font-bold">
+                                البيع المباشر فقط
+                              </Label>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                عرض المنتجات المتوفرة للبيع المباشر
+                              </p>
+                            </div>
+                            <Switch
+                              id="direct-only"
+                              checked={directOnly}
+                              onCheckedChange={setDirectOnly}
+                            />
+                          </div>
+
+                          {/* Price range */}
+                          <div className="space-y-2">
+                            <Label className="text-sm font-bold">نطاق السعر (د.ع)</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="من"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value)}
+                                className="text-right"
+                              />
+                              <span className="text-muted-foreground">—</span>
+                              <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="إلى"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(e.target.value)}
+                                className="text-right"
+                              />
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={resetFilters}
+                            disabled={!filtersActive}
+                          >
+                            إعادة تعيين
+                          </Button>
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+                </div>
 
                 {/* Responsive grid of product cards */}
-                {otherProducts.length > 0 && (
+                {otherProducts.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
                     {otherProducts.map((product) => (
                       <FloatingProductCard
@@ -145,6 +333,10 @@ const CategoryDetail = () => {
                         hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                       />
                     ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-foreground/50 text-sm">
+                    لا توجد منتجات تطابق الفلترة الحالية.
                   </div>
                 )}
               </div>
