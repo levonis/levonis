@@ -222,8 +222,9 @@ serve(async (req) => {
     // ===== Try Bambu Lab deterministic parser =====
     if (isBambuLab) {
       // First try raw HTML
-      let bambuColors = parseBambuLabColors(html);
-      
+      let bambuParsed = await parseBambuLabUnified(html);
+      let bambuColors = bambuParsed.colors;
+
       // If raw HTML has no swatch data, try Firecrawl for rendered HTML
       if (bambuColors.length === 0) {
         console.log('Bambu parser found 0 in raw HTML, trying Firecrawl...');
@@ -240,7 +241,8 @@ serve(async (req) => {
               const renderedHtml = fcData.data?.html || fcData.html || '';
               console.log('Firecrawl returned HTML length:', renderedHtml.length);
               if (renderedHtml.length > 1000) {
-                bambuColors = parseBambuLabColors(renderedHtml);
+                bambuParsed = await parseBambuLabUnified(renderedHtml);
+                bambuColors = bambuParsed.colors;
               }
             }
           } catch (e) {
