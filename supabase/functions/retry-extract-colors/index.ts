@@ -182,7 +182,7 @@ export async function parseBambuLabUnified(html: string): Promise<{
     if (!rawName || rawName.length > 80 || /^\d+$/.test(rawName)) continue;
     const imgMatch = m[2].match(/<img[^>]*\bsrc="([^"]+)"/i);
     const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
-    const key = rawName.toLowerCase();
+    const key = normalizeVariantName(rawName);
     if (looksLikeColor) {
       if (seenC.has(key)) continue;
       seenC.add(key);
