@@ -752,15 +752,53 @@ export function normalizeVariantName(input: string): string {
   return s.trim().toLowerCase();
 }
 
+function extractVariantKeyFromProductName(name: string): string {
+  if (!name) return '';
+  const trimmed = String(name).trim();
+  const afterDash = trimmed.includes(' - ') ? trimmed.split(' - ').slice(1).join(' - ') : trimmed;
+  const firstSegment = afterDash.split('/')[0]?.trim() || afterDash;
+  return normalizeVariantName(firstSegment);
+}
+
 // Build a map of variant name -> main product image by scanning RSC/JSON payloads
 // for objects pairing "propertyValue" with an image-bearing key. We exclude obvious
 // swatch thumbnails so the displayed image actually matches the selected variant.
 export function buildBambuVariantImageMap(html: string): Map<string, string> {
   const map = new Map<string, string>();
-  // Bambu's RSC stream embeds JSON either as plain JSON or escaped (\"...\").
-  // Image keys observed: imageUrl, mainImage, productImage, picUrl, image,
-  // AND colorUrl (per-color hero on filament pages).
-  const IMG_KEYS = '(?:imageUrl|mainImage|productImage|picUrl|image|colorUrl)';
+  const setIfValid = (rawName: string, rawUrl: string) => {
+    let url = String(rawUrl || '').trim().replace(/\\\//g, '/');
+    const key = normalizeVariantName(rawName);
+    if (!key || !url) return;
+    if (url === 'null' || url.length < 4) return;
+    if (url.startsWith('//')) url = 'https:' + url;
+    if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) return;
+    if (!/^https?:\/\//i.test(url)) return;
+    if (!map.has(key)) map.set(key, url);
+  };
+
+  for (const match of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const data = JSON.parse(match[1]);
+      const items = Array.isArray(data) ? data : [data];
+      for (const item of items) {
+        const variants = Array.isArray(item?.hasVariant)
+          ? item.hasVariant
+          : Array.isArray(item)
+            ? item
+            : (item?.['@type'] === 'Product' ? [item] : []);
+        for (const variant of variants) {
+          if (variant?.['@type'] !== 'Product') continue;
+          const key = extractVariantKeyFromProductName(String(variant?.name || ''));
+          const image = typeof variant?.image === 'string' ? variant.image : Array.isArray(variant?.image) ? variant.image[0] : '';
+          if (key && image) setIfValid(key, image);
+        }
+      }
+    } catch {}
+  }
+
+  // Secondary source: RSC payload. Intentionally exclude `colorUrl` because it is
+  // a swatch thumbnail, not the full product image.
+  const IMG_KEYS = '(?:imageUrl|mainImage|productImage|picUrl|image)';
   const patterns = [
     new RegExp(`"propertyValue"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"${IMG_KEYS}"\\s*:\\s*"([^"]+)"`, 'gi'),
     new RegExp(`"${IMG_KEYS}"\\s*:\\s*"([^"]+)"[^{}]{0,800}?"propertyValue"\\s*:\\s*"([^"]+)"`, 'gi'),
@@ -773,14 +811,8 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(html)) !== null) {
       const rawName = nameFirst[p] ? mm[1] : mm[2];
-      let url = (nameFirst[p] ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
-      const key = normalizeVariantName(rawName);
-      if (!key || !url) continue;
-      if (url === 'null' || url.length < 4) continue;
-      if (url.startsWith('//')) url = 'https:' + url;
-      if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
-      if (!/^https?:\/\//i.test(url)) continue;
-      if (!map.has(key)) map.set(key, url);
+      const rawUrl = nameFirst[p] ? mm[2] : mm[1];
+      setIfValid(rawName, rawUrl);
     }
   }
   return map;
