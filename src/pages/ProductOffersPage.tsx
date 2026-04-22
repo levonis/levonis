@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy, X, Clock, Sparkles, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface ProductOption {
   name_ar: string;
@@ -336,7 +337,7 @@ export default function ProductOffersPage() {
                           <div
                             key={idx}
                             className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
-                            style={{ backgroundColor: color.hex_code }}
+                            style={getColorSwatchStyle(color.hex_code)}
                             title={color.name_ar}
                           />
                         ))}
@@ -451,7 +452,7 @@ export default function ProductOffersPage() {
                             <div key={idx} className="flex flex-col items-center gap-1">
                               <button
                                 className={`w-10 h-10 rounded-full border-2 transition-all ${selectedColor?.hex_code === color.hex_code ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:scale-105'} ${color.stock_quantity === 0 ? 'opacity-50' : ''}`}
-                                style={{ backgroundColor: color.hex_code }}
+                                style={getColorSwatchStyle(color.hex_code)}
                                 onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
                                 title={color.name_ar}
                                 disabled={color.stock_quantity === 0}

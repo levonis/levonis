@@ -7,6 +7,7 @@ import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
+import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface GroupedCartItemProps {
   productId: string;
@@ -89,7 +90,7 @@ const GroupedCartItem = ({
               )}
               {colorData && (
                 <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                  <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={{ backgroundColor: colorData.hex_code }} />
+                  <span className="w-2.5 h-2.5 rounded-full border border-border/50 inline-block" style={getColorSwatchStyle(colorData.hex_code)} />
                   {colorData.name_ar}
                 </span>
               )}
