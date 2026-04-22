@@ -669,8 +669,7 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
     const buf = new Uint8Array(await resp.arrayBuffer());
     if (buf.length < 100 || buf.length > 4_000_000) { swatchHexCache.set(imageUrl, null); return null; }
 
-    const { decode } = await import('https://deno.land/x/imagescript@1.2.17/mod.ts');
-    const img: any = await decode(buf);
+    const img: any = await decodeImage(buf);
     if (!img || !img.bitmap) { swatchHexCache.set(imageUrl, null); return null; }
 
     // Histogram quantized RGB. Two passes:
