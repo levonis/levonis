@@ -72,9 +72,14 @@ Deno.test("buildBambuVariantImageMap: ignores duplicate, keeps first", () => {
   assertEquals(map.get("red"), "https://store.bblcdn.com/p/red1.png");
 });
 
-Deno.test(
-  "parseBambuLabUnified: never returns a /swatch/ image_url when a mapped main image exists",
-  async () => {
+Deno.test({
+  name:
+    "parseBambuLabUnified: never returns a /swatch/ image_url when a mapped main image exists",
+  // The parser fires fetch() against swatch URLs to sample hex codes. Those are
+  // unrelated to this assertion and would otherwise trip Deno's leak detector.
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
     // Two variants ("Red", "Blue") expose swatch <img> tags inside <li value="...">
     // AND a non-swatch main product image via the JSON propertyValue mapping.
     // A third variant ("Yellow") only has a swatch — it should fall back to the swatch URL.
