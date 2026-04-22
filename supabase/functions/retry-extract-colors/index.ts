@@ -69,20 +69,32 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
     const img: any = await decode(buf);
     if (!img || !img.bitmap) { swatchHexCache.set(imageUrl, null); return null; }
     const w = img.width, h = img.height;
-    const counts = new Map<number, [number, number, number, number]>();
     const stepX = Math.max(1, Math.floor(w / 32));
     const stepY = Math.max(1, Math.floor(h / 32));
-    for (let y = 0; y < h; y += stepY) {
-      for (let x = 0; x < w; x += stepX) {
-        const px = img.getPixelAt(x + 1, y + 1);
-        const r = (px >>> 24) & 0xff, g = (px >>> 16) & 0xff, b = (px >>> 8) & 0xff, a = px & 0xff;
-        if (a < 64 || (r > 245 && g > 245 && b > 245) || (r < 12 && g < 12 && b < 12)) continue;
-        const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
-        const cur = counts.get(key);
-        if (cur) { cur[0] += r; cur[1] += g; cur[2] += b; cur[3] += 1; }
-        else counts.set(key, [r, g, b, 1]);
+    // Two-pass histogram: first ignore near-white/near-black/transparent (matte),
+    // then re-sample without those filters if pass 1 yielded nothing — this handles
+    // pure white / pure black swatches (e.g. White (13110)).
+    const sample = (allowExtremes: boolean) => {
+      const counts = new Map<number, [number, number, number, number]>();
+      for (let y = 0; y < h; y += stepY) {
+        for (let x = 0; x < w; x += stepX) {
+          const px = img.getPixelAt(x + 1, y + 1);
+          const r = (px >>> 24) & 0xff, g = (px >>> 16) & 0xff, b = (px >>> 8) & 0xff, a = px & 0xff;
+          if (a < 64) continue;
+          if (!allowExtremes) {
+            if (r > 245 && g > 245 && b > 245) continue;
+            if (r < 12 && g < 12 && b < 12) continue;
+          }
+          const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+          const cur = counts.get(key);
+          if (cur) { cur[0] += r; cur[1] += g; cur[2] += b; cur[3] += 1; }
+          else counts.set(key, [r, g, b, 1]);
+        }
       }
-    }
+      return counts;
+    };
+    let counts = sample(false);
+    if (counts.size === 0) counts = sample(true);
     if (counts.size === 0) { swatchHexCache.set(imageUrl, null); return null; }
     let best: [number, number, number, number] | null = null;
     for (const v of counts.values()) if (!best || v[3] > best[3]) best = v;
