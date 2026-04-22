@@ -7938,6 +7938,47 @@ export type Database = {
           },
         ]
       }
+      product_color_qa_flags: {
+        Row: {
+          color_name: string
+          created_at: string
+          flagged_by: string | null
+          id: string
+          product_id: string
+          reason: string | null
+          resolved: boolean
+          updated_at: string
+        }
+        Insert: {
+          color_name: string
+          created_at?: string
+          flagged_by?: string | null
+          id?: string
+          product_id: string
+          reason?: string | null
+          resolved?: boolean
+          updated_at?: string
+        }
+        Update: {
+          color_name?: string
+          created_at?: string
+          flagged_by?: string | null
+          id?: string
+          product_id?: string
+          reason?: string | null
+          resolved?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_color_qa_flags_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_offer_purchases: {
         Row: {
           created_at: string
