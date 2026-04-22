@@ -799,7 +799,7 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
 
     const imgMatch = body.match(/<img[^>]*\bsrc="([^"]+)"/i);
     const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
-    const key = rawName.toLowerCase();
+    const key = normalizeVariantName(rawName);
 
     if (looksLikeColor) {
       if (seenColorNames.has(key)) continue;
