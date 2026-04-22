@@ -275,12 +275,15 @@ const ProductDetail = () => {
   const activeSaleType = useMemo(() => {
     if (selectedSaleType === 'direct' && !hasDirectSale) return hasPreOrder ? 'preorder' : 'direct';
     if (selectedSaleType === 'preorder' && !hasPreOrder) return hasDirectSale ? 'direct' : 'preorder';
+    // Auto-switch direct → preorder when direct stock is depleted and preorder is available
+    if (selectedSaleType === 'direct' && directStockDepleted && hasPreOrder) return 'preorder';
     if (selectedSaleType) return selectedSaleType;
-    // Default to direct when available (even if depleted) so users see direct price
-    if (hasDirectSale) return 'direct';
+    // Default: prefer direct only when it has stock; otherwise fall back to preorder
+    if (hasDirectSale && !directStockDepleted) return 'direct';
     if (hasPreOrder) return 'preorder';
+    if (hasDirectSale) return 'direct';
     return 'direct';
-  }, [selectedSaleType, hasDirectSale, hasPreOrder]);
+  }, [selectedSaleType, hasDirectSale, hasPreOrder, directStockDepleted]);
 
   // Auto-select first available option when options load
   useEffect(() => {
