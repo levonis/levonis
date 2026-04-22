@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
 import { normalizeVariantName, isSwatchUrl } from '@/lib/variantNameNormalize';
+import { getColorSwatchStyle } from '@/lib/colorSwatch';
 
 type ColorVariant = {
   name?: string;
