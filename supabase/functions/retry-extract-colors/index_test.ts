@@ -101,19 +101,24 @@ Deno.test('parseBambuLabUnified: variant uses MAIN product image, not swatch', a
   assertEquals(/swatch/.test(rose.image_url || ''), false);
 });
 
-Deno.test('parseBambuLabUnified: falls back to swatch when no main image is mapped', async () => {
-  // NB: we use a protocol-relative swatch URL elsewhere to skip network sampling
-  // for hex, but the fallback path requires the swatch to be a full http URL —
-  // so use a non-existent host that will fail fast on DNS (test stays sub-second).
-  const html = `
-    <ul>
-      <li value="Mystery Color"><img src="http://store.bblcdn.com.invalid/swatch/mystery.png"></li>
-    </ul>
-  `;
-  const { colors } = await parseBambuLabUnified(html);
-  assertEquals(colors.length, 1);
-  // No RSC pair → must fall back to the swatch URL.
-  assertEquals(colors[0].image_url, 'http://store.bblcdn.com.invalid/swatch/mystery.png');
+Deno.test({
+  name: 'parseBambuLabUnified: falls back to swatch when no main image is mapped',
+  // The fallback path triggers a real fetch + AbortController for hex sampling,
+  // which Deno flags as a timer leak after the test returns. The image-mapping
+  // assertion below is what we care about, so disable leak detection here.
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const html = `
+      <ul>
+        <li value="Mystery Color"><img src="http://store.bblcdn.com.invalid/swatch/mystery.png"></li>
+      </ul>
+    `;
+    const { colors } = await parseBambuLabUnified(html);
+    assertEquals(colors.length, 1);
+    // No RSC pair → must fall back to the swatch URL.
+    assertEquals(colors[0].image_url, 'http://store.bblcdn.com.invalid/swatch/mystery.png');
+  },
 });
 
 Deno.test('parseBambuLabUnified: drops non-http swatch when no main image is mapped', async () => {
