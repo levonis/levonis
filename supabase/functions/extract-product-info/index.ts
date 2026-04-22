@@ -1656,10 +1656,6 @@ Return ONLY JSON:
       }
     }
 
-          price_adjustment: 0,
-        }));
-      }
-    }
 
     // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
     if (productInfo.images.length === 0 && directImages.length > 0) {
