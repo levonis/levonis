@@ -211,7 +211,13 @@ export async function parseBambuLabUnified(html: string): Promise<{
     const sampled = await Promise.all(jobs.map(j => sampleSwatchColor(j.url)));
     jobs.forEach((j, i) => { if (sampled[i]) colors[j.idx].hex_code = sampled[i]; });
   }
-  console.log(`Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped), ${options.length} options`);
+  const fallbackCount = colors.filter((c) => {
+    const productImg = variantImages.get(normalizeVariantName(c.name));
+    return !productImg && !!c.image_url;
+  }).length;
+  console.log(
+    `[retry-extract-colors] Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped, ${fallbackCount} used swatch fallback), ${options.length} options`
+  );
   return { colors, options };
 }
 
