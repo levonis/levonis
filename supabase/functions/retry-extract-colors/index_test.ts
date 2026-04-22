@@ -1,5 +1,9 @@
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { normalizeVariantName, buildBambuVariantImageMap } from "./index.ts";
+import { assertEquals, assert } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import {
+  normalizeVariantName,
+  buildBambuVariantImageMap,
+  parseBambuLabUnified,
+} from "./index.ts";
 
 Deno.test("normalizeVariantName: trims and lowercases", () => {
   assertEquals(normalizeVariantName("  Red  "), "red");
