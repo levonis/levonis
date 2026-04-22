@@ -804,7 +804,8 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
     if (looksLikeColor) {
       if (seenColorNames.has(key)) continue;
       seenColorNames.add(key);
-      const swatchUrl = imgMatch![1].trim();
+      let swatchUrl = imgMatch![1].trim();
+      if (swatchUrl.startsWith('//')) swatchUrl = 'https:' + swatchUrl;
       // Prefer the variant's main product photo; fall back to the swatch only
       // when no main image is available.
       const productImg = variantImages.get(key) || null;
