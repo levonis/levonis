@@ -108,7 +108,7 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
 
 // Build a map of variant name -> main product image by scanning RSC/JSON payloads
 // for objects that pair "propertyValue" with an image-bearing key.
-function buildBambuVariantImageMap(html: string): Map<string, string> {
+export function buildBambuVariantImageMap(html: string): Map<string, string> {
   const map = new Map<string, string>();
   const patterns = [
     /"propertyValue"\s*:\s*"([^"]+)"[^{}]*?"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"/gi,
