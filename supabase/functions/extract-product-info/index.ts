@@ -727,10 +727,32 @@ export interface BambuExtractResult {
   options: Array<{ name: string; name_ar: string; image_url: string | null }>;
 }
 
+// Normalize a variant name for reliable matching across pages.
+// Decodes HTML entities + JSON unicode escapes, strips zero-width chars,
+// collapses NBSP/whitespace, tightens spacing around () and -.
+export function normalizeVariantName(input: string): string {
+  if (!input) return '';
+  let s = String(input);
+  s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  s = s.replace(/\\\//g, '/').replace(/\\"/g, '"').replace(/\\'/g, "'");
+  s = s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+  s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  const named: Record<string, string> = {
+    '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>',
+    '&nbsp;': ' ', '&ndash;': '-', '&mdash;': '-', '&hellip;': '…',
+  };
+  s = s.replace(/&[a-zA-Z]+;/g, (mm) => named[mm.toLowerCase()] ?? mm);
+  s = s.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  s = s.replace(/[\u00A0\s]+/g, ' ');
+  s = s.replace(/\s*\(\s*/g, '(').replace(/\s*\)\s*/g, ')');
+  s = s.replace(/\s*-\s*/g, '-');
+  return s.trim().toLowerCase();
+}
+
 // Build a map of variant name -> main product image by scanning RSC/JSON payloads
 // for objects pairing "propertyValue" with an image-bearing key. We exclude obvious
 // swatch thumbnails so the displayed image actually matches the selected variant.
-function buildBambuVariantImageMap(html: string): Map<string, string> {
+export function buildBambuVariantImageMap(html: string): Map<string, string> {
   const map = new Map<string, string>();
   const patterns = [
     /"propertyValue"\s*:\s*"([^"]+)"[^{}]*?"(?:imageUrl|mainImage|productImage|picUrl|image)"\s*:\s*"([^"]+)"/gi,
@@ -740,12 +762,13 @@ function buildBambuVariantImageMap(html: string): Map<string, string> {
     const re = patterns[p];
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(html)) !== null) {
-      const name = (p === 0 ? mm[1] : mm[2]).trim();
+      const rawName = (p === 0 ? mm[1] : mm[2]);
       let url = (p === 0 ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
-      if (!name || !url) continue;
+      const key = normalizeVariantName(rawName);
+      if (!key || !url) continue;
+      if (url.startsWith('//')) url = 'https:' + url;
       if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
       if (!/^https?:\/\//i.test(url)) continue;
-      const key = name.toLowerCase();
       if (!map.has(key)) map.set(key, url);
     }
   }
@@ -776,12 +799,13 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
 
     const imgMatch = body.match(/<img[^>]*\bsrc="([^"]+)"/i);
     const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
-    const key = rawName.toLowerCase();
+    const key = normalizeVariantName(rawName);
 
     if (looksLikeColor) {
       if (seenColorNames.has(key)) continue;
       seenColorNames.add(key);
-      const swatchUrl = imgMatch![1].trim();
+      let swatchUrl = imgMatch![1].trim();
+      if (swatchUrl.startsWith('//')) swatchUrl = 'https:' + swatchUrl;
       // Prefer the variant's main product photo; fall back to the swatch only
       // when no main image is available.
       const productImg = variantImages.get(key) || null;

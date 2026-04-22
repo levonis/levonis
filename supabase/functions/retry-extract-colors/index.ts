@@ -106,6 +106,40 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
   } catch { swatchHexCache.set(imageUrl, null); return null; }
 }
 
+// Normalize a variant name for reliable matching across pages.
+// Rules:
+//  1) Decode common HTML entities (&amp; &#39; &quot; &nbsp; numeric entities).
+//  2) Unescape JSON-encoded sequences (\u00xx, \/, \").
+//  3) Strip zero-width chars and the BOM.
+//  4) Replace NBSP and any whitespace run with a single ASCII space.
+//  5) Collapse spaces around parentheses/hyphens so "Red ( 13100 )" === "Red(13100)".
+//  6) Lowercase + trim for the lookup key.
+export function normalizeVariantName(input: string): string {
+  if (!input) return '';
+  let s = String(input);
+  // JSON unicode escapes
+  s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  // JSON slash/quote escapes
+  s = s.replace(/\\\//g, '/').replace(/\\"/g, '"').replace(/\\'/g, "'");
+  // Numeric HTML entities
+  s = s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+  s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  // Named HTML entities (common set)
+  const named: Record<string, string> = {
+    '&amp;': '&', '&quot;': '"', '&apos;': "'", '&lt;': '<', '&gt;': '>',
+    '&nbsp;': ' ', '&ndash;': '-', '&mdash;': '-', '&hellip;': '…',
+  };
+  s = s.replace(/&[a-zA-Z]+;/g, (m) => named[m.toLowerCase()] ?? m);
+  // Zero-width chars + BOM
+  s = s.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  // NBSP and any whitespace run -> single space
+  s = s.replace(/[\u00A0\s]+/g, ' ');
+  // Tighten spacing around () and -
+  s = s.replace(/\s*\(\s*/g, '(').replace(/\s*\)\s*/g, ')');
+  s = s.replace(/\s*-\s*/g, '-');
+  return s.trim().toLowerCase();
+}
+
 // Build a map of variant name -> main product image by scanning RSC/JSON payloads
 // for objects that pair "propertyValue" with an image-bearing key.
 export function buildBambuVariantImageMap(html: string): Map<string, string> {
@@ -118,13 +152,15 @@ export function buildBambuVariantImageMap(html: string): Map<string, string> {
     const re = patterns[p];
     let mm: RegExpExecArray | null;
     while ((mm = re.exec(html)) !== null) {
-      const name = (p === 0 ? mm[1] : mm[2]).trim();
+      const rawName = (p === 0 ? mm[1] : mm[2]);
       let url = (p === 0 ? mm[2] : mm[1]).trim().replace(/\\\//g, '/');
-      if (!name || !url) continue;
+      const key = normalizeVariantName(rawName);
+      if (!key || !url) continue;
+      // Normalize protocol-relative URLs
+      if (url.startsWith('//')) url = 'https:' + url;
       // Skip swatch-style thumbnails
       if (/\/swatch\//i.test(url) || /-swatch[\.-]/i.test(url)) continue;
       if (!/^https?:\/\//i.test(url)) continue;
-      const key = name.toLowerCase();
       if (!map.has(key)) map.set(key, url);
     }
   }
@@ -146,7 +182,7 @@ export async function parseBambuLabUnified(html: string): Promise<{
     if (!rawName || rawName.length > 80 || /^\d+$/.test(rawName)) continue;
     const imgMatch = m[2].match(/<img[^>]*\bsrc="([^"]+)"/i);
     const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
-    const key = rawName.toLowerCase();
+    const key = normalizeVariantName(rawName);
     if (looksLikeColor) {
       if (seenC.has(key)) continue;
       seenC.add(key);
