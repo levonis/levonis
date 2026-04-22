@@ -92,8 +92,8 @@ Deno.test('parseBambuLabUnified: variant uses MAIN product image, not swatch', a
   `;
   const { colors } = await parseBambuLabUnified(html);
   assertEquals(colors.length, 2);
-  const titan = colors.find((c) => c.name === 'Titan Gray (13108)')!;
-  const rose = colors.find((c) => c.name === 'Rose Gold (13206)')!;
+  const titan = colors.find((c: { name: string }) => c.name === 'Titan Gray (13108)')!;
+  const rose = colors.find((c: { name: string }) => c.name === 'Rose Gold (13206)')!;
   assertEquals(titan.image_url, 'https://store.bblcdn.com/main/titan-gray.jpg');
   assertEquals(rose.image_url, 'https://store.bblcdn.com/main/rose-gold.jpg');
   // Sanity: must NOT be the swatch path.
