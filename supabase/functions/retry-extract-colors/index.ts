@@ -186,10 +186,15 @@ export async function parseBambuLabUnified(html: string): Promise<{
     if (looksLikeColor) {
       if (seenC.has(key)) continue;
       seenC.add(key);
-      const swatchUrl = imgMatch![1].trim();
+      let swatchUrl = imgMatch![1].trim();
+      if (swatchUrl.startsWith('//')) swatchUrl = 'https:' + swatchUrl;
       // Prefer the variant's main product image; fall back to swatch only if no main image is available.
       const productImg = variantImages.get(key) || null;
+      const usedFallback = !productImg;
       const finalImg = productImg || (swatchUrl.startsWith('http') ? swatchUrl : null);
+      console.log(
+        `[retry-extract-colors] variant matched | propertyValue="${rawName}" | key="${key}" | productImage=${productImg ?? 'NONE'} | swatch=${swatchUrl} | finalImage=${finalImg ?? 'NONE'} | swatchFallback=${usedFallback}`
+      );
       const idx = colors.length;
       colors.push({ name: rawName, name_ar: translateBambuColorName(rawName), hex_code: null, image_url: finalImg });
       // Always sample hex from the swatch (more accurate than the full product photo)
@@ -206,7 +211,13 @@ export async function parseBambuLabUnified(html: string): Promise<{
     const sampled = await Promise.all(jobs.map(j => sampleSwatchColor(j.url)));
     jobs.forEach((j, i) => { if (sampled[i]) colors[j.idx].hex_code = sampled[i]; });
   }
-  console.log(`Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped), ${options.length} options`);
+  const fallbackCount = colors.filter((c) => {
+    const productImg = variantImages.get(normalizeVariantName(c.name));
+    return !productImg && !!c.image_url;
+  }).length;
+  console.log(
+    `[retry-extract-colors] Bambu unified parser: ${colors.length} colors (${variantImages.size} variant images mapped, ${fallbackCount} used swatch fallback), ${options.length} options`
+  );
   return { colors, options };
 }
 
