@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { mergeRetryColors } from '@/lib/mergeRetryColors';
 
 interface AdminCustomRequestsProps {
   requests: any[] | undefined;
@@ -147,42 +148,17 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
           .eq('setting_key', 'product_defaults')
           .maybeSingle();
         const defaults: any = (defaultsRow?.setting_value as any) || {};
-        const applyDefaults = (c: any) => ({
-          ...c,
-          available_for_pre_order:
-            c?.available_for_pre_order ?? defaults.default_color_available_for_pre_order ?? true,
-          available_for_direct_sale:
-            c?.available_for_direct_sale ?? defaults.default_color_available_for_direct_sale ?? false,
-          in_stock: c?.in_stock ?? defaults.has_in_stock ?? false,
-        });
 
-        let updatedColors: any[];
-        
-        if (data.mode === 'replace') {
-          // Full replace — discard old colors entirely
-          updatedColors = (data.addedColors || []).map(applyDefaults);
-        } else {
-          // Upsert: merge by normalized color name
-          const existingColorsArray = Array.isArray(existingColors) ? existingColors : [];
-          const colorMap = new Map<string, any>();
-          for (const c of existingColorsArray) {
-            const key = ((c as any).name || '').toLowerCase().trim();
-            if (key) colorMap.set(key, c);
-          }
-          for (const c of (data.addedColors || [])) {
-            const key = (c.name || '').toLowerCase().trim();
-            if (!key) continue;
-            const prev = colorMap.get(key);
-            const merged = { ...prev, ...c };
-            // Only apply defaults for brand-new colors (no prior entry)
-            colorMap.set(key, prev ? merged : applyDefaults(merged));
-          }
-          updatedColors = Array.from(colorMap.values());
-        }
+        const updatedColors = mergeRetryColors({
+          existingColors: Array.isArray(existingColors) ? (existingColors as any[]) : [],
+          addedColors: data.addedColors || [],
+          mode: data.mode === 'replace' ? 'replace' : 'upsert',
+          defaults,
+        });
 
         await supabase
           .from('products')
-          .update({ colors: updatedColors })
+          .update({ colors: updatedColors as any })
           .eq('slug', request.code);
 
         toast.success(data.mode === 'replace' 
