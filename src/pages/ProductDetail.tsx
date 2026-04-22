@@ -273,18 +273,31 @@ const ProductDetail = () => {
   const hasDirectSale = rawHasDirectSale;
   const hasBothTypes = hasDirectSale && hasPreOrder;
 
+  // Restore user's saved sale-type choice for this product (per-product persistence)
+  useEffect(() => {
+    if (!product?.id) return;
+    try {
+      const saved = localStorage.getItem(`product:${product.id}:saleType`);
+      if (saved === 'direct' || saved === 'preorder') {
+        setSelectedSaleType(saved);
+        setUserManuallySelected(true);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
   const activeSaleType = useMemo(() => {
     if (selectedSaleType === 'direct' && !hasDirectSale) return hasPreOrder ? 'preorder' : 'direct';
     if (selectedSaleType === 'preorder' && !hasPreOrder) return hasDirectSale ? 'direct' : 'preorder';
-    // Auto-switch direct → preorder when direct stock is depleted and preorder is available
-    if (selectedSaleType === 'direct' && directStockDepleted && hasPreOrder) return 'preorder';
+    // Auto-switch direct → preorder when direct stock is depleted (only if user hasn't manually chosen direct)
+    if (selectedSaleType === 'direct' && directStockDepleted && hasPreOrder && !userManuallySelected) return 'preorder';
     if (selectedSaleType) return selectedSaleType;
     // Default: prefer direct only when it has stock; otherwise fall back to preorder
     if (hasDirectSale && !directStockDepleted) return 'direct';
     if (hasPreOrder) return 'preorder';
     if (hasDirectSale) return 'direct';
     return 'direct';
-  }, [selectedSaleType, hasDirectSale, hasPreOrder, directStockDepleted]);
+  }, [selectedSaleType, hasDirectSale, hasPreOrder, directStockDepleted, userManuallySelected]);
 
   // Auto-select first available option when options load
   useEffect(() => {
