@@ -6,91 +6,129 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Bambu Lab deterministic color-image parser
-// Parses rendered HTML to find color swatches with names (including SKU codes)
-function parseBambuLabColors(html: string): Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> {
-  const colors: Array<{name: string; name_ar: string; hex_code: string; image_url: string | null}> = [];
+// Bambu Lab unified parser — extracts colors AND non-color options from <li value="..."> blocks.
+// Color = <li> with <img src="store.bblcdn.com/...png">, Option = text-only <li>.
 
-  const bambuColorArMap: Record<string, string> = {
-    'gray': 'رمادي', 'grey': 'رمادي',
-    'light blue': 'أزرق فاتح', 'blue': 'أزرق',
-    'olive': 'زيتي', 'brown': 'بني',
-    'teal': 'أزرق مخضر', 'orange': 'برتقالي',
-    'purple': 'بنفسجي', 'pink': 'وردي',
-    'red': 'أحمر', 'green': 'أخضر',
-    'yellow': 'أصفر', 'white': 'أبيض',
-    'black': 'أسود', 'gold': 'ذهبي',
-    'silver': 'فضي', 'jade': 'أخضر يشمي',
-    'translucent': 'شفاف', 'clear': 'شفاف',
-  };
-
-  // Primary: Parse <li value="ColorName (SKU)"> with <img> inside
-  const swatchPattern = /<li[^>]*value="([^"]+)"[^>]*class="[^"]*(?:rounded-full|color)[^"]*"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>[\s\S]*?<\/li>/gi;
-  let swatchMatch;
-  const seenNames = new Set<string>();
-  
-  while ((swatchMatch = swatchPattern.exec(html)) !== null) {
-    const fullName = swatchMatch[1].trim();
-    const swatchImageUrl = swatchMatch[2].trim();
-    
-    if (seenNames.has(fullName.toLowerCase())) continue;
-    seenNames.add(fullName.toLowerCase());
-
-    const nameLower = fullName.toLowerCase();
-    let nameAr = fullName;
-    for (const [key, ar] of Object.entries(bambuColorArMap)) {
-      if (nameLower.includes(key)) {
-        nameAr = (nameLower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
-        break;
-      }
-    }
-
-    let hexCode = '#808080';
-    const matchStart = Math.max(0, swatchMatch.index - 500);
-    const matchEnd = Math.min(html.length, swatchMatch.index + swatchMatch[0].length + 500);
-    const nearbyHtml = html.substring(matchStart, matchEnd);
-    const hexMatch = nearbyHtml.match(/background-color:\s*#([0-9a-fA-F]{6})/i);
-    if (hexMatch) hexCode = '#' + hexMatch[1];
-
-    const imageUrl = swatchImageUrl.startsWith('http') ? swatchImageUrl : null;
-    colors.push({ name: fullName, name_ar: nameAr, hex_code: hexCode, image_url: imageUrl });
-    console.log(`  Bambu swatch: ${fullName} -> ${imageUrl ? 'has image' : 'no image'}`);
-  }
-
-  // Fallback: spec table + JP images
-  if (colors.length === 0) {
-    const colorTablePattern = /<td[^>]*>\s*((?:Translucent|Matte|Glossy|Basic|Silk|Marble|Support|Clear)\s*\w[\w\s]*?)\s*<\/td>\s*<td[^>]*style="[^"]*background-color:\s*#([0-9a-fA-F]+)/gi;
-    const tableColors: Array<{name: string; hex: string}> = [];
-    let tableMatch;
-    while ((tableMatch = colorTablePattern.exec(html)) !== null) {
-      tableColors.push({ name: tableMatch[1].trim(), hex: '#' + tableMatch[2] });
-    }
-    const jpImagePattern = /https:\/\/store\.bblcdn\.com[^"'\s<>]*\/(JP\d{5}[^"'\s<>]+\.jpg)/g;
-    const jpImages: Map<string, string> = new Map();
-    let jpMatch;
-    while ((jpMatch = jpImagePattern.exec(html)) !== null) {
-      const fullUrl = jpMatch[0].split('__op__')[0];
-      const jpCode = jpMatch[1].match(/^JP\d{5}/)?.[0];
-      if (jpCode && !jpImages.has(jpCode)) jpImages.set(jpCode, fullUrl);
-    }
-    const orderedJpUrls = Array.from(jpImages.values());
-    for (let i = 0; i < tableColors.length; i++) {
-      const { name, hex } = tableColors[i];
-      const imageUrl = i < orderedJpUrls.length ? orderedJpUrls[i] : null;
-      const nameLower = name.toLowerCase();
-      let nameAr = name;
-      for (const [key, ar] of Object.entries(bambuColorArMap)) {
-        if (nameLower.includes(key)) {
-          nameAr = (nameLower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
-          break;
-        }
-      }
-      colors.push({ name, name_ar: nameAr, hex_code: hex, image_url: imageUrl });
+const bambuBaseColorMap: Record<string, string> = {
+  'gray': 'رمادي', 'grey': 'رمادي', 'blue': 'أزرق', 'olive': 'زيتي', 'brown': 'بني',
+  'teal': 'أزرق مخضر', 'orange': 'برتقالي', 'purple': 'بنفسجي', 'pink': 'وردي',
+  'red': 'أحمر', 'green': 'أخضر', 'yellow': 'أصفر', 'white': 'أبيض',
+  'black': 'أسود', 'gold': 'ذهبي', 'silver': 'فضي', 'jade': 'أخضر يشمي',
+  'translucent': 'شفاف', 'clear': 'شفاف', 'champagne': 'شمبانيا', 'mint': 'نعناعي',
+  'cream': 'كريمي', 'beige': 'بيج', 'ivory': 'عاجي', 'cyan': 'سماوي',
+  'magenta': 'ماجنتا', 'bronze': 'برونزي', 'copper': 'نحاسي', 'candy': 'كاندي',
+};
+const bambuQualifierMap: Array<[string, string]> = [
+  ['rose gold', 'وردي ذهبي'], ['baby blue', 'أزرق فاتح'], ['light blue', 'أزرق فاتح'],
+  ['dark blue', 'أزرق غامق'], ['sky blue', 'أزرق سماوي'], ['light gray', 'رمادي فاتح'],
+  ['light grey', 'رمادي فاتح'], ['dark gray', 'رمادي غامق'], ['dark grey', 'رمادي غامق'],
+  ['titan gray', 'رمادي تيتانيوم'], ['titan grey', 'رمادي تيتانيوم'], ['hot pink', 'وردي فاقع'],
+  ['matte black', 'أسود مطفي'], ['matte white', 'أبيض مطفي'], ['mint green', 'أخضر نعناعي'],
+  ['forest green', 'أخضر غابات'], ['lime green', 'أخضر ليموني'], ['blood red', 'أحمر دموي'],
+  ['wine red', 'أحمر نبيذي'], ['candy red', 'أحمر كاندي'], ['candy green', 'أخضر كاندي'],
+];
+const bambuOptionArMap: Record<string, string> = {
+  'refill': 'إعادة تعبئة', 'standard': 'قياسي', 'filament with spool': 'خيط مع بكرة',
+  'with spool': 'مع بكرة', 'without spool': 'بدون بكرة',
+  '1 kg': '1 كغم', '500 g': '500 غم', '250 g': '250 غم',
+  '0.2 mm': '0.2 ملم', '0.4 mm': '0.4 ملم', '0.6 mm': '0.6 ملم', '0.8 mm': '0.8 ملم',
+};
+function translateBambuColorName(name: string): string {
+  const skuMatch = name.match(/\s*(\([^)]+\))\s*$/);
+  const sku = skuMatch ? ` ${skuMatch[1]}` : '';
+  const baseName = skuMatch ? name.slice(0, skuMatch.index).trim() : name.trim();
+  const lower = baseName.toLowerCase();
+  for (const [key, ar] of bambuQualifierMap) if (lower.includes(key)) return `${ar}${sku}`;
+  for (const [key, ar] of Object.entries(bambuBaseColorMap)) {
+    if (lower.includes(key)) {
+      const result = (lower.includes('translucent') && key !== 'translucent') ? `شفاف ${ar}` : ar;
+      return `${result}${sku}`;
     }
   }
+  return name;
+}
+function translateBambuOption(name: string): string {
+  const lower = name.toLowerCase().trim();
+  if (bambuOptionArMap[lower]) return bambuOptionArMap[lower];
+  for (const [key, ar] of Object.entries(bambuOptionArMap)) if (lower.includes(key)) return ar;
+  return name;
+}
 
-  console.log('Bambu parser: found', colors.length, 'colors total');
-  return colors;
+const swatchHexCache = new Map<string, string | null>();
+async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
+  if (swatchHexCache.has(imageUrl)) return swatchHexCache.get(imageUrl)!;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const resp = await fetch(imageUrl, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!resp.ok) { swatchHexCache.set(imageUrl, null); return null; }
+    const buf = new Uint8Array(await resp.arrayBuffer());
+    if (buf.length < 100 || buf.length > 4_000_000) { swatchHexCache.set(imageUrl, null); return null; }
+    const { decode } = await import('https://deno.land/x/imagescript@1.2.17/mod.ts');
+    const img: any = await decode(buf);
+    if (!img || !img.bitmap) { swatchHexCache.set(imageUrl, null); return null; }
+    const w = img.width, h = img.height;
+    const counts = new Map<number, [number, number, number, number]>();
+    const stepX = Math.max(1, Math.floor(w / 32));
+    const stepY = Math.max(1, Math.floor(h / 32));
+    for (let y = 0; y < h; y += stepY) {
+      for (let x = 0; x < w; x += stepX) {
+        const px = img.getPixelAt(x + 1, y + 1);
+        const r = (px >>> 24) & 0xff, g = (px >>> 16) & 0xff, b = (px >>> 8) & 0xff, a = px & 0xff;
+        if (a < 64 || (r > 245 && g > 245 && b > 245) || (r < 12 && g < 12 && b < 12)) continue;
+        const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+        const cur = counts.get(key);
+        if (cur) { cur[0] += r; cur[1] += g; cur[2] += b; cur[3] += 1; }
+        else counts.set(key, [r, g, b, 1]);
+      }
+    }
+    if (counts.size === 0) { swatchHexCache.set(imageUrl, null); return null; }
+    let best: [number, number, number, number] | null = null;
+    for (const v of counts.values()) if (!best || v[3] > best[3]) best = v;
+    if (!best) { swatchHexCache.set(imageUrl, null); return null; }
+    const r = Math.round(best[0] / best[3]), g = Math.round(best[1] / best[3]), b = Math.round(best[2] / best[3]);
+    const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+    swatchHexCache.set(imageUrl, hex);
+    return hex;
+  } catch { swatchHexCache.set(imageUrl, null); return null; }
+}
+
+async function parseBambuLabUnified(html: string): Promise<{
+  colors: Array<{ name: string; name_ar: string; hex_code: string | null; image_url: string | null }>;
+  options: Array<{ name: string; name_ar: string; image_url: string | null }>;
+}> {
+  const colors: any[] = [], options: any[] = [];
+  const seenC = new Set<string>(), seenO = new Set<string>();
+  const jobs: Array<{ idx: number; url: string }> = [];
+  const liPattern = /<li\s+[^>]*\bvalue="([^"]+)"[^>]*>([\s\S]*?)<\/li>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = liPattern.exec(html)) !== null) {
+    const rawName = m[1].trim();
+    if (!rawName || rawName.length > 80 || /^\d+$/.test(rawName)) continue;
+    const imgMatch = m[2].match(/<img[^>]*\bsrc="([^"]+)"/i);
+    const looksLikeColor = !!imgMatch && /store\.bblcdn\.com/i.test(imgMatch[1]);
+    const key = rawName.toLowerCase();
+    if (looksLikeColor) {
+      if (seenC.has(key)) continue;
+      seenC.add(key);
+      const url = imgMatch![1].trim();
+      const idx = colors.length;
+      colors.push({ name: rawName, name_ar: translateBambuColorName(rawName), hex_code: null, image_url: url.startsWith('http') ? url : null });
+      if (colors[idx].image_url) jobs.push({ idx, url: colors[idx].image_url });
+    } else {
+      if (seenO.has(key)) continue;
+      seenO.add(key);
+      if (/^\$|^¥|^€|^د\.ع/i.test(rawName)) continue;
+      options.push({ name: rawName, name_ar: translateBambuOption(rawName), image_url: null });
+    }
+  }
+  if (jobs.length > 0) {
+    const sampled = await Promise.all(jobs.map(j => sampleSwatchColor(j.url)));
+    jobs.forEach((j, i) => { if (sampled[i]) colors[j.idx].hex_code = sampled[i]; });
+  }
+  console.log(`Bambu unified parser: ${colors.length} colors, ${options.length} options`);
+  return { colors, options };
 }
 
 serve(async (req) => {
