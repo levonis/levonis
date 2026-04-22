@@ -158,7 +158,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
 
         await supabase
           .from('products')
-          .update({ colors: updatedColors })
+          .update({ colors: updatedColors as any })
           .eq('slug', request.code);
 
         toast.success(data.mode === 'replace' 
