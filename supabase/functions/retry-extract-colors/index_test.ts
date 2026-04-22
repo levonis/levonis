@@ -126,8 +126,8 @@ Deno.test('parseBambuLabUnified: non-color OPTIONS also receive their main image
   const { colors, options } = await parseBambuLabUnified(html);
   assertEquals(colors.length, 0);
   assertEquals(options.length, 2);
-  const refill = options.find((o) => o.name === 'Refill')!;
-  const oneKg = options.find((o) => o.name === '1 kg')!;
+  const refill = options.find((o: { name: string }) => o.name === 'Refill')!;
+  const oneKg = options.find((o: { name: string }) => o.name === '1 kg')!;
   assertEquals(refill.image_url, 'https://cdn.example.com/refill.jpg');
   assertEquals(oneKg.image_url, null); // no mapping → null, not the swatch
 });
