@@ -1825,6 +1825,7 @@ const Admin = () => {
                 { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
                 { icon: Star, title: 'التقييمات', desc: 'موافقة', path: ADMIN_ROUTES.reviews },
                 { icon: Trophy, title: 'الفائزون', desc: 'جوائز', path: ADMIN_ROUTES.winners },
+                { icon: Flag, title: 'فحص الألوان', desc: 'مطابقة الصور', path: ADMIN_ROUTES.productColorQa },
               ].map((item, idx) => (
                 <button
                   key={idx}
