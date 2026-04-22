@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { getLocalizedField } from '@/hooks/useLocalizedProduct';
 import { useLanguage } from '@/lib/i18n';
+import DirectSaleRibbon from './ui/DirectSaleRibbon';
 
 interface FloatingProductCardProps {
   id: string;
@@ -15,6 +16,7 @@ interface FloatingProductCardProps {
   featured?: boolean;
   nameEn?: string | null;
   nameKu?: string | null;
+  hasDirectSale?: boolean;
 }
 
 const FloatingProductCard = memo(({
@@ -27,6 +29,7 @@ const FloatingProductCard = memo(({
   featured = false,
   nameEn = null,
   nameKu = null,
+  hasDirectSale = false,
 }: FloatingProductCardProps) => {
   const { language } = useLanguage();
   const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu };
@@ -112,6 +115,7 @@ const FloatingProductCard = memo(({
   return (
     <Link to={`/product/${slug}`} className="block group h-full">
       <div className="relative h-full flex flex-col rounded-xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300">
+        {hasDirectSale && <DirectSaleRibbon />}
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
           <img

@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
 import FloatingProductCard from '@/components/FloatingProductCard';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ArrowRight } from 'lucide-react';
 import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 
@@ -119,6 +120,7 @@ const CategoryDetail = () => {
                         imageUrl={featuredProduct.image_url || undefined}
                         currency={featuredProduct.currency || undefined}
                         slug={featuredProduct.slug}
+                        hasDirectSale={(featuredProduct.has_in_stock ?? false) && !isAllDirectStockDepleted(featuredProduct)}
                         featured
                       />
                     </div>
@@ -140,6 +142,7 @@ const CategoryDetail = () => {
                         imageUrl={product.image_url || undefined}
                         currency={product.currency || undefined}
                         slug={product.slug}
+                        hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
                       />
                     ))}
                   </div>
