@@ -7,7 +7,7 @@ import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
+import DirectSaleRibbon from './ui/DirectSaleRibbon';
 import { useProductCardDiscount } from '@/hooks/useProductCardDiscount';
 import { getLocalizedField } from '@/hooks/useLocalizedProduct';
 import { useLanguage } from '@/lib/i18n';
@@ -118,9 +118,11 @@ const ProductCard = ({
       to={`/product/${slug}`}
       className="group block product-card-glass p-1.5 relative"
     >
+      {/* Direct sale ribbon */}
+      {hasDirectSale && <DirectSaleRibbon />}
 
       {/* Sale badge - above image */}
-      {hasSale && (
+      {hasSale && !hasDirectSale && (
         <Badge 
           variant="secondary" 
           className="absolute top-0.5 left-0.5 z-20 text-[10px] bg-primary/90 text-primary-foreground border-0 shadow-sm px-1.5 py-0"
