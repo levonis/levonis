@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// Static import — dynamic import of imagescript inside concurrent Promise.all
+// triggers a `Cannot access 'ImageType' before initialization` race in 1.2.17.
+import { decode as decodeImage } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
