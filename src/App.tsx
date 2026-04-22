@@ -122,6 +122,7 @@ const AdminFinancialDrafts = lazy(() => import("./pages/AdminFinancialDrafts"));
 const AdminInventory = lazy(() => import("./pages/AdminInventory"));
 const AdminReviews = lazy(() => import("./pages/AdminReviews"));
 const AdminWinners = lazy(() => import("./pages/AdminWinners"));
+const AdminProductColorQa = lazy(() => import("./pages/AdminProductColorQa"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
