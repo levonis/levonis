@@ -227,6 +227,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/inventory`} element={<AdminRoute><AdminInventory /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/reviews`} element={<AdminRoute><AdminReviews /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/winners`} element={<AdminRoute><AdminWinners /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/product-color-qa`} element={<AdminRoute><AdminProductColorQa /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
