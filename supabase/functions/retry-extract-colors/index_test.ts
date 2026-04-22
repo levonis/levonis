@@ -102,15 +102,30 @@ Deno.test('parseBambuLabUnified: variant uses MAIN product image, not swatch', a
 });
 
 Deno.test('parseBambuLabUnified: falls back to swatch when no main image is mapped', async () => {
+  // NB: we use a protocol-relative swatch URL elsewhere to skip network sampling
+  // for hex, but the fallback path requires the swatch to be a full http URL —
+  // so use a non-existent host that will fail fast on DNS (test stays sub-second).
   const html = `
     <ul>
-      <li value="Mystery Color"><img src="//store.bblcdn.com/swatch/mystery.png"></li>
+      <li value="Mystery Color"><img src="http://store.bblcdn.com.invalid/swatch/mystery.png"></li>
     </ul>
   `;
   const { colors } = await parseBambuLabUnified(html);
   assertEquals(colors.length, 1);
-  // No RSC pair → must fall back to swatch (kept as-is).
-  assertEquals(colors[0].image_url, '//store.bblcdn.com/swatch/mystery.png');
+  // No RSC pair → must fall back to the swatch URL.
+  assertEquals(colors[0].image_url, 'http://store.bblcdn.com.invalid/swatch/mystery.png');
+});
+
+Deno.test('parseBambuLabUnified: drops non-http swatch when no main image is mapped', async () => {
+  // Production safeguard: protocol-relative swatch URLs are not stored as image_url.
+  const html = `
+    <ul>
+      <li value="Edge Case"><img src="//store.bblcdn.com/swatch/edge.png"></li>
+    </ul>
+  `;
+  const { colors } = await parseBambuLabUnified(html);
+  assertEquals(colors.length, 1);
+  assertEquals(colors[0].image_url, null);
 });
 
 Deno.test('parseBambuLabUnified: non-color OPTIONS also receive their main image when mapped', async () => {
