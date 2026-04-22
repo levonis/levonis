@@ -218,7 +218,7 @@ const AdminProductColorQa = () => {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout title="فحص جودة ألوان المنتجات">
       <div className="container mx-auto p-4 space-y-4" dir="rtl">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
