@@ -120,6 +120,7 @@ const CategoryDetail = () => {
                         imageUrl={featuredProduct.image_url || undefined}
                         currency={featuredProduct.currency || undefined}
                         slug={featuredProduct.slug}
+                        hasDirectSale={(featuredProduct.has_in_stock ?? false) && !isAllDirectStockDepleted(featuredProduct)}
                         featured
                       />
                     </div>
