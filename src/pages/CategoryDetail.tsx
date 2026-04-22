@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
 import FloatingProductCard from '@/components/FloatingProductCard';
+import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ArrowRight } from 'lucide-react';
 import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 
