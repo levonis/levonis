@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { mergeRetryColors } from '@/lib/mergeRetryColors';
 
 interface AdminCustomRequestsProps {
   requests: any[] | undefined;
