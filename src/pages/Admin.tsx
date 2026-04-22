@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users, Music, BadgeDollarSign, Star, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users, Music, BadgeDollarSign, Star, Eye, EyeOff, Flag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1825,6 +1825,7 @@ const Admin = () => {
                 { icon: Sparkles, title: 'الأمنيات', desc: 'مراجعة', path: ADMIN_ROUTES.wishes },
                 { icon: Star, title: 'التقييمات', desc: 'موافقة', path: ADMIN_ROUTES.reviews },
                 { icon: Trophy, title: 'الفائزون', desc: 'جوائز', path: ADMIN_ROUTES.winners },
+                { icon: Flag, title: 'فحص الألوان', desc: 'مطابقة الصور', path: ADMIN_ROUTES.productColorQa },
               ].map((item, idx) => (
                 <button
                   key={idx}

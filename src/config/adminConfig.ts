@@ -59,6 +59,7 @@ export const ADMIN_ROUTES = {
   inventory: `${ADMIN_BASE_PATH}/inventory`,
   reviews: `${ADMIN_BASE_PATH}/reviews`,
   winners: `${ADMIN_BASE_PATH}/winners`,
+  productColorQa: `${ADMIN_BASE_PATH}/product-color-qa`,
 } as const;
 
 // Helper to check if a path is an admin path
