@@ -13,8 +13,10 @@ import {
 import { toast } from 'sonner';
 import {
   Loader2, Search, Flag, FlagOff, RefreshCw, ImageOff, AlertTriangle, ExternalLink,
+  Bug, Copy, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
+import { normalizeVariantName, isSwatchUrl } from '@/lib/variantNameNormalize';
 
 type ColorVariant = {
   name?: string;
