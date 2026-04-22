@@ -672,7 +672,12 @@ const ProductDetail = () => {
   const decrementQuantity = () => { if (quantity > 1) setQuantity(prev => prev - 1); };
 
   const handleSaleTypeChange = (type: string) => {
-    setSelectedSaleType(type as 'direct' | 'preorder');
+    const t = type as 'direct' | 'preorder';
+    setSelectedSaleType(t);
+    setUserManuallySelected(true);
+    try {
+      if (product?.id) localStorage.setItem(`product:${product.id}:saleType`, t);
+    } catch {}
     setSelectedColor(null);
     setColorImageUrl(null);
     setSelectedShippingOption(null);
