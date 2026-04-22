@@ -1219,9 +1219,6 @@ ${pageContent.substring(0, 100000)}${extraContext}
                     ? c.hex_code 
                     : (info ? info[1].hex : '#808080'),
                   image_url: colorImageUrl,
-                  in_stock: true,
-                  available_for_direct_sale: true,
-                  available_for_pre_order: false
                 });
               }
             }
@@ -1242,9 +1239,6 @@ ${pageContent.substring(0, 100000)}${extraContext}
                   name_ar: o.name_ar || o.name,
                   price_adjustment: 0,
                   image_url: optionImageUrl,
-                  in_stock: true,
-                  available_for_direct_sale: true,
-                  available_for_pre_order: false
                 });
               }
             }
