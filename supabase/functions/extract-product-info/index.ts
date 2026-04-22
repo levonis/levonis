@@ -1,4 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Static import to avoid `Cannot access 'ImageType' before initialization`
+// race-condition that occurs when imagescript is dynamically imported
+// concurrently from multiple Promise.all branches.
+import { decode as decodeImage } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -665,8 +669,7 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
     const buf = new Uint8Array(await resp.arrayBuffer());
     if (buf.length < 100 || buf.length > 4_000_000) { swatchHexCache.set(imageUrl, null); return null; }
 
-    const { decode } = await import('https://deno.land/x/imagescript@1.2.17/mod.ts');
-    const img: any = await decode(buf);
+    const img: any = await decodeImage(buf);
     if (!img || !img.bitmap) { swatchHexCache.set(imageUrl, null); return null; }
 
     // Histogram quantized RGB. Two passes:

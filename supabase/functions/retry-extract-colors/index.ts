@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// Static import — dynamic import of imagescript inside concurrent Promise.all
+// triggers a `Cannot access 'ImageType' before initialization` race in 1.2.17.
+import { decode as decodeImage } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,8 +68,7 @@ async function sampleSwatchColor(imageUrl: string): Promise<string | null> {
     if (!resp.ok) { swatchHexCache.set(imageUrl, null); return null; }
     const buf = new Uint8Array(await resp.arrayBuffer());
     if (buf.length < 100 || buf.length > 4_000_000) { swatchHexCache.set(imageUrl, null); return null; }
-    const { decode } = await import('https://deno.land/x/imagescript@1.2.17/mod.ts');
-    const img: any = await decode(buf);
+    const img: any = await decodeImage(buf);
     if (!img || !img.bitmap) { swatchHexCache.set(imageUrl, null); return null; }
     const w = img.width, h = img.height;
     const stepX = Math.max(1, Math.floor(w / 32));
