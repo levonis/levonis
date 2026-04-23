@@ -56,7 +56,7 @@ const Home = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, name_ar, slug, icon, description, description_ar, main_section_id, media_url, media_type, media_transparent')
+        .select('id, name, name_ar, slug, icon, description, description_ar, main_section_id, media_url, media_type, media_transparent, media_chroma_key')
         .order('created_at', { ascending: true });
       if (error) throw error;
       return data;
@@ -232,6 +232,7 @@ const Home = () => {
                           mediaUrl={(category as any).media_url}
                           mediaType={(category as any).media_type}
                           mediaTransparent={!!(category as any).media_transparent}
+                          mediaChromaKey={(category as any).media_chroma_key ?? 'none'}
                         />
                       ))}
                     </div>
