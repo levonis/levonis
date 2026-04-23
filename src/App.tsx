@@ -286,7 +286,8 @@ function AppContent() {
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
-            <Route path="/profile" element={<RequireAuth><ProfileExpansionShell><Profile /></ProfileExpansionShell></RequireAuth>} />
+            {/* /profile is rendered by ProfileExpansionShell at app level (overlay) */}
+            <Route path="/profile" element={<div />} />
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/my-referral" element={<RequireAuth><MyReferral /></RequireAuth>} />
