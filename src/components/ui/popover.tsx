@@ -10,7 +10,7 @@ const PopoverTrigger = PopoverPrimitive.Trigger;
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, side = "bottom", ...props }, ref) => (
+>(({ className, align = "center", sideOffset = 6, side = "bottom", ...props }, ref) => (
   <PopoverPrimitive.Portal>
     <PopoverPrimitive.Content
       ref={ref}
@@ -18,10 +18,9 @@ const PopoverContent = React.forwardRef<
       side={side}
       sideOffset={sideOffset}
       className={cn(
-        "z-[300] w-72 rounded-xl border border-[hsl(var(--border))] p-4 text-popover-foreground shadow-xl outline-none",
-        "bg-popover",
-        "shadow-[0_10px_30px_hsl(var(--foreground)/0.2)]",
-        "data-[side=bottom]:animate-[dropdown-in-bottom_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=top]:animate-[dropdown-in-top_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=left]:animate-[dropdown-in-left_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=right]:animate-[dropdown-in-right_160ms_cubic-bezier(0.16,1,0.3,1)]",
+        "z-[300] w-72 rounded-2xl p-4 text-popover-foreground outline-none glass-floating",
+        "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
+        "origin-[var(--radix-popover-content-transform-origin)]",
         className,
       )}
       {...props}
