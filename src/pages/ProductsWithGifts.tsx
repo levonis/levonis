@@ -13,7 +13,7 @@ import { ShoppingBag, Gift, Wallet, Ticket, Package, ArrowRight, Loader2, Info, 
 import { toast } from "sonner";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import ProductGiftCard from "@/components/ProductGiftCard";
-import Header from "@/components/Header";
+
 
 interface ProductWithGift {
   id: string;
@@ -180,7 +180,6 @@ export default function ProductsWithGifts() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <Header />
       
       <main className="container mx-auto px-4 py-6 pb-24">
         {/* Page Header */}
