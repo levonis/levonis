@@ -3477,7 +3477,14 @@ const Admin = () => {
               
               <Dialog open={categoryDialogOpen} onOpenChange={(open) => {
                 setCategoryDialogOpen(open);
-                if (!open) setEditingCategory(null);
+                if (open) {
+                  setCategoryMediaUrl(editingCategory?.media_url ?? null);
+                  setCategoryMediaType(editingCategory?.media_type ?? null);
+                } else {
+                  setEditingCategory(null);
+                  setCategoryMediaUrl(null);
+                  setCategoryMediaType(null);
+                }
               }} key={editingCategory?.id || 'new-category'}>
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
