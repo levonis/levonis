@@ -103,7 +103,39 @@ const searchShape = (
 /* -------------------------------------------------------------------------- */
 
 export const DynamicIsland = () => {
-  const { state, title, promoMessages, visible } = useIsland();
+  const { state, title: rawTitle, promoMessages, visible } = useIsland();
+
+  /* ---------- Debounce rapid title changes ----------
+   * Coalesces fast successive title updates (e.g. switching products while
+   * typing or quick category hops) so the island doesn't queue overlapping
+   * width/scale animations. The latest pending change wins; mid-flight
+   * timers are cancelled before they fire.
+   */
+  const [title, setTitle] = useState<string | undefined>(rawTitle);
+  const titleTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (rawTitle === title) return;
+    if (titleTimerRef.current !== null) {
+      window.clearTimeout(titleTimerRef.current);
+      titleTimerRef.current = null;
+    }
+    // Empty/undefined updates apply immediately so the island can collapse
+    // without a perceptible lag; non-empty changes settle after a short window.
+    if (!rawTitle) {
+      setTitle(rawTitle);
+      return;
+    }
+    titleTimerRef.current = window.setTimeout(() => {
+      setTitle(rawTitle);
+      titleTimerRef.current = null;
+    }, 120);
+    return () => {
+      if (titleTimerRef.current !== null) {
+        window.clearTimeout(titleTimerRef.current);
+        titleTimerRef.current = null;
+      }
+    };
+  }, [rawTitle, title]);
   const { t, isRtl, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
