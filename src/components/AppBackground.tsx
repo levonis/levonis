@@ -84,8 +84,9 @@ export default function AppBackground() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="pointer-events-none fixed inset-0 overflow-hidden"
       style={{
+        zIndex: 0,
         background:
           'radial-gradient(120% 90% at 10% 100%, hsl(0 0% 3%) 0%, transparent 55%), linear-gradient(160deg, #15382c 0%, #15382c 65%, #0a0a0a 100%)',
       }}
