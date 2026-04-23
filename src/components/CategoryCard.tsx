@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import DirectSaleRibbon from "./ui/DirectSaleRibbon";
 
@@ -35,8 +35,35 @@ const CategoryCard = ({
   const showImage = !!mediaUrl && !showVideo;
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
 
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    if (!mediaUrl) return;
+    const el = linkRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            setInView(true);
+            io.disconnect();
+          }
+        });
+      },
+      { rootMargin: "200px", threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [mediaUrl]);
+
   return (
     <Link
+      ref={linkRef}
       to={`/category/${slug}`}
       className="group relative block rounded-2xl h-[160px] sm:h-[172px] p-3 sm:p-4 overflow-hidden
                  backdrop-blur-xl bg-card/40 border border-white/15
@@ -49,7 +76,7 @@ const CategoryCard = ({
 
       {useFullMedia && (
         <div className="absolute inset-0 z-0 overflow-hidden">
-          {showVideo ? (
+          {inView && showVideo ? (
             <video
               src={mediaUrl!}
               className="w-full h-full object-cover scale-[1.02]"
@@ -57,14 +84,15 @@ const CategoryCard = ({
               muted
               loop
               playsInline
-              preload="metadata"
+              preload="none"
             />
-          ) : showImage ? (
+          ) : inView && showImage ? (
             <img
               src={mediaUrl!}
               alt=""
               className="w-full h-full object-cover scale-[1.02]"
               loading="lazy"
+              decoding="async"
               draggable={false}
             />
           ) : null}
@@ -107,7 +135,7 @@ const CategoryCard = ({
             }
             aria-hidden="true"
           >
-            {showVideo ? (
+            {inView && showVideo ? (
               <video
                 src={mediaUrl!}
                 className="w-full h-full object-cover"
@@ -115,17 +143,18 @@ const CategoryCard = ({
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                preload="none"
               />
-            ) : showImage ? (
+            ) : inView && showImage ? (
               <img
                 src={mediaUrl!}
                 alt=""
                 className="w-full h-full object-cover"
                 loading="lazy"
+                decoding="async"
                 draggable={false}
               />
-            ) : (
+            ) : !showVideo && !showImage ? (
               <span
                 className={
                   isLongIcon
@@ -135,7 +164,7 @@ const CategoryCard = ({
               >
                 {iconText}
               </span>
-            )}
+            ) : null}
           </div>
         )}
 
