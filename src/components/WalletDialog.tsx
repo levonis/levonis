@@ -61,7 +61,7 @@ interface WalletSettings {
   payment_methods: PaymentMethod[];
 }
 
-export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) {
+export default function WalletDialog({ open, onOpenChange, originRect }: WalletDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
