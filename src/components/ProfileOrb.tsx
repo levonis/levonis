@@ -29,23 +29,45 @@ const ProfileOrb = memo(() => {
     remeasureOrigin();
   }, [isRtl, remeasureOrigin]);
 
-  // Tuck the orb away when the page is scrolled — at that point the Dynamic
-  // Island morphs to its wider "search" shape and would otherwise overlap.
-  const [scrolled, setScrolled] = useState(false);
+  // Progressive merge with the Dynamic Island as the user scrolls.
+  // 0 = fully visible orb, 1 = fully merged into the island.
+  // Range chosen to overlap the island's promo→search morph (≈ 0–80px).
+  const [mergeProgress, setMergeProgress] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll();
+    let raf = 0;
+    const compute = () => {
+      const y = window.scrollY;
+      const start = 8;
+      const end = 80;
+      const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
+      // ease-out cubic for a soft tail
+      const eased = 1 - Math.pow(1 - t, 3);
+      setMergeProgress(eased);
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        compute();
+      });
+    };
+    compute();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
   }, []);
 
-  // Re-measure origin after the orb's transform settles so clip-path stays
-  // anchored on the visible orb position when the user clicks.
+  // Re-measure origin when the orb settles at either extreme so clip-path
+  // stays anchored on the visible position when the user clicks.
+  const settled = mergeProgress === 0 || mergeProgress === 1;
   useEffect(() => {
-    const t = window.setTimeout(remeasureOrigin, 320);
+    if (!settled) return;
+    const t = window.setTimeout(remeasureOrigin, 120);
     return () => window.clearTimeout(t);
-  }, [scrolled, remeasureOrigin]);
+  }, [settled, remeasureOrigin]);
 
   const { data: avatarUrl } = useQuery({
     queryKey: ["orb-avatar", user?.id],
@@ -89,12 +111,15 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Direction the orb tucks away towards (off-screen edge).
-  const tuckTransform = scrolled
-    ? isRtl
-      ? "translate(8px, -4px) scale(0.75)"
-      : "translate(-8px, -4px) scale(0.75)"
-    : "translate(0, 0) scale(1)";
+  // Smoothly interpolate visual properties so the orb appears to dissolve
+  // into the island instead of snapping out.
+  const p = mergeProgress;
+  const opacity = 1 - p;
+  const scale = 1 - p * 0.45; // 1 → 0.55
+  const translateX = (isRtl ? 1 : -1) * p * 6; // drift toward the screen edge
+  const translateY = -p * 6; // and a touch up toward the island
+  const blurPx = p * 2.5; // soft gaussian as it fades into the island
+  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
   return (
     <button
@@ -105,16 +130,18 @@ const ProfileOrb = memo(() => {
         "fixed top-3 z-[55] w-10 h-10 rounded-full overflow-hidden",
         "glass-panel !rounded-full",
         "flex items-center justify-center",
-        "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[transform,opacity,filter] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
         "ring-1 ring-white/20 hover:ring-primary/50",
         "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
-        scrolled ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
         sideClass,
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
         transform: tuckTransform,
+        opacity,
+        filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
+        pointerEvents: p > 0.6 ? "none" : "auto",
       }}
     >
       {/* Avatar — softened with blur + lowered opacity for a frosted feel */}
