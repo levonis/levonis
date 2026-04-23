@@ -152,8 +152,11 @@ function AppContent() {
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
-      {!hideChrome && <DynamicIsland />}
-      <main style={{ paddingTop: hideChrome ? 0 : 64 }}>
+      <DynamicIsland />
+      <main
+        style={{ paddingTop: hideChrome ? 0 : 64 }}
+        className="transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
+      >
         <Suspense fallback={<RouteAwareSkeleton />}>
           <Routes>
             <Route path="/" element={<Home />} />
