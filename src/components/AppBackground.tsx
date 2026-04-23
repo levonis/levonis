@@ -87,29 +87,36 @@ export default function AppBackground() {
       className="pointer-events-none fixed inset-0 overflow-hidden"
       style={{
         zIndex: -1,
-        background:
-          'radial-gradient(120% 90% at 10% 100%, hsl(0 0% 3%) 0%, transparent 55%), linear-gradient(160deg, #15382c 0%, #15382c 65%, #0a0a0a 100%)',
+        backgroundColor: '#15382c',
       }}
     >
-      {/* Soft black wash blended with green base */}
+      {/* Smooth black diffusion mixed into the green base */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(140% 110% at 0% 110%, hsl(0 0% 0% / 0.85) 0%, hsl(0 0% 0% / 0.35) 35%, transparent 70%), radial-gradient(120% 100% at 100% 0%, hsl(0 0% 0% / 0.55) 0%, transparent 60%)',
+            'linear-gradient(165deg, hsl(0 0% 0% / 0) 0%, hsl(0 0% 0% / 0.25) 55%, hsl(0 0% 0% / 0.55) 100%)',
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(160% 120% at 50% 0%, hsl(0 0% 0% / 0) 40%, hsl(0 0% 0% / 0.35) 100%)',
+          mixBlendMode: 'multiply',
         }}
       />
 
-      {/* Red light bleeding softly into the scene (no hard edges) */}
+      {/* Red light bleeding into the scene — fully diffused, no visible edges */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '110vmax',
-          height: '110vmax',
-          marginLeft: '-55vmax',
-          marginTop: '-55vmax',
+          width: '160vmax',
+          height: '160vmax',
+          marginLeft: '-80vmax',
+          marginTop: '-80vmax',
           mixBlendMode: 'soft-light',
           willChange: 'left, top',
         }}
@@ -118,24 +125,24 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 90% 50% / 0.55) 0%, hsl(0 85% 45% / 0.30) 18%, hsl(0 80% 40% / 0.15) 35%, hsl(0 70% 35% / 0.06) 55%, transparent 80%)',
-            filter: 'blur(80px)',
+              'radial-gradient(circle, hsl(0 90% 50% / 0.7) 0%, hsl(0 85% 45% / 0.5) 12%, hsl(0 80% 42% / 0.3) 25%, hsl(0 75% 38% / 0.15) 40%, hsl(0 70% 35% / 0.06) 60%, transparent 85%)',
+            filter: 'blur(120px)',
           }}
         />
       </motion.div>
 
-      {/* Second softer red layer with screen blend for subtle warmth */}
+      {/* Subtle warm tint layer */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '90vmax',
-          height: '90vmax',
-          marginLeft: '-45vmax',
-          marginTop: '-45vmax',
+          width: '120vmax',
+          height: '120vmax',
+          marginLeft: '-60vmax',
+          marginTop: '-60vmax',
           mixBlendMode: 'screen',
-          opacity: 0.35,
+          opacity: 0.25,
           willChange: 'left, top',
         }}
       >
@@ -143,18 +150,18 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 85% 45% / 0.45) 0%, hsl(0 75% 35% / 0.18) 30%, transparent 65%)',
-            filter: 'blur(100px)',
+              'radial-gradient(circle, hsl(0 80% 40% / 0.35) 0%, hsl(0 70% 35% / 0.15) 30%, transparent 70%)',
+            filter: 'blur(140px)',
           }}
         />
       </motion.div>
 
-      {/* Final vignette to fuse everything */}
+      {/* Final unifying vignette */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(130% 90% at 50% 50%, transparent 50%, hsl(0 0% 0% / 0.5) 100%)',
+            'radial-gradient(140% 100% at 50% 50%, transparent 45%, hsl(0 0% 0% / 0.45) 100%)',
         }}
       />
     </div>
