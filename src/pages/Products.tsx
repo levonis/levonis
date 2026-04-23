@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
-import SearchBar from '@/components/SearchBar';
+
 import ProductCard from '@/components/ProductCard';
 import ProductListItem from '@/components/ProductListItem';
 import { Grid3x3, List } from 'lucide-react';
@@ -167,9 +167,6 @@ const Products = () => {
         }}
       />
       <main className="container mx-auto px-3 sm:px-4 py-4 pt-6 relative z-10">
-        <div className="mb-4">
-          <SearchBar />
-        </div>
 
         <div className="mb-4 flex flex-col lg:flex-row gap-2 justify-between items-start lg:items-center">
           {searchQuery ? (

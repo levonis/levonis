@@ -27,6 +27,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useLanguage } from '@/lib/i18n';
+import { usePageTitle } from '@/island/usePageTitle';
 
 type SortKey =
   | 'default'
@@ -63,6 +64,8 @@ const CategoryDetail = () => {
       return data;
     },
   });
+
+  usePageTitle('category', category ? pickName(category.name as any, category.name_ar as any) : undefined);
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['category-products', category?.id],

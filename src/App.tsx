@@ -13,8 +13,9 @@ import AdminRoute from "@/components/AdminRoute";
 
 // Defer chrome and non-critical hooks for faster first paint on mobile
 const AppNavBar = lazy(() => import("@/components/AppNavBar"));
-const AnnouncementBar = lazy(() => import("@/components/AnnouncementBar"));
 const DeferredEffects = lazy(() => import("@/components/DeferredEffects"));
+import { IslandProvider } from "@/island/IslandContext";
+import { DynamicIsland } from "@/island/DynamicIsland";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
@@ -151,12 +152,8 @@ function AppContent() {
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
-      {!isReelsPage && (
-        <Suspense fallback={null}>
-          <AnnouncementBar />
-        </Suspense>
-      )}
-      <main style={{ paddingTop: 0 }}>
+      {!hideChrome && <DynamicIsland />}
+      <main style={{ paddingTop: hideChrome ? 0 : 64 }}>
         <Suspense fallback={<RouteAwareSkeleton />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -333,7 +330,9 @@ export default function App() {
           <LanguageProvider>
             <AuthProvider>
               <CartProvider>
-                <AppContent />
+                <IslandProvider>
+                  <AppContent />
+                </IslandProvider>
               </CartProvider>
             </AuthProvider>
           </LanguageProvider>

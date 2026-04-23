@@ -2,7 +2,7 @@ import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import SearchBar from '@/components/SearchBar';
+
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
@@ -149,9 +149,6 @@ const Home = () => {
             {t('home_subtitle')}
           </p>
           
-          <div className="mb-4 md:mb-6">
-            <SearchBar />
-          </div>
           
           <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
             <a href="https://www.facebook.com/levonisiq" target="_blank" rel="noopener noreferrer"

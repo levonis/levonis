@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import Header from '@/components/Header';
+
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -358,7 +358,6 @@ const PrinterProtection = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      <Header />
       
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* Header */}
