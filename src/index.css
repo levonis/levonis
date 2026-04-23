@@ -220,7 +220,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: transparent;
     font-family: 'Cairo', system-ui, -apple-system, sans-serif;
     font-feature-settings: 'cv11', 'ss01';
     font-variation-settings: 'opsz' 32;
