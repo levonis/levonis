@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "lucide-react";
@@ -13,8 +13,21 @@ const ProfileOrb = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isRtl } = useLanguage();
-  const { beginExpand } = useProfileTransition();
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const { beginExpand, registerOrb, remeasureOrigin } = useProfileTransition();
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+
+  const setRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      btnRef.current = el;
+      registerOrb(el);
+    },
+    [registerOrb],
+  );
+
+  // Re-measure when RTL flips so the side class change is reflected immediately.
+  useEffect(() => {
+    remeasureOrigin();
+  }, [isRtl, remeasureOrigin]);
 
   const { data: avatarUrl } = useQuery({
     queryKey: ["orb-avatar", user?.id],
@@ -42,6 +55,9 @@ const ProfileOrb = memo(() => {
       navigate(user ? "/profile" : "/auth");
       return;
     }
+    // Force a fresh measure right at click time so any pending layout
+    // (sticky bars, RTL flip, viewport resize) is reflected in the origin.
+    remeasureOrigin();
     const r = el.getBoundingClientRect();
     beginExpand({
       x: r.left + r.width / 2,
@@ -57,7 +73,7 @@ const ProfileOrb = memo(() => {
 
   return (
     <button
-      ref={btnRef}
+      ref={setRef}
       onClick={handleClick}
       aria-label="Profile"
       className={cn(
