@@ -438,7 +438,7 @@ const MyOrders = () => {
             </div>
             <h3 className="font-black text-foreground mb-1.5 text-lg">{t('myorders_no_orders_yet')}</h3>
             <p className="text-sm text-muted-foreground mb-5">{t('myorders_no_orders_desc')}</p>
-            <Button onClick={() => navigate('/categories')} className="rounded-xl">
+            <Button onClick={() => navigate('/')} className="rounded-xl">
               <ShoppingBag className="h-4 w-4 ml-1.5" />
               {t('myorders_browse_products')}
             </Button>

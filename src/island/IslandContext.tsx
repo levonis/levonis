@@ -110,7 +110,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     const promoSurfaces =
       p === "/" ||
       p === "/home" ||
-      p === "/categories" ||
+      
       p === "/bundles" ||
       p === "/favorites" ||
       p === "/community" ||

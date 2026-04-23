@@ -31,7 +31,7 @@ const SpriteDebugPage = lazy(() => import("@/components/games/SpriteDebug"));
 // Lazy load all routes (including Home) to keep initial bundle small
 const Home = lazy(() => import("./pages/Home"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-const Categories = lazy(() => import("./pages/Categories"));
+// Categories landing page removed — /categories now redirects to /
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
 const UserInfo = lazy(() => import("./pages/UserInfo"));
@@ -176,10 +176,10 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
-            <Route path="/products" element={<Navigate to="/categories" replace />} />
-            <Route path="/products/*" element={<Navigate to="/categories" replace />} />
+            <Route path="/products" element={<Navigate to="/" replace />} />
+            <Route path="/products/*" element={<Navigate to="/" replace />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
-            <Route path="/categories" element={<Categories />} />
+            <Route path="/categories" element={<Navigate to="/" replace />} />
             <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/bundles" element={<ProductBundles />} />

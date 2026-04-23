@@ -171,7 +171,7 @@ const CategoryDetail = () => {
         <div className="flex items-center gap-2 mb-8 text-sm text-foreground/50">
           <Link to="/" className="hover:text-primary transition-colors">{t('nav_home')}</Link>
           <span>/</span>
-          <Link to="/categories" className="hover:text-primary transition-colors">{t('nav_categories')}</Link>
+          <Link to="/" className="hover:text-primary transition-colors">{t('nav_categories')}</Link>
           <span>/</span>
           {categoryLoading ? <span>...</span> : (
             <span className="text-primary font-medium">{pickName(category?.name as any, category?.name_ar as any)}</span>
@@ -373,7 +373,7 @@ const CategoryDetail = () => {
         ) : (
           <div className="text-center py-20">
             <p className="text-foreground/50 text-lg mb-6">{t('category_not_found')}</p>
-            <Link to="/categories">
+            <Link to="/">
               <Button variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
                 <ArrowRight className="h-4 w-4" />
                 {t('category_back')}

@@ -82,8 +82,7 @@ function pickSkeleton(pathname: string) {
   if (p === "/competitions" || p === "/rewards" || p === "/community" || p === "/community/print-requests")
     return <CompetitionGridSkeleton />;
 
-  // Categories grid
-  if (p === "/categories") return <GridCardsSkeleton count={8} />;
+  // Categories landing removed — handled by Home skeleton
 
   // Download app — simple
   if (p === "/download-app") {

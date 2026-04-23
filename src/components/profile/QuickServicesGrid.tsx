@@ -25,7 +25,7 @@ const SERVICES: Array<{
   { icon: Truck, labelKey: "qs_track_shipments", path: "/my-orders", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", key: "shipping" },
   { icon: Heart, labelKey: "qs_favorites", path: "/favorites", color: "bg-rose-500/10 text-rose-600 dark:text-rose-400", key: "favorites" },
   { icon: BellRing, labelKey: "qs_notifications", path: "/notifications", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400", key: "notifications" },
-  { icon: History, labelKey: "qs_browse_history", path: "/categories", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400", key: "history" },
+  { icon: History, labelKey: "qs_browse_history", path: "/", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400", key: "history" },
   { icon: MapPin, labelKey: "qs_addresses", path: "/addresses", color: "bg-violet-500/10 text-violet-600 dark:text-violet-400", key: "addresses" },
   { icon: Headphones, labelKey: "qs_customer_service", path: "/chats", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400", key: "support" },
   { icon: Gift, labelKey: "qs_prizes", path: "/rewards", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400", key: "rewards" },
