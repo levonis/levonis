@@ -1314,8 +1314,6 @@ export type TranslationKeys = {
   rh_login_btn: string;
 
   // UserInfo page
-  user_info_title: string;
-  user_info_desc: string;
   ui_load_error: string;
   ui_save_success: string;
   ui_save_error: string;
