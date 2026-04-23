@@ -45,7 +45,7 @@ const ProductCard = ({
   originalPrice, 
   imageUrl,
   images,
-  currency = 'دينار عراقي',
+  currency,
   slug,
   priority = false,
   inStock = true,
@@ -57,7 +57,8 @@ const ProductCard = ({
   descriptionEn = null,
   descriptionKu = null,
 }: ProductCardProps) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const resolvedCurrency = currency ?? t('product_default_currency');
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const { getDiscount } = useProductCardDiscount();
@@ -82,7 +83,7 @@ const ProductCard = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('يرجى تسجيل الدخول أولاً');
+        toast.error(t('product_login_required'));
         return;
       }
 
@@ -95,7 +96,7 @@ const ProductCard = ({
         .maybeSingle();
 
       if (existing) {
-        toast.info('المنتج موجود بالفعل في المفضلة');
+        toast.info(t('product_already_in_favorites'));
         return;
       }
 
@@ -104,14 +105,14 @@ const ProductCard = ({
         .insert({ user_id: user.id, product_id: id });
 
       if (error) throw error;
-      toast.success('تمت الإضافة إلى المفضلة');
+      toast.success(t('product_added_to_favorites'));
     } catch (error) {
       console.error('Error adding to favorites:', error);
-      toast.error('حدث خطأ أثناء الإضافة للمفضلة');
+      toast.error(t('product_favorite_error'));
     } finally {
       setIsAdding(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   return (
     <Link 
@@ -127,7 +128,7 @@ const ProductCard = ({
           variant="secondary" 
           className="absolute top-0.5 left-0.5 z-20 text-[10px] bg-primary/90 text-primary-foreground border-0 shadow-sm px-1.5 py-0"
         >
-          تخفيض
+          {t('product_discount_badge')}
         </Badge>
       )}
       
@@ -137,7 +138,7 @@ const ProductCard = ({
           variant="destructive" 
           className="absolute top-0.5 right-0.5 z-20 text-[10px] border-0 shadow-sm px-1.5 py-0"
         >
-          غير متوفر
+          {t('product_out_of_stock')}
         </Badge>
       )}
 
@@ -179,7 +180,7 @@ const ProductCard = ({
       {soldCount > 0 && (
         <div className="flex items-center gap-0.5 mb-1">
           <span className="text-[9px] text-muted-foreground/70">
-            🔥 {soldCount} قطعة مباعة
+            {t('product_units_sold', { count: soldCount })}
           </span>
         </div>
       )}
@@ -192,7 +193,7 @@ const ProductCard = ({
                   {formatPrice(cardPrice)}
                 </span>
                 <span className="text-[9px] text-muted-foreground">
-                  {currency}
+                  {resolvedCurrency}
                 </span>
               </>
             ) : (
@@ -201,7 +202,7 @@ const ProductCard = ({
                   {formatPrice(price)}
                 </span>
                 <span className="text-[9px] text-muted-foreground">
-                  {currency}
+                  {resolvedCurrency}
                 </span>
               </>
             )}
@@ -238,7 +239,7 @@ const ProductCard = ({
           className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 h-6 w-6 p-0 flex-shrink-0 rounded-md"
           onClick={handleAddToFavorites}
           disabled={isAdding}
-          aria-label="أضف للمفضلة"
+          aria-label={t('product_add_to_favorites')}
         >
           <Heart className="h-3 w-3" />
         </Button>

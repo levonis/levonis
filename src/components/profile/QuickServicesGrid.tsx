@@ -12,21 +12,30 @@ import {
   Settings,
   Gift,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
+import type { TranslationKeys } from "@/lib/i18n/types";
 
-const SERVICES = [
-  { icon: Truck, label: "تتبع الشحنات", path: "/my-orders", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", key: "shipping" },
-  { icon: Heart, label: "المفضلة", path: "/favorites", color: "bg-rose-500/10 text-rose-600 dark:text-rose-400", key: "favorites" },
-  { icon: BellRing, label: "الإشعارات", path: "/notifications", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400", key: "notifications" },
-  { icon: History, label: "سجل التصفح", path: "/products", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400", key: "history" },
-  { icon: MapPin, label: "العناوين", path: "/addresses", color: "bg-violet-500/10 text-violet-600 dark:text-violet-400", key: "addresses" },
-  { icon: Headphones, label: "خدمة العملاء", path: "/chats", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400", key: "support" },
-  { icon: Gift, label: "الجوائز", path: "/rewards", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400", key: "rewards" },
-  { icon: Settings, label: "الإعدادات", path: "/profile/settings", color: "bg-slate-500/10 text-slate-600 dark:text-slate-400", key: "settings" },
+const SERVICES: Array<{
+  icon: typeof Truck;
+  labelKey: keyof TranslationKeys;
+  path: string;
+  color: string;
+  key: string;
+}> = [
+  { icon: Truck, labelKey: "qs_track_shipments", path: "/my-orders", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", key: "shipping" },
+  { icon: Heart, labelKey: "qs_favorites", path: "/favorites", color: "bg-rose-500/10 text-rose-600 dark:text-rose-400", key: "favorites" },
+  { icon: BellRing, labelKey: "qs_notifications", path: "/notifications", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400", key: "notifications" },
+  { icon: History, labelKey: "qs_browse_history", path: "/products", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400", key: "history" },
+  { icon: MapPin, labelKey: "qs_addresses", path: "/addresses", color: "bg-violet-500/10 text-violet-600 dark:text-violet-400", key: "addresses" },
+  { icon: Headphones, labelKey: "qs_customer_service", path: "/chats", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400", key: "support" },
+  { icon: Gift, labelKey: "qs_prizes", path: "/rewards", color: "bg-orange-500/10 text-orange-600 dark:text-orange-400", key: "rewards" },
+  { icon: Settings, labelKey: "qs_settings", path: "/profile/settings", color: "bg-slate-500/10 text-slate-600 dark:text-slate-400", key: "settings" },
 ];
 
 export default function QuickServicesGrid() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const { data: unreadCount } = useQuery({
     queryKey: ["unread-notifications-count", user?.id],
@@ -45,7 +54,7 @@ export default function QuickServicesGrid() {
 
   return (
     <div className="rounded-3xl bg-card border border-border/40 shadow-sm p-4">
-      <h2 className="text-base font-bold text-foreground mb-3">خدمات سريعة</h2>
+      <h2 className="text-base font-bold text-foreground mb-3">{t('profile_quick_services')}</h2>
 
       <div className="grid grid-cols-4 gap-3">
         {SERVICES.map((s) => {
@@ -66,7 +75,7 @@ export default function QuickServicesGrid() {
                 )}
               </div>
               <span className="text-[11px] text-muted-foreground text-center leading-tight">
-                {s.label}
+                {t(s.labelKey)}
               </span>
             </button>
           );

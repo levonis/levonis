@@ -21,12 +21,12 @@ const CommunitySection = lazy(() => import('@/components/community/CommunitySect
 }));
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 
-// Simple error boundary for lazy-loaded components
-class ErrorBoundaryFallback extends Component<{ children: ReactNode }, { hasError: boolean }> {
+// Simple error boundary for lazy-loaded components — message localized via DOM lookup avoided; uses translation key fallback
+class ErrorBoundaryFallback extends Component<{ children: ReactNode; fallbackText?: string }, { hasError: boolean }> {
   state = { hasError: false };
   static getDerivedStateFromError() { return { hasError: true }; }
   render() {
-    if (this.state.hasError) return <div className="text-center py-8 text-muted-foreground text-sm">تعذر تحميل المحتوى. يرجى تحديث الصفحة.</div>;
+    if (this.state.hasError) return <div className="text-center py-8 text-muted-foreground text-sm">{this.props.fallbackText || ''}</div>;
     return this.props.children;
   }
 }
@@ -120,8 +120,8 @@ const Home = () => {
                   <span className="text-base">✨</span>
                 </div>
                 <div>
-                  <span className="text-sm font-black text-foreground block leading-tight">الأمنيات</span>
-                  <span className="text-[10px] text-muted-foreground">تمنّى منتجاً وسنوفره لك</span>
+                  <span className="text-sm font-black text-foreground block leading-tight">{t('home_wishes_title')}</span>
+                  <span className="text-[10px] text-muted-foreground">{t('home_wishes_desc')}</span>
                 </div>
               </div>
               <div className="relative w-7 h-7 rounded-lg bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-all">
@@ -266,7 +266,7 @@ const Home = () => {
 
         <ProgressiveSection minHeight="240px" rootMargin="500px">
           <Suspense fallback={<div className="h-32 md:h-64 px-4"><div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-3"><div className="h-20 rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-2/3 rounded bg-muted animate-pulse" /></div>)}</div></div>}>
-            <ErrorBoundaryFallback>
+            <ErrorBoundaryFallback fallbackText={t('common_load_failed')}>
               <CommunitySection />
             </ErrorBoundaryFallback>
           </Suspense>

@@ -802,4 +802,98 @@ export type TranslationKeys = {
   // Product badges
   ticket_badge_label: string;
   delayed_shipping_label: string;
+
+  // Batch 1 — Home / Header / Footer / Cart / Profile / Product / Auth (Premium)
+  home_wishes_title: string;
+  home_wishes_desc: string;
+  common_load_failed: string;
+  topbar_download_app: string;
+  announcement_prev: string;
+  announcement_next: string;
+  announcement_close: string;
+  announcement_index: string;
+
+  auth_pwd_min_chars: string;
+  auth_pwd_uppercase: string;
+  auth_pwd_lowercase: string;
+  auth_pwd_digit: string;
+  auth_pwd_requirements: string;
+
+  product_default_currency: string;
+  product_already_in_favorites: string;
+  product_added_to_favorites: string;
+  product_favorite_error: string;
+  product_discount_badge: string;
+  product_units_sold: string;
+  product_add_to_favorites: string;
+
+  cart_signin_required_title: string;
+  cart_signin_required_desc: string;
+  cart_signin_action: string;
+  cart_clear_all: string;
+  cart_empty_title: string;
+  cart_empty_desc: string;
+  cart_browse_stores: string;
+  cart_currency_iqd: string;
+  cart_delivery_fee: string;
+  cart_creating_order: string;
+  cart_order_from: string;
+  cart_grand_total: string;
+  cart_items_summary: string;
+  cart_includes_delivery: string;
+  cart_default_store: string;
+  cart_item_removed: string;
+  cart_cleared: string;
+  cart_not_logged_in: string;
+  cart_no_products: string;
+  cart_merchant_not_found: string;
+  cart_order_create_failed: string;
+  cart_order_label: string;
+  cart_products_count: string;
+
+  profile_admin_panel: string;
+  profile_default_username: string;
+  profile_points_to_next: string;
+  profile_level_complete: string;
+  profile_manage_referral: string;
+  profile_upgrade_membership: string;
+  profile_label_points: string;
+  profile_label_coupons: string;
+  profile_label_wallet: string;
+  profile_label_savings: string;
+  profile_quick_services: string;
+  qs_track_shipments: string;
+  qs_favorites: string;
+  qs_notifications: string;
+  qs_browse_history: string;
+  qs_addresses: string;
+  qs_customer_service: string;
+  qs_prizes: string;
+  qs_settings: string;
+
+  coupons_my_coupons: string;
+  coupons_view_all: string;
+  coupons_use_now: string;
+  coupons_days_left: string;
+
+  orders_recent_title: string;
+  orders_view_all: string;
+  orders_my_orders: string;
+  orders_none_yet: string;
+  orders_browse_products: string;
+  orders_order_number: string;
+  order_status_pending: string;
+  order_status_confirmed: string;
+  order_status_shipped: string;
+  order_status_arrived_iraq: string;
+  order_status_delivered: string;
+  order_status_cancelled: string;
+
+  notif_prompt_title: string;
+  notif_prompt_desc: string;
+  notif_prompt_enable_site: string;
+  notif_prompt_blocked: string;
+  notif_prompt_link_telegram: string;
+  notif_prompt_dismiss: string;
+  notif_prompt_dismiss_aria: string;
 };
