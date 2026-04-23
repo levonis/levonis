@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 interface WalletDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  originRect?: OriginRect | null;
 }
 
 interface PaymentMethod {
