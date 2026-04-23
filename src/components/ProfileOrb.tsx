@@ -31,20 +31,37 @@ const ProfileOrb = memo(() => {
 
   // Progressive merge with the Dynamic Island as the user scrolls.
   // 0 = fully visible orb, 1 = fully merged into the island.
-  // The range is auto-calibrated to the island's actual morph window:
-  //   start ≈ a bit before the island's promo→search threshold (40px)
-  //   end   ≈ start + island height (so the orb is gone by the time the
-  //           search shape has fully settled — taller islands get a longer fade).
+  // Also tracks the live island center so the orb visually travels toward
+  // it (absorption) and back (detachment) instead of drifting off-edge.
   const [mergeProgress, setMergeProgress] = useState(0);
+  const [islandTarget, setIslandTarget] = useState<{
+    dx: number;
+    dy: number;
+    height: number;
+  }>({ dx: 0, dy: 0, height: 52 });
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     let raf = 0;
     const ISLAND_THRESHOLD = 40; // matches IslandContext scroll threshold
     const compute = () => {
-      // Auto-calibrate: read the live island height when present, fall back
-      // to a sane default (≈ search shape height) otherwise.
+      const orbEl = btnRef.current;
       const islandEl = document.querySelector<HTMLElement>("[data-dynamic-island]");
       const islandH = islandEl?.getBoundingClientRect().height ?? 52;
+
+      // Vector from orb center → island center (used to "fly into" it).
+      if (orbEl && islandEl) {
+        const o = orbEl.getBoundingClientRect();
+        const i = islandEl.getBoundingClientRect();
+        const ocx = o.left + o.width / 2;
+        const ocy = o.top + o.height / 2;
+        const icx = i.left + i.width / 2;
+        const icy = i.top + i.height / 2;
+        setIslandTarget({ dx: icx - ocx, dy: icy - ocy, height: islandH });
+      } else {
+        setIslandTarget((prev) => ({ ...prev, height: islandH }));
+      }
+
       const start = Math.max(8, ISLAND_THRESHOLD - 12); // ≈ 28px
       const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9); // ≈ 88–110px
       const y = window.scrollY;
@@ -120,15 +137,24 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Smoothly interpolate visual properties so the orb appears to dissolve
-  // into the island instead of snapping out.
+  // Smoothly interpolate visual properties so the orb appears to be absorbed
+  // into the island (and detach back out on scroll up).
   const p = mergeProgress;
-  const opacity = 1 - p;
-  const scale = 1 - p * 0.45; // 1 → 0.55
-  const translateX = (isRtl ? 1 : -1) * p * 6; // drift toward the screen edge
-  const translateY = -p * 6; // and a touch up toward the island
-  const blurPx = p * 2.5; // soft gaussian as it fades into the island
-  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  // Travel ~70% of the way toward the island center — last 30% is covered by
+  // the island's own expansion so the join looks continuous, not jarring.
+  const travel = p * 0.72;
+  const translateX = islandTarget.dx * travel;
+  const translateY = islandTarget.dy * travel;
+  // Shrink the orb height to roughly match the island, while widening slightly
+  // so it morphs into a tiny pill before disappearing into the surface.
+  const targetScaleY = Math.max(0.45, islandTarget.height / 40); // ~1.0 → ~1.3
+  const scaleY = 1 + (targetScaleY - 1) * p * 0.35; // very subtle
+  const scaleX = 1 - p * 0.35; // narrows as it dives in
+  const baseScale = 1 - p * 0.15; // gentle overall shrink
+  // Fade only late in the merge so the absorption is the dominant cue.
+  const opacity = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
+  const blurPx = p > 0.55 ? (p - 0.55) * 6 : 0; // soft dissolve at the end
+  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${baseScale * scaleX}, ${baseScale * scaleY})`;
 
   return (
     <button
@@ -147,6 +173,7 @@ const ProfileOrb = memo(() => {
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
+        transformOrigin: "center center",
         transform: tuckTransform,
         opacity,
         filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
