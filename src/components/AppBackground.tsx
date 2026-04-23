@@ -32,7 +32,7 @@ export default function AppBackground() {
 
   // Cinematic intensity pulse on route change
   const intensity = useMotionValue(1);
-  const intensityOpacity = useTransform(intensity, [1, 1.6], [0.55, 0.85]);
+  const intensityOpacity = useTransform(intensity, [1, 1.6], [0.85, 1]);
 
   // Scroll choreography
   useEffect(() => {
@@ -97,17 +97,17 @@ export default function AppBackground() {
         backgroundColor: '#15382c',
       }}
     >
-      {/* Primary red living light — soft-light blend, drifts with scroll */}
+      {/* Primary red living light — screen blend so it actually glows on dark green */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '95vmax',
-          height: '95vmax',
-          marginLeft: '-47.5vmax',
-          marginTop: '-47.5vmax',
-          mixBlendMode: 'soft-light',
+          width: '85vmax',
+          height: '85vmax',
+          marginLeft: '-42.5vmax',
+          marginTop: '-42.5vmax',
+          mixBlendMode: 'screen',
           opacity: intensityOpacity,
           willChange: 'left, top, opacity',
         }}
@@ -116,24 +116,24 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 92% 52% / 0.95) 0%, hsl(0 80% 45% / 0.45) 14%, hsl(0 60% 35% / 0.15) 34%, transparent 62%)',
-            filter: 'blur(140px)',
+              'radial-gradient(circle, hsl(0 90% 50% / 0.55) 0%, hsl(0 80% 42% / 0.30) 18%, hsl(0 60% 30% / 0.10) 38%, transparent 65%)',
+            filter: 'blur(120px)',
           }}
         />
       </motion.div>
 
-      {/* Secondary faint red ember — even softer, mirrors the primary */}
+      {/* Secondary faint red ember — mirrors the primary on opposite side */}
       <motion.div
         className="absolute"
         style={{
           left: left2,
           top: top2,
-          width: '70vmax',
-          height: '70vmax',
-          marginLeft: '-35vmax',
-          marginTop: '-35vmax',
-          mixBlendMode: 'soft-light',
-          opacity: 0.25,
+          width: '60vmax',
+          height: '60vmax',
+          marginLeft: '-30vmax',
+          marginTop: '-30vmax',
+          mixBlendMode: 'screen',
+          opacity: 0.4,
           willChange: 'left, top',
         }}
       >
@@ -141,8 +141,8 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 85% 50% / 0.6) 0%, hsl(0 60% 35% / 0.15) 28%, transparent 60%)',
-            filter: 'blur(160px)',
+              'radial-gradient(circle, hsl(0 85% 48% / 0.40) 0%, hsl(0 60% 32% / 0.12) 30%, transparent 62%)',
+            filter: 'blur(140px)',
           }}
         />
       </motion.div>
@@ -152,17 +152,7 @@ export default function AppBackground() {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(215deg, transparent 0%, transparent 50%, hsl(0 0% 0% / 0.35) 100%)',
-          mixBlendMode: 'multiply',
-        }}
-      />
-
-      {/* Green unifying veil — re-asserts #15382c dominance */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(130% 110% at 50% 50%, hsl(155 45% 16% / 0.30) 0%, hsl(155 45% 12% / 0.55) 100%)',
+            'linear-gradient(215deg, transparent 0%, transparent 55%, hsl(0 0% 0% / 0.40) 100%)',
           mixBlendMode: 'multiply',
         }}
       />
