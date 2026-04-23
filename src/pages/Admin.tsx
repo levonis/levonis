@@ -60,6 +60,8 @@ const categorySchema = z.object({
   description: z.string().optional(),
   main_section_id: z.string().uuid().optional(),
   featured_product_id: z.string().uuid().nullable().optional(),
+  media_url: z.string().nullable().optional(),
+  media_type: z.string().nullable().optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -147,6 +149,9 @@ const Admin = () => {
   const [mainSectionDialogOpen, setMainSectionDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [categoryMediaUrl, setCategoryMediaUrl] = useState<string | null>(null);
+  const [categoryMediaType, setCategoryMediaType] = useState<string | null>(null);
+  const [categoryMediaUploading, setCategoryMediaUploading] = useState(false);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -1590,6 +1595,8 @@ const Admin = () => {
         description: formData.get('description') as string || undefined,
         main_section_id: mainSectionVal || undefined,
         featured_product_id: featuredVal || null,
+        media_url: categoryMediaUrl,
+        media_type: categoryMediaType,
       });
 
       if (editingCategory) {
