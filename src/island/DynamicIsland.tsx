@@ -260,21 +260,30 @@ export const DynamicIsland = () => {
               key="island-shell"
               ref={islandRef}
               layout
-              initial={{ opacity: 0, scale: 0.7, width: 28, height: 0 }}
+              initial={{ opacity: 0, scale: 0.6, y: -18, filter: "blur(6px)" }}
               animate={{
                 opacity: 1,
                 scale: 1,
+                y: 0,
+                filter: "blur(0px)",
                 width: shape.width,
                 height: shape.height,
                 borderRadius: shape.radius,
               }}
-              exit={{ opacity: 0, scale: 0.7, width: 28, height: 0 }}
+              exit={{ opacity: 0, scale: 0.55, y: -22, filter: "blur(8px)" }}
               style={{
                 maxWidth: "calc(100vw - 16px)",
                 borderRadius: shape.radius,
+                transformOrigin: "top center",
               }}
-              transition={shellSpring}
-              className="island-surface pointer-events-auto flex flex-col overflow-hidden"
+              transition={{
+                default: shellSpring,
+                opacity: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
+                scale: shellEnterExit,
+                y: shellEnterExit,
+                filter: { duration: 0.28, ease: [0.32, 0.72, 0, 1] },
+              }}
+              className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
             >
           <AnimatePresence mode="popLayout" initial={false}>
             {/* PROMO ----------------------------------------------------- */}
