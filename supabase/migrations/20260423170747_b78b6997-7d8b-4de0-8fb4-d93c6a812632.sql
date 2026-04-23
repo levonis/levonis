@@ -1,0 +1,1 @@
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS media_chroma text NOT NULL DEFAULT 'none';
