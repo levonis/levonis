@@ -2411,3 +2411,53 @@ body.keyboard-open .fixed.bottom-0 {
   to   { opacity: 0; transform: translateY(-6px) scale(0.97); }
 }
 
+
+/* ============================================================
+   Profile Glassmorphism — unified tokens & utilities
+   Single source of truth for all /profile cards.
+   ============================================================ */
+@layer base {
+  :root {
+    --glass-bg: 255 255 255 / 0.10;
+    --glass-bg-strong: 255 255 255 / 0.18;
+    --glass-border: 255 255 255 / 0.20;
+    --glass-blur: 20px;
+    --glass-saturation: 140%;
+    --glass-shadow: 0 8px 32px -12px hsl(var(--foreground) / 0.18);
+  }
+  .dark {
+    --glass-bg: 255 255 255 / 0.05;
+    --glass-bg-strong: 255 255 255 / 0.10;
+    --glass-border: 255 255 255 / 0.10;
+    --glass-shadow: 0 8px 32px -12px hsl(0 0% 0% / 0.45);
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: rgb(var(--glass-bg));
+    border: 1px solid rgb(var(--glass-border));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+    box-shadow: var(--glass-shadow);
+    border-radius: 1.5rem;
+    transform: translateZ(0);
+    isolation: isolate;
+  }
+  .glass-card-inner {
+    background: rgb(var(--glass-bg-strong));
+    border: 1px solid rgb(var(--glass-border));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) - 6px)) saturate(var(--glass-saturation));
+    backdrop-filter: blur(calc(var(--glass-blur) - 6px)) saturate(var(--glass-saturation));
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-card,
+    .glass-card-inner {
+      background: hsl(var(--card) / 0.85);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    :root { --glass-bg: 255 255 255 / 0.20; --glass-blur: 12px; }
+    .dark { --glass-bg: 255 255 255 / 0.12; }
+  }
+}
