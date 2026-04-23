@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Sparkles, LogIn } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 import RewardsMainTabs, { MainTabId } from "@/components/rewards/RewardsMainTabs";
 import RewardsSubTabs, { SubTabId } from "@/components/rewards/RewardsSubTabs";
@@ -20,6 +21,7 @@ export default function RewardsHub() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { t, dir } = useLanguage();
 
   // Read tab from URL search params (e.g. /rewards?tab=competitions&sub=competitions)
   const urlTab = searchParams.get('tab') as MainTabId | null;
@@ -81,7 +83,7 @@ export default function RewardsHub() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={dir}>
       {/* Compact Sticky Header + Tabs - Fixed, doesn't scroll */}
       <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
         {/* Minimal Header */}
@@ -90,7 +92,7 @@ export default function RewardsHub() {
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/80">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
-            <h1 className="text-sm font-bold text-foreground">مركز المكافآت</h1>
+            <h1 className="text-sm font-bold text-foreground">{t('rh_title')}</h1>
           </div>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4" />
@@ -135,11 +137,11 @@ export default function RewardsHub() {
                 <LogIn className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium">سجّل دخولك للاستفادة الكاملة</p>
-                <p className="text-xs text-muted-foreground">نقاط • مسابقات • مزايا حصرية</p>
+                <p className="text-sm font-medium">{t('rh_login_prompt_title')}</p>
+                <p className="text-xs text-muted-foreground">{t('rh_login_prompt_subtitle')}</p>
               </div>
               <Button size="sm" onClick={() => navigate('/auth')}>
-                دخول
+                {t('rh_login_btn')}
               </Button>
             </CardContent>
           </Card>
