@@ -29,6 +29,24 @@ const ProfileOrb = memo(() => {
     remeasureOrigin();
   }, [isRtl, remeasureOrigin]);
 
+  // Tuck the orb away when the page is scrolled — at that point the Dynamic
+  // Island morphs to its wider "search" shape and would otherwise overlap.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Re-measure origin after the orb's transform settles so clip-path stays
+  // anchored on the visible orb position when the user clicks.
+  useEffect(() => {
+    const t = window.setTimeout(remeasureOrigin, 320);
+    return () => window.clearTimeout(t);
+  }, [scrolled, remeasureOrigin]);
+
   const { data: avatarUrl } = useQuery({
     queryKey: ["orb-avatar", user?.id],
     enabled: !!user,
@@ -71,6 +89,13 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
+  // Direction the orb tucks away towards (off-screen edge).
+  const tuckTransform = scrolled
+    ? isRtl
+      ? "translate(8px, -4px) scale(0.75)"
+      : "translate(-8px, -4px) scale(0.75)"
+    : "translate(0, 0) scale(1)";
+
   return (
     <button
       ref={setRef}
@@ -78,15 +103,19 @@ const ProfileOrb = memo(() => {
       aria-label="Profile"
       className={cn(
         "fixed top-3 z-[55] w-10 h-10 rounded-full overflow-hidden",
-        "glass-panel !rounded-full pointer-events-auto",
+        "glass-panel !rounded-full",
         "flex items-center justify-center",
-        "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
         "ring-1 ring-white/20 hover:ring-primary/50",
         "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
+        scrolled ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
         sideClass,
       )}
-      style={{ WebkitTapHighlightColor: "transparent" }}
+      style={{
+        WebkitTapHighlightColor: "transparent",
+        transform: tuckTransform,
+      }}
     >
       {/* Avatar — softened with blur + lowered opacity for a frosted feel */}
       {avatarUrl ? (
