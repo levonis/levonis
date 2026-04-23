@@ -266,12 +266,10 @@ export default function Wishes() {
   const isFulfilled = (w: any) => w.status === 'fulfilled' || w.fulfilled_at;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* ═══ HERO SECTION ═══ */}
       <div className="relative pt-6 pb-8 overflow-hidden">
-        <div className="absolute top-10 right-10 w-64 h-64 bg-primary/8 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full blur-[80px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 bg-primary/5 rounded-full blur-[120px]" />
+
 
         <div className="container mx-auto px-4 max-w-3xl relative z-10" dir="rtl">
           <div className="absolute top-4 right-8 text-primary/30 animate-bounce" style={{ animationDuration: '3s' }}>✦</div>
