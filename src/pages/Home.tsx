@@ -2,6 +2,8 @@ import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
+import { useSearchParams, Link } from 'react-router-dom';
+import { X } from 'lucide-react';
 
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
