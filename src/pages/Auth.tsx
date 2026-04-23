@@ -14,11 +14,12 @@ import { useLanguage } from '@/lib/i18n';
 import { Check, X } from 'lucide-react';
 
 const PasswordRequirements = ({ password }: { password: string }) => {
+  const { t } = useLanguage();
   const requirements = [
-    { label: '8 أحرف على الأقل', met: password.length >= 8 },
-    { label: 'حرف كبير (A-Z)', met: /[A-Z]/.test(password) },
-    { label: 'حرف صغير (a-z)', met: /[a-z]/.test(password) },
-    { label: 'رقم واحد على الأقل (0-9)', met: /\d/.test(password) },
+    { label: t('auth_pwd_min_chars'), met: password.length >= 8 },
+    { label: t('auth_pwd_uppercase'), met: /[A-Z]/.test(password) },
+    { label: t('auth_pwd_lowercase'), met: /[a-z]/.test(password) },
+    { label: t('auth_pwd_digit'), met: /\d/.test(password) },
   ];
 
   if (!password) return null;
@@ -212,7 +213,7 @@ const Auth = () => {
     e.preventDefault();
     
     if (!isStrongPassword(newPassword)) {
-      toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف كبير وحرف صغير ورقم');
+      toast.error(t('auth_pwd_requirements'));
       return;
     }
 
