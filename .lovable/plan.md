@@ -1,66 +1,63 @@
 
 
-# Dynamic Island - شريط علوي عائم موحّد
+# Dynamic Island — توسّع ذكي وانسيابي للبحث (Apple-style)
 
-استبدال الشريط العلوي + شريط البحث + شريط الإعلانات + أزرار الرجوع وعناوين الصفحات بـ **جزيرة عائمة ديناميكية** (Dynamic Island) واحدة تتغيّر حسب الصفحة.
+تحويل الجزيرة من تغيّر حجم بسيط إلى **كائن حي واحد** يتنفّس ويتمدّد تدريجيًا حسب محتوى البحث: من كبسولة → حقل → اقتراحات → لوحة نتائج، مع morphing سلس وglass متواصل.
 
-## السلوك حسب الحالة
+## المراحل الأربع للبحث
 
-| الحالة | الشكل | المحتوى |
+| المرحلة | الحجم | المحتوى |
 |---|---|---|
-| `promo` (الرئيسية، أعلى الصفحة) | كبسولة 260×40 | Marquee متحرك يعرض رسائل من جدول `announcements` |
-| `search` (الرئيسية بعد التمرير + Products) | كبسولة 320×48 | حقل بحث "Search products…" + اختصار ⌘K |
-| `category` (`/category/:slug`) | كبسولة 320×52 | زر رجوع ◀ + اسم القسم + زر بحث 🔍 |
-| `product` (`/product/:slug`) | كبسولة 220×46 | زر رجوع ◀ + اسم المنتج |
+| `idle` (عند الضغط على البحث) | 360 × 52 ، radius 26 | حقل بحث فارغ + أيقونة + ⌘K |
+| `typing` (المستخدم يكتب) | 420 × 60 ، radius 26 | الحقل + زر مسح + شريط hint رفيع |
+| `suggestions` (كلمات مقترحة) | 480 × 180 ، radius 28 | الحقل + قائمة 4-6 كلمات (تاريخ + اقتراحات حية) |
+| `results` (نتائج منتجات) | 520 × 380 ، radius 30 | الحقل + شبكة 3-5 منتجات مصغّرة (صورة + اسم + سعر) + "عرض الكل" |
 
-تتنقل الحالات بانتقال spring سلس عبر `framer-motion` (التغيير بين الأشكال + fade للمحتوى).
+الانتقال بين المراحل يتم تلقائيًا داخل نفس الـ `motion.div` (نفس العنصر، لا swap)، فيشعر المستخدم بأنّ الجزيرة تتنفّس.
 
-## التغييرات
+## السلوك التفاعلي
 
-### 1) ملفات جديدة
-- **`src/island/IslandContext.tsx`** — Provider يشتق الحالة تلقائياً من المسار الحالي + scroll position، ويتيح override يدوي عبر `setContext({ state, title })` لتمرير اسم القسم/المنتج.
-- **`src/island/DynamicIsland.tsx`** — مكوّن الجزيرة بحدّ ذاته (animations + 4 حالات). سيتم تعريبه: استخدام `useLanguage()` لترجمة "Search products…" / placeholders بدلاً من النصوص الإنجليزية الثابتة، مع دعم RTL لأيقونة السهم (تقلب تلقائياً حسب `isRtl`).
-- **`src/island/usePageTitle.ts`** (مساعد صغير) — hook يستدعي `setContext` عند mount/unmount لتمرير عنوان الصفحة (يُستخدم في `CategoryDetail` و `ProductDetail`).
+- **فتح**: نقر زر البحث أو الحقل → squash خفيف (scale 0.96) ثم expand بـ spring ناعم.
+- **كتابة**: مع أول حرف → ينتقل تلقائيًا من `idle` → `typing` (ارتفاع +8px).
+- **debounce 250ms**: بعد التوقّف عن الكتابة → `suggestions` تظهر بـ stagger بسيط (40ms بين العناصر).
+- **عند توفّر نتائج فعلية من DB**: يرتقي إلى `results` تدريجيًا (الارتفاع يكبر، الاقتراحات تتلاشى مع slide-up خفيف، المنتجات تدخل بـ fade+slide).
+- **مسح النص (X)**: يرجع إلى `idle` بسلاسة عكسية.
+- **Esc / blur خارج الجزيرة / Escape**: تنطوي إلى الحالة الافتراضية للصفحة (`promo`/`category`/`product`).
+- **اختيار اقتراح أو منتج**: morph قصير (squash) ثم navigate.
 
-### 2) `src/index.css`
-إضافة توكنات `--island-bg` و `--gradient-island-stroke` و `--shadow-island` + كلاس `.island-surface` (glassmorphism + حدّ متدرج + لمعة علوية) + keyframes `marquee`. التوكنات تستعمل HSL متوافقة مع نظام الثيم الثلاثي الموجود.
+## مواصفات الحركة
 
-### 3) `src/App.tsx`
-- إضافة `<IslandProvider>` داخل `<BrowserRouter>` (بعد `LanguageProvider`).
-- إضافة `<DynamicIsland />` كأول عنصر داخل `<AppContent>`.
-- **حذف** `<AnnouncementBar />` و كل منطق `announcementHeight` / `verificationBannerHeight` المرتبط بالشريط القديم.
+- **Spring واحد موحّد**: `stiffness: 260, damping: 28, mass: 0.95` — ناعم بدون ارتداد.
+- **Squash قبل التوسّع**: `scale` يبدأ من 0.97 لـ 80ms ثم يعود إلى 1 مع توسّع width/height — يحاكي تنفّس الجزيرة.
+- **Animation متزامن**: `width` + `height` + `borderRadius` كلها داخل نفس `animate={}` بـ نفس `transition`.
+- **المحتوى الداخلي**: بدلًا من `AnimatePresence mode="wait"` (يسبّب swap حاد للبحث)، نستخدم **layout** حقيقي مع `layout` prop لكل قسم داخلي (input, suggestions, results) — كل قسم يدخل/يخرج بـ `opacity` + `y: 6→0` خلال 220ms.
+- **glass continuity**: الخلفية `island-surface` تبقى نفسها — لا تنفصل أبدًا. نستخدم `layoutId="island-shell"` للحفاظ على الاستمرارية البصرية.
+- **Stagger**: العناصر داخل القوائم تتأخّر 35ms بين عنصر وآخر للحصول على cascade ناعم.
 
-### 4) ربط رسائل الإعلانات الجديدة
-داخل `IslandContext` (أو hook منفصل `useAnnouncements`):
-- استعلام `useQuery` على جدول `announcements` (`active=true`) — نفس الاستعلام الموجود حالياً في `AnnouncementBar.tsx`.
-- تمرير المصفوفة (`message_ar` / `message_en` / `message_ku` حسب اللغة) إلى `DynamicIsland` لتحلّ محل `promoMessages` الثابتة.
-- يبقى الأدمن يحرّر نفس الجدول من `/admin/announcements` بدون أي تغيير في لوحة التحكم.
+## مصادر البيانات
 
-### 5) حذف الشيفرة القديمة
+- **Suggestions**:
+  1. آخر 5 عمليات بحث محلية من `localStorage` (`island_recent_searches`).
+  2. أهم 4 منتجات مطابقة (اسم) من `products` بـ `ilike` على `name`/`name_ar` (limit 4).
+- **Results**: 5 منتجات من نفس الاستعلام مع `image_url`, `name`/`name_ar`, `price` — مع احترام `scope` (في القسم: نرشّح بـ `category_id`؛ في المجتمع: نستعلم من `community_products`).
+- استخدام `useQuery` بـ `enabled: query.length >= 2` و `staleTime: 30s`.
 
-| ملف | إجراء |
+## الملفات المتأثّرة
+
+| الملف | التعديل |
 |---|---|
-| `src/components/SearchBar.tsx` | **حذف الملف** |
-| `src/components/AnnouncementBar.tsx` | **حذف الملف** |
-| `src/components/Header.tsx` | **حذف الملف** (غير مُستخدم فعلياً في App.tsx) |
-| `src/components/TopBar.tsx` | **حذف الملف** — أزراره (السلة، الحساب، الإشعارات، اللغة، المحفظة، الإدارة...) موجودة أصلاً في `AppNavBar.tsx` السفلي |
-| `src/pages/Home.tsx` | حذف `import SearchBar` و `<SearchBar />` (سطر 5 و 153) — البحث صار في الجزيرة |
-| `src/pages/Products.tsx` | حذف `import SearchBar` و `<SearchBar />` (سطر 6 و 171) |
-| `src/pages/PrinterProtection.tsx` | حذف `import Header` و `<Header />` |
-| `src/pages/ProductsWithGifts.tsx` | حذف `import Header` و `<Header />` |
-| `src/pages/CategoryDetail.tsx` | حذف زر "العودة" (الأسطر ≈357-371) — صار في الجزيرة. إضافة `usePageTitle({ state:'category', title: categoryName })` |
-| `src/pages/ProductDetail.tsx` | حذف زرّي الرجوع (سطر 753-758 موبايل، 832-837 ديسكتوب) — صار في الجزيرة. إضافة `usePageTitle({ state:'product', title: product.name_ar })` |
+| `src/island/DynamicIsland.tsx` | إعادة بناء حالة `search` بأربع مراحل داخلية، morph موحّد، إضافة قوائم suggestions + results داخل نفس الـ motion shell. |
+| `src/island/IslandContext.tsx` | لا تغيير وظيفي. (state يبقى `search`؛ المراحل الفرعية محلية في الكومبوننت.) |
+| `src/island/useIslandSearch.ts` (جديد) | hook مخصّص: query state, debounce, recent searches, fetch suggestions + results عبر supabase حسب scope. |
+| `src/index.css` | إضافة فئة `.island-search-row` و `.island-result-thumb` لتنسيق القوائم الداخلية بـ glass خفيف، وضمان `overflow: hidden` مع `border-radius` متغيّر. |
+| `src/lib/i18n/types.ts` + `ar/en/ku.ts` | 5 مفاتيح: `island_recent`, `island_suggestions`, `island_results`, `island_view_all`, `island_no_results`. |
 
-### 6) ملاحظات تقنية
-- `framer-motion` و `lucide-react` و `react-router-dom` مثبتة مسبقاً (لا حاجة للتثبيت).
-- الجزيرة `position: fixed; top: 12px; z-50` — تُضاف padding-top على `<main>` (≈64px) لتعويض المساحة.
-- شريط `AppNavBar` السفلي يبقى كما هو (بدون تغيير) — يحتفظ بالسلة/الحساب/الرسائل... إلخ.
-- اسم المنتج/القسم يُمرّر باللغة النشطة عبر `pickName(name, name_ar)` المستعمل أصلاً.
-- زر البحث داخل حالة `category` وحقل البحث في حالة `search` يفتحان شيت بحث (`/products?search=`) بنفس منطق `SearchBar` السابق.
+## ملاحظات تقنية
 
-### 7) أثر على i18n
-إضافة 3 مفاتيح فقط في `types.ts` و `ar.ts` / `en.ts` / `ku.ts`:
-- `island_search_placeholder` — "ابحث عن المنتجات…"
-- `island_back` — "رجوع"
-- `island_category_default` / `island_product_default` (اختياري كـ fallback)
+- **حساب الأحجام ديناميكيًا**: دالة `searchShape(stage, query, resultsCount)` ترجع `{width, height, radius}` بدلًا من جداول ثابتة، مع `clamp` على عرض الشاشة (`maxWidth: calc(100vw - 16px)`).
+- **منع تجاوز الشاشة**: على الموبايل، `width` يصبح `min(calc(100vw - 24px), targetWidth)`.
+- **إغلاق خارجي**: `useEffect` يستمع لـ `mousedown` خارج الـ ref + مفتاح `Escape`.
+- **Accessibility**: `role="combobox"`, `aria-expanded`, `aria-controls` للحقل؛ `role="listbox"` للاقتراحات؛ تنقّل بالأسهم ↑↓ + Enter.
+- **أداء**: المنتجات تُحمّل lazy؛ الصور بحجم 40×40 بـ `loading="lazy"`؛ debounce يمنع spam على Supabase.
+- **التراجع عن السلوك القديم**: حالة `search` في `category`/`product` (زر العدسة) تفتح نفس الجزيرة الموسّعة بدلًا من توجيه فوري — تجربة موحّدة في كل الصفحات.
 
