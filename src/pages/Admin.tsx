@@ -64,7 +64,7 @@ const categorySchema = z.object({
   media_url: z.string().nullable().optional(),
   media_type: z.string().nullable().optional(),
   media_transparent: z.boolean().optional(),
-  media_chroma_key: z.enum(['none', 'black', 'white']).optional(),
+  media_chroma_key: z.enum(['none', 'black', 'white', 'green', 'blue']).optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -155,7 +155,7 @@ const Admin = () => {
   const [categoryMediaUrl, setCategoryMediaUrl] = useState<string | null>(null);
   const [categoryMediaType, setCategoryMediaType] = useState<string | null>(null);
   const [categoryMediaTransparent, setCategoryMediaTransparent] = useState(false);
-  const [categoryMediaChromaKey, setCategoryMediaChromaKey] = useState<'none' | 'black' | 'white'>('none');
+  const [categoryMediaChromaKey, setCategoryMediaChromaKey] = useState<'none' | 'black' | 'white' | 'green' | 'blue'>('none');
   const [categoryMediaUploading, setCategoryMediaUploading] = useState(false);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -3586,6 +3586,8 @@ const Admin = () => {
                             { value: 'none', label: 'بدون', desc: 'يعرض كما هو (للملفات الشفافة فعلياً مثل WebM/MOV)' },
                             { value: 'black', label: 'إزالة الأسود', desc: 'للفيديو/GIF بخلفية سوداء' },
                             { value: 'white', label: 'إزالة الأبيض', desc: 'للفيديو/GIF بخلفية بيضاء' },
+                            { value: 'green', label: 'إزالة الأخضر', desc: 'شاشة خضراء (Green Screen) كلاسيكية' },
+                            { value: 'blue', label: 'إزالة الأزرق', desc: 'شاشة زرقاء (Blue Screen)' },
                           ].map((opt) => (
                             <button
                               key={opt.value}
