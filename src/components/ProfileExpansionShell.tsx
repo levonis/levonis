@@ -91,6 +91,12 @@ const ProfileExpansionShell = ({ children }: Props) => {
   const initialClip = `circle(${initialRadius}px at ${o.x}px ${o.y}px)`;
   const openClip = `circle(${maxRadius}px at ${o.x}px ${o.y}px)`;
 
+  // Glass surface tokens — translucent so the site's primary background
+  // shows through (no secondary opaque background).
+  const glassBg =
+    "linear-gradient(135deg, hsl(var(--background) / 0.55) 0%, hsl(var(--background) / 0.35) 100%)";
+  const glassFilter = "blur(22px) saturate(1.4)";
+
   // Reduced motion: just fade.
   if (reducedMotion) {
     return (
@@ -99,7 +105,11 @@ const ProfileExpansionShell = ({ children }: Props) => {
           <motion.div
             key="profile-shell-rm"
             className="fixed inset-0 z-[36] overflow-y-auto"
-            style={{ background: "hsl(var(--background))" }}
+            style={{
+              background: glassBg,
+              backdropFilter: glassFilter,
+              WebkitBackdropFilter: glassFilter,
+            }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -116,24 +126,29 @@ const ProfileExpansionShell = ({ children }: Props) => {
     <AnimatePresence>
       {present && (
         <>
-          {/* Soft backdrop dim that fades with expand/collapse */}
+          {/* Soft dim — no longer an opaque secondary surface; just a faint
+              tint so the glass disc reads against the live page behind it. */}
           <motion.div
             key="profile-shell-backdrop"
             aria-hidden
-            className="fixed inset-0 z-[35] pointer-events-none bg-background/40"
+            className="fixed inset-0 z-[35] pointer-events-none"
+            style={{ background: "hsl(var(--background) / 0.18)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           />
 
-          {/* Circular reveal layer */}
+          {/* Circular reveal layer — glassmorphism instead of solid bg. */}
           <motion.div
             key="profile-shell"
             className="fixed inset-0 z-[36] overflow-y-auto will-change-[clip-path]"
             style={{
-              background: "hsl(var(--background))",
-              boxShadow: "inset 0 0 0 1px hsl(var(--primary) / 0.15)",
+              background: glassBg,
+              backdropFilter: glassFilter,
+              WebkitBackdropFilter: glassFilter,
+              boxShadow:
+                "inset 0 1px 0 hsl(0 0% 100% / 0.18), inset 0 0 0 1px hsl(var(--primary) / 0.12)",
             }}
             initial={
               {
@@ -163,9 +178,6 @@ const ProfileExpansionShell = ({ children }: Props) => {
               setCircleOpened(true);
             }}
           >
-            {/* Children (skeletons / page) only appear AFTER the circle has
-                fully expanded, so the user sees the glass disc grow first,
-                then the content fades in inside it. */}
             <AnimatePresence>
               {circleOpened && (
                 <motion.div
