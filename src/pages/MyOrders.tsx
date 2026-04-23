@@ -179,19 +179,19 @@ const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground line-clamp-1 mb-1">
                 {firstName}
-                {itemCount > 1 && <span className="text-muted-foreground font-normal text-xs"> و{itemCount - 1} آخر</span>}
+                {itemCount > 1 && <span className="text-muted-foreground font-normal text-xs"> {t('myorders_more_items', { count: itemCount - 1 })}</span>}
               </p>
               <div className="flex flex-wrap gap-1">
                 {order.order_type === 'direct' ? (
                   <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600">
                     <Truck className="h-2.5 w-2.5" />
-                    بيع مباشر
+                    {t('myorders_type_direct')}
                   </span>
                 ) : (
                   <>
                     <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600">
                       <ShoppingBag className="h-2.5 w-2.5" />
-                      طلب مسبق
+                      {t('myorders_type_preorder')}
                     </span>
                     {shippingName && (
                       <span className={cn(
@@ -228,7 +228,7 @@ const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 rounded-xl py-2 transition-colors"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  تتبع الشحنة
+                  {t('myorders_track_shipment')}
                 </button>
               )}
               {order.status === 'delivered' && !order.user_confirmed_delivery && !order.auto_confirmed && (
@@ -237,13 +237,13 @@ const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/15 rounded-xl py-2 transition-colors"
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
-                  تأكيد الاستلام
+                  {t('myorders_confirm_receipt')}
                 </button>
               )}
               {order.status === 'delivered' && (order.user_confirmed_delivery || order.auto_confirmed) && (
                 <div className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 rounded-xl py-2">
                   <CheckCircle className="h-3.5 w-3.5" />
-                  تم تأكيد الاستلام ✅
+                  {t('myorders_receipt_confirmed')}
                 </div>
               )}
             </div>
@@ -270,8 +270,8 @@ const MyOrders = () => {
     const statusParam = searchParams.get('status');
     if (!statusParam) return;
 
-    const isDirectStatus = DIRECT_TABS.some(t => t.key === statusParam);
-    const isPreorderStatus = PREORDER_TABS.some(t => t.key === statusParam);
+    const isDirectStatus = DIRECT_TAB_KEYS.some(t => t.key === statusParam);
+    const isPreorderStatus = PREORDER_TAB_KEYS.some(t => t.key === statusParam);
 
     if (isDirectStatus) {
       setDirectTab(statusParam);
