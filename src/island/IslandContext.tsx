@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/lib/i18n";
+import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
 export type IslandState = "promo" | "search" | "category" | "product";
 
@@ -58,6 +59,8 @@ const HIDDEN_PREFIXES: string[] = [
   "/inventory",
   "/auth",
   "/admin",
+  "/profile",
+  ADMIN_BASE_PATH,
 ];
 
 export const isIslandHidden = (path: string): boolean =>
