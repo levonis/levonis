@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,7 +15,18 @@ interface ReelThumb {
 
 export default function ReelsBar() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressClickRef = useRef(false);
+  const suppressTimerRef = useRef<number | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return () => {
+      if (suppressTimerRef.current !== null) {
+        window.clearTimeout(suppressTimerRef.current);
+      }
+    };
+  }, []);
 
   const { data: reels = [] } = useQuery({
     queryKey: ['home-reels-bar'],
@@ -45,6 +56,45 @@ export default function ReelsBar() {
     return n.toString();
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (suppressTimerRef.current !== null) {
+      window.clearTimeout(suppressTimerRef.current);
+      suppressTimerRef.current = null;
+    }
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    suppressClickRef.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = pointerStartRef.current;
+    if (!start) return;
+
+    if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) {
+      suppressClickRef.current = true;
+    }
+  };
+
+  const handlePointerEnd = () => {
+    pointerStartRef.current = null;
+
+    if (!suppressClickRef.current) return;
+
+    suppressTimerRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false;
+      suppressTimerRef.current = null;
+    }, 140);
+  };
+
+  const openReels = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (suppressClickRef.current) {
+      e?.preventDefault();
+      e?.stopPropagation();
+      return;
+    }
+
+    navigate('/community/reels');
+  };
+
   return (
     <>
       <div className="w-full py-3">
@@ -61,12 +111,21 @@ export default function ReelsBar() {
         <div
           ref={scrollRef}
           className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x pan-y',
+            overscrollBehaviorX: 'contain',
+            overscrollBehaviorY: 'auto',
+          }}
         >
           {reels.map((reel) => (
             <button
               key={reel.id}
-              onClick={() => navigate('/community/reels')}
+              onClick={openReels}
               className="relative flex-shrink-0 w-[100px] h-[160px] md:w-[120px] md:h-[190px] rounded-xl overflow-hidden bg-muted group"
             >
               {reel.thumbnail_url ? (
