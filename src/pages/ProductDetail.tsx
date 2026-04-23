@@ -122,6 +122,8 @@ const ProductDetail = () => {
   const { name: localizedName, description: localizedDescription } = useLocalizedProduct(product);
   const { discount: protectionDiscount } = useProtectionDiscount(product?.category_id);
 
+  usePageTitle('product', localizedName || (product as any)?.name_ar || (product as any)?.name);
+
   const { data: allLoyaltyLevels } = useQuery({
     queryKey: ['loyalty-levels-for-discounts'],
     staleTime: 10 * 60 * 1000,
