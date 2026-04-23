@@ -106,13 +106,13 @@ export default function AppBackground() {
         style={{
           left,
           top,
-          width: '38vmax',
-          height: '38vmax',
-          marginLeft: '-19vmax',
-          marginTop: '-19vmax',
+          width: '55vmax',
+          height: '55vmax',
+          marginLeft: '-27.5vmax',
+          marginTop: '-27.5vmax',
           background:
-            'radial-gradient(circle, hsl(0 80% 50% / 0.55) 0%, hsl(0 75% 40% / 0.25) 35%, transparent 65%)',
-          filter: 'blur(60px)',
+            'radial-gradient(circle, hsl(0 90% 55% / 0.85) 0%, hsl(0 80% 45% / 0.45) 30%, hsl(0 70% 35% / 0.15) 55%, transparent 70%)',
+          filter: 'blur(40px)',
           mixBlendMode: 'screen',
           willChange: 'left, top',
         }}
