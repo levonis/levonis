@@ -137,21 +137,26 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden p-0" dir="rtl">
-          {/* Header */}
-          <div className="sticky top-0 z-10 px-5 pt-5 pb-3 bg-gradient-to-b from-card to-card/95 backdrop-blur-xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <span className="text-sm font-black">العروض والخصومات</span>
-                  <p className="text-[9px] text-muted-foreground font-normal mt-0.5">وفّر مع كل طلب</p>
-                </div>
-              </DialogTitle>
-            </DialogHeader>
+      <OriginExpandShell
+        open={open}
+        onOpenChange={onOpenChange}
+        originRect={originRect ?? null}
+        panelClassName="pointer-events-auto relative w-full max-w-md max-h-[88vh] overflow-hidden rounded-3xl border border-white/15 bg-card/95 backdrop-blur-xl shadow-2xl flex flex-col p-0"
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <span className="text-sm font-black">العروض والخصومات</span>
+              <p className="text-[9px] text-muted-foreground font-normal mt-0.5">وفّر مع كل طلب</p>
+            </div>
+          </div>
+        }
+      >
+        <div className="-mx-5 px-5">
+          <div>
+
 
             {/* Stats chips */}
             {!isLoading && hasContent && (
