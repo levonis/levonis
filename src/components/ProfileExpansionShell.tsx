@@ -50,6 +50,9 @@ const ProfileExpansionShell = ({ children }: Props) => {
   // Snapshot the origin used for THIS open cycle so resize/RTL during open
   // doesn't yank the collapse target away from the orb.
   const lockedOriginRef = useRef<{ x: number; y: number; size: number } | null>(null);
+  // Gate the children: only render the page content AFTER the circle has
+  // finished expanding, so the user sees the disc grow first, then content.
+  const [circleOpened, setCircleOpened] = useState(false);
   useEffect(() => {
     if (present) {
       lockedOriginRef.current = origin
@@ -58,6 +61,7 @@ const ProfileExpansionShell = ({ children }: Props) => {
     } else {
       // After collapse animation completes the shell unmounts; clear lock.
       lockedOriginRef.current = null;
+      setCircleOpened(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [present]);
@@ -154,16 +158,27 @@ const ProfileExpansionShell = ({ children }: Props) => {
             }
             transition={balloonSpring}
             onAnimationStart={() => setPhase("expanding")}
-            onAnimationComplete={() => setPhase("open")}
+            onAnimationComplete={() => {
+              setPhase("open");
+              setCircleOpened(true);
+            }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.985 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.4, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {children}
-            </motion.div>
+            {/* Children (skeletons / page) only appear AFTER the circle has
+                fully expanded, so the user sees the glass disc grow first,
+                then the content fades in inside it. */}
+            <AnimatePresence>
+              {circleOpened && (
+                <motion.div
+                  key="profile-content"
+                  initial={{ opacity: 0, y: 6, scale: 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {children}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </>
       )}
