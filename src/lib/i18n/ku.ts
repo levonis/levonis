@@ -1081,16 +1081,8 @@ export const ku: TranslationKeys = {
   cart_referral_free_delivery_desc: 'سوپاس بۆ پشتگیریکردنی @{username}! گەیاندنی بەخۆڕاییت بەدەستهێنا',
   cart_referral_add_for_free_toast: '🎁 سوپاس بۆ پشتگیریکردنی @{username}! {amount} د.ع زیاد بکە بۆ گەیاندنی بەخۆڕایی — بەردەوام بە لە کڕین',
 
-  // Batch 5 — Notifications page
-  notif_title: 'ئاگادارکردنەوەکان',
-  notif_unread_count: '{count} ئاگادارکردنەوەی نوێ چاوەڕێتە',
-  notif_all_read: 'هەموو ئاگادارکردنەوەکانت بینیوە',
-  notif_empty: 'هیچ ئاگادارکردنەوەیەک نییە',
+  // Batch 5 — Notifications page (extras)
   notif_empty_hint: 'ئاگادارکردنەوەکانت لێرە دەردەکەون کاتێک دەگەن',
-  common_new: 'نوێ',
-  common_general: 'گشتی',
-  common_view_details: 'بینینی وردەکارییەکان',
-  common_back: 'گەڕانەوە',
 
   // Batch 5 — User Addresses
   addr_page_title: 'ناونیشانەکانم',

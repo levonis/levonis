@@ -1081,16 +1081,8 @@ export const ar: TranslationKeys = {
   cart_referral_free_delivery_desc: 'شكراً لدعمك @{username}! لقد حصلت على توصيل مجاني',
   cart_referral_add_for_free_toast: '🎁 شكراً لدعمك @{username}! أضف {amount} د.ع للحصول على توصيل مجاني — تابع التسوق',
 
-  // Batch 5 — Notifications page
-  notif_title: 'الإشعارات',
-  notif_unread_count: '{count} إشعار جديد بانتظارك',
-  notif_all_read: 'تم اطلاعك على كل الإشعارات',
-  notif_empty: 'لا توجد إشعارات حالياً',
+  // Batch 5 — Notifications page (extras)
   notif_empty_hint: 'ستظهر إشعاراتك هنا فور وصولها',
-  common_new: 'جديد',
-  common_general: 'عام',
-  common_view_details: 'عرض التفاصيل',
-  common_back: 'رجوع',
 
   // Batch 5 — User Addresses
   addr_page_title: 'عناويني',

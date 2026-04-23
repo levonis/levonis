@@ -1084,16 +1084,8 @@ export type TranslationKeys = {
   cart_referral_free_delivery_desc: string;
   cart_referral_add_for_free_toast: string;
 
-  // Batch 5 — Notifications page
-  notif_title: string;
-  notif_unread_count: string;
-  notif_all_read: string;
-  notif_empty: string;
+  // Batch 5 — Notifications page (extras)
   notif_empty_hint: string;
-  common_new: string;
-  common_general: string;
-  common_view_details: string;
-  common_back: string;
 
   // Batch 5 — User Addresses
   addr_page_title: string;

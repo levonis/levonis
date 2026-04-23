@@ -1081,16 +1081,8 @@ export const en: TranslationKeys = {
   cart_referral_free_delivery_desc: 'Thanks for supporting @{username}! You unlocked free delivery',
   cart_referral_add_for_free_toast: '🎁 Thanks for supporting @{username}! Add {amount} IQD to unlock free delivery — keep shopping',
 
-  // Batch 5 — Notifications page
-  notif_title: 'Notifications',
-  notif_unread_count: '{count} new notifications waiting for you',
-  notif_all_read: 'You are all caught up',
-  notif_empty: 'No notifications yet',
+  // Batch 5 — Notifications page (extras)
   notif_empty_hint: 'Your notifications will appear here as soon as they arrive',
-  common_new: 'New',
-  common_general: 'General',
-  common_view_details: 'View details',
-  common_back: 'Back',
 
   // Batch 5 — User Addresses
   addr_page_title: 'My Addresses',
