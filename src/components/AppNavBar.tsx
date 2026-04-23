@@ -105,7 +105,7 @@ const AppNavBar = memo(() => {
     return (
       <nav
         className={cn(
-          "z-50 flex items-center gap-1.5 p-2 rounded-2xl bg-card/90 border border-border/50 shadow-xl transition-all duration-500",
+          "z-50 flex items-center gap-1.5 p-2 glass-panel !rounded-full transition-all duration-500",
           positionClasses[dockPosition]
         )}
       >
@@ -113,7 +113,7 @@ const AppNavBar = memo(() => {
         <button
           onClick={cyclePosition}
           title="تغيير موقع الشريط"
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-[hsl(var(--foreground)/0.06)] transition-all duration-300"
         >
           {isHorizontal ? <ArrowLeftRight className="h-3.5 w-3.5" /> : <ArrowUpDown className="h-3.5 w-3.5" />}
         </button>
@@ -127,25 +127,25 @@ const AppNavBar = memo(() => {
               onClick={() => handleClick(item)}
               title={t(item.labelKey as any)}
               className={cn(
-                "group relative flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200",
+                "group relative flex items-center justify-center w-11 h-11 rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
                 active
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-[0_4px_14px_hsl(var(--primary)/0.45),inset_0_1px_0_hsl(0_0%_100%/0.18)] scale-110"
+                  : "text-muted-foreground hover:bg-[hsl(var(--foreground)/0.06)] hover:text-foreground hover:scale-105"
               )}
             >
               <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
               {item.key === 'cart' && itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background/40">
                   {itemCount > 9 ? '9+' : itemCount}
                 </span>
               )}
               {item.key === 'messages' && unreadMsgCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center animate-pulse">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center animate-pulse ring-2 ring-background/40">
                   {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
                 </span>
               )}
               <span className={cn(
-                "absolute px-2.5 py-1 rounded-lg bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 z-[60]",
+                "absolute px-2.5 py-1 rounded-lg glass-floating text-foreground text-xs font-medium whitespace-nowrap opacity-0 pointer-events-none scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-[60]",
                 tooltipClasses[dockPosition]
               )}>
                 {t(item.labelKey as any)}
@@ -157,65 +157,64 @@ const AppNavBar = memo(() => {
     );
   }
 
-  // Mobile: bottom bar (unchanged)
+  // Mobile: floating oval glass bottom bar
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border/40"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed bottom-0 left-0 right-0 z-50 px-3 pointer-events-none"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
     >
-      <div className="flex items-end justify-around px-2 pt-1 pb-1.5">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item);
-          return (
-            <button
-              key={item.key}
-              onClick={() => handleClick(item)}
-              className={cn(
-                "relative flex flex-col items-center gap-0.5 min-w-[3.2rem] py-1 transition-all duration-300",
-                active ? "text-primary" : "text-muted-foreground active:scale-90"
-              )}
-            >
-              <span
+      <div className="glass-panel !rounded-full pointer-events-auto px-2 py-1.5 mx-auto max-w-md">
+        <div className="flex items-center justify-around">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item);
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleClick(item)}
                 className={cn(
-                  "flex items-center justify-center rounded-2xl transition-all duration-300",
-                  active
-                    ? "w-12 h-8 bg-primary/15 -translate-y-1 shadow-sm"
-                    : "w-8 h-8"
+                  "relative flex flex-col items-center min-w-[2.6rem] py-1 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  active ? "text-primary-foreground" : "text-muted-foreground active:scale-90"
                 )}
               >
-                <Icon
+                <span
                   className={cn(
-                    "transition-all duration-300",
-                    active ? "h-[22px] w-[22px]" : "h-[18px] w-[18px]"
+                    "relative flex items-center justify-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    active
+                      ? "w-12 h-9 bg-primary shadow-[0_4px_14px_hsl(var(--primary)/0.45),inset_0_1px_0_hsl(0_0%_100%/0.18)]"
+                      : "w-9 h-9 hover:bg-[hsl(var(--foreground)/0.06)]"
                   )}
-                  strokeWidth={active ? 2.5 : 1.8}
-                />
-                {item.key === 'cart' && itemCount > 0 && (
-                  <span className="absolute top-0 right-1/2 translate-x-4 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm">
-                    {itemCount > 9 ? '9+' : itemCount}
-                  </span>
-                )}
-                {item.key === 'messages' && unreadMsgCount > 0 && (
-                  <span className="absolute top-0 right-1/2 translate-x-4 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center shadow-sm animate-pulse">
-                    {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
-                  </span>
-                )}
-              </span>
-              <span
-                className={cn(
-                  "text-[10px] leading-none font-medium transition-all duration-200",
-                  active ? "font-bold text-primary opacity-100" : "opacity-70"
-                )}
-              >
-                {t(item.labelKey as any)}
-              </span>
-              {active && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
-              )}
-            </button>
-          );
-        })}
+                >
+                  <Icon
+                    className={cn(
+                      "transition-all duration-300",
+                      active ? "h-[20px] w-[20px]" : "h-[18px] w-[18px]"
+                    )}
+                    strokeWidth={active ? 2.5 : 1.8}
+                  />
+                  {item.key === 'cart' && itemCount > 0 && (
+                    <span className="absolute -top-0.5 right-0 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background/40">
+                      {itemCount > 9 ? '9+' : itemCount}
+                    </span>
+                  )}
+                  {item.key === 'messages' && unreadMsgCount > 0 && (
+                    <span className="absolute -top-0.5 right-0 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-background/40 animate-pulse">
+                      {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "text-[9px] leading-none font-medium mt-0.5 transition-all duration-200",
+                    active ? "font-bold text-primary opacity-100" : "opacity-65"
+                  )}
+                >
+                  {t(item.labelKey as any)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

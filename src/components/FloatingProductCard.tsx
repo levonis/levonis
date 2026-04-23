@@ -111,21 +111,10 @@ const FloatingProductCard = memo(({
     );
   }
 
-  // Standard product — image-fill card
+  // Standard product — image-fill glass card
   return (
     <Link to={`/product/${slug}`} className="block group h-full">
-      <div
-        className="relative h-full flex flex-col rounded-xl overflow-hidden isolate"
-        style={{
-          backdropFilter: 'blur(40px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(40px) saturate(1.6)',
-          background:
-            'linear-gradient(170deg, hsl(160 35% 14% / 0.22) 0%, hsl(160 30% 10% / 0.30) 50%, hsl(160 25% 8% / 0.38) 100%)',
-          border: '1px solid hsl(160 30% 30% / 0.18)',
-          boxShadow:
-            '0 8px 32px -6px hsl(0 0% 0% / 0.45), inset 0 1px 0 hsl(160 40% 50% / 0.10)',
-        }}
-      >
+      <div className="relative h-full flex flex-col rounded-2xl overflow-hidden isolate glass-panel transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.35),inset_0_1px_0_hsl(0_0%_100%/0.12)]">
         {hasDirectSale && <DirectSaleRibbon />}
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
@@ -133,11 +122,11 @@ const FloatingProductCard = memo(({
             src={imageUrl || '/placeholder.svg'}
             alt={displayName}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           {/* Discount badge */}
           {discount > 0 && (
-            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[9px] font-bold">
+            <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-destructive/85 backdrop-blur-md text-destructive-foreground text-[9px] font-bold border border-white/15 shadow-[0_2px_8px_hsl(var(--destructive)/0.4)]">
               -{discount}%
             </span>
           )}

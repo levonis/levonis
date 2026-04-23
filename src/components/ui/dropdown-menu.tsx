@@ -44,8 +44,8 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      "z-[300] min-w-[8rem] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-popover p-1.5 text-popover-foreground",
-      "shadow-[0_10px_30px_hsl(var(--foreground)/0.2)]",
+      "z-[300] min-w-[8rem] overflow-hidden rounded-xl p-1.5 text-popover-foreground glass-floating",
+      "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
       className,
     )}
     {...props}
@@ -56,16 +56,16 @@ DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayNam
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, side = "bottom", ...props }, ref) => (
+>(({ className, sideOffset = 6, side = "bottom", ...props }, ref) => (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
       ref={ref}
       side={side}
       sideOffset={sideOffset}
       className={cn(
-        "z-[300] min-w-[8rem] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-popover p-1.5 text-popover-foreground",
-        "shadow-md",
-        "data-[side=bottom]:animate-[dropdown-in-bottom_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=top]:animate-[dropdown-in-top_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=left]:animate-[dropdown-in-left_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=right]:animate-[dropdown-in-right_160ms_cubic-bezier(0.16,1,0.3,1)]",
+        "z-[300] min-w-[8rem] overflow-hidden rounded-xl p-1.5 text-popover-foreground glass-floating",
+        "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
+        "data-[side=bottom]:origin-top data-[side=top]:origin-bottom data-[side=left]:origin-right data-[side=right]:origin-left",
         className,
       )}
       {...props}
@@ -83,9 +83,10 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg px-2 py-2 text-sm outline-none transition-colors",
+      "relative flex cursor-default select-none items-center rounded-lg px-2 py-2 text-sm outline-none transition-colors duration-200",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      "focus:bg-[hsl(160_50%_20%)] focus:text-foreground",
+      "focus:bg-[hsl(var(--primary)/0.15)] focus:text-foreground",
+      "hover:bg-[hsl(var(--foreground)/0.06)]",
       inset && "pl-8",
       className,
     )}

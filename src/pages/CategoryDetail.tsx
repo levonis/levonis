@@ -440,17 +440,17 @@ const CategoryDetail = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-foreground/50 text-sm">
-                    {t('catdetail_no_match')}
+                  <div className="glass-panel text-center py-12 px-6">
+                    <p className="text-foreground/60 text-sm">{t('catdetail_no_match')}</p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-center py-20">
-                <p className="text-foreground/50 text-lg mb-6">{t('category_no_products')}</p>
+              <div className="glass-panel text-center py-16 px-6">
+                <p className="text-foreground/70 text-lg mb-6">{t('category_no_products')}</p>
                 <Link to="/">
-                  <Button variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
-                    <ArrowRight className="h-4 w-4" />
+                  <Button variant="outline" className="gap-2">
+                    <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                     {t('products_browse')}
                   </Button>
                 </Link>
@@ -458,11 +458,11 @@ const CategoryDetail = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-20">
-            <p className="text-foreground/50 text-lg mb-6">{t('category_not_found')}</p>
+          <div className="glass-panel text-center py-16 px-6">
+            <p className="text-foreground/70 text-lg mb-6">{t('category_not_found')}</p>
             <Link to="/">
-              <Button variant="outline" className="gap-2 border-primary/30 text-primary hover:bg-primary/10">
-                <ArrowRight className="h-4 w-4" />
+              <Button variant="outline" className="gap-2">
+                <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                 {t('category_back')}
               </Button>
             </Link>
