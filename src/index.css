@@ -31,6 +31,39 @@
   src: url('/fonts/cairo-900.ttf') format('truetype');
 }
 
+/* UniSIRWAN Qabas - Kurdish (Sorani) font */
+@font-face {
+  font-family: 'UniSIRWAN Qabas';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/UniSIRWAN_Qabas_Light.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'UniSIRWAN Qabas';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/UniSIRWAN_Qabas_Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'UniSIRWAN Qabas';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/UniSIRWAN_Qabas_Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'UniSIRWAN Qabas';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/UniSIRWAN_Qabas_Bold.ttf') format('truetype');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -193,6 +226,12 @@
     position: relative;
     /* Keep vertical scrollbar space stable on desktop to avoid horizontal jitter */
     scrollbar-gutter: stable;
+  }
+
+  /* Use Kurdish (Sorani) font when language is set to ckb */
+  html[lang="ckb"] body,
+  html[lang="ckb"] {
+    font-family: 'UniSIRWAN Qabas', 'Cairo', system-ui, -apple-system, sans-serif;
   }
 
   #root {
