@@ -1,56 +1,49 @@
 
+## Glassmorphism Skeletons + Smooth Page Reveal
 
-# عرض الجزيرة العائمة بشكل ذكي + انميشن انكماش/تمدد
+Goal: upgrade skeleton placeholders to a frosted-glass look that matches the app's glassmorphism style, and make real content fade/slide in gracefully (no abrupt swap).
 
-تنظيف ظهور الجزيرة لتظهر فقط على صفحات التسوّق والمجتمع، مع انتقال انكماش ناعم عند الاختفاء وتمدد عند الظهور، مع التأكد من أن محتوى الإعلانات (promo) يظهر داخل الجزيرة نفسها.
+### 1. Glass skeleton primitive
+File: `src/components/ui/skeleton.tsx`
 
-## السلوك المطلوب
+Replace the flat `bg-muted` block with a frosted-glass shimmer:
+- Translucent base: `bg-white/5` (auto-adapts in light/dark via theme tokens)
+- `backdrop-blur-xl` + subtle border `border-white/10`
+- Soft inner highlight: `before:` overlay with a moving white→transparent gradient (shimmer sweep, 1.6s)
+- Keep `animate-pulse` as a low-opacity pulse beneath the shimmer
+- Exposed via the same `<Skeleton>` API → every existing skeleton instantly gains the glass look with zero refactors
 
-### 1) الصفحات التي تظهر فيها الجزيرة (visible)
-- `/` و `/home` (الرئيسية)
-- `/products` , `/product/:slug`
-- `/categories` , `/category/:slug`
-- `/bundles` , `/bundles/:id`
-- `/favorites`
-- `/community` (ومسارات المجتمع للتصفّح: `/community/merchants/*`, `/community/requests/*`, `/community/reels`)
-- `/profile/:username` و `/seller/:username` (الملفات العامة)
+Add the shimmer keyframe in `tailwind.config.ts` (`shimmer: translateX(-100% → 100%)`) and a utility class `.skeleton-glass` in `src/index.css` for the gradient mask, so it works site-wide.
 
-### 2) الصفحات التي تختفي فيها الجزيرة (hidden)
-- `/cart` (السلة)
-- `/rewards` (المكافآت)
-- `/games`, `/games/winners` (الألعاب)
-- `/chats`, `/community/messages` (المحادثات)
-- `/notifications`, `/notification-settings`, `/telegram-settings` (الإشعارات والإعدادات)
-- `/profile/settings`, `/user-info`, `/addresses` (إعدادات الحساب)
-- `/my-orders`, `/order/:id`, `/my-orders/:id/confirm` (الطلبات)
-- `/community/cart`, `/community/checkout/*` (سلة المجتمع والدفع)
-- `/community/customer/dashboard`, `/community/merchant/dashboard`, `/community/customer/profile` (لوحات المستخدم)
-- `/auth`, `/admin/*` (المصادقة والإدارة)
-- `/my-requests`, `/my-referral`, `/my-purchased`, `/my-offer-purchases`, `/confirm-delivery`, `/activate-printer`, `/warranty-dashboard`, `/download`, `/printer-protection`
+### 2. Refined page-shaped skeletons
+File: `src/components/ui/PageSkeletons.tsx`
 
-### 3) محتوى الإعلانات (promo) داخل الجزيرة
-- حالة `promo` (الـmarquee التي تعرض رسائل من جدول `announcements`) موجودة فعليًا داخل الجزيرة، ولا حاجة لتغييرها.
-- توسيع تشغيلها بحيث تظهر افتراضيًا (قبل التمرير) على كل سطوح التسوّق الرئيسية: `/`, `/products`, `/categories`, `/bundles`, `/favorites`, `/community`, `/community/merchants/*`, `/community/requests/*` — ما دامت `promoMessages.length > 0`. وعند التمرير لأسفل تتحوّل إلى شريط البحث كما في السابق.
-- في صفحات التفاصيل (`/product/:slug`, `/category/:slug`) تبقى الحالة `product`/`category` بزر الرجوع كما هي.
+- Wrap each page skeleton root in a `bg-transparent` container and add a faint vignette so the shimmer reads on any background.
+- Replace generic card wrappers (`Card`/`CardContent`) used in `GridCardsSkeleton`, `ListCardsSkeleton`, `CartSkeleton`, `OrderListSkeleton`, `NotificationsSkeleton`, `CompetitionGridSkeleton`, `ProductGridSkeleton`, `HomePageSkeleton`'s category tiles, etc., with a glass shell:
+  ```
+  rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl
+  ```
+  matching the real product/category cards (per `mem://ui/styling/product-card-glassmorphism`).
+- Keep all existing dimensions (no layout-shift regressions).
 
-### 4) انميشن الانكماش/التمدد عند تبديل الظهور
-- عند الانتقال إلى صفحة مخفية: الجزيرة تنكمش بسلاسة (`width → 28px`, `height → 0`, `opacity → 0`, `scale → 0.85`, `borderRadius → 14`) ثم تُزال من الـDOM عبر `AnimatePresence`.
-- عند العودة إلى صفحة ظاهرة: تظهر بنفس الانتقال بالعكس مع spring ناعم (نفس `shellSpring` الحالي: `stiffness 260, damping 28, mass 0.95`) — squash خفيف ثم تمدد إلى الحجم الكامل.
-- يُستخدم `motion.div` خارجي بـ `initial={{height: 0, opacity: 0, scale: 0.85}}` و `animate={{height: 'auto', opacity: 1, scale: 1}}` و `exit` معكوس — يلفّ الـmount/unmount بالكامل حتى لا يحدث pop مفاجئ.
-- المساحة العلوية (`paddingTop: 64`) في `<main>` تتحرّك أيضًا بسلاسة عند الإخفاء (تنزل إلى `0`) عبر CSS `transition: padding 280ms cubic-bezier(.32,.72,0,1)`.
+### 3. Smooth reveal of real content
+File: `src/components/RouteAwareSkeleton.tsx` and a new `src/components/PageFade.tsx`
 
-## الملفات المتأثّرة
+- Bump skeleton fade duration to 250ms with `ease-out`.
+- Create `PageFade`: a tiny wrapper using Tailwind `animate-in fade-in slide-in-from-bottom-1 duration-300` that pages mount inside. Apply it once at the `<Suspense>` boundary by wrapping `<Routes>` output via a small `<RouteFade>` keyed on `location.pathname` in `src/App.tsx`. This gives every route a uniform graceful entrance without touching individual pages.
+- Cross-fade feel: skeleton fades out (200ms) while page fades+slides in (300ms) — perceived as a single smooth reveal, not a jump.
 
-| الملف | التعديل |
-|---|---|
-| `src/island/IslandContext.tsx` | إضافة قائمة `HIDDEN_PREFIXES` ودالة `isIslandHidden(path)`، تصدير `visible` ضمن قيمة السياق، وتوسيع `routeDefault` لتفعيل حالة `promo` على سطوح التسوّق والمجتمع. |
-| `src/island/DynamicIsland.tsx` | قراءة `visible` من السياق ولفّ الجزيرة بـ `<AnimatePresence>` خارجي + `motion.div` بـ `initial/animate/exit` لانكماش وتمدد ناعم. عند `!visible` لا يُرندَر شيء داخل الـpresence. |
-| `src/App.tsx` | حذف الـ flag المحلية `hideChrome` للجزيرة (تبقى للـreels فقط داخل `IslandProvider`)؛ السماح بـ `<DynamicIsland />` بشكل دائم تحت `IslandProvider` (هي ستخفي نفسها). تحريك `paddingTop` في `<main>` ليصبح ديناميكيًا حسب `visible` عبر هوك صغير `useIsland` أو CSS variable. |
+### 4. Respect reduced motion
+In `src/index.css`, gate the shimmer and slide-in under `@media (prefers-reduced-motion: no-preference)` so accessibility is preserved.
 
-## ملاحظات تقنية
+### Files touched
+- `src/components/ui/skeleton.tsx` (glass + shimmer)
+- `src/components/ui/PageSkeletons.tsx` (glass card shells)
+- `src/components/RouteAwareSkeleton.tsx` (smoother fade-out)
+- `src/components/PageFade.tsx` (new — route entrance animation)
+- `src/App.tsx` (wrap `<Routes>` with `<RouteFade>`)
+- `tailwind.config.ts` (shimmer keyframe + animation)
+- `src/index.css` (`.skeleton-glass` utility + reduced-motion guard)
 
-- الفحص يعتمد `startsWith` لأن مسارات مثل `/order/abc` و `/games/winners` يجب أن تُخفي.
-- ترتيب الفحص: المسارات المخفية أولاً → ثم تحديد الحالة. هكذا لو ظهرت مسارات إدارية فرعية تظل مخفية تلقائيًا.
-- لا يُستخدم `lazy` للجزيرة (تبقى مدمجة بـ `import` مباشر) لضمان عدم وميض عند العودة لصفحة مرئية.
-- الانتقال يستخدم نفس `shellSpring` الحالي للحفاظ على إحساس apple-style موحّد بين كل التحويلات.
-
+### Out of scope
+- No data-fetch refactors; pages still mount as soon as React Query/Suspense resolves. The "fully loaded before swap" feel is achieved by the cross-fade timing, not by holding pages back (which would feel slower).
