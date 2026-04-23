@@ -10,6 +10,7 @@ import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Package, Plus, Minus,
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
@@ -46,6 +47,8 @@ const SALE_TYPE_LABELS: Record<string, string> = {
 };
 
 const BundleDetail = () => {
+  const thumbsScrollRef = useHorizontalDragScroll<HTMLDivElement>();
+  const productsScrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { addBundleToCart, cartSaleType, items: cartItems } = useCart();
