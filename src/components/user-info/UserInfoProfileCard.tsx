@@ -39,6 +39,7 @@ export default function UserInfoProfileCard({
   uploadingAvatar: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const { t, isRtl } = useLanguage();
   const [uploadingCover, setUploadingCover] = useState(false);
 
   const objectUrl = useMemo(() => {
