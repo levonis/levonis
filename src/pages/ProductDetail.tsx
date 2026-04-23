@@ -749,13 +749,7 @@ const ProductDetail = () => {
         <div className="md:grid md:grid-cols-2 md:gap-8">
           {/* Image */}
           <div className="relative md:sticky md:top-6 md:self-start">
-            {/* Back button overlay */}
-            <button
-              onClick={() => navigate(-1)}
-              className="absolute top-4 right-4 z-20 w-9 h-9 rounded-xl bg-card/80 flex items-center justify-center md:hidden"
-            >
-              <ArrowRight className="h-4 w-4 text-foreground" />
-            </button>
+            {/* Back button moved to Dynamic Island */}
 
             {/* Sale badge */}
             {hasSale && finalOriginalPrice && (
@@ -828,13 +822,7 @@ const ProductDetail = () => {
           {/* Product Info - Overlap card on mobile */}
           <div className="relative z-10 px-4 -mt-5 md:mt-0 md:px-0 pb-40 md:pb-12">
             <div className="rounded-2xl border border-border/40 bg-card p-4 md:p-6 space-y-4 md:border-0 md:bg-transparent md:p-0">
-              {/* Desktop back */}
-              <div className="hidden md:block mb-4">
-                <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="rounded-xl">
-                  <ArrowRight className="h-4 w-4 ml-1.5" />
-                  {t('product_go_back')}
-                </Button>
-              </div>
+              {/* Desktop back removed — handled by Dynamic Island */}
 
               {/* Category */}
               {product.categories && (
