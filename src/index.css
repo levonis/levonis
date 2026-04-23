@@ -2007,6 +2007,7 @@ body {
 #root {
   overflow: visible;
   background: transparent;
+  isolation: isolate;
 }
 
 html {
