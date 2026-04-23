@@ -13,6 +13,7 @@ import { ADMIN_ROUTES } from "@/config/adminConfig";
 import WalletDialog from "@/components/WalletDialog";
 import SavingsPopup from "./SavingsPopup";
 import CouponsPopup from "./CouponsPopup";
+import { useLanguage } from "@/lib/i18n";
 
 interface ProfileHeaderProps {
   userId: string;
