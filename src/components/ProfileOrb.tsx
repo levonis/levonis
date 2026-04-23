@@ -31,20 +31,37 @@ const ProfileOrb = memo(() => {
 
   // Progressive merge with the Dynamic Island as the user scrolls.
   // 0 = fully visible orb, 1 = fully merged into the island.
-  // The range is auto-calibrated to the island's actual morph window:
-  //   start ≈ a bit before the island's promo→search threshold (40px)
-  //   end   ≈ start + island height (so the orb is gone by the time the
-  //           search shape has fully settled — taller islands get a longer fade).
+  // Also tracks the live island center so the orb visually travels toward
+  // it (absorption) and back (detachment) instead of drifting off-edge.
   const [mergeProgress, setMergeProgress] = useState(0);
+  const [islandTarget, setIslandTarget] = useState<{
+    dx: number;
+    dy: number;
+    height: number;
+  }>({ dx: 0, dy: 0, height: 52 });
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     let raf = 0;
     const ISLAND_THRESHOLD = 40; // matches IslandContext scroll threshold
     const compute = () => {
-      // Auto-calibrate: read the live island height when present, fall back
-      // to a sane default (≈ search shape height) otherwise.
+      const orbEl = btnRef.current;
       const islandEl = document.querySelector<HTMLElement>("[data-dynamic-island]");
       const islandH = islandEl?.getBoundingClientRect().height ?? 52;
+
+      // Vector from orb center → island center (used to "fly into" it).
+      if (orbEl && islandEl) {
+        const o = orbEl.getBoundingClientRect();
+        const i = islandEl.getBoundingClientRect();
+        const ocx = o.left + o.width / 2;
+        const ocy = o.top + o.height / 2;
+        const icx = i.left + i.width / 2;
+        const icy = i.top + i.height / 2;
+        setIslandTarget({ dx: icx - ocx, dy: icy - ocy, height: islandH });
+      } else {
+        setIslandTarget((prev) => ({ ...prev, height: islandH }));
+      }
+
       const start = Math.max(8, ISLAND_THRESHOLD - 12); // ≈ 28px
       const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9); // ≈ 88–110px
       const y = window.scrollY;
