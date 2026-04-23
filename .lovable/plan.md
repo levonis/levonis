@@ -1,49 +1,70 @@
 
-## Glassmorphism Skeletons + Smooth Page Reveal
 
-Goal: upgrade skeleton placeholders to a frosted-glass look that matches the app's glassmorphism style, and make real content fade/slide in gracefully (no abrupt swap).
+## إصلاح مشاكل البحث + إظهار الأسماء كاملة في الجزيرة
 
-### 1. Glass skeleton primitive
-File: `src/components/ui/skeleton.tsx`
+### 1) مشاكل البحث الحالية
 
-Replace the flat `bg-muted` block with a frosted-glass shimmer:
-- Translucent base: `bg-white/5` (auto-adapts in light/dark via theme tokens)
-- `backdrop-blur-xl` + subtle border `border-white/10`
-- Soft inner highlight: `before:` overlay with a moving white→transparent gradient (shimmer sweep, 1.6s)
-- Keep `animate-pulse` as a low-opacity pulse beneath the shimmer
-- Exposed via the same `<Skeleton>` API → every existing skeleton instantly gains the glass look with zero refactors
+**أ. الضغط على أيقونة البحث داخل قسم يخرج للرئيسية**
+في `src/island/DynamicIsland.tsx` → الدالة `goSearch` تتحقق فقط من `state === "search"` لتركز على الـinput. لكن داخل `/category/:slug` الجزيرة في حالة `search` افتراضياً، فينجح هذا. **المشكلة الحقيقية**: عند تسجيل المستخدم العنوان بـ`setContext({ state: "category", title })` فإن `state` يصبح `"category"` لا `"search"`، فينفذ `navigate("/category/${slug}?focus=search")` بـ `replace: true` — وفي الواقع `params.slug` موجود فيعمل، لكن لا يوجد أي معالج لـ `?focus=search` فلا يحدث شيء مرئي. الحل: في حالة `category`/`product` نقوم بـ:
+- إذا كنا داخل قسم → تبديل `state` للجزيرة لـ `search` فوراً عبر `setContext({ state: "search" })` و focus على الـinput.
+- لا navigate، لا redirect.
 
-Add the shimmer keyframe in `tailwind.config.ts` (`shimmer: translateX(-100% → 100%)`) and a utility class `.skeleton-glass` in `src/index.css` for the gradient mask, so it works site-wide.
+**ب. كتابة كلمة في البحث لا يحدث شيء**
+- داخل القسم: `useIslandSearch` يطلب من Supabase ويعرض النتائج، لكن الضغط على "View all" ينتقل لـ `/category/${slug}?q=...` — صحيح، و `CategoryDetail.tsx` يقرأ `?q=` ويفلتر. هذا يعمل.
+- على الرئيسية: `goSearchUrl` يذهب لـ `/?q=...` لكن **`Home.tsx` لا يقرأ الـquery param إطلاقاً** فلا يحصل أي فلترة. هذه هي المشكلة.
 
-### 2. Refined page-shaped skeletons
-File: `src/components/ui/PageSkeletons.tsx`
+**الحل**:
+- في `src/pages/Home.tsx` أضف قراءة `?q=` عبر `useSearchParams`، ومرّره كـفلتر على شبكة المنتجات/البحث، مع شريط "نتائج البحث عن: «X» — مسح" أعلى الصفحة.
+- إصلاح `goSearch` في `DynamicIsland.tsx` ليفتح الـinput مباشرة بدل التنقل (للحالات `category`/`product`/أي حالة).
+- إصلاح فحص النص داخل القسم: في `useIslandSearch` يعمل عند `>= 2` حروف — جيد، لكن نضيف إشعاراً مرئياً عند 1 حرف فقط ("اكتب حرفين على الأقل") بدل أن تظل اللوحة فارغة.
+- التأكد أن RLS على `products` يسمح بالقراءة العامة (موجود بالفعل في المشروع).
 
-- Wrap each page skeleton root in a `bg-transparent` container and add a faint vignette so the shimmer reads on any background.
-- Replace generic card wrappers (`Card`/`CardContent`) used in `GridCardsSkeleton`, `ListCardsSkeleton`, `CartSkeleton`, `OrderListSkeleton`, `NotificationsSkeleton`, `CompetitionGridSkeleton`, `ProductGridSkeleton`, `HomePageSkeleton`'s category tiles, etc., with a glass shell:
-  ```
-  rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl
-  ```
-  matching the real product/category cards (per `mem://ui/styling/product-card-glassmorphism`).
-- Keep all existing dimensions (no layout-shift regressions).
+**ج. الأمور الإضافية**
+- تنظيف query param بعد الضغط Enter يمسح `?q=` من URL — نتركه ليرى المستخدم النتائج.
+- `submitSearch` يستدعي `resetSearch()` التي تـ blur الـinput — جيد، لكن نتركه يستدعي `goSearchUrl` بعدها.
 
-### 3. Smooth reveal of real content
-File: `src/components/RouteAwareSkeleton.tsx` and a new `src/components/PageFade.tsx`
+### 2) إظهار الاسم كاملاً في الجزيرة (عربي/كردي/إنكليزي)
 
-- Bump skeleton fade duration to 250ms with `ease-out`.
-- Create `PageFade`: a tiny wrapper using Tailwind `animate-in fade-in slide-in-from-bottom-1 duration-300` that pages mount inside. Apply it once at the `<Suspense>` boundary by wrapping `<Routes>` output via a small `<RouteFade>` keyed on `location.pathname` in `src/App.tsx`. This gives every route a uniform graceful entrance without touching individual pages.
-- Cross-fade feel: skeleton fades out (200ms) while page fades+slides in (300ms) — perceived as a single smooth reveal, not a jump.
+**المشكلة الحالية في `baseShape` (DynamicIsland.tsx)**:
+```ts
+const titleWidth = Math.min(220, Math.max(60, titleLen * 9));
+```
+- السقف 220px ثابت → الأسماء الطويلة تُقص.
+- 9px/حرف غير دقيق للعربي والكردي (الحروف أعرض بسبب الـligatures والـdiacritics).
+- الأنيميشن `scaleX: 0.6 → 1` يمطّ الحروف بصرياً مما يبدو مشوهاً.
 
-### 4. Respect reduced motion
-In `src/index.css`, gate the shimmer and slide-in under `@media (prefers-reduced-motion: no-preference)` so accessibility is preserved.
+**الإصلاحات**:
 
-### Files touched
-- `src/components/ui/skeleton.tsx` (glass + shimmer)
-- `src/components/ui/PageSkeletons.tsx` (glass card shells)
-- `src/components/RouteAwareSkeleton.tsx` (smoother fade-out)
-- `src/components/PageFade.tsx` (new — route entrance animation)
-- `src/App.tsx` (wrap `<Routes>` with `<RouteFade>`)
-- `tailwind.config.ts` (shimmer keyframe + animation)
-- `src/index.css` (`.skeleton-glass` utility + reduced-motion guard)
+**أ. حساب عرض ذكي حسب اللغة**:
+```ts
+const perChar = (language === "ar" || language === "ku") ? 11 : 8.5;
+const minBudget = 120;
+const viewportBudget = typeof window !== "undefined" ? window.innerWidth - 48 : 520;
+const desktopCap = 560;
+const cap = Math.min(viewportBudget, desktopCap);
+const titleWidth = Math.min(cap, Math.max(minBudget, titleLen * perChar + 24));
+```
+- يطبَّق على كلٍ من `category` و `product`.
+- المسافة الأفقية للأزرار (back + search) ~96px تُترك كما هي، فيكون عرض الجزيرة الكلي = `titleWidth + chrome`.
 
-### Out of scope
-- No data-fetch refactors; pages still mount as soon as React Query/Suspense resolves. The "fully loaded before swap" feel is achieved by the cross-fade timing, not by holding pages back (which would feel slower).
+**ب. إزالة scaleX من النص (كي لا يتمطط)**:
+- داخل بلوك `category` و `product` في `motion.span`:
+  - استبدال `scaleX: 0.6 → 1` بـ `opacity + y: 4 → 0` فقط.
+  - الحاوية (الـshell) هي التي تتمدد عبر spring على `width`، فتظهر الحروف بحجمها الطبيعي.
+
+**ج. اتجاه النص التلقائي للنصوص المختلطة**:
+- إضافة `dir="auto"` على `<motion.span>` و `style={{ unicodeBidi: "plaintext" }}`.
+- ينفع الأسماء المختلطة مثل "Bambulab X1 برو" أو "كرت RTX 4090".
+
+**د. نعومة الـmorph عند التوسع لأسماء طويلة**:
+- تخفيف spring الـwidth: `stiffness 360 → 300`, `damping 36 → 32` ليبدو الانفتاح متدفقاً وليس قافزاً.
+
+### الملفات التي ستتغير
+- `src/island/DynamicIsland.tsx` — `baseShape` (عرض ذكي)، `goSearch` (تبديل لـ search state بدل التنقل)، نص العنوان في `category`/`product` (إزالة scaleX، dir="auto")، تخفيف spring العرض.
+- `src/pages/Home.tsx` — قراءة `?q=` وفلترة المنتجات + شريط مسح.
+- ملاحظة: `CategoryDetail.tsx` يقرأ `?q=` بالفعل ويعمل، لا حاجة لتعديل.
+
+### خارج النطاق
+- لا تغييرات على RLS، لا migrations.
+- لا تغييرات على debounce العنوان (يعمل من الجلسات السابقة).
+
