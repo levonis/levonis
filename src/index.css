@@ -2050,7 +2050,13 @@
   50%      { opacity: 0.95; transform: translate(-4%, -3%) scale(1.08); }
 }
 
-@keyframes card-red-sweep {
+/* Lift real card content above the decorative red glow/sweep layers */
+.product-card-glass > *:not(.card-red-glow):not(.card-red-sweep) {
+  position: relative;
+  z-index: 2;
+}
+
+
   0%   { transform: translateX(-120%); opacity: 0; }
   18%  { opacity: 1; }
   60%  { opacity: 1; }
