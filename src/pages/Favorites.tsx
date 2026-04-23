@@ -42,7 +42,7 @@ const FavoriteSkeleton = () => (
 );
 
 const Favorites = () => {
-  const { t, language } = useLanguage();
+  const { t, language, isRtl } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -97,7 +97,7 @@ const Favorites = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card border-b border-border/30">
         <div className="px-4 pt-4 pb-3">
@@ -109,7 +109,7 @@ const Favorites = () => {
               <div>
                 <h1 className="text-lg font-black text-foreground">{t('favorites_title')}</h1>
                 {!loading && (
-                  <p className="text-xs text-muted-foreground">{favorites.length} منتج</p>
+                  <p className="text-xs text-muted-foreground">{t('favorites_count_label', { count: favorites.length })}</p>
                 )}
               </div>
             </div>
