@@ -4,10 +4,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/utils';
-import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 const BundlesSection = () => {
-  const scrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const { data: bundles } = useQuery({
     queryKey: ['home-bundles-preview'],
     queryFn: async () => {
@@ -39,11 +37,11 @@ const BundlesSection = () => {
       </div>
 
       <div
-        ref={scrollRef}
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
         style={{
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y',
+          touchAction: 'pan-y pinch-zoom',
+          overscrollBehaviorX: 'contain',
         }}
       >
         {bundles.map((bundle) => {
@@ -66,7 +64,8 @@ const BundlesSection = () => {
                   <img
                     src={bundle.image_url}
                     alt={bundle.title_ar}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none"
+                    draggable={false}
                   />
                   <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
                   {discount > 0 && (

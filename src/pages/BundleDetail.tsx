@@ -10,7 +10,6 @@ import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Package, Plus, Minus,
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
@@ -47,8 +46,6 @@ const SALE_TYPE_LABELS: Record<string, string> = {
 };
 
 const BundleDetail = () => {
-  const thumbsScrollRef = useHorizontalDragScroll<HTMLDivElement>();
-  const productsScrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { addBundleToCart, cartSaleType, items: cartItems } = useCart();
@@ -206,9 +203,8 @@ const BundleDetail = () => {
         {/* Image thumbnails */}
         {bundle.allImages.length > 1 && (
           <div
-            ref={thumbsScrollRef}
             className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1"
-            style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+            style={{ touchAction: 'pan-y pinch-zoom', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
           >
             {bundle.allImages.map((img: string, i: number) => (
               <button
@@ -220,7 +216,7 @@ const BundleDetail = () => {
                     : 'border-border/30 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={img} className="w-full h-full object-cover" />
+                <img src={img} className="w-full h-full object-cover pointer-events-none" draggable={false} />
               </button>
             ))}
           </div>
@@ -310,9 +306,8 @@ const BundleDetail = () => {
             <h3 className="text-sm font-bold text-foreground">المنتجات في هذه الباقة</h3>
           </div>
           <div
-            ref={productsScrollRef}
             className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2"
-            style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+            style={{ touchAction: 'pan-y pinch-zoom', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
           >
             {bundle.items.map((item: any, idx: number) => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
@@ -327,7 +322,7 @@ const BundleDetail = () => {
                 >
                   {itemImage && (
                     <div className="h-[80px] overflow-hidden">
-                      <img src={itemImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                      <img src={itemImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" draggable={false} />
                     </div>
                   )}
                   <div className="p-1.5">
