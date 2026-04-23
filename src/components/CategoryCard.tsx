@@ -34,6 +34,7 @@ const CategoryCard = ({
   const showVideo = !!mediaUrl && (mediaType === "video" || (mediaType == null && isVideoUrl(mediaUrl)));
   const showImage = !!mediaUrl && !showVideo;
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
+  const isTransparentGif = useFullMedia && mediaType === "gif";
 
   return (
     <Link
@@ -52,7 +53,7 @@ const CategoryCard = ({
           {showVideo ? (
             <video
               src={mediaUrl!}
-              className="w-full h-full object-cover scale-[1.02]"
+              className="w-full h-full object-cover"
               autoPlay
               muted
               loop
@@ -63,7 +64,7 @@ const CategoryCard = ({
             <img
               src={mediaUrl!}
               alt=""
-              className="w-full h-full object-cover scale-[1.02]"
+              className={isTransparentGif ? "w-full h-full object-contain" : "w-full h-full object-cover"}
               loading="lazy"
               draggable={false}
             />
@@ -72,7 +73,9 @@ const CategoryCard = ({
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, hsl(var(--background) / 0.12) 0%, hsl(var(--background) / 0.22) 40%, hsl(var(--background) / 0.58) 100%)",
+                isTransparentGif
+                  ? "linear-gradient(180deg, hsl(var(--background) / 0.04) 0%, hsl(var(--background) / 0.10) 52%, hsl(var(--background) / 0.32) 100%)"
+                  : "linear-gradient(180deg, hsl(var(--background) / 0.12) 0%, hsl(var(--background) / 0.22) 40%, hsl(var(--background) / 0.58) 100%)",
             }}
           />
         </div>
@@ -140,14 +143,14 @@ const CategoryCard = ({
         )}
 
         {/* Title */}
-        <div className="w-full min-h-[36px] sm:min-h-[40px] flex items-start justify-center px-0.5 overflow-hidden">
+        <div className="w-full min-h-[36px] sm:min-h-[40px] flex items-start justify-center px-0.5 overflow-hidden mt-auto">
           <h3 className="font-bold text-[12px] sm:text-[13px] text-foreground group-hover:text-primary transition-colors duration-200 text-center leading-snug line-clamp-2 break-words w-full">
             {nameAr}
           </h3>
         </div>
 
         {/* Description */}
-        <div className="w-full flex-1 flex items-start justify-center px-0.5 overflow-hidden">
+        <div className="w-full min-h-[30px] flex items-start justify-center px-0.5 overflow-hidden">
           {descriptionAr ? (
             <p className="text-[10px] sm:text-[11px] font-medium text-foreground/75 text-center leading-relaxed line-clamp-2 break-words w-full">
               {descriptionAr}
