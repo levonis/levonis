@@ -1385,4 +1385,9 @@ export const en: TranslationKeys = {
   island_search_in_category: 'Search in this category…',
   island_search_in_community: 'Search the community…',
   island_back: 'Back',
+  island_recent: 'Recent searches',
+  island_suggestions: 'Suggestions',
+  island_results: 'Products',
+  island_view_all: 'View all results',
+  island_no_results: 'No results',
 };

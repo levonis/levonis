@@ -1394,4 +1394,9 @@ export type TranslationKeys = {
   island_search_in_category: string;
   island_search_in_community: string;
   island_back: string;
+  island_recent: string;
+  island_suggestions: string;
+  island_results: string;
+  island_view_all: string;
+  island_no_results: string;
 };
