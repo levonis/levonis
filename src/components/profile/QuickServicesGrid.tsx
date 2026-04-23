@@ -53,7 +53,7 @@ export default function QuickServicesGrid() {
   });
 
   return (
-    <div className="rounded-3xl bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-4">
+    <div className="glass-card p-4">
       <h2 className="text-base font-bold text-foreground mb-3">{t('profile_quick_services')}</h2>
 
       <div className="grid grid-cols-4 gap-3">
