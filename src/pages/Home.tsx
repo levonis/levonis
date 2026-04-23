@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
-import { Loader2 } from 'lucide-react';
+
 import AnimatedDivider from '@/components/ui/animated-divider';
 import { useLanguage } from '@/lib/i18n';
 import ProgressiveSection from '@/components/ProgressiveSection';
