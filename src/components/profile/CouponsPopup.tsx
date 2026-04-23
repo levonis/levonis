@@ -141,7 +141,6 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
         open={open}
         onOpenChange={onOpenChange}
         originRect={originRect ?? null}
-        panelClassName="pointer-events-auto relative w-full max-w-md max-h-[88vh] overflow-hidden rounded-3xl border border-white/15 bg-card/95 backdrop-blur-xl shadow-2xl flex flex-col p-0"
         title={
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
