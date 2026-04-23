@@ -21,6 +21,9 @@ import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 // EmailVerificationBanner available for post-login verification
 import AppBackground from "@/components/AppBackground";
+import ProfileOrb from "@/components/ProfileOrb";
+import ProfileExpansionShell from "@/components/ProfileExpansionShell";
+import { ProfileTransitionProvider } from "@/components/ProfileTransitionProvider";
 
 
 // Lazy load unified chat button (global floating button)
@@ -172,6 +175,7 @@ function AppContent() {
         <DeferredEffects />
       </Suspense>
       <DynamicIsland />
+      <ProfileOrb />
       <main
         style={{ paddingTop: mainPaddingTop }}
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
@@ -277,7 +281,7 @@ function AppContent() {
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
-            <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+            <Route path="/profile" element={<RequireAuth><ProfileExpansionShell><Profile /></ProfileExpansionShell></RequireAuth>} />
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/my-referral" element={<RequireAuth><MyReferral /></RequireAuth>} />
