@@ -1,51 +1,33 @@
 
 
-## جعل خلفية بطاقة المنتج زجاجية فقط (Glassmorphism نقي)
+## جعل خلفية بطاقة المنتج في صفحة `/category` زجاجية فقط
 
-### الوضع الحالي
-الكلاس `.product-card-glass` في `src/index.css` (السطور 1982–2028) يطبق على البطاقة:
-- **خلفية زجاجية** (backdrop-filter blur + تدرج شفاف) ✅ هذا ما نريد إبقاءه
-- **ميلان ثلاثي الأبعاد** (`perspective(800px) rotateX(0.8deg)`)
-- **حدود ملوّنة** (border + inset shadows)
-- **ظل خارجي قوي** (`box-shadow 0 4px 20px`)
-- **لمعة زاوية** عبر `::before` (تدرج قطري في الزاوية العلوية)
-- **حركة hover** ترفع البطاقة وتغيّر الميلان والظل
+### الملف المعني
+بطاقات المنتجات في `/category/:slug` تأتي من `src/components/FloatingProductCard.tsx` (الفرع غير-featured، السطور 115–157). هي التي تظهر في شبكة المنتجات داخل القسم — وليست `ProductCard.tsx` (التي عُدّلت سابقاً وتُستخدم في الرئيسية).
 
-النتيجة: البطاقة تبدو وكأنها لوحة ثلاثية الأبعاد بإطار وإضاءة، وليست مجرد خلفية زجاجية.
-
-### المطلوب
-الإبقاء على **الخلفية الزجاجية فقط** (blur + شفافية)، وإزالة كل ما عداها: الميلان، الإطار، الظل الخارجي، اللمعة، وتأثير hover ثلاثي الأبعاد.
-
-### التغيير
-
-**ملف واحد:** `src/index.css` — استبدال الكتلة `.product-card-glass` (السطور 1982–2028) بـ:
-
-```css
-/* Glass background only for ProductCard (flat, no 3D, no border, no glare) */
-.product-card-glass {
-  position: relative;
-  border-radius: 0.5rem;
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  background: linear-gradient(
-    170deg,
-    hsl(160 35% 14% / 0.3) 0%,
-    hsl(160 30% 10% / 0.4) 50%,
-    hsl(160 25% 8% / 0.5) 100%
-  );
-  border: none;
-  box-shadow: none;
-  transition: background 0.2s ease;
-}
+### الوضع الحالي للبطاقة (الحاوية الخارجية)
+```tsx
+<div className="... border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300">
 ```
++ تدرّج سفلي فوق الصورة `bg-gradient-to-t from-card to-transparent` يمتزج مع الخلفية الصلبة.
++ تكبير عند hover للصورة (`group-hover:scale-105`).
 
-ملاحظات:
-- إزالة `transform: perspective/rotateX` → البطاقة مسطحة.
-- إزالة `::before` (اللمعة) وقاعدة `:hover` بالكامل → لا حركة ولا تغيّر إضاءة.
-- إبقاء `overflow:hidden` غير ضروري بعد إزالة اللمعة، لكن نتركه افتراضياً عبر صورة المنتج التي تستخدم `overflow-hidden` على الـ`<div>` الداخلي بالفعل، فنحذفه من الكلاس الأم لتفادي اقتطاع غير مرغوب لشارات الخصم.
+النتيجة: الخلفية ليست زجاجاً نقياً (شفافية ضعيفة + لون كرت صلب)، ويوجد إطار وتأثيرات إضافية.
+
+### التغيير المطلوب
+**ملف واحد فقط:** `src/components/FloatingProductCard.tsx` — الحاوية في الفرع العادي (السطور 117–127):
+
+1. استبدال `border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300` بخلفية زجاجية نقية عبر `style`:
+   - `backdropFilter: blur(20px) saturate(1.4)`
+   - `background: linear-gradient(170deg, hsl(160 35% 14% / 0.3), hsl(160 30% 10% / 0.4), hsl(160 25% 8% / 0.5))`
+   - بدون `border` ولا `hover` ولا transition للحدود.
+2. إزالة شريط التدرّج السفلي `<div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />` لأنه يستند للون الكرت الصلب ولن يندمج مع الخلفية الزجاجية.
+3. إزالة `group-hover:scale-105` من الصورة (إبقاء الـtransition بدون تكبير) للحفاظ على هدوء البطاقة كما طلب المستخدم سابقاً.
+
+محتوى البطاقة (الصورة + الاسم + السعر + شارة الخصم) يبقى كما هو تماماً.
 
 ### خارج النطاق
-- لا تغيير على `ProductCard.tsx` (نفس الـ markup وأماكن الشارات).
-- لا تغيير على بطاقات أخرى (CategoryCard, CompactProductCard, إلخ).
-- لا تغيير على RLS أو قاعدة البيانات.
+- لا تغيير على الفرع `featured` (المنتج الرئيسي ثلاثي الأبعاد على المنصة).
+- لا تغيير على `ProductCard.tsx` أو الرئيسية.
+- لا تغييرات قاعدة بيانات.
 
