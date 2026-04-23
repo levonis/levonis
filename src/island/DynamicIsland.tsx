@@ -81,7 +81,7 @@ const searchShape = (
 /* -------------------------------------------------------------------------- */
 
 export const DynamicIsland = () => {
-  const { state, title, promoMessages } = useIsland();
+  const { state, title, promoMessages, visible } = useIsland();
   const { t, isRtl, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -232,22 +232,28 @@ export const DynamicIsland = () => {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-3">
       <LayoutGroup>
-        <motion.div
-          ref={islandRef}
-          layout
-          initial={false}
-          animate={{
-            width: shape.width,
-            height: shape.height,
-            borderRadius: shape.radius,
-          }}
-          style={{
-            maxWidth: "calc(100vw - 16px)",
-            borderRadius: shape.radius,
-          }}
-          transition={shellSpring}
-          className="island-surface pointer-events-auto flex flex-col overflow-hidden"
-        >
+        <AnimatePresence initial={false}>
+          {visible && (
+            <motion.div
+              key="island-shell"
+              ref={islandRef}
+              layout
+              initial={{ opacity: 0, scale: 0.7, width: 28, height: 0 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                width: shape.width,
+                height: shape.height,
+                borderRadius: shape.radius,
+              }}
+              exit={{ opacity: 0, scale: 0.7, width: 28, height: 0 }}
+              style={{
+                maxWidth: "calc(100vw - 16px)",
+                borderRadius: shape.radius,
+              }}
+              transition={shellSpring}
+              className="island-surface pointer-events-auto flex flex-col overflow-hidden"
+            >
           <AnimatePresence mode="wait" initial={false}>
             {/* PROMO ----------------------------------------------------- */}
             {state === "promo" && (
