@@ -2006,6 +2006,11 @@ body {
 
 #root {
   overflow: visible;
+  background: transparent;
+}
+
+html {
+  background: transparent;
 }
 
 /* Safe area padding for notched devices & Telegram */
