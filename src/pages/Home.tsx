@@ -1,4 +1,4 @@
-import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';
+import { useMemo, lazy, Suspense, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
@@ -8,7 +8,7 @@ import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
 
-import AnimatedDivider from '@/components/ui/animated-divider';
+
 import { useLanguage } from '@/lib/i18n';
 import ProgressiveSection from '@/components/ProgressiveSection';
 
@@ -19,15 +19,6 @@ const ReelsBar = lazy(() => import('@/components/reels/ReelsBar'));
 // CommunitySection moved off the homepage to /community to reduce initial load.
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 
-// Simple error boundary for lazy-loaded components — message localized via DOM lookup avoided; uses translation key fallback
-class ErrorBoundaryFallback extends Component<{ children: ReactNode; fallbackText?: string }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  render() {
-    if (this.state.hasError) return <div className="text-center py-8 text-muted-foreground text-sm">{this.props.fallbackText || ''}</div>;
-    return this.props.children;
-  }
-}
 
 const MemoizedCategoryCard = memo(CategoryCard);
 
