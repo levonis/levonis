@@ -83,7 +83,7 @@ export default function RewardsHub() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir={dir}>
+    <div className="min-h-screen flex flex-col" dir={dir}>
       {/* Compact Sticky Header + Tabs - Fixed, doesn't scroll */}
       <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
         {/* Minimal Header */}
