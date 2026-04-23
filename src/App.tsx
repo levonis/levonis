@@ -137,6 +137,7 @@ const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
+import PageFade from "@/components/PageFade";
 
 
 function AppContent() {
@@ -173,6 +174,7 @@ function AppContent() {
         className="transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
         <Suspense fallback={<RouteAwareSkeleton />}>
+          <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
