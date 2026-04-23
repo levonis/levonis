@@ -1,12 +1,16 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 /* -------------------------------------------------------------------------- */
-/*  Skeleton primitives                                                        */
-/*  Every skeleton below is sized to mirror the REAL rendered content as       */
-/*  closely as possible (heights, paddings, grid columns, gaps, aspect ratios) */
-/*  so the transition from skeleton → content has zero layout shift.           */
+/*  Glassmorphism Skeleton system                                             */
+/*  Every wrapper uses a frosted glass shell that matches the real cards in   */
+/*  the app (see mem://ui/styling/product-card-glassmorphism). Sizes mirror   */
+/*  the rendered content so swapping in real data causes zero layout shift.   */
 /* -------------------------------------------------------------------------- */
+
+const glassCard =
+  "rounded-2xl border border-foreground/10 bg-foreground/[0.04] backdrop-blur-xl shadow-[0_8px_24px_-12px_hsl(var(--background)/0.5)]";
+const glassCardSm =
+  "rounded-xl border border-foreground/10 bg-foreground/[0.04] backdrop-blur-xl";
 
 // Header with title + description
 export function HeaderSkeleton() {
@@ -29,13 +33,11 @@ export function GridCardsSkeleton({
   return (
     <div className={`grid ${cols} gap-3`}>
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4">
-            <Skeleton className="aspect-square w-full rounded-lg mb-3" />
-            <Skeleton className="h-4 w-3/4 mb-2" />
-            <Skeleton className="h-3 w-1/2" />
-          </CardContent>
-        </Card>
+        <div key={i} className={`${glassCard} p-4`}>
+          <Skeleton className="aspect-square w-full rounded-lg mb-3" />
+          <Skeleton className="h-4 w-3/4 mb-2" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
       ))}
     </div>
   );
@@ -46,10 +48,7 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-card/50 rounded-lg p-1.5 border border-border/30"
-        >
+        <div key={i} className={`${glassCardSm} p-1.5`}>
           <Skeleton className="aspect-square w-full rounded-md mb-1.5" />
           <Skeleton className="h-3 w-3/4 mb-1" />
           <Skeleton className="h-2.5 w-1/2 mb-1.5" />
@@ -68,17 +67,15 @@ export function ListCardsSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Skeleton className="w-14 h-14 rounded-lg shrink-0" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-              <Skeleton className="h-3 w-1/3" />
-            </div>
-            <Skeleton className="h-8 w-16 rounded-md" />
-          </CardContent>
-        </Card>
+        <div key={i} className={`${glassCard} p-4 flex items-center gap-3`}>
+          <Skeleton className="w-14 h-14 rounded-lg shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+          <Skeleton className="h-8 w-16 rounded-md" />
+        </div>
       ))}
     </div>
   );
@@ -93,14 +90,14 @@ export function TableSkeleton({
   cols?: number;
 }) {
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="bg-muted/50 p-3 flex gap-4">
+    <div className={`${glassCard} overflow-hidden`}>
+      <div className="bg-foreground/5 p-3 flex gap-4">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
       </div>
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="p-3 flex gap-4 border-t">
+        <div key={i} className="p-3 flex gap-4 border-t border-foreground/5">
           {Array.from({ length: cols }).map((_, j) => (
             <Skeleton key={j} className="h-4 flex-1" />
           ))}
@@ -113,11 +110,9 @@ export function TableSkeleton({
 // Form skeleton for settings pages
 export function FormSkeleton({ fields = 5 }: { fields?: number }) {
   return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-40" />
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className={`${glassCard} p-6`}>
+      <Skeleton className="h-6 w-40 mb-5" />
+      <div className="space-y-4">
         {Array.from({ length: fields }).map((_, i) => (
           <div key={i} className="space-y-2">
             <Skeleton className="h-4 w-24" />
@@ -125,8 +120,8 @@ export function FormSkeleton({ fields = 5 }: { fields?: number }) {
           </div>
         ))}
         <Skeleton className="h-10 w-32 rounded-md mt-4" />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -141,7 +136,7 @@ export function ChatSkeleton() {
         >
           <div className="max-w-[70%] space-y-1">
             <Skeleton
-              className={`h-12 ${isLeft ? "w-48" : "w-36"} rounded-xl`}
+              className={`h-12 ${isLeft ? "w-48" : "w-36"} rounded-2xl`}
             />
             <Skeleton className="h-2.5 w-16" />
           </div>
@@ -154,7 +149,7 @@ export function ChatSkeleton() {
 // Detail page skeleton (product/order detail) — matches ProductDetail layout
 export function DetailPageSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       {/* Hero image */}
       <div className="relative">
         <Skeleton className="w-full aspect-square rounded-none" />
@@ -167,7 +162,7 @@ export function DetailPageSkeleton() {
       </div>
       {/* Content card */}
       <div className="px-4 -mt-6 relative z-10 space-y-4">
-        <div className="rounded-2xl border border-border/40 bg-card p-4 space-y-3">
+        <div className={`${glassCard} p-4 space-y-3`}>
           <Skeleton className="h-5 w-20 rounded-full" />
           <Skeleton className="h-7 w-3/4" />
           <Skeleton className="h-4 w-full" />
@@ -178,7 +173,7 @@ export function DetailPageSkeleton() {
             <Skeleton className="h-7 w-16 rounded-full" />
           </div>
         </div>
-        <div className="rounded-2xl border border-border/40 bg-card p-4 space-y-3">
+        <div className={`${glassCard} p-4 space-y-3`}>
           <Skeleton className="h-5 w-32" />
           <div className="flex gap-3">
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -201,15 +196,13 @@ export function StatsGridSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-            <Skeleton className="h-7 w-20" />
-          </CardContent>
-        </Card>
+        <div key={i} className={`${glassCard} p-4`}>
+          <div className="flex items-center gap-2 mb-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+          <Skeleton className="h-7 w-20" />
+        </div>
       ))}
     </div>
   );
@@ -220,16 +213,14 @@ export function NotificationsSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-3 flex items-start gap-3">
-            <Skeleton className="w-8 h-8 rounded-full shrink-0 mt-0.5" />
-            <div className="flex-1 space-y-1.5">
-              <Skeleton className="h-4 w-4/5" />
-              <Skeleton className="h-3 w-3/5" />
-              <Skeleton className="h-2.5 w-20" />
-            </div>
-          </CardContent>
-        </Card>
+        <div key={i} className={`${glassCard} p-3 flex items-start gap-3`}>
+          <Skeleton className="w-8 h-8 rounded-full shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-4 w-4/5" />
+            <Skeleton className="h-3 w-3/5" />
+            <Skeleton className="h-2.5 w-20" />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -237,9 +228,7 @@ export function NotificationsSkeleton({ count = 6 }: { count?: number }) {
 
 // Banner skeleton for home page (matches BannerCarousel)
 export function BannerSkeleton() {
-  return (
-    <Skeleton className="w-full h-32 md:h-48 lg:h-64 rounded-xl" />
-  );
+  return <Skeleton className="w-full h-32 md:h-48 lg:h-64 rounded-xl" />;
 }
 
 // Cart items skeleton
@@ -247,27 +236,23 @@ export function CartSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-3 flex gap-3">
-            <Skeleton className="w-20 h-20 rounded-lg shrink-0" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/3" />
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-8 w-24 rounded-md" />
-              </div>
+        <div key={i} className={`${glassCard} p-3 flex gap-3`}>
+          <Skeleton className="w-20 h-20 rounded-lg shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/3" />
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-8 w-24 rounded-md" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-10 w-full rounded-lg" />
-        </CardContent>
-      </Card>
+      <div className={`${glassCard} p-4 space-y-3`}>
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-10 w-full rounded-lg" />
+      </div>
     </div>
   );
 }
@@ -277,22 +262,20 @@ export function OrderListSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-5 w-16 rounded-full" />
+        <div key={i} className={`${glassCard} p-4`}>
+          <div className="flex items-center justify-between mb-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-12 h-12 rounded-lg" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
-            <div className="flex items-center gap-3">
-              <Skeleton className="w-12 h-12 rounded-lg" />
-              <div className="flex-1 space-y-1.5">
-                <Skeleton className="h-3.5 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-              <Skeleton className="h-5 w-20" />
-            </div>
-          </CardContent>
-        </Card>
+            <Skeleton className="h-5 w-20" />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -320,17 +303,17 @@ export function CompetitionGridSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="overflow-hidden">
-          <Skeleton className="aspect-video w-full" />
-          <CardContent className="p-3 space-y-2">
+        <div key={i} className={`${glassCard} overflow-hidden`}>
+          <Skeleton className="aspect-video w-full rounded-none" />
+          <div className="p-3 space-y-2">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
             <div className="flex items-center justify-between">
               <Skeleton className="h-5 w-16" />
               <Skeleton className="h-7 w-20 rounded-md" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -355,8 +338,7 @@ export function AdminPageSkeleton({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Page-shaped skeletons — match the exact layout of specific pages so the   */
-/*  user sees an outline that snaps perfectly into the loaded content.        */
+/*  Page-shaped skeletons — match the exact layout of specific pages.         */
 /* -------------------------------------------------------------------------- */
 
 // Home page — wishes banner + carousel + reels strip + hero + categories grid
@@ -428,7 +410,7 @@ export function HomePageSkeleton() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-card/50 rounded-xl p-3 md:p-4 border border-border/40 h-[140px] md:h-[172px] flex flex-col items-center justify-center gap-2"
+                className={`${glassCardSm} p-3 md:p-4 h-[140px] md:h-[172px] flex flex-col items-center justify-center gap-2`}
               >
                 <Skeleton className="w-8 h-8 md:w-12 md:h-12 rounded-xl" />
                 <Skeleton className="h-3 w-3/4" />
@@ -495,15 +477,6 @@ export function ProfilePageSkeleton() {
       <div className="container mx-auto px-4 py-6 space-y-4">
         <ProfileSkeleton />
       </div>
-    </div>
-  );
-}
-
-// Full page loading skeleton wrapper
-export function FullPageSkeleton({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-transparent">
-      <div className="container mx-auto px-4 py-8">{children}</div>
     </div>
   );
 }

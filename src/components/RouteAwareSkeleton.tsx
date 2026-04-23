@@ -175,7 +175,7 @@ function pickSkeleton(pathname: string) {
 export default function RouteAwareSkeleton() {
   const location = useLocation();
   return (
-    <div className="animate-in fade-in duration-200">
+    <div className="animate-in fade-in duration-300 ease-out">
       {pickSkeleton(location.pathname)}
     </div>
   );
