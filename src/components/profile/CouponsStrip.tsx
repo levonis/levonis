@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, Ticket } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/lib/i18n";
 
 interface CouponsStripProps {
   userId: string;
@@ -10,6 +11,7 @@ interface CouponsStripProps {
 
 export default function CouponsStrip({ userId }: CouponsStripProps) {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   const { data: coupons, isLoading } = useQuery({
     queryKey: ["profile-coupons-list", userId],
@@ -35,20 +37,21 @@ export default function CouponsStrip({ userId }: CouponsStripProps) {
     const d = new Date(date);
     const now = new Date();
     const diffDays = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 3) return `${diffDays} يوم متبقي`;
-    return d.toLocaleDateString("ar-IQ", { month: "short", day: "numeric" });
+    const dateLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
+    if (diffDays <= 3) return t('cs_days_remaining', { days: diffDays });
+    return d.toLocaleDateString(dateLocale, { month: "short", day: "numeric" });
   };
 
   return (
     <div className="rounded-3xl bg-card border border-border/40 shadow-sm p-4">
       {/* Title */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-bold text-foreground">كوبوناتي</h2>
+        <h2 className="text-base font-bold text-foreground">{t('cs_my_coupons')}</h2>
         <button
           onClick={() => navigate("/special-coupons")}
           className="flex items-center gap-1 text-xs text-primary font-semibold transition-colors hover:text-primary/80"
         >
-          <span>عرض الكل</span>
+          <span>{t('cs_view_all')}</span>
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -81,7 +84,7 @@ export default function CouponsStrip({ userId }: CouponsStripProps) {
                         {c.discount_value?.toLocaleString()}
                       </span>
                       <span className="text-xs font-semibold text-destructive/80">
-                        {isPercentage ? "%" : "د.ع"}
+                        {isPercentage ? "%" : t('ph_currency_iqd')}
                       </span>
                     </div>
 
@@ -100,7 +103,7 @@ export default function CouponsStrip({ userId }: CouponsStripProps) {
                       onClick={() => navigate("/")}
                       className="mt-2 text-[11px] font-bold text-destructive hover:text-destructive/80 self-start transition-colors"
                     >
-                      استخدم الآن ←
+                      {t('cs_use_now')}
                     </button>
                   </div>
                 </div>
