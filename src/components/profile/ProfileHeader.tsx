@@ -182,14 +182,17 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       label: t('ph_label_points'),
       value: userPoints?.available_points ?? 0,
       loading: pointsLoading,
-      onClick: () => navigate("/rewards?tab=points&sub=summary"),
+      onClick: (_e: MouseEvent<HTMLButtonElement>) => navigate("/rewards?tab=points&sub=summary"),
     },
     {
       icon: Ticket,
       label: t('ph_label_coupons'),
       value: couponsCount ?? 0,
       loading: couponsLoading,
-      onClick: () => setCouponsOpen(true),
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        setCouponsOrigin(captureOrigin(e));
+        setCouponsOpen(true);
+      },
     },
     {
       icon: Wallet,
@@ -197,7 +200,10 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: wallet?.balance ?? 0,
       loading: walletLoading,
       suffix: t('ph_currency_iqd'),
-      onClick: () => setWalletOpen(true),
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        setWalletOrigin(captureOrigin(e));
+        setWalletOpen(true);
+      },
     },
     {
       icon: TrendingUp,
@@ -205,7 +211,10 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: totalSavings ?? 0,
       loading: savingsLoading,
       suffix: t('ph_currency_iqd'),
-      onClick: () => setSavingsOpen(true),
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        setSavingsOrigin(captureOrigin(e));
+        setSavingsOpen(true);
+      },
     },
   ];
 
