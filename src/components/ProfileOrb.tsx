@@ -70,7 +70,7 @@ const ProfileOrb = memo(() => {
 
   return (
     <button
-      ref={btnRef}
+      ref={setRef}
       onClick={handleClick}
       aria-label="Profile"
       className={cn(
