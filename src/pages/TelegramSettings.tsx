@@ -127,11 +127,10 @@ export default function TelegramSettings() {
   const isLinked = !!profile?.telegram_chat_id;
 
   return (
-    <div className="min-h-screen bg-background pt-6 pb-24" dir="rtl">
+    <div className="min-h-screen pt-6 pb-24" dir="rtl">
       {/* Header */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0088cc]/8 via-[#0088cc]/3 to-transparent" />
-        <div className="absolute top-6 right-12 h-32 w-32 rounded-full bg-[#0088cc]/5 blur-3xl" />
+
 
         <div className="relative container mx-auto px-4 py-6 max-w-lg">
           <button
