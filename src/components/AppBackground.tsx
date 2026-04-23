@@ -3,26 +3,38 @@ import { useLocation } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform, animate } from 'framer-motion';
 
 /**
- * Fixed full-viewport background:
- * - Base color: #15382c (dominant green, ~90%)
- * - A soft red glow (~10%) drifts on scroll & route change, blended seamlessly
- *   into the green using `mix-blend-mode: soft-light` and heavy blur — no
- *   visible edges, just a moving warm tint.
+ * Premium fixed full-viewport background:
+ * - Dominant base: #15382c (deep emerald)
+ * - Subtle red "living light" — small, soft, drifts on scroll & route change
+ * - Black depth wash for cinematic vignette / luxury feel
+ *
+ * All accents use soft-light / multiply blends with heavy blur so nothing
+ * reads as a separate layer — just a single, breathing gradient.
  */
 export default function AppBackground() {
   const location = useLocation();
   const sideRef = useRef<'right' | 'left'>('right');
   const transitioningRef = useRef(false);
 
-  const xPct = useMotionValue(78);
-  const yPct = useMotionValue(28);
+  // Red glow position (% of viewport)
+  const xPct = useMotionValue(75);
+  const yPct = useMotionValue(30);
 
-  const xSpring = useSpring(xPct, { stiffness: 60, damping: 18, mass: 0.6 });
-  const ySpring = useSpring(yPct, { stiffness: 60, damping: 18, mass: 0.6 });
+  const xSpring = useSpring(xPct, { stiffness: 40, damping: 22, mass: 0.9 });
+  const ySpring = useSpring(yPct, { stiffness: 40, damping: 22, mass: 0.9 });
 
   const left = useTransform(xSpring, (v) => `${v}vw`);
   const top = useTransform(ySpring, (v) => `${v}vh`);
 
+  // Secondary red ember on opposite side — even subtler
+  const left2 = useTransform(xSpring, (v) => `${100 - v}vw`);
+  const top2 = useTransform(ySpring, (v) => `${100 - v * 0.6}vh`);
+
+  // Cinematic intensity pulse on route change
+  const intensity = useMotionValue(1);
+  const intensityOpacity = useTransform(intensity, [1, 1.6], [0.55, 0.85]);
+
+  // Scroll choreography
   useEffect(() => {
     let pending = false;
     const onScroll = () => {
@@ -32,9 +44,9 @@ export default function AppBackground() {
         pending = false;
         if (transitioningRef.current) return;
         const scrollY = window.scrollY || 0;
-        const baseX = sideRef.current === 'right' ? 78 : 22;
-        const sway = Math.sin(scrollY / 300) * 4;
-        const targetY = Math.min(75, Math.max(22, 22 + scrollY * 0.04));
+        const baseX = sideRef.current === 'right' ? 75 : 25;
+        const sway = Math.sin(scrollY / 380) * 5;
+        const targetY = Math.min(72, Math.max(24, 24 + scrollY * 0.035));
         xPct.set(baseX + sway);
         yPct.set(targetY);
       });
@@ -44,21 +56,23 @@ export default function AppBackground() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [xPct, yPct]);
 
+  // Route change: cinematic subtle motion
   useEffect(() => {
     const nextSide: 'right' | 'left' = sideRef.current === 'right' ? 'left' : 'right';
-    const targetX = nextSide === 'right' ? 78 : 22;
+    const targetX = nextSide === 'right' ? 75 : 25;
     transitioningRef.current = true;
 
-    const ease = [0.65, 0, 0.35, 1] as const;
-    const c1 = animate(yPct, 92, { duration: 0.22, ease });
-    let c2: ReturnType<typeof animate> | null = null;
-    let c3: ReturnType<typeof animate> | null = null;
+    const ease = [0.22, 1, 0.36, 1] as const; // cinematic easeOutQuint
+    const flare = animate(intensity, [1, 1.6, 1], { duration: 1.2, ease });
+    const dip = animate(yPct, 88, { duration: 0.45, ease });
+    let cross: ReturnType<typeof animate> | null = null;
+    let rise: ReturnType<typeof animate> | null = null;
 
-    c1.then(() => {
-      c2 = animate(xPct, targetX, { duration: 0.34, ease });
-      c2.then(() => {
-        c3 = animate(yPct, 24, { duration: 0.26, ease });
-        c3.then(() => {
+    dip.then(() => {
+      cross = animate(xPct, targetX, { duration: 0.55, ease });
+      cross.then(() => {
+        rise = animate(yPct, 28, { duration: 0.45, ease });
+        rise.then(() => {
           sideRef.current = nextSide;
           transitioningRef.current = false;
         });
@@ -66,9 +80,10 @@ export default function AppBackground() {
     });
 
     return () => {
-      c1.stop();
-      c2?.stop();
-      c3?.stop();
+      flare.stop();
+      dip.stop();
+      cross?.stop();
+      rise?.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
@@ -82,18 +97,43 @@ export default function AppBackground() {
         backgroundColor: '#15382c',
       }}
     >
-      {/* Moving red tint — small, soft, blended seamlessly into the green */}
+      {/* Primary red living light — soft-light blend, drifts with scroll */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '90vmax',
-          height: '90vmax',
-          marginLeft: '-45vmax',
-          marginTop: '-45vmax',
+          width: '95vmax',
+          height: '95vmax',
+          marginLeft: '-47.5vmax',
+          marginTop: '-47.5vmax',
           mixBlendMode: 'soft-light',
-          opacity: 0.9,
+          opacity: intensityOpacity,
+          willChange: 'left, top, opacity',
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle, hsl(0 92% 52% / 0.95) 0%, hsl(0 80% 45% / 0.45) 14%, hsl(0 60% 35% / 0.15) 34%, transparent 62%)',
+            filter: 'blur(140px)',
+          }}
+        />
+      </motion.div>
+
+      {/* Secondary faint red ember — even softer, mirrors the primary */}
+      <motion.div
+        className="absolute"
+        style={{
+          left: left2,
+          top: top2,
+          width: '70vmax',
+          height: '70vmax',
+          marginLeft: '-35vmax',
+          marginTop: '-35vmax',
+          mixBlendMode: 'soft-light',
+          opacity: 0.25,
           willChange: 'left, top',
         }}
       >
@@ -101,19 +141,38 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 90% 50% / 0.95) 0%, hsl(0 80% 45% / 0.55) 12%, hsl(0 60% 35% / 0.20) 32%, transparent 60%)',
-            filter: 'blur(120px)',
+              'radial-gradient(circle, hsl(0 85% 50% / 0.6) 0%, hsl(0 60% 35% / 0.15) 28%, transparent 60%)',
+            filter: 'blur(160px)',
           }}
         />
       </motion.div>
 
-      {/* Subtle green unifying veil — keeps #15382c dominant */}
+      {/* Black depth wash — diagonal, adds luxurious depth without flatness */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(120% 100% at 50% 50%, hsl(155 45% 16% / 0.35) 0%, hsl(155 45% 13% / 0.55) 100%)',
+            'linear-gradient(215deg, transparent 0%, transparent 50%, hsl(0 0% 0% / 0.35) 100%)',
           mixBlendMode: 'multiply',
+        }}
+      />
+
+      {/* Green unifying veil — re-asserts #15382c dominance */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(130% 110% at 50% 50%, hsl(155 45% 16% / 0.30) 0%, hsl(155 45% 12% / 0.55) 100%)',
+          mixBlendMode: 'multiply',
+        }}
+      />
+
+      {/* Final cinematic vignette */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(150% 110% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.30) 100%)',
         }}
       />
     </div>
