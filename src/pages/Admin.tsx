@@ -3649,6 +3649,8 @@ const Admin = () => {
                             variant="outline"
                             onClick={() => {
                               setEditingCategory(category);
+                              setCategoryMediaUrl((category as any).media_url ?? null);
+                              setCategoryMediaType((category as any).media_type ?? null);
                               setCategoryDialogOpen(true);
                             }}
                           >
