@@ -26,20 +26,38 @@ declare global {
   }
 }
 
-// Capacitor: initialize native platform UI (status bar, splash, back button)
+// Capacitor: initialize native platform UI (status bar, splash, back button, keyboard)
 import('@capacitor/core').then(({ Capacitor }) => {
   if (!Capacitor.isNativePlatform()) return;
+  // Mark the document so CSS can target native vs web
+  document.documentElement.classList.add('is-native', `platform-${Capacitor.getPlatform()}`);
+
   import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
     StatusBar.setBackgroundColor({ color: '#103d33' }).catch(() => {});
+    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
   }).catch(() => {});
+
   import('@capacitor/splash-screen').then(({ SplashScreen }) => {
     setTimeout(() => SplashScreen.hide().catch(() => {}), 500);
   }).catch(() => {});
+
   import('@capacitor/app').then(({ App }) => {
     App.addListener('backButton', ({ canGoBack }) => {
       if (canGoBack) window.history.back();
       else App.exitApp();
+    });
+  }).catch(() => {});
+
+  // Push the layout up when keyboard opens, restore on close
+  import('@capacitor/keyboard').then(({ Keyboard }) => {
+    Keyboard.addListener('keyboardWillShow', (info) => {
+      document.documentElement.style.setProperty('--keyboard-height', `${info.keyboardHeight}px`);
+      document.body.classList.add('keyboard-open');
+    });
+    Keyboard.addListener('keyboardWillHide', () => {
+      document.documentElement.style.setProperty('--keyboard-height', '0px');
+      document.body.classList.remove('keyboard-open');
     });
   }).catch(() => {});
 }).catch(() => {});
