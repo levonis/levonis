@@ -12,6 +12,7 @@ interface CategoryCardProps {
   hasDirectSale?: boolean;
   mediaUrl?: string | null;
   mediaType?: string | null; // 'image' | 'gif' | 'video'
+  mediaTransparent?: boolean;
 }
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url);
@@ -26,11 +27,13 @@ const CategoryCard = ({
   hasDirectSale,
   mediaUrl,
   mediaType,
+  mediaTransparent,
 }: CategoryCardProps) => {
   const iconText = (icon ?? "").trim();
   const isLongIcon = iconText.length > 3;
   const showVideo = !!mediaUrl && (mediaType === "video" || (mediaType == null && isVideoUrl(mediaUrl)));
   const showImage = !!mediaUrl && !showVideo;
+  const useFullMedia = !!mediaUrl && !!mediaTransparent;
 
   return (
     <Link
@@ -44,6 +47,37 @@ const CategoryCard = ({
     >
       {hasDirectSale && <DirectSaleRibbon />}
 
+      {useFullMedia && (
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          {showVideo ? (
+            <video
+              src={mediaUrl!}
+              className="w-full h-full object-cover scale-[1.02]"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            />
+          ) : showImage ? (
+            <img
+              src={mediaUrl!}
+              alt=""
+              className="w-full h-full object-cover scale-[1.02]"
+              loading="lazy"
+              draggable={false}
+            />
+          ) : null}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, hsl(var(--background) / 0.12) 0%, hsl(var(--background) / 0.22) 40%, hsl(var(--background) / 0.58) 100%)",
+            }}
+          />
+        </div>
+      )}
+
       {/* Glass sheen */}
       <div
         className="pointer-events-none absolute inset-0 opacity-70"
@@ -56,52 +90,54 @@ const CategoryCard = ({
 
       <div className="relative z-10 flex flex-col items-center h-full">
         {/* Media / Icon */}
-        <div
-          className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl mb-2 flex items-center justify-center shrink-0
-                     overflow-hidden border border-white/20 backdrop-blur-md
-                     group-hover:scale-105 transition-transform duration-300"
-          style={
-            showVideo || showImage
-              ? { background: "hsl(var(--muted) / 0.3)" }
-              : {
-                  background:
-                    "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
-                  boxShadow: "0 6px 14px hsl(var(--primary) / 0.20)",
-                  color: "hsl(var(--primary-foreground))",
+        {!useFullMedia && (
+          <div
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl mb-2 flex items-center justify-center shrink-0
+                       overflow-hidden border border-white/20 backdrop-blur-md
+                       group-hover:scale-105 transition-transform duration-300"
+            style={
+              showVideo || showImage
+                ? { background: "hsl(var(--muted) / 0.3)" }
+                : {
+                    background:
+                      "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
+                    boxShadow: "0 6px 14px hsl(var(--primary) / 0.20)",
+                    color: "hsl(var(--primary-foreground))",
+                  }
+            }
+            aria-hidden="true"
+          >
+            {showVideo ? (
+              <video
+                src={mediaUrl!}
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              />
+            ) : showImage ? (
+              <img
+                src={mediaUrl!}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+                draggable={false}
+              />
+            ) : (
+              <span
+                className={
+                  isLongIcon
+                    ? "text-[10px] sm:text-[11px] font-extrabold leading-tight text-center px-1 line-clamp-2 break-all"
+                    : "text-xl sm:text-2xl font-bold leading-none"
                 }
-          }
-          aria-hidden="true"
-        >
-          {showVideo ? (
-            <video
-              src={mediaUrl!}
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-            />
-          ) : showImage ? (
-            <img
-              src={mediaUrl!}
-              alt=""
-              className="w-full h-full object-cover"
-              loading="lazy"
-              draggable={false}
-            />
-          ) : (
-            <span
-              className={
-                isLongIcon
-                  ? "text-[10px] sm:text-[11px] font-extrabold leading-tight text-center px-1 line-clamp-2 break-all"
-                  : "text-xl sm:text-2xl font-bold leading-none"
-              }
-            >
-              {iconText}
-            </span>
-          )}
-        </div>
+              >
+                {iconText}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Title */}
         <div className="w-full min-h-[36px] sm:min-h-[40px] flex items-start justify-center px-0.5 overflow-hidden">

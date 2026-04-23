@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -62,6 +63,7 @@ const categorySchema = z.object({
   featured_product_id: z.string().uuid().nullable().optional(),
   media_url: z.string().nullable().optional(),
   media_type: z.string().nullable().optional(),
+  media_transparent: z.boolean().optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -151,6 +153,7 @@ const Admin = () => {
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categoryMediaUrl, setCategoryMediaUrl] = useState<string | null>(null);
   const [categoryMediaType, setCategoryMediaType] = useState<string | null>(null);
+  const [categoryMediaTransparent, setCategoryMediaTransparent] = useState(false);
   const [categoryMediaUploading, setCategoryMediaUploading] = useState(false);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -1597,6 +1600,7 @@ const Admin = () => {
         featured_product_id: featuredVal || null,
         media_url: categoryMediaUrl,
         media_type: categoryMediaType,
+        media_transparent: categoryMediaTransparent,
       });
 
       if (editingCategory) {
@@ -3480,10 +3484,12 @@ const Admin = () => {
                 if (open) {
                   setCategoryMediaUrl(editingCategory?.media_url ?? null);
                   setCategoryMediaType(editingCategory?.media_type ?? null);
+                  setCategoryMediaTransparent(!!editingCategory?.media_transparent);
                 } else {
                   setEditingCategory(null);
                   setCategoryMediaUrl(null);
                   setCategoryMediaType(null);
+                  setCategoryMediaTransparent(false);
                 }
               }} key={editingCategory?.id || 'new-category'}>
                 <DialogTrigger asChild>
@@ -3551,6 +3557,18 @@ const Admin = () => {
                         إذا تم رفع ملف فسيتم عرضه بدلاً من الأيقونة الافتراضية.
                       </p>
 
+                      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/60 px-3 py-2">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">وسائط شفافة تملأ البطاقة</p>
+                          <p className="text-[11px] text-muted-foreground">تلغي المربع الصغير وتعرض الفيديو أو الـ GIF على كامل البطاقة.</p>
+                        </div>
+                        <Switch
+                          checked={categoryMediaTransparent}
+                          onCheckedChange={setCategoryMediaTransparent}
+                          disabled={!categoryMediaUrl}
+                        />
+                      </div>
+
                       {categoryMediaUrl && (
                         <div className="flex items-center gap-3">
                           <div className="w-16 h-16 rounded-xl overflow-hidden border border-border/60 bg-card">
@@ -3567,6 +3585,7 @@ const Admin = () => {
                             onClick={() => {
                               setCategoryMediaUrl(null);
                               setCategoryMediaType(null);
+                              setCategoryMediaTransparent(false);
                             }}
                           >
                             <X className="h-4 w-4 ml-1" />
@@ -3727,6 +3746,7 @@ const Admin = () => {
                               setEditingCategory(category);
                               setCategoryMediaUrl((category as any).media_url ?? null);
                               setCategoryMediaType((category as any).media_type ?? null);
+                              setCategoryMediaTransparent(!!(category as any).media_transparent);
                               setCategoryDialogOpen(true);
                             }}
                           >
