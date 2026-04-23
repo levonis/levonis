@@ -329,14 +329,15 @@ const MyOrders = () => {
   }
 
   if (!user) {
+    const { isRtl } = useLanguage();
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center space-y-3">
-          <h1 className="text-base font-bold text-foreground">يلزم تسجيل الدخول</h1>
-          <p className="text-sm text-muted-foreground">ادخل إلى حسابك لعرض طلباتك.</p>
+          <h1 className="text-base font-bold text-foreground">{t('myorders_login_required')}</h1>
+          <p className="text-sm text-muted-foreground">{t('myorders_login_required_desc')}</p>
           <div className="flex gap-2">
-            <Button onClick={() => navigate('/auth')} className="flex-1">تسجيل الدخول</Button>
-            <Button variant="outline" onClick={() => navigate('/')} className="flex-1">الرئيسية</Button>
+            <Button onClick={() => navigate('/auth')} className="flex-1">{t('myorders_login_btn')}</Button>
+            <Button variant="outline" onClick={() => navigate('/')} className="flex-1">{t('myorders_home_btn')}</Button>
           </div>
         </div>
       </div>
@@ -535,8 +536,8 @@ const MyOrders = () => {
                     <Store className="h-[18px] w-[18px] text-emerald-500" />
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-foreground">البيع المباشر</p>
-                    <p className="text-[11px] text-muted-foreground">{directOrders.length} طلب</p>
+                    <p className="text-sm font-black text-foreground">{t('myorders_section_direct')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('myorders_section_orders_count', { count: directOrders.length })}</p>
                   </div>
                 </div>
                 <div className="relative z-[1] flex items-center gap-2">
