@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
@@ -44,6 +44,8 @@ const CategoryDetail = () => {
 
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const searchQ = (searchParams.get('q') || '').trim().toLowerCase();
 
   // Sort & filter state
   const [sortBy, setSortBy] = useState<SortKey>('default');
@@ -105,6 +107,10 @@ const CategoryDetail = () => {
       if (directOnly && !hasDirect) return false;
       if (minP != null && priceNum < minP) return false;
       if (maxP != null && priceNum > maxP) return false;
+      if (searchQ) {
+        const hay = `${p.name ?? ''} ${p.name_ar ?? ''} ${p.description ?? ''} ${p.description_ar ?? ''}`.toLowerCase();
+        if (!hay.includes(searchQ)) return false;
+      }
       return true;
     });
 
