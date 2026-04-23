@@ -3544,6 +3544,82 @@ const Admin = () => {
                       </div>
                     </div>
 
+                    {/* Category media: image / GIF / video */}
+                    <div className="space-y-2 rounded-lg border border-dashed border-border/60 p-3 bg-muted/20">
+                      <Label>وسائط القسم (صورة / GIF / فيديو) — اختياري</Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        إذا تم رفع ملف فسيتم عرضه بدلاً من الأيقونة الافتراضية.
+                      </p>
+
+                      {categoryMediaUrl && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden border border-border/60 bg-card">
+                            {categoryMediaType === 'video' ? (
+                              <video src={categoryMediaUrl} className="w-full h-full object-cover" muted autoPlay loop playsInline />
+                            ) : (
+                              <img src={categoryMediaUrl} alt="preview" className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setCategoryMediaUrl(null);
+                              setCategoryMediaType(null);
+                            }}
+                          >
+                            <X className="h-4 w-4 ml-1" />
+                            إزالة
+                          </Button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*,video/mp4,video/webm,video/quicktime"
+                          disabled={categoryMediaUploading}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            // 20MB limit
+                            if (file.size > 20 * 1024 * 1024) {
+                              toast.error('حجم الملف يجب أن يكون أقل من 20 ميجابايت');
+                              e.target.value = '';
+                              return;
+                            }
+                            try {
+                              setCategoryMediaUploading(true);
+                              const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+                              const path = `${crypto.randomUUID()}.${ext}`;
+                              const { error: upErr } = await supabase
+                                .storage
+                                .from('category-media')
+                                .upload(path, file, {
+                                  cacheControl: '3600',
+                                  upsert: false,
+                                  contentType: file.type || undefined,
+                                });
+                              if (upErr) throw upErr;
+                              const { data: pub } = supabase.storage.from('category-media').getPublicUrl(path);
+                              const isVideo = file.type.startsWith('video/');
+                              const isGif = file.type === 'image/gif' || ext === 'gif';
+                              setCategoryMediaUrl(pub.publicUrl);
+                              setCategoryMediaType(isVideo ? 'video' : isGif ? 'gif' : 'image');
+                              toast.success('تم رفع الملف بنجاح');
+                            } catch (err: any) {
+                              toast.error(err?.message || 'فشل رفع الملف');
+                            } finally {
+                              setCategoryMediaUploading(false);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        {categoryMediaUploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="cat_description_ar">الوصف بالعربي</Label>
