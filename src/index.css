@@ -2085,7 +2085,7 @@ body {
 }
 
 html, body {
-  overscroll-behavior: none;
+  overscroll-behavior-x: none;
   -webkit-overflow-scrolling: touch;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -2093,7 +2093,8 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
-  touch-action: manipulation;
+  /* DO NOT set touch-action here — it kills vertical scrolling on mobile.
+     Apply touch-action: manipulation only on tap targets (buttons/links). */
 }
 
 body {
@@ -2135,6 +2136,7 @@ input, textarea, [contenteditable="true"], [contenteditable=""],
 a, button, [role="button"], input, select, textarea, label {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
 img {
