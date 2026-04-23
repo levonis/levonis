@@ -64,7 +64,6 @@ const categorySchema = z.object({
   media_url: z.string().nullable().optional(),
   media_type: z.string().nullable().optional(),
   media_transparent: z.boolean().optional(),
-  media_chroma_key: z.enum(['none', 'black', 'white', 'green', 'blue']).optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -155,7 +154,6 @@ const Admin = () => {
   const [categoryMediaUrl, setCategoryMediaUrl] = useState<string | null>(null);
   const [categoryMediaType, setCategoryMediaType] = useState<string | null>(null);
   const [categoryMediaTransparent, setCategoryMediaTransparent] = useState(false);
-  const [categoryMediaChromaKey, setCategoryMediaChromaKey] = useState<'none' | 'black' | 'white' | 'green' | 'blue'>('none');
   const [categoryMediaUploading, setCategoryMediaUploading] = useState(false);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -1603,7 +1601,6 @@ const Admin = () => {
         media_url: categoryMediaUrl,
         media_type: categoryMediaType,
         media_transparent: categoryMediaTransparent,
-        media_chroma_key: categoryMediaChromaKey,
       });
 
       if (editingCategory) {
@@ -3488,13 +3485,11 @@ const Admin = () => {
                   setCategoryMediaUrl(editingCategory?.media_url ?? null);
                   setCategoryMediaType(editingCategory?.media_type ?? null);
                   setCategoryMediaTransparent(!!editingCategory?.media_transparent);
-                  setCategoryMediaChromaKey((editingCategory?.media_chroma_key as any) ?? 'none');
                 } else {
                   setEditingCategory(null);
                   setCategoryMediaUrl(null);
                   setCategoryMediaType(null);
                   setCategoryMediaTransparent(false);
-                  setCategoryMediaChromaKey('none');
                 }
               }} key={editingCategory?.id || 'new-category'}>
                 <DialogTrigger asChild>
@@ -3574,43 +3569,6 @@ const Admin = () => {
                         />
                       </div>
 
-                      <div className="rounded-lg border border-border/50 bg-card/60 px-3 py-2 space-y-2">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">إزالة لون الخلفية (Chroma Key)</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            استخدمها إذا كان الفيديو/GIF له خلفية سوداء أو بيضاء صلبة. يجعلها شفافة تلقائياً.
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { value: 'none', label: 'بدون', desc: 'يعرض كما هو (للملفات الشفافة فعلياً مثل WebM/MOV)' },
-                            { value: 'black', label: 'إزالة الأسود', desc: 'للفيديو/GIF بخلفية سوداء' },
-                            { value: 'white', label: 'إزالة الأبيض', desc: 'للفيديو/GIF بخلفية بيضاء' },
-                            { value: 'green', label: 'إزالة الأخضر', desc: 'شاشة خضراء (Green Screen) كلاسيكية' },
-                            { value: 'blue', label: 'إزالة الأزرق', desc: 'شاشة زرقاء (Blue Screen)' },
-                          ].map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setCategoryMediaChromaKey(opt.value as any)}
-                              disabled={!categoryMediaUrl}
-                              title={opt.desc}
-                              className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-                                categoryMediaChromaKey === opt.value
-                                  ? 'bg-primary text-primary-foreground border-primary'
-                                  : 'bg-background border-border hover:border-primary/50'
-                              } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
-                          💡 نصيحة: للحصول على شفافية مثالية، صدّر الفيديو بصيغة <strong>WebM (VP9 + alpha)</strong> أو <strong>MOV (HEVC + alpha)</strong> وسيُعرض شفافاً بدون أي معالجة.
-                        </p>
-                      </div>
-
-
                       {categoryMediaUrl && (
                         <div className="flex items-center gap-3">
                           <div className="w-16 h-16 rounded-xl overflow-hidden border border-border/60 bg-card">
@@ -3628,7 +3586,6 @@ const Admin = () => {
                               setCategoryMediaUrl(null);
                               setCategoryMediaType(null);
                               setCategoryMediaTransparent(false);
-                              setCategoryMediaChromaKey('none');
                             }}
                           >
                             <X className="h-4 w-4 ml-1" />
@@ -3790,7 +3747,6 @@ const Admin = () => {
                               setCategoryMediaUrl((category as any).media_url ?? null);
                               setCategoryMediaType((category as any).media_type ?? null);
                               setCategoryMediaTransparent(!!(category as any).media_transparent);
-                              setCategoryMediaChromaKey(((category as any).media_chroma_key as any) ?? 'none');
                               setCategoryDialogOpen(true);
                             }}
                           >

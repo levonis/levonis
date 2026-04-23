@@ -941,7 +941,6 @@ export type Database = {
           icon: string
           id: string
           main_section_id: string | null
-          media_chroma_key: string | null
           media_transparent: boolean
           media_type: string | null
           media_url: string | null
@@ -961,7 +960,6 @@ export type Database = {
           icon: string
           id?: string
           main_section_id?: string | null
-          media_chroma_key?: string | null
           media_transparent?: boolean
           media_type?: string | null
           media_url?: string | null
@@ -981,7 +979,6 @@ export type Database = {
           icon?: string
           id?: string
           main_section_id?: string | null
-          media_chroma_key?: string | null
           media_transparent?: boolean
           media_type?: string | null
           media_url?: string | null
