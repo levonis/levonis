@@ -16,10 +16,7 @@ import ProgressiveSection from '@/components/ProgressiveSection';
 const StoriesBar = lazy(() => import('@/components/stories/StoriesBar'));
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
 const ReelsBar = lazy(() => import('@/components/reels/ReelsBar'));
-const CommunitySection = lazy(() => import('@/components/community/CommunitySection').catch(() => {
-  // Retry once on dynamic import failure (common with HMR/cache issues)
-  return import('@/components/community/CommunitySection');
-}));
+// CommunitySection moved off the homepage to /community to reduce initial load.
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 
 // Simple error boundary for lazy-loaded components — message localized via DOM lookup avoided; uses translation key fallback
@@ -260,17 +257,7 @@ const Home = () => {
           </Suspense>
         </ProgressiveSection>
 
-        <div className="container mx-auto px-4">
-          <AnimatedDivider className="my-4 md:my-6 opacity-90" />
-        </div>
-
-        <ProgressiveSection minHeight="240px" rootMargin="500px">
-          <Suspense fallback={<div className="h-32 md:h-64 px-4"><div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[1,2,3].map(i=><div key={i} className="rounded-lg border bg-card p-3"><div className="h-20 rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-2/3 rounded bg-muted animate-pulse" /></div>)}</div></div>}>
-            <ErrorBoundaryFallback fallbackText={t('common_load_failed')}>
-              <CommunitySection />
-            </ErrorBoundaryFallback>
-          </Suspense>
-        </ProgressiveSection>
+        {/* Levo Community section is available at /community only. */}
 
         <Footer />
       </main>
