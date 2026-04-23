@@ -43,7 +43,7 @@ const CategoryCard = ({
                  backdrop-blur-xl ${isTransparentGif ? "bg-card/20 border border-white/8" : "bg-card/40 border border-white/15"}
                  shadow-[0_4px_24px_-6px_hsl(var(--primary)/0.15)]
                  hover:border-primary/55 hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.35)]
-                 hover:-translate-y-0.5 transition-all duration-300"
+                 hover:-translate-y-0.5 transition-all duration-300`}
       aria-label={nameAr || name}
     >
       {hasDirectSale && <DirectSaleRibbon />}
