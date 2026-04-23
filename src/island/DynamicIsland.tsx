@@ -121,7 +121,7 @@ const searchShape = (
 /* -------------------------------------------------------------------------- */
 
 export const DynamicIsland = () => {
-  const { state, title: rawTitle, promoMessages, visible } = useIsland();
+  const { state, title: rawTitle, promoMessages, visible, setContext } = useIsland();
 
   /* ---------- Debounce rapid title changes ----------
    * Coalesces fast successive title updates (e.g. switching products while
@@ -286,18 +286,17 @@ export const DynamicIsland = () => {
   };
 
   const goSearch = () => {
-    // Triggered by the magnifier in category state — focus the island input
-    if (state === "search") {
+    // Switch the island into search mode in-place and focus the input.
+    // We must NOT navigate away — staying on the current category/community
+    // page lets the user search within that scope.
+    if (state !== "search") {
+      setContext({ state: "search" });
+    }
+    // Wait one frame so the input mounts (search shell renders) before focusing.
+    requestAnimationFrame(() => {
+      setFocused(true);
       inputRef.current?.focus();
-      return;
-    }
-    if (scope === "category" && params.slug) {
-      navigate(`/category/${params.slug}?focus=search`, { replace: true });
-    } else if (scope === "community") {
-      navigate("/community/merchants/all-products");
-    } else {
-      navigate("/");
-    }
+    });
   };
 
   const pickSuggestion = (s: string) => {
