@@ -245,6 +245,7 @@ const BannerCarousel = memo(() => {
     <div 
       ref={containerRef}
       className="relative w-full overflow-hidden rounded-lg bg-card/30 border border-border/10 shadow-md"
+      style={{ touchAction: 'pan-y' }}
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
       onTouchStart={handleTouchStart}
