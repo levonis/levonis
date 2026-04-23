@@ -115,7 +115,6 @@ export default function ReelsBar() {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
           onPointerCancel={handlePointerEnd}
-          className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4"
           style={{
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-x pan-y',
