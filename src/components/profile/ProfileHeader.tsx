@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, type MouseEvent } from "react";
+import type { OriginRect } from "./OriginExpandShell";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
