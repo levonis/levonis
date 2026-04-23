@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,12 +141,18 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const visible = !isIslandHidden(location.pathname);
   const active = override ?? routeDefault;
 
+  // Stable reference so consumers' useEffect deps don't loop.
+  const setContext = useCallback(
+    (ctx: { state: IslandState; title?: string } | null) => setOverride(ctx),
+    [],
+  );
+
   return (
     <IslandContext.Provider
       value={{
         state: active.state,
         title: active.title,
-        setContext: (ctx) => setOverride(ctx),
+        setContext,
         promoMessages,
         visible,
       }}
