@@ -320,22 +320,22 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
             )}
           </div>
 
-          {/* View all button */}
-          {hasContent && (
-            <div className="px-5 pb-4">
-              <Button
-                variant="outline"
-                className="w-full h-10 rounded-2xl text-xs font-bold gap-2 border-primary/20 hover:bg-primary/5"
-                onClick={() => { navigate("/special-coupons"); onOpenChange(false); }}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                عرض الكل
-                <ChevronLeft className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        {/* View all button */}
+        {hasContent && (
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              className="w-full h-10 rounded-2xl text-xs font-bold gap-2 border-primary/20 hover:bg-primary/5"
+              onClick={() => { navigate("/special-coupons"); onOpenChange(false); }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              عرض الكل
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+      </OriginExpandShell>
+
 
       {/* Discount Detail Sheet */}
       <Sheet open={!!selectedDiscount} onOpenChange={() => setSelectedDiscount(null)}>
