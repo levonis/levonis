@@ -108,12 +108,9 @@ const Notifications = () => {
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
-    <div className="min-h-screen bg-background pt-6 pb-24" dir="rtl">
+    <div className="min-h-screen pt-6 pb-24" dir="rtl">
       {/* Hero Header */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
-        <div className="absolute top-6 right-12 h-32 w-32 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-10 left-8 h-24 w-24 rounded-full bg-accent/8 blur-2xl" />
 
         <div className="relative container mx-auto px-4 py-6 max-w-2xl">
           <button
