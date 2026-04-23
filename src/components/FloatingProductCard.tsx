@@ -114,7 +114,15 @@ const FloatingProductCard = memo(({
   // Standard product — image-fill card
   return (
     <Link to={`/product/${slug}`} className="block group h-full">
-      <div className="relative h-full flex flex-col rounded-xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300">
+      <div
+        className="relative h-full flex flex-col rounded-xl overflow-hidden"
+        style={{
+          backdropFilter: 'blur(20px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+          background:
+            'linear-gradient(170deg, hsl(160 35% 14% / 0.3) 0%, hsl(160 30% 10% / 0.4) 50%, hsl(160 25% 8% / 0.5) 100%)',
+        }}
+      >
         {hasDirectSale && <DirectSaleRibbon />}
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
@@ -122,9 +130,8 @@ const FloatingProductCard = memo(({
             src={imageUrl || '/placeholder.svg'}
             alt={displayName}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-transform duration-500"
           />
-          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
           {/* Discount badge */}
           {discount > 0 && (
             <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-destructive/90 text-destructive-foreground text-[9px] font-bold">
