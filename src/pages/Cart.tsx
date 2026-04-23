@@ -856,20 +856,20 @@ const Cart = () => {
 
         if (total >= minOrder) {
           toast({
-            title: '🎁 توصيل مجاني!',
-            description: `شكراً لدعمك @${ref.owner_username}! لقد حصلت على توصيل مجاني`,
+            title: t('cart_referral_free_delivery_title'),
+            description: t('cart_referral_free_delivery_desc', { username: ref.owner_username }),
           });
         } else {
           const remaining = minOrder - total;
           toast({
-            title: `🎁 شكراً لدعمك @${ref.owner_username}!`,
-            description: `أضف ${formatPrice(remaining)} د.ع للحصول على توصيل مجاني — تابع التسوق`,
+            title: t('cart_referral_add_for_free_toast', { username: ref.owner_username, amount: formatPrice(remaining) }),
+            description: '',
           });
         }
         return;
       }
       if (ref?.reason === 'self_use_not_allowed') {
-        toast({ title: 'غير مسموح', description: 'لا يمكنك استخدام كودك الخاص', variant: 'destructive' });
+        toast({ title: t('cart_referral_self_blocked_title'), description: t('cart_referral_self_blocked_desc'), variant: 'destructive' });
         return;
       }
 
@@ -1004,8 +1004,8 @@ const Cart = () => {
   const handleCheckoutClick = () => {
     if (!user) {
       toast({
-        title: "يجب تسجيل الدخول",
-        description: "الرجاء تسجيل الدخول أولاً لإتمام الطلب",
+        title: t('cart_login_required_to_checkout_title'),
+        description: t('cart_login_required_to_checkout_desc'),
         variant: "destructive",
       });
       return;
@@ -1013,8 +1013,8 @@ const Cart = () => {
 
     if (!termsAccepted) {
       toast({
-        title: "الشروط والأحكام",
-        description: "يجب الموافقة على الشروط والأحكام لإتمام الطلب",
+        title: t('cart_terms_required_title'),
+        description: t('cart_terms_required_desc'),
         variant: "destructive",
       });
       return;
@@ -1023,8 +1023,8 @@ const Cart = () => {
     if (isDirectSaleCart) {
       if (!selectedAddress) {
         toast({
-          title: "يجب اختيار عنوان",
-          description: "الرجاء اختيار أو إضافة عنوان توصيل أولاً",
+          title: t('cart_address_required_title'),
+          description: t('cart_address_required_desc2'),
           variant: "destructive",
         });
         return;
@@ -1035,8 +1035,8 @@ const Cart = () => {
 
     if (!hasEnoughBalance) {
       toast({
-        title: "رصيد المحفظة غير كافٍ",
-        description: `رصيدك الحالي: ${formatPrice(walletBalance)} د.ع - المطلوب: ${formatPrice(requiredPaymentNow)} د.ع`,
+        title: t('cart_wallet_insufficient_title'),
+        description: t('cart_wallet_insufficient_desc', { balance: formatPrice(walletBalance), required: formatPrice(requiredPaymentNow) }),
         variant: "destructive",
       });
       return;
@@ -1065,7 +1065,7 @@ const Cart = () => {
         .limit(1);
 
       if (addressError || !addresses || addresses.length === 0) {
-        toast({ title: "يجب إضافة عنوان", description: "الرجاء إضافة عنوان توصيل أولاً", variant: "destructive" });
+        toast({ title: t('cart_address_required_action'), description: t('cart_address_required_desc2'), variant: 'destructive' });
         navigate('/addresses');
         return;
       }
@@ -1106,7 +1106,7 @@ const Cart = () => {
           p_description: `خصم من المحفظة لطلب بيع مباشر`,
         });
         if (walletError) {
-          toast({ title: "خطأ", description: "فشل في خصم رصيد المحفظة", variant: "destructive" });
+          toast({ title: t('cart_wallet_deduct_failed_title'), description: t('cart_wallet_deduct_failed_desc'), variant: 'destructive' });
           return;
         }
       }
@@ -1134,7 +1134,7 @@ const Cart = () => {
         .single();
 
       if (orderError || !orderResult) {
-        toast({ title: "خطأ", description: orderError?.message || "حدث خطأ أثناء إنشاء الطلب", variant: "destructive" });
+        toast({ title: t('cart_order_create_error_title'), description: orderError?.message || t('cart_order_create_error_desc'), variant: 'destructive' });
         return;
       }
 
@@ -1305,8 +1305,8 @@ const Cart = () => {
     
     if (!user) {
       toast({
-        title: "يجب تسجيل الدخول",
-        description: "الرجاء تسجيل الدخول أولاً لإتمام الطلب",
+        title: t('cart_login_required_to_checkout_title'),
+        description: t('cart_login_required_to_checkout_desc'),
         variant: "destructive",
       });
       return;
@@ -1350,8 +1350,8 @@ const Cart = () => {
 
       if (error || !profile) {
         toast({
-          title: "خطأ",
-          description: "لم نتمكن من الحصول على معلومات الملف الشخصي",
+          title: t('cart_order_create_error_title'),
+          description: t('cart_order_create_error_desc'),
           variant: "destructive",
         });
         return;
@@ -1403,8 +1403,8 @@ const Cart = () => {
       if (orderError || !orderId) {
         console.error('Error creating order with payment:', orderError);
         toast({
-          title: "خطأ",
-          description: orderError?.message || "حدث خطأ أثناء إنشاء الطلب",
+          title: t('cart_order_create_error_title'),
+          description: orderError?.message || t('cart_order_create_error_desc'),
           variant: "destructive",
         });
         return;
@@ -1433,8 +1433,8 @@ const Cart = () => {
       if (fetchOrderError || !order) {
         console.error('Error fetching order:', fetchOrderError);
         toast({
-          title: "خطأ",
-          description: "تم إنشاء الطلب لكن حدث خطأ في جلب التفاصيل",
+          title: t('cart_order_create_error_title'),
+          description: t('cart_order_create_error_desc'),
           variant: "destructive",
         });
         return;
@@ -1738,15 +1738,15 @@ const Cart = () => {
       window.open(whatsappURL, '_blank');
       
       toast({
-        title: "تم إنشاء الطلب بنجاح ✅",
-        description: `رقم الطلب: ${order.order_number} — لا تنسَ تقييم المنتجات بعد الاستلام للحصول على خصومات وهدايا! ⭐`,
+        title: t('cart_order_success_title'),
+        description: t('cart_order_success_desc', { number: order.order_number }),
       });
       
     } catch (error) {
       console.error('Error during checkout:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إتمام الطلب",
+        title: t('cart_order_create_error_title'),
+        description: t('cart_order_create_error_desc'),
         variant: "destructive",
       });
     } finally {
@@ -1796,9 +1796,9 @@ const Cart = () => {
                   : 'bg-accent/10 text-accent-foreground border-accent/20'
               }`}>
                 {isDirectSaleCart ? (
-                  <><Package className="w-3 h-3" /> بيع مباشر</>
+                  <><Package className="w-3 h-3" /> {t('cart_label_direct')}</>
                 ) : (
-                  <><Truck className="w-3 h-3" /> حجز مسبق</>
+                  <><Truck className="w-3 h-3" /> {t('cart_label_preorder')}</>
                 )}
               </span>
             )}
@@ -1899,7 +1899,7 @@ const Cart = () => {
                                   {bundle.title_ar}
                                 </Link>
                                 <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 mt-0.5">
-                                  <Package className="h-2.5 w-2.5" /> باقة
+                                  <Package className="h-2.5 w-2.5" /> {t('cart_bundle_badge')}
                                 </span>
                               </div>
                               <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
@@ -1908,7 +1908,7 @@ const Cart = () => {
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <span className="text-sm sm:text-base font-black text-primary">
-                                <AnimatedPrice value={bundlePrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
+                                <AnimatedPrice value={bundlePrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">{t('cart_iqd_short')}</span>
                               </span>
                               <div className="flex items-center gap-1 bg-muted/30 rounded-lg border border-border/40">
                                 <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>
@@ -1922,12 +1922,12 @@ const Cart = () => {
                             </div>
                             {isDirect && effectiveMax < 99 && (
                               <div className="text-[9px] text-muted-foreground mt-0.5">
-                                الحد الأقصى: <span className="font-bold text-foreground">{effectiveMax}</span> باقة
+                                {t('cart_max_bundles', { max: effectiveMax })}
                               </div>
                             )}
                             {item.quantity > 1 && (
                               <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
-                                المجموع: <AnimatedPrice value={bundlePrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
+                                {t('cart_total_label')} <AnimatedPrice value={bundlePrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> {t('cart_iqd_short')}
                               </div>
                             )}
                           </div>
@@ -1961,10 +1961,10 @@ const Cart = () => {
                             <div className="flex items-start justify-between gap-1">
                               <div className="min-w-0 flex-1">
                                 <span className="font-bold text-xs sm:text-sm text-foreground line-clamp-1 block">
-                                  {offerInfo?.title_ar || 'منتج من المخزن'}
+                                  {offerInfo?.title_ar || t('cart_storage_default_title')}
                                 </span>
                                 <span className="text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5 mt-0.5">
-                                  <Package className="h-2.5 w-2.5" /> من المخزن
+                                  <Package className="h-2.5 w-2.5" /> {t('cart_storage_badge')}
                                 </span>
                               </div>
                               <Button type="button" size="icon" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 shrink-0" onClick={handleAnimatedRemove}>
@@ -1973,7 +1973,7 @@ const Cart = () => {
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <span className="text-sm sm:text-base font-black text-emerald-600">
-                                مجاني <span className="text-[10px] font-normal text-muted-foreground">(مدفوع مسبقاً)</span>
+                                {t('cart_paid_in_advance')}
                               </span>
                             </div>
                           </div>
@@ -2024,15 +2024,15 @@ const Cart = () => {
                       >
                         {isOutOfStock && (
                           <div className="flex items-center justify-between gap-2 mb-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
-                            <span className="text-xs font-bold text-destructive">⚠️ انتهى من المخزون</span>
+                            <span className="text-xs font-bold text-destructive">{t('cart_out_of_stock')}</span>
                             <Button size="sm" variant="destructive" className="h-6 text-[10px] px-2" onClick={() => handleAnimatedRemove()}>
-                              <Trash2 className="h-3 w-3 ml-1" /> حذف
+                              <Trash2 className="h-3 w-3 ml-1" /> {t('cart_remove_btn')}
                             </Button>
                           </div>
                         )}
                         {isLowStock && (
                           <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                            <span className="text-xs font-bold text-amber-600">⚠️ الكمية المتاحة: {itemAvailableStock} فقط</span>
+                            <span className="text-xs font-bold text-amber-600">{t('cart_low_stock_only', { qty: itemAvailableStock! })}</span>
                           </div>
                         )}
                         <div className="flex gap-2.5 sm:gap-4">
@@ -2064,7 +2064,7 @@ const Cart = () => {
                                 ) : (
                                   <div className="font-bold text-xs sm:text-sm text-foreground line-clamp-1 flex items-center gap-1">
                                     {item.custom_product_requests?.product_name}
-                                    <span className="text-[9px] bg-primary/20 text-primary px-1 py-0.5 rounded-full shrink-0">طلب خاص</span>
+                                    <span className="text-[9px] bg-primary/20 text-primary px-1 py-0.5 rounded-full shrink-0">{t('cart_special_request_badge')}</span>
                                   </div>
                                 )}
                                 
@@ -2099,7 +2099,7 @@ const Cart = () => {
                                   e.stopPropagation();
                                   handleAnimatedRemove();
                                 }}
-                                aria-label="حذف المنتج"
+                                aria-label={t('cart_remove_aria')}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -2110,17 +2110,17 @@ const Cart = () => {
                             {isGift && (
                               <div className="flex items-center gap-1 mt-1">
                                 <Gift className="h-3 w-3 text-primary" />
-                                <span className="text-[10px] font-bold text-primary">🎁 هدية مجانية</span>
+                                <span className="text-[10px] font-bold text-primary">{t('cart_gift_free_badge')}</span>
                               </div>
                             )}
 
                             {/* Price + Quantity row */}
                             <div className="flex items-center justify-between mt-1.5">
                               {isGift ? (
-                                <span className="text-sm sm:text-base font-black text-primary">مجاناً</span>
+                                <span className="text-sm sm:text-base font-black text-primary">{t('cart_gift_free')}</span>
                               ) : (
                               <span className="text-sm sm:text-base font-black text-primary">
-                                <AnimatedPrice value={itemPrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">د.ع</span>
+                                <AnimatedPrice value={itemPrice} formatFn={formatPrice} /> <span className="text-[10px] font-normal text-muted-foreground">{t('cart_iqd_short')}</span>
                               </span>
                               )}
                               
@@ -2161,7 +2161,7 @@ const Cart = () => {
                             {/* Total if quantity > 1 */}
                             {!isGift && item.quantity > 1 && (
                               <div className="text-[11px] text-muted-foreground mt-0.5 text-left">
-                                المجموع: <AnimatedPrice value={itemPrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> د.ع
+                                {t('cart_total_label')} <AnimatedPrice value={itemPrice * item.quantity} formatFn={formatPrice} className="font-bold text-foreground" /> {t('cart_iqd_short')}
                               </div>
                             )}
                           </div>
@@ -2189,10 +2189,10 @@ const Cart = () => {
               {/* Out of Stock Warning */}
               {hasOutOfStockItems && (
                 <div className="rounded-xl p-3 border border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3">
-                  <span className="text-sm font-bold text-destructive">⚠️ يوجد منتجات غير متوفرة في السلة</span>
+                  <span className="text-sm font-bold text-destructive">{t('cart_out_of_stock_warning')}</span>
                   <Button size="sm" variant="destructive" className="shrink-0" onClick={removeOutOfStockItems}>
                     <Trash2 className="h-3.5 w-3.5 ml-1" />
-                    حذف الكل
+                    {t('cart_remove_all')}
                   </Button>
                 </div>
               )}
@@ -2208,8 +2208,8 @@ const Cart = () => {
                   onClick={() => {
                     if (!user) {
                       toast({
-                        title: "يجب تسجيل الدخول",
-                        description: "الرجاء تسجيل الدخول أولاً",
+                        title: t('cart_login_required_short'),
+                        description: t('cart_login_required_short_desc'),
                         variant: "destructive",
                       });
                       return;
@@ -2263,7 +2263,7 @@ const Cart = () => {
                     const refStyle = getReferralBannerStyle(appliedReferral.banner_style);
                     const headlineMessage = appliedReferral.custom_message?.trim()
                       ? appliedReferral.custom_message
-                      : `شكراً لدعمك @${appliedReferral.owner_username}!`;
+                      : t('cart_referral_thanks', { username: appliedReferral.owner_username });
                     return (
                     <div className={`rounded-xl ${refStyle.container} ${refStyle.border} p-3 space-y-2`}>
                       <div className="flex items-start justify-between gap-2">
@@ -2274,10 +2274,10 @@ const Cart = () => {
                               {headlineMessage}
                             </p>
                             {referralFreeShippingApplied ? (
-                              <p className="text-[11px] text-emerald-600 font-semibold">✅ حصلت على توصيل مجاني</p>
+                              <p className="text-[11px] text-emerald-600 font-semibold">{t('cart_referral_free_shipping_active')}</p>
                             ) : (
                               <p className="text-[11px] text-muted-foreground">
-                                أضف <span className={`font-bold ${refStyle.highlight}`}>{formatPrice(referralRemainingForFreeDelivery)} د.ع</span> للتوصيل المجاني
+                                <span dangerouslySetInnerHTML={{ __html: t('cart_referral_add_for_free', { amount: `<span class="font-bold ${refStyle.highlight}">${formatPrice(referralRemainingForFreeDelivery)}</span>` }) }} />
                               </p>
                             )}
                           </div>
@@ -2287,7 +2287,7 @@ const Cart = () => {
                           variant="ghost"
                           onClick={removeCoupon}
                           className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-                          title="إزالة الكوبون"
+                          title={t('cart_remove_coupon')}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -2301,7 +2301,7 @@ const Cart = () => {
                             />
                           </div>
                           <p className="text-[10px] text-muted-foreground text-center">
-                            {formatPrice(total)} / {formatPrice(appliedReferral.free_delivery_min_order_iqd || 100000)} د.ع
+                            {formatPrice(total)} / {formatPrice(appliedReferral.free_delivery_min_order_iqd || 100000)} {t('cart_iqd_short')}
                           </p>
                         </div>
                       )}
@@ -2328,7 +2328,7 @@ const Cart = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_subtotal')}</span>
-                    <span className="font-bold"><AnimatedPrice value={total} formatFn={formatPrice} /> دينار عراقي</span>
+                    <span className="font-bold"><AnimatedPrice value={total} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                   </div>
                   
                   {appliedCoupon && discount > 0 && (
@@ -2336,10 +2336,10 @@ const Cart = () => {
                       <span className="text-green-600">{t('cart_discount')} ({appliedCoupon.code})</span>
                       <div className="flex flex-col items-end">
                         <span className="text-muted-foreground line-through text-xs animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                          {formatPrice(total)} د.ع
+                          {formatPrice(total)} {t('cart_iqd_short')}
                         </span>
                         <span className="font-bold text-green-600 animate-scale-in" style={{ animationDelay: '0.3s' }}>
-                          -<AnimatedPrice value={discount} formatFn={formatPrice} /> دينار عراقي
+                          -<AnimatedPrice value={discount} formatFn={formatPrice} /> {t('pd_currency_iqd')}
                         </span>
                       </div>
                     </div>
@@ -2349,10 +2349,10 @@ const Cart = () => {
                   {protectionDiscountAmount > 0 && protectionDiscount && (
                     <div className="flex justify-between animate-fade-in">
                       <span className="text-emerald-600 text-sm flex items-center gap-1">
-                        🛡️ خصم {protectionDiscount.planNameAr}
+                        {t('cart_protection_discount', { plan: protectionDiscount.planNameAr })}
                       </span>
                       <span className="font-bold text-emerald-600">
-                        -<AnimatedPrice value={protectionDiscountAmount} formatFn={formatPrice} /> دينار عراقي
+                        -<AnimatedPrice value={protectionDiscountAmount} formatFn={formatPrice} /> {t('pd_currency_iqd')}
                       </span>
                     </div>
                   )}
@@ -2366,13 +2366,13 @@ const Cart = () => {
                         </div>
                         <div>
                           <span className="text-xs font-bold text-primary block flex items-center gap-1">
-                            ✨ خصم {cardDiscount.levelName}
+                            {t('cart_card_discount', { level: cardDiscount.levelName })}
                           </span>
-                          <span className="text-[9px] text-muted-foreground">خصم بطاقة الولاء الحصري</span>
+                          <span className="text-[9px] text-muted-foreground">{t('cart_card_discount_subtitle')}</span>
                         </div>
                       </div>
                       <span className="font-black text-primary text-sm animate-pulse">
-                        -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> د.ع
+                        -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> {t('cart_iqd_short')}
                       </span>
                     </div>
                   )}
@@ -2383,15 +2383,15 @@ const Cart = () => {
                     <span>{t('cart_delivery')}</span>
                     {(cardFreeShippingApplied || isFreeDeliveryApplied) ? (
                       <span className="font-bold text-emerald-600">
-                        توصيل مجاني 🎉 {rawDeliveryFee > 0 && <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>}
+                        {t('cart_free_delivery_won')} {rawDeliveryFee > 0 && <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>}
                       </span>
                     ) : (
-                      <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> دينار عراقي</span>
+                      <span className="font-bold"><AnimatedPrice value={deliveryFee} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                     )}
                   </div>
                   {freeDeliveryRemaining > 0 && (
                     <div className="text-xs text-emerald-600 bg-emerald-500/10 rounded-lg px-3 py-1.5 text-center">
-                      أضف {formatPrice(freeDeliveryRemaining)} دينار للحصول على توصيل مجاني 🚚
+                      {t('cart_free_delivery_remaining', { amount: formatPrice(freeDeliveryRemaining) })}
                     </div>
                   )}
                   
@@ -2402,7 +2402,7 @@ const Cart = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                           <MapPin className="h-4 w-4 text-primary" />
-                          عنوان التوصيل
+                          {t('cart_delivery_address')}
                         </div>
                         <div className="flex items-center gap-1">
                           {userAddresses && userAddresses.length > 1 && (
@@ -2412,7 +2412,7 @@ const Cart = () => {
                               className="h-7 text-xs text-primary hover:text-primary/80"
                               onClick={() => setShowAddressSwitcher(true)}
                             >
-                              تبديل العنوان
+                              {t('cart_switch_address')}
                             </Button>
                           )}
                           <Button
@@ -2421,7 +2421,7 @@ const Cart = () => {
                             className="h-7 text-xs text-muted-foreground hover:text-foreground"
                             onClick={() => navigate('/addresses')}
                           >
-                            {userAddresses && userAddresses.length > 0 ? 'إدارة' : 'إضافة عنوان'}
+                            {userAddresses && userAddresses.length > 0 ? t('cart_manage_addresses') : t('cart_add_address')}
                           </Button>
                         </div>
                       </div>
@@ -2437,7 +2437,7 @@ const Cart = () => {
                         </div>
                       ) : (
                         <div className="text-center py-3">
-                          <p className="text-xs text-muted-foreground mb-2">لا يوجد عنوان محفوظ</p>
+                          <p className="text-xs text-muted-foreground mb-2">{t('cart_no_saved_address')}</p>
                           <Button
                             size="sm"
                             variant="outline"
@@ -2445,7 +2445,7 @@ const Cart = () => {
                             onClick={() => navigate('/addresses')}
                           >
                             <MapPin className="h-3 w-3 ml-1" />
-                            إضافة عنوان جديد
+                            {t('cart_add_new_address')}
                           </Button>
                         </div>
                       )}
@@ -2456,7 +2456,7 @@ const Cart = () => {
                         <DialogHeader>
                           <DialogTitle className="flex items-center gap-2">
                             <MapPin className="h-5 w-5 text-primary" />
-                            اختر عنوان التوصيل
+                            {t('cart_choose_address')}
                           </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -2503,7 +2503,7 @@ const Cart = () => {
                         <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/40 py-3 px-4 flex items-center gap-2">
                           <Truck className="h-5 w-5 text-emerald-600 shrink-0" />
                           <div className="flex-1 text-right">
-                            <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">🎉 توصيل مجاني — تم تجاوز الحد الأدنى</div>
+                            <div className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">{t('cart_free_delivery_unlocked')}</div>
                             {selectedMethod && (
                               <div className="text-xs text-muted-foreground">{selectedMethod.name_ar}</div>
                             )}
@@ -2529,12 +2529,12 @@ const Cart = () => {
                           className="w-full flex items-center gap-2 py-3 px-4 text-right bg-sidebar border-primary"
                         >
                           <Truck className="h-5 w-5 text-primary shrink-0" />
-                          <span className="font-bold text-foreground flex-1">طريقة التوصيل</span>
+                          <span className="font-bold text-foreground flex-1">{t('cart_delivery_method')}</span>
                           {selectedMethod && (
                             <span className="text-xs text-muted-foreground ml-1 text-center">
                               {selectedMethod.name_ar} — {' '}
                               <span className={`font-bold ${selectedDeliveryMethod === 'pickup' ? 'text-green-500' : 'text-primary'}`}>
-                                {selectedDeliveryMethod === 'pickup' ? 'مجاناً' : `${formatPrice(selectedFee)} د.ع`}
+                                {selectedDeliveryMethod === 'pickup' ? t('cart_free_label') : `${formatPrice(selectedFee)} ${t('cart_iqd_short')}`}
                               </span>
                             </span>
                           )}
@@ -2583,7 +2583,7 @@ const Cart = () => {
                                 {method.description_ar && <div className="text-[11px] text-muted-foreground">{method.description_ar}</div>}
                               </Label>
                               <span className={`text-sm font-bold ${(method.method_key === 'pickup' || methodFreeApplied) ? 'text-green-500' : 'text-primary'}`}>
-                                {method.method_key === 'pickup' || methodFreeApplied ? 'مجاناً' : `${formatPrice(previewFee)} د.ع`}
+                                {method.method_key === 'pickup' || methodFreeApplied ? t('cart_free_label') : `${formatPrice(previewFee)} ${t('cart_iqd_short')}`}
                               </span>
                             </div>
                           );
@@ -2644,14 +2644,14 @@ const Cart = () => {
                             <Label htmlFor="payment-cod" className="flex-1 cursor-pointer">
                               <div className="font-bold text-foreground flex items-center gap-2">
                                 <Truck className="h-4 w-4" />
-                                الدفع عند الاستلام
+                                {t('cart_cod_title')}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                لا تدفع شيئاً الآن — تدفع المبلغ كاملاً عند استلام الطلب
+                                {t('cart_cod_desc_short')}
                               </div>
                               {preOrderPaymentOption === 'cod' && codFee > 0 && (
                                 <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                  + {formatPrice(codFee)} د.ع رسوم الدفع عند الاستلام
+                                  {t('cart_cod_fee', { amount: formatPrice(codFee) })}
                                 </div>
                               )}
                             </Label>
@@ -2666,17 +2666,17 @@ const Cart = () => {
                     <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className="h-5 w-5 text-primary" />
-                        <span className="font-bold text-primary">الدفع عند الاستلام</span>
+                        <span className="font-bold text-primary">{t('cart_cod_title')}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب</p>
+                      <p className="text-xs text-muted-foreground">{t('cart_cod_paid_on_receipt')}</p>
                     </div>
                   ) : isCodPayment ? (
                     <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
                       <div className="flex items-center gap-2 mb-2">
                         <Truck className="h-5 w-5 text-primary" />
-                        <span className="font-bold text-primary">الدفع عند الاستلام</span>
+                        <span className="font-bold text-primary">{t('cart_cod_title')}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">سيتم الدفع نقداً عند استلام الطلب — لا يتم خصم أي مبلغ من المحفظة الآن.</p>
+                      <p className="text-xs text-muted-foreground">{t('cart_cod_paid_on_receipt_no_wallet')}</p>
                     </div>
                   ) : (
                     <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-card border-primary/30' : 'bg-card border-destructive/30'}`}>
@@ -2710,58 +2710,58 @@ const Cart = () => {
                     {hasPreOrderItems && preOrderPaymentOption === 'quarter' && (
                       <>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                          <span>ربع المبلغ (25%)</span>
-                          <span className="font-bold">{formatPrice(preOrderPaymentAmount)} د.ع</span>
+                          <span>{t('cart_quarter_label')}</span>
+                          <span className="font-bold">{formatPrice(preOrderPaymentAmount)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-amber-600 mb-2">
-                          <span>{partialPaymentSettings?.fee_label_ar || 'رسوم إضافية'}</span>
-                          <span className="font-bold">+{formatPrice(partialPaymentFee)} د.ع</span>
+                          <span>{partialPaymentSettings?.fee_label_ar || t('cart_extra_fees')}</span>
+                          <span className="font-bold">+{formatPrice(partialPaymentFee)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                          <span>التوصيل</span>
-                          <span className="font-bold">{formatPrice(deliveryFee)} د.ع</span>
+                          <span>{t('cart_delivery')}</span>
+                          <span className="font-bold">{formatPrice(deliveryFee)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-orange-500 mb-3">
-                          <span>المتبقي عند الاستلام</span>
-                          <span className="font-bold">{formatPrice(remainingAmount)} دينار عراقي</span>
+                          <span>{t('cart_remaining_on_receipt')}</span>
+                          <span className="font-bold">{formatPrice(remainingAmount)} {t('pd_currency_iqd')}</span>
                         </div>
                       </>
                     )}
                     {isCodPayment && (
                       <>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                          <span>قيمة المنتجات</span>
-                          <span className="font-bold">{formatPrice(subtotalWithTax)} د.ع</span>
+                          <span>{t('cart_products_value')}</span>
+                          <span className="font-bold">{formatPrice(subtotalWithTax)} {t('cart_iqd_short')}</span>
                         </div>
                         {codFee > 0 && (
                           <div className="flex justify-between text-sm text-amber-600 mb-2">
-                            <span>{partialPaymentSettings?.cod_label_ar || 'رسوم الدفع عند الاستلام'}</span>
-                            <span className="font-bold">+{formatPrice(codFee)} د.ع</span>
+                            <span>{partialPaymentSettings?.cod_label_ar || t('cart_cod_fees_label')}</span>
+                            <span className="font-bold">+{formatPrice(codFee)} {t('cart_iqd_short')}</span>
                           </div>
                         )}
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                          <span>التوصيل</span>
-                          <span className="font-bold">{formatPrice(deliveryFee)} د.ع</span>
+                          <span>{t('cart_delivery')}</span>
+                          <span className="font-bold">{formatPrice(deliveryFee)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-orange-500 mb-3">
-                          <span>الإجمالي عند الاستلام</span>
-                          <span className="font-bold">{formatPrice(remainingAmount + deliveryFee)} دينار عراقي</span>
+                          <span>{t('cart_total_on_receipt')}</span>
+                          <span className="font-bold">{formatPrice(remainingAmount + deliveryFee)} {t('pd_currency_iqd')}</span>
                         </div>
                       </>
                     )}
                     {referralOwnerEarnings > 0 && (
                       <div className="flex justify-between text-sm mb-2 text-amber-600 dark:text-amber-400">
                         <span className="flex items-center gap-1">
-                          🎁 دعم @{appliedReferral?.owner_username}
+                          {t('cart_referral_support', { username: appliedReferral?.owner_username || '' })}
                         </span>
-                        <span className="font-bold">+{formatPrice(referralOwnerEarnings)} د.ع</span>
+                        <span className="font-bold">+{formatPrice(referralOwnerEarnings)} {t('cart_iqd_short')}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
-                        {isCodPayment ? 'المطلوب الآن' : (hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total'))}
+                        {isCodPayment ? t('cart_required_now') : (hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total'))}
                       </span>
-                      <span className="text-primary"><AnimatedPrice value={grandTotal} formatFn={formatPrice} /> دينار عراقي</span>
+                      <span className="text-primary"><AnimatedPrice value={grandTotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                     </div>
                     {useWalletBalance && walletDeduction > 0 && grandTotal === 0 && (
                       <p className="text-xs text-green-600 mt-2 text-center">
@@ -2808,7 +2808,7 @@ const Cart = () => {
                   ) : hasOutOfStockItems ? (
                     <>
                       <Trash2 className="ml-2 h-4 w-4" />
-                      يرجى حذف المنتجات غير المتوفرة
+                      {t('cart_remove_oos_first')}
                     </>
                   ) : !termsAccepted ? (
                     <>
@@ -2818,7 +2818,7 @@ const Cart = () => {
                   ) : isDirectSaleCart ? (
                     <>
                       <Truck className="ml-2 h-4 w-4" />
-                      إتمام الطلب - الدفع عند الاستلام
+                      {t('cart_checkout_cod')}
                     </>
                   ) : !hasEnoughBalance ? (
                     <>
@@ -2973,7 +2973,7 @@ const Cart = () => {
           const ms = cutoff.getTime() - now.getTime();
           const h = Math.floor(ms / 3600000);
           const m = Math.floor((ms % 3600000) / 60000);
-          return `${h} ساعة و ${m} دقيقة`;
+          return t('cart_time_h_m', { h, m });
         })()}
       />
 
@@ -2983,19 +2983,19 @@ const Cart = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />
-              تفريغ السلة
+              {t('cart_clear_confirm_title')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من تفريغ السلة؟ سيتم حذف جميع المنتجات ({itemCount} منتج) من السلة.
+              {t('cart_clear_confirm_desc', { count: itemCount })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogCancel>{t('cart_clear_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmClearCart}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              تفريغ السلة
+              {t('cart_clear_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
