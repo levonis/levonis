@@ -1,9 +1,10 @@
 import { AnimatePresence, motion, type Transition } from "framer-motion";
 import { ArrowLeft, ArrowRight, Search, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useState, useMemo } from "react";
 import { useIsland, type IslandState } from "./IslandContext";
 import { useLanguage } from "@/lib/i18n";
+import type { TranslationKeys } from "@/lib/i18n";
 
 const spring: Transition = {
   type: "spring",
@@ -38,22 +39,57 @@ const shapeFor = (
   }
 };
 
+type SearchScope = "global" | "category" | "community";
+
 export const DynamicIsland = () => {
   const { state, title, promoMessages } = useIsland();
   const { t, isRtl } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
   const shape = shapeFor(state, title);
   const [searchQuery, setSearchQuery] = useState("");
 
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
+  // Derive search scope + placeholder from current route
+  const { scope, placeholderKey } = useMemo<{
+    scope: SearchScope;
+    placeholderKey: keyof TranslationKeys;
+  }>(() => {
+    const p = location.pathname;
+    if (p.startsWith("/category/")) {
+      return { scope: "category", placeholderKey: "island_search_in_category" };
+    }
+    if (p.startsWith("/community")) {
+      return { scope: "community", placeholderKey: "island_search_in_community" };
+    }
+    return { scope: "global", placeholderKey: "island_search_placeholder" };
+  }, [location.pathname]);
+
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchQuery.trim();
-    if (q) navigate(`/products?search=${encodeURIComponent(q)}`);
+    if (!q) return;
+    if (scope === "category" && params.slug) {
+      // Stay inside the current category; CategoryDetail reads ?q=
+      navigate(`/category/${params.slug}?q=${encodeURIComponent(q)}`, { replace: true });
+    } else if (scope === "community") {
+      navigate(`/community/merchants/all-products?q=${encodeURIComponent(q)}`);
+    } else {
+      navigate(`/products?search=${encodeURIComponent(q)}`);
+    }
   };
 
-  const goSearch = () => navigate("/products");
+  const goSearch = () => {
+    if (scope === "category" && params.slug) {
+      navigate(`/category/${params.slug}?focus=search`, { replace: true });
+    } else if (scope === "community") {
+      navigate("/community/merchants/all-products");
+    } else {
+      navigate("/products");
+    }
+  };
 
   const messages = promoMessages.length ? promoMessages : [];
 
