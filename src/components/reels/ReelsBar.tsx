@@ -117,9 +117,15 @@ export default function ReelsBar() {
           onPointerCancel={handlePointerEnd}
           style={{
             WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-x pan-y',
-            overscrollBehaviorX: 'contain',
-            overscrollBehaviorY: 'auto',
+            // Claim only the vertical axis so the page never gets its
+            // down-scroll hijacked when the finger lands on the reels strip.
+            // Horizontal gestures are intentionally NOT claimed here — they
+            // propagate to the page (and the browser's native back/forward
+            // edge-swipe), enabling left/right page navigation.
+            touchAction: 'pan-y',
+            // Don't trap any axis: vertical scroll continues into the page,
+            // horizontal gestures bubble up instead of being absorbed.
+            overscrollBehavior: 'auto',
           }}
         >
           {reels.map((reel) => (
