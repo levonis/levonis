@@ -1,64 +1,125 @@
 
 
-## تحويل شريط الفلترة والترتيب في `/category` إلى Glassmorphism احترافي
+## توحيد التصميم على Glassmorphism Professional
 
-### الوضع الحالي
-في `src/pages/CategoryDetail.tsx`، شريط "عدد المنتجات + الترتيب + الفلترة" تصميمه بسيط: حدّ سفلي رفيع، `Select` و`Button` افتراضيان، والفلترة تفتح في `Sheet` جانبي. لا يوجد إحساس زجاجي ولا أنميشن توسّع للأسفل.
+طلبك واسع النطاق — `/category` + بقية الموقع + شريط التنقّل السفلي البيضاوي + أنميشنات التوسّع. سأنفّذ على **5 مراحل** مرتّبة حسب الأثر البصري.
 
-أما ترتيب المنتجات: **منطق "بيع مباشر أولاً" مطبّق فعلياً** كترتيب افتراضي (دالة `directRank` تضع منتجات `has_in_stock` غير المنفذة قبل غيرها قبل تطبيق الـ `sortBy`). لذا لا حاجة لتغيير منطقي — فقط التأكيد عليه.
+---
 
-### التصميم الجديد للشريط
+### المرحلة 1 — إكمال `/category` (الأولوية القصوى)
 
-بطاقة زجاجية واحدة مستطيلة (rounded-2xl) تحتوي ثلاث مناطق:
+**العناصر المتبقّية للتحويل:**
+
+1. **بطاقة Hero الرئيسية** (موجودة بالفعل بنمط زجاجي — تحسين بسيط: زيادة `backdrop-blur` إلى 2xl وتوحيد التدرّج مع باقي العناصر).
+2. **بطاقات المنتجات `FloatingProductCard`**:
+   - رفع الزجاج من `blur(40px)` إلى صيغة موحّدة `backdrop-blur-2xl + saturate-150`.
+   - إضافة `inset 0 1px 0` highlight علوي.
+   - ترقية ribbon البيع المباشر إلى نمط زجاجي (شفافية + blur خفيف).
+3. **رسالة "لا توجد منتجات"** (السطور 423-460): تحويل البطاقة الفارغة إلى لوحة زجاجية بنفس النمط.
+4. **شبكة المنتجات**: إضافة `animate-fade-in` متتابع خفيف عند التحميل.
+
+---
+
+### المرحلة 2 — الشريط السفلي البيضاوي (Mobile Bottom Nav)
+
+**الوضع الحالي:** شريط مستطيل بحدّ علوي بسيط، عرض كامل، حواف غير مدوّرة.
+
+**الجديد:**
+- **شكل بيضاوي عائم** (`rounded-full`) منفصل عن الحواف — `mx-3 mb-3` مع `bottom-0` آمن.
+- خلفية زجاجية: `backdrop-blur-2xl + bg-card/50 gradient + border 0.4 + deep shadow + inner highlight`.
+- العنصر النشط: حبّة بيضاوية مضيئة `bg-primary/20` مع توهّج خلفي `glow`.
+- انتقالات `cubic-bezier(0.16,1,0.3,1)` 300ms للأيقونات.
+- شارات الإشعارات (السلة/الرسائل) بنمط زجاجي صغير مع `ring-2 ring-background/50`.
+- الحفاظ على `safe-area-inset-bottom`.
+
+**سطح المكتب (dock):** نفس البطاقة موجودة بالفعل بـ `rounded-2xl` — ترقية إلى `rounded-full` (بيضاوي) + ترقية الزجاج لتطابق المعيار.
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  [عدد المنتجات: 24]      [⇅ الترتيب ▾]    [⚙ الفلترة •]  │
-└─────────────────────────────────────────────────────────────┘
-        ↓ (عند الضغط على الترتيب)                ↓ (الفلترة)
-   تنزلق Popover للأسفل                  تنزلق Popover للأسفل
-   بأنميشن slide+fade                     بأنميشن slide+fade
-   (نفس النمط الزجاجي)                    (نفس النمط الزجاجي)
+┌──────────────────────────────────────────┐
+│  ╭──────────────────────────────────╮   │  ← شكل بيضاوي زجاجي
+│  │  🏠   🛒²  👥   🏆   🎮   💬   👤  │   │     عائم بهامش جانبي
+│  ╰──────────────────────────────────╯   │
+└──────────────────────────────────────────┘
 ```
 
-**خصائص الزجاج (موحّدة لكل العناصر):**
-- `backdrop-filter: blur(24px) saturate(1.5)`
-- خلفية متدرجة: `linear-gradient(135deg, hsl(var(--card)/0.45), hsl(var(--card)/0.25))`
-- حد رفيع: `1px solid hsl(var(--border)/0.4)`
-- ظل ناعم + `inset 0 1px 0 rgba(255,255,255,0.08)` لإبراز اللمعان العلوي
-- `rounded-2xl`
+---
 
-### التغييرات التفصيلية
+### المرحلة 3 — معيار Popover/Dropdown موحّد عالميًا
 
-**1. شريط Toolbar (السطر 264-368):**
-- استبدال الحاوية `border-b border-border/40 pb-3` ببطاقة زجاجية مستقلة بـ padding `px-4 py-3`.
-- شارة عدد المنتجات: شريحة (chip) زجاجية صغيرة بأيقونة `Package`، مع `tabular-nums` للأرقام.
-- استبدال `Select` الترتيب بـ **Popover مخصّص**:
-  - Trigger: زرّ زجاجي بأيقونة `ArrowUpDown` + النص الحالي.
-  - Content: ينفتح `side="bottom"` بأنميشن `dropdown-in-bottom` (موجود مسبقاً في النظام)، خلفية زجاجية، عناصر القائمة كـ buttons أنيقة مع تمييز الخيار النشط بـ `bg-primary/15` ودائرة صغيرة على اليمين.
-- استبدال `Sheet` الفلترة (للموبايل والديسكتوب) بـ **Popover** ينفتح للأسفل أيضاً بنفس الأنميشن:
-  - عرض ~320px، يحتوي نفس الحقول الحالية (Availability, Direct Only, Price Range, Reset) لكن داخل أقسام زجاجية مصغّرة بفواصل ناعمة.
-  - في الموبايل (<sm): يأخذ عرض كامل تحت الزر مع `align="end"` للحفاظ على الترتيب RTL.
+إنشاء **مكوّن مساعد جديد** `src/components/ui/glass-popover.tsx` يغلّف `Popover` بالنمط الزجاجي الجاهز + أنميشن التوسّع للأسفل (`dropdown-in-bottom` 220ms `cubic-bezier(0.16,1,0.3,1)`).
 
-**2. أنميشن التوسّع:**
-- استخدام `data-[state=open]:animate-[dropdown-in-bottom_220ms_cubic-bezier(0.16,1,0.3,1)]` المتاح في `popover.tsx` بالفعل.
-- إضافة `transition-all` على Trigger ليتغيّر شكله قليلاً (ring + scale خفيف) عند `data-[state=open]`.
+تحديث `src/components/ui/select.tsx` و`src/components/ui/dropdown-menu.tsx` و`src/components/ui/sheet.tsx` لتطبيق نفس الزجاج تلقائيًا — هذا ينقل **كل قوائم الموقع** إلى النمط دون تعديل كل صفحة.
 
-**3. ترتيب "بيع مباشر أولاً" (تأكيد):**
-- المنطق الحالي في `directRank` (السطور 140-150) صحيح ويُفعَّل دائماً عند `sortBy === 'default'` (وأيضاً كـ tie-breaker لباقي الترتيبات).
-- لا تعديل برمجي مطلوب — فقط نضمن أن الـ `default` يبقى القيمة الابتدائية (موجود).
+أنميشن التوسّع:
+- `data-[state=open]:animate-[glass-expand_220ms]` — keyframe جديد: scale 0.96→1 + opacity 0→1 + translateY 8→0.
+- يُضاف إلى `tailwind.config.ts` و`index.css`.
 
-### قاعدة UI/UX مستقبلية (تُحفظ في الذاكرة)
-كل تعديلات الواجهة القادمة (بطاقات، شرائط، نوافذ، أزرار رئيسية) يجب أن تتبع نمط **Glassmorphism Professional**:
-- `backdrop-blur` + خلفية شبه شفافة + حد ناعم + ظل عميق + لمعان داخلي علوي.
-- زوايا `rounded-2xl/3xl`.
-- أنميشنات دخول `cubic-bezier(0.16,1,0.3,1)` بمدّة 200-260ms.
-- ستُضاف هذه القاعدة إلى `mem://ui/styling/glassmorphism-professional-standard` كقاعدة Core.
+---
+
+### المرحلة 4 — العناصر العامّة للموقع
+
+**Top-level shells (ترقية تلقائية عبر مكوّنات shadcn):**
+
+| المكوّن | التغيير |
+|---|---|
+| `Card` (ui/card.tsx) | إضافة variant `glass` افتراضي للصفحات الرئيسية |
+| `Dialog` content | تطبيق نفس وصفة الزجاج + animation موحّد |
+| `Sheet` content | زجاج + slide-in بـ `cubic-bezier(0.16,1,0.3,1)` |
+| `Tabs` list | حاوية زجاجية بـ `rounded-full`، النشط بـ pill داخلي مضيء |
+| `Button outline/ghost` | إضافة variant `glass` (شفّاف + blur + hover lift) |
+| `Input` | حدّ زجاجي + focus ring بنمط primary glow |
+
+**صفحات تحصل على ترقية بصرية مباشرة من تحديث المكوّنات:**
+`/`, `/cart`, `/rewards`, `/games`, `/community`, `/profile`, `/notifications`, `/favorites`, `/my-orders`, جميع صفحات Auth.
+
+**ملاحظة:** لن أعيد كتابة محتوى كل صفحة — فقط أرقّي مكوّنات الـ design system المشتركة، فيرث الموقع كله النمط تلقائياً. هذا يحفظ ساعات من العمل ويضمن التناسق.
+
+---
+
+### المرحلة 5 — تأثيرات الحركة الموحّدة
+
+في `src/index.css`:
+```css
+@keyframes glass-expand { /* scale + fade + slide */ }
+@keyframes glass-collapse { /* عكسي */ }
+.glass-panel { /* class مساعد جاهز */ }
+.glass-trigger { /* للأزرار */ }
+```
+
+ضبط `tailwind.config.ts` بـ animation keys جديدة:
+- `glass-in`, `glass-out`, `glass-expand`
+
+كل قائمة أو خيار أو drawer ينفتح يستخدم نفس التوقيت → إحساس موحّد عبر الموقع.
+
+---
 
 ### الملفات المعدّلة
-- `src/pages/CategoryDetail.tsx` — إعادة بناء شريط Toolbar فقط (Hero والشبكة بدون تغيير).
-- `mem://index.md` + `mem://ui/styling/glassmorphism-professional-standard.md` — حفظ القاعدة الجديدة.
+
+**جديدة:**
+- `src/components/ui/glass-popover.tsx`
+
+**معدّلة:**
+- `src/pages/CategoryDetail.tsx` (Hero + EmptyState + grid animations)
+- `src/components/FloatingProductCard.tsx` (زجاج موحّد)
+- `src/components/ui/DirectSaleRibbon.tsx` (زجاج خفيف)
+- `src/components/AppNavBar.tsx` (شكل بيضاوي للموبايل + سطح المكتب)
+- `src/components/ui/select.tsx`, `dropdown-menu.tsx`, `sheet.tsx`, `dialog.tsx`, `card.tsx`, `tabs.tsx`, `button.tsx`, `input.tsx` (variants زجاجية)
+- `src/index.css` (keyframes + utility classes)
+- `tailwind.config.ts` (animation tokens)
+
+**ذاكرة:**
+- تحديث `mem://ui/styling/glassmorphism-professional-standard.md` بالوصفة الكاملة + قواعد Bottom Nav البيضاوي + keyframes الجديدة.
+
+---
 
 ### بدون تغيير
-- منطق الفلترة، الاستعلامات، Hero card، شبكة المنتجات، ترتيب "بيع مباشر أولاً".
+
+- منطق التطبيق، البيانات، الاستعلامات، التوجيه، الترجمة.
+- ألوان الـ primary/destructive.
+- ترتيب "بيع مباشر أولاً".
+- وظائف وعدد عناصر شريط التنقّل.
+
+### النتيجة
+
+موقع كامل بهوية بصرية موحّدة: زجاج، شفافية أنيقة، حركات سلسة، شريط سفلي بيضاوي عائم، وكل قائمة تنفتح بنفس الإحساس الناعم.
 
