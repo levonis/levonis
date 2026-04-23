@@ -820,19 +820,16 @@ export type TranslationKeys = {
   auth_pwd_requirements: string;
 
   product_default_currency: string;
-  product_login_required: string;
   product_already_in_favorites: string;
   product_added_to_favorites: string;
   product_favorite_error: string;
   product_discount_badge: string;
-  product_out_of_stock: string;
   product_units_sold: string;
   product_add_to_favorites: string;
 
   cart_signin_required_title: string;
   cart_signin_required_desc: string;
   cart_signin_action: string;
-  cart_title: string;
   cart_clear_all: string;
   cart_empty_title: string;
   cart_empty_desc: string;
