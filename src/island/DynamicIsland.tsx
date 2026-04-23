@@ -327,6 +327,7 @@ export const DynamicIsland = () => {
                 maxWidth: "calc(100vw - 16px)",
                 borderRadius: shape.radius,
                 transformOrigin: "center center",
+                touchAction: "pan-y",
               }}
               transition={{
                 default: {
