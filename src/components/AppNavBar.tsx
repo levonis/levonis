@@ -23,7 +23,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'rewards', labelKey: 'menu_rewards', icon: Trophy, path: '/rewards' },
   { key: 'games', labelKey: 'nav_games', icon: Gamepad2, path: '/games' },
   { key: 'messages', labelKey: 'menu_messages', icon: MessageCircle, path: '/chats' },
-  { key: 'account', labelKey: 'menu_account_info', icon: User, path: '/profile' },
 ];
 
 type DockPosition = 'right' | 'left' | 'top' | 'bottom';

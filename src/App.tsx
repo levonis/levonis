@@ -362,7 +362,9 @@ export default function App() {
             <AuthProvider>
               <CartProvider>
                 <IslandProvider>
-                  <AppContent />
+                  <ProfileTransitionProvider>
+                    <AppContent />
+                  </ProfileTransitionProvider>
                 </IslandProvider>
               </CartProvider>
             </AuthProvider>
