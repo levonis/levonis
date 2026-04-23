@@ -37,6 +37,15 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   const [walletOpen, setWalletOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(false);
   const [couponsOpen, setCouponsOpen] = useState(false);
+  const [walletOrigin, setWalletOrigin] = useState<OriginRect | null>(null);
+  const [savingsOrigin, setSavingsOrigin] = useState<OriginRect | null>(null);
+  const [couponsOrigin, setCouponsOrigin] = useState<OriginRect | null>(null);
+
+  const captureOrigin = (e: MouseEvent<HTMLButtonElement>): OriginRect => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return { x: r.left, y: r.top, width: r.width, height: r.height };
+  };
+
 
   // Detect active card → drives both VIP+ CTA and the card background color
   const { data: activeCard } = useQuery({
