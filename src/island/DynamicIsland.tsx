@@ -357,9 +357,9 @@ export const DynamicIsland = () => {
                 },
                 width: {
                   type: "spring",
-                  stiffness: 360,
-                  damping: 36,
-                  mass: 0.75,
+                  stiffness: 300,
+                  damping: 32,
+                  mass: 0.8,
                   restDelta: 0.5,
                   restSpeed: 0.5,
                 },
