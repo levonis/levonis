@@ -37,7 +37,9 @@ type SortKey =
   | 'name-asc';
 
 const CategoryDetail = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const pickName = (en?: string | null, ar?: string | null) => (language === 'ar' ? (ar || en || '') : (en || ar || ''));
+  const pickDesc = pickName;
 
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
