@@ -2236,7 +2236,6 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
   overflow-y: auto;
-  touch-action: pan-y;
   /* DO NOT set touch-action here — it kills vertical scrolling on mobile.
      Apply touch-action: manipulation only on tap targets (buttons/links). */
 }
@@ -2292,10 +2291,6 @@ textarea {
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
   touch-action: pan-x pan-y;
-}
-
-.overflow-x-auto > * {
-  touch-action: pan-x;
 }
 
 img {
