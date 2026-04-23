@@ -19,28 +19,28 @@ import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/lib/i18n';
 import Footer from '@/components/Footer';
 
-const PREORDER_TABS = [
-  { key: 'all', label: 'الكل', icon: Package },
-  { key: 'pending', label: 'بانتظار الدفع', icon: Clock },
-  { key: 'confirmed', label: 'مؤكد', icon: PackageCheck },
-  { key: 'purchased', label: 'تم الشراء', icon: ShoppingBag },
-  { key: 'arrived_warehouse', label: 'في المخزن', icon: Warehouse },
-  { key: 'shipped', label: 'تم الشحن', icon: Ship },
-  { key: 'arrived_iraq', label: 'وصل العراق', icon: MapPin },
-  { key: 'on_the_way', label: 'في الطريق', icon: Truck },
-  { key: 'delivered', label: 'تم التسليم', icon: CheckCircle },
-  { key: 'cancelled', label: 'ملغي', icon: XCircle },
+const PREORDER_TAB_KEYS = [
+  { key: 'all', tKey: 'myorders_tab_all', icon: Package },
+  { key: 'pending', tKey: 'myorders_tab_pending', icon: Clock },
+  { key: 'confirmed', tKey: 'myorders_tab_confirmed', icon: PackageCheck },
+  { key: 'purchased', tKey: 'myorders_tab_purchased', icon: ShoppingBag },
+  { key: 'arrived_warehouse', tKey: 'myorders_tab_arrived_warehouse', icon: Warehouse },
+  { key: 'shipped', tKey: 'myorders_tab_shipped', icon: Ship },
+  { key: 'arrived_iraq', tKey: 'myorders_tab_arrived_iraq', icon: MapPin },
+  { key: 'on_the_way', tKey: 'myorders_tab_on_the_way', icon: Truck },
+  { key: 'delivered', tKey: 'myorders_tab_delivered', icon: CheckCircle },
+  { key: 'cancelled', tKey: 'myorders_tab_cancelled', icon: XCircle },
 ] as const;
 
-const DIRECT_TABS = [
-  { key: 'all', label: 'الكل', icon: Package },
-  { key: 'pending', label: 'بانتظار الدفع', icon: Clock },
-  { key: 'confirmed', label: 'مؤكد', icon: PackageCheck },
-  { key: 'processing', label: 'قيد التجهيز', icon: Package },
-  { key: 'shipped', label: 'تم الشحن', icon: Truck },
-  { key: 'on_the_way', label: 'في الطريق', icon: Truck },
-  { key: 'delivered', label: 'تم التسليم', icon: CheckCircle },
-  { key: 'cancelled', label: 'ملغي', icon: XCircle },
+const DIRECT_TAB_KEYS = [
+  { key: 'all', tKey: 'myorders_tab_all', icon: Package },
+  { key: 'pending', tKey: 'myorders_tab_pending', icon: Clock },
+  { key: 'confirmed', tKey: 'myorders_tab_confirmed', icon: PackageCheck },
+  { key: 'processing', tKey: 'myorders_tab_processing', icon: Package },
+  { key: 'shipped', tKey: 'myorders_tab_shipped', icon: Truck },
+  { key: 'on_the_way', tKey: 'myorders_tab_on_the_way', icon: Truck },
+  { key: 'delivered', tKey: 'myorders_tab_delivered', icon: CheckCircle },
+  { key: 'cancelled', tKey: 'myorders_tab_cancelled', icon: XCircle },
 ] as const;
 
 const STATUS_ACCENT: Record<string, string> = {
@@ -69,8 +69,18 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ALL_STATUS_LABELS: Record<string, string> = {};
-[...PREORDER_TABS, ...DIRECT_TABS].forEach(t => { ALL_STATUS_LABELS[t.key] = t.label; });
+const STATUS_TKEY: Record<string, string> = {
+  pending: 'myorders_tab_pending',
+  confirmed: 'myorders_tab_confirmed',
+  processing: 'myorders_tab_processing',
+  purchased: 'myorders_tab_purchased',
+  arrived_warehouse: 'myorders_tab_arrived_warehouse',
+  shipped: 'myorders_tab_shipped',
+  arrived_iraq: 'myorders_tab_arrived_iraq',
+  on_the_way: 'myorders_tab_on_the_way',
+  delivered: 'myorders_tab_delivered',
+  cancelled: 'myorders_tab_cancelled',
+};
 
 const OrderSkeleton = () => (
   <div className="space-y-3 px-4 py-4">
@@ -104,9 +114,10 @@ const OrderSkeleton = () => (
 interface OrderCardProps {
   order: any;
   navigate: (path: string) => void;
+  t: (key: any, vars?: Record<string, string | number>) => string;
 }
 
-const OrderCard = ({ order, navigate }: OrderCardProps) => {
+const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
   const isPreOrder = order.order_type !== 'direct';
   const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
   const shippingName = shippingItem?.shipping_option_name_ar || '';
@@ -145,7 +156,7 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
               <span className="text-[11px] text-muted-foreground">{relativeTime}</span>
             </div>
             <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 font-bold border rounded-lg", statusColor)}>
-              {ALL_STATUS_LABELS[order.status] || order.status}
+              {STATUS_TKEY[order.status] ? t(STATUS_TKEY[order.status] as any) : order.status}
             </Badge>
           </div>
 
@@ -168,19 +179,19 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground line-clamp-1 mb-1">
                 {firstName}
-                {itemCount > 1 && <span className="text-muted-foreground font-normal text-xs"> و{itemCount - 1} آخر</span>}
+                {itemCount > 1 && <span className="text-muted-foreground font-normal text-xs"> {t('myorders_more_items', { count: itemCount - 1 })}</span>}
               </p>
               <div className="flex flex-wrap gap-1">
                 {order.order_type === 'direct' ? (
                   <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600">
                     <Truck className="h-2.5 w-2.5" />
-                    بيع مباشر
+                    {t('myorders_type_direct')}
                   </span>
                 ) : (
                   <>
                     <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600">
                       <ShoppingBag className="h-2.5 w-2.5" />
-                      طلب مسبق
+                      {t('myorders_type_preorder')}
                     </span>
                     {shippingName && (
                       <span className={cn(
@@ -217,7 +228,7 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 rounded-xl py-2 transition-colors"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  تتبع الشحنة
+                  {t('myorders_track_shipment')}
                 </button>
               )}
               {order.status === 'delivered' && !order.user_confirmed_delivery && !order.auto_confirmed && (
@@ -226,13 +237,13 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
                   className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/15 rounded-xl py-2 transition-colors"
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
-                  تأكيد الاستلام
+                  {t('myorders_confirm_receipt')}
                 </button>
               )}
               {order.status === 'delivered' && (order.user_confirmed_delivery || order.auto_confirmed) && (
                 <div className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 rounded-xl py-2">
                   <CheckCircle className="h-3.5 w-3.5" />
-                  تم تأكيد الاستلام ✅
+                  {t('myorders_receipt_confirmed')}
                 </div>
               )}
             </div>
@@ -246,7 +257,7 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
 const MyOrders = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, isRtl } = useLanguage();
   const [searchParams] = useSearchParams();
 
   const [preorderExpanded, setPreorderExpanded] = useState(true);
@@ -259,8 +270,8 @@ const MyOrders = () => {
     const statusParam = searchParams.get('status');
     if (!statusParam) return;
 
-    const isDirectStatus = DIRECT_TABS.some(t => t.key === statusParam);
-    const isPreorderStatus = PREORDER_TABS.some(t => t.key === statusParam);
+    const isDirectStatus = DIRECT_TAB_KEYS.some(t => t.key === statusParam);
+    const isPreorderStatus = PREORDER_TAB_KEYS.some(t => t.key === statusParam);
 
     if (isDirectStatus) {
       setDirectTab(statusParam);
@@ -319,13 +330,13 @@ const MyOrders = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center space-y-3">
-          <h1 className="text-base font-bold text-foreground">يلزم تسجيل الدخول</h1>
-          <p className="text-sm text-muted-foreground">ادخل إلى حسابك لعرض طلباتك.</p>
+          <h1 className="text-base font-bold text-foreground">{t('myorders_login_required')}</h1>
+          <p className="text-sm text-muted-foreground">{t('myorders_login_required_desc')}</p>
           <div className="flex gap-2">
-            <Button onClick={() => navigate('/auth')} className="flex-1">تسجيل الدخول</Button>
-            <Button variant="outline" onClick={() => navigate('/')} className="flex-1">الرئيسية</Button>
+            <Button onClick={() => navigate('/auth')} className="flex-1">{t('myorders_login_btn')}</Button>
+            <Button variant="outline" onClick={() => navigate('/')} className="flex-1">{t('myorders_home_btn')}</Button>
           </div>
         </div>
       </div>
@@ -333,7 +344,7 @@ const MyOrders = () => {
   }
 
   const renderTabs = (
-    tabs: readonly { key: string; label: string; icon: any }[],
+    tabs: readonly { key: string; tKey: string; icon: any }[],
     activeTab: string,
     setTab: (k: string) => void,
     counts: Record<string, number>,
@@ -356,7 +367,7 @@ const MyOrders = () => {
             )}
           >
             <Icon className="h-3.5 w-3.5" />
-            <span>{tab.label}</span>
+            <span>{t(tab.tKey as any)}</span>
             {count > 0 && (
               <span className={cn(
                 "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black px-1",
@@ -378,15 +389,15 @@ const MyOrders = () => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <Package className="h-8 w-8 text-primary/40" />
           </div>
-          <h3 className="font-bold text-foreground mb-1 text-sm">لا توجد طلبات {emptyLabel}</h3>
-          <p className="text-xs text-muted-foreground">جرب تصفية أخرى أو ابدأ التسوق</p>
+          <h3 className="font-bold text-foreground mb-1 text-sm">{t('myorders_empty_filtered', { label: emptyLabel })}</h3>
+          <p className="text-xs text-muted-foreground">{t('myorders_empty_filtered_desc')}</p>
         </div>
       );
     }
     return (
       <div className="px-3 py-2 space-y-2.5">
         {filtered.map((order: any) => (
-          <OrderCard key={order.id} order={order} navigate={navigate} />
+          <OrderCard key={order.id} order={order} navigate={navigate} t={t} />
         ))}
       </div>
     );
@@ -403,8 +414,8 @@ const MyOrders = () => {
                 <Package className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-lg font-black text-foreground">طلباتي</h1>
-                {orders && <p className="text-xs text-muted-foreground">{orders.length} طلب</p>}
+                <h1 className="text-lg font-black text-foreground">{t('myorders_title')}</h1>
+                {orders && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate(-1 as any)}>
@@ -423,11 +434,11 @@ const MyOrders = () => {
             <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
               <Package className="h-10 w-10 text-primary/40" />
             </div>
-            <h3 className="font-black text-foreground mb-1.5 text-lg">لا توجد طلبات بعد</h3>
-            <p className="text-sm text-muted-foreground mb-5">ابدأ التسوق واطلب منتجاتك المفضلة</p>
+            <h3 className="font-black text-foreground mb-1.5 text-lg">{t('myorders_no_orders_yet')}</h3>
+            <p className="text-sm text-muted-foreground mb-5">{t('myorders_no_orders_desc')}</p>
             <Button onClick={() => navigate('/products')} className="rounded-xl">
               <ShoppingBag className="h-4 w-4 ml-1.5" />
-              تصفح المنتجات
+              {t('myorders_browse_products')}
             </Button>
           </div>
         ) : (
@@ -464,8 +475,8 @@ const MyOrders = () => {
                     <ShoppingBag className="h-[18px] w-[18px] text-amber-500" />
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-foreground">الحجز المسبق</p>
-                    <p className="text-[11px] text-muted-foreground">{preorders.length} طلب</p>
+                    <p className="text-sm font-black text-foreground">{t('myorders_section_preorder')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('myorders_section_orders_count', { count: preorders.length })}</p>
                   </div>
                 </div>
                 <div className="relative z-[1] flex items-center gap-2">
@@ -486,8 +497,8 @@ const MyOrders = () => {
 
               {preorderExpanded && (
                 <div className="mt-2">
-                  {renderTabs(PREORDER_TABS, preorderTab, setPreorderTab, preorderCounts, preorders.length)}
-                  {renderOrderList(filteredPreorders, ALL_STATUS_LABELS[preorderTab] || '')}
+                  {renderTabs(PREORDER_TAB_KEYS, preorderTab, setPreorderTab, preorderCounts, preorders.length)}
+                  {renderOrderList(filteredPreorders, STATUS_TKEY[preorderTab] ? t(STATUS_TKEY[preorderTab] as any) : '')}
                 </div>
               )}
             </div>
@@ -524,8 +535,8 @@ const MyOrders = () => {
                     <Store className="h-[18px] w-[18px] text-emerald-500" />
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-foreground">البيع المباشر</p>
-                    <p className="text-[11px] text-muted-foreground">{directOrders.length} طلب</p>
+                    <p className="text-sm font-black text-foreground">{t('myorders_section_direct')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('myorders_section_orders_count', { count: directOrders.length })}</p>
                   </div>
                 </div>
                 <div className="relative z-[1] flex items-center gap-2">
@@ -546,8 +557,8 @@ const MyOrders = () => {
 
               {directExpanded && (
                 <div className="mt-2">
-                  {renderTabs(DIRECT_TABS, directTab, setDirectTab, directCounts, directOrders.length)}
-                  {renderOrderList(filteredDirect, ALL_STATUS_LABELS[directTab] || '')}
+                  {renderTabs(DIRECT_TAB_KEYS, directTab, setDirectTab, directCounts, directOrders.length)}
+                  {renderOrderList(filteredDirect, STATUS_TKEY[directTab] ? t(STATUS_TKEY[directTab] as any) : '')}
                 </div>
               )}
             </div>
