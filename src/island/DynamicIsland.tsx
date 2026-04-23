@@ -189,6 +189,15 @@ export const DynamicIsland = () => {
     };
   }, [isSearchActive]);
 
+  /* ---------- Reset search whenever route changes ----------
+   * Ensures opening a product (or any nav) clears the input + closes the
+   * suggestions/results panel so the user starts fresh on the next page.
+   */
+  useEffect(() => {
+    setSearchQuery("");
+    setFocused(false);
+  }, [location.pathname]);
+
   /* ---------- Shape ---------- */
   const shape =
     state === "search"
