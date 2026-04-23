@@ -1,35 +1,23 @@
 
 
-## تحويل /profile إلى Glassmorphism وإزالة الخلفية الثانوية
+## إزالة قسم "مجتمع ليفو" من الواجهة الرئيسية
 
-### المشكلة
-`ProfileExpansionShell` يرسم طبقة معتمة `hsl(var(--background))` فوق الصفحة، فتظهر "خلفية ثانوية" تخفي الخلفية الرئيسية للموقع وراءها.
+### الهدف
+تخفيف عبء التحميل على الصفحة الرئيسية (`Home.tsx`) عبر إزالة قسم `CommunitySection` بالكامل، مع إبقائه متاحاً عبر صفحة `/community`.
 
-### الحل
-استبدال الطبقة المعتمة بسطح زجاجي شفاف (Glassmorphism) يسمح برؤية الخلفية الرئيسية للموقع من خلاله.
+### التغييرات (`src/pages/Home.tsx`)
 
-### التغييرات (`src/components/ProfileExpansionShell.tsx`)
-
-1. **استبدال خلفية `profile-shell`**:
-   - حذف `background: "hsl(var(--background))"` المعتم.
-   - استخدام تدرج شفاف:
-     ```
-     linear-gradient(135deg, hsl(var(--background) / 0.55), hsl(var(--background) / 0.35))
-     ```
-   - إضافة `backdrop-filter: blur(22px) saturate(1.4)` (مع `-webkit-` prefix) لتغبيش ما خلف القرص.
-   - تحديث `boxShadow` لإطار زجاجي ناعم: `inset 0 1px 0 white/18%` + ring خفيف للـ primary.
-
-2. **تخفيف الـ backdrop دون إزالته**:
-   - الطبقة `profile-shell-backdrop` الحالية (`bg-background/40`) تُخفض إلى `hsl(var(--background) / 0.18)` كي لا تُشكّل خلفية بديلة، فقط dim لطيف.
-
-3. **مسار `prefers-reduced-motion`**:
-   - تطبيق نفس الـ glassBg + backdropFilter على نسخة الـ fade المباشر، بدل الـ background المعتم.
+1. **حذف الـ lazy import** الخاص بـ `CommunitySection` (مع كتلة الـ retry-on-failure) — يمنع تحميل أي chunk للمجتمع من الصفحة الرئيسية.
+2. **حذف الكتلة المعروضة** في أسفل الصفحة:
+   - `AnimatedDivider` التمهيدي،
+   - الـ `ProgressiveSection` + `Suspense` + `ErrorBoundaryFallback` المغلِّفة لـ `<CommunitySection />`.
+3. **إبقاء** `Footer` في مكانه مباشرة بعد آخر قسم متبقٍّ.
 
 ### بدون تغييرات
-- بنية الـ clip-path الدائري ونوابض الانفتاح/الانكماش وترتيب ظهور المحتوى تبقى كما هي.
-- `Profile.tsx` لا يحتاج تعديل (ليس له خلفية خاصة).
-- `AppBackground` العام يبقى كما هو ويظهر الآن خلف القرص الزجاجي.
+- `/community` (`CommunityHome`) يبقى كما هو ويعرض المحتوى بشكل كامل.
+- لا تأثير على شريط التنقل أو روابط `LevoHelpBot` المؤدية إلى `/community`.
+- لا تعديل على بقية أقسام الرئيسية.
 
 ### الملف المعدّل
-- `src/components/ProfileExpansionShell.tsx`
+- `src/pages/Home.tsx`
 
