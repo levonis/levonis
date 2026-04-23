@@ -200,11 +200,15 @@ const AdminAnnouncements = () => {
                 إضافة إعلان
               </Button>
             </DialogTrigger>
-            <DialogContent className="admin-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+            <DialogContent className="admin-dialog max-w-2xl !max-h-[90vh] !overflow-hidden flex flex-col p-0">
+            <DialogHeader className="p-6 pb-2 shrink-0">
               <DialogTitle>{editing ? 'تعديل الإعلان' : 'إضافة إعلان جديد'}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4 overflow-y-auto overscroll-contain flex-1 px-6 pb-6 touch-pan-y"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               <div className="admin-form-group">
                 <Label htmlFor="message_ar">نص الإعلان (عربي)</Label>
                 <Input
