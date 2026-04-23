@@ -117,14 +117,15 @@ const FloatingProductCard = memo(({
       <div
         className="relative h-full flex flex-col rounded-xl overflow-hidden isolate"
         style={{
-          backdropFilter: 'blur(20px) saturate(1.4)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+          backdropFilter: 'blur(40px) saturate(1.6)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.6)',
           background:
-            'linear-gradient(170deg, hsl(160 35% 14% / 0.3) 0%, hsl(160 30% 10% / 0.4) 50%, hsl(160 25% 8% / 0.5) 100%)',
+            'linear-gradient(170deg, hsl(160 35% 14% / 0.22) 0%, hsl(160 30% 10% / 0.30) 50%, hsl(160 25% 8% / 0.38) 100%)',
+          border: '1px solid hsl(160 30% 30% / 0.18)',
+          boxShadow:
+            '0 8px 32px -6px hsl(0 0% 0% / 0.45), inset 0 1px 0 hsl(160 40% 50% / 0.10)',
         }}
       >
-        {/* Animated red edge ribbon traveling along the card border */}
-        <div className="card-red-edge" aria-hidden="true" />
         {hasDirectSale && <DirectSaleRibbon />}
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
