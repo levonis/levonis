@@ -252,8 +252,8 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
                   />
                   <div className="mt-1 text-[10px] text-white/60 text-center">
                     {nextMin - currentPoints > 0
-                      ? `${nextMin - currentPoints} نقطة للترقية`
-                      : "مكتمل!"}
+                      ? t('profile_points_to_next', { points: nextMin - currentPoints })
+                      : t('profile_level_complete')}
                   </div>
                 </div>
               )}
@@ -273,7 +273,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
                   <Skeleton className="h-4 w-8 bg-white/20" />
                 ) : (
                   <span className="text-sm font-bold text-white tabular-nums">
-                    {typeof s.value === "number" ? s.value.toLocaleString("ar-IQ") : s.value}
+                    {typeof s.value === "number" ? s.value.toLocaleString(language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ') : s.value}
                   </span>
                 )}
                 <span className="text-[10px] text-white/70">{s.label}</span>
@@ -286,7 +286,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
             onClick={() => navigate(vipPlusActive ? "/my-referral" : "/rewards?tab=cards")}
             className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.97] hover:bg-white/25"
           >
-            <span>{vipPlusActive ? "إدارة كود الإحالة" : "ترقية العضوية"}</span>
+            <span>{vipPlusActive ? t('profile_manage_referral') : t('profile_upgrade_membership')}</span>
             <ChevronLeft className="h-4 w-4" />
           </button>
         </div>

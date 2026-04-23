@@ -3,21 +3,24 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, Package, Truck, MapPin, CheckCircle, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/lib/i18n";
+import type { TranslationKeys } from "@/lib/i18n/types";
 
 interface OrdersCenterProps {
   userId: string;
 }
 
-const ORDER_STATUSES = [
-  { key: "pending", label: "بانتظار الدفع", icon: Clock },
-  { key: "confirmed", label: "قيد التجهيز", icon: Package },
-  { key: "shipped", label: "تم الشحن", icon: Truck },
-  { key: "arrived_iraq", label: "في الطريق", icon: MapPin },
-  { key: "delivered", label: "تم التسليم", icon: CheckCircle },
-] as const;
+const ORDER_STATUSES: Array<{ key: string; labelKey: keyof TranslationKeys; icon: typeof Clock }> = [
+  { key: "pending", labelKey: "order_status_pending", icon: Clock },
+  { key: "confirmed", labelKey: "order_status_confirmed", icon: Package },
+  { key: "shipped", labelKey: "order_status_shipped", icon: Truck },
+  { key: "arrived_iraq", labelKey: "order_status_arrived_iraq", icon: MapPin },
+  { key: "delivered", labelKey: "order_status_delivered", icon: CheckCircle },
+];
 
 export default function OrdersCenter({ userId }: OrdersCenterProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { data: statusCounts, isLoading } = useQuery({
     queryKey: ["profile-order-counts", userId],
@@ -40,19 +43,17 @@ export default function OrdersCenter({ userId }: OrdersCenterProps) {
 
   return (
     <div className="rounded-3xl bg-card border border-border/40 shadow-sm p-4">
-      {/* Title */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-foreground">طلباتي</h2>
+        <h2 className="text-base font-bold text-foreground">{t('orders_my_orders')}</h2>
         <button
           onClick={() => navigate("/my-orders")}
           className="flex items-center gap-1 text-xs text-primary font-semibold transition-colors hover:text-primary/80"
         >
-          <span>عرض الكل</span>
+          <span>{t('orders_view_all')}</span>
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {/* 5-col grid */}
       <div className="grid grid-cols-5 gap-1">
         {ORDER_STATUSES.map((s) => {
           const count = statusCounts?.[s.key] ?? 0;
@@ -77,7 +78,7 @@ export default function OrdersCenter({ userId }: OrdersCenterProps) {
                 )}
               </div>
               <span className="text-[10px] text-muted-foreground text-center leading-tight line-clamp-2">
-                {s.label}
+                {t(s.labelKey)}
               </span>
             </button>
           );
