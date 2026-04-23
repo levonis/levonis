@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion, type Transition } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, type Transition } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { useProfileTransition } from "./ProfileTransitionProvider";
 
 interface Props {
@@ -20,15 +21,20 @@ const collapseSpring: Transition = {
   mass: 0.85,
 };
 
+const PROFILE_PATH = "/profile";
+
 /**
- * Wraps the /profile page so it appears via a circular reveal that grows from
- * the ProfileOrb's screen position. On unmount (route change), it plays the
- * inverse animation collapsing back into the orb.
+ * Renders the profile content as a circular reveal overlay that grows from
+ * the ProfileOrb's position on enter and collapses back into it on exit.
+ *
+ * Mounted once at the app shell level so AnimatePresence can play the exit
+ * animation when the user navigates away (back button, nav links, etc.).
  */
 const ProfileExpansionShell = ({ children }: Props) => {
-  const { origin, phase, setPhase } = useProfileTransition();
+  const { origin, setPhase } = useProfileTransition();
   const reducedMotion = useReducedMotion();
-  const mountedRef = useRef(false);
+  const location = useLocation();
+  const present = location.pathname === PROFILE_PATH;
 
   // Track viewport so the clip circle stays correctly sized after resize/rotate.
   const [vp, setVp] = useState(() => ({
@@ -46,10 +52,25 @@ const ProfileExpansionShell = ({ children }: Props) => {
     };
   }, []);
 
-  // Fallback origin: top of the screen (where the orb lives).
-  // Uses the document direction so the fallback flips with RTL.
+  // Snapshot the origin used for THIS open cycle so resize/RTL during open
+  // doesn't yank the collapse target away from the orb.
+  const lockedOriginRef = useRef<{ x: number; y: number; size: number } | null>(null);
+  useEffect(() => {
+    if (present) {
+      lockedOriginRef.current = origin
+        ? { ...origin }
+        : null; // computed below if still missing
+    } else {
+      // After collapse animation completes the shell unmounts; clear lock.
+      lockedOriginRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [present]);
+
+  // Resolve effective origin: locked snapshot > live origin > RTL-aware fallback.
   const o = useMemo(() => {
-    if (origin) return origin;
+    const src = lockedOriginRef.current ?? origin;
+    if (src) return src;
     const isRtl =
       typeof document !== "undefined" && document.documentElement.dir === "rtl";
     const edgeOffset = 28; // 12px (left-3) + 20px (half of 40px orb)
@@ -58,7 +79,7 @@ const ProfileExpansionShell = ({ children }: Props) => {
       y: 28,
       size: 40,
     };
-  }, [origin, vp.w]);
+  }, [origin, vp.w, present]);
 
   // Diagonal in px → ensures the circle fully covers the viewport at peak.
   const maxRadius = useMemo(() => {
@@ -68,72 +89,95 @@ const ProfileExpansionShell = ({ children }: Props) => {
   }, [o, vp]);
 
   const initialRadius = (o.size || 40) / 2;
-
-  // Drives clip-path animation
-  const [animateState, setAnimateState] = useState<"in" | "out">("in");
-
-  useEffect(() => {
-    mountedRef.current = true;
-    setPhase("expanding");
-    // After the spring settles, mark as open
-    const t = window.setTimeout(() => setPhase("open"), 700);
-    return () => {
-      window.clearTimeout(t);
-      mountedRef.current = false;
-      setPhase("idle");
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (reducedMotion) {
-    return <div className="animate-fade-in">{children}</div>;
-  }
-
   const initialClip = `circle(${initialRadius}px at ${o.x}px ${o.y}px)`;
   const openClip = `circle(${maxRadius}px at ${o.x}px ${o.y}px)`;
 
-  return (
-    <>
-      {/* Soft backdrop dim that fades in with the expansion */}
-      <motion.div
-        aria-hidden
-        className="fixed inset-0 z-[35] pointer-events-none bg-background/40"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: animateState === "in" ? 1 : 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      />
+  // Reduced motion: just fade.
+  if (reducedMotion) {
+    return (
+      <AnimatePresence>
+        {present && (
+          <motion.div
+            key="profile-shell-rm"
+            className="fixed inset-0 z-[36] overflow-y-auto"
+            style={{ background: "hsl(var(--background))" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
 
-      {/* The circular reveal layer */}
-      <motion.div
-        className="relative z-[36] min-h-screen will-change-[clip-path]"
-        style={{
-          background: "hsl(var(--background))",
-          // Premium edge: subtle inner ring at the leading edge of the circle
-          boxShadow: "inset 0 0 0 1px hsl(var(--primary) / 0.15)",
-        }}
-        initial={{ clipPath: initialClip, WebkitClipPath: initialClip, opacity: 0.85 } as any}
-        animate={
-          animateState === "in"
-            ? ({ clipPath: openClip, WebkitClipPath: openClip, opacity: 1 } as any)
-            : ({ clipPath: initialClip, WebkitClipPath: initialClip, opacity: 0.6 } as any)
-        }
-        exit={{ clipPath: initialClip, WebkitClipPath: initialClip, opacity: 0.6 } as any}
-        transition={animateState === "in" ? expandSpring : collapseSpring}
-        onAnimationStart={() => {
-          if (animateState === "out") setPhase("collapsing");
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.985 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {children}
-        </motion.div>
-      </motion.div>
-    </>
+  return (
+    <AnimatePresence>
+      {present && (
+        <>
+          {/* Soft backdrop dim that fades with expand/collapse */}
+          <motion.div
+            key="profile-shell-backdrop"
+            aria-hidden
+            className="fixed inset-0 z-[35] pointer-events-none bg-background/40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          />
+
+          {/* Circular reveal layer */}
+          <motion.div
+            key="profile-shell"
+            className="fixed inset-0 z-[36] overflow-y-auto will-change-[clip-path]"
+            style={{
+              background: "hsl(var(--background))",
+              boxShadow: "inset 0 0 0 1px hsl(var(--primary) / 0.15)",
+            }}
+            initial={
+              {
+                clipPath: initialClip,
+                WebkitClipPath: initialClip,
+                opacity: 0.85,
+              } as any
+            }
+            animate={
+              {
+                clipPath: openClip,
+                WebkitClipPath: openClip,
+                opacity: 1,
+              } as any
+            }
+            exit={
+              {
+                clipPath: initialClip,
+                WebkitClipPath: initialClip,
+                opacity: 0.6,
+              } as any
+            }
+            transition={expandSpring}
+            onAnimationStart={() => setPhase("expanding")}
+            onAnimationComplete={() => setPhase("open")}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.985 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.4, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {children}
+            </motion.div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
+
+// Override exit transition to use collapse spring via custom variants
+// (Framer applies the same `transition` to exit unless overridden inline)
+ProfileExpansionShell.collapseSpring = collapseSpring;
 
 export default ProfileExpansionShell;
