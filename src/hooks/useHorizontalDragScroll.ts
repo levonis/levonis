@@ -26,7 +26,8 @@ export function useHorizontalDragScroll<T extends HTMLElement>() {
     let dragging = false;
     let decided = false;
 
-    const THRESHOLD = 6;
+    const THRESHOLD = 10;
+    const HORIZONTAL_INTENT_RATIO = 1.6;
 
     const onPointerDown = (e: PointerEvent) => {
       // Only react to the primary touch / mouse button
@@ -46,8 +47,10 @@ export function useHorizontalDragScroll<T extends HTMLElement>() {
 
       if (!decided) {
         if (Math.abs(dx) < THRESHOLD && Math.abs(dy) < THRESHOLD) return;
-        // Decide axis based on initial dominant direction.
-        if (Math.abs(dx) > Math.abs(dy)) {
+        // Be intentionally biased toward vertical scrolling so a slightly
+        // diagonal downward swipe still scrolls the page instead of being
+        // interpreted as a horizontal drag.
+        if (Math.abs(dx) > Math.abs(dy) * HORIZONTAL_INTENT_RATIO) {
           dragging = true;
           try {
             el.setPointerCapture(e.pointerId);
