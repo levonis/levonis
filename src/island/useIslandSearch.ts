@@ -12,6 +12,10 @@ export interface IslandProduct {
   name_ar: string | null;
   name_en: string | null;
   name_ku: string | null;
+  description: string | null;
+  description_ar: string | null;
+  description_en: string | null;
+  description_ku: string | null;
   image_url: string | null;
   price: number | null;
 }
@@ -55,14 +59,38 @@ export const pickName = (p: IslandProduct, lang: string): string => {
   return p.name_ar || p.name || "";
 };
 
+/**
+ * Rank a product by how well it matches the term:
+ *   0 = name starts with term  (best)
+ *   1 = name contains term
+ *   2 = description contains term
+ *   3 = no match (filtered out)
+ * Checks all language variants for both fields.
+ */
+export const rankProduct = (p: IslandProduct, q: string): number => {
+  const term = q.toLowerCase().trim();
+  if (!term) return 3;
+  const names = [p.name, p.name_ar, p.name_en, p.name_ku]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase());
+  const descs = [p.description, p.description_ar, p.description_en, p.description_ku]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase());
+  if (names.some((n) => n.startsWith(term))) return 0;
+  if (names.some((n) => n.includes(term))) return 1;
+  if (descs.some((d) => d.includes(term))) return 2;
+  return 3;
+};
+
 interface Options {
   query: string;
   scope: SearchScope;
   categoryId?: string | null;
   enabled?: boolean;
+  limit?: number;
 }
 
-export const useIslandSearch = ({ query, scope, categoryId, enabled = true }: Options) => {
+export const useIslandSearch = ({ query, scope, categoryId, enabled = true, limit = 30 }: Options) => {
   const debounced = useDebounced(query.trim(), 220);
   const { language } = useLanguage();
   const recentRef = useRef<string[]>([]);
@@ -76,24 +104,31 @@ export const useIslandSearch = ({ query, scope, categoryId, enabled = true }: Op
 
   const refreshRecent = () => setRecent(readRecent());
 
-  const { data: products = [], isFetching } = useQuery({
-    queryKey: ["island-search", scope, categoryId ?? null, debounced],
+  const { data: rawProducts = [], isFetching } = useQuery({
+    queryKey: ["island-search", scope, categoryId ?? null, debounced, limit],
     enabled: enabled && debounced.length >= 2,
     staleTime: 30_000,
     queryFn: async (): Promise<IslandProduct[]> => {
       const term = `%${debounced}%`;
       let q = supabase
         .from("products")
-        .select("id, slug, name, name_ar, name_en, name_ku, image_url, price, category_id")
+        .select(
+          "id, slug, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, image_url, price, category_id, in_stock",
+        )
+        .eq("in_stock", true)
         .or(
           [
             `name.ilike.${term}`,
             `name_ar.ilike.${term}`,
             `name_en.ilike.${term}`,
             `name_ku.ilike.${term}`,
+            `description.ilike.${term}`,
+            `description_ar.ilike.${term}`,
+            `description_en.ilike.${term}`,
+            `description_ku.ilike.${term}`,
           ].join(","),
         )
-        .limit(8);
+        .limit(limit);
       if (scope === "category" && categoryId) {
         q = q.eq("category_id", categoryId);
       }
@@ -102,6 +137,16 @@ export const useIslandSearch = ({ query, scope, categoryId, enabled = true }: Op
       return (data || []) as IslandProduct[];
     },
   });
+
+  // Sort matches: name-prefix > name-contains > description-contains
+  const products = useMemo<IslandProduct[]>(() => {
+    if (debounced.length < 2) return [];
+    return [...rawProducts]
+      .map((p) => ({ p, r: rankProduct(p, debounced) }))
+      .filter((x) => x.r < 3)
+      .sort((a, b) => a.r - b.r)
+      .map((x) => x.p);
+  }, [rawProducts, debounced]);
 
   // Suggestion keywords derived from product names (unique short tokens)
   const suggestions = useMemo<string[]>(() => {
@@ -122,7 +167,8 @@ export const useIslandSearch = ({ query, scope, categoryId, enabled = true }: Op
 
   return {
     debounced,
-    products: products.slice(0, 5),
+    products: products.slice(0, 8),
+    allProducts: products,
     suggestions,
     recent,
     refreshRecent,
