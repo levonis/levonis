@@ -93,18 +93,17 @@
       html, body { background-color: #103d33; margin: 0; }
       #initial-loader {
         position: fixed; inset: 0; z-index: 99999;
-        display: flex; align-items: center; justify-content: center;
+        display: none; align-items: center; justify-content: center;
         background: radial-gradient(ellipse at center, #123f35 0%, #0b3028 100%);
         transition: opacity 0.4s ease;
       }
+      #initial-loader.show { display: flex; }
       #initial-loader.fade-out { opacity: 0; pointer-events: none; }
       #il-recover {
-        position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-        display: none; flex-direction: column; align-items: center; gap: 12px;
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
         font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         text-align: center; color: #d8c887; max-width: 320px; padding: 0 20px;
       }
-      #il-recover.show { display: flex; }
       #il-recover p { margin: 0; font-size: 14px; opacity: 0.85; line-height: 1.6; }
       #il-recover button {
         background: linear-gradient(135deg, #c7b46c 0%, #8e6c3d 100%);
@@ -113,55 +112,12 @@
         box-shadow: 0 4px 14px rgba(199, 180, 108, 0.3);
       }
       #il-recover button:active { transform: scale(0.97); }
-      #initial-loader .il-wrap {
-        position: relative;
-        width: 120px; height: 120px;
-        display: flex; align-items: center; justify-content: center;
-      }
-      #initial-loader .il-ring {
-        position: absolute; inset: 0;
-        border-radius: 50%;
-        border: 1px solid rgba(199, 180, 108, 0.15);
-        border-top-color: #c7b46c;
-        border-right-color: rgba(199, 180, 108, 0.5);
-        animation: il-spin 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-      }
-      #initial-loader .il-ring-inner {
-        position: absolute; inset: 14px;
-        border-radius: 50%;
-        border: 1px solid rgba(216, 200, 135, 0.1);
-        border-bottom-color: #d8c887;
-        animation: il-spin 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite reverse;
-      }
-      #initial-loader .il-logo {
-        position: relative;
-        font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-weight: 900; font-size: 28px;
-        letter-spacing: 0.15em;
-        background: linear-gradient(135deg, #d8c887 0%, #c7b46c 50%, #8e6c3d 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: il-glow 2s ease-in-out infinite;
-      }
-      @keyframes il-spin {
-        to { transform: rotate(360deg); }
-      }
-      @keyframes il-glow {
-        0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(199, 180, 108, 0.4)); }
-        50% { opacity: 0.7; filter: drop-shadow(0 0 16px rgba(216, 200, 135, 0.6)); }
-      }
     </style>
   </head>
 
   <body>
     <div id="root"></div>
     <div id="initial-loader">
-      <div class="il-wrap">
-        <div class="il-ring"></div>
-        <div class="il-ring-inner"></div>
-        <div class="il-logo">L</div>
-      </div>
       <div id="il-recover">
         <p>التحميل يستغرق وقتاً أطول من المعتاد</p>
         <button onclick="window.__levoRecover()">إعادة المحاولة</button>
@@ -187,13 +143,14 @@
         }
 
         function showRecovery(message) {
+          var loader = document.getElementById('initial-loader');
           var rec = document.getElementById('il-recover');
-          if (!rec) return;
+          if (!rec || !loader) return;
           if (message) {
             var p = rec.querySelector('p');
             if (p) p.textContent = message;
           }
-          rec.classList.add('show');
+          loader.classList.add('show');
         }
 
         var showTimer = setTimeout(function () {
