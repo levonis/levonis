@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, MapPin, Edit, Trash2, Check, ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import AddressDialog from '@/components/AddressDialog';
+import { useLanguage } from '@/lib/i18n';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -40,6 +41,7 @@ const UserAddresses = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, isRtl } = useLanguage();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
@@ -69,10 +71,10 @@ const UserAddresses = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
-      toast({ title: "تم التحديث", description: "تم تعيين العنوان كافتراضي" });
+      toast({ title: t('addr_set_default_success_title'), description: t('addr_set_default_success_desc') });
     },
     onError: () => {
-      toast({ title: "خطأ", description: "حدث خطأ أثناء تحديث العنوان", variant: "destructive" });
+      toast({ title: t('addr_error_label'), description: t('addr_update_error'), variant: "destructive" });
     },
   });
 
@@ -83,25 +85,25 @@ const UserAddresses = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
-      toast({ title: "تم الحذف", description: "تم حذف العنوان بنجاح" });
+      toast({ title: t('addr_delete_success_title'), description: t('addr_delete_success_desc') });
       setDeleteDialogOpen(false);
       setDeletingAddressId(null);
     },
     onError: () => {
-      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف العنوان", variant: "destructive" });
+      toast({ title: t('addr_error_label'), description: t('addr_delete_error'), variant: "destructive" });
     },
   });
 
   if (!user) { navigate('/auth'); return null; }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <h1 className="text-base font-bold text-foreground">عناويني</h1>
+            <h1 className="text-base font-bold text-foreground">{t('addr_page_title')}</h1>
             {addresses && (
               <span className="text-xs text-muted-foreground">({addresses.length})</span>
             )}
@@ -109,7 +111,7 @@ const UserAddresses = () => {
           <div className="flex items-center gap-2">
             <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => { setEditingAddress(null); setDialogOpen(true); }}>
               <Plus className="h-3.5 w-3.5" />
-              إضافة
+              {t('addr_add_short')}
             </Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(-1)}>
               <ArrowRight className="h-4 w-4" />
@@ -127,11 +129,11 @@ const UserAddresses = () => {
             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
               <MapPin className="h-10 w-10 text-muted-foreground/50" />
             </div>
-            <h3 className="font-bold text-foreground mb-1">لا توجد عناوين محفوظة</h3>
-            <p className="text-sm text-muted-foreground mb-4">قم بإضافة عنوان توصيل لتسهيل عملية الطلب</p>
+            <h3 className="font-bold text-foreground mb-1">{t('addr_empty_title')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{t('addr_empty_desc')}</p>
             <Button size="sm" onClick={() => { setEditingAddress(null); setDialogOpen(true); }} className="gap-1.5">
               <Plus className="h-4 w-4" />
-              إضافة عنوان جديد
+              {t('addr_add_new')}
             </Button>
           </div>
         ) : (
@@ -143,8 +145,8 @@ const UserAddresses = () => {
               >
                 {/* Default badge */}
                 {address.is_default && (
-                  <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] px-2 py-0.5">
-                    افتراضي
+                  <Badge className={`absolute top-3 ${isRtl ? 'left-3' : 'right-3'} bg-primary text-primary-foreground text-[10px] px-2 py-0.5`}>
+                    {t('addr_default_badge')}
                   </Badge>
                 )}
 
@@ -161,7 +163,7 @@ const UserAddresses = () => {
 
                     <div className="text-xs space-y-0.5 text-foreground/80">
                       <p>{address.governorate} • {address.area}</p>
-                      <p className="text-muted-foreground">أقرب نقطة: {address.nearest_landmark}</p>
+                      <p className="text-muted-foreground">{t('addr_nearest_label')} {address.nearest_landmark}</p>
                       {address.additional_notes && (
                         <p className="text-muted-foreground/70 text-[11px]">📝 {address.additional_notes}</p>
                       )}
@@ -180,7 +182,7 @@ const UserAddresses = () => {
                       className="flex-1 h-8 text-xs gap-1 text-primary hover:bg-primary/5"
                     >
                       <Check className="h-3.5 w-3.5" />
-                      تعيين كافتراضي
+                      {t('addr_set_default')}
                     </Button>
                   )}
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingAddress(address); setDialogOpen(true); }}>
@@ -206,19 +208,19 @@ const UserAddresses = () => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-            <AlertDialogDescription>سيتم حذف هذا العنوان نهائياً ولن تتمكن من استرجاعه.</AlertDialogDescription>
+            <AlertDialogTitle>{t('addr_delete_confirm_title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('addr_delete_confirm_desc')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('addr_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingAddressId && deleteMutation.mutate(deletingAddressId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? (
-                <><Loader2 className="ml-2 h-4 w-4 animate-spin" />جاري الحذف...</>
-              ) : 'حذف'}
+                <><Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('addr_deleting')}</>
+              ) : t('addr_delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

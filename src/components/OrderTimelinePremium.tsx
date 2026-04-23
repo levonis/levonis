@@ -1,12 +1,12 @@
 import { format, differenceInDays, isPast, isToday } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import { 
-  ShoppingCart, 
-  Package, 
-  Warehouse, 
-  Truck, 
-  MapPin, 
-  CheckCircle2, 
+import { ar as arLocale, enUS } from 'date-fns/locale';
+import {
+  ShoppingCart,
+  Package,
+  Warehouse,
+  Truck,
+  MapPin,
+  CheckCircle2,
   Clock,
   CreditCard,
   PackageCheck,
@@ -16,6 +16,7 @@ import {
   Ship
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/lib/i18n';
 
 interface OrderTimelinePremiumProps {
   order: {
@@ -47,38 +48,48 @@ interface TimelineStep {
 }
 
 export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremiumProps) => {
+  const { t, language, isRtl } = useLanguage();
+  const dateLocale = language === 'en' ? enUS : arLocale;
+
   const getPreOrderSteps = (): TimelineStep[] => {
     const statusOrder = ['pending', 'confirmed', 'purchased', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'on_the_way', 'delivered'];
     const currentIndex = statusOrder.indexOf(order.status);
-    
+
     return [
-      { key: 'created', title: 'تم إنشاء الطلب', description: 'تم استلام طلبك بنجاح', icon: <ShoppingCart className="h-5 w-5" />, isCompleted: currentIndex >= 0, timestamp: order.created_at },
-      { key: 'confirmed', title: 'تم تأكيد الطلب', description: 'تم تأكيد طلبك وجاري الشراء', icon: <CreditCard className="h-5 w-5" />, isCompleted: currentIndex >= 1, timestamp: order.confirmed_at },
-      { key: 'purchased', title: 'تم الشراء', description: 'تم شراء المنتج من المورد', icon: <PackageCheck className="h-5 w-5" />, isCompleted: currentIndex >= 2, timestamp: order.purchased_at },
-      { key: 'arrived_warehouse', title: 'وصل إلى المخزن', description: 'وصل المنتج إلى مخزننا', icon: <Warehouse className="h-5 w-5" />, isCompleted: currentIndex >= 3, timestamp: order.arrived_warehouse_at, showImage: true },
-      { key: 'shipped', title: 'تم الشحن إلى العراق', description: 'طلبك في الطريق إلى العراق', icon: <Ship className="h-5 w-5" />, isCompleted: currentIndex >= 4, timestamp: order.shipped_at },
-      { key: 'arrived_iraq', title: 'وصل إلى العراق', description: 'وصلت الشحنة وجاري التوصيل', icon: <MapPin className="h-5 w-5" />, isCompleted: currentIndex >= 5, timestamp: order.arrived_iraq_at },
-      { key: 'on_the_way', title: 'في الطريق إليك', description: 'الشحنة في الطريق إلى عنوانك', icon: <Truck className="h-5 w-5" />, isCompleted: currentIndex >= 6, timestamp: order.on_the_way_at },
-      { key: 'delivered', title: 'تم التوصيل', description: 'تم توصيل طلبك بنجاح', icon: <CheckCircle2 className="h-5 w-5" />, isCompleted: currentIndex >= 7, timestamp: order.delivered_at },
+      { key: 'created', title: t('tl_step_created_title'), description: t('tl_step_created_desc'), icon: <ShoppingCart className="h-5 w-5" />, isCompleted: currentIndex >= 0, timestamp: order.created_at },
+      { key: 'confirmed', title: t('tl_step_confirmed_title'), description: t('tl_step_confirmed_desc'), icon: <CreditCard className="h-5 w-5" />, isCompleted: currentIndex >= 1, timestamp: order.confirmed_at },
+      { key: 'purchased', title: t('tl_step_purchased_title'), description: t('tl_step_purchased_desc'), icon: <PackageCheck className="h-5 w-5" />, isCompleted: currentIndex >= 2, timestamp: order.purchased_at },
+      { key: 'arrived_warehouse', title: t('tl_step_warehouse_title'), description: t('tl_step_warehouse_desc'), icon: <Warehouse className="h-5 w-5" />, isCompleted: currentIndex >= 3, timestamp: order.arrived_warehouse_at, showImage: true },
+      { key: 'shipped', title: t('tl_step_shipped_iraq_title'), description: t('tl_step_shipped_iraq_desc'), icon: <Ship className="h-5 w-5" />, isCompleted: currentIndex >= 4, timestamp: order.shipped_at },
+      { key: 'arrived_iraq', title: t('tl_step_arrived_iraq_title'), description: t('tl_step_arrived_iraq_desc'), icon: <MapPin className="h-5 w-5" />, isCompleted: currentIndex >= 5, timestamp: order.arrived_iraq_at },
+      { key: 'on_the_way', title: t('tl_step_on_the_way_title'), description: t('tl_step_on_the_way_desc'), icon: <Truck className="h-5 w-5" />, isCompleted: currentIndex >= 6, timestamp: order.on_the_way_at },
+      { key: 'delivered', title: t('tl_step_delivered_title'), description: t('tl_step_delivered_desc'), icon: <CheckCircle2 className="h-5 w-5" />, isCompleted: currentIndex >= 7, timestamp: order.delivered_at },
     ];
   };
 
   const getDirectOrderSteps = (): TimelineStep[] => {
     const statusOrder = ['pending', 'confirmed', 'processing', 'on_the_way', 'delivered'];
     const currentIndex = statusOrder.indexOf(order.status);
-    
+
     return [
-      { key: 'created', title: 'تم إنشاء الطلب', description: 'تم استلام طلبك', icon: <ShoppingCart className="h-5 w-5" />, isCompleted: currentIndex >= 0, timestamp: order.created_at },
-      { key: 'confirmed', title: 'تم تأكيد الطلب', description: 'تم تأكيد طلبك وجاري تجهيزه', icon: <CreditCard className="h-5 w-5" />, isCompleted: currentIndex >= 1, timestamp: order.confirmed_at },
-      { key: 'processing', title: 'قيد التجهيز', description: 'جاري تجهيز وتغليف طلبك', icon: <PackageCheck className="h-5 w-5" />, isCompleted: currentIndex >= 2, timestamp: order.processing_at },
-      { key: 'on_the_way', title: 'في الطريق إليك', description: 'الشحنة في الطريق إلى عنوانك', icon: <Truck className="h-5 w-5" />, isCompleted: currentIndex >= 3, timestamp: order.on_the_way_at },
-      { key: 'delivered', title: 'تم التوصيل', description: 'تم توصيل طلبك بنجاح ✓', icon: <CheckCircle2 className="h-5 w-5" />, isCompleted: currentIndex >= 4, timestamp: order.delivered_at },
+      { key: 'created', title: t('tl_step_created_title'), description: t('tl_direct_created_desc'), icon: <ShoppingCart className="h-5 w-5" />, isCompleted: currentIndex >= 0, timestamp: order.created_at },
+      { key: 'confirmed', title: t('tl_step_confirmed_title'), description: t('tl_direct_confirmed_desc'), icon: <CreditCard className="h-5 w-5" />, isCompleted: currentIndex >= 1, timestamp: order.confirmed_at },
+      { key: 'processing', title: t('tl_direct_processing_title'), description: t('tl_direct_processing_desc'), icon: <PackageCheck className="h-5 w-5" />, isCompleted: currentIndex >= 2, timestamp: order.processing_at },
+      { key: 'on_the_way', title: t('tl_step_on_the_way_title'), description: t('tl_step_on_the_way_desc'), icon: <Truck className="h-5 w-5" />, isCompleted: currentIndex >= 3, timestamp: order.on_the_way_at },
+      { key: 'delivered', title: t('tl_step_delivered_title'), description: t('tl_direct_delivered_desc'), icon: <CheckCircle2 className="h-5 w-5" />, isCompleted: currentIndex >= 4, timestamp: order.delivered_at },
     ];
   };
 
   const steps = isPreOrder ? getPreOrderSteps() : getDirectOrderSteps();
   const currentStepIndex = steps.reduce((lastIndex, step, index) => step.isCompleted ? index : lastIndex, -1);
   const progressPercent = steps.length > 1 ? ((currentStepIndex + 1) / steps.length) * 100 : 0;
+
+  const renderDaysLeft = (daysRemaining: number) => {
+    if (daysRemaining === 1) return t('tl_one_day_left');
+    if (daysRemaining === 2) return t('tl_two_days_left');
+    if (daysRemaining <= 10) return t('tl_days_left_few', { days: daysRemaining });
+    return t('tl_days_left_many', { days: daysRemaining });
+  };
 
   return (
     <div className="space-y-6">
@@ -93,8 +104,8 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
           </span>
         </div>
         <div className="h-2 rounded-full bg-muted/50 overflow-hidden backdrop-blur-sm border border-border/30">
-          <motion.div 
-            className="h-full rounded-full bg-gradient-to-l from-primary to-primary/60"
+          <motion.div
+            className={`h-full rounded-full bg-gradient-to-${isRtl ? 'l' : 'r'} from-primary to-primary/60`}
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ duration: 1, ease: "easeOut" }}
@@ -105,9 +116,9 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
       {/* Steps */}
       <div className="relative space-y-0">
         {/* Vertical line */}
-        <div className="absolute right-[19px] top-6 bottom-6 w-[2px] bg-border/40" />
-        <motion.div 
-          className="absolute right-[19px] top-6 w-[2px] bg-gradient-to-b from-primary to-primary/40 z-[1]"
+        <div className={`absolute ${isRtl ? 'right-[19px]' : 'left-[19px]'} top-6 bottom-6 w-[2px] bg-border/40`} />
+        <motion.div
+          className={`absolute ${isRtl ? 'right-[19px]' : 'left-[19px]'} top-6 w-[2px] bg-gradient-to-b from-primary to-primary/40 z-[1]`}
           initial={{ height: 0 }}
           animate={{ height: `${progressPercent}%` }}
           transition={{ duration: 1.2, ease: "easeOut" }}
@@ -117,11 +128,11 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
         {steps.map((step, index) => {
           const isCurrent = index === currentStepIndex;
           const isPastStep = step.isCompleted;
-          
+
           return (
             <motion.div
               key={step.key}
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: isRtl ? 20 : -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.08, duration: 0.4 }}
               className="relative flex gap-4 py-3"
@@ -129,22 +140,22 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
               {/* Icon */}
               <div className={`
                 relative z-[2] w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500
-                ${isPastStep 
-                  ? 'bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_hsl(var(--primary)/0.2)]' 
+                ${isPastStep
+                  ? 'bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_hsl(var(--primary)/0.2)]'
                   : 'bg-muted/30 text-muted-foreground/50 border border-border/30'
                 }
                 ${isCurrent ? 'ring-[3px] ring-primary/20 scale-110 bg-primary/20' : ''}
               `}>
                 {isPastStep ? step.icon : <Clock className="h-4 w-4" />}
               </div>
-              
+
               {/* Content */}
               <div className={`
                 flex-1 rounded-xl p-3 transition-all duration-300
-                ${isCurrent 
-                  ? 'bg-primary/5 border border-primary/20 shadow-[0_4px_16px_hsl(var(--primary)/0.08)]' 
-                  : isPastStep 
-                    ? 'bg-card/40' 
+                ${isCurrent
+                  ? 'bg-primary/5 border border-primary/20 shadow-[0_4px_16px_hsl(var(--primary)/0.08)]'
+                  : isPastStep
+                    ? 'bg-card/40'
                     : 'opacity-50'
                 }
               `}>
@@ -154,28 +165,28 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
                   </h4>
                   {isCurrent && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black bg-primary/15 text-primary border border-primary/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary ml-1 animate-pulse" />
-                      الحالي
+                      <span className={`w-1.5 h-1.5 rounded-full bg-primary ${isRtl ? 'ml-1' : 'mr-1'} animate-pulse`} />
+                      {t('tl_current_label')}
                     </span>
                   )}
                 </div>
-                
+
                 <p className="text-xs text-muted-foreground">{step.description}</p>
-                
+
                 {step.timestamp && isPastStep && (
                   <p className="text-[11px] text-primary/80 font-medium mt-1.5 flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {format(new Date(step.timestamp), 'PPP - p', { locale: ar })}
+                    {format(new Date(step.timestamp), 'PPP - p', { locale: dateLocale })}
                   </p>
                 )}
-                
+
                 {/* Serial number image */}
                 {step.showImage && order.serial_number_image_url && isPastStep && (
                   <div className="mt-3">
-                    <p className="text-xs text-muted-foreground mb-1.5">صورة الرقم التسلسلي:</p>
-                    <img 
-                      src={order.serial_number_image_url} 
-                      alt="Serial Number" 
+                    <p className="text-xs text-muted-foreground mb-1.5">{t('tl_serial_image_label')}</p>
+                    <img
+                      src={order.serial_number_image_url}
+                      alt="Serial Number"
                       className="max-w-[180px] rounded-xl border border-border/50 shadow-lg hover:scale-105 transition-transform cursor-pointer"
                       onClick={() => window.open(order.serial_number_image_url!, '_blank')}
                     />
@@ -195,7 +206,7 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
         const isOverdue = isPast(estimatedDate) && !isToday(estimatedDate);
         const isDeliveryToday = isToday(estimatedDate);
         const isDelivered = order.status === 'delivered';
-        
+
         return (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -215,12 +226,12 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
               </div>
               <div className="flex-1">
                 <p className="text-xs font-bold text-muted-foreground mb-0.5">
-                  {isDelivered ? 'تاريخ التوصيل المتوقع (تم التوصيل)' : 'التاريخ المتوقع للوصول'}
+                  {isDelivered ? t('tl_estimated_delivered_label') : t('tl_estimated_label')}
                 </p>
                 <p className={`text-base font-black ${isOverdue && !isDelivered ? 'text-destructive' : 'text-primary'}`}>
-                  {format(estimatedDate, 'EEEE، d MMMM yyyy', { locale: ar })}
+                  {format(estimatedDate, 'EEEE، d MMMM yyyy', { locale: dateLocale })}
                 </p>
-                
+
                 {!isDelivered && (
                   <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
                     isOverdue ? 'bg-destructive/10 text-destructive'
@@ -228,20 +239,17 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
                       : 'bg-primary/10 text-primary'
                   }`}>
                     <Timer className="h-3 w-3" />
-                    {isOverdue ? `متأخر بـ ${Math.abs(daysRemaining)} يوم`
-                      : isDeliveryToday ? 'متوقع الوصول اليوم!'
-                      : daysRemaining === 1 ? 'متبقي يوم واحد'
-                      : daysRemaining === 2 ? 'متبقي يومان'
-                      : daysRemaining <= 10 ? `متبقي ${daysRemaining} أيام`
-                      : `متبقي ${daysRemaining} يوم`
+                    {isOverdue ? t('tl_overdue_days', { days: Math.abs(daysRemaining) })
+                      : isDeliveryToday ? t('tl_arriving_today')
+                      : renderDaysLeft(daysRemaining)
                     }
                   </div>
                 )}
-                
+
                 {isDelivered && (
                   <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-primary/15 text-primary">
                     <CheckCircle2 className="h-3 w-3" />
-                    تم التوصيل بنجاح
+                    {t('tl_delivered_success')}
                   </div>
                 )}
               </div>
@@ -252,11 +260,11 @@ export const OrderTimelinePremium = ({ order, isPreOrder }: OrderTimelinePremium
 
       {/* Order type chip */}
       <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border ${
-        isPreOrder 
-          ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400' 
+        isPreOrder
+          ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400'
           : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
       }`}>
-        {isPreOrder ? <><Clock className="h-3 w-3" /> طلب مسبق (Pre-Order)</> : <><CheckCircle2 className="h-3 w-3" /> بيع مباشر</>}
+        {isPreOrder ? <><Clock className="h-3 w-3" /> {t('tl_chip_preorder')}</> : <><CheckCircle2 className="h-3 w-3" /> {t('tl_chip_direct')}</>}
       </div>
     </div>
   );

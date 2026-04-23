@@ -121,7 +121,7 @@ const Notifications = () => {
             className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            رجوع
+            {t('common_back')}
           </button>
 
           <div className="flex items-center justify-between gap-4">
@@ -180,7 +180,7 @@ const Notifications = () => {
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
                 </div>
                 <p className="text-muted-foreground text-sm font-bold">{t('notif_empty')}</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">ستظهر إشعاراتك هنا</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">{t('notif_empty_hint')}</p>
               </GlassCard>
             </motion.div>
           ) : (

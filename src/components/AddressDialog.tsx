@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -31,9 +32,9 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
-// قائمة المحافظات العراقية
+// قائمة المحافظات العراقية (تبقى بالعربية كقيم تخزين، لكن قابلة للترجمة في العرض مستقبلاً)
 const governorates = [
   'بغداد',
   'البصرة',
@@ -55,20 +56,6 @@ const governorates = [
   'السليمانية',
 ];
 
-const addressSchema = z.object({
-  label: z.string().optional(),
-  full_name: z.string().min(1, 'الاسم مطلوب').max(100, 'الاسم طويل جداً'),
-  phone_number: z.string().min(1, 'رقم الهاتف مطلوب').max(20, 'رقم الهاتف غير صحيح'),
-  governorate: z.string().min(1, 'المحافظة مطلوبة'),
-  area: z.string().min(1, 'المنطقة مطلوبة'),
-  neighborhood: z.string().optional(),
-  nearest_landmark: z.string().min(1, 'أقرب نقطة دالة مطلوبة'),
-  additional_notes: z.string().optional(),
-  is_default: z.boolean().default(false),
-});
-
-type AddressFormData = z.infer<typeof addressSchema>;
-
 interface AddressDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -78,7 +65,22 @@ interface AddressDialogProps {
 const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
+
+  const addressSchema = useMemo(() => z.object({
+    label: z.string().optional(),
+    full_name: z.string().min(1, t('addr_validation_name_required')).max(100, t('addr_validation_name_too_long')),
+    phone_number: z.string().min(1, t('addr_validation_phone_required')).max(20, t('addr_validation_phone_invalid')),
+    governorate: z.string().min(1, t('addr_validation_governorate_required')),
+    area: z.string().min(1, t('addr_validation_area_required')),
+    neighborhood: z.string().optional(),
+    nearest_landmark: z.string().min(1, t('addr_validation_landmark_required')),
+    additional_notes: z.string().optional(),
+    is_default: z.boolean().default(false),
+  }), [t]);
+
+  type AddressFormData = z.infer<typeof addressSchema>;
 
   const form = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
@@ -128,7 +130,6 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
       if (!user?.id) throw new Error('User not authenticated');
 
       if (address) {
-        // Update existing address
         const { error } = await supabase
           .from('user_addresses')
           .update({
@@ -146,7 +147,6 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
 
         if (error) throw error;
       } else {
-        // Create new address
         const { error } = await supabase
           .from('user_addresses')
           .insert({
@@ -168,8 +168,8 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-addresses'] });
       toast({
-        title: address ? "تم التحديث" : "تم الإضافة",
-        description: address ? "تم تحديث العنوان بنجاح" : "تم إضافة العنوان بنجاح",
+        title: address ? t('addr_updated_title') : t('addr_added_title'),
+        description: address ? t('addr_updated_desc') : t('addr_added_desc'),
       });
       form.reset();
       onOpenChange(false);
@@ -177,8 +177,8 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
     onError: (error) => {
       console.error('Error saving address:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء حفظ العنوان",
+        title: t('addr_error_label'),
+        description: t('addr_dialog_save_error'),
         variant: "destructive",
       });
     },
@@ -193,7 +193,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {address ? 'تعديل العنوان' : 'إضافة عنوان جديد'}
+            {address ? t('addr_dialog_edit_title') : t('addr_dialog_add_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -204,9 +204,9 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               name="label"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>اسم العنوان (اختياري)</FormLabel>
+                  <FormLabel>{t('addr_field_label')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="مثال: البيت، العمل، بيت الأهل" {...field} />
+                    <Input placeholder={t('addr_field_label_placeholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -218,9 +218,9 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               name="full_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>الاسم الكامل</FormLabel>
+                  <FormLabel>{t('addr_field_full_name')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="محمد أحمد" {...field} />
+                    <Input placeholder={t('addr_field_full_name_placeholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -232,23 +232,22 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               name="phone_number"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>رقم الهاتف</FormLabel>
+                  <FormLabel>{t('addr_field_phone')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="07XXXXXXXXX" {...field} />
+                    <Input placeholder={t('addr_field_phone_placeholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* المحافظة + المنطقة */}
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="governorate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>المحافظة</FormLabel>
+                    <FormLabel>{t('addr_field_governorate')}</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -258,7 +257,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="اختر المحافظة" />
+                          <SelectValue placeholder={t('addr_field_governorate_placeholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background">
@@ -279,9 +278,9 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                 name="area"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>المنطقة</FormLabel>
+                    <FormLabel>{t('addr_field_area')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="اسم المنطقة" {...field} />
+                      <Input placeholder={t('addr_field_area_placeholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -289,16 +288,15 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               />
             </div>
 
-            {/* الحي + أقرب نقطة دالة */}
             <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="neighborhood"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>الحي (اختياري)</FormLabel>
+                    <FormLabel>{t('addr_field_neighborhood')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="اسم الحي" {...field} />
+                      <Input placeholder={t('addr_field_neighborhood_placeholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -310,9 +308,9 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                 name="nearest_landmark"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>أقرب نقطة دالة</FormLabel>
+                    <FormLabel>{t('addr_field_landmark')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="قرب مول المنصور" {...field} />
+                      <Input placeholder={t('addr_field_landmark_placeholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -325,10 +323,10 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               name="additional_notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ملاحظات أخرى (اختياري)</FormLabel>
+                  <FormLabel>{t('addr_field_notes')}</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="أي تفاصيل إضافية تساعد في الوصول إلى العنوان"
+                    <Textarea
+                      placeholder={t('addr_field_notes_placeholder')}
                       className="resize-none"
                       {...field}
                     />
@@ -351,7 +349,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                   </FormControl>
                   <div className="space-y-1 leading-none mr-2">
                     <FormLabel>
-                      تعيين كعنوان افتراضي
+                      {t('addr_field_set_default')}
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -366,7 +364,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                 className="flex-1"
                 disabled={mutation.isPending}
               >
-                إلغاء
+                {t('addr_cancel')}
               </Button>
               <Button
                 type="submit"
@@ -376,10 +374,10 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                 {mutation.isPending ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جاري الحفظ...
+                    {t('addr_dialog_saving')}
                   </>
                 ) : (
-                  address ? 'تحديث' : 'إضافة'
+                  address ? t('addr_dialog_update_btn') : t('addr_dialog_add_btn')
                 )}
               </Button>
             </div>
