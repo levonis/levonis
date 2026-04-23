@@ -255,112 +255,171 @@ const CategoryDetail = () => {
                   </Link>
                 )}
 
-                {/* Sort & Filter toolbar */}
-                <div className="flex items-center justify-between gap-2 flex-wrap border-b border-border/40 pb-3">
-                  <div className="text-xs md:text-sm text-foreground/60">
-                    {t('catdetail_products_count', { count: filteredProducts.length })}
-                  </div>
+                {/* Sort & Filter toolbar — Glassmorphism Professional */}
+                {(() => {
+                  const sortOptions: { value: SortKey; label: string }[] = [
+                    { value: 'default', label: t('catdetail_sort_default') },
+                    { value: 'price-asc', label: t('catdetail_sort_price_asc') },
+                    { value: 'price-desc', label: t('catdetail_sort_price_desc') },
+                    { value: 'newest', label: t('catdetail_sort_newest') },
+                    { value: 'best-selling', label: t('catdetail_sort_best_selling') },
+                    { value: 'name-asc', label: t('catdetail_sort_name_asc') },
+                  ];
+                  const currentSortLabel =
+                    sortOptions.find((o) => o.value === sortBy)?.label ?? t('catdetail_sort_label');
 
-                  <div className="flex items-center gap-2">
-                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-                      <SelectTrigger className="h-9 text-xs md:text-sm w-40">
-                        <SelectValue placeholder={t('catdetail_sort_label')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">{t('catdetail_sort_default')}</SelectItem>
-                        <SelectItem value="price-asc">{t('catdetail_sort_price_asc')}</SelectItem>
-                        <SelectItem value="price-desc">{t('catdetail_sort_price_desc')}</SelectItem>
-                        <SelectItem value="newest">{t('catdetail_sort_newest')}</SelectItem>
-                        <SelectItem value="best-selling">{t('catdetail_sort_best_selling')}</SelectItem>
-                        <SelectItem value="name-asc">{t('catdetail_sort_name_asc')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  const glassPanel =
+                    'rounded-2xl border border-[hsl(var(--border)/0.4)] bg-[linear-gradient(135deg,hsl(var(--card)/0.55),hsl(var(--card)/0.25))] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_-12px_hsl(0_0%_0%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.08)]';
+                  const glassBtn =
+                    'h-10 px-3.5 text-xs md:text-sm rounded-xl border border-[hsl(var(--border)/0.5)] bg-[hsl(var(--card)/0.5)] backdrop-blur-xl hover:bg-[hsl(var(--card)/0.7)] transition-all duration-300 data-[state=open]:ring-2 data-[state=open]:ring-primary/40 data-[state=open]:bg-[hsl(var(--card)/0.8)]';
 
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs md:text-sm relative">
-                          <SlidersHorizontal className="h-3.5 w-3.5" />
-                          {t('catdetail_filter_button')}
-                          {filtersActive && (
-                            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
-                          )}
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="left" className="w-full sm:max-w-sm">
-                        <SheetHeader>
-                          <SheetTitle className="text-right">{t('catdetail_filter_title')}</SheetTitle>
-                        </SheetHeader>
+                  return (
+                    <div className={cn(glassPanel, 'flex items-center justify-between gap-3 flex-wrap px-4 py-3')}>
+                      {/* Count chip */}
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[hsl(var(--primary)/0.08)] border border-[hsl(var(--primary)/0.15)]">
+                        <Package className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs md:text-sm font-semibold text-foreground/80 tabular-nums">
+                          {t('catdetail_products_count', { count: filteredProducts.length })}
+                        </span>
+                      </div>
 
-                        <div className="mt-6 space-y-6 text-right" dir="rtl">
-                          {/* Availability */}
-                          <div className="space-y-2">
-                            <Label className="text-sm font-bold">{t('catdetail_filter_availability')}</Label>
-                            <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as any)}>
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">{t('catdetail_filter_avail_all')}</SelectItem>
-                                <SelectItem value="in-stock">{t('catdetail_filter_avail_in')}</SelectItem>
-                                <SelectItem value="out-of-stock">{t('catdetail_filter_avail_out')}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Direct sale */}
-                          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 p-3">
-                            <div>
-                              <Label htmlFor="direct-only" className="text-sm font-bold">
-                                {t('catdetail_filter_direct_only')}
-                              </Label>
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                {t('catdetail_filter_direct_only_desc')}
-                              </p>
-                            </div>
-                            <Switch
-                              id="direct-only"
-                              checked={directOnly}
-                              onCheckedChange={setDirectOnly}
-                            />
-                          </div>
-
-                          {/* Price range */}
-                          <div className="space-y-2">
-                            <Label className="text-sm font-bold">{t('catdetail_filter_price_range')}</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                inputMode="numeric"
-                                placeholder={t('catdetail_filter_price_from')}
-                                value={minPrice}
-                                onChange={(e) => setMinPrice(e.target.value)}
-                                className="text-right"
-                              />
-                              <span className="text-muted-foreground">—</span>
-                              <Input
-                                type="number"
-                                inputMode="numeric"
-                                placeholder={t('catdetail_filter_price_to')}
-                                value={maxPrice}
-                                onChange={(e) => setMaxPrice(e.target.value)}
-                                className="text-right"
-                              />
-                            </div>
-                          </div>
-
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={resetFilters}
-                            disabled={!filtersActive}
+                      <div className="flex items-center gap-2">
+                        {/* Sort Popover */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className={cn(glassBtn, 'gap-2')}>
+                              <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
+                              <span className="font-medium">{currentSortLabel}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="end"
+                            sideOffset={8}
+                            className={cn(
+                              'w-56 p-1.5 border-[hsl(var(--border)/0.5)]',
+                              'bg-[linear-gradient(135deg,hsl(var(--card)/0.85),hsl(var(--card)/0.65))] backdrop-blur-2xl backdrop-saturate-150',
+                              'shadow-[0_20px_50px_-12px_hsl(0_0%_0%/0.55),inset_0_1px_0_hsl(0_0%_100%/0.1)]',
+                            )}
                           >
-                            {t('catdetail_filter_reset')}
-                          </Button>
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                  </div>
-                </div>
+                            <div className="flex flex-col gap-0.5" dir="rtl">
+                              {sortOptions.map((opt) => {
+                                const active = opt.value === sortBy;
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setSortBy(opt.value)}
+                                    className={cn(
+                                      'flex items-center justify-between gap-2 w-full px-3 py-2 rounded-lg text-xs md:text-sm text-right transition-all duration-200',
+                                      active
+                                        ? 'bg-[hsl(var(--primary)/0.15)] text-foreground font-bold'
+                                        : 'text-foreground/75 hover:bg-[hsl(var(--foreground)/0.06)]',
+                                    )}
+                                  >
+                                    <span>{opt.label}</span>
+                                    {active && <Check className="h-3.5 w-3.5 text-primary" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Filter Popover */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className={cn(glassBtn, 'gap-2 relative')}>
+                              <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+                              <span className="font-medium">{t('catdetail_filter_button')}</span>
+                              {filtersActive && (
+                                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background animate-pulse" />
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="end"
+                            sideOffset={8}
+                            className={cn(
+                              'w-[320px] p-4 border-[hsl(var(--border)/0.5)]',
+                              'bg-[linear-gradient(135deg,hsl(var(--card)/0.85),hsl(var(--card)/0.65))] backdrop-blur-2xl backdrop-saturate-150',
+                              'shadow-[0_20px_50px_-12px_hsl(0_0%_0%/0.55),inset_0_1px_0_hsl(0_0%_100%/0.1)]',
+                            )}
+                          >
+                            <div className="space-y-4 text-right" dir="rtl">
+                              <div className="flex items-center justify-between pb-2 border-b border-[hsl(var(--border)/0.4)]">
+                                <span className="text-sm font-bold text-foreground">{t('catdetail_filter_title')}</span>
+                                <SlidersHorizontal className="h-4 w-4 text-primary" />
+                              </div>
+
+                              {/* Availability */}
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-foreground/80">{t('catdetail_filter_availability')}</Label>
+                                <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as any)}>
+                                  <SelectTrigger className="w-full h-9 rounded-lg bg-[hsl(var(--background)/0.6)] backdrop-blur border-[hsl(var(--border)/0.5)]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">{t('catdetail_filter_avail_all')}</SelectItem>
+                                    <SelectItem value="in-stock">{t('catdetail_filter_avail_in')}</SelectItem>
+                                    <SelectItem value="out-of-stock">{t('catdetail_filter_avail_out')}</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Direct sale */}
+                              <div className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border)/0.4)] bg-[hsl(var(--background)/0.4)] backdrop-blur p-3">
+                                <div className="flex-1">
+                                  <Label htmlFor="direct-only" className="text-xs font-bold">
+                                    {t('catdetail_filter_direct_only')}
+                                  </Label>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {t('catdetail_filter_direct_only_desc')}
+                                  </p>
+                                </div>
+                                <Switch id="direct-only" checked={directOnly} onCheckedChange={setDirectOnly} />
+                              </div>
+
+                              {/* Price range */}
+                              <div className="space-y-1.5">
+                                <Label className="text-xs font-bold text-foreground/80">{t('catdetail_filter_price_range')}</Label>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="number"
+                                    inputMode="numeric"
+                                    placeholder={t('catdetail_filter_price_from')}
+                                    value={minPrice}
+                                    onChange={(e) => setMinPrice(e.target.value)}
+                                    className="text-right h-9 rounded-lg bg-[hsl(var(--background)/0.6)] backdrop-blur border-[hsl(var(--border)/0.5)]"
+                                  />
+                                  <span className="text-muted-foreground">—</span>
+                                  <Input
+                                    type="number"
+                                    inputMode="numeric"
+                                    placeholder={t('catdetail_filter_price_to')}
+                                    value={maxPrice}
+                                    onChange={(e) => setMaxPrice(e.target.value)}
+                                    className="text-right h-9 rounded-lg bg-[hsl(var(--background)/0.6)] backdrop-blur border-[hsl(var(--border)/0.5)]"
+                                  />
+                                </div>
+                              </div>
+
+                              <Button
+                                variant="outline"
+                                className="w-full h-9 rounded-lg bg-[hsl(var(--background)/0.4)] backdrop-blur border-[hsl(var(--border)/0.5)] hover:bg-[hsl(var(--background)/0.7)]"
+                                onClick={resetFilters}
+                                disabled={!filtersActive}
+                              >
+                                {t('catdetail_filter_reset')}
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Responsive grid of product cards */}
                 {otherProducts.length > 0 ? (
