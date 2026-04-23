@@ -91,11 +91,9 @@ const ProfileExpansionShell = ({ children }: Props) => {
   const initialClip = `circle(${initialRadius}px at ${o.x}px ${o.y}px)`;
   const openClip = `circle(${maxRadius}px at ${o.x}px ${o.y}px)`;
 
-  // Glass surface tokens — translucent so the site's primary background
-  // shows through (no secondary opaque background).
-  const glassBg =
-    "linear-gradient(135deg, hsl(var(--background) / 0.55) 0%, hsl(var(--background) / 0.35) 100%)";
-  const glassFilter = "blur(22px) saturate(1.4)";
+  // No extra background — let the site's primary background show through fully.
+  const glassBg = "transparent";
+  const glassFilter = "none";
 
   // Reduced motion: just fade.
   if (reducedMotion) {
