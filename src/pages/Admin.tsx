@@ -3488,11 +3488,13 @@ const Admin = () => {
                   setCategoryMediaUrl(editingCategory?.media_url ?? null);
                   setCategoryMediaType(editingCategory?.media_type ?? null);
                   setCategoryMediaTransparent(!!editingCategory?.media_transparent);
+                  setCategoryMediaChromaKey((editingCategory?.media_chroma_key as any) ?? 'none');
                 } else {
                   setEditingCategory(null);
                   setCategoryMediaUrl(null);
                   setCategoryMediaType(null);
                   setCategoryMediaTransparent(false);
+                  setCategoryMediaChromaKey('none');
                 }
               }} key={editingCategory?.id || 'new-category'}>
                 <DialogTrigger asChild>
