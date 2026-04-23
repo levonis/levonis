@@ -221,7 +221,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   return (
     <>
       <div
-        className="relative overflow-hidden rounded-3xl border border-white/20 shadow-lg backdrop-blur-xl"
+        className="glass-card relative overflow-hidden"
         style={{
           background: `linear-gradient(135deg, ${levelColor}99, ${levelColor}55, ${levelColor}22)`,
         }}
@@ -287,7 +287,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
               <button
                 key={s.label}
                 onClick={s.onClick}
-                className="flex flex-col items-center gap-1 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 px-2 py-3 transition-all duration-200 active:scale-[0.95]"
+                className="glass-card-inner flex flex-col items-center gap-1 rounded-2xl px-2 py-3 transition-all duration-200 active:scale-[0.95]"
               >
                 <s.icon className="h-4 w-4 text-white/90" />
                 {s.loading ? (
@@ -305,7 +305,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
           {/* CTA */}
           <button
             onClick={() => navigate(vipPlusActive ? "/my-referral" : "/rewards?tab=cards")}
-            className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.97] hover:bg-white/25"
+            className="glass-card-inner mt-4 w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-semibold text-white transition-all duration-200 active:scale-[0.97]"
           >
             <span>{vipPlusActive ? t('profile_manage_referral') : t('profile_upgrade_membership')}</span>
             <ChevronLeft className="h-4 w-4" />
