@@ -1,33 +1,44 @@
 
+## استبدال `lazy/Suspense` غير الضروري في `Home.tsx` باستيراد مباشر
 
-## تنظيف الـ imports غير المستخدمة في `Home.tsx`
+### المنطق
+- الأقسام داخل `ProgressiveSection` (تنتظر الـ viewport) تستفيد فعلياً من الـ lazy → تبقى كما هي.
+- الأقسام الظاهرة فوراً أعلى الصفحة لا فائدة من تأجيلها — `Suspense` يُسبب وميض fallback ويزيد عدد الـ chunks.
 
-### العناصر التي أصبحت غير مستخدمة بعد إزالة `CommunitySection`
-- `AnimatedDivider` (سطر 11) — كان فقط للفاصل أعلى قسم المجتمع.
-- `ErrorBoundaryFallback` (الكلاس، أسطر 22–30) — كان يلفّ `<CommunitySection />` فقط.
-- نتيجة لذلك: `Component` و`ReactNode` من `react` (سطر 1) لا تُستخدم في أي مكان آخر.
+### يبقى lazy (مبرر)
+- `BundlesSection` — داخل `ProgressiveSection`.
+- `OffersStorageSection` — داخل `ProgressiveSection`.
+
+### يتحول إلى استيراد مباشر
+- `ReelsBar` — مباشرة بعد البانر، above-the-fold، بدون `ProgressiveSection`.
+- `StoriesBar` — بعد قسم الـ Hero، above-the-fold، بدون `ProgressiveSection`.
 
 ### التغييرات (`src/pages/Home.tsx`)
 
-1. سطر 1 — تقليص استيراد React:
-   - من: `import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';`
-   - إلى: `import { useMemo, lazy, Suspense, memo } from 'react';`
-
-2. سطر 11 — حذف:
+1. حذف السطرين:
+   ```ts
+   const StoriesBar = lazy(() => import('@/components/stories/StoriesBar'));
+   const ReelsBar = lazy(() => import('@/components/reels/ReelsBar'));
    ```
-   import AnimatedDivider from '@/components/ui/animated-divider';
+   وإضافتهما كـ imports مباشرة بجانب `BannerCarousel`:
+   ```ts
+   import StoriesBar from '@/components/stories/StoriesBar';
+   import ReelsBar from '@/components/reels/ReelsBar';
    ```
 
-3. أسطر 22–30 — حذف كلاس `ErrorBoundaryFallback` بالكامل (التعليق التمهيدي + الكلاس).
+2. إزالة غلاف `<Suspense fallback=...>` حول `<ReelsBar />` و`<StoriesBar />` في الـ JSX، وعرض المكوّن مباشرة داخل الـ `<section>`.
 
-### يبقى كما هو
-- `useMemo`, `lazy`, `Suspense`, `memo` — كلها لا تزال مستخدمة.
-- باقي الأقسام والمكونات (`StoriesBar`, `BundlesSection`, `ReelsBar`, `OffersStorageSection`, `BannerCarousel`, `CategoryCard`, `Footer`, `ProgressiveSection`) دون تغيير.
+3. `Suspense` و`lazy` يبقيان في استيراد React (لا يزالان مستخدمين لـ `BundlesSection`/`OffersStorageSection`).
+
+### بدون تغييرات
+- بنية الأقسام، الترتيب، التنسيقات.
+- منطق `ProgressiveSection`.
+- باقي الـ imports.
 
 ### الأثر
-- إزالة dependency على `animated-divider` من حزمة الصفحة الرئيسية.
-- إزالة كود الـ Error Boundary غير المستخدم (~9 أسطر) → حزمة Home أصغر.
+- إزالة وميض الـ Suspense fallback أعلى الصفحة.
+- تقليل عدد الـ chunks بـ 2.
+- الأقسام الفعلية أسفل الصفحة تبقى كسولة كما يجب.
 
 ### الملف المعدّل
 - `src/pages/Home.tsx`
-
