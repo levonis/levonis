@@ -162,6 +162,7 @@ const AppNavBar = memo(() => {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 px-3 pointer-events-none"
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
+      aria-label={t('nav_home' as any) as string}
     >
       <div className="glass-panel !rounded-full pointer-events-auto px-2 py-1.5 mx-auto max-w-md">
         <div className="flex items-center justify-around">
@@ -172,23 +173,42 @@ const AppNavBar = memo(() => {
               <button
                 key={item.key}
                 onClick={() => handleClick(item)}
+                aria-label={t(item.labelKey as any) as string}
+                aria-current={active ? 'page' : undefined}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
                 className={cn(
-                  "relative flex flex-col items-center min-w-[2.6rem] py-1 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                  active ? "text-primary-foreground" : "text-muted-foreground active:scale-90"
+                  "relative flex flex-col items-center min-w-[2.6rem] py-1 select-none outline-none",
+                  "transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                  "active:scale-[0.92]",
+                  "focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl",
+                  active ? "text-primary-foreground" : "text-muted-foreground"
                 )}
               >
+                {/* Outer ambient glow — only when active */}
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-9 rounded-full bg-primary/40 blur-xl opacity-70 animate-pulse pointer-events-none"
+                  />
+                )}
                 <span
                   className={cn(
-                    "relative flex items-center justify-center rounded-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    "relative flex items-center justify-center rounded-full",
+                    "transition-[width,height,background-color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    "group-active:scale-95",
                     active
-                      ? "w-12 h-9 bg-primary shadow-[0_4px_14px_hsl(var(--primary)/0.45),inset_0_1px_0_hsl(0_0%_100%/0.18)]"
-                      : "w-9 h-9 hover:bg-[hsl(var(--foreground)/0.06)]"
+                      ? [
+                          "w-12 h-9 bg-primary text-primary-foreground",
+                          // Layered glow: outer drop, primary halo, top inner highlight, bottom inner depth
+                          "shadow-[0_6px_18px_-2px_hsl(var(--primary)/0.55),0_2px_6px_hsl(var(--primary)/0.35),inset_0_1px_0_hsl(0_0%_100%/0.25),inset_0_-1px_0_hsl(0_0%_0%/0.15)]",
+                        ].join(" ")
+                      : "w-9 h-9 hover:bg-[hsl(var(--foreground)/0.06)] active:bg-[hsl(var(--foreground)/0.10)]"
                   )}
                 >
                   <Icon
                     className={cn(
-                      "transition-all duration-300",
-                      active ? "h-[20px] w-[20px]" : "h-[18px] w-[18px]"
+                      "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                      active ? "h-[20px] w-[20px] drop-shadow-[0_1px_2px_hsl(var(--primary)/0.45)]" : "h-[18px] w-[18px]"
                     )}
                     strokeWidth={active ? 2.5 : 1.8}
                   />
