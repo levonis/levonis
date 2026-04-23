@@ -5,7 +5,7 @@ import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import FloatingProductCard from '@/components/FloatingProductCard';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ArrowRight, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, SlidersHorizontal, ArrowUpDown, Package, Check } from 'lucide-react';
 import { ProductGridSkeleton } from '@/components/ui/PageSkeletons';
 
 import { Button } from '@/components/ui/button';
@@ -19,13 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { usePageTitle } from '@/island/usePageTitle';
 
