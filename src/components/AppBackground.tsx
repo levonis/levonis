@@ -26,6 +26,9 @@ export default function AppBackground() {
   // Convert % values to CSS strings for left/top
   const left = useTransform(xSpring, (v) => `${v}vw`);
   const top = useTransform(ySpring, (v) => `${v}vh`);
+  // Black anchor — always on the opposite side of the red
+  const blackLeft = useTransform(xSpring, (v) => `${100 - v}vw`);
+  const blackTop = useTransform(ySpring, (v) => `${100 - v}vh`);
 
   // Scroll-driven motion (descends + sways around the current side)
   useEffect(() => {
@@ -90,34 +93,16 @@ export default function AppBackground() {
         backgroundColor: '#15382c',
       }}
     >
-      {/* Smooth black diffusion mixed into the green base */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(165deg, hsl(0 0% 0% / 0) 0%, hsl(0 0% 0% / 0.25) 55%, hsl(0 0% 0% / 0.55) 100%)',
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(160% 120% at 50% 0%, hsl(0 0% 0% / 0) 40%, hsl(0 0% 0% / 0.35) 100%)',
-          mixBlendMode: 'multiply',
-        }}
-      />
-
-      {/* Red light bleeding into the scene — fully diffused, no visible edges */}
+      {/* Black mass anchored opposite to the red — drifts with it */}
       <motion.div
         className="absolute"
         style={{
-          left,
-          top,
-          width: '160vmax',
-          height: '160vmax',
-          marginLeft: '-80vmax',
-          marginTop: '-80vmax',
-          mixBlendMode: 'soft-light',
+          left: blackLeft,
+          top: blackTop,
+          width: '180vmax',
+          height: '180vmax',
+          marginLeft: '-90vmax',
+          marginTop: '-90vmax',
           willChange: 'left, top',
         }}
       >
@@ -125,43 +110,42 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 90% 50% / 0.7) 0%, hsl(0 85% 45% / 0.5) 12%, hsl(0 80% 42% / 0.3) 25%, hsl(0 75% 38% / 0.15) 40%, hsl(0 70% 35% / 0.06) 60%, transparent 85%)',
-            filter: 'blur(120px)',
-          }}
-        />
-      </motion.div>
-
-      {/* Subtle warm tint layer */}
-      <motion.div
-        className="absolute"
-        style={{
-          left,
-          top,
-          width: '120vmax',
-          height: '120vmax',
-          marginLeft: '-60vmax',
-          marginTop: '-60vmax',
-          mixBlendMode: 'screen',
-          opacity: 0.25,
-          willChange: 'left, top',
-        }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(circle, hsl(0 80% 40% / 0.35) 0%, hsl(0 70% 35% / 0.15) 30%, transparent 70%)',
+              'radial-gradient(circle, hsl(0 0% 0% / 0.85) 0%, hsl(0 0% 0% / 0.55) 18%, hsl(0 0% 0% / 0.30) 35%, hsl(0 0% 0% / 0.12) 55%, transparent 80%)',
             filter: 'blur(140px)',
           }}
         />
       </motion.div>
 
-      {/* Final unifying vignette */}
+      {/* Concentrated red orb — smaller footprint, higher intensity, fully diffused */}
+      <motion.div
+        className="absolute"
+        style={{
+          left,
+          top,
+          width: '70vmax',
+          height: '70vmax',
+          marginLeft: '-35vmax',
+          marginTop: '-35vmax',
+          mixBlendMode: 'screen',
+          willChange: 'left, top',
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle, hsl(0 95% 52% / 0.95) 0%, hsl(0 90% 48% / 0.55) 14%, hsl(0 85% 42% / 0.25) 30%, hsl(0 75% 35% / 0.08) 50%, transparent 78%)',
+            filter: 'blur(90px)',
+          }}
+        />
+      </motion.div>
+
+      {/* Final unifying veil to remove any remaining edges */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(140% 100% at 50% 50%, transparent 45%, hsl(0 0% 0% / 0.45) 100%)',
+            'radial-gradient(150% 110% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.30) 100%)',
         }}
       />
     </div>
