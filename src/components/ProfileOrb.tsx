@@ -141,24 +141,25 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Smoothly interpolate visual properties so the orb appears to be absorbed
-  // into the island (and detach back out on scroll up).
+  // Fusion math: translate the orb so its inner edge meets the island's
+  // near edge exactly when p === 1. The orb stays fully visible — fusion
+  // is about contact, not disappearance.
   const p = mergeProgress;
-  // Travel ~70% of the way toward the island center — last 30% is covered by
-  // the island's own expansion so the join looks continuous, not jarring.
-  const travel = p * 0.72;
-  const translateX = islandTarget.dx * travel;
-  const translateY = islandTarget.dy * travel;
-  // Shrink the orb height to roughly match the island, while widening slightly
-  // so it morphs into a tiny pill before disappearing into the surface.
-  const targetScaleY = Math.max(0.45, islandTarget.height / 40); // ~1.0 → ~1.3
-  const scaleY = 1 + (targetScaleY - 1) * p * 0.35; // very subtle
-  const scaleX = 1 - p * 0.35; // narrows as it dives in
-  const baseScale = 1 - p * 0.15; // gentle overall shrink
-  // Fade only late in the merge so the absorption is the dominant cue.
-  const opacity = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
-  const blurPx = p > 0.55 ? (p - 0.55) * 6 : 0; // soft dissolve at the end
-  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${baseScale * scaleX}, ${baseScale * scaleY})`;
+  const translateX = fusion.dx * p;
+  const translateY = fusion.dy * p;
+  // Vertical scale eases gently toward the island height for a liquid seam.
+  const targetScaleY = Math.max(0.85, Math.min(1.15, fusion.islandH / 40));
+  const scaleY = 1 + (targetScaleY - 1) * p;
+  const scaleX = 1 + p * 0.06; // tiny stretch toward the contact side
+  // Origin on the contact edge so the stretch happens where the seam forms.
+  const originX = isRtl ? "0% 50%" : "100% 50%";
+  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+
+  // Bridge: a glassy pill that fills the residual seam in the final phase
+  // of the merge so the two surfaces weld together visually.
+  const bridgeVisible = p > 0.55;
+  const bridgeW = bridgeVisible ? Math.min(20, 4 + (p - 0.55) * 36) : 0;
+  const bridgeH = Math.max(14, Math.min(22, fusion.islandH * 0.55));
 
   return (
     <button
@@ -166,10 +167,10 @@ const ProfileOrb = memo(() => {
       onClick={handleClick}
       aria-label="Profile"
       className={cn(
-        "fixed top-3 z-[55] w-10 h-10 rounded-full overflow-hidden",
+        "fixed top-3 z-[55] w-10 h-10 rounded-full",
         "glass-panel !rounded-full",
         "flex items-center justify-center",
-        "transition-[transform,opacity,filter] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
         "ring-1 ring-white/20 hover:ring-primary/50",
         "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
@@ -177,13 +178,31 @@ const ProfileOrb = memo(() => {
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
-        transformOrigin: "center center",
+        transformOrigin: originX,
         transform: tuckTransform,
-        opacity,
-        filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
-        pointerEvents: p > 0.6 ? "none" : "auto",
+        overflow: "visible", // allow the fusion bridge to escape the orb
       }}
     >
+      {/* Fusion bridge — connects the orb's contact edge to the island. */}
+      <span
+        aria-hidden
+        className="absolute pointer-events-none glass-panel"
+        style={{
+          top: "50%",
+          [isRtl ? "right" : "left"]: "100%",
+          width: `${bridgeW}px`,
+          height: `${bridgeH}px`,
+          transform: "translateY(-50%)",
+          opacity: bridgeVisible ? 1 : 0,
+          transition: "opacity 180ms ease-out, width 180ms ease-out",
+          borderRadius: "0",
+          boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.35)",
+        }}
+      />
+      {/* Inner clipping wrapper — keeps avatar/glass overlays circular while
+          letting the fusion bridge extend outside the orb. */}
+      <span className="absolute inset-0 rounded-full overflow-hidden">
+
       {/* Avatar — softened with blur + lowered opacity for a frosted feel */}
       {avatarUrl ? (
         <img
