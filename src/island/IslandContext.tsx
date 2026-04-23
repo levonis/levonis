@@ -123,12 +123,15 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
       p.startsWith("/community/requests") ||
       p.startsWith("/community/reels");
     if (promoSurfaces) {
+      // Keep promo state stable regardless of scroll position so the marquee
+      // animation never restarts (which produced a visible "break" in the
+      // ticker every time the user scrolled past the threshold).
       return {
-        state: scrolled ? "search" : promoMessages.length > 0 ? "promo" : "search",
+        state: promoMessages.length > 0 ? "promo" : "search",
       };
     }
     return { state: "search" };
-  }, [location.pathname, scrolled, promoMessages.length]);
+  }, [location.pathname, promoMessages.length]);
 
   // reset override when path changes
   useEffect(() => {
