@@ -138,6 +138,14 @@ const ProductListItem = ({
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
           <div className="flex flex-col">
+            {hasSale && (
+              <div className="mb-1 flex">
+                <span className="relative inline-flex items-center rounded-md bg-gradient-to-b from-primary to-accent px-2 py-0.5 text-[11px] font-bold text-primary-foreground shadow-sm animate-fade-in">
+                  تخفيضات
+                  <span aria-hidden className="absolute -bottom-1 right-3 h-2 w-2 rotate-45 bg-accent" />
+                </span>
+              </div>
+            )}
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg sm:text-xl font-black text-primary whitespace-nowrap">
                 {formatPrice(price)}
