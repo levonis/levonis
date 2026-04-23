@@ -408,7 +408,18 @@ export const DynamicIsland = () => {
                 transition={morphTransition}
                 className="relative flex h-full w-full items-center gap-2 overflow-hidden px-3"
               >
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={2.5} />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/wishes");
+                  }}
+                  aria-label="اذهب إلى الأمنيات"
+                  title="الأمنيات"
+                  className="pointer-events-auto inline-flex shrink-0 items-center justify-center rounded-full p-0.5 text-primary transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                >
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+                </button>
                 <div
                   className="relative flex-1 overflow-hidden"
                   style={{
