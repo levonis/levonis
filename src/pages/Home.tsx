@@ -37,6 +37,37 @@ const MemoizedCategoryCard = memo(CategoryCard);
 
 const Home = () => {
   const { t, language } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQ = (searchParams.get('q') || '').trim();
+  const searchQLower = searchQ.toLowerCase();
+
+  // When a global search is active, fetch matching products so the user can
+  // jump straight to one without re-running the search elsewhere.
+  const { data: searchProducts, isLoading: searchLoading } = useQuery({
+    queryKey: ['home-search-products', searchQLower],
+    enabled: searchQ.length >= 2,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const term = `%${searchQ}%`;
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, slug, name, name_ar, image_url, price, currency')
+        .or([
+          `name.ilike.${term}`,
+          `name_ar.ilike.${term}`,
+        ].join(','))
+        .eq('in_stock', true)
+        .limit(24);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const clearSearch = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('q');
+    setSearchParams(params, { replace: true });
+  };
 
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
     queryKey: ['main-sections'],
