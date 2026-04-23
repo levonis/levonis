@@ -327,15 +327,18 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       <WalletDialog
         open={walletOpen}
         onOpenChange={setWalletOpen}
+        originRect={walletOrigin}
       />
       <SavingsPopup
         open={savingsOpen}
         onOpenChange={setSavingsOpen}
         userId={userId}
+        originRect={savingsOrigin}
       />
       <CouponsPopup
         open={couponsOpen}
         onOpenChange={setCouponsOpen}
+        originRect={couponsOrigin}
       />
     </>
   );
