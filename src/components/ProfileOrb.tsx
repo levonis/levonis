@@ -29,23 +29,45 @@ const ProfileOrb = memo(() => {
     remeasureOrigin();
   }, [isRtl, remeasureOrigin]);
 
-  // Tuck the orb away when the page is scrolled — at that point the Dynamic
-  // Island morphs to its wider "search" shape and would otherwise overlap.
-  const [scrolled, setScrolled] = useState(false);
+  // Progressive merge with the Dynamic Island as the user scrolls.
+  // 0 = fully visible orb, 1 = fully merged into the island.
+  // Range chosen to overlap the island's promo→search morph (≈ 0–80px).
+  const [mergeProgress, setMergeProgress] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll();
+    let raf = 0;
+    const compute = () => {
+      const y = window.scrollY;
+      const start = 8;
+      const end = 80;
+      const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
+      // ease-out cubic for a soft tail
+      const eased = 1 - Math.pow(1 - t, 3);
+      setMergeProgress(eased);
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        compute();
+      });
+    };
+    compute();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
   }, []);
 
-  // Re-measure origin after the orb's transform settles so clip-path stays
-  // anchored on the visible orb position when the user clicks.
+  // Re-measure origin when the orb settles at either extreme so clip-path
+  // stays anchored on the visible position when the user clicks.
+  const settled = mergeProgress === 0 || mergeProgress === 1;
   useEffect(() => {
-    const t = window.setTimeout(remeasureOrigin, 320);
+    if (!settled) return;
+    const t = window.setTimeout(remeasureOrigin, 120);
     return () => window.clearTimeout(t);
-  }, [scrolled, remeasureOrigin]);
+  }, [settled, remeasureOrigin]);
 
   const { data: avatarUrl } = useQuery({
     queryKey: ["orb-avatar", user?.id],
