@@ -150,9 +150,12 @@ function AppContent() {
     if (isReelsPage) return;
 
     document.body.style.overflow = "";
+    document.body.style.overflowY = "";
     document.body.style.position = "";
     document.body.style.inset = "";
     document.body.style.width = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.overflowY = "";
   }, [location.pathname, isReelsPage]);
 
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
