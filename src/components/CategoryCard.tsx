@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useId } from "react";
 import { Link } from "react-router-dom";
 import DirectSaleRibbon from "./ui/DirectSaleRibbon";
 
@@ -13,6 +13,7 @@ interface CategoryCardProps {
   mediaUrl?: string | null;
   mediaType?: string | null; // 'image' | 'gif' | 'video'
   mediaTransparent?: boolean;
+  mediaChromaKey?: 'none' | 'black' | 'white' | string | null;
 }
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url);
@@ -28,12 +29,49 @@ const CategoryCard = ({
   mediaUrl,
   mediaType,
   mediaTransparent,
+  mediaChromaKey,
 }: CategoryCardProps) => {
   const iconText = (icon ?? "").trim();
   const isLongIcon = iconText.length > 3;
   const showVideo = !!mediaUrl && (mediaType === "video" || (mediaType == null && isVideoUrl(mediaUrl)));
   const showImage = !!mediaUrl && !showVideo;
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
+
+  const filterId = useId().replace(/:/g, "");
+  const chromaActive = mediaChromaKey === "black" || mediaChromaKey === "white";
+  const filterStyle = chromaActive ? { filter: `url(#chroma-${filterId})` } : undefined;
+
+  // SVG filter that converts a chosen color (black/white) to transparent.
+  // Black-removal: alpha = max(R,G,B). White-removal: alpha = 1 - min(R,G,B).
+  const chromaFilter = chromaActive ? (
+    <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
+      <defs>
+        <filter id={`chroma-${filterId}`} x="0" y="0" width="1" height="1">
+          {mediaChromaKey === "black" ? (
+            <feColorMatrix
+              type="matrix"
+              values="
+                1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                1 1 1 0 -0.15
+              "
+            />
+          ) : (
+            <feColorMatrix
+              type="matrix"
+              values="
+                1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                -1 -1 -1 0 2.85
+              "
+            />
+          )}
+        </filter>
+      </defs>
+    </svg>
+  ) : null;
 
   return (
     <Link
@@ -45,6 +83,7 @@ const CategoryCard = ({
                  hover:-translate-y-0.5 transition-all duration-300"
       aria-label={nameAr || name}
     >
+      {chromaFilter}
       {hasDirectSale && <DirectSaleRibbon />}
 
       {useFullMedia && (
@@ -53,6 +92,7 @@ const CategoryCard = ({
             <video
               src={mediaUrl!}
               className="w-full h-full object-cover scale-[1.02]"
+              style={filterStyle}
               autoPlay
               muted
               loop
@@ -64,17 +104,21 @@ const CategoryCard = ({
               src={mediaUrl!}
               alt=""
               className="w-full h-full object-cover scale-[1.02]"
+              style={filterStyle}
               loading="lazy"
               draggable={false}
             />
           ) : null}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, hsl(var(--background) / 0.12) 0%, hsl(var(--background) / 0.22) 40%, hsl(var(--background) / 0.58) 100%)",
-            }}
-          />
+          {/* Subtle bottom fade for text legibility (skip when chroma so background card shows through) */}
+          {!chromaActive && (
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(180deg, hsl(var(--background) / 0.12) 0%, hsl(var(--background) / 0.22) 40%, hsl(var(--background) / 0.58) 100%)",
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -97,7 +141,7 @@ const CategoryCard = ({
                        group-hover:scale-105 transition-transform duration-300"
             style={
               showVideo || showImage
-                ? { background: "hsl(var(--muted) / 0.3)" }
+                ? { background: "transparent" }
                 : {
                     background:
                       "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
@@ -111,6 +155,7 @@ const CategoryCard = ({
               <video
                 src={mediaUrl!}
                 className="w-full h-full object-cover"
+                style={filterStyle}
                 autoPlay
                 muted
                 loop
@@ -122,6 +167,7 @@ const CategoryCard = ({
                 src={mediaUrl!}
                 alt=""
                 className="w-full h-full object-cover"
+                style={filterStyle}
                 loading="lazy"
                 draggable={false}
               />
@@ -141,7 +187,7 @@ const CategoryCard = ({
 
         {/* Title */}
         <div className="w-full min-h-[36px] sm:min-h-[40px] flex items-start justify-center px-0.5 overflow-hidden">
-          <h3 className="font-bold text-[12px] sm:text-[13px] text-foreground group-hover:text-primary transition-colors duration-200 text-center leading-snug line-clamp-2 break-words w-full">
+          <h3 className="font-bold text-[12px] sm:text-[13px] text-foreground group-hover:text-primary transition-colors duration-200 text-center leading-snug line-clamp-2 break-words w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
             {nameAr}
           </h3>
         </div>
