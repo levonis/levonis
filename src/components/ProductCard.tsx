@@ -119,6 +119,10 @@ const ProductCard = ({
       to={`/product/${slug}`}
       className="group block product-card-glass p-1.5 relative"
     >
+      {/* Cinematic red accents — pure decoration, non-interactive */}
+      <div className="card-red-glow" aria-hidden="true" />
+      <div className="card-red-sweep" aria-hidden="true" />
+
       {/* Direct sale ribbon */}
       {hasDirectSale && <DirectSaleRibbon />}
 
