@@ -1,87 +1,53 @@
 
 
-## ضبط موحّد لتأثير الزجاج (Glassmorphism) عبر بطاقات /profile
+## توحيد كامل لتجربة فتح/إغلاق النوافذ الثلاث عبر `OriginExpandShell`
 
-### الفكرة
-إنشاء طبقة CSS موحّدة (`.glass-card`) تحدّد قيم الشفافية، الحدود، الـ blur، والظل في **مكان واحد** — ثم تطبيقها على جميع بطاقات صفحة `/profile`. هذا يضمن تطابقاً كاملاً بصرياً عبر كل الأجهزة، ويجعل أي تعديل مستقبلي على المظهر الزجاجي يتم من ملف واحد فقط.
+النوافذ الثلاث (المحفظة، التوفير، الكوبونات) تستخدم بالفعل `OriginExpandShell` لكن المحتوى الداخلي مختلف الخلفية/الحدود/الـ scroll، فيظهر تباين بصري. الهدف: كل ما تراه (الـ backdrop، الحاوية، الهيدر، التذييل، الانتقالات) يأتي من الشل الموحّد، والـ popups تمرّر **محتوى فقط**.
 
-### 1) Design Tokens — `src/index.css`
-إضافة متغيرات CSS تحت `:root` و `.dark` ضمن `@layer base`:
+### 1) ترقية `src/components/profile/OriginExpandShell.tsx`
+توسيع الـ shell ليحمل الـ chrome الكامل وبخيارات اختيارية:
+- `title?: string` و`icon?: ReactNode` و`subtitle?: ReactNode` لرأس موحّد.
+- `footer?: ReactNode` لتذييل ثابت اختياري.
+- `size?: "default" | "lg"` (الافتراضي `default`).
+- بنية داخلية موحّدة:
+  - `backdrop`: `fixed inset-0 bg-black/55 backdrop-blur-md` مع fade منفصل (200ms).
+  - `container`: مركزة، `max-w-md` / `lg:max-w-lg`، `max-h-[85vh]`، `glass-card` + `overflow-hidden`.
+  - `header`: شريط أعلى مع الأيقونة، العنوان، وزر إغلاق X (يستخدم `glass-card-inner` للأيقونة وزر الإغلاق).
+  - `body`: `overflow-y-auto` بـ padding ثابت + `scrollbar-thin`.
+  - `footer`: حدود علوية رفيعة (`border-white/10`) إن وُجد.
+- نفس spring الحالي (`stiffness: 320, damping: 32, mass: 0.9`) و`transformOrigin` المحسوب من `originRect`.
+- احترام `prefers-reduced-motion` (موجود مسبقاً يبقى).
+- إضافة `role="dialog"` و`aria-modal="true"` و`aria-labelledby` مرتبط بالـ title.
 
-```css
-:root {
-  /* Glassmorphism — unified across profile cards */
-  --glass-bg: 255 255 255 / 0.10;          /* خلفية شبه شفافة (light) */
-  --glass-bg-strong: 255 255 255 / 0.18;   /* للهيدر/CTA داخل البطاقة */
-  --glass-border: 255 255 255 / 0.20;
-  --glass-blur: 20px;
-  --glass-saturation: 140%;
-  --glass-shadow: 0 8px 32px -12px hsl(var(--foreground) / 0.18);
-}
-.dark {
-  --glass-bg: 255 255 255 / 0.05;
-  --glass-bg-strong: 255 255 255 / 0.10;
-  --glass-border: 255 255 255 / 0.10;
-  --glass-shadow: 0 8px 32px -12px hsl(0 0% 0% / 0.45);
-}
-```
+### 2) تبسيط `SavingsPopup.tsx`
+حذف الهيدر/زر الإغلاق المكرر داخل المكوّن. تمرير:
+- `title={t('savings_title')}`, `icon={<TrendingUp />}` للشل.
+- المحتوى = الإجمالي + التفصيل + القائمة فقط (بدون أي backdrop/border/blur خارجي).
+- الكروت الفرعية داخل المحتوى تستخدم `glass-card-inner` لاتساق مع الهيدر.
 
-ثم، تحت `@layer components`:
+### 3) تبسيط `CouponsPopup.tsx`
+- نفس الشيء: `title={t('coupons_title')}`, `icon={<Ticket />}`.
+- إزالة أي حاوية `rounded-3xl bg-* backdrop-*` من جذر المحتوى.
+- الـ `Sheet` الداخلي لتفاصيل الخصم يبقى كما هو.
 
-```css
-.glass-card {
-  background: rgb(var(--glass-bg));
-  border: 1px solid rgb(var(--glass-border));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-  box-shadow: var(--glass-shadow);
-  border-radius: 1.5rem; /* rounded-3xl */
-}
-.glass-card-inner {                /* للعناصر الفرعية داخل البطاقة (stats، CTA) */
-  background: rgb(var(--glass-bg-strong));
-  border: 1px solid rgb(var(--glass-border));
-  backdrop-filter: blur(calc(var(--glass-blur) - 6px));
-}
-/* Fallback لو المتصفح لا يدعم backdrop-filter */
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-card { background: hsl(var(--card) / 0.85); }
-}
-```
+### 4) تبسيط `WalletDialog.tsx`
+- تمرير `title={t('wallet_title')}`, `icon={<Wallet />}`, و`size="lg"` (لأنه أكبر محتوى).
+- نقل أزرار "إيداع/سحب" الرئيسية إلى `footer` ليبقى الـ tabs قابلة للتمرير دونها.
+- إزالة الهيدر اليدوي القديم؛ الإغلاق فقط من زر X في الـ shell.
 
-### 2) توحيد البطاقات الخمس
-استبدال الأصناف الحالية المتفرقة (`bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg`) بـ `glass-card p-4` في:
-
-- `src/components/profile/OrdersCenter.tsx`
-- `src/components/profile/QuickServicesGrid.tsx`
-- `src/components/profile/CouponsStrip.tsx`
-- `src/components/profile/RecentOrders.tsx`
-
-وللهيدر `src/components/profile/ProfileHeader.tsx`:
-- الحاوية الخارجية تبقى تستخدم `linear-gradient` بلون المستوى + `glass-card` (تُستبدل أصناف backdrop/border/shadow الحالية).
-- بطاقات الإحصائيات الأربع (Points/Coupons/Wallet/Savings) داخل الهيدر تُستبدل بـ `glass-card-inner` بدلاً من `bg-white/10 backdrop-blur-md border border-white/15`.
-- زر CTA السفلي يستخدم نفس `glass-card-inner`.
-
-### 3) ضبط الموبايل (اتساق عبر الأجهزة)
-بعض المتصفحات على الموبايل (خاصة Safari iOS الأقدم وWebView على Android) تتعامل مع `backdrop-filter` بشكل غير متسق. لتفادي الاختلافات:
-- استخدام `-webkit-backdrop-filter` كنسخة مكررة (مضافة في الـ CSS أعلاه).
-- إضافة `transform: translateZ(0)` و `isolation: isolate` على `.glass-card` لتفعيل الـ GPU compositing وتثبيت تأثير الزجاج عبر الأجهزة.
-- تخفيف القيم على الشاشات الضعيفة عبر media query:
-  ```css
-  @media (max-width: 480px) and (prefers-reduced-transparency: reduce) {
-    :root { --glass-bg: 255 255 255 / 0.18; --glass-blur: 12px; }
-  }
-  ```
+### النتيجة المرئية
+- نفس الـ backdrop (نفس درجة الإعتام والضبابية) في النوافذ الثلاث.
+- نفس زاوية التدوير، نفس الظل، نفس التباعد، نفس مكان زر X، نفس حجم العنوان.
+- نفس انيميشن الفتح من الزر والانكماش إليه.
 
 ### بدون تغييرات
-- بنية المكونات وعناصر المحتوى داخل البطاقات.
-- قاعدة البيانات / المنطق / الترجمة.
-- باقي الصفحات (التغيير محصور في بطاقات `/profile`، وفئة `.glass-card` متاحة لاحقاً للاستخدام في أي مكان).
+- إحداثيات `originRect` ومنطق التقاطها في `ProfileHeader`.
+- منطق البيانات (queries/mutations) في الـ popups.
+- صفحات/مكوّنات أخرى تستخدم الـ shell (لا توجد حالياً غير هذه الثلاث).
 
 ### الملفات المعدّلة
-- `src/index.css` — تعريف المتغيرات والفئات الموحّدة.
-- `src/components/profile/ProfileHeader.tsx`
-- `src/components/profile/OrdersCenter.tsx`
-- `src/components/profile/QuickServicesGrid.tsx`
-- `src/components/profile/CouponsStrip.tsx`
-- `src/components/profile/RecentOrders.tsx`
+- `src/components/profile/OriginExpandShell.tsx` (توسيع API)
+- `src/components/profile/SavingsPopup.tsx`
+- `src/components/profile/CouponsPopup.tsx`
+- `src/components/WalletDialog.tsx`
 
