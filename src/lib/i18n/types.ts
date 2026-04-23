@@ -1083,4 +1083,112 @@ export type TranslationKeys = {
   cart_referral_free_delivery_title: string;
   cart_referral_free_delivery_desc: string;
   cart_referral_add_for_free_toast: string;
+
+  // Batch 5 — Notifications page
+  notif_title: string;
+  notif_unread_count: string;
+  notif_all_read: string;
+  notif_empty: string;
+  notif_empty_hint: string;
+  common_new: string;
+  common_general: string;
+  common_view_details: string;
+  common_back: string;
+
+  // Batch 5 — User Addresses
+  addr_page_title: string;
+  addr_add_short: string;
+  addr_empty_title: string;
+  addr_empty_desc: string;
+  addr_add_new: string;
+  addr_default_badge: string;
+  addr_set_default: string;
+  addr_nearest_label: string;
+  addr_set_default_success_title: string;
+  addr_set_default_success_desc: string;
+  addr_update_error: string;
+  addr_delete_success_title: string;
+  addr_delete_success_desc: string;
+  addr_delete_error: string;
+  addr_delete_confirm_title: string;
+  addr_delete_confirm_desc: string;
+  addr_cancel: string;
+  addr_delete: string;
+  addr_deleting: string;
+  addr_error_label: string;
+  common_updated: string;
+
+  // Batch 5 — Address Dialog
+  addr_dialog_edit_title: string;
+  addr_dialog_add_title: string;
+  addr_field_label: string;
+  addr_field_label_placeholder: string;
+  addr_field_full_name: string;
+  addr_field_full_name_placeholder: string;
+  addr_field_phone: string;
+  addr_field_phone_placeholder: string;
+  addr_field_governorate: string;
+  addr_field_governorate_placeholder: string;
+  addr_field_area: string;
+  addr_field_area_placeholder: string;
+  addr_field_neighborhood: string;
+  addr_field_neighborhood_placeholder: string;
+  addr_field_landmark: string;
+  addr_field_landmark_placeholder: string;
+  addr_field_notes: string;
+  addr_field_notes_placeholder: string;
+  addr_field_set_default: string;
+  addr_validation_name_required: string;
+  addr_validation_name_too_long: string;
+  addr_validation_phone_required: string;
+  addr_validation_phone_invalid: string;
+  addr_validation_governorate_required: string;
+  addr_validation_area_required: string;
+  addr_validation_landmark_required: string;
+  addr_dialog_save_error: string;
+  addr_dialog_saving: string;
+  addr_dialog_update_btn: string;
+  addr_dialog_add_btn: string;
+  addr_updated_title: string;
+  addr_updated_desc: string;
+  addr_added_title: string;
+  addr_added_desc: string;
+
+  // Batch 5 — Order Timeline (Pre-Order)
+  tl_step_created_title: string;
+  tl_step_created_desc: string;
+  tl_step_confirmed_title: string;
+  tl_step_confirmed_desc: string;
+  tl_step_purchased_title: string;
+  tl_step_purchased_desc: string;
+  tl_step_warehouse_title: string;
+  tl_step_warehouse_desc: string;
+  tl_step_shipped_iraq_title: string;
+  tl_step_shipped_iraq_desc: string;
+  tl_step_arrived_iraq_title: string;
+  tl_step_arrived_iraq_desc: string;
+  tl_step_on_the_way_title: string;
+  tl_step_on_the_way_desc: string;
+  tl_step_delivered_title: string;
+  tl_step_delivered_desc: string;
+  // Direct order variants
+  tl_direct_created_desc: string;
+  tl_direct_confirmed_desc: string;
+  tl_direct_processing_title: string;
+  tl_direct_processing_desc: string;
+  tl_direct_delivered_desc: string;
+  // Timeline UI
+  tl_current_label: string;
+  tl_serial_image_label: string;
+  tl_estimated_delivered_label: string;
+  tl_estimated_label: string;
+  tl_overdue_days: string;
+  tl_arriving_today: string;
+  tl_one_day_left: string;
+  tl_two_days_left: string;
+  tl_days_left_few: string;
+  tl_days_left_many: string;
+  tl_delivered_success: string;
+  tl_chip_preorder: string;
+  tl_chip_direct: string;
 };
