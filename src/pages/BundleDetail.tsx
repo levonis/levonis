@@ -202,7 +202,10 @@ const BundleDetail = () => {
 
         {/* Image thumbnails */}
         {bundle.allImages.length > 1 && (
-          <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1">
+          <div
+            className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1"
+            style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'auto' }}
+          >
             {bundle.allImages.map((img: string, i: number) => (
               <button
                 key={i}
@@ -302,7 +305,10 @@ const BundleDetail = () => {
             <Sparkles className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-bold text-foreground">المنتجات في هذه الباقة</h3>
           </div>
-          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2">
+          <div
+            className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2"
+            style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'auto' }}
+          >
             {bundle.items.map((item: any, idx: number) => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
               const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
