@@ -184,17 +184,6 @@ const CategoryDetail = () => {
   return (
     <div className="min-h-screen">
       <main className="container mx-auto px-4 py-8 relative z-10">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 mb-8 text-sm text-foreground/50">
-          <Link to="/" className="hover:text-primary transition-colors">{t('nav_home')}</Link>
-          <span>/</span>
-          <Link to="/" className="hover:text-primary transition-colors">{t('nav_categories')}</Link>
-          <span>/</span>
-          {categoryLoading ? <span>...</span> : (
-            <span className="text-primary font-medium">{pickName(category?.name as any, category?.name_ar as any)}</span>
-          )}
-        </div>
-
         {categoryLoading ? (
           <ProductGridSkeleton count={8} />
         ) : category ? (
