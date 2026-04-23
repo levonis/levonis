@@ -152,7 +152,7 @@ const ProfileExpansionShell = ({ children }: Props) => {
                 opacity: 0.6,
               } as any
             }
-            transition={expandSpring}
+            transition={balloonSpring}
             onAnimationStart={() => setPhase("expanding")}
             onAnimationComplete={() => setPhase("open")}
           >
@@ -170,9 +170,5 @@ const ProfileExpansionShell = ({ children }: Props) => {
     </AnimatePresence>
   );
 };
-
-// Override exit transition to use collapse spring via custom variants
-// (Framer applies the same `transition` to exit unless overridden inline)
-ProfileExpansionShell.collapseSpring = collapseSpring;
 
 export default ProfileExpansionShell;
