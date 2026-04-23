@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import OriginExpandShell, { type OriginRect } from "@/components/profile/OriginExpandShell";
 import {
   AlertDialog,
   AlertDialogAction,
