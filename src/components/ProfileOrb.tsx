@@ -82,22 +82,51 @@ const ProfileOrb = memo(() => {
         "flex items-center justify-center",
         "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
-        "ring-1 ring-white/15 hover:ring-primary/40",
-        "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.35)]",
+        "ring-1 ring-white/20 hover:ring-primary/50",
+        "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
         sideClass,
       )}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
+      {/* Avatar — softened with blur + lowered opacity for a frosted feel */}
       {avatarUrl ? (
         <img
           src={avatarUrl}
           alt=""
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover opacity-70"
+          style={{ filter: "blur(1.5px) saturate(1.1)" }}
           draggable={false}
         />
       ) : (
-        <User className="w-5 h-5 text-foreground/80" strokeWidth={2.2} />
+        <User
+          className="relative z-[2] w-5 h-5 text-foreground/85"
+          strokeWidth={2.2}
+        />
       )}
+
+      {/* Glass overlay above the avatar */}
+      <span
+        aria-hidden
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(135deg, hsl(0 0% 100% / 0.32) 0%, hsl(0 0% 100% / 0.06) 45%, hsl(0 0% 100% / 0.18) 100%)",
+          backdropFilter: "blur(2px) saturate(1.15)",
+          WebkitBackdropFilter: "blur(2px) saturate(1.15)",
+          boxShadow:
+            "inset 0 1px 0 hsl(0 0% 100% / 0.45), inset 0 -1px 0 hsl(0 0% 0% / 0.15)",
+        }}
+      />
+      {/* Top sheen highlight */}
+      <span
+        aria-hidden
+        className="absolute inset-x-1 top-0.5 h-1.5 rounded-full pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(180deg, hsl(0 0% 100% / 0.55) 0%, transparent 100%)",
+          filter: "blur(0.5px)",
+        }}
+      />
     </button>
   );
 });

@@ -154,16 +154,27 @@ const ProfileExpansionShell = ({ children }: Props) => {
             }
             transition={balloonSpring}
             onAnimationStart={() => setPhase("expanding")}
-            onAnimationComplete={() => setPhase("open")}
+            onAnimationComplete={() => {
+              setPhase("open");
+              setCircleOpened(true);
+            }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.985 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.99 }}
-              transition={{ duration: 0.4, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {children}
-            </motion.div>
+            {/* Children (skeletons / page) only appear AFTER the circle has
+                fully expanded, so the user sees the glass disc grow first,
+                then the content fades in inside it. */}
+            <AnimatePresence>
+              {circleOpened && (
+                <motion.div
+                  key="profile-content"
+                  initial={{ opacity: 0, y: 6, scale: 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {children}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </>
       )}
