@@ -63,6 +63,7 @@ const ProductDetailSkeleton = () => (
 
 const ProductDetail = () => {
   const { t, language } = useLanguage();
+  const pickName = (en?: string | null, ar?: string | null) => (language === 'ar' ? (ar || en || '') : (en || ar || ''));
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
