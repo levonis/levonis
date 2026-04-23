@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useRef } from 'react';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 interface ReelThumb {
   id: string;
@@ -14,19 +14,8 @@ interface ReelThumb {
 }
 
 export default function ReelsBar() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-  const suppressClickRef = useRef(false);
-  const suppressTimerRef = useRef<number | null>(null);
+  const scrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    return () => {
-      if (suppressTimerRef.current !== null) {
-        window.clearTimeout(suppressTimerRef.current);
-      }
-    };
-  }, []);
 
   const { data: reels = [] } = useQuery({
     queryKey: ['home-reels-bar'],
@@ -56,44 +45,7 @@ export default function ReelsBar() {
     return n.toString();
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (suppressTimerRef.current !== null) {
-      window.clearTimeout(suppressTimerRef.current);
-      suppressTimerRef.current = null;
-    }
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
-    suppressClickRef.current = false;
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const start = pointerStartRef.current;
-    if (!start) return;
-
-    if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) {
-      suppressClickRef.current = true;
-    }
-  };
-
-  const handlePointerEnd = () => {
-    pointerStartRef.current = null;
-
-    if (!suppressClickRef.current) return;
-
-    suppressTimerRef.current = window.setTimeout(() => {
-      suppressClickRef.current = false;
-      suppressTimerRef.current = null;
-    }, 140);
-  };
-
-  const openReels = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    if (suppressClickRef.current) {
-      e?.preventDefault();
-      e?.stopPropagation();
-      return;
-    }
-
-    navigate('/community/reels');
-  };
+  const openReels = () => navigate('/community/reels');
 
   return (
     <>
@@ -111,18 +63,13 @@ export default function ReelsBar() {
         <div
           ref={scrollRef}
           className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerEnd}
-          onPointerCancel={handlePointerEnd}
           style={{
             WebkitOverflowScrolling: 'touch',
-            // Allow both horizontal (handled by this strip) and vertical
-            // (bubbles to page since this container only scrolls horizontally)
-            // pan gestures, so the user can always scroll the page even when
-            // their finger lands on the reels strip.
-            touchAction: 'pan-x pan-y',
-            overscrollBehaviorY: 'auto',
+            // Browser handles vertical pan natively (page scroll bubbles up).
+            // Horizontal scrolling is performed manually by useHorizontalDragScroll
+            // only after the gesture is unambiguously horizontal, so a vertical
+            // swipe is never hijacked.
+            touchAction: 'pan-y',
           }}
         >
           {reels.map((reel) => (
