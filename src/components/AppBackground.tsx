@@ -93,8 +93,9 @@ export default function AppBackground() {
       aria-hidden
       className="pointer-events-none fixed inset-0 overflow-hidden"
       style={{
-        zIndex: -1,
-        backgroundColor: '#15382c',
+        zIndex: 0,
+        background:
+          'radial-gradient(140% 120% at 18% 14%, hsl(var(--background) / 0.96) 0%, hsl(var(--background)) 42%, hsl(var(--background-2) / 0.92) 100%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 58%, hsl(var(--background-2) / 0.88) 100%)',
       }}
     >
       {/* Primary red living light — screen blend so it actually glows on dark green */}
@@ -116,7 +117,7 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 90% 50% / 0.55) 0%, hsl(0 80% 42% / 0.30) 18%, hsl(0 60% 30% / 0.10) 38%, transparent 65%)',
+              'radial-gradient(circle, hsl(var(--accent-red) / 0.52) 0%, hsl(var(--accent-red) / 0.24) 20%, hsl(var(--accent-red) / 0.08) 42%, transparent 68%)',
             filter: 'blur(120px)',
           }}
         />
@@ -141,7 +142,7 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 85% 48% / 0.40) 0%, hsl(0 60% 32% / 0.12) 30%, transparent 62%)',
+              'radial-gradient(circle, hsl(var(--accent-red) / 0.22) 0%, hsl(var(--accent-red) / 0.10) 32%, transparent 62%)',
             filter: 'blur(140px)',
           }}
         />

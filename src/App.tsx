@@ -173,7 +173,7 @@ function AppContent() {
       <DynamicIsland />
       <main
         style={{ paddingTop: mainPaddingTop }}
-        className="transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
+        className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
         <Suspense fallback={<RouteAwareSkeleton />}>
           <PageFade>
