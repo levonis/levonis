@@ -72,8 +72,9 @@
 @layer base {
   :root {
     /* Base colors - Dark green & Gold theme */
-    --background: 160 46% 15%;        /* #103d33 Dark green */
-    --background-2: 160 59% 11%;      /* #0b3028 Deeper green */
+    --background: 160 38% 15%;        /* #15382c Dark green base */
+    --background-2: 0 0% 4%;          /* near-black accent */
+    --accent-red: 0 75% 45%;          /* moving red orb */
     --foreground: 44 44% 89%;         /* #efe6c9 Gold cream text */
     
     /* Card & surfaces */
