@@ -5,6 +5,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Loader2, Mail, CheckCircle2, Shield, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n';
 
 interface EmailVerificationDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ export default function EmailVerificationDialog({
   onResendCode,
   autoSendOnOpen = true, // Default to true for backward compatibility
 }: EmailVerificationDialogProps) {
+  const { t, dir, isRtl } = useLanguage();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -94,7 +96,7 @@ export default function EmailVerificationDialog({
           sentCodes[timerKey] = false;
         } else if (data?.success) {
           if (!data?.alreadySent) {
-            toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+            toast.success(t('evd_code_sent_toast'));
           }
           resendTimers[timerKey] = Date.now() + 60000;
           setResendTimer(60);
@@ -130,7 +132,7 @@ export default function EmailVerificationDialog({
 
   const handleVerify = async (codeStr: string) => {
     if (codeStr.length !== 6) {
-      toast.error('أدخل الرمز كاملاً');
+      toast.error(t('evd_enter_full_code'));
       return;
     }
 
@@ -144,19 +146,19 @@ export default function EmailVerificationDialog({
 
       if (data.success) {
         setVerified(true);
-        toast.success('تم التحقق بنجاح! ✓');
+        toast.success(t('evd_verified_toast'));
         delete sentCodes[timerKey];
         setTimeout(() => {
           onVerified();
           onOpenChange(false);
         }, 1500);
       } else {
-        toast.error(data.error || 'رمز غير صحيح');
+        toast.error(data.error || t('evd_invalid_code'));
         setCode('');
       }
     } catch (error: any) {
       console.error('Verification error:', error);
-      toast.error(error.message || 'حدث خطأ أثناء التحقق');
+      toast.error(error.message || t('evd_verify_error'));
       setCode('');
     } finally {
       setLoading(false);
@@ -176,17 +178,17 @@ export default function EmailVerificationDialog({
       if (error) throw error;
 
       if (data.success) {
-        toast.success('تم إرسال رمز جديد');
+        toast.success(t('evd_resend_success'));
         resendTimers[timerKey] = Date.now() + 60000;
         setResendTimer(60);
         setCode('');
         onResendCode?.();
       } else {
-        toast.error(data.error || 'فشل في إرسال الرمز');
+        toast.error(data.error || t('evd_resend_failed'));
       }
     } catch (error: any) {
       console.error('Resend error:', error);
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('evd_generic_error'));
     } finally {
       setLoading(false);
       setIsSending(false);
@@ -194,17 +196,17 @@ export default function EmailVerificationDialog({
   };
 
   const typeLabels: Record<string, string> = {
-    signup: 'تأكيد البريد الإلكتروني',
-    password_reset: 'إعادة تعيين كلمة المرور',
-    password_change: 'تأكيد تغيير كلمة المرور',
-    email_change: 'تأكيد البريد الجديد',
+    signup: t('evd_type_signup'),
+    password_reset: t('evd_type_password_reset'),
+    password_change: t('evd_type_password_change'),
+    email_change: t('evd_type_email_change'),
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className="sm:max-w-md z-[9999] p-0 gap-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-card to-background" 
-        dir="rtl"
+        dir={dir}
       >
         {/* Hero Header */}
         <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent">
@@ -231,7 +233,7 @@ export default function EmailVerificationDialog({
                 {typeLabels[type]}
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                أرسلنا رمز تحقق مكون من 6 أرقام إلى
+                {t('evd_description')}
                 <br />
                 <span className="font-semibold text-foreground" dir="ltr">{email}</span>
               </DialogDescription>
@@ -244,8 +246,8 @@ export default function EmailVerificationDialog({
             <div className="h-24 w-24 rounded-full bg-green-500/10 flex items-center justify-center mb-4 border border-green-500/30">
               <CheckCircle2 className="h-12 w-12 text-green-500" />
             </div>
-            <p className="text-lg font-bold text-green-500">تم التحقق بنجاح!</p>
-            <p className="text-sm text-muted-foreground mt-2">جاري الانتقال...</p>
+            <p className="text-lg font-bold text-green-500">{t('evd_verified_title')}</p>
+            <p className="text-sm text-muted-foreground mt-2">{t('evd_redirecting')}</p>
           </div>
         ) : (
           <div className="px-6 pb-6 space-y-6">
@@ -277,7 +279,7 @@ export default function EmailVerificationDialog({
               {/* Security note */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Shield className="h-3.5 w-3.5" />
-                <span>الرمز صالح لمدة 10 دقائق</span>
+                <span>{t('evd_code_validity')}</span>
               </div>
             </div>
 
@@ -289,13 +291,13 @@ export default function EmailVerificationDialog({
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                  جاري التحقق...
+                  <Loader2 className={`h-5 w-5 animate-spin ${isRtl ? 'ml-2' : 'mr-2'}`} />
+                  {t('evd_verifying')}
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-5 w-5 ml-2" />
-                  تأكيد الرمز
+                  <CheckCircle2 className={`h-5 w-5 ${isRtl ? 'ml-2' : 'mr-2'}`} />
+                  {t('evd_confirm_code')}
                 </>
               )}
             </Button>
@@ -303,7 +305,7 @@ export default function EmailVerificationDialog({
             {/* Resend */}
             <div className="text-center border-t border-border/30 pt-4">
               <p className="text-sm text-muted-foreground mb-2">
-                لم تستلم الرمز؟
+                {t('evd_didnt_receive')}
               </p>
               <Button
                 variant="ghost"
@@ -312,8 +314,8 @@ export default function EmailVerificationDialog({
                 className="text-primary hover:text-primary/80 hover:bg-primary/10 font-semibold"
               >
                 {resendTimer > 0
-                  ? `إعادة الإرسال بعد ${resendTimer} ثانية`
-                  : 'إعادة إرسال الرمز'}
+                  ? t('evd_resend_after', { seconds: resendTimer })
+                  : t('evd_resend_btn')}
               </Button>
             </div>
           </div>
