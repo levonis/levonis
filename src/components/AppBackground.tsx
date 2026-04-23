@@ -91,26 +91,26 @@ export default function AppBackground() {
           'radial-gradient(120% 90% at 10% 100%, hsl(0 0% 3%) 0%, transparent 55%), linear-gradient(160deg, #15382c 0%, #15382c 65%, #0a0a0a 100%)',
       }}
     >
-      {/* Vignette to deepen edges */}
+      {/* Soft black wash blended with green base */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(120% 80% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.55) 100%)',
+            'radial-gradient(140% 110% at 0% 110%, hsl(0 0% 0% / 0.85) 0%, hsl(0 0% 0% / 0.35) 35%, transparent 70%), radial-gradient(120% 100% at 100% 0%, hsl(0 0% 0% / 0.55) 0%, transparent 60%)',
         }}
       />
 
-      {/* Red drifting orb */}
+      {/* Red light bleeding softly into the scene (no hard edges) */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '55vmax',
-          height: '55vmax',
-          marginLeft: '-27.5vmax',
-          marginTop: '-27.5vmax',
-          mixBlendMode: 'screen',
+          width: '110vmax',
+          height: '110vmax',
+          marginLeft: '-55vmax',
+          marginTop: '-55vmax',
+          mixBlendMode: 'soft-light',
           willChange: 'left, top',
         }}
       >
@@ -118,11 +118,45 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 95% 55% / 0.95) 0%, hsl(0 85% 45% / 0.55) 28%, hsl(0 75% 35% / 0.2) 50%, transparent 68%)',
-            filter: 'blur(30px)',
+              'radial-gradient(circle, hsl(0 90% 50% / 0.55) 0%, hsl(0 85% 45% / 0.30) 18%, hsl(0 80% 40% / 0.15) 35%, hsl(0 70% 35% / 0.06) 55%, transparent 80%)',
+            filter: 'blur(80px)',
           }}
         />
       </motion.div>
+
+      {/* Second softer red layer with screen blend for subtle warmth */}
+      <motion.div
+        className="absolute"
+        style={{
+          left,
+          top,
+          width: '90vmax',
+          height: '90vmax',
+          marginLeft: '-45vmax',
+          marginTop: '-45vmax',
+          mixBlendMode: 'screen',
+          opacity: 0.35,
+          willChange: 'left, top',
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle, hsl(0 85% 45% / 0.45) 0%, hsl(0 75% 35% / 0.18) 30%, transparent 65%)',
+            filter: 'blur(100px)',
+          }}
+        />
+      </motion.div>
+
+      {/* Final vignette to fuse everything */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(130% 90% at 50% 50%, transparent 50%, hsl(0 0% 0% / 0.5) 100%)',
+        }}
+      />
     </div>
   );
 }
