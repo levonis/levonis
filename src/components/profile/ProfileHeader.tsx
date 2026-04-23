@@ -169,32 +169,32 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   const stats = [
     {
       icon: Coins,
-      label: "النقاط",
+      label: t('ph_label_points'),
       value: userPoints?.available_points ?? 0,
       loading: pointsLoading,
       onClick: () => navigate("/rewards?tab=points&sub=summary"),
     },
     {
       icon: Ticket,
-      label: "كوبونات",
+      label: t('ph_label_coupons'),
       value: couponsCount ?? 0,
       loading: couponsLoading,
       onClick: () => setCouponsOpen(true),
     },
     {
       icon: Wallet,
-      label: "المحفظة",
+      label: t('ph_label_wallet'),
       value: wallet?.balance ?? 0,
       loading: walletLoading,
-      suffix: "د.ع",
+      suffix: t('ph_currency_iqd'),
       onClick: () => setWalletOpen(true),
     },
     {
       icon: TrendingUp,
-      label: "الوفر",
+      label: t('ph_label_savings'),
       value: totalSavings ?? 0,
       loading: savingsLoading,
-      suffix: "د.ع",
+      suffix: t('ph_currency_iqd'),
       onClick: () => setSavingsOpen(true),
     },
   ];
@@ -216,7 +216,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
               className="absolute top-3 left-3 flex items-center gap-1.5 rounded-xl bg-white/20 backdrop-blur-md border border-white/25 px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 active:scale-[0.95] hover:bg-white/30 z-10"
             >
               <Shield className="h-3.5 w-3.5" />
-              <span>لوحة الإدارة</span>
+              <span>{t('profile_admin_panel')}</span>
             </button>
           )}
 
@@ -234,7 +234,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
 
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold text-white truncate">
-                {profile?.full_name || profile?.username || "مستخدم"}
+                {profile?.full_name || profile?.username || t('ph_user_default')}
               </h1>
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-sm text-white/70 truncate">@{profile?.username || "—"}</span>
