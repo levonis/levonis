@@ -1,23 +1,27 @@
 
 
-## إزالة قسم "مجتمع ليفو" من الواجهة الرئيسية
+## إزالة الخلفية الثانوية في `/community`
 
-### الهدف
-تخفيف عبء التحميل على الصفحة الرئيسية (`Home.tsx`) عبر إزالة قسم `CommunitySection` بالكامل، مع إبقائه متاحاً عبر صفحة `/community`.
+### المشكلة
+صفحة `CommunityHome` تضيف طبقة `bg-background/95 backdrop-blur-sm` فوق خلفية الموقع الرئيسية (`AppBackground`)، فتظهر "خلفية ثانية" تطمس الأصلية.
 
-### التغييرات (`src/pages/Home.tsx`)
+### التغيير
+ملف `src/pages/CommunityHome.tsx` — السطر 8:
+- استبدال:
+  ```
+  <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+  ```
+- بـ:
+  ```
+  <div className="min-h-screen">
+  ```
 
-1. **حذف الـ lazy import** الخاص بـ `CommunitySection` (مع كتلة الـ retry-on-failure) — يمنع تحميل أي chunk للمجتمع من الصفحة الرئيسية.
-2. **حذف الكتلة المعروضة** في أسفل الصفحة:
-   - `AnimatedDivider` التمهيدي،
-   - الـ `ProgressiveSection` + `Suspense` + `ErrorBoundaryFallback` المغلِّفة لـ `<CommunitySection />`.
-3. **إبقاء** `Footer` في مكانه مباشرة بعد آخر قسم متبقٍّ.
+بذلك تختفي طبقة الخلفية والـ blur، وتظهر خلفية الموقع الرئيسية كما هي خلف محتوى المجتمع، دون تأثير على التخطيط أو المحتوى.
 
 ### بدون تغييرات
-- `/community` (`CommunityHome`) يبقى كما هو ويعرض المحتوى بشكل كامل.
-- لا تأثير على شريط التنقل أو روابط `LevoHelpBot` المؤدية إلى `/community`.
-- لا تعديل على بقية أقسام الرئيسية.
+- `CommunitySection` و`CommunityGiftsButton` و`Footer` تبقى كما هي.
+- لا تعديل على الراوتر أو `AppBackground`.
 
 ### الملف المعدّل
-- `src/pages/Home.tsx`
+- `src/pages/CommunityHome.tsx`
 
