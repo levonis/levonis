@@ -1,6 +1,6 @@
 import { memo, useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Users, Trophy, User, Gamepad2, MessageCircle, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
+import { Home, ShoppingCart, Users, Trophy, Gamepad2, MessageCircle, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { CartContext } from '@/hooks/useCart';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -23,7 +23,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'rewards', labelKey: 'menu_rewards', icon: Trophy, path: '/rewards' },
   { key: 'games', labelKey: 'nav_games', icon: Gamepad2, path: '/games' },
   { key: 'messages', labelKey: 'menu_messages', icon: MessageCircle, path: '/chats' },
-  { key: 'account', labelKey: 'menu_account_info', icon: User, path: '/profile' },
 ];
 
 type DockPosition = 'right' | 'left' | 'top' | 'bottom';
