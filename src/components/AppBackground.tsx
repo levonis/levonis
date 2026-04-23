@@ -26,6 +26,9 @@ export default function AppBackground() {
   // Convert % values to CSS strings for left/top
   const left = useTransform(xSpring, (v) => `${v}vw`);
   const top = useTransform(ySpring, (v) => `${v}vh`);
+  // Black anchor — always on the opposite side of the red
+  const blackLeft = useTransform(xSpring, (v) => `${100 - v}vw`);
+  const blackTop = useTransform(ySpring, (v) => `${100 - v}vh`);
 
   // Scroll-driven motion (descends + sways around the current side)
   useEffect(() => {
