@@ -82,13 +82,14 @@ export default function ReelsBar() {
                 <img
                   src={reel.thumbnail_url}
                   alt=""
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                   loading="lazy"
+                  draggable={false}
                 />
               ) : (
                 <video
                   src={reel.video_url}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                   muted
                   preload="metadata"
                 />
