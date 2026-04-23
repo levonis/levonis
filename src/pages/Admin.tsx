@@ -3752,6 +3752,7 @@ const Admin = () => {
                               setCategoryMediaUrl((category as any).media_url ?? null);
                               setCategoryMediaType((category as any).media_type ?? null);
                               setCategoryMediaTransparent(!!(category as any).media_transparent);
+                              setCategoryMediaChromaKey(((category as any).media_chroma_key as any) ?? 'none');
                               setCategoryDialogOpen(true);
                             }}
                           >
