@@ -65,17 +65,35 @@ const morphTransition: Transition = {
 type SearchStage = "idle" | "typing" | "suggestions" | "results";
 type SearchScope = "global" | "category" | "community";
 
+/**
+ * Computes the island shape. For category/product titles, the width budget
+ * scales per-language (Arabic/Kurdish glyphs are visually wider than Latin)
+ * and respects the viewport so long names show in full instead of being cut
+ * to a few letters.
+ */
 const baseShape = (
   state: IslandState,
-  title?: string,
+  title: string | undefined,
+  language: string,
 ): { width: number; height: number; radius: number } => {
   const titleLen = title ? Array.from(title).length : 0;
-  const titleWidth = Math.min(220, Math.max(60, titleLen * 9));
+  const isWideScript = language === "ar" || language === "ku";
+  const perChar = isWideScript ? 11 : 8.5;
+  const minBudget = 120;
+  const viewportBudget =
+    typeof window !== "undefined" ? window.innerWidth - 48 : 520;
+  const cap = Math.min(viewportBudget, 560);
+  const titleWidth = Math.min(
+    cap,
+    Math.max(minBudget, Math.round(titleLen * perChar) + 24),
+  );
   switch (state) {
     case "promo":    return { width: 280, height: 40, radius: 22 };
     case "search":   return { width: 360, height: 52, radius: 26 };
-    case "category": return { width: 96 + titleWidth, height: 52, radius: 26 };
-    case "product":  return { width: 56 + titleWidth, height: 46, radius: 24 };
+    // chrome = back button + search button (~96 px) + paddings
+    case "category": return { width: Math.min(cap, 96 + titleWidth), height: 52, radius: 26 };
+    // chrome = back button only (~56 px)
+    case "product":  return { width: Math.min(cap, 64 + titleWidth), height: 46, radius: 24 };
   }
 };
 
@@ -234,7 +252,7 @@ export const DynamicIsland = () => {
   const shape =
     state === "search"
       ? searchShape(stage, products.length)
-      : baseShape(state, title);
+      : baseShape(state, title, language);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
