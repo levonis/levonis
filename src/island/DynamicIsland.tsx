@@ -189,6 +189,15 @@ export const DynamicIsland = () => {
     };
   }, [isSearchActive]);
 
+  /* ---------- Reset search whenever route changes ----------
+   * Ensures opening a product (or any nav) clears the input + closes the
+   * suggestions/results panel so the user starts fresh on the next page.
+   */
+  useEffect(() => {
+    setSearchQuery("");
+    setFocused(false);
+  }, [location.pathname]);
+
   /* ---------- Shape ---------- */
   const shape =
     state === "search"
@@ -199,12 +208,21 @@ export const DynamicIsland = () => {
   const goSearchUrl = (q: string) => {
     const encoded = encodeURIComponent(q);
     if (scope === "category" && params.slug) {
+      // Stay inside the current category page and just update the q param.
       navigate(`/category/${params.slug}?q=${encoded}`, { replace: true });
     } else if (scope === "community") {
-      navigate(`/community/merchants/all-products?q=${encoded}`);
+      // Stay inside the current community page; the page filters by ?q=.
+      navigate(`${location.pathname}?q=${encoded}`, { replace: true });
     } else {
+      // Global search opens the dedicated /products listing.
       navigate(`/products?search=${encoded}`);
     }
+  };
+
+  const resetSearch = () => {
+    setSearchQuery("");
+    setFocused(false);
+    inputRef.current?.blur();
   };
 
   const submitSearch = (e: React.FormEvent) => {
@@ -213,8 +231,7 @@ export const DynamicIsland = () => {
     if (!q) return;
     pushRecent(q);
     refreshRecent();
-    setFocused(false);
-    inputRef.current?.blur();
+    resetSearch();
     goSearchUrl(q);
   };
 
@@ -242,9 +259,13 @@ export const DynamicIsland = () => {
   };
 
   const openProduct = (slug: string | null, id: string) => {
-    pushRecent(searchQuery.trim());
-    refreshRecent();
-    setFocused(false);
+    const term = searchQuery.trim();
+    if (term) {
+      pushRecent(term);
+      refreshRecent();
+    }
+    // Clear search state fully so returning to the page doesn't re-open results.
+    resetSearch();
     navigate(`/product/${slug || id}`);
   };
 
