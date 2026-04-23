@@ -202,7 +202,7 @@ const UserInfo = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
+      <div className="min-h-screen pt-6">
         <div className="container mx-auto px-4 max-w-2xl py-8">
           <ProfileSkeleton />
         </div>
@@ -211,7 +211,7 @@ const UserInfo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm" dir={dir}>
+    <div className="min-h-screen" dir={dir}>
       <main className="container mx-auto px-4 pt-6 pb-10 max-w-4xl">
         <UserInfoPageHeader />
 

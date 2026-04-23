@@ -324,7 +324,7 @@ const MyOrders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Package className="h-8 w-8 animate-pulse text-primary" />
       </div>
     );
@@ -332,7 +332,7 @@ const MyOrders = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center space-y-3">
           <h1 className="text-base font-bold text-foreground">{t('myorders_login_required')}</h1>
           <p className="text-sm text-muted-foreground">{t('myorders_login_required_desc')}</p>
@@ -406,7 +406,7 @@ const MyOrders = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen flex flex-col" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card border-b border-border/30">
         <div className="px-4 pt-4 pb-3">

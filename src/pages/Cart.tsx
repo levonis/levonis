@@ -1756,7 +1756,7 @@ const Cart = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-6">
+      <div className="min-h-screen pt-6">
         <div className="container mx-auto px-4 max-w-4xl py-8">
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
@@ -1784,7 +1784,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen overflow-x-hidden" dir="rtl">
       <main className="w-full max-w-4xl mx-auto px-4 py-8 overflow-x-hidden">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">

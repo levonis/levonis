@@ -38,7 +38,7 @@ const FEATURE_ICONS: Record<string, any> = {
 };
 
 const ProductDetailSkeleton = () => (
-  <div className="min-h-screen bg-background" dir="rtl">
+  <div className="min-h-screen" dir="rtl">
     {/* Full-width image skeleton */}
     <div className="relative">
       <Skeleton className="w-full aspect-square" />
@@ -342,7 +342,7 @@ const ProductDetail = () => {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">{t('product_not_found')}</h2>
           <Button onClick={() => navigate('/')}>{t('product_back_home')}</Button>
@@ -747,7 +747,7 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen" dir="rtl">
       {/* Full-width image section (mobile) / grid (desktop) */}
       <div className="md:container md:mx-auto md:px-4 md:pt-6">
         <div className="md:grid md:grid-cols-2 md:gap-8">

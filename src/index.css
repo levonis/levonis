@@ -220,7 +220,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: transparent;
     font-family: 'Cairo', system-ui, -apple-system, sans-serif;
     font-feature-settings: 'cv11', 'ss01';
     font-variation-settings: 'opsz' 32;
@@ -1768,15 +1769,7 @@
 
 /* ── Category Luxury Page — Redesign ── */
 .category-luxury-bg {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 15%, hsl(160 40% 14% / 0.6), transparent),
-    linear-gradient(
-      175deg,
-      hsl(160 50% 8%) 0%,
-      hsl(160 45% 6%) 40%,
-      hsl(160 40% 10%) 70%,
-      hsl(160 35% 7%) 100%
-    );
+  background: transparent;
 }
 
 /* ── 3D Cube for Featured Product ── */
