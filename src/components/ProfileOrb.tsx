@@ -29,44 +29,50 @@ const ProfileOrb = memo(() => {
     remeasureOrigin();
   }, [isRtl, remeasureOrigin]);
 
-  // Progressive merge with the Dynamic Island as the user scrolls.
-  // 0 = fully visible orb, 1 = fully merged into the island.
-  // Also tracks the live island center so the orb visually travels toward
-  // it (absorption) and back (detachment) instead of drifting off-edge.
+  // Progressive fusion with the Dynamic Island as the user scrolls.
+  // 0 = fully separate orb, 1 = edges fused with the island.
+  // We measure the live gap between the orb's inner edge and the island's
+  // near edge, then translate the orb by exactly that amount so the two
+  // shapes meet seam-to-seam (no overshoot, no disappearing).
   const [mergeProgress, setMergeProgress] = useState(0);
-  const [islandTarget, setIslandTarget] = useState<{
-    dx: number;
-    dy: number;
-    height: number;
-  }>({ dx: 0, dy: 0, height: 52 });
+  const [fusion, setFusion] = useState<{
+    dx: number; // horizontal travel needed to touch the island edge
+    dy: number; // vertical alignment offset (orb center → island center)
+    gap: number; // live gap in px (for the bridge width)
+    islandH: number;
+  }>({ dx: 0, dy: 0, gap: 0, islandH: 52 });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let raf = 0;
-    const ISLAND_THRESHOLD = 40; // matches IslandContext scroll threshold
+    const ISLAND_THRESHOLD = 40;
     const compute = () => {
       const orbEl = btnRef.current;
       const islandEl = document.querySelector<HTMLElement>("[data-dynamic-island]");
       const islandH = islandEl?.getBoundingClientRect().height ?? 52;
 
-      // Vector from orb center → island center (used to "fly into" it).
       if (orbEl && islandEl) {
         const o = orbEl.getBoundingClientRect();
         const i = islandEl.getBoundingClientRect();
-        const ocx = o.left + o.width / 2;
+        // Horizontal gap between orb's inner edge and the island's near edge.
+        // In LTR the orb sits on the left → its inner (right) edge approaches
+        // the island's left edge. Mirror in RTL.
+        const gap = isRtl ? o.left - i.right : i.left - o.right;
+        const dx = isRtl ? -Math.max(0, gap) : Math.max(0, gap);
+        // Vertical alignment so the seam is clean.
         const ocy = o.top + o.height / 2;
-        const icx = i.left + i.width / 2;
         const icy = i.top + i.height / 2;
-        setIslandTarget({ dx: icx - ocx, dy: icy - ocy, height: islandH });
+        const dy = icy - ocy;
+        setFusion({ dx, dy, gap: Math.max(0, gap), islandH });
       } else {
-        setIslandTarget((prev) => ({ ...prev, height: islandH }));
+        setFusion((prev) => ({ ...prev, islandH }));
       }
 
-      const start = Math.max(8, ISLAND_THRESHOLD - 12); // ≈ 28px
-      const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9); // ≈ 88–110px
+      const start = Math.max(8, ISLAND_THRESHOLD - 12);
+      const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9);
       const y = window.scrollY;
       const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       setMergeProgress(eased);
     };
     const onScroll = () => {
@@ -84,10 +90,8 @@ const ProfileOrb = memo(() => {
       window.removeEventListener("resize", compute);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [isRtl]);
 
-  // Re-measure origin when the orb settles at either extreme so clip-path
-  // stays anchored on the visible position when the user clicks.
   const settled = mergeProgress === 0 || mergeProgress === 1;
   useEffect(() => {
     if (!settled) return;
