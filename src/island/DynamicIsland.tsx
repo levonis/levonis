@@ -25,6 +25,15 @@ const shellSpring: Transition = {
   mass: 0.95,
 };
 
+// Dedicated transition for the island appearing / disappearing with the route.
+// Slower & softer than internal morphs so it feels like a gentle breath.
+const shellEnterExit: Transition = {
+  type: "spring",
+  stiffness: 180,
+  damping: 26,
+  mass: 1.05,
+};
+
 const contentTransition: Transition = {
   duration: 0.24,
   ease: [0.32, 0.72, 0, 1],
