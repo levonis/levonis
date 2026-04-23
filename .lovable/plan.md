@@ -1,125 +1,77 @@
 
 
-## توحيد التصميم على Glassmorphism Professional
+## Profile Orb beside the Dynamic Island + Circular Reveal Animation
 
-طلبك واسع النطاق — `/category` + بقية الموقع + شريط التنقّل السفلي البيضاوي + أنميشنات التوسّع. سأنفّذ على **5 مراحل** مرتّبة حسب الأثر البصري.
+### What the user gets
 
----
-
-### المرحلة 1 — إكمال `/category` (الأولوية القصوى)
-
-**العناصر المتبقّية للتحويل:**
-
-1. **بطاقة Hero الرئيسية** (موجودة بالفعل بنمط زجاجي — تحسين بسيط: زيادة `backdrop-blur` إلى 2xl وتوحيد التدرّج مع باقي العناصر).
-2. **بطاقات المنتجات `FloatingProductCard`**:
-   - رفع الزجاج من `blur(40px)` إلى صيغة موحّدة `backdrop-blur-2xl + saturate-150`.
-   - إضافة `inset 0 1px 0` highlight علوي.
-   - ترقية ribbon البيع المباشر إلى نمط زجاجي (شفافية + blur خفيف).
-3. **رسالة "لا توجد منتجات"** (السطور 423-460): تحويل البطاقة الفارغة إلى لوحة زجاجية بنفس النمط.
-4. **شبكة المنتجات**: إضافة `animate-fade-in` متتابع خفيف عند التحميل.
-
----
-
-### المرحلة 2 — الشريط السفلي البيضاوي (Mobile Bottom Nav)
-
-**الوضع الحالي:** شريط مستطيل بحدّ علوي بسيط، عرض كامل، حواف غير مدوّرة.
-
-**الجديد:**
-- **شكل بيضاوي عائم** (`rounded-full`) منفصل عن الحواف — `mx-3 mb-3` مع `bottom-0` آمن.
-- خلفية زجاجية: `backdrop-blur-2xl + bg-card/50 gradient + border 0.4 + deep shadow + inner highlight`.
-- العنصر النشط: حبّة بيضاوية مضيئة `bg-primary/20` مع توهّج خلفي `glow`.
-- انتقالات `cubic-bezier(0.16,1,0.3,1)` 300ms للأيقونات.
-- شارات الإشعارات (السلة/الرسائل) بنمط زجاجي صغير مع `ring-2 ring-background/50`.
-- الحفاظ على `safe-area-inset-bottom`.
-
-**سطح المكتب (dock):** نفس البطاقة موجودة بالفعل بـ `rounded-2xl` — ترقية إلى `rounded-full` (بيضاوي) + ترقية الزجاج لتطابق المعيار.
+A small **glassmorphism circular button** with the user's avatar (or User icon) pinned at the top of the screen, **next to the Dynamic Island**. Tapping it triggers a premium **circular expansion animation** that grows from the orb's position until it fills the entire screen — and the `/profile` page content is revealed from within that expanding circle (clipped to it). Navigating away (back button, route change) plays the reverse: the page contracts back into the orb.
 
 ```text
 ┌──────────────────────────────────────────┐
-│  ╭──────────────────────────────────╮   │  ← شكل بيضاوي زجاجي
-│  │  🏠   🛒²  👥   🏆   🎮   💬   👤  │   │     عائم بهامش جانبي
-│  ╰──────────────────────────────────╯   │
+│                                          │
+│   ◯  ▭▭▭▭▭ DynamicIsland ▭▭▭▭▭          │  ← top bar
+│   ↑                                      │
+│   Profile orb (glass, 40px)              │
+│                                          │
+│   Tap → circle expands from orb origin  │
+│   ◯ → ◯◯ → ⬤⬤⬤ (fills screen)            │
+│                                          │
+│   /profile content rendered inside       │
 └──────────────────────────────────────────┘
 ```
 
----
+### Components to build
 
-### المرحلة 3 — معيار Popover/Dropdown موحّد عالميًا
+1. **`src/components/ProfileOrb.tsx`** (new)
+   - Small circular glassmorphism button (`w-10 h-10 rounded-full glass-panel`), avatar image with fallback to `User` icon.
+   - Fixed position: `top-3` + horizontally offset from the centered Island (e.g. RTL-aware: `right-3` for Arabic, `left-3` otherwise).
+   - On click: stores its bounding rect (origin x/y) in a global context, then `navigate('/profile')`.
+   - Hidden when already on `/profile` (since the orb visually "becomes" the page).
+   - Reads avatar from `useAuth()` + `profiles` table.
 
-إنشاء **مكوّن مساعد جديد** `src/components/ui/glass-popover.tsx` يغلّف `Popover` بالنمط الزجاجي الجاهز + أنميشن التوسّع للأسفل (`dropdown-in-bottom` 220ms `cubic-bezier(0.16,1,0.3,1)`).
+2. **`src/components/ProfileTransitionProvider.tsx`** (new context)
+   - Stores `originRect: { x, y } | null` and a `phase: 'idle' | 'expanding' | 'open' | 'collapsing'`.
+   - Exposed via `useProfileTransition()` hook so the orb sets the origin and the page reads it.
 
-تحديث `src/components/ui/select.tsx` و`src/components/ui/dropdown-menu.tsx` و`src/components/ui/sheet.tsx` لتطبيق نفس الزجاج تلقائيًا — هذا ينقل **كل قوائم الموقع** إلى النمط دون تعديل كل صفحة.
+3. **`src/components/ProfileExpansionShell.tsx`** (new)
+   - Wraps `<Profile />` route element.
+   - Uses **framer-motion** with a `clip-path: circle(R at X Y)` animation:
+     - **Enter**: `clipPath: circle(20px at originX originY)` → `circle(150vmax at originX originY)` (covers screen).
+     - **Exit** (on route change away): reverse to `circle(20px at originX originY)`.
+   - Uses spring transition (`stiffness: 220, damping: 28, mass: 0.9`) for that elastic "balloon inflating" feel.
+   - Inside the clipped layer renders the actual `<Profile />` content (already loaded — clip-path just reveals it).
+   - Adds a subtle backdrop fade and a soft white ring at the expanding edge for premium polish.
 
-أنميشن التوسّع:
-- `data-[state=open]:animate-[glass-expand_220ms]` — keyframe جديد: scale 0.96→1 + opacity 0→1 + translateY 8→0.
-- يُضاف إلى `tailwind.config.ts` و`index.css`.
+4. **Route integration in `src/App.tsx`**
+   - Wrap `ProfileTransitionProvider` around `AppContent` (above `IslandProvider` is fine).
+   - Render `<ProfileOrb />` inside `AppContent` next to `<DynamicIsland />`.
+   - Replace `<Route path="/profile" element={<Profile />} />` with `<Route path="/profile" element={<ProfileExpansionShell><Profile /></ProfileExpansionShell> />`.
+   - Use `AnimatePresence mode="wait"` at the route level only for `/profile` so the collapse animation plays before unmount when navigating away.
 
----
+5. **Remove duplicate Profile entry from `AppNavBar`**
+   - Remove the `account → /profile` item from `NAV_ITEMS` (it's now the orb at the top). Keeps the bottom nav cleaner and avoids two entry points to the same page.
 
-### المرحلة 4 — العناصر العامّة للموقع
+### Animation specifics
 
-**Top-level shells (ترقية تلقائية عبر مكوّنات shadcn):**
+- **Origin tracking**: orb's `getBoundingClientRect()` center is captured on click; persisted via context so the shell knows where to "grow from".
+- **Clip-path circle**: GPU-accelerated, smooth on mobile; doesn't trigger layout.
+- **Reverse transition**: a `useEffect` in `ProfileExpansionShell` listens to route change away from `/profile` — sets `phase: 'collapsing'`, then unmounts after the animation completes.
+- **Reduced-motion**: respects `prefers-reduced-motion` → falls back to a 150ms fade.
+- **Interruptions**: if the user double-taps or navigates mid-animation, framer-motion's spring smoothly retargets.
 
-| المكوّن | التغيير |
-|---|---|
-| `Card` (ui/card.tsx) | إضافة variant `glass` افتراضي للصفحات الرئيسية |
-| `Dialog` content | تطبيق نفس وصفة الزجاج + animation موحّد |
-| `Sheet` content | زجاج + slide-in بـ `cubic-bezier(0.16,1,0.3,1)` |
-| `Tabs` list | حاوية زجاجية بـ `rounded-full`، النشط بـ pill داخلي مضيء |
-| `Button outline/ghost` | إضافة variant `glass` (شفّاف + blur + hover lift) |
-| `Input` | حدّ زجاجي + focus ring بنمط primary glow |
+### Visual polish
 
-**صفحات تحصل على ترقية بصرية مباشرة من تحديث المكوّنات:**
-`/`, `/cart`, `/rewards`, `/games`, `/community`, `/profile`, `/notifications`, `/favorites`, `/my-orders`, جميع صفحات Auth.
+- Orb: `glass-panel rounded-full`, soft ring on hover, gentle scale down on press (`active:scale-95`), pulsing dot if there are pending notifications (optional, future).
+- Expanding circle background: solid `bg-background` with a 1px inner glow `inset 0 0 0 1px hsl(var(--primary)/0.25)` so the leading edge feels premium.
+- `z-index`: orb at `z-50`, expansion shell at `z-40` (under the Island so the Island stays on top during transition — feels "anchored").
 
-**ملاحظة:** لن أعيد كتابة محتوى كل صفحة — فقط أرقّي مكوّنات الـ design system المشتركة، فيرث الموقع كله النمط تلقائياً. هذا يحفظ ساعات من العمل ويضمن التناسق.
+### Files
 
----
+- New: `src/components/ProfileOrb.tsx`, `src/components/ProfileTransitionProvider.tsx`, `src/components/ProfileExpansionShell.tsx`
+- Edited: `src/App.tsx` (provider + orb + route wrap), `src/components/AppNavBar.tsx` (remove `/profile` nav item)
 
-### المرحلة 5 — تأثيرات الحركة الموحّدة
+### Out of scope
 
-في `src/index.css`:
-```css
-@keyframes glass-expand { /* scale + fade + slide */ }
-@keyframes glass-collapse { /* عكسي */ }
-.glass-panel { /* class مساعد جاهز */ }
-.glass-trigger { /* للأزرار */ }
-```
-
-ضبط `tailwind.config.ts` بـ animation keys جديدة:
-- `glass-in`, `glass-out`, `glass-expand`
-
-كل قائمة أو خيار أو drawer ينفتح يستخدم نفس التوقيت → إحساس موحّد عبر الموقع.
-
----
-
-### الملفات المعدّلة
-
-**جديدة:**
-- `src/components/ui/glass-popover.tsx`
-
-**معدّلة:**
-- `src/pages/CategoryDetail.tsx` (Hero + EmptyState + grid animations)
-- `src/components/FloatingProductCard.tsx` (زجاج موحّد)
-- `src/components/ui/DirectSaleRibbon.tsx` (زجاج خفيف)
-- `src/components/AppNavBar.tsx` (شكل بيضاوي للموبايل + سطح المكتب)
-- `src/components/ui/select.tsx`, `dropdown-menu.tsx`, `sheet.tsx`, `dialog.tsx`, `card.tsx`, `tabs.tsx`, `button.tsx`, `input.tsx` (variants زجاجية)
-- `src/index.css` (keyframes + utility classes)
-- `tailwind.config.ts` (animation tokens)
-
-**ذاكرة:**
-- تحديث `mem://ui/styling/glassmorphism-professional-standard.md` بالوصفة الكاملة + قواعد Bottom Nav البيضاوي + keyframes الجديدة.
-
----
-
-### بدون تغيير
-
-- منطق التطبيق، البيانات، الاستعلامات، التوجيه، الترجمة.
-- ألوان الـ primary/destructive.
-- ترتيب "بيع مباشر أولاً".
-- وظائف وعدد عناصر شريط التنقّل.
-
-### النتيجة
-
-موقع كامل بهوية بصرية موحّدة: زجاج، شفافية أنيقة، حركات سلسة، شريط سفلي بيضاوي عائم، وكل قائمة تنفتح بنفس الإحساس الناعم.
+- Redesigning the `/profile` page content itself (only its entry transition changes).
+- Adding the same effect to other pages — easy to extend later by reusing `ProfileExpansionShell`.
 
