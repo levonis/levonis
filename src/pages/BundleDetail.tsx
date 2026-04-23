@@ -220,7 +220,7 @@ const BundleDetail = () => {
                     : 'border-border/30 opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={img} className="w-full h-full object-cover" />
+                <img src={img} className="w-full h-full object-cover pointer-events-none" draggable={false} />
               </button>
             ))}
           </div>
@@ -327,7 +327,7 @@ const BundleDetail = () => {
                 >
                   {itemImage && (
                     <div className="h-[80px] overflow-hidden">
-                      <img src={itemImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                      <img src={itemImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" draggable={false} />
                     </div>
                   )}
                   <div className="p-1.5">
