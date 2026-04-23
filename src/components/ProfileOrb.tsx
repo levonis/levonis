@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/lib/i18n";
 import { useProfileTransition } from "./ProfileTransitionProvider";
+import { computeOrbMagnet } from "./profileOrbMagnet";
 import { cn } from "@/lib/utils";
 
 const ProfileOrb = memo(() => {
