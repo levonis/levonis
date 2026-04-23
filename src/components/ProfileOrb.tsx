@@ -55,6 +55,9 @@ const ProfileOrb = memo(() => {
       navigate(user ? "/profile" : "/auth");
       return;
     }
+    // Force a fresh measure right at click time so any pending layout
+    // (sticky bars, RTL flip, viewport resize) is reflected in the origin.
+    remeasureOrigin();
     const r = el.getBoundingClientRect();
     beginExpand({
       x: r.left + r.width / 2,
