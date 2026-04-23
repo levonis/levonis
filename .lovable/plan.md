@@ -1,53 +1,76 @@
 
 
-## توحيد كامل لتجربة فتح/إغلاق النوافذ الثلاث عبر `OriginExpandShell`
+## ترقية احترافية لتأثير الـ Glassmorphism على بطاقات `/profile`
 
-النوافذ الثلاث (المحفظة، التوفير، الكوبونات) تستخدم بالفعل `OriginExpandShell` لكن المحتوى الداخلي مختلف الخلفية/الحدود/الـ scroll، فيظهر تباين بصري. الهدف: كل ما تراه (الـ backdrop، الحاوية، الهيدر، التذييل، الانتقالات) يأتي من الشل الموحّد، والـ popups تمرّر **محتوى فقط**.
+### الهدف
+الفئة الحالية `.glass-card` تعمل لكنها مسطّحة بصرياً. الترقية تضيف **عمق وطبقات ضوء واقعية** بمستوى تصميم Apple/visionOS، مع الإبقاء على نفس الـ API (لا تغيير على ملفات البطاقات).
 
-### 1) ترقية `src/components/profile/OriginExpandShell.tsx`
-توسيع الـ shell ليحمل الـ chrome الكامل وبخيارات اختيارية:
-- `title?: string` و`icon?: ReactNode` و`subtitle?: ReactNode` لرأس موحّد.
-- `footer?: ReactNode` لتذييل ثابت اختياري.
-- `size?: "default" | "lg"` (الافتراضي `default`).
-- بنية داخلية موحّدة:
-  - `backdrop`: `fixed inset-0 bg-black/55 backdrop-blur-md` مع fade منفصل (200ms).
-  - `container`: مركزة، `max-w-md` / `lg:max-w-lg`، `max-h-[85vh]`، `glass-card` + `overflow-hidden`.
-  - `header`: شريط أعلى مع الأيقونة، العنوان، وزر إغلاق X (يستخدم `glass-card-inner` للأيقونة وزر الإغلاق).
-  - `body`: `overflow-y-auto` بـ padding ثابت + `scrollbar-thin`.
-  - `footer`: حدود علوية رفيعة (`border-white/10`) إن وُجد.
-- نفس spring الحالي (`stiffness: 320, damping: 32, mass: 0.9`) و`transformOrigin` المحسوب من `originRect`.
-- احترام `prefers-reduced-motion` (موجود مسبقاً يبقى).
-- إضافة `role="dialog"` و`aria-modal="true"` و`aria-labelledby` مرتبط بالـ title.
+### التغييرات البصرية
+1. **خلفية متدرّجة بدل لون مسطّح** — تدرّج قطري خفيف من أعلى-اليمين (شفافية أعلى) إلى أسفل-اليسار (شفافية أقل) يعطي إحساس زجاج حقيقي يعكس الضوء.
+2. **حد مزدوج (Double border)** — حد خارجي خفيف + خط داخلي مضيء (`inset 0 1px 0 rgba(255,255,255,0.18)`) يحاكي حافة الكريستال.
+3. **ظل متعدد الطبقات** — ظل قريب صغير + ظل بعيد أنعم + ظل داخلي للعمق.
+4. **Specular highlight علوي** — طبقة `::before` بـ `linear-gradient` شفاف من الأعلى تعطي وميض زجاجي.
+5. **Noise/grain خفيف اختياري** عبر `::after` بـ SVG inline لإزالة أي banding في الـ blur.
+6. **زيادة saturation إلى 180%** + رفع الـ blur لـ 24px لزجاج أنقى.
+7. **انتقال hover ناعم** — رفع طفيف للظل وزيادة سطوع الحد عند hover (للبطاقات التفاعلية فقط عبر `.glass-card-interactive`).
 
-### 2) تبسيط `SavingsPopup.tsx`
-حذف الهيدر/زر الإغلاق المكرر داخل المكوّن. تمرير:
-- `title={t('savings_title')}`, `icon={<TrendingUp />}` للشل.
-- المحتوى = الإجمالي + التفصيل + القائمة فقط (بدون أي backdrop/border/blur خارجي).
-- الكروت الفرعية داخل المحتوى تستخدم `glass-card-inner` لاتساق مع الهيدر.
+### الـ Tokens المُحدّثة (light/dark)
+```text
+Light:
+  --glass-bg-from:   rgba(255,255,255,0.22)
+  --glass-bg-to:     rgba(255,255,255,0.08)
+  --glass-border:    rgba(255,255,255,0.35)
+  --glass-highlight: rgba(255,255,255,0.45)
+  --glass-blur:      24px
+  --glass-saturation:180%
+  --glass-shadow:    0 1px 0 rgba(255,255,255,0.18) inset,
+                     0 8px 24px -8px rgba(0,0,0,0.18),
+                     0 24px 48px -16px rgba(0,0,0,0.22)
 
-### 3) تبسيط `CouponsPopup.tsx`
-- نفس الشيء: `title={t('coupons_title')}`, `icon={<Ticket />}`.
-- إزالة أي حاوية `rounded-3xl bg-* backdrop-*` من جذر المحتوى.
-- الـ `Sheet` الداخلي لتفاصيل الخصم يبقى كما هو.
+Dark:
+  --glass-bg-from:   rgba(255,255,255,0.10)
+  --glass-bg-to:     rgba(255,255,255,0.02)
+  --glass-border:    rgba(255,255,255,0.14)
+  --glass-highlight: rgba(255,255,255,0.22)
+  --glass-shadow:    0 1px 0 rgba(255,255,255,0.08) inset,
+                     0 8px 24px -8px rgba(0,0,0,0.45),
+                     0 24px 56px -20px rgba(0,0,0,0.55)
+```
 
-### 4) تبسيط `WalletDialog.tsx`
-- تمرير `title={t('wallet_title')}`, `icon={<Wallet />}`, و`size="lg"` (لأنه أكبر محتوى).
-- نقل أزرار "إيداع/سحب" الرئيسية إلى `footer` ليبقى الـ tabs قابلة للتمرير دونها.
-- إزالة الهيدر اليدوي القديم؛ الإغلاق فقط من زر X في الـ shell.
+### بنية الفئة الجديدة
+```text
+.glass-card {
+  background: linear-gradient(135deg, var(--glass-bg-from), var(--glass-bg-to));
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--glass-shadow);
+  border-radius: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.glass-card::before {  /* specular highlight */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, var(--glass-highlight) 0%, transparent 35%);
+  opacity: 0.6; mix-blend-mode: overlay;
+}
+.glass-card-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: <stronger shadow>;
+  transition: all 240ms cubic-bezier(0.16,1,0.3,1);
+}
+```
 
-### النتيجة المرئية
-- نفس الـ backdrop (نفس درجة الإعتام والضبابية) في النوافذ الثلاث.
-- نفس زاوية التدوير، نفس الظل، نفس التباعد، نفس مكان زر X، نفس حجم العنوان.
-- نفس انيميشن الفتح من الزر والانكماش إليه.
-
-### بدون تغييرات
-- إحداثيات `originRect` ومنطق التقاطها في `ProfileHeader`.
-- منطق البيانات (queries/mutations) في الـ popups.
-- صفحات/مكوّنات أخرى تستخدم الـ shell (لا توجد حالياً غير هذه الثلاث).
+### Fallbacks محفوظة
+- `@supports not (backdrop-filter)` → خلفية صلبة 90%.
+- `@media (prefers-reduced-transparency)` → blur=10px وشفافية أعلى.
+- `@media (prefers-reduced-motion)` → إلغاء انتقال hover.
 
 ### الملفات المعدّلة
-- `src/components/profile/OriginExpandShell.tsx` (توسيع API)
-- `src/components/profile/SavingsPopup.tsx`
-- `src/components/profile/CouponsPopup.tsx`
-- `src/components/WalletDialog.tsx`
+- `src/index.css` فقط — تحديث tokens الـ glass (السطور 2419-2463) وإضافة `::before` و `.glass-card-interactive`.
+
+### بدون تغييرات
+- لا تعديل على أي مكوّن في `src/components/profile/*` — الفئة `.glass-card` تبقى نفسها.
+- لا تأثير على `.glass-panel` (مستخدمة في `Card` العام).
+- لا تأثير على صفحات أخرى.
 
