@@ -135,7 +135,7 @@ const CategoryCard = ({
             }
             aria-hidden="true"
           >
-            {showVideo ? (
+            {inView && showVideo ? (
               <video
                 src={mediaUrl!}
                 className="w-full h-full object-cover"
@@ -143,17 +143,18 @@ const CategoryCard = ({
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                preload="none"
               />
-            ) : showImage ? (
+            ) : inView && showImage ? (
               <img
                 src={mediaUrl!}
                 alt=""
                 className="w-full h-full object-cover"
                 loading="lazy"
+                decoding="async"
                 draggable={false}
               />
-            ) : (
+            ) : !showVideo && !showImage ? (
               <span
                 className={
                   isLongIcon
