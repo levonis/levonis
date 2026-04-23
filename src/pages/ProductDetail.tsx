@@ -747,7 +747,7 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen" dir="rtl">
       {/* Full-width image section (mobile) / grid (desktop) */}
       <div className="md:container md:mx-auto md:px-4 md:pt-6">
         <div className="md:grid md:grid-cols-2 md:gap-8">
