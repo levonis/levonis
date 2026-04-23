@@ -334,6 +334,7 @@ export const DynamicIsland = () => {
             <motion.div
               key="island-shell"
               ref={islandRef}
+              data-dynamic-island
               layout
               initial={{ opacity: 0, scaleX: 0.02, scaleY: 0.85 }}
               animate={{
