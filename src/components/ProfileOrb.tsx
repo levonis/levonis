@@ -242,6 +242,7 @@ const ProfileOrb = memo(() => {
           filter: "blur(0.5px)",
         }}
       />
+      </span>
     </button>
   );
 });
