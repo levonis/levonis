@@ -2182,10 +2182,6 @@ body {
     /* trailing gap so the seam between the duplicated halves matches the
        inter-item spacing — prevents a visible "jump" at the loop point */
     padding-inline-end: 3rem;
-    /* guarantee the duplicated track is at least 2× the visible width so the
-       -50% translate always wraps onto a filled segment (no empty gap even
-       when there is only one short announcement) */
-    min-width: 200%;
     animation: marquee 22s linear infinite;
     white-space: nowrap;
     will-change: transform;
