@@ -1,63 +1,56 @@
 
 
-# Dynamic Island — توسّع ذكي وانسيابي للبحث (Apple-style)
+# عرض الجزيرة العائمة بشكل ذكي + انميشن انكماش/تمدد
 
-تحويل الجزيرة من تغيّر حجم بسيط إلى **كائن حي واحد** يتنفّس ويتمدّد تدريجيًا حسب محتوى البحث: من كبسولة → حقل → اقتراحات → لوحة نتائج، مع morphing سلس وglass متواصل.
+تنظيف ظهور الجزيرة لتظهر فقط على صفحات التسوّق والمجتمع، مع انتقال انكماش ناعم عند الاختفاء وتمدد عند الظهور، مع التأكد من أن محتوى الإعلانات (promo) يظهر داخل الجزيرة نفسها.
 
-## المراحل الأربع للبحث
+## السلوك المطلوب
 
-| المرحلة | الحجم | المحتوى |
-|---|---|---|
-| `idle` (عند الضغط على البحث) | 360 × 52 ، radius 26 | حقل بحث فارغ + أيقونة + ⌘K |
-| `typing` (المستخدم يكتب) | 420 × 60 ، radius 26 | الحقل + زر مسح + شريط hint رفيع |
-| `suggestions` (كلمات مقترحة) | 480 × 180 ، radius 28 | الحقل + قائمة 4-6 كلمات (تاريخ + اقتراحات حية) |
-| `results` (نتائج منتجات) | 520 × 380 ، radius 30 | الحقل + شبكة 3-5 منتجات مصغّرة (صورة + اسم + سعر) + "عرض الكل" |
+### 1) الصفحات التي تظهر فيها الجزيرة (visible)
+- `/` و `/home` (الرئيسية)
+- `/products` , `/product/:slug`
+- `/categories` , `/category/:slug`
+- `/bundles` , `/bundles/:id`
+- `/favorites`
+- `/community` (ومسارات المجتمع للتصفّح: `/community/merchants/*`, `/community/requests/*`, `/community/reels`)
+- `/profile/:username` و `/seller/:username` (الملفات العامة)
 
-الانتقال بين المراحل يتم تلقائيًا داخل نفس الـ `motion.div` (نفس العنصر، لا swap)، فيشعر المستخدم بأنّ الجزيرة تتنفّس.
+### 2) الصفحات التي تختفي فيها الجزيرة (hidden)
+- `/cart` (السلة)
+- `/rewards` (المكافآت)
+- `/games`, `/games/winners` (الألعاب)
+- `/chats`, `/community/messages` (المحادثات)
+- `/notifications`, `/notification-settings`, `/telegram-settings` (الإشعارات والإعدادات)
+- `/profile/settings`, `/user-info`, `/addresses` (إعدادات الحساب)
+- `/my-orders`, `/order/:id`, `/my-orders/:id/confirm` (الطلبات)
+- `/community/cart`, `/community/checkout/*` (سلة المجتمع والدفع)
+- `/community/customer/dashboard`, `/community/merchant/dashboard`, `/community/customer/profile` (لوحات المستخدم)
+- `/auth`, `/admin/*` (المصادقة والإدارة)
+- `/my-requests`, `/my-referral`, `/my-purchased`, `/my-offer-purchases`, `/confirm-delivery`, `/activate-printer`, `/warranty-dashboard`, `/download`, `/printer-protection`
 
-## السلوك التفاعلي
+### 3) محتوى الإعلانات (promo) داخل الجزيرة
+- حالة `promo` (الـmarquee التي تعرض رسائل من جدول `announcements`) موجودة فعليًا داخل الجزيرة، ولا حاجة لتغييرها.
+- توسيع تشغيلها بحيث تظهر افتراضيًا (قبل التمرير) على كل سطوح التسوّق الرئيسية: `/`, `/products`, `/categories`, `/bundles`, `/favorites`, `/community`, `/community/merchants/*`, `/community/requests/*` — ما دامت `promoMessages.length > 0`. وعند التمرير لأسفل تتحوّل إلى شريط البحث كما في السابق.
+- في صفحات التفاصيل (`/product/:slug`, `/category/:slug`) تبقى الحالة `product`/`category` بزر الرجوع كما هي.
 
-- **فتح**: نقر زر البحث أو الحقل → squash خفيف (scale 0.96) ثم expand بـ spring ناعم.
-- **كتابة**: مع أول حرف → ينتقل تلقائيًا من `idle` → `typing` (ارتفاع +8px).
-- **debounce 250ms**: بعد التوقّف عن الكتابة → `suggestions` تظهر بـ stagger بسيط (40ms بين العناصر).
-- **عند توفّر نتائج فعلية من DB**: يرتقي إلى `results` تدريجيًا (الارتفاع يكبر، الاقتراحات تتلاشى مع slide-up خفيف، المنتجات تدخل بـ fade+slide).
-- **مسح النص (X)**: يرجع إلى `idle` بسلاسة عكسية.
-- **Esc / blur خارج الجزيرة / Escape**: تنطوي إلى الحالة الافتراضية للصفحة (`promo`/`category`/`product`).
-- **اختيار اقتراح أو منتج**: morph قصير (squash) ثم navigate.
-
-## مواصفات الحركة
-
-- **Spring واحد موحّد**: `stiffness: 260, damping: 28, mass: 0.95` — ناعم بدون ارتداد.
-- **Squash قبل التوسّع**: `scale` يبدأ من 0.97 لـ 80ms ثم يعود إلى 1 مع توسّع width/height — يحاكي تنفّس الجزيرة.
-- **Animation متزامن**: `width` + `height` + `borderRadius` كلها داخل نفس `animate={}` بـ نفس `transition`.
-- **المحتوى الداخلي**: بدلًا من `AnimatePresence mode="wait"` (يسبّب swap حاد للبحث)، نستخدم **layout** حقيقي مع `layout` prop لكل قسم داخلي (input, suggestions, results) — كل قسم يدخل/يخرج بـ `opacity` + `y: 6→0` خلال 220ms.
-- **glass continuity**: الخلفية `island-surface` تبقى نفسها — لا تنفصل أبدًا. نستخدم `layoutId="island-shell"` للحفاظ على الاستمرارية البصرية.
-- **Stagger**: العناصر داخل القوائم تتأخّر 35ms بين عنصر وآخر للحصول على cascade ناعم.
-
-## مصادر البيانات
-
-- **Suggestions**:
-  1. آخر 5 عمليات بحث محلية من `localStorage` (`island_recent_searches`).
-  2. أهم 4 منتجات مطابقة (اسم) من `products` بـ `ilike` على `name`/`name_ar` (limit 4).
-- **Results**: 5 منتجات من نفس الاستعلام مع `image_url`, `name`/`name_ar`, `price` — مع احترام `scope` (في القسم: نرشّح بـ `category_id`؛ في المجتمع: نستعلم من `community_products`).
-- استخدام `useQuery` بـ `enabled: query.length >= 2` و `staleTime: 30s`.
+### 4) انميشن الانكماش/التمدد عند تبديل الظهور
+- عند الانتقال إلى صفحة مخفية: الجزيرة تنكمش بسلاسة (`width → 28px`, `height → 0`, `opacity → 0`, `scale → 0.85`, `borderRadius → 14`) ثم تُزال من الـDOM عبر `AnimatePresence`.
+- عند العودة إلى صفحة ظاهرة: تظهر بنفس الانتقال بالعكس مع spring ناعم (نفس `shellSpring` الحالي: `stiffness 260, damping 28, mass 0.95`) — squash خفيف ثم تمدد إلى الحجم الكامل.
+- يُستخدم `motion.div` خارجي بـ `initial={{height: 0, opacity: 0, scale: 0.85}}` و `animate={{height: 'auto', opacity: 1, scale: 1}}` و `exit` معكوس — يلفّ الـmount/unmount بالكامل حتى لا يحدث pop مفاجئ.
+- المساحة العلوية (`paddingTop: 64`) في `<main>` تتحرّك أيضًا بسلاسة عند الإخفاء (تنزل إلى `0`) عبر CSS `transition: padding 280ms cubic-bezier(.32,.72,0,1)`.
 
 ## الملفات المتأثّرة
 
 | الملف | التعديل |
 |---|---|
-| `src/island/DynamicIsland.tsx` | إعادة بناء حالة `search` بأربع مراحل داخلية، morph موحّد، إضافة قوائم suggestions + results داخل نفس الـ motion shell. |
-| `src/island/IslandContext.tsx` | لا تغيير وظيفي. (state يبقى `search`؛ المراحل الفرعية محلية في الكومبوننت.) |
-| `src/island/useIslandSearch.ts` (جديد) | hook مخصّص: query state, debounce, recent searches, fetch suggestions + results عبر supabase حسب scope. |
-| `src/index.css` | إضافة فئة `.island-search-row` و `.island-result-thumb` لتنسيق القوائم الداخلية بـ glass خفيف، وضمان `overflow: hidden` مع `border-radius` متغيّر. |
-| `src/lib/i18n/types.ts` + `ar/en/ku.ts` | 5 مفاتيح: `island_recent`, `island_suggestions`, `island_results`, `island_view_all`, `island_no_results`. |
+| `src/island/IslandContext.tsx` | إضافة قائمة `HIDDEN_PREFIXES` ودالة `isIslandHidden(path)`، تصدير `visible` ضمن قيمة السياق، وتوسيع `routeDefault` لتفعيل حالة `promo` على سطوح التسوّق والمجتمع. |
+| `src/island/DynamicIsland.tsx` | قراءة `visible` من السياق ولفّ الجزيرة بـ `<AnimatePresence>` خارجي + `motion.div` بـ `initial/animate/exit` لانكماش وتمدد ناعم. عند `!visible` لا يُرندَر شيء داخل الـpresence. |
+| `src/App.tsx` | حذف الـ flag المحلية `hideChrome` للجزيرة (تبقى للـreels فقط داخل `IslandProvider`)؛ السماح بـ `<DynamicIsland />` بشكل دائم تحت `IslandProvider` (هي ستخفي نفسها). تحريك `paddingTop` في `<main>` ليصبح ديناميكيًا حسب `visible` عبر هوك صغير `useIsland` أو CSS variable. |
 
 ## ملاحظات تقنية
 
-- **حساب الأحجام ديناميكيًا**: دالة `searchShape(stage, query, resultsCount)` ترجع `{width, height, radius}` بدلًا من جداول ثابتة، مع `clamp` على عرض الشاشة (`maxWidth: calc(100vw - 16px)`).
-- **منع تجاوز الشاشة**: على الموبايل، `width` يصبح `min(calc(100vw - 24px), targetWidth)`.
-- **إغلاق خارجي**: `useEffect` يستمع لـ `mousedown` خارج الـ ref + مفتاح `Escape`.
-- **Accessibility**: `role="combobox"`, `aria-expanded`, `aria-controls` للحقل؛ `role="listbox"` للاقتراحات؛ تنقّل بالأسهم ↑↓ + Enter.
-- **أداء**: المنتجات تُحمّل lazy؛ الصور بحجم 40×40 بـ `loading="lazy"`؛ debounce يمنع spam على Supabase.
-- **التراجع عن السلوك القديم**: حالة `search` في `category`/`product` (زر العدسة) تفتح نفس الجزيرة الموسّعة بدلًا من توجيه فوري — تجربة موحّدة في كل الصفحات.
+- الفحص يعتمد `startsWith` لأن مسارات مثل `/order/abc` و `/games/winners` يجب أن تُخفي.
+- ترتيب الفحص: المسارات المخفية أولاً → ثم تحديد الحالة. هكذا لو ظهرت مسارات إدارية فرعية تظل مخفية تلقائيًا.
+- لا يُستخدم `lazy` للجزيرة (تبقى مدمجة بـ `import` مباشر) لضمان عدم وميض عند العودة لصفحة مرئية.
+- الانتقال يستخدم نفس `shellSpring` الحالي للحفاظ على إحساس apple-style موحّد بين كل التحويلات.
 
