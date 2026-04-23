@@ -1380,4 +1380,7 @@ export const ku: TranslationKeys = {
   evd_didnt_receive: 'کۆدەکەت پێ نەگەیشت؟',
   evd_resend_after: 'دوبارە بنێرە دوای {seconds} چرکە',
   evd_resend_btn: 'دووبارە ناردنی کۆد',
+
+  island_search_placeholder: 'گەڕان بۆ بەرهەمەکان…',
+  island_back: 'گەڕانەوە',
 };

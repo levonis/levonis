@@ -1991,3 +1991,73 @@ body {
 .animate-ticker {
   animation: ticker-scroll 20s linear infinite;
 }
+
+/* ============ Dynamic Island ============ */
+@layer base {
+  :root {
+    --island-bg: 240 20% 12%;
+    --island-stroke-from: 270 90% 80%;
+    --island-stroke-to: 195 90% 70%;
+    --gradient-island-stroke: linear-gradient(
+      135deg,
+      hsl(var(--island-stroke-from) / 0.55),
+      hsl(var(--island-stroke-to) / 0.25) 50%,
+      hsl(var(--island-stroke-from) / 0.5)
+    );
+    --shadow-island:
+      0 10px 30px -8px hsl(240 80% 2% / 0.7),
+      0 4px 14px -4px hsl(270 80% 30% / 0.35),
+      0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
+      0 -1px 0 0 hsl(0 0% 0% / 0.4) inset;
+  }
+}
+
+@layer components {
+  .island-surface {
+    position: relative;
+    background: hsl(var(--island-bg) / 0.5);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    box-shadow: var(--shadow-island);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .island-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-island-stroke);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+  .island-surface::after {
+    content: "";
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 0;
+    height: 45%;
+    border-radius: inherit;
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.18), hsl(0 0% 100% / 0) 100%);
+    pointer-events: none;
+    filter: blur(2px);
+  }
+
+  .marquee-track {
+    display: inline-flex;
+    gap: 3rem;
+    animation: marquee 22s linear infinite;
+    white-space: nowrap;
+    will-change: transform;
+  }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0%); }
+  to   { transform: translateX(-50%); }
+}

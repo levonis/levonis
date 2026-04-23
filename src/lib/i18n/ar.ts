@@ -1380,4 +1380,7 @@ export const ar: TranslationKeys = {
   evd_didnt_receive: 'لم تستلم الرمز؟',
   evd_resend_after: 'إعادة الإرسال بعد {seconds} ثانية',
   evd_resend_btn: 'إعادة إرسال الرمز',
+
+  island_search_placeholder: 'ابحث عن المنتجات…',
+  island_back: 'رجوع',
 };

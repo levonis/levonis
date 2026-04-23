@@ -1380,4 +1380,7 @@ export const en: TranslationKeys = {
   evd_didnt_receive: "Didn't receive the code?",
   evd_resend_after: 'Resend in {seconds} s',
   evd_resend_btn: 'Resend code',
+
+  island_search_placeholder: 'Search products…',
+  island_back: 'Back',
 };

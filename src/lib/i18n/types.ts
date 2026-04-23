@@ -1388,4 +1388,8 @@ export type TranslationKeys = {
   evd_didnt_receive: string;
   evd_resend_after: string;
   evd_resend_btn: string;
+
+  // Dynamic Island
+  island_search_placeholder: string;
+  island_back: string;
 };
