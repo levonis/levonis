@@ -45,7 +45,7 @@ const ProductCard = ({
   originalPrice, 
   imageUrl,
   images,
-  currency = 'دينار عراقي',
+  currency,
   slug,
   priority = false,
   inStock = true,
@@ -57,7 +57,8 @@ const ProductCard = ({
   descriptionEn = null,
   descriptionKu = null,
 }: ProductCardProps) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const resolvedCurrency = currency ?? t('product_default_currency');
   const [isAdding, setIsAdding] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const { getDiscount } = useProductCardDiscount();
