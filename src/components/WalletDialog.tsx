@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import OriginExpandShell, { type OriginRect } from "@/components/profile/OriginExpandShell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 interface WalletDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  originRect?: OriginRect | null;
 }
 
 interface PaymentMethod {
@@ -60,7 +61,7 @@ interface WalletSettings {
   payment_methods: PaymentMethod[];
 }
 
-export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) {
+export default function WalletDialog({ open, onOpenChange, originRect }: WalletDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
@@ -337,15 +338,17 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(open) => {
-        onOpenChange(open);
-        if (!open) resetDepositForm();
-      }}>
-        <DialogContent 
-          className="max-w-md p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col bg-gradient-to-b from-background via-background to-card/50" 
-          dir="rtl"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
+      <OriginExpandShell
+        open={open}
+        onOpenChange={(o) => {
+          onOpenChange(o);
+          if (!o) resetDepositForm();
+        }}
+        originRect={originRect ?? null}
+        panelClassName="pointer-events-auto relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-background via-background to-card/50 shadow-2xl flex flex-col p-0"
+      >
+
+
           {/* Compact Balance Header */}
           <div className="relative p-4 pb-3 border-b border-border/50">
             <div className="flex items-center gap-3">
@@ -629,8 +632,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
               </ScrollArea>
             </TabsContent>
           </Tabs>
-        </DialogContent>
-      </Dialog>
+      </OriginExpandShell>
 
       {/* Deposit Confirmation */}
       <AlertDialog open={showDepositConfirm} onOpenChange={setShowDepositConfirm}>

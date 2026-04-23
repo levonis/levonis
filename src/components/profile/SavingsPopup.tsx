@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TrendingUp, Tag, Ticket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatPrice } from '@/lib/utils';
+import OriginExpandShell, { type OriginRect } from './OriginExpandShell';
 
 interface SavingsPopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
+  originRect?: OriginRect | null;
 }
 
 interface SavingsItem {
@@ -23,13 +23,12 @@ interface SavingsItem {
   type: 'discount' | 'coupon';
 }
 
-export default function SavingsPopup({ open, onOpenChange, userId }: SavingsPopupProps) {
+export default function SavingsPopup({ open, onOpenChange, userId, originRect }: SavingsPopupProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['user-savings-popup', userId],
     enabled: open && !!userId,
     staleTime: 30_000,
     queryFn: async () => {
-      // Get orders with their items and product original prices
       const { data: orders, error } = await supabase
         .from('orders')
         .select(`
@@ -50,7 +49,6 @@ export default function SavingsPopup({ open, onOpenChange, userId }: SavingsPopu
       let totalCouponSavings = 0;
 
       orders?.forEach((order) => {
-        // Product discount savings
         order.order_items?.forEach((item: any) => {
           const product = item.products;
           if (product?.original_price && product.original_price > product.price) {
@@ -73,7 +71,6 @@ export default function SavingsPopup({ open, onOpenChange, userId }: SavingsPopu
           }
         });
 
-        // Coupon discount savings
         const couponDiscount = Number(order.discount_amount) || 0;
         if (couponDiscount > 0) {
           totalCouponSavings += couponDiscount;
@@ -100,15 +97,18 @@ export default function SavingsPopup({ open, onOpenChange, userId }: SavingsPopu
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-hidden" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-500" />
-            التوفير الخاص بك
-          </DialogTitle>
-        </DialogHeader>
-
+    <OriginExpandShell
+      open={open}
+      onOpenChange={onOpenChange}
+      originRect={originRect ?? null}
+      title={
+        <span className="flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-green-500" />
+          التوفير الخاص بك
+        </span>
+      }
+    >
+      <div className="space-y-4">
         {/* Total Savings Summary */}
         <div className="rounded-2xl p-5 text-center" style={{ background: 'linear-gradient(135deg, hsl(142 71% 45% / 0.15), hsl(142 71% 45% / 0.05))' }}>
           <p className="text-xs text-muted-foreground mb-1">إجمالي التوفير</p>
@@ -137,7 +137,7 @@ export default function SavingsPopup({ open, onOpenChange, userId }: SavingsPopu
         {/* Savings Items */}
         <div className="space-y-1">
           <h3 className="text-sm font-bold text-foreground">تفاصيل التوفير</h3>
-          <div className="max-h-[35vh] overflow-y-auto space-y-2 pr-1">
+          <div className="space-y-2 pr-1">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 rounded-xl" />
@@ -173,7 +173,7 @@ export default function SavingsPopup({ open, onOpenChange, userId }: SavingsPopu
             )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </OriginExpandShell>
   );
 }

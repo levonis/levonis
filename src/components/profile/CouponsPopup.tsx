@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,10 +13,12 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import OriginExpandShell, { type OriginRect } from './OriginExpandShell';
 
 interface CouponsPopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  originRect?: OriginRect | null;
 }
 
 interface SpecialCoupon {
@@ -68,7 +69,7 @@ const discountLabels: Record<string, string> = {
   min_purchase_delivery: "توصيل مجاني عند الشراء",
 };
 
-export default function CouponsPopup({ open, onOpenChange }: CouponsPopupProps) {
+export default function CouponsPopup({ open, onOpenChange, originRect }: CouponsPopupProps) {
   const navigate = useNavigate();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedDiscount, setSelectedDiscount] = useState<StoreDiscount | null>(null);
@@ -136,50 +137,51 @@ export default function CouponsPopup({ open, onOpenChange }: CouponsPopupProps) 
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden p-0" dir="rtl">
-          {/* Header */}
-          <div className="sticky top-0 z-10 px-5 pt-5 pb-3 bg-gradient-to-b from-card to-card/95 backdrop-blur-xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                  <Sparkles className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div>
-                  <span className="text-sm font-black">العروض والخصومات</span>
-                  <p className="text-[9px] text-muted-foreground font-normal mt-0.5">وفّر مع كل طلب</p>
-                </div>
-              </DialogTitle>
-            </DialogHeader>
-
-            {/* Stats chips */}
-            {!isLoading && hasContent && (
-              <div className="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-hide">
-                {discountsByStore.size > 0 && (
-                  <div className="flex items-center gap-1.5 bg-primary/10 rounded-full px-2.5 py-1 shrink-0">
-                    <Store className="h-2.5 w-2.5 text-primary" />
-                    <span className="text-[9px] font-bold text-primary">{discountsByStore.size} متجر</span>
-                  </div>
-                )}
-                {storeDiscounts && storeDiscounts.length > 0 && (
-                  <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
-                    <Zap className="h-2.5 w-2.5 text-foreground" />
-                    <span className="text-[9px] font-bold">{storeDiscounts.length} عرض</span>
-                  </div>
-                )}
-                {coupons && coupons.length > 0 && (
-                  <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
-                    <Ticket className="h-2.5 w-2.5 text-foreground" />
-                    <span className="text-[9px] font-bold">{coupons.length} كوبون</span>
-                  </div>
-                )}
+      <OriginExpandShell
+        open={open}
+        onOpenChange={onOpenChange}
+        originRect={originRect ?? null}
+        panelClassName="pointer-events-auto relative w-full max-w-md max-h-[88vh] overflow-hidden rounded-3xl border border-white/15 bg-card/95 backdrop-blur-xl shadow-2xl flex flex-col p-0"
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <div>
+              <span className="text-sm font-black">العروض والخصومات</span>
+              <p className="text-[9px] text-muted-foreground font-normal mt-0.5">وفّر مع كل طلب</p>
+            </div>
+          </div>
+        }
+      >
+        {/* Stats chips */}
+        {!isLoading && hasContent && (
+          <div className="flex items-center gap-2 mb-3 overflow-x-auto scrollbar-hide">
+            {discountsByStore.size > 0 && (
+              <div className="flex items-center gap-1.5 bg-primary/10 rounded-full px-2.5 py-1 shrink-0">
+                <Store className="h-2.5 w-2.5 text-primary" />
+                <span className="text-[9px] font-bold text-primary">{discountsByStore.size} متجر</span>
+              </div>
+            )}
+            {storeDiscounts && storeDiscounts.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
+                <Zap className="h-2.5 w-2.5 text-foreground" />
+                <span className="text-[9px] font-bold">{storeDiscounts.length} عرض</span>
+              </div>
+            )}
+            {coupons && coupons.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
+                <Ticket className="h-2.5 w-2.5 text-foreground" />
+                <span className="text-[9px] font-bold">{coupons.length} كوبون</span>
               </div>
             )}
           </div>
+        )}
 
-          {/* Content */}
-          <div className="overflow-y-auto max-h-[60vh] px-5 pb-5 space-y-4">
-            {/* Store Discounts */}
+        {/* Content */}
+        <div className="space-y-4">
+          {/* Store Discounts */}
+
             {Array.from(discountsByStore.entries()).map(([storeName, discounts]) => (
               <section key={storeName} className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -318,22 +320,22 @@ export default function CouponsPopup({ open, onOpenChange }: CouponsPopupProps) 
             )}
           </div>
 
-          {/* View all button */}
-          {hasContent && (
-            <div className="px-5 pb-4">
-              <Button
-                variant="outline"
-                className="w-full h-10 rounded-2xl text-xs font-bold gap-2 border-primary/20 hover:bg-primary/5"
-                onClick={() => { navigate("/special-coupons"); onOpenChange(false); }}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                عرض الكل
-                <ChevronLeft className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        {/* View all button */}
+        {hasContent && (
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              className="w-full h-10 rounded-2xl text-xs font-bold gap-2 border-primary/20 hover:bg-primary/5"
+              onClick={() => { navigate("/special-coupons"); onOpenChange(false); }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              عرض الكل
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+      </OriginExpandShell>
+
 
       {/* Discount Detail Sheet */}
       <Sheet open={!!selectedDiscount} onOpenChange={() => setSelectedDiscount(null)}>

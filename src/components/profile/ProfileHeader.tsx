@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, type MouseEvent } from "react";
+import type { OriginRect } from "./OriginExpandShell";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,15 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   const [walletOpen, setWalletOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(false);
   const [couponsOpen, setCouponsOpen] = useState(false);
+  const [walletOrigin, setWalletOrigin] = useState<OriginRect | null>(null);
+  const [savingsOrigin, setSavingsOrigin] = useState<OriginRect | null>(null);
+  const [couponsOrigin, setCouponsOrigin] = useState<OriginRect | null>(null);
+
+  const captureOrigin = (e: MouseEvent<HTMLButtonElement>): OriginRect => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return { x: r.left, y: r.top, width: r.width, height: r.height };
+  };
+
 
   // Detect active card → drives both VIP+ CTA and the card background color
   const { data: activeCard } = useQuery({
@@ -172,14 +182,17 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       label: t('ph_label_points'),
       value: userPoints?.available_points ?? 0,
       loading: pointsLoading,
-      onClick: () => navigate("/rewards?tab=points&sub=summary"),
+      onClick: (_e: MouseEvent<HTMLButtonElement>) => navigate("/rewards?tab=points&sub=summary"),
     },
     {
       icon: Ticket,
       label: t('ph_label_coupons'),
       value: couponsCount ?? 0,
       loading: couponsLoading,
-      onClick: () => setCouponsOpen(true),
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        setCouponsOrigin(captureOrigin(e));
+        setCouponsOpen(true);
+      },
     },
     {
       icon: Wallet,
@@ -187,7 +200,10 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: wallet?.balance ?? 0,
       loading: walletLoading,
       suffix: t('ph_currency_iqd'),
-      onClick: () => setWalletOpen(true),
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        setWalletOrigin(captureOrigin(e));
+        setWalletOpen(true);
+      },
     },
     {
       icon: TrendingUp,
@@ -195,7 +211,10 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       value: totalSavings ?? 0,
       loading: savingsLoading,
       suffix: t('ph_currency_iqd'),
-      onClick: () => setSavingsOpen(true),
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        setSavingsOrigin(captureOrigin(e));
+        setSavingsOpen(true);
+      },
     },
   ];
 
@@ -308,15 +327,18 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
       <WalletDialog
         open={walletOpen}
         onOpenChange={setWalletOpen}
+        originRect={walletOrigin}
       />
       <SavingsPopup
         open={savingsOpen}
         onOpenChange={setSavingsOpen}
         userId={userId}
+        originRect={savingsOrigin}
       />
       <CouponsPopup
         open={couponsOpen}
         onOpenChange={setCouponsOpen}
+        originRect={couponsOrigin}
       />
     </>
   );
