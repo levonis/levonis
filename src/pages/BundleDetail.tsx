@@ -307,7 +307,7 @@ const BundleDetail = () => {
           </div>
           <div
             className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2"
-            style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'auto' }}
+            style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'auto' }}
           >
             {bundle.items.map((item: any, idx: number) => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
