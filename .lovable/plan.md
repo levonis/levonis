@@ -1,27 +1,33 @@
 
 
-## إزالة الخلفية الثانوية في `/community`
+## تنظيف الـ imports غير المستخدمة في `Home.tsx`
 
-### المشكلة
-صفحة `CommunityHome` تضيف طبقة `bg-background/95 backdrop-blur-sm` فوق خلفية الموقع الرئيسية (`AppBackground`)، فتظهر "خلفية ثانية" تطمس الأصلية.
+### العناصر التي أصبحت غير مستخدمة بعد إزالة `CommunitySection`
+- `AnimatedDivider` (سطر 11) — كان فقط للفاصل أعلى قسم المجتمع.
+- `ErrorBoundaryFallback` (الكلاس، أسطر 22–30) — كان يلفّ `<CommunitySection />` فقط.
+- نتيجة لذلك: `Component` و`ReactNode` من `react` (سطر 1) لا تُستخدم في أي مكان آخر.
 
-### التغيير
-ملف `src/pages/CommunityHome.tsx` — السطر 8:
-- استبدال:
-  ```
-  <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-  ```
-- بـ:
-  ```
-  <div className="min-h-screen">
-  ```
+### التغييرات (`src/pages/Home.tsx`)
 
-بذلك تختفي طبقة الخلفية والـ blur، وتظهر خلفية الموقع الرئيسية كما هي خلف محتوى المجتمع، دون تأثير على التخطيط أو المحتوى.
+1. سطر 1 — تقليص استيراد React:
+   - من: `import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';`
+   - إلى: `import { useMemo, lazy, Suspense, memo } from 'react';`
 
-### بدون تغييرات
-- `CommunitySection` و`CommunityGiftsButton` و`Footer` تبقى كما هي.
-- لا تعديل على الراوتر أو `AppBackground`.
+2. سطر 11 — حذف:
+   ```
+   import AnimatedDivider from '@/components/ui/animated-divider';
+   ```
+
+3. أسطر 22–30 — حذف كلاس `ErrorBoundaryFallback` بالكامل (التعليق التمهيدي + الكلاس).
+
+### يبقى كما هو
+- `useMemo`, `lazy`, `Suspense`, `memo` — كلها لا تزال مستخدمة.
+- باقي الأقسام والمكونات (`StoriesBar`, `BundlesSection`, `ReelsBar`, `OffersStorageSection`, `BannerCarousel`, `CategoryCard`, `Footer`, `ProgressiveSection`) دون تغيير.
+
+### الأثر
+- إزالة dependency على `animated-divider` من حزمة الصفحة الرئيسية.
+- إزالة كود الـ Error Boundary غير المستخدم (~9 أسطر) → حزمة Home أصغر.
 
 ### الملف المعدّل
-- `src/pages/CommunityHome.tsx`
+- `src/pages/Home.tsx`
 
