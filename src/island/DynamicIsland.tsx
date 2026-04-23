@@ -319,6 +319,11 @@ export const DynamicIsland = () => {
   };
 
   const messages = promoMessages.length ? promoMessages : [];
+  const marqueeItems = useMemo(() => {
+    if (!messages.length) return [] as string[];
+    const repeatCount = Math.max(8, Math.ceil(24 / messages.length));
+    return Array.from({ length: repeatCount }, () => messages).flat();
+  }, [messages]);
 
   /* ---------- Render ---------- */
   return (
@@ -413,26 +418,18 @@ export const DynamicIsland = () => {
                   }}
                 >
                   {messages.length > 0 ? (
-                    (() => {
-                      // Repeat messages enough times to fill a wide marquee
-                      // track. The animation uses translateX(-50%) so the
-                      // content MUST be exactly two identical halves for the
-                      // loop to be seamless. We build one "half" with enough
-                      // repetitions to be visually long, then duplicate it.
-                      const REPEAT = Math.max(6, Math.ceil(20 / messages.length));
-                      const half = Array.from({ length: REPEAT }, () => messages).flat();
-                      const full = [...half, ...half];
-                      return (
-                        <div dir="ltr" className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
-                          {full.map((m, i) => (
-                            <span key={i} className="inline-flex items-center gap-3">
+                    <div dir="ltr" className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
+                      {[0, 1].map((group) => (
+                        <div key={group} className="marquee-group" aria-hidden={group === 1}>
+                          {marqueeItems.map((m, i) => (
+                            <span key={`${group}-${i}`} className="inline-flex items-center gap-3">
                               <span dir="auto" className="text-foreground/90">{m}</span>
                               <span aria-hidden="true" className="text-foreground/35">•</span>
                             </span>
                           ))}
                         </div>
-                      );
-                    })()
+                      ))}
+                    </div>
                   ) : (
                     <span className="text-[12px] font-medium text-foreground/70">LEVONIS</span>
                   )}

@@ -2178,15 +2178,21 @@ body {
 
   .marquee-track {
     display: flex;
+    align-items: center;
     width: max-content;
+    min-width: 100%;
     flex: none;
-    gap: 3rem;
-    /* trailing gap so the seam between the duplicated halves matches the
-       inter-item spacing — prevents a visible "jump" at the loop point */
-    padding-inline-end: 3rem;
     animation: island-marquee 22s linear infinite;
     white-space: nowrap;
     will-change: transform;
+  }
+
+  .marquee-group {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 2.5rem;
+    padding-inline-end: 2.5rem;
   }
 
   .island-search-row {
