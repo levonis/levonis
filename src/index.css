@@ -1978,114 +1978,53 @@
   transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
 }
 
-/* ===========================================================
-   ProductCard — VisionOS / Soft Glass UI
-   Floating card with deep soft shadow, frosted surface, light
-   reflection in the top corner, micro grain, and an engraved
-   text treatment for headings & prices.
-   =========================================================== */
+/* Glass card for ProductCard (main store) */
 .product-card-glass {
   position: relative;
-  border-radius: 1.5rem;                      /* 24px — generous radius */
-  isolation: isolate;
-  background:
-    linear-gradient(
-      155deg,
-      hsl(var(--background) / 0.55) 0%,
-      hsl(var(--background) / 0.32) 60%,
-      hsl(var(--background) / 0.48) 100%
-    );
-  backdrop-filter: blur(28px) saturate(1.55);
-  -webkit-backdrop-filter: blur(28px) saturate(1.55);
-  border: 1px solid hsl(0 0% 100% / 0.06);    /* hairline edge */
+  overflow: hidden;
+  border-radius: 0.5rem;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background: linear-gradient(
+    170deg,
+    hsl(160 35% 14% / 0.3) 0%,
+    hsl(160 30% 10% / 0.4) 50%,
+    hsl(160 25% 8% / 0.5) 100%
+  );
+  border: 1px solid hsl(160 40% 35% / 0.18);
   box-shadow:
-    0 22px 50px -22px hsl(0 0% 0% / 0.55),    /* deep ambient shadow */
-    0 8px 20px -10px hsl(0 0% 0% / 0.32),     /* mid contact shadow */
-    inset 0 1px 0 hsl(0 0% 100% / 0.08),      /* top edge highlight */
-    inset 0 -1px 0 hsl(0 0% 0% / 0.22);       /* bottom inner shade */
-  transition:
-    transform 380ms cubic-bezier(.22, 1, .36, 1),
-    box-shadow 380ms cubic-bezier(.22, 1, .36, 1);
+    0 4px 20px hsl(160 30% 4% / 0.35),
+    inset 0 1px 0 hsl(155 60% 50% / 0.12),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.25);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transform: perspective(800px) rotateX(0.8deg);
+  transform-style: preserve-3d;
 }
 
-/* Top-corner light reflection */
 .product-card-glass::before {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(
-      120% 60% at 18% 0%,
-      hsl(0 0% 100% / 0.10) 0%,
-      transparent 55%
-    );
+  top: 0;
+  left: -15%;
+  width: 55%;
+  height: 40%;
+  background: linear-gradient(
+    135deg,
+    hsl(155 50% 60% / 0.1) 0%,
+    transparent 55%
+  );
+  border-radius: 0 0 50% 0;
   pointer-events: none;
-  z-index: 1;
-}
-
-/* Subtle grain layer for a real-glass feel */
-.product-card-glass::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: 160px 160px;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.product-card-glass > * {
-  position: relative;
-  z-index: 3;
+  z-index: 15;
 }
 
 .product-card-glass:hover {
-  transform: translateY(-4px);
   box-shadow:
-    0 30px 60px -22px hsl(0 0% 0% / 0.6),
-    0 14px 28px -12px hsl(0 0% 0% / 0.42),
-    inset 0 1px 0 hsl(0 0% 100% / 0.14),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.22),
-    0 0 28px hsl(var(--primary) / 0.18);      /* gentle brand glow */
-}
-
-/* Soft cast shadow beneath the floating product image */
-.product-card-glass .floating-img-shadow {
-  position: absolute;
-  bottom: -8%;
-  left: 12%;
-  right: 12%;
-  height: 16%;
-  background: radial-gradient(
-    50% 100% at 50% 0%,
-    hsl(0 0% 0% / 0.42) 0%,
-    transparent 70%
-  );
-  filter: blur(10px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Engraved-glass text treatment — fine highlight + recess shadow */
-.engraved-text {
-  text-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.07),
-    0 -1px 0 hsl(0 0% 0% / 0.32);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .product-card-glass,
-  .product-card-glass:hover {
-    transition: none;
-    transform: none;
-  }
-  .product-card-glass:hover img {
-    transform: none !important;
-  }
+    0 8px 32px hsl(160 40% 8% / 0.5),
+    inset 0 1px 0 hsl(155 60% 50% / 0.2),
+    inset 0 -1px 0 hsl(160 20% 5% / 0.25),
+    0 0 16px hsl(155 50% 30% / 0.12);
+  transform: perspective(800px) rotateX(0.4deg) translateY(-2px);
 }
 
 /* Telegram Mini App viewport fix */
