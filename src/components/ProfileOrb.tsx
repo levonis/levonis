@@ -111,12 +111,15 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Direction the orb tucks away towards (off-screen edge).
-  const tuckTransform = scrolled
-    ? isRtl
-      ? "translate(8px, -4px) scale(0.75)"
-      : "translate(-8px, -4px) scale(0.75)"
-    : "translate(0, 0) scale(1)";
+  // Smoothly interpolate visual properties so the orb appears to dissolve
+  // into the island instead of snapping out.
+  const p = mergeProgress;
+  const opacity = 1 - p;
+  const scale = 1 - p * 0.45; // 1 → 0.55
+  const translateX = (isRtl ? 1 : -1) * p * 6; // drift toward the screen edge
+  const translateY = -p * 6; // and a touch up toward the island
+  const blurPx = p * 2.5; // soft gaussian as it fades into the island
+  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
   return (
     <button
@@ -127,16 +130,18 @@ const ProfileOrb = memo(() => {
         "fixed top-3 z-[55] w-10 h-10 rounded-full overflow-hidden",
         "glass-panel !rounded-full",
         "flex items-center justify-center",
-        "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[transform,opacity,filter] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
         "ring-1 ring-white/20 hover:ring-primary/50",
         "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
-        scrolled ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
         sideClass,
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
         transform: tuckTransform,
+        opacity,
+        filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
+        pointerEvents: p > 0.6 ? "none" : "auto",
       }}
     >
       {/* Avatar — softened with blur + lowered opacity for a frosted feel */}
