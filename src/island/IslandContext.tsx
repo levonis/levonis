@@ -104,8 +104,13 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
 
   const routeDefault = useMemo<{ state: IslandState; title?: string }>(() => {
     const p = location.pathname;
-    if (p.startsWith("/product/")) return { state: "product" };
-    if (p.startsWith("/category/")) return { state: "category" };
+    // For product/category pages we intentionally do NOT preset state here.
+    // The page itself will call setContext(state, title) once the real title
+    // is loaded — until then the island stays in its neutral search state so
+    // the user never sees a flash of the generic "Categories" / "Products"
+    // label before the actual name appears.
+    if (p.startsWith("/product/")) return { state: "search" };
+    if (p.startsWith("/category/")) return { state: "search" };
     // Show promo marquee when not scrolled on the main shopping & community surfaces.
     const promoSurfaces =
       p === "/" ||

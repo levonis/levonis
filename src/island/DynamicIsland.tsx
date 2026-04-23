@@ -613,7 +613,7 @@ export const DynamicIsland = () => {
                       }}
                       className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
                     >
-                      {title ?? t("nav_categories")}
+                      {title ?? ""}
                     </motion.span>
                   </AnimatePresence>
                 </div>
@@ -656,7 +656,7 @@ export const DynamicIsland = () => {
                       }}
                       className="block truncate text-[12.5px] font-semibold tracking-tight text-foreground"
                     >
-                      {title ?? t("nav_products")}
+                      {title ?? ""}
                     </motion.span>
                   </AnimatePresence>
                 </div>
