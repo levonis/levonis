@@ -109,14 +109,14 @@ export const DynamicIsland = () => {
               transition={contentTransition}
               onSubmit={submitSearch}
               className="flex h-full w-full items-center gap-2.5 px-4 text-start"
-              aria-label={t("island_search_placeholder" as any)}
+              aria-label={t("island_search_placeholder")}
             >
               <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={2.25} />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 type="search"
-                placeholder={t("island_search_placeholder" as any)}
+                placeholder={t("island_search_placeholder")}
                 className="flex-1 bg-transparent text-[13px] font-medium text-foreground placeholder:text-foreground/45 outline-none border-0"
               />
               <kbd className="hidden sm:inline-block rounded-md border border-foreground/10 bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium text-foreground/55">
@@ -137,7 +137,7 @@ export const DynamicIsland = () => {
               <button
                 onClick={() => navigate(-1)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-foreground/5 text-foreground/85 transition hover:bg-foreground/10 active:scale-95"
-                aria-label={t("island_back" as any)}
+                aria-label={t("island_back")}
               >
                 <BackIcon className="h-4 w-4" strokeWidth={2.25} />
               </button>
@@ -147,7 +147,7 @@ export const DynamicIsland = () => {
               <button
                 onClick={goSearch}
                 className="grid h-8 w-8 place-items-center rounded-full bg-foreground/5 text-foreground/85 transition hover:bg-foreground/10 active:scale-95"
-                aria-label={t("island_search_placeholder" as any)}
+                aria-label={t("island_search_placeholder")}
               >
                 <Search className="h-4 w-4" strokeWidth={2.25} />
               </button>
@@ -166,7 +166,7 @@ export const DynamicIsland = () => {
               <button
                 onClick={() => navigate(-1)}
                 className="grid h-8 w-8 place-items-center rounded-full bg-foreground/5 text-foreground/85 transition hover:bg-foreground/10 active:scale-95"
-                aria-label={t("island_back" as any)}
+                aria-label={t("island_back")}
               >
                 <BackIcon className="h-4 w-4" strokeWidth={2.25} />
               </button>
