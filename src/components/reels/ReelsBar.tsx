@@ -62,8 +62,8 @@ export default function ReelsBar() {
           className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4"
           style={{
             WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-y pinch-zoom',
             overscrollBehaviorX: 'contain',
+            overscrollBehaviorY: 'auto',
           }}
         >
           {reels.map((reel) => (
