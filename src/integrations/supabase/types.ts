@@ -941,6 +941,8 @@ export type Database = {
           icon: string
           id: string
           main_section_id: string | null
+          media_type: string | null
+          media_url: string | null
           name: string
           name_ar: string
           name_ku: string | null
@@ -957,6 +959,8 @@ export type Database = {
           icon: string
           id?: string
           main_section_id?: string | null
+          media_type?: string | null
+          media_url?: string | null
           name: string
           name_ar: string
           name_ku?: string | null
@@ -973,6 +977,8 @@ export type Database = {
           icon?: string
           id?: string
           main_section_id?: string | null
+          media_type?: string | null
+          media_url?: string | null
           name?: string
           name_ar?: string
           name_ku?: string | null
