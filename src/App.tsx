@@ -1,5 +1,5 @@
 // App component - main application entry point - v11 (premium loading)
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -146,6 +146,15 @@ function AppContent() {
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const hideChrome = isGamesPage || isReelsPage;
 
+  useEffect(() => {
+    if (isReelsPage) return;
+
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.inset = "";
+    document.body.style.width = "";
+  }, [location.pathname, isReelsPage]);
+
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
   const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
@@ -163,6 +172,7 @@ function AppContent() {
         <Suspense fallback={<RouteAwareSkeleton />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/products" element={<Navigate to="/categories" replace />} />
             <Route path="/products/*" element={<Navigate to="/categories" replace />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
