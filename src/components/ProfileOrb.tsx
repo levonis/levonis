@@ -176,7 +176,7 @@ const ProfileOrb = memo(() => {
         transform: tuckTransform,
         opacity,
         filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
-        pointerEvents: fullyMerged || p > 0.6 ? "none" : "auto",
+        pointerEvents: visual.pointerEventsAuto ? "auto" : "none",
         visibility: fullyMerged ? "hidden" : "visible",
       }}
     >
