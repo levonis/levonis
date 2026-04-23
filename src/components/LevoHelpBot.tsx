@@ -59,7 +59,7 @@ const finders = {
   customRequestBtn: () => document.querySelector('button[aria-label="طلب منتج مخصص"]') as HTMLElement | null,
   categoriesLink: () => {
     const links = document.querySelectorAll('a');
-    for (const l of links) { if (l.getAttribute('href') === '/categories') return l as HTMLElement; }
+    for (const l of links) { if (l.getAttribute('href') === '/') return l as HTMLElement; }
     return null;
   },
   communityLink: () => {

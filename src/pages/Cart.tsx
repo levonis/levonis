@@ -2841,7 +2841,7 @@ const Cart = () => {
                   </Button>
                 )}
 
-                <Link to="/categories">
+                <Link to="/">
                   <Button 
                     variant="outline"
                     className="w-full"
