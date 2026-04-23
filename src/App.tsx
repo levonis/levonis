@@ -176,6 +176,11 @@ function AppContent() {
       </Suspense>
       <DynamicIsland />
       <ProfileOrb />
+      <ProfileExpansionShell>
+        <RequireAuth>
+          <Profile />
+        </RequireAuth>
+      </ProfileExpansionShell>
       <main
         style={{ paddingTop: mainPaddingTop }}
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
