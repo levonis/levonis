@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useRef } from 'react';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 interface ReelThumb {
   id: string;
