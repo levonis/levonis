@@ -35,6 +35,32 @@ const CategoryCard = ({
   const showImage = !!mediaUrl && !showVideo;
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
 
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    if (!mediaUrl) return;
+    const el = linkRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            setInView(true);
+            io.disconnect();
+          }
+        });
+      },
+      { rootMargin: "200px", threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [mediaUrl]);
+
   return (
     <Link
       to={`/category/${slug}`}
