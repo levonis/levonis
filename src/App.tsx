@@ -330,7 +330,9 @@ export default function App() {
           <LanguageProvider>
             <AuthProvider>
               <CartProvider>
-                <AppContent />
+                <IslandProvider>
+                  <AppContent />
+                </IslandProvider>
               </CartProvider>
             </AuthProvider>
           </LanguageProvider>
