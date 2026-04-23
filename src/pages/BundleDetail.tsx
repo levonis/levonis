@@ -204,7 +204,7 @@ const BundleDetail = () => {
         {bundle.allImages.length > 1 && (
           <div
             className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1"
-            style={{ touchAction: 'pan-y pinch-zoom', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
           >
             {bundle.allImages.map((img: string, i: number) => (
               <button
@@ -307,7 +307,7 @@ const BundleDetail = () => {
           </div>
           <div
             className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2"
-            style={{ touchAction: 'pan-y pinch-zoom', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
           >
             {bundle.items.map((item: any, idx: number) => {
               const colors = Array.isArray(item.products?.colors) ? item.products.colors : [];
