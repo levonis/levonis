@@ -1,69 +1,105 @@
 
+## تحسين بطاقات المنتجات — إضاءة سينمائية فاخرة
 
-## خلفية تطبيق موحّدة بهوية لونية جديدة + بقعة حمراء متحركة
+سيتم تعديل **مظهر بطاقة المنتج فقط** (الألوان/الإضاءة/العمق/الحركة) دون أي تغيير في البنية أو الوظائف أو التخطيط.
 
-### الهدف
-طبقة خلفية ثابتة (fixed) تغطي كامل النافذة في كل الصفحات، تتكوّن من:
-- **#15382c (أخضر داكن)** كقاعدة ≥75%
-- **أسود** كتدرّجات/زوايا ≥20%
-- **بقعة ضوئية حمراء** ≤5% تتحرك ديناميكياً عبر الـ scroll والتنقل بين الصفحات
+### الملفات المعدلة
+1. `src/index.css` — إعادة تصميم الكلاس `.product-card-glass` (السطر 1976) + إضافة keyframes للنبض الأحمر.
+2. `src/components/ProductCard.tsx` — إضافة طبقتين زخرفيتين (glow + موجة ضوء) داخل البطاقة بشكل `pointer-events-none`.
 
-البقعة الحمراء تنتقل داخل canvas بصري كبير: **يمين عند النزول بالـscroll**، و**تنزلق عبر الحافّة (تنزل أسفل ثم تعبر للأسفل اليسار ثم تصعد)** عند الانتقال لصفحة جديدة، فتظهر دائماً في الجهة المقابلة بعد التنقّل.
+### 1) الأساس اللوني (Base)
+خلفية البطاقة تتدرج بين الأسود العميق والأخضر الداكن `#15382c`:
+```css
+background:
+  radial-gradient(120% 90% at 80% 110%, hsl(0 75% 45% / 0.10) 0%, transparent 55%),
+  linear-gradient(155deg,
+    hsl(160 35% 14% / 0.55) 0%,    /* #15382c بشفافية */
+    hsl(160 30% 8%  / 0.70) 45%,
+    hsl(0 0% 4% / 0.85) 100%);     /* أسود عميق */
+```
+- لا حدود حمراء — الأحمر يُحقن داخل التدرج كـ glow في الزاوية السفلية فقط.
+- `backdrop-filter: blur(24px) saturate(1.3)` للحفاظ على إحساس الزجاج.
 
----
+### 2) العمق (Shadows)
+```css
+box-shadow:
+  0 8px 24px -6px hsl(0 0% 0% / 0.55),               /* ظل خارجي داكن */
+  0 1px 0 hsl(160 40% 30% / 0.10) inset,             /* انعكاس علوي ناعم */
+  0 -1px 0 hsl(0 0% 0% / 0.40) inset,                /* قاعدة عميقة */
+  0 0 0 1px hsl(160 30% 20% / 0.20) inset;           /* إطار زجاجي خفي */
+```
 
-### البنية التقنية
+### 3) الـ Accent الأحمر — طبقتان داخل JSX
+تُضاف كـ `<div>` خلف المحتوى مباشرة بعد فتح الـ `<Link>` (داخل `overflow-hidden`):
 
-**1) تحديث متغيرات اللون — `src/index.css`**
-- استبدال `--background: 160 46% 15%` بـ `160 38% 15%` ≈ `#15382c` (الثيم الداكن الأصلي فقط — الثيمات الباهت/الليلي تبقى كما هي).
-- استبدال `--background-2` بـ `0 0% 4%` (أسود شبه نقي).
-- إضافة `--accent-red: 0 75% 45%` كمرجع للبقعة.
+**أ) Glow ثابت في الزاوية السفلى** (نبض ناعم دائم):
+```tsx
+<div className="card-red-glow" aria-hidden />
+```
+```css
+.product-card-glass { overflow: hidden; isolation: isolate; }
+.card-red-glow {
+  position: absolute; inset: auto -20% -30% auto;
+  width: 70%; height: 70%;
+  background: radial-gradient(circle, hsl(0 85% 50% / 0.22) 0%, transparent 65%);
+  filter: blur(28px);
+  mix-blend-mode: screen;
+  animation: card-red-pulse 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes card-red-pulse {
+  0%, 100% { opacity: 0.55; transform: translate(0,0) scale(1); }
+  50%      { opacity: 0.95; transform: translate(-4%, -3%) scale(1.08); }
+}
+```
 
-**2) مكوّن جديد `src/components/AppBackground.tsx`**
-طبقة `position: fixed; inset: 0; z-index: -1; pointer-events: none` خلف كل المحتوى، تحتوي:
-- **قاعدة لونية**: `linear-gradient(160deg, #15382c 0% 70%, #0a0a0a 100%)` + radial gradient أسود من الزاوية السفلية اليسرى → يضمن نسبة الأسود ≥20%.
-- **بقعة حمراء** عبر `<motion.div>`:
-  - قطر `38vmax`، خلفية `radial-gradient(circle, hsl(0 80% 50% / 0.55) 0%, transparent 65%)`
-  - `mix-blend-mode: screen` + `filter: blur(60px)` لتمتزج بسلاسة مع الأخضر/الأسود
-  - حركة "نَفَس" خفيفة: `scale [1, 1.05, 1]` كل 12s
+**ب) موجة ضوء حمراء عابرة** (تمر داخل البطاقة كل ~9s، وتتسارع عند hover):
+```tsx
+<div className="card-red-sweep" aria-hidden />
+```
+```css
+.card-red-sweep {
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg,
+    transparent 30%,
+    hsl(0 90% 55% / 0.10) 48%,
+    hsl(0 95% 60% / 0.18) 50%,
+    hsl(0 90% 55% / 0.10) 52%,
+    transparent 70%);
+  mix-blend-mode: screen;
+  transform: translateX(-120%);
+  animation: card-red-sweep 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes card-red-sweep {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+.group:hover .card-red-sweep { animation-duration: 4s; }
+.group:hover .card-red-glow  { animation-duration: 3s; }
+```
 
-**3) منطق تحريك البقعة (داخل نفس المكوّن)**
-استخدام `useMotionValue` + `useSpring` (stiffness: 60, damping: 18) لإحداثيات `x, y`:
+### 4) سلوك Hover
+- لا تغيير في الـ scale (يبقى `scale-103` على الصورة كما هو).
+- يزداد سطوع الـ glow الأحمر تدريجياً عبر تسريع الـ animation فقط (بدون وميض).
+- إضافة ظل أعمق خفيف على hover:
+```css
+.product-card-glass:hover {
+  box-shadow:
+    0 14px 36px -8px hsl(0 0% 0% / 0.7),
+    0 0 24px -6px hsl(0 80% 45% / 0.18),
+    0 0 0 1px hsl(160 35% 25% / 0.25) inset;
+}
+```
 
-- متغيّر داخلي `side: 'right' | 'left'` يبدأ من `'right'`.
-- **عند Scroll** (listener `passive` مع `requestAnimationFrame` throttle):
-  - `y = clamp(20vh + scrollY * 0.15, 20vh, 75vh)` → البقعة تنزل تدريجياً
-  - `x = sideBaseX + sin(scrollY/300) * 4vw` → تمايل خفيف حول الجهة الحالية
-- **عند تغيّر `location.pathname`** (`useEffect` على router):
-  1. تشغيل sequence عبر `animate()`:
-     - `y → 92vh` (نزول للأسفل)
-     - `x → الجهة المقابلة` عبر الحافة السفلية
-     - `y → 8vh` (صعود عبر الحافة المقابلة)
-     - استقرار في الموضع الجديد
-  2. قلب `side`، إعادة ربط حركة الـscroll للجهة الجديدة
-  3. مدة إجمالية ≈ 700ms بمنحنى `easeInOut`
+### مبادئ الالتزام
+- الأحمر **لا يتجاوز opacity 0.22** في أي طبقة — يبقى كضوء حي لا كلون.
+- لا توجد حدود/borders حمراء، فقط blur + screen blend.
+- الأخضر `#15382c` + الأسود يشكلان 90%+ من المساحة المرئية.
+- جميع الطبقات الجديدة `pointer-events-none` ولن تؤثر على النقر/التفاعل.
+- لا تغيير على layout/spacing/typography/أزرار البطاقة.
 
-**4) تركيب المكوّن — `src/App.tsx`**
-- استيراد عادي (ليس lazy، بسيط وحرج بصرياً).
-- وضعه داخل `<BrowserRouter>` مباشرة قبل `<Routes>` ليصل إليه `useLocation`.
-- لا حاجة لتعديل أي صفحة فردية — الخلفية تعمل تلقائياً للجميع لأن أغلب الصفحات تكشف عن `body` في الفراغات.
-
----
-
-### الملفات المتأثرة
-| ملف | التغيير |
-|---|---|
-| `src/components/AppBackground.tsx` | **جديد** — طبقة الخلفية + البقعة المتحركة |
-| `src/index.css` | تعديل `--background`/`--background-2` للثيم الداكن + إضافة `--accent-red` |
-| `src/App.tsx` | استيراد ووضع `<AppBackground />` داخل `BrowserRouter` |
-
-### الأداء
-- طبقة GPU واحدة، بلا إعادة ترتيب DOM.
-- scroll listener مع rAF throttle.
-- لا تأثير على lazy routes أو الـbackend.
-
-### خارج النطاق
-- لا تغيير على بطاقات المنتجات أو ألوان النصوص.
-- لا تغيير على ثيمي light/dark-night.
-- لا migrations.
-
+### النتيجة المتوقعة
+بطاقة داكنة فاخرة بإحساس سينمائي: قاعدة سوداء-خضراء عميقة، توهج أحمر هادئ ينبض في الزاوية السفلى، وموجة ضوء حمراء ناعمة تعبر البطاقة دورياً وتتسارع برفق عند المرور بالمؤشر — دون أي حدة أو إزعاج بصري.
