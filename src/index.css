@@ -2147,7 +2147,22 @@ input, textarea, [contenteditable="true"], [contenteditable=""],
 a, button, [role="button"], input, select, textarea, label {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+}
+
+input,
+select,
+textarea {
   touch-action: manipulation;
+}
+
+.overflow-x-auto {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  touch-action: pan-x;
+}
+
+.overflow-x-auto > * {
+  touch-action: pan-x;
 }
 
 img {
