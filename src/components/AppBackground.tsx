@@ -93,40 +93,34 @@ export default function AppBackground() {
         backgroundColor: '#15382c',
       }}
     >
-      {/* Black mass anchored opposite to the red — drifts with it */}
+      {/* Soft directional black wash — diffused across one diagonal */}
       <motion.div
-        className="absolute"
+        className="absolute inset-0"
         style={{
-          left: blackLeft,
-          top: blackTop,
-          width: '180vmax',
-          height: '180vmax',
-          marginLeft: '-90vmax',
-          marginTop: '-90vmax',
-          willChange: 'left, top',
+          willChange: 'transform',
         }}
       >
-        <div
+        <motion.div
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 0% 0% / 0.85) 0%, hsl(0 0% 0% / 0.55) 18%, hsl(0 0% 0% / 0.30) 35%, hsl(0 0% 0% / 0.12) 55%, transparent 80%)',
-            filter: 'blur(140px)',
+              'linear-gradient(var(--bg-angle, 200deg), transparent 0%, transparent 45%, hsl(0 0% 0% / 0.45) 100%)',
           }}
         />
       </motion.div>
 
-      {/* Concentrated red orb — smaller footprint, higher intensity, fully diffused */}
+      {/* Red tint layer — small, intense center, completely fades into green */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '70vmax',
-          height: '70vmax',
-          marginLeft: '-35vmax',
-          marginTop: '-35vmax',
-          mixBlendMode: 'screen',
+          width: '55vmax',
+          height: '55vmax',
+          marginLeft: '-27.5vmax',
+          marginTop: '-27.5vmax',
+          mixBlendMode: 'overlay',
+          opacity: 0.85,
           willChange: 'left, top',
         }}
       >
@@ -134,18 +128,28 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 95% 52% / 0.95) 0%, hsl(0 90% 48% / 0.55) 14%, hsl(0 85% 42% / 0.25) 30%, hsl(0 75% 35% / 0.08) 50%, transparent 78%)',
-            filter: 'blur(90px)',
+              'radial-gradient(circle, hsl(0 95% 50% / 0.95) 0%, hsl(0 85% 45% / 0.35) 18%, hsl(0 70% 35% / 0.10) 40%, transparent 70%)',
+            filter: 'blur(70px)',
           }}
         />
       </motion.div>
 
-      {/* Final unifying veil to remove any remaining edges */}
+      {/* Dominant green veil — keeps #15382c as the ruling color (>75%) */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(150% 110% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.30) 100%)',
+            'linear-gradient(180deg, hsl(155 45% 15% / 0.55) 0%, hsl(155 45% 15% / 0.35) 50%, hsl(155 45% 12% / 0.55) 100%)',
+          mixBlendMode: 'multiply',
+        }}
+      />
+
+      {/* Subtle final vignette to fuse all layers seamlessly */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(160% 120% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.25) 100%)',
         }}
       />
     </div>
