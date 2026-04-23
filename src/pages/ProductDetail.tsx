@@ -353,7 +353,7 @@ const ProductDetail = () => {
     return product.images && product.images.length > 0 ? product.images : product.image_url ? [product.image_url] : [];
   };
   const productImages = getProductImages();
-  const currency = product.currency || 'دينار عراقي';
+  const currency = product.currency || t('pd_currency_iqd');
 
 
   const allColors = Array.isArray(product.colors) ? (product.colors as any[]) : [];
@@ -548,13 +548,13 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     // Block if options exist but still loading
-    if (optionsLoading) { toast.error('جاري تحميل الخيارات...'); return; }
+    if (optionsLoading) { toast.error(t('pd_loading_options')); return; }
 
     // If direct stock is fully depleted, force fallback to preorder when available
     if (activeSaleType === 'direct' && directStockDepleted) {
       if (hasPreOrder) {
         setSelectedSaleType('preorder');
-        toast.info('نفد مخزون البيع المباشر، تم التحويل إلى الحجز المسبق');
+        toast.info(t('pd_direct_depleted_switched'));
       } else {
         toast.error(t('product_out_of_stock'));
       }
@@ -570,7 +570,7 @@ const ProductDetail = () => {
     if (activeSaleType === 'direct' && filteredOptions.length > 0 && availableOptions.length === 0) {
       if (hasPreOrder) {
         setSelectedSaleType('preorder');
-        toast.info('لا توجد خيارات متاحة للبيع المباشر، تم التحويل إلى الحجز المسبق');
+        toast.info(t('pd_no_direct_options_switched'));
       } else {
         toast.error(t('product_out_of_stock'));
       }
@@ -584,7 +584,7 @@ const ProductDetail = () => {
     if (selectedOptionState && !selectedOptionState.isAvailable) {
       if (activeSaleType === 'direct' && hasPreOrder) {
         setSelectedSaleType('preorder');
-        toast.info('الخيار المحدد غير متوفر للبيع المباشر، تم التحويل إلى الحجز المسبق');
+        toast.info(t('pd_option_unavailable_switched'));
       } else {
         toast.error(t('product_out_of_stock'));
       }
@@ -597,14 +597,14 @@ const ProductDetail = () => {
     if (activeSaleType === 'direct' && filteredColors.length > 0 && availableColors.length === 0) {
       if (hasPreOrder) {
         setSelectedSaleType('preorder');
-        toast.info('لا يوجد مخزون مباشر للألوان الحالية، تم التحويل إلى الحجز المسبق');
+        toast.info(t('pd_no_color_stock_switched'));
       } else {
         toast.error(t('product_out_of_stock'));
       }
       return;
     }
 
-    if (availableColors.length > 0 && !selectedColor) { toast.error('يرجى اختيار اللون'); return; }
+    if (availableColors.length > 0 && !selectedColor) { toast.error(t('pd_select_color')); return; }
 
     const selectedColorState = selectedColor
       ? filteredColors.find((c: any) => c.name_ar === selectedColor)
@@ -613,7 +613,7 @@ const ProductDetail = () => {
     if (selectedColorState && !selectedColorState.isAvailable) {
       if (activeSaleType === 'direct' && hasPreOrder) {
         setSelectedSaleType('preorder');
-        toast.info('اللون المحدد غير متوفر للبيع المباشر، تم التحويل إلى الحجز المسبق');
+        toast.info(t('pd_color_unavailable_switched'));
       } else {
         toast.error(t('product_out_of_stock'));
       }
@@ -624,10 +624,10 @@ const ProductDetail = () => {
     const fallbackOpts: any[] = [];
     if (preOrderShippingOptions.length === 0 && activeSaleType === 'preorder') {
       const st = product.shipping_type;
-      if ((st === 'both' || st === 'sea') && (product as any).sea_price) fallbackOpts.push({ name_ar: '🚢 شحن بحري', price_adjustment: 0, type: 'sea' });
+      if ((st === 'both' || st === 'sea') && (product as any).sea_price) fallbackOpts.push({ name_ar: t('pd_shipping_sea'), price_adjustment: 0, type: 'sea' });
       if ((st === 'both' || st === 'air') && (product as any).air_price) {
         const adj = st === 'both' ? (Number((product as any).air_price || 0) - Number((product as any).sea_price || 0)) : 0;
-        fallbackOpts.push({ name_ar: '✈️ شحن جوي', price_adjustment: adj, type: 'air' });
+        fallbackOpts.push({ name_ar: t('pd_shipping_air'), price_adjustment: adj, type: 'air' });
       }
     }
     const allShippingOpts = preOrderShippingOptions.length > 0 ? preOrderShippingOptions : fallbackOpts;
@@ -661,7 +661,7 @@ const ProductDetail = () => {
     setShowSaleTypeConflict(false);
     const success = await forceAddToCart(p.productId, p.optionId, p.color, p.quantity, p.shippingInfo, p.saleType);
     if (success) {
-      toast.success('تم تفريغ السلة وإضافة المنتج بنجاح 🛒');
+      toast.success(t('pd_cart_cleared_added'));
       setQuantity(1);
     }
     pendingAddRef.current = null;
@@ -706,7 +706,7 @@ const ProductDetail = () => {
   const isAvailableForCurrentSaleType = activeSaleType === 'preorder' ? hasPreOrder : (hasDirectSale && !directStockDepleted);
 
   const handleNotifyMe = async () => {
-    if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+    if (!user) { toast.error(t('pd_login_required')); navigate('/auth'); return; }
     const notifyColor = selectedColor || null;
     const notifyOption = selectedOptionName || null;
     setNotifyLoading(true);
@@ -721,7 +721,7 @@ const ProductDetail = () => {
         const { error } = await q;
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['stock-notify'] });
-        toast.success('تم إلغاء الإشعار عند التوفر');
+        toast.success(t('pd_notify_cancelled'));
       } else {
         // Subscribe
         const { error } = await supabase.from('stock_notifications').insert({
@@ -732,11 +732,11 @@ const ProductDetail = () => {
         } as any);
         if (error) throw error;
         queryClient.invalidateQueries({ queryKey: ['stock-notify'] });
-        toast.success('سيتم إعلامك عند توفر المنتج ✅');
+        toast.success(t('pd_notify_subscribed'));
       }
     } catch (err) {
       console.error(err);
-      toast.error('حدث خطأ، حاول مرة أخرى');
+      toast.error(t('pd_generic_error'));
     } finally {
       setNotifyLoading(false);
     }
@@ -853,7 +853,7 @@ const ProductDetail = () => {
               {(product as any).sold_count > 0 && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                    🔥 {(product as any).sold_count} قطعة مباعة
+                    {t('pd_units_sold_count', { count: (product as any).sold_count })}
                   </span>
                 </div>
               )}
@@ -887,7 +887,7 @@ const ProductDetail = () => {
                     <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                       <Tag className="h-3.5 w-3.5" />
                       <span className="text-xs font-bold">
-                        خصم خاص لمشتركي الحماية ({protectionDiscount.planNameAr})
+                        {t('pd_protection_discount_for', { plan: protectionDiscount.planNameAr })}
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2 mt-1">
@@ -903,8 +903,8 @@ const ProductDetail = () => {
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {protectionDiscount.canUse
-                        ? `متبقي ${protectionDiscount.limitCount - protectionDiscount.usedCount} استخدام ${protectionDiscount.limitType === 'weekly' ? 'هذا الأسبوع' : 'هذا الشهر'}`
-                        : `تم استهلاك الحد ${protectionDiscount.limitType === 'weekly' ? 'الأسبوعي' : 'الشهري'}`
+                        ? (protectionDiscount.limitType === 'weekly' ? t('pd_remaining_uses_weekly', { count: protectionDiscount.limitCount - protectionDiscount.usedCount }) : t('pd_remaining_uses_monthly', { count: protectionDiscount.limitCount - protectionDiscount.usedCount }))
+                        : (protectionDiscount.limitType === 'weekly' ? t('pd_limit_reached_weekly') : t('pd_limit_reached_monthly'))
                       }
                     </p>
                   </div>
@@ -912,12 +912,12 @@ const ProductDetail = () => {
                 {hasStockInfo && (
                   <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
                     <BoxIcon className="h-3 w-3" />
-                    متبقي {directStockQuantity} قطعة
+                    {t('pd_remaining_pieces', { count: directStockQuantity })}
                   </p>
                 )}
                 {directStockDepleted && activeSaleType === 'direct' && (
                   <div className="mt-2 space-y-2">
-                    <Badge variant="destructive" className="text-xs">غير متوفر حالياً</Badge>
+                    <Badge variant="destructive" className="text-xs">{t('pd_unavailable_now')}</Badge>
                     <Button
                       variant="outline"
                       size="sm"
@@ -926,9 +926,9 @@ const ProductDetail = () => {
                       disabled={notifyLoading}
                     >
                       {isNotifySubscribed ? (
-                        <><BellRing className="h-3.5 w-3.5" /> إلغاء الإشعار عند التوفر</>
+                        <><BellRing className="h-3.5 w-3.5" /> {t('pd_cancel_notify')}</>
                       ) : (
-                        <><Bell className="h-3.5 w-3.5" /> أعلمني عند توفر المنتج</>
+                        <><Bell className="h-3.5 w-3.5" /> {t('pd_notify_me')}</>
                       )}
                     </Button>
                   </div>
@@ -959,13 +959,13 @@ const ProductDetail = () => {
                   const fallbackOptions: any[] = [];
                   if (preOrderOpts.length === 0 && (shippingType === 'both' || shippingType === 'sea' || shippingType === 'air')) {
                     if ((shippingType === 'both' || shippingType === 'sea') && (product as any).sea_price) {
-                      fallbackOptions.push({ name_ar: '🚢 شحن بحري', description: 'توصيل خلال 45-55 يوم', price_adjustment: 0, type: 'sea' });
+                      fallbackOptions.push({ name_ar: t('pd_shipping_sea'), description: 'توصيل خلال 45-55 يوم', price_adjustment: 0, type: 'sea' });
                     }
                     if ((shippingType === 'both' || shippingType === 'air') && (product as any).air_price) {
                       const seaP = Number((product as any).sea_price || 0);
                       const airP = Number((product as any).air_price || 0);
                       const adj = shippingType === 'both' ? (airP - seaP) : 0;
-                      fallbackOptions.push({ name_ar: '✈️ شحن جوي', description: 'توصيل خلال 7-15 يوم', price_adjustment: adj, type: 'air' });
+                      fallbackOptions.push({ name_ar: t('pd_shipping_air'), description: 'توصيل خلال 7-15 يوم', price_adjustment: adj, type: 'air' });
                     }
                   }
                   const displayOptions = preOrderOpts.length > 0 ? preOrderOpts : fallbackOptions;
@@ -978,7 +978,7 @@ const ProductDetail = () => {
                     <AccordionItem value="shipping" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
                       <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                         <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" />{t('product_shipping_type')}
-                          {selectedShippingOption === null && displayOptions.length > 1 && <Badge variant="destructive" className="text-[8px] px-1.5 py-0 h-4 mr-1">مطلوب</Badge>}
+                          {selectedShippingOption === null && displayOptions.length > 1 && <Badge variant="destructive" className="text-[8px] px-1.5 py-0 h-4 mr-1">{t('pd_required_badge')}</Badge>}
                         </span>
                       </AccordionTrigger>
                       <AccordionContent className="px-3 pb-3">
@@ -1048,10 +1048,10 @@ const ProductDetail = () => {
                               <div className="min-w-0">
                                 <span className="font-bold text-xs truncate block">{option.name_ar}</span>
                                 {activeSaleType === 'direct' && option.computedDirectStock != null && option.computedDirectStock > 0 && (
-                                  <span className="text-[9px] text-muted-foreground">متبقي {option.computedDirectStock}</span>
+                                  <span className="text-[9px] text-muted-foreground">{t('pd_remaining_short', { count: option.computedDirectStock })}</span>
                                 )}
                                 {activeSaleType === 'direct' && option.computedDirectStock != null && option.computedDirectStock <= 0 && (
-                                  <span className="text-[9px] text-destructive">غير متوفر</span>
+                                  <span className="text-[9px] text-destructive">{t('pd_unavailable_short')}</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1 shrink-0">
@@ -1075,17 +1075,17 @@ const ProductDetail = () => {
                                           onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+                                            if (!user) { toast.error(t('pd_login_required')); navigate('/auth'); return; }
                                             const colorName = selectedColor || null;
                                             const optName = option.name_ar || null;
                                             if (isSubbed) {
                                               let q = supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
                                               if (colorName) q = q.eq('selected_color', colorName); else q = q.is('selected_color', null);
                                               if (optName) q = q.eq('selected_option', optName); else q = q.is('selected_option', null);
-                                              q.then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('تم إلغاء الإشعار'); });
+                                              q.then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success(t('pd_notify_cancelled')); });
                                             } else {
                                               supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id, selected_color: colorName, selected_option: optName } as any)
-                                                .then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('سيتم إعلامك عند التوفر ✅'); });
+                                                .then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success(t('pd_notify_subscribed')); });
                                             }
                                           }}
                                         >
@@ -1180,26 +1180,26 @@ const ProductDetail = () => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      if (!user) { toast.error('يرجى تسجيل الدخول أولاً'); navigate('/auth'); return; }
+                                      if (!user) { toast.error(t('pd_login_required')); navigate('/auth'); return; }
                                       const colorName = color.name_ar || null;
                                       const optName = selectedOptionName || null;
                                       if (isSubbed) {
                                         let q = supabase.from('stock_notifications').delete().eq('user_id', user.id).eq('product_id', product.id);
                                         if (colorName) q = q.eq('selected_color', colorName); else q = q.is('selected_color', null);
                                         if (optName) q = q.eq('selected_option', optName); else q = q.is('selected_option', null);
-                                        q.then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('تم إلغاء الإشعار'); });
+                                        q.then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success(t('pd_notify_cancelled')); });
                                       } else {
                                         supabase.from('stock_notifications').insert({ user_id: user.id, product_id: product.id, selected_color: colorName, selected_option: optName } as any)
-                                          .then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success('سيتم إعلامك عند التوفر ✅'); });
+                                          .then(() => { queryClient.invalidateQueries({ queryKey: ['stock-notify'] }); toast.success(t('pd_notify_subscribed')); });
                                       }
                                     }}
                                   >
                                     {isSubbed ? <BellRing className="h-3 w-3" /> : <Bell className="h-3 w-3" />}
-                                    <span>{isSubbed ? 'إلغاء' : 'أعلمني'}</span>
+                                    <span>{isSubbed ? t('pd_cancel_short') : t('pd_notify_me').replace(/ .*/, '')}</span>
                                   </button>
                                 );
                               }
-                              return stock != null && stock > 0 ? <span className="text-[8px] text-muted-foreground">متبقي {stock}</span> : null;
+                              return stock != null && stock > 0 ? <span className="text-[8px] text-muted-foreground">{t('pd_remaining_short', { count: stock })}</span> : null;
                             })()}
                             {activeSaleType === 'direct' && color.direct_sale_price && (
                               <span className="text-[9px] font-black text-primary">{formatPrice(color.direct_sale_price)}</span>
@@ -1268,7 +1268,7 @@ const ProductDetail = () => {
                         description={rp.description} descriptionAr={rp.description_ar}
                         price={Number(rp.price)} originalPrice={rp.original_price ? Number(rp.original_price) : undefined}
                         imageUrl={rp.image_url} images={rp.images}
-                        currency={rp.currency || 'دينار عراقي'} slug={rp.slug}
+                        currency={rp.currency || t('pd_currency_iqd')} slug={rp.slug}
                         hasDirectSale={(rp.has_in_stock ?? false) && !isAllDirectStockDepleted(rp)}
                         cardDiscounts={rp.card_discounts} />
                     ))}
@@ -1314,7 +1314,7 @@ const ProductDetail = () => {
                 onClick={handleNotifyMe}
                 disabled={notifyLoading}
               >
-                {isNotifySubscribed ? <><BellRing className="h-4 w-4 shrink-0" /> إلغاء الإشعار</> : <><Bell className="h-4 w-4 shrink-0" /> أعلمني عند التوفر</>}
+                {isNotifySubscribed ? <><BellRing className="h-4 w-4 shrink-0" /> {t('pd_cancel_notify')}</> : <><Bell className="h-4 w-4 shrink-0" /> {t('pd_notify_me')}</>}
               </Button>
             ) : (
               <Button className="h-9 flex-1 min-w-0 rounded-xl text-xs font-black whitespace-normal" onClick={handleAddToCart} disabled={!isAvailableForCurrentSaleType || optionsLoading}>
@@ -1347,7 +1347,7 @@ const ProductDetail = () => {
                     await navigator.share({ title: product.name_ar, url: ogUrl });
                   } else {
                     await navigator.clipboard.writeText(directUrl);
-                    toast.success('تم نسخ الرابط');
+                    toast.success(t('pd_link_copied'));
                   }
                 } catch {}
               }}
@@ -1364,19 +1364,19 @@ const ProductDetail = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />
-              تفريغ السلة
+              {t('pd_clear_cart_title')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              لديك منتجات من نوع بيع مختلف في السلة. هل تريد تفريغ السلة وإضافة هذا المنتج؟
+              {t('pd_clear_cart_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel onClick={() => { pendingAddRef.current = null; }}>تراجع</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { pendingAddRef.current = null; }}>{t('pd_clear_cart_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleForceAdd}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              تفريغ السلة وإضافة المنتج
+              {t('pd_clear_cart_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

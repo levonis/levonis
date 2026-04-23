@@ -37,7 +37,9 @@ type SortKey =
   | 'name-asc';
 
 const CategoryDetail = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const pickName = (en?: string | null, ar?: string | null) => (language === 'ar' ? (ar || en || '') : (en || ar || ''));
+  const pickDesc = pickName;
 
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
@@ -163,7 +165,7 @@ const CategoryDetail = () => {
           <Link to="/categories" className="hover:text-primary transition-colors">{t('nav_categories')}</Link>
           <span>/</span>
           {categoryLoading ? <span>...</span> : (
-            <span className="text-primary font-medium">{category?.name_ar}</span>
+            <span className="text-primary font-medium">{pickName(category?.name as any, category?.name_ar as any)}</span>
           )}
         </div>
 
@@ -181,18 +183,18 @@ const CategoryDetail = () => {
                     {/* Title & description — right side (RTL) */}
                     <div className="flex-1 text-right pt-2 md:pt-12">
                       <h1 className="text-xl sm:text-3xl md:text-6xl font-black text-foreground/90 mb-1 md:mb-2 tracking-tight leading-tight">
-                        {featuredProduct.name_ar}
+                        {pickName(featuredProduct.name as any, featuredProduct.name_ar as any)}
                       </h1>
-                      {featuredProduct.description_ar && (
+                      {(featuredProduct.description_ar || (featuredProduct as any).description) && (
                         <div>
                           <p className="text-foreground/40 text-xs sm:text-sm md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
-                            {featuredProduct.description_ar}
+                            {pickDesc((featuredProduct as any).description, featuredProduct.description_ar)}
                           </p>
                           <Link
                             to={`/product/${featuredProduct.slug}`}
                             className="text-primary text-xs md:text-sm mt-1 md:mt-2 hover:underline inline-block"
                           >
-                            عرض المزيد
+                            {t('catdetail_view_more')}
                           </Link>
                         </div>
                       )}
@@ -219,21 +221,21 @@ const CategoryDetail = () => {
                 {/* Sort & Filter toolbar */}
                 <div className="flex items-center justify-between gap-2 flex-wrap border-b border-border/40 pb-3">
                   <div className="text-xs md:text-sm text-foreground/60">
-                    {filteredProducts.length} منتج
+                    {t('catdetail_products_count', { count: filteredProducts.length })}
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
                       <SelectTrigger className="h-9 text-xs md:text-sm w-40">
-                        <SelectValue placeholder="ترتيب" />
+                        <SelectValue placeholder={t('catdetail_sort_label')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="default">الترتيب الافتراضي</SelectItem>
-                        <SelectItem value="price-asc">السعر: الأقل أولاً</SelectItem>
-                        <SelectItem value="price-desc">السعر: الأعلى أولاً</SelectItem>
-                        <SelectItem value="newest">الأحدث</SelectItem>
-                        <SelectItem value="best-selling">الأكثر مبيعاً</SelectItem>
-                        <SelectItem value="name-asc">الاسم: أ-ي</SelectItem>
+                        <SelectItem value="default">{t('catdetail_sort_default')}</SelectItem>
+                        <SelectItem value="price-asc">{t('catdetail_sort_price_asc')}</SelectItem>
+                        <SelectItem value="price-desc">{t('catdetail_sort_price_desc')}</SelectItem>
+                        <SelectItem value="newest">{t('catdetail_sort_newest')}</SelectItem>
+                        <SelectItem value="best-selling">{t('catdetail_sort_best_selling')}</SelectItem>
+                        <SelectItem value="name-asc">{t('catdetail_sort_name_asc')}</SelectItem>
                       </SelectContent>
                     </Select>
 
@@ -241,7 +243,7 @@ const CategoryDetail = () => {
                       <SheetTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs md:text-sm relative">
                           <SlidersHorizontal className="h-3.5 w-3.5" />
-                          فلترة
+                          {t('catdetail_filter_button')}
                           {filtersActive && (
                             <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
                           )}
@@ -249,21 +251,21 @@ const CategoryDetail = () => {
                       </SheetTrigger>
                       <SheetContent side="left" className="w-full sm:max-w-sm">
                         <SheetHeader>
-                          <SheetTitle className="text-right">خيارات الفلترة</SheetTitle>
+                          <SheetTitle className="text-right">{t('catdetail_filter_title')}</SheetTitle>
                         </SheetHeader>
 
                         <div className="mt-6 space-y-6 text-right" dir="rtl">
                           {/* Availability */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-bold">التوفر</Label>
+                            <Label className="text-sm font-bold">{t('catdetail_filter_availability')}</Label>
                             <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as any)}>
                               <SelectTrigger className="w-full">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="all">الكل</SelectItem>
-                                <SelectItem value="in-stock">متوفر</SelectItem>
-                                <SelectItem value="out-of-stock">غير متوفر</SelectItem>
+                                <SelectItem value="all">{t('catdetail_filter_avail_all')}</SelectItem>
+                                <SelectItem value="in-stock">{t('catdetail_filter_avail_in')}</SelectItem>
+                                <SelectItem value="out-of-stock">{t('catdetail_filter_avail_out')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -272,10 +274,10 @@ const CategoryDetail = () => {
                           <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 p-3">
                             <div>
                               <Label htmlFor="direct-only" className="text-sm font-bold">
-                                البيع المباشر فقط
+                                {t('catdetail_filter_direct_only')}
                               </Label>
                               <p className="text-[11px] text-muted-foreground mt-0.5">
-                                عرض المنتجات المتوفرة للبيع المباشر
+                                {t('catdetail_filter_direct_only_desc')}
                               </p>
                             </div>
                             <Switch
@@ -287,12 +289,12 @@ const CategoryDetail = () => {
 
                           {/* Price range */}
                           <div className="space-y-2">
-                            <Label className="text-sm font-bold">نطاق السعر (د.ع)</Label>
+                            <Label className="text-sm font-bold">{t('catdetail_filter_price_range')}</Label>
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
                                 inputMode="numeric"
-                                placeholder="من"
+                                placeholder={t('catdetail_filter_price_from')}
                                 value={minPrice}
                                 onChange={(e) => setMinPrice(e.target.value)}
                                 className="text-right"
@@ -301,7 +303,7 @@ const CategoryDetail = () => {
                               <Input
                                 type="number"
                                 inputMode="numeric"
-                                placeholder="إلى"
+                                placeholder={t('catdetail_filter_price_to')}
                                 value={maxPrice}
                                 onChange={(e) => setMaxPrice(e.target.value)}
                                 className="text-right"
@@ -315,7 +317,7 @@ const CategoryDetail = () => {
                             onClick={resetFilters}
                             disabled={!filtersActive}
                           >
-                            إعادة تعيين
+                            {t('catdetail_filter_reset')}
                           </Button>
                         </div>
                       </SheetContent>
@@ -343,7 +345,7 @@ const CategoryDetail = () => {
                   </div>
                 ) : (
                   <div className="text-center py-10 text-foreground/50 text-sm">
-                    لا توجد منتجات تطابق الفلترة الحالية.
+                    {t('catdetail_no_match')}
                   </div>
                 )}
               </div>
