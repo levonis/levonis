@@ -36,7 +36,14 @@ const BundlesSection = () => {
         </Link>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      <div
+        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
+          overscrollBehavior: 'auto',
+        }}
+      >
         {bundles.map((bundle) => {
           const discount = bundle.original_price > 0
             ? Math.round(((bundle.original_price - bundle.bundle_price) / bundle.original_price) * 100)
