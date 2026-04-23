@@ -324,7 +324,7 @@ const MyOrders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Package className="h-8 w-8 animate-pulse text-primary" />
       </div>
     );
