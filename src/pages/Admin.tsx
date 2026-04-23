@@ -3586,6 +3586,8 @@ const Admin = () => {
                             { value: 'none', label: 'بدون', desc: 'يعرض كما هو (للملفات الشفافة فعلياً مثل WebM/MOV)' },
                             { value: 'black', label: 'إزالة الأسود', desc: 'للفيديو/GIF بخلفية سوداء' },
                             { value: 'white', label: 'إزالة الأبيض', desc: 'للفيديو/GIF بخلفية بيضاء' },
+                            { value: 'green', label: 'إزالة الأخضر', desc: 'شاشة خضراء (Green Screen) كلاسيكية' },
+                            { value: 'blue', label: 'إزالة الأزرق', desc: 'شاشة زرقاء (Blue Screen)' },
                           ].map((opt) => (
                             <button
                               key={opt.value}
