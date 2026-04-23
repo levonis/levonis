@@ -84,8 +84,9 @@ export default function AppBackground() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="pointer-events-none fixed inset-0 overflow-hidden"
       style={{
+        zIndex: -1,
         background:
           'radial-gradient(120% 90% at 10% 100%, hsl(0 0% 3%) 0%, transparent 55%), linear-gradient(160deg, #15382c 0%, #15382c 65%, #0a0a0a 100%)',
       }}
@@ -105,17 +106,23 @@ export default function AppBackground() {
         style={{
           left,
           top,
-          width: '38vmax',
-          height: '38vmax',
-          marginLeft: '-19vmax',
-          marginTop: '-19vmax',
-          background:
-            'radial-gradient(circle, hsl(0 80% 50% / 0.55) 0%, hsl(0 75% 40% / 0.25) 35%, transparent 65%)',
-          filter: 'blur(60px)',
+          width: '55vmax',
+          height: '55vmax',
+          marginLeft: '-27.5vmax',
+          marginTop: '-27.5vmax',
           mixBlendMode: 'screen',
           willChange: 'left, top',
         }}
-      />
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle, hsl(0 95% 55% / 0.95) 0%, hsl(0 85% 45% / 0.55) 28%, hsl(0 75% 35% / 0.2) 50%, transparent 68%)',
+            filter: 'blur(30px)',
+          }}
+        />
+      </motion.div>
     </div>
   );
 }
