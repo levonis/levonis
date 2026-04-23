@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileSkeleton } from '@/components/ui/PageSkeletons';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n';
 import UserInfoPageHeader from '@/components/user-info/UserInfoPageHeader';
 import UserInfoProfileCard from '@/components/user-info/UserInfoProfileCard';
 import UserInfoAccountDetailsCard from '@/components/user-info/UserInfoAccountDetailsCard';
