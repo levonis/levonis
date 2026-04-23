@@ -513,7 +513,9 @@ export const DynamicIsland = () => {
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </LayoutGroup>
     </div>
   );
