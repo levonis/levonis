@@ -63,18 +63,13 @@ export default function ReelsBar() {
         <div
           ref={scrollRef}
           className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerEnd}
-          onPointerCancel={handlePointerEnd}
           style={{
             WebkitOverflowScrolling: 'touch',
-            // Allow both horizontal (handled by this strip) and vertical
-            // (bubbles to page since this container only scrolls horizontally)
-            // pan gestures, so the user can always scroll the page even when
-            // their finger lands on the reels strip.
-            touchAction: 'pan-x pan-y',
-            overscrollBehaviorY: 'auto',
+            // Browser handles vertical pan natively (page scroll bubbles up).
+            // Horizontal scrolling is performed manually by useHorizontalDragScroll
+            // only after the gesture is unambiguously horizontal, so a vertical
+            // swipe is never hijacked.
+            touchAction: 'pan-y',
           }}
         >
           {reels.map((reel) => (
