@@ -2007,65 +2007,78 @@
     inset 0 0 0 1px hsl(160 35% 25% / 0.28);
 }
 
-/* Soft red glow living in the bottom-right corner */
-.card-red-glow {
-  position: absolute;
-  right: -20%;
-  bottom: -28%;
-  width: 70%;
-  height: 70%;
-  background: radial-gradient(circle, hsl(0 88% 52% / 0.22) 0%, hsl(0 85% 48% / 0.10) 38%, transparent 65%);
-  filter: blur(28px);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  z-index: 1;
-  animation: card-red-pulse 6s ease-in-out infinite;
+/* ============================================================
+   Edge-only animated red ribbon (NO inside-card glow)
+   A bright red light arc travels along the card border.
+   ============================================================ */
+@property --edge-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
-/* Cinematic red light sweep traveling across the card */
-.card-red-sweep {
+.card-red-edge {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 30%,
-    hsl(0 90% 55% / 0.08) 47%,
-    hsl(0 95% 60% / 0.18) 50%,
-    hsl(0 90% 55% / 0.08) 53%,
-    transparent 70%
-  );
-  mix-blend-mode: screen;
-  transform: translateX(-120%);
+  border-radius: inherit;
   pointer-events: none;
-  z-index: 1;
-  animation: card-red-sweep 9s ease-in-out infinite;
+  z-index: 3;
+  padding: 1.5px;
+  background:
+    conic-gradient(
+      from var(--edge-angle, 0deg),
+      transparent 0deg,
+      transparent 230deg,
+      hsl(0 95% 55% / 0.55) 290deg,
+      hsl(0 100% 62% / 1) 320deg,
+      hsl(0 95% 55% / 0.55) 350deg,
+      transparent 360deg
+    );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: card-edge-rotate 6s linear infinite;
 }
 
-/* Speed up the living light on hover (no flicker, just smoother pulse) */
-.group:hover .card-red-glow  { animation-duration: 3s; }
-.group:hover .card-red-sweep { animation-duration: 4s; }
-
-@keyframes card-red-pulse {
-  0%, 100% { opacity: 0.55; transform: translate(0, 0) scale(1); }
-  50%      { opacity: 0.95; transform: translate(-4%, -3%) scale(1.08); }
+/* Soft outer red halo bleeding out from the bright arc */
+.card-red-edge::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  background:
+    conic-gradient(
+      from var(--edge-angle, 0deg),
+      transparent 0deg,
+      transparent 260deg,
+      hsl(0 95% 55% / 0.40) 320deg,
+      transparent 360deg
+    );
+  filter: blur(12px);
+  opacity: 0.9;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: card-edge-rotate 6s linear infinite;
 }
 
-@keyframes card-red-sweep {
-  0%   { transform: translateX(-120%); opacity: 0; }
-  18%  { opacity: 1; }
-  60%  { opacity: 1; }
-  100% { transform: translateX(120%); opacity: 0; }
+@keyframes card-edge-rotate {
+  to { --edge-angle: 360deg; }
 }
 
-/* Lift real card content above the decorative red glow/sweep layers */
-.product-card-glass > *:not(.card-red-glow):not(.card-red-sweep) {
+.group:hover .card-red-edge,
+.group:hover .card-red-edge::after { animation-duration: 3s; }
+
+/* Lift content above the edge layer */
+.product-card-glass > *:not(.card-red-edge) {
   position: relative;
   z-index: 2;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-red-glow,
-  .card-red-sweep { animation: none; }
+  .card-red-edge,
+  .card-red-edge::after { animation: none; }
 }
 
 /* Telegram Mini App viewport fix */
