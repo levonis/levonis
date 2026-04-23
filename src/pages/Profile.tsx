@@ -33,7 +33,7 @@ export default function Profile() {
   const { data: cardFrame } = useUserCardFrame(user?.id);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <main className="container mx-auto px-4 pt-6 pb-24 max-w-lg space-y-4" dir={dir}>
         {user?.id && (
           <ProfileHeader
