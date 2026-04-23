@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Store, Search, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,8 @@ interface ProductWithMerchant {
 
 export default function CommunityAllMerchantsProducts() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: products = [], isLoading } = useQuery({
