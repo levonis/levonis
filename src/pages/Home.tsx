@@ -56,7 +56,7 @@ const Home = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, name_ar, slug, icon, description, description_ar, main_section_id, media_url, media_type')
+        .select('id, name, name_ar, slug, icon, description, description_ar, main_section_id, media_url, media_type, media_transparent')
         .order('created_at', { ascending: true });
       if (error) throw error;
       return data;
@@ -231,6 +231,7 @@ const Home = () => {
                           hasDirectSale={directSaleCategoryIds?.has(category.id)}
                           mediaUrl={(category as any).media_url}
                           mediaType={(category as any).media_type}
+                          mediaTransparent={!!(category as any).media_transparent}
                         />
                       ))}
                     </div>
