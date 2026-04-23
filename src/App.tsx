@@ -177,9 +177,11 @@ function AppContent() {
       <DynamicIsland />
       <ProfileOrb />
       <ProfileExpansionShell>
-        <RequireAuth>
-          <Profile />
-        </RequireAuth>
+        <Suspense fallback={null}>
+          <RequireAuth>
+            <Profile />
+          </RequireAuth>
+        </Suspense>
       </ProfileExpansionShell>
       <main
         style={{ paddingTop: mainPaddingTop }}
