@@ -5,7 +5,7 @@ import CommunityGiftsButton from "@/components/community/CommunityGiftsButton";
 
 export default function CommunityHome() {
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+    <div className="min-h-screen">
       <main className="container mx-auto px-4 py-6 max-w-6xl">
         <CommunitySection noFrame />
 
