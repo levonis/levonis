@@ -1365,4 +1365,27 @@ export type TranslationKeys = {
   np_enable_site: string;
   np_blocked_hint: string;
   np_link_telegram: string;
+
+  // Email Verification Dialog
+  evd_type_signup: string;
+  evd_type_password_reset: string;
+  evd_type_password_change: string;
+  evd_type_email_change: string;
+  evd_description: string;
+  evd_code_sent_toast: string;
+  evd_verified_toast: string;
+  evd_verified_title: string;
+  evd_redirecting: string;
+  evd_enter_full_code: string;
+  evd_invalid_code: string;
+  evd_verify_error: string;
+  evd_resend_success: string;
+  evd_resend_failed: string;
+  evd_generic_error: string;
+  evd_code_validity: string;
+  evd_verifying: string;
+  evd_confirm_code: string;
+  evd_didnt_receive: string;
+  evd_resend_after: string;
+  evd_resend_btn: string;
 };
