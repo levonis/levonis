@@ -43,7 +43,7 @@ export default function CouponsStrip({ userId }: CouponsStripProps) {
   };
 
   return (
-    <div className="rounded-3xl bg-card border border-border/40 shadow-sm p-4">
+    <div className="rounded-3xl bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-4">
       {/* Title */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-base font-bold text-foreground">{t('cs_my_coupons')}</h2>
