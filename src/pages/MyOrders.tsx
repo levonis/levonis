@@ -19,28 +19,28 @@ import { ar } from 'date-fns/locale';
 import { useLanguage } from '@/lib/i18n';
 import Footer from '@/components/Footer';
 
-const PREORDER_TABS = [
-  { key: 'all', label: 'الكل', icon: Package },
-  { key: 'pending', label: 'بانتظار الدفع', icon: Clock },
-  { key: 'confirmed', label: 'مؤكد', icon: PackageCheck },
-  { key: 'purchased', label: 'تم الشراء', icon: ShoppingBag },
-  { key: 'arrived_warehouse', label: 'في المخزن', icon: Warehouse },
-  { key: 'shipped', label: 'تم الشحن', icon: Ship },
-  { key: 'arrived_iraq', label: 'وصل العراق', icon: MapPin },
-  { key: 'on_the_way', label: 'في الطريق', icon: Truck },
-  { key: 'delivered', label: 'تم التسليم', icon: CheckCircle },
-  { key: 'cancelled', label: 'ملغي', icon: XCircle },
+const PREORDER_TAB_KEYS = [
+  { key: 'all', tKey: 'myorders_tab_all', icon: Package },
+  { key: 'pending', tKey: 'myorders_tab_pending', icon: Clock },
+  { key: 'confirmed', tKey: 'myorders_tab_confirmed', icon: PackageCheck },
+  { key: 'purchased', tKey: 'myorders_tab_purchased', icon: ShoppingBag },
+  { key: 'arrived_warehouse', tKey: 'myorders_tab_arrived_warehouse', icon: Warehouse },
+  { key: 'shipped', tKey: 'myorders_tab_shipped', icon: Ship },
+  { key: 'arrived_iraq', tKey: 'myorders_tab_arrived_iraq', icon: MapPin },
+  { key: 'on_the_way', tKey: 'myorders_tab_on_the_way', icon: Truck },
+  { key: 'delivered', tKey: 'myorders_tab_delivered', icon: CheckCircle },
+  { key: 'cancelled', tKey: 'myorders_tab_cancelled', icon: XCircle },
 ] as const;
 
-const DIRECT_TABS = [
-  { key: 'all', label: 'الكل', icon: Package },
-  { key: 'pending', label: 'بانتظار الدفع', icon: Clock },
-  { key: 'confirmed', label: 'مؤكد', icon: PackageCheck },
-  { key: 'processing', label: 'قيد التجهيز', icon: Package },
-  { key: 'shipped', label: 'تم الشحن', icon: Truck },
-  { key: 'on_the_way', label: 'في الطريق', icon: Truck },
-  { key: 'delivered', label: 'تم التسليم', icon: CheckCircle },
-  { key: 'cancelled', label: 'ملغي', icon: XCircle },
+const DIRECT_TAB_KEYS = [
+  { key: 'all', tKey: 'myorders_tab_all', icon: Package },
+  { key: 'pending', tKey: 'myorders_tab_pending', icon: Clock },
+  { key: 'confirmed', tKey: 'myorders_tab_confirmed', icon: PackageCheck },
+  { key: 'processing', tKey: 'myorders_tab_processing', icon: Package },
+  { key: 'shipped', tKey: 'myorders_tab_shipped', icon: Truck },
+  { key: 'on_the_way', tKey: 'myorders_tab_on_the_way', icon: Truck },
+  { key: 'delivered', tKey: 'myorders_tab_delivered', icon: CheckCircle },
+  { key: 'cancelled', tKey: 'myorders_tab_cancelled', icon: XCircle },
 ] as const;
 
 const STATUS_ACCENT: Record<string, string> = {
@@ -69,8 +69,18 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-const ALL_STATUS_LABELS: Record<string, string> = {};
-[...PREORDER_TABS, ...DIRECT_TABS].forEach(t => { ALL_STATUS_LABELS[t.key] = t.label; });
+const STATUS_TKEY: Record<string, string> = {
+  pending: 'myorders_tab_pending',
+  confirmed: 'myorders_tab_confirmed',
+  processing: 'myorders_tab_processing',
+  purchased: 'myorders_tab_purchased',
+  arrived_warehouse: 'myorders_tab_arrived_warehouse',
+  shipped: 'myorders_tab_shipped',
+  arrived_iraq: 'myorders_tab_arrived_iraq',
+  on_the_way: 'myorders_tab_on_the_way',
+  delivered: 'myorders_tab_delivered',
+  cancelled: 'myorders_tab_cancelled',
+};
 
 const OrderSkeleton = () => (
   <div className="space-y-3 px-4 py-4">
