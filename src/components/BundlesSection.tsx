@@ -40,8 +40,8 @@ const BundlesSection = () => {
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
         style={{
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y',
-          overscrollBehavior: 'auto',
+          touchAction: 'pan-x',
+          overscrollBehaviorY: 'auto',
         }}
       >
         {bundles.map((bundle) => {
