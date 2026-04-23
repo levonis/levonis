@@ -114,9 +114,10 @@ const OrderSkeleton = () => (
 interface OrderCardProps {
   order: any;
   navigate: (path: string) => void;
+  t: (key: any, vars?: Record<string, string | number>) => string;
 }
 
-const OrderCard = ({ order, navigate }: OrderCardProps) => {
+const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
   const isPreOrder = order.order_type !== 'direct';
   const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
   const shippingName = shippingItem?.shipping_option_name_ar || '';
@@ -155,7 +156,7 @@ const OrderCard = ({ order, navigate }: OrderCardProps) => {
               <span className="text-[11px] text-muted-foreground">{relativeTime}</span>
             </div>
             <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 font-bold border rounded-lg", statusColor)}>
-              {ALL_STATUS_LABELS[order.status] || order.status}
+              {STATUS_TKEY[order.status] ? t(STATUS_TKEY[order.status] as any) : order.status}
             </Badge>
           </div>
 
