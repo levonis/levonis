@@ -164,6 +164,7 @@ function AppContent() {
 
   return (
     <>
+      <AppBackground />
       <ScrollRestoration />
       <Suspense fallback={null}>
         <DeferredEffects />
