@@ -184,6 +184,14 @@ const ProductCard = ({
           </span>
         </div>
       )}
+      {hasSale && (
+        <div className="mb-1 flex justify-start">
+          <span className="relative inline-flex items-center rounded-md bg-gradient-to-b from-primary to-accent px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground shadow-sm animate-fade-in">
+            {t('product_discount_badge')}
+            <span aria-hidden className="absolute -bottom-1 right-3 h-2 w-2 rotate-45 bg-accent" />
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-1">
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-0.5">
