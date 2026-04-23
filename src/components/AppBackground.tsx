@@ -110,13 +110,19 @@ export default function AppBackground() {
           height: '55vmax',
           marginLeft: '-27.5vmax',
           marginTop: '-27.5vmax',
-          background:
-            'radial-gradient(circle, hsl(0 90% 55% / 0.85) 0%, hsl(0 80% 45% / 0.45) 30%, hsl(0 70% 35% / 0.15) 55%, transparent 70%)',
-          filter: 'blur(40px)',
           mixBlendMode: 'screen',
           willChange: 'left, top',
         }}
-      />
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle, hsl(0 95% 55% / 0.95) 0%, hsl(0 85% 45% / 0.55) 28%, hsl(0 75% 35% / 0.2) 50%, transparent 68%)',
+            filter: 'blur(30px)',
+          }}
+        />
+      </motion.div>
     </div>
   );
 }
