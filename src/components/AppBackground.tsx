@@ -38,16 +38,16 @@ export default function AppBackground() {
       className="pointer-events-none fixed inset-0 overflow-hidden"
       style={{ zIndex: 0, background: '#15382c' }}
     >
-      {/* Static blended red blooms — soft cinematic mixture */}
+      {/* Static blended red blooms — richer cinematic mixture */}
       <div
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse 70% 55% at 85% 25%, hsl(0 85% 50% / 0.45) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 50% at 15% 80%, hsl(355 80% 45% / 0.32) 0%, transparent 65%),
-            radial-gradient(ellipse 80% 60% at 50% 50%, hsl(160 40% 12% / 0.55) 0%, transparent 70%)
+            radial-gradient(ellipse 85% 70% at 88% 22%, hsl(0 95% 55% / 0.85) 0%, hsl(355 90% 50% / 0.45) 35%, transparent 70%),
+            radial-gradient(ellipse 75% 65% at 12% 82%, hsl(355 90% 50% / 0.65) 0%, hsl(0 85% 45% / 0.30) 40%, transparent 75%),
+            radial-gradient(ellipse 60% 50% at 50% 50%, hsl(10 80% 45% / 0.35) 0%, transparent 70%)
           `,
-          filter: 'blur(40px)',
+          filter: 'blur(60px)',
           mixBlendMode: 'screen',
         }}
       />
@@ -57,23 +57,23 @@ export default function AppBackground() {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at center, transparent 30%, hsl(160 45% 6% / 0.55) 100%)',
+            'radial-gradient(ellipse at center, transparent 40%, hsl(160 45% 5% / 0.45) 100%)',
         }}
       />
 
-      {/* Scroll-following red bloom */}
+      {/* Scroll-following red bloom — bigger & brighter */}
       <motion.div
         className="absolute"
         style={{
           top,
-          right: '-10vw',
-          width: '70vw',
-          height: '60vh',
-          marginTop: '-30vh',
+          right: '-15vw',
+          width: '90vw',
+          height: '80vh',
+          marginTop: '-40vh',
           willChange: 'top',
           background:
-            'radial-gradient(circle at center, hsl(0 90% 55% / 0.55) 0%, hsl(355 85% 45% / 0.25) 35%, transparent 70%)',
-          filter: 'blur(80px)',
+            'radial-gradient(circle at center, hsl(0 95% 58% / 0.95) 0%, hsl(355 90% 50% / 0.55) 25%, hsl(350 80% 40% / 0.20) 55%, transparent 75%)',
+          filter: 'blur(100px)',
           mixBlendMode: 'screen',
         }}
       />
