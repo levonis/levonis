@@ -64,6 +64,7 @@ const categorySchema = z.object({
   media_url: z.string().nullable().optional(),
   media_type: z.string().nullable().optional(),
   media_transparent: z.boolean().optional(),
+  media_chroma_key: z.enum(['none', 'black', 'white']).optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -154,6 +155,7 @@ const Admin = () => {
   const [categoryMediaUrl, setCategoryMediaUrl] = useState<string | null>(null);
   const [categoryMediaType, setCategoryMediaType] = useState<string | null>(null);
   const [categoryMediaTransparent, setCategoryMediaTransparent] = useState(false);
+  const [categoryMediaChromaKey, setCategoryMediaChromaKey] = useState<'none' | 'black' | 'white'>('none');
   const [categoryMediaUploading, setCategoryMediaUploading] = useState(false);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -1601,6 +1603,7 @@ const Admin = () => {
         media_url: categoryMediaUrl,
         media_type: categoryMediaType,
         media_transparent: categoryMediaTransparent,
+        media_chroma_key: categoryMediaChromaKey,
       });
 
       if (editingCategory) {
