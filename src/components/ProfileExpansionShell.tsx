@@ -126,17 +126,7 @@ const ProfileExpansionShell = ({ children }: Props) => {
         <>
           {/* Soft dim — no longer an opaque secondary surface; just a faint
               tint so the glass disc reads against the live page behind it. */}
-          <motion.div
-            key="profile-shell-backdrop"
-            aria-hidden
-            className="fixed inset-0 z-[35] pointer-events-none"
-            style={{ background: "hsl(var(--background) / 0.18)" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          />
-
+          {/* Dim backdrop removed — show the site's primary background as-is. */}
           {/* Circular reveal layer — glassmorphism instead of solid bg. */}
           <motion.div
             key="profile-shell"
