@@ -204,7 +204,7 @@ const BundleDetail = () => {
         {bundle.allImages.length > 1 && (
           <div
             className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1"
-            style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'auto' }}
+            style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'auto' }}
           >
             {bundle.allImages.map((img: string, i: number) => (
               <button
