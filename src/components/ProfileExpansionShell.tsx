@@ -30,24 +30,42 @@ const ProfileExpansionShell = ({ children }: Props) => {
   const reducedMotion = useReducedMotion();
   const mountedRef = useRef(false);
 
-  // Fallback origin: center-top of the screen (where the orb lives).
+  // Track viewport so the clip circle stays correctly sized after resize/rotate.
+  const [vp, setVp] = useState(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 1024,
+    h: typeof window !== "undefined" ? window.innerHeight : 768,
+  }));
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  // Fallback origin: top of the screen (where the orb lives).
+  // Uses the document direction so the fallback flips with RTL.
   const o = useMemo(() => {
     if (origin) return origin;
-    if (typeof window === "undefined") {
-      return { x: 200, y: 30, size: 40 };
-    }
-    return { x: window.innerWidth * 0.08, y: 28, size: 40 };
-  }, [origin]);
+    const isRtl =
+      typeof document !== "undefined" && document.documentElement.dir === "rtl";
+    const edgeOffset = 28; // 12px (left-3) + 20px (half of 40px orb)
+    return {
+      x: isRtl ? vp.w - edgeOffset : edgeOffset,
+      y: 28,
+      size: 40,
+    };
+  }, [origin, vp.w]);
 
   // Diagonal in px → ensures the circle fully covers the viewport at peak.
   const maxRadius = useMemo(() => {
-    if (typeof window === "undefined") return 1500;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const dx = Math.max(o.x, w - o.x);
-    const dy = Math.max(o.y, h - o.y);
+    const dx = Math.max(o.x, vp.w - o.x);
+    const dy = Math.max(o.y, vp.h - o.y);
     return Math.ceil(Math.sqrt(dx * dx + dy * dy)) + 40;
-  }, [o]);
+  }, [o, vp]);
 
   const initialRadius = (o.size || 40) / 2;
 
