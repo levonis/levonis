@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar as arLocale, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/lib/i18n';
 import Footer from '@/components/Footer';
 
@@ -115,9 +115,10 @@ interface OrderCardProps {
   order: any;
   navigate: (path: string) => void;
   t: (key: any, vars?: Record<string, string | number>) => string;
+  language: string;
 }
 
-const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
+const OrderCard = ({ order, navigate, t, language }: OrderCardProps) => {
   const isPreOrder = order.order_type !== 'direct';
   const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
   const shippingName = shippingItem?.shipping_option_name_ar || '';
@@ -133,9 +134,10 @@ const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
     ? firstItem?.custom_product_requests?.product_name || firstItem?.product_name_ar
     : firstItem?.product_name_ar;
 
+  const dateLocale = language === 'en' ? enUS : arLocale;
   const relativeTime = (() => {
     try {
-      return formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: ar });
+      return formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: dateLocale });
     } catch {
       return '';
     }
@@ -257,7 +259,7 @@ const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
 const MyOrders = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { t, isRtl } = useLanguage();
+  const { t, isRtl, language } = useLanguage();
   const [searchParams] = useSearchParams();
 
   const [preorderExpanded, setPreorderExpanded] = useState(true);
@@ -397,14 +399,14 @@ const MyOrders = () => {
     return (
       <div className="px-3 py-2 space-y-2.5">
         {filtered.map((order: any) => (
-          <OrderCard key={order.id} order={order} navigate={navigate} t={t} />
+          <OrderCard key={order.id} order={order} navigate={navigate} t={t} language={language} />
         ))}
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card border-b border-border/30">
         <div className="px-4 pt-4 pb-3">
