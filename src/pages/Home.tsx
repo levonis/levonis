@@ -7,15 +7,14 @@ import { Link } from 'react-router-dom';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
-
+import StoriesBar from '@/components/stories/StoriesBar';
+import ReelsBar from '@/components/reels/ReelsBar';
 
 import { useLanguage } from '@/lib/i18n';
 import ProgressiveSection from '@/components/ProgressiveSection';
 
-// Lazy load below-the-fold sections to reduce initial bundle
-const StoriesBar = lazy(() => import('@/components/stories/StoriesBar'));
+// Lazy-load only sections gated by ProgressiveSection (genuinely below-the-fold)
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
-const ReelsBar = lazy(() => import('@/components/reels/ReelsBar'));
 // CommunitySection moved off the homepage to /community to reduce initial load.
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 
