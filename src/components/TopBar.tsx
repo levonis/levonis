@@ -247,8 +247,8 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                 size="icon"
                 onClick={() => navigate('/download-app')}
                 className="rounded-full border-primary/30 hover:border-primary hidden sm:inline-flex"
-                title="تحميل التطبيق"
-                aria-label="تحميل التطبيق"
+                title={t('topbar_download_app')}
+                aria-label={t('topbar_download_app')}
               >
                 <Download className="h-4 w-4" />
               </Button>

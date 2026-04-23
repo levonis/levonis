@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import React from 'react';
 import { useLocation } from 'react-router-dom';
+import { useLanguage } from '@/lib/i18n';
 
 interface AnnouncementBarProps {
   onHeightChange?: (height: number) => void;
@@ -11,6 +12,7 @@ interface AnnouncementBarProps {
 }
 
 const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: AnnouncementBarProps) => {
+  const { t } = useLanguage();
   const [dismissed, setDismissed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -132,7 +134,7 @@ const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: 
           <button
             onClick={goToPrevious}
             className="flex-shrink-0 hover:bg-white/20 rounded-full p-1 transition-colors"
-            aria-label="السابق"
+            aria-label={t('announcement_prev')}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -202,7 +204,7 @@ const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: 
           <button
             onClick={goToNext}
             className="flex-shrink-0 hover:bg-white/20 rounded-full p-1 transition-colors"
-            aria-label="التالي"
+            aria-label={t('announcement_next')}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -220,7 +222,7 @@ const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: 
                     ? 'bg-white w-6' 
                     : 'bg-white/40 hover:bg-white/60'
                 }`}
-                aria-label={`الإعلان ${index + 1}`}
+                aria-label={t('announcement_index', { index: index + 1 })}
               />
             ))}
           </div>
@@ -229,7 +231,7 @@ const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: 
         <button
           onClick={() => setDismissed(true)}
           className="flex-shrink-0 hover:bg-white/20 rounded-full p-1 transition-colors"
-          aria-label="إغلاق"
+          aria-label={t('announcement_close')}
         >
           <X className="h-4 w-4" />
         </button>
