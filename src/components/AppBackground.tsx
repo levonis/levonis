@@ -86,14 +86,14 @@ export default function AppBackground() {
       className="pointer-events-none fixed inset-0 overflow-hidden"
       style={{ zIndex: 0, background: '#000000' }}
     >
-      {/* Static blended red blooms — richer cinematic mixture */}
+      {/* Static blended green blooms — richer cinematic mixture */}
       <div
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse 85% 70% at 88% 22%, hsl(0 95% 55% / 0.85) 0%, hsl(355 90% 50% / 0.45) 35%, transparent 70%),
-            radial-gradient(ellipse 75% 65% at 12% 82%, hsl(355 90% 50% / 0.65) 0%, hsl(0 85% 45% / 0.30) 40%, transparent 75%),
-            radial-gradient(ellipse 60% 50% at 50% 50%, hsl(10 80% 45% / 0.35) 0%, transparent 70%)
+            radial-gradient(ellipse 85% 70% at 88% 22%, hsl(160 45% 18% / 0.95) 0%, hsl(160 45% 15% / 0.55) 35%, transparent 70%),
+            radial-gradient(ellipse 75% 65% at 12% 82%, hsl(160 45% 15% / 0.75) 0%, hsl(160 45% 12% / 0.35) 40%, transparent 75%),
+            radial-gradient(ellipse 60% 50% at 50% 50%, hsl(160 45% 15% / 0.40) 0%, transparent 70%)
           `,
           filter: 'blur(60px)',
           mixBlendMode: 'screen',
@@ -109,7 +109,7 @@ export default function AppBackground() {
         }}
       />
 
-      {/* Velocity-reactive red LED bloom */}
+      {/* Velocity-reactive green LED bloom */}
       <motion.div
         className="absolute"
         style={{
@@ -123,7 +123,7 @@ export default function AppBackground() {
           marginTop: '-40vh',
           willChange: 'top, transform, opacity, filter',
           background:
-            'radial-gradient(circle at center, hsl(0 95% 60% / 1) 0%, hsl(355 90% 50% / 0.55) 25%, hsl(350 80% 40% / 0.20) 55%, transparent 75%)',
+            'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
           filter,
           mixBlendMode: 'screen',
         }}
