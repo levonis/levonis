@@ -257,7 +257,7 @@ const OrderCard = ({ order, navigate, t }: OrderCardProps) => {
 const MyOrders = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, isRtl } = useLanguage();
   const [searchParams] = useSearchParams();
 
   const [preorderExpanded, setPreorderExpanded] = useState(true);
@@ -329,7 +329,6 @@ const MyOrders = () => {
   }
 
   if (!user) {
-    const { isRtl } = useLanguage();
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center space-y-3">
