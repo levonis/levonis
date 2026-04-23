@@ -288,7 +288,6 @@ const Home = () => {
         </ProgressiveSection>
 
         <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout' }}>
-          <div className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
           
           <div className="text-center mb-6 md:mb-8 relative z-10">
             <div className="inline-block mb-2">
