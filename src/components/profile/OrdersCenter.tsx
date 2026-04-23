@@ -42,7 +42,7 @@ export default function OrdersCenter({ userId }: OrdersCenterProps) {
   });
 
   return (
-    <div className="rounded-3xl bg-card border border-border/40 shadow-sm p-4">
+    <div className="rounded-3xl bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-bold text-foreground">{t('orders_my_orders')}</h2>
         <button
