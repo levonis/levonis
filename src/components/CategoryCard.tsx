@@ -39,8 +39,8 @@ const CategoryCard = ({
   return (
     <Link
       to={`/category/${slug}`}
-      className="group relative block rounded-2xl h-[160px] sm:h-[172px] p-3 sm:p-4 overflow-hidden
-                 backdrop-blur-xl bg-card/40 border border-white/15
+      className={`group relative block rounded-2xl h-[160px] sm:h-[172px] p-3 sm:p-4 overflow-hidden
+                 backdrop-blur-xl ${isTransparentGif ? "bg-card/20 border border-white/8" : "bg-card/40 border border-white/15"}
                  shadow-[0_4px_24px_-6px_hsl(var(--primary)/0.15)]
                  hover:border-primary/55 hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.35)]
                  hover:-translate-y-0.5 transition-all duration-300"
@@ -49,7 +49,7 @@ const CategoryCard = ({
       {hasDirectSale && <DirectSaleRibbon />}
 
       {useFullMedia && (
-        <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
           {showVideo ? (
             <video
               src={mediaUrl!}
@@ -64,17 +64,17 @@ const CategoryCard = ({
             <img
               src={mediaUrl!}
               alt=""
-              className={isTransparentGif ? "w-full h-full object-contain" : "w-full h-full object-cover"}
+              className={isTransparentGif ? "max-w-full max-h-full object-contain object-center select-none" : "w-full h-full object-cover"}
               loading="lazy"
               draggable={false}
             />
           ) : null}
           <div
-            className="absolute inset-0"
+            className="absolute inset-x-0 bottom-0 h-[58%]"
             style={{
               background:
                 isTransparentGif
-                  ? "linear-gradient(180deg, hsl(var(--background) / 0.04) 0%, hsl(var(--background) / 0.10) 52%, hsl(var(--background) / 0.32) 100%)"
+                  ? "linear-gradient(180deg, transparent 0%, hsl(var(--background) / 0.12) 48%, hsl(var(--background) / 0.44) 100%)"
                   : "linear-gradient(180deg, hsl(var(--background) / 0.12) 0%, hsl(var(--background) / 0.22) 40%, hsl(var(--background) / 0.58) 100%)",
             }}
           />
@@ -91,7 +91,7 @@ const CategoryCard = ({
       />
       <div className="pointer-events-none absolute -top-8 -right-8 w-24 h-24 rounded-full bg-primary/15 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      <div className="relative z-10 flex flex-col items-center h-full">
+      <div className={`relative z-10 flex flex-col items-center h-full ${isTransparentGif ? "justify-end" : ""}`}>
         {/* Media / Icon */}
         {!useFullMedia && (
           <div
@@ -144,7 +144,7 @@ const CategoryCard = ({
 
         {/* Title */}
         <div className="w-full min-h-[36px] sm:min-h-[40px] flex items-start justify-center px-0.5 overflow-hidden mt-auto">
-          <h3 className="font-bold text-[12px] sm:text-[13px] text-foreground group-hover:text-primary transition-colors duration-200 text-center leading-snug line-clamp-2 break-words w-full">
+          <h3 className={`font-bold text-[12px] sm:text-[13px] text-foreground group-hover:text-primary transition-colors duration-200 text-center leading-snug line-clamp-2 break-words w-full ${isTransparentGif ? "drop-shadow-[0_2px_8px_hsl(var(--background)/0.75)]" : ""}`}>
             {nameAr}
           </h3>
         </div>
@@ -152,7 +152,7 @@ const CategoryCard = ({
         {/* Description */}
         <div className="w-full min-h-[30px] flex items-start justify-center px-0.5 overflow-hidden">
           {descriptionAr ? (
-            <p className="text-[10px] sm:text-[11px] font-medium text-foreground/75 text-center leading-relaxed line-clamp-2 break-words w-full">
+            <p className={`text-[10px] sm:text-[11px] font-medium text-center leading-relaxed line-clamp-2 break-words w-full ${isTransparentGif ? "text-foreground/90 drop-shadow-[0_2px_8px_hsl(var(--background)/0.75)]" : "text-foreground/75"}`}>
               {descriptionAr}
             </p>
           ) : (
