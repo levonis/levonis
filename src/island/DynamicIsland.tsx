@@ -549,8 +549,20 @@ export const DynamicIsland = () => {
                 >
                   <BackIcon className="h-4 w-4" strokeWidth={2.25} />
                 </button>
-                <div className="flex-1 truncate text-center text-[13px] font-semibold tracking-tight text-foreground">
-                  {title ?? t("nav_categories")}
+                <div className="flex-1 overflow-hidden text-center">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={title ?? "cat-default"}
+                      layout
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                      className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
+                    >
+                      {title ?? t("nav_categories")}
+                    </motion.span>
+                  </AnimatePresence>
                 </div>
                 <button
                   onClick={goSearch}
@@ -577,8 +589,20 @@ export const DynamicIsland = () => {
                 >
                   <BackIcon className="h-4 w-4" strokeWidth={2.25} />
                 </button>
-                <div className="flex-1 truncate text-center text-[12.5px] font-semibold tracking-tight text-foreground">
-                  {title ?? t("nav_products")}
+                <div className="flex-1 overflow-hidden text-center">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={title ?? "prod-default"}
+                      layout
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                      className="block truncate text-[12.5px] font-semibold tracking-tight text-foreground"
+                    >
+                      {title ?? t("nav_products")}
+                    </motion.span>
+                  </AnimatePresence>
                 </div>
                 <div className="h-8 w-8" />
               </motion.div>
