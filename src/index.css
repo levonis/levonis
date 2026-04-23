@@ -2177,12 +2177,14 @@ body {
   }
 
   .marquee-track {
-    display: inline-flex;
+    display: flex;
+    width: max-content;
+    flex: none;
     gap: 3rem;
     /* trailing gap so the seam between the duplicated halves matches the
        inter-item spacing — prevents a visible "jump" at the loop point */
     padding-inline-end: 3rem;
-    animation: marquee 22s linear infinite;
+    animation: island-marquee 22s linear infinite;
     white-space: nowrap;
     will-change: transform;
   }
@@ -2198,7 +2200,7 @@ body {
   }
 }
 
-@keyframes marquee {
+@keyframes island-marquee {
   from { transform: translateX(0%); }
   to   { transform: translateX(-50%); }
 }
