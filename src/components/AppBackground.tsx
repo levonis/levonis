@@ -3,13 +3,14 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 /**
  * Premium fixed background:
- * - Solid #15382c base (dominant)
- * - Single red LED-like glow on the right edge that travels vertically with scroll
+ * - Base color #15382c (dominant green-black)
+ * - Soft red gradient blooms blended in (secondary)
+ * - A subtle red highlight that drifts vertically with scroll
  */
 export default function AppBackground() {
-  // Vertical position of the LED glow (in vh)
-  const yPct = useMotionValue(30);
-  const ySpring = useSpring(yPct, { stiffness: 60, damping: 20, mass: 0.8 });
+  // Vertical position of the red bloom (in vh)
+  const yPct = useMotionValue(40);
+  const ySpring = useSpring(yPct, { stiffness: 50, damping: 22, mass: 1 });
   const top = useTransform(ySpring, (v) => `${v}vh`);
 
   useEffect(() => {
@@ -22,8 +23,8 @@ export default function AppBackground() {
         const scrollY = window.scrollY || 0;
         const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         const ratio = Math.min(1, scrollY / max);
-        // Travel between 15vh and 80vh based on scroll position
-        yPct.set(15 + ratio * 65);
+        // Travel between 20vh and 75vh based on scroll
+        yPct.set(20 + ratio * 55);
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -35,52 +36,58 @@ export default function AppBackground() {
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 overflow-hidden"
-      style={{
-        zIndex: 0,
-        background: '#15382c',
-      }}
+      style={{ zIndex: 0, background: '#15382c' }}
     >
-      {/* Red LED glow on the right edge — follows scroll */}
+      {/* Static blended red blooms — soft cinematic mixture */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 70% 55% at 85% 25%, hsl(0 85% 50% / 0.45) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 50% at 15% 80%, hsl(355 80% 45% / 0.32) 0%, transparent 65%),
+            radial-gradient(ellipse 80% 60% at 50% 50%, hsl(160 40% 12% / 0.55) 0%, transparent 70%)
+          `,
+          filter: 'blur(40px)',
+          mixBlendMode: 'screen',
+        }}
+      />
+
+      {/* Deep green vignette to anchor the base */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 30%, hsl(160 45% 6% / 0.55) 100%)',
+        }}
+      />
+
+      {/* Scroll-following red bloom */}
       <motion.div
         className="absolute"
         style={{
           top,
-          right: 0,
-          width: '40vw',
-          height: '40vh',
-          marginTop: '-20vh',
-          marginRight: '-15vw',
+          right: '-10vw',
+          width: '70vw',
+          height: '60vh',
+          marginTop: '-30vh',
           willChange: 'top',
+          background:
+            'radial-gradient(circle at center, hsl(0 90% 55% / 0.55) 0%, hsl(355 85% 45% / 0.25) 35%, transparent 70%)',
+          filter: 'blur(80px)',
+          mixBlendMode: 'screen',
         }}
-      >
-        {/* Outer soft halo */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(circle at center, hsl(0 95% 55% / 0.45) 0%, hsl(0 90% 50% / 0.18) 30%, transparent 65%)',
-            filter: 'blur(60px)',
-            mixBlendMode: 'screen',
-          }}
-        />
-        {/* Bright LED core */}
-        <div
-          className="absolute"
-          style={{
-            top: '50%',
-            right: '15vw',
-            width: '24px',
-            height: '24px',
-            marginTop: '-12px',
-            borderRadius: '50%',
-            background:
-              'radial-gradient(circle, hsl(0 100% 65%) 0%, hsl(0 100% 55%) 40%, hsl(0 95% 45% / 0.6) 70%, transparent 100%)',
-            boxShadow:
-              '0 0 24px 8px hsl(0 100% 55% / 0.6), 0 0 60px 20px hsl(0 95% 50% / 0.35)',
-            mixBlendMode: 'screen',
-          }}
-        />
-      </motion.div>
+      />
+
+      {/* Subtle film grain via gradient noise */}
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            'radial-gradient(hsl(0 0% 100% / 0.6) 1px, transparent 1px)',
+          backgroundSize: '3px 3px',
+          mixBlendMode: 'overlay',
+        }}
+      />
     </div>
   );
 }
