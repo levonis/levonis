@@ -20,23 +20,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 const shellSpring: Transition = {
   type: "spring",
-  stiffness: 260,
-  damping: 28,
-  mass: 0.95,
+  stiffness: 170,
+  damping: 26,
+  mass: 1.1,
 };
 
 // Dedicated transition for the island appearing / disappearing with the route.
 // Slower & softer than internal morphs so it feels like a gentle breath.
 const shellEnterExit: Transition = {
   type: "spring",
-  stiffness: 180,
-  damping: 26,
-  mass: 1.05,
+  stiffness: 140,
+  damping: 24,
+  mass: 1.2,
 };
 
 const contentTransition: Transition = {
-  duration: 0.24,
-  ease: [0.32, 0.72, 0, 1],
+  duration: 0.36,
+  ease: [0.22, 1, 0.36, 1],
 };
 
 const contentMotion = {
@@ -54,8 +54,8 @@ const morphMotion = {
 };
 
 const morphTransition: Transition = {
-  duration: 0.32,
-  ease: [0.32, 0.72, 0, 1],
+  duration: 0.45,
+  ease: [0.22, 1, 0.36, 1],
 };
 
 /* -------------------------------------------------------------------------- */
@@ -301,27 +301,33 @@ export const DynamicIsland = () => {
               transition={{
                 default: {
                   type: "spring",
-                  stiffness: 220,
-                  damping: 30,
-                  mass: 1,
+                  stiffness: 160,
+                  damping: 28,
+                  mass: 1.1,
                 },
                 width: {
                   type: "spring",
-                  stiffness: 200,
-                  damping: 32,
-                  mass: 1.05,
+                  stiffness: 150,
+                  damping: 30,
+                  mass: 1.15,
                 },
                 height: {
                   type: "spring",
-                  stiffness: 220,
-                  damping: 30,
-                  mass: 1,
+                  stiffness: 160,
+                  damping: 28,
+                  mass: 1.1,
                 },
-                opacity: { duration: 0.28, ease: [0.32, 0.72, 0, 1] },
+                borderRadius: {
+                  type: "spring",
+                  stiffness: 160,
+                  damping: 28,
+                  mass: 1.1,
+                },
+                opacity: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
                 scaleX: shellEnterExit,
                 scaleY: shellEnterExit,
                 y: shellEnterExit,
-                filter: { duration: 0.26, ease: [0.32, 0.72, 0, 1] },
+                filter: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
               }}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
             >
