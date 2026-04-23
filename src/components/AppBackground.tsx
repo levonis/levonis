@@ -4,36 +4,27 @@ import { motion, useMotionValue, useSpring, useTransform, animate } from 'framer
 
 /**
  * Fixed full-viewport background:
- * - Base: #15382c (≥75%) blended into near-black (≥20%)
- * - A red light orb (≤5%) drifts as the user scrolls (descends + sways)
- * - On route change, the orb travels along the bottom edge to the opposite
- *   side, climbs back up the opposite edge, and stays there.
- *
- * Coordinates are stored as percentages and converted to CSS via calc(% vw/vh).
+ * - Base color: #15382c (dominant green, ~90%)
+ * - A soft red glow (~10%) drifts on scroll & route change, blended seamlessly
+ *   into the green using `mix-blend-mode: soft-light` and heavy blur — no
+ *   visible edges, just a moving warm tint.
  */
 export default function AppBackground() {
   const location = useLocation();
   const sideRef = useRef<'right' | 'left'>('right');
   const transitioningRef = useRef(false);
 
-  // Percentages of the viewport (0–100)
   const xPct = useMotionValue(78);
   const yPct = useMotionValue(28);
 
   const xSpring = useSpring(xPct, { stiffness: 60, damping: 18, mass: 0.6 });
   const ySpring = useSpring(yPct, { stiffness: 60, damping: 18, mass: 0.6 });
 
-  // Convert % values to CSS strings for left/top
   const left = useTransform(xSpring, (v) => `${v}vw`);
   const top = useTransform(ySpring, (v) => `${v}vh`);
-  // Black anchor — always on the opposite side of the red
-  const blackLeft = useTransform(xSpring, (v) => `${100 - v}vw`);
-  const blackTop = useTransform(ySpring, (v) => `${100 - v}vh`);
 
-  // Scroll-driven motion (descends + sways around the current side)
   useEffect(() => {
     let pending = false;
-
     const onScroll = () => {
       if (pending) return;
       pending = true;
@@ -48,13 +39,11 @@ export default function AppBackground() {
         yPct.set(targetY);
       });
     };
-
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, [xPct, yPct]);
 
-  // Route-change choreography: travel along the edge to the opposite side
   useEffect(() => {
     const nextSide: 'right' | 'left' = sideRef.current === 'right' ? 'left' : 'right';
     const targetX = nextSide === 'right' ? 78 : 22;
@@ -93,34 +82,18 @@ export default function AppBackground() {
         backgroundColor: '#15382c',
       }}
     >
-      {/* Soft directional black wash — diffused across one diagonal */}
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          willChange: 'transform',
-        }}
-      >
-        <motion.div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(var(--bg-angle, 200deg), transparent 0%, transparent 45%, hsl(0 0% 0% / 0.45) 100%)',
-          }}
-        />
-      </motion.div>
-
-      {/* Red tint layer — small, intense center, completely fades into green */}
+      {/* Moving red tint — small, soft, blended seamlessly into the green */}
       <motion.div
         className="absolute"
         style={{
           left,
           top,
-          width: '55vmax',
-          height: '55vmax',
-          marginLeft: '-27.5vmax',
-          marginTop: '-27.5vmax',
-          mixBlendMode: 'overlay',
-          opacity: 0.85,
+          width: '90vmax',
+          height: '90vmax',
+          marginLeft: '-45vmax',
+          marginTop: '-45vmax',
+          mixBlendMode: 'soft-light',
+          opacity: 0.9,
           willChange: 'left, top',
         }}
       >
@@ -128,28 +101,19 @@ export default function AppBackground() {
           className="absolute inset-0"
           style={{
             background:
-              'radial-gradient(circle, hsl(0 95% 50% / 0.95) 0%, hsl(0 85% 45% / 0.35) 18%, hsl(0 70% 35% / 0.10) 40%, transparent 70%)',
-            filter: 'blur(70px)',
+              'radial-gradient(circle, hsl(0 90% 50% / 0.95) 0%, hsl(0 80% 45% / 0.55) 12%, hsl(0 60% 35% / 0.20) 32%, transparent 60%)',
+            filter: 'blur(120px)',
           }}
         />
       </motion.div>
 
-      {/* Dominant green veil — keeps #15382c as the ruling color (>75%) */}
+      {/* Subtle green unifying veil — keeps #15382c dominant */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, hsl(155 45% 15% / 0.55) 0%, hsl(155 45% 15% / 0.35) 50%, hsl(155 45% 12% / 0.55) 100%)',
+            'radial-gradient(120% 100% at 50% 50%, hsl(155 45% 16% / 0.35) 0%, hsl(155 45% 13% / 0.55) 100%)',
           mixBlendMode: 'multiply',
-        }}
-      />
-
-      {/* Subtle final vignette to fuse all layers seamlessly */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(160% 120% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.25) 100%)',
         }}
       />
     </div>
