@@ -4,10 +4,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/utils';
-import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 const BundlesSection = () => {
-  const scrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const { data: bundles } = useQuery({
     queryKey: ['home-bundles-preview'],
     queryFn: async () => {
@@ -39,11 +37,11 @@ const BundlesSection = () => {
       </div>
 
       <div
-        ref={scrollRef}
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
         style={{
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y',
+          touchAction: 'pan-y pinch-zoom',
+          overscrollBehaviorX: 'contain',
         }}
       >
         {bundles.map((bundle) => {

@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useHorizontalDragScroll } from '@/hooks/useHorizontalDragScroll';
 
 interface ReelThumb {
   id: string;
@@ -14,7 +13,6 @@ interface ReelThumb {
 }
 
 export default function ReelsBar() {
-  const scrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const navigate = useNavigate();
 
   const { data: reels = [] } = useQuery({
@@ -61,15 +59,11 @@ export default function ReelsBar() {
           </button>
         </div>
         <div
-          ref={scrollRef}
           className="flex gap-2.5 overflow-x-auto scrollbar-hide px-4"
           style={{
             WebkitOverflowScrolling: 'touch',
-            // Browser handles vertical pan natively (page scroll bubbles up).
-            // Horizontal scrolling is performed manually by useHorizontalDragScroll
-            // only after the gesture is unambiguously horizontal, so a vertical
-            // swipe is never hijacked.
-            touchAction: 'pan-y',
+            touchAction: 'pan-y pinch-zoom',
+            overscrollBehaviorX: 'contain',
           }}
         >
           {reels.map((reel) => (
