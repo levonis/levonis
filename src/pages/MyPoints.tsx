@@ -14,11 +14,16 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import LoyaltyLevelCard from "@/components/LoyaltyLevelCard";
 import DailyTaskCard from "@/components/DailyTaskCard";
 import ReferralCard from "@/components/ReferralCard";
+import { useLanguage } from "@/lib/i18n";
+import { ar as arLocale, enUS } from "date-fns/locale";
+import { format } from "date-fns";
 
 export default function MyPoints() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, language, dir } = useLanguage();
+  const dateLocale = language === 'en' ? enUS : arLocale;
   const [redeemAmount, setRedeemAmount] = useState("");
   const [convertAmount, setConvertAmount] = useState("");
   const [completingTask, setCompletingTask] = useState<string | null>(null);
@@ -29,202 +34,108 @@ export default function MyPoints() {
     }
   }, [user, navigate]);
 
-  // جلب رصيد النقاط
   const { data: userPoints, isLoading: loadingPoints } = useQuery({
     queryKey: ["userPoints", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from("user_points")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-      
+      const { data, error } = await supabase.from("user_points").select("*").eq("user_id", user.id).single();
       if (error && error.code !== "PGRST116") throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // جلب المعاملات
   const { data: transactions, isLoading: loadingTransactions } = useQuery({
     queryKey: ["pointsTransactions", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from("points_transactions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      
+      const { data, error } = await supabase.from("points_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // جلب رصيد المحفظة
-  const { data: wallet } = useQuery({
-    queryKey: ["wallet", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from("user_wallets")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      
-      if (error && error.code !== "PGRST116") throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // جلب معاملات المحفظة
-  const { data: walletTransactions } = useQuery({
-    queryKey: ["walletTransactions", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from("wallet_transactions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // جلب إعدادات النقاط
   const { data: pointsSettings } = useQuery({
     queryKey: ["pointsSettings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("default_settings")
-        .select("setting_value")
-        .eq("setting_key", "points_settings")
-        .single();
-      
+      const { data, error } = await supabase.from("default_settings").select("setting_value").eq("setting_key", "points_settings").single();
       if (error && error.code !== "PGRST116") throw error;
-      const settings = data?.setting_value as any || { 
-        points_per_order: 10, 
-        points_per_review: 5,
-        points_to_money_rate: 100,
-        points_to_coupon_rate: 50
-      };
-      return settings;
+      return (data?.setting_value as any) || { points_per_order: 10, points_per_review: 5, points_to_money_rate: 100, points_to_coupon_rate: 50 };
     },
   });
 
-  // جلب المستويات
   const { data: loyaltyLevels, isLoading: loadingLevels } = useQuery({
     queryKey: ["loyaltyLevels"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("loyalty_levels")
-        .select("*")
-        .order("display_order", { ascending: true });
-      
+      const { data, error } = await supabase.from("loyalty_levels").select("*").order("display_order", { ascending: true });
       if (error) throw error;
       return data;
     },
   });
 
-  // جلب المهام اليومية
   const { data: dailyTasks, isLoading: loadingTasks } = useQuery({
     queryKey: ["dailyTasks"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("daily_tasks")
-        .select("*")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
-      
+      const { data, error } = await supabase.from("daily_tasks").select("*").eq("is_active", true).order("display_order", { ascending: true });
       if (error) throw error;
       return data;
     },
   });
 
-  // جلب المهام المكتملة اليوم
   const { data: completedTasks, refetch: refetchCompletedTasks } = useQuery({
     queryKey: ["completedTasks", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from("user_task_completions")
-        .select("*")
-        .eq("user_id", user.id)
-        .gte("completed_at", new Date().toISOString().split('T')[0]);
-      
+      const { data, error } = await supabase.from("user_task_completions").select("*").eq("user_id", user.id).gte("completed_at", new Date().toISOString().split('T')[0]);
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // جلب كود الدعوة
   const { data: referralData, refetch: refetchReferral } = useQuery({
     queryKey: ["referralCode", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from("user_referrals")
-        .select("referral_code, status, points_awarded")
-        .eq("referrer_user_id", user.id);
-      
+      const { data, error } = await supabase.from("user_referrals").select("referral_code, status, points_awarded").eq("referrer_user_id", user.id);
       if (error) throw error;
       return data;
     },
     enabled: !!user?.id,
   });
 
-  // تحويل النقاط إلى كوبون
   const redeemToCoupon = useMutation({
     mutationFn: async (points: number) => {
       if (!user?.id) throw new Error("User not found");
       if (!userPoints || userPoints.available_points < points) {
-        throw new Error("رصيد نقاط غير كافٍ");
+        throw new Error(t('mp_err_insufficient'));
       }
 
       const couponValue = points / (pointsSettings?.points_to_coupon_rate || 50);
-      
-      // إنشاء كوبون
-      const couponCode = `POINTS-${Date.now()}`;
-      const { error: couponError } = await supabase
-        .from("coupons")
-        .insert({
-          code: couponCode,
-          discount_type: "fixed",
-          discount_value: couponValue,
-          max_uses: 1,
-          current_uses: 0,
-          active: true,
-        });
-
+      const couponCode = `${t('mp_coupon_code_prefix')}-${Date.now()}`;
+      const { error: couponError } = await supabase.from("coupons").insert({
+        code: couponCode,
+        discount_type: "fixed",
+        discount_value: couponValue,
+        max_uses: 1,
+        current_uses: 0,
+        active: true,
+      });
       if (couponError) throw couponError;
 
-      // تحديث النقاط
-      const { error: pointsError } = await supabase
-        .from("user_points")
-        .update({
-          available_points: userPoints.available_points - points,
-          redeemed_points: userPoints.redeemed_points + points,
-        })
-        .eq("user_id", user.id);
-
+      const { error: pointsError } = await supabase.from("user_points").update({
+        available_points: userPoints.available_points - points,
+        redeemed_points: userPoints.redeemed_points + points,
+      }).eq("user_id", user.id);
       if (pointsError) throw pointsError;
 
-      // إضافة معاملة
       await supabase.from("points_transactions").insert({
         user_id: user.id,
         points: -points,
         type: "redeemed",
         source: "coupon",
-        description: `تحويل ${points.toLocaleString()} نقطة إلى كوبون بقيمة ${couponValue.toLocaleString()} دينار عراقي`,
+        description: t('mp_tx_desc_coupon', { points: points.toLocaleString(), value: couponValue.toLocaleString() }),
       });
 
       return couponCode;
@@ -232,45 +143,38 @@ export default function MyPoints() {
     onSuccess: (couponCode) => {
       queryClient.invalidateQueries({ queryKey: ["userPoints"] });
       queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
-      toast.success(`تم إنشاء الكوبون بنجاح: ${couponCode}`);
+      toast.success(t('mp_success_coupon', { code: couponCode }));
       setRedeemAmount("");
     },
     onError: (error: any) => {
-      toast.error(error.message || "حدث خطأ أثناء تحويل النقاط");
+      toast.error(error.message || t('mp_err_redeem'));
     },
   });
 
-  // تحويل النقاط إلى المحفظة
   const convertToMoney = useMutation({
     mutationFn: async (points: number) => {
-      const { data, error } = await supabase.rpc('convert_points_to_wallet', {
-        points_amount: points
-      });
-
+      const { data, error } = await supabase.rpc('convert_points_to_wallet', { points_amount: points });
       if (error) throw error;
-      
       const result = data as any;
-      if (!result?.success) throw new Error(result?.error || 'فشل تحويل النقاط');
-
+      if (!result?.success) throw new Error(result?.error || t('mp_err_convert'));
       return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userPoints"] });
       queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success('تم تحويل النقاط إلى محفظتك بنجاح!');
+      toast.success(t('mp_success_convert'));
       setConvertAmount("");
     },
     onError: (error: any) => {
-      console.error('خطأ في تحويل النقاط:', error);
-      toast.error(error.message || 'حدث خطأ في تحويل النقاط');
+      toast.error(error.message || t('mp_err_convert'));
     },
   });
 
   const handleRedeemToCoupon = () => {
     const points = parseFloat(redeemAmount);
     if (isNaN(points) || points <= 0) {
-      toast.error("الرجاء إدخال عدد نقاط صحيح");
+      toast.error(t('mp_err_invalid_amount'));
       return;
     }
     redeemToCoupon.mutate(points);
@@ -279,109 +183,81 @@ export default function MyPoints() {
   const handleConvertToMoney = () => {
     const points = parseFloat(convertAmount);
     if (isNaN(points) || points <= 0) {
-      toast.error("الرجاء إدخال عدد نقاط صحيح");
+      toast.error(t('mp_err_invalid_amount'));
       return;
     }
     convertToMoney.mutate(points);
   };
 
-  // إكمال مهمة يومية
   const handleCompleteTask = async (taskKey: string) => {
     if (!user?.id) return;
-    
     setCompletingTask(taskKey);
     try {
-      const { data, error } = await supabase.rpc("complete_daily_task", {
-        task_key_param: taskKey,
-      });
-
+      const { data, error } = await supabase.rpc("complete_daily_task", { task_key_param: taskKey });
       if (error) throw error;
-
       const result = data as any;
       if (result.success) {
-        toast.success(`تم إكمال المهمة! حصلت على ${result.points_earned} نقطة`);
+        toast.success(t('mp_success_task', { points: result.points_earned }));
         queryClient.invalidateQueries({ queryKey: ["userPoints"] });
         queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
         refetchCompletedTasks();
       } else {
-        toast.error(result.error || "حدث خطأ");
+        toast.error(result.error || t('mp_err_task'));
       }
     } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء إكمال المهمة");
+      toast.error(error.message || t('mp_err_task'));
     } finally {
       setCompletingTask(null);
     }
   };
 
-  // إنشاء كود دعوة
   const handleGenerateReferralCode = async () => {
     if (!user?.id) return;
-
     try {
-      // جلب username من الprofile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", user.id)
-        .single();
-
+      const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single();
       if (!profile?.username) {
-        toast.error("لم يتم العثور على اسم المستخدم");
+        toast.error(t('mp_err_username_missing'));
         return;
       }
-
-      const referralCode = `REF-${profile.username.toUpperCase()}`;
-      
-      // التحقق من وجود كود دعوة سابق
-      const { data: existingReferral } = await supabase
-        .from("user_referrals")
-        .select("referral_code")
-        .eq("referrer_user_id", user.id)
-        .maybeSingle();
-
+      const referralCode = `${t('mp_referral_code_prefix')}-${profile.username.toUpperCase()}`;
+      const { data: existingReferral } = await supabase.from("user_referrals").select("referral_code").eq("referrer_user_id", user.id).maybeSingle();
       if (existingReferral) {
-        toast.info("لديك كود دعوة بالفعل");
+        toast.info(t('mp_info_referral_exists'));
         refetchReferral();
         return;
       }
-
-      const { error } = await supabase
-        .from("user_referrals")
-        .insert({
-          referrer_user_id: user.id,
-          referral_code: referralCode,
-        });
-
+      const { error } = await supabase.from("user_referrals").insert({
+        referrer_user_id: user.id,
+        referral_code: referralCode,
+      });
       if (error) throw error;
-
-      toast.success("تم إنشاء كود الدعوة بنجاح!");
+      toast.success(t('mp_success_referral_created'));
       refetchReferral();
     } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء إنشاء كود الدعوة");
+      toast.error(error.message || t('mp_err_referral'));
     }
   };
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={dir}>
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">النقاط</h1>
-          <p className="text-muted-foreground">إدارة نقاط المكافآت الخاصة بك</p>
+          <h1 className="text-3xl font-bold mb-2">{t('mp_title')}</h1>
+          <p className="text-muted-foreground">{t('mp_subtitle')}</p>
         </div>
 
         {loadingPoints ? (
-          <div className="text-center py-12">جاري التحميل...</div>
+          <div className="text-center py-12">{t('mp_loading')}</div>
         ) : (
           <>
-            {/* رصيد النقاط */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Coins className="h-4 w-4" />
-                    النقاط المتاحة
+                    {t('mp_available_points')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -393,7 +269,7 @@ export default function MyPoints() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <History className="h-4 w-4" />
-                    إجمالي النقاط
+                    {t('mp_total_points')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -405,12 +281,12 @@ export default function MyPoints() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="h-4 w-4" />
-                    مستواك
+                    {t('mp_your_level')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold capitalize">
-                    {loyaltyLevels?.find(l => l.level_key === userPoints?.level)?.name_ar || "برونزي"}
+                    {loyaltyLevels?.find(l => l.level_key === userPoints?.level)?.name_ar || t('mp_default_level')}
                   </p>
                 </CardContent>
               </Card>
@@ -419,12 +295,12 @@ export default function MyPoints() {
             <Tabs defaultValue="tasks" className="space-y-6">
               <ScrollArea className="w-full whitespace-nowrap">
                 <TabsList className="inline-flex w-auto min-w-full p-1">
-                  <TabsTrigger value="tasks" className="text-xs sm:text-sm px-3 sm:px-4">المهام</TabsTrigger>
-                  <TabsTrigger value="levels" className="text-xs sm:text-sm px-3 sm:px-4">المستويات</TabsTrigger>
-                  <TabsTrigger value="earn" className="text-xs sm:text-sm px-3 sm:px-4">ربح النقاط</TabsTrigger>
-                  <TabsTrigger value="redeem" className="text-xs sm:text-sm px-3 sm:px-4">كوبون</TabsTrigger>
-                  <TabsTrigger value="convert" className="text-xs sm:text-sm px-3 sm:px-4">أموال</TabsTrigger>
-                  <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4">السجل</TabsTrigger>
+                  <TabsTrigger value="tasks" className="text-xs sm:text-sm px-3 sm:px-4">{t('mp_tab_tasks')}</TabsTrigger>
+                  <TabsTrigger value="levels" className="text-xs sm:text-sm px-3 sm:px-4">{t('mp_tab_levels')}</TabsTrigger>
+                  <TabsTrigger value="earn" className="text-xs sm:text-sm px-3 sm:px-4">{t('mp_tab_earn')}</TabsTrigger>
+                  <TabsTrigger value="redeem" className="text-xs sm:text-sm px-3 sm:px-4">{t('mp_tab_redeem')}</TabsTrigger>
+                  <TabsTrigger value="convert" className="text-xs sm:text-sm px-3 sm:px-4">{t('mp_tab_convert')}</TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4">{t('mp_tab_history')}</TabsTrigger>
                 </TabsList>
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
@@ -434,10 +310,10 @@ export default function MyPoints() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <CheckSquare className="h-5 w-5 text-primary" />
-                      المهام اليومية
+                      {t('mp_daily_tasks')}
                     </h3>
                     {loadingTasks ? (
-                      <div className="text-center py-8">جاري التحميل...</div>
+                      <div className="text-center py-8">{t('mp_loading')}</div>
                     ) : dailyTasks && dailyTasks.length > 0 ? (
                       <div className="space-y-3">
                         {dailyTasks.map((task) => (
@@ -453,7 +329,7 @@ export default function MyPoints() {
                     ) : (
                       <Card>
                         <CardContent className="py-8 text-center text-muted-foreground">
-                          لا توجد مهام متاحة حالياً
+                          {t('mp_no_tasks')}
                         </CardContent>
                       </Card>
                     )}
@@ -462,7 +338,7 @@ export default function MyPoints() {
                   <div>
                     <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
                       <Gift className="h-5 w-5 text-primary" />
-                      برنامج الدعوات
+                      {t('mp_referral_program')}
                     </h3>
                     <ReferralCard
                       referralCode={referralData?.[0]?.referral_code || ""}
@@ -476,7 +352,7 @@ export default function MyPoints() {
 
               <TabsContent value="levels" className="space-y-6">
                 {loadingLevels ? (
-                  <div className="text-center py-8">جاري التحميل...</div>
+                  <div className="text-center py-8">{t('mp_loading')}</div>
                 ) : loyaltyLevels && loyaltyLevels.length > 0 ? (
                   <div className="grid md:grid-cols-2 gap-6">
                     {loyaltyLevels.map((level, index) => (
@@ -492,7 +368,7 @@ export default function MyPoints() {
                 ) : (
                   <Card>
                     <CardContent className="py-8 text-center text-muted-foreground">
-                      لا توجد مستويات متاحة حالياً
+                      {t('mp_no_levels')}
                     </CardContent>
                   </Card>
                 )}
@@ -504,39 +380,39 @@ export default function MyPoints() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Gift className="h-5 w-5 text-primary" />
-                        طرق كسب النقاط
+                        {t('mp_earn_methods_title')}
                       </CardTitle>
-                      <CardDescription>اكسب نقاط إضافية بطرق متعددة</CardDescription>
+                      <CardDescription>{t('mp_earn_methods_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                        <p className="font-semibold">✓ إتمام الطلبات</p>
+                        <p className="font-semibold">{t('mp_earn_orders_title')}</p>
                         <p className="text-sm text-muted-foreground">
-                          احصل على {pointsSettings?.points_per_order || 10} نقطة لكل طلب يتم توصيله
+                          {t('mp_earn_orders_desc', { points: pointsSettings?.points_per_order || 10 })}
                           {pointsSettings?.order_value_multiplier > 0 && (
-                            <span> + نقاط إضافية حسب قيمة الطلب</span>
+                            <span> {t('mp_earn_orders_extra')}</span>
                           )}
                         </p>
                       </div>
 
                       <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                        <p className="font-semibold">✓ كتابة التقييمات</p>
+                        <p className="font-semibold">{t('mp_earn_reviews_title')}</p>
                         <p className="text-sm text-muted-foreground">
-                          احصل على {pointsSettings?.points_per_review || 5} نقطة لكل تقييم تكتبه
+                          {t('mp_earn_reviews_desc', { points: pointsSettings?.points_per_review || 5 })}
                         </p>
                       </div>
 
                       <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                        <p className="font-semibold">✓ تقييم الطلبات المؤكدة</p>
+                        <p className="font-semibold">{t('mp_earn_verified_reviews_title')}</p>
                         <p className="text-sm text-muted-foreground">
-                          احصل على {pointsSettings?.points_per_verified_review || 10} نقطة عند تقييم طلب مؤكد من الإدارة
+                          {t('mp_earn_verified_reviews_desc', { points: pointsSettings?.points_per_verified_review || 10 })}
                         </p>
                       </div>
 
                       <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                        <p className="font-semibold">✓ مشاهدة الإعلانات</p>
+                        <p className="font-semibold">{t('mp_earn_ads_title')}</p>
                         <p className="text-sm text-muted-foreground">
-                          احصل على {pointsSettings?.points_per_ad || 2} نقطة لكل إعلان تشاهده بالكامل
+                          {t('mp_earn_ads_desc', { points: pointsSettings?.points_per_ad || 2 })}
                         </p>
                       </div>
                     </CardContent>
@@ -546,19 +422,21 @@ export default function MyPoints() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Award className="h-5 w-5 text-green-500" />
-                        مشاهدة إعلان
+                        {t('mp_watch_ad_title')}
                       </CardTitle>
-                      <CardDescription>اكسب {pointsSettings?.points_per_ad || 2} نقطة بمشاهدة إعلان</CardDescription>
+                      <CardDescription>
+                        {t('mp_watch_ad_desc', { points: pointsSettings?.points_per_ad || 2 })}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                        <p className="text-muted-foreground">سيتم عرض الإعلان هنا</p>
+                        <p className="text-muted-foreground">{t('mp_watch_ad_placeholder')}</p>
                       </div>
                       <Button className="w-full" variant="default">
-                        ابدأ مشاهدة الإعلان
+                        {t('mp_watch_ad_btn')}
                       </Button>
                       <p className="text-xs text-muted-foreground text-center">
-                        * يجب مشاهدة الإعلان بالكامل للحصول على النقاط
+                        {t('mp_watch_ad_note')}
                       </p>
                     </CardContent>
                   </Card>
@@ -570,25 +448,25 @@ export default function MyPoints() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Gift className="h-4 w-4" />
-                      تحويل النقاط إلى كوبون
+                      {t('mp_redeem_title')}
                     </CardTitle>
                     <CardDescription>
-                      كل {pointsSettings?.points_to_coupon_rate || 50} نقطة = 1 دينار عراقي
+                      {t('mp_redeem_desc', { rate: pointsSettings?.points_to_coupon_rate || 50 })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="redeemAmount">عدد النقاط</Label>
+                      <Label htmlFor="redeemAmount">{t('mp_points_count_label')}</Label>
                       <Input
                         id="redeemAmount"
                         type="number"
-                        placeholder="أدخل عدد النقاط"
+                        placeholder={t('mp_points_count_placeholder')}
                         value={redeemAmount}
                         onChange={(e) => setRedeemAmount(e.target.value)}
                       />
                       {redeemAmount && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          = {(parseFloat(redeemAmount) / (pointsSettings?.points_to_coupon_rate || 50)).toFixed(2)} دينار عراقي
+                          = {(parseFloat(redeemAmount) / (pointsSettings?.points_to_coupon_rate || 50)).toFixed(2)} {t('mp_iqd')}
                         </p>
                       )}
                     </div>
@@ -597,8 +475,8 @@ export default function MyPoints() {
                       disabled={redeemToCoupon.isPending || !redeemAmount}
                       className="w-full"
                     >
-                      {redeemToCoupon.isPending ? "جاري التحويل..." : "تحويل إلى كوبون"}
-                      <ArrowRight className="mr-2 h-4 w-4" />
+                      {redeemToCoupon.isPending ? t('mp_redeem_loading') : t('mp_redeem_btn')}
+                      <ArrowRight className="mx-2 h-4 w-4" />
                     </Button>
                   </CardContent>
                 </Card>
@@ -609,25 +487,25 @@ export default function MyPoints() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      تحويل النقاط إلى أموال
+                      {t('mp_convert_title')}
                     </CardTitle>
                     <CardDescription>
-                      كل {pointsSettings?.points_to_money_rate || 100} نقطة = 1 دينار عراقي
+                      {t('mp_convert_desc', { rate: pointsSettings?.points_to_money_rate || 100 })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="convertAmount">عدد النقاط</Label>
+                      <Label htmlFor="convertAmount">{t('mp_points_count_label')}</Label>
                       <Input
                         id="convertAmount"
                         type="number"
-                        placeholder="أدخل عدد النقاط"
+                        placeholder={t('mp_points_count_placeholder')}
                         value={convertAmount}
                         onChange={(e) => setConvertAmount(e.target.value)}
                       />
                       {convertAmount && (
                         <p className="text-sm text-muted-foreground mt-2">
-                          = {(parseFloat(convertAmount) / (pointsSettings?.points_to_money_rate || 100)).toFixed(2)} دينار عراقي
+                          = {(parseFloat(convertAmount) / (pointsSettings?.points_to_money_rate || 100)).toFixed(2)} {t('mp_iqd')}
                         </p>
                       )}
                     </div>
@@ -636,11 +514,11 @@ export default function MyPoints() {
                       disabled={convertToMoney.isPending || !convertAmount}
                       className="w-full"
                     >
-                      {convertToMoney.isPending ? "جاري التحويل..." : "طلب تحويل إلى أموال"}
-                      <ArrowRight className="mr-2 h-4 w-4" />
+                      {convertToMoney.isPending ? t('mp_convert_loading') : t('mp_convert_btn')}
+                      <ArrowRight className="mx-2 h-4 w-4" />
                     </Button>
                     <p className="text-sm text-muted-foreground">
-                      * سيتم التواصل معك من قبل الإدارة لإتمام عملية التحويل
+                      {t('mp_convert_note')}
                     </p>
                   </CardContent>
                 </Card>
@@ -649,11 +527,11 @@ export default function MyPoints() {
               <TabsContent value="history" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>سجل المعاملات</CardTitle>
+                    <CardTitle>{t('mp_history_title')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {loadingTransactions ? (
-                      <p className="text-center py-4">جاري التحميل...</p>
+                      <p className="text-center py-4">{t('mp_loading')}</p>
                     ) : transactions && transactions.length > 0 ? (
                       <div className="space-y-4">
                         {transactions.map((transaction) => (
@@ -664,13 +542,7 @@ export default function MyPoints() {
                             <div className="flex-1">
                               <p className="font-medium">{transaction.description}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(transaction.created_at).toLocaleDateString("ar-IQ", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {format(new Date(transaction.created_at), 'PPP - p', { locale: dateLocale })}
                               </p>
                             </div>
                             <div
@@ -688,7 +560,7 @@ export default function MyPoints() {
                       </div>
                     ) : (
                       <p className="text-center py-8 text-muted-foreground">
-                        لا توجد معاملات بعد
+                        {t('mp_no_transactions')}
                       </p>
                     )}
                   </CardContent>
