@@ -164,7 +164,7 @@ const CategoryCard = ({
               >
                 {iconText}
               </span>
-            )}
+            ) : null}
           </div>
         )}
 
