@@ -332,7 +332,7 @@ const MyOrders = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="min-h-screen flex items-center justify-center px-4" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center space-y-3">
           <h1 className="text-base font-bold text-foreground">{t('myorders_login_required')}</h1>
           <p className="text-sm text-muted-foreground">{t('myorders_login_required_desc')}</p>
