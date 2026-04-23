@@ -344,7 +344,7 @@ const MyOrders = () => {
   }
 
   const renderTabs = (
-    tabs: readonly { key: string; label: string; icon: any }[],
+    tabs: readonly { key: string; tKey: string; icon: any }[],
     activeTab: string,
     setTab: (k: string) => void,
     counts: Record<string, number>,
@@ -367,7 +367,7 @@ const MyOrders = () => {
             )}
           >
             <Icon className="h-3.5 w-3.5" />
-            <span>{tab.label}</span>
+            <span>{t(tab.tKey as any)}</span>
             {count > 0 && (
               <span className={cn(
                 "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black px-1",
@@ -389,15 +389,15 @@ const MyOrders = () => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <Package className="h-8 w-8 text-primary/40" />
           </div>
-          <h3 className="font-bold text-foreground mb-1 text-sm">لا توجد طلبات {emptyLabel}</h3>
-          <p className="text-xs text-muted-foreground">جرب تصفية أخرى أو ابدأ التسوق</p>
+          <h3 className="font-bold text-foreground mb-1 text-sm">{t('myorders_empty_filtered', { label: emptyLabel })}</h3>
+          <p className="text-xs text-muted-foreground">{t('myorders_empty_filtered_desc')}</p>
         </div>
       );
     }
     return (
       <div className="px-3 py-2 space-y-2.5">
         {filtered.map((order: any) => (
-          <OrderCard key={order.id} order={order} navigate={navigate} />
+          <OrderCard key={order.id} order={order} navigate={navigate} t={t} />
         ))}
       </div>
     );
@@ -414,8 +414,8 @@ const MyOrders = () => {
                 <Package className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-lg font-black text-foreground">طلباتي</h1>
-                {orders && <p className="text-xs text-muted-foreground">{orders.length} طلب</p>}
+                <h1 className="text-lg font-black text-foreground">{t('myorders_title')}</h1>
+                {orders && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate(-1 as any)}>
@@ -434,11 +434,11 @@ const MyOrders = () => {
             <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
               <Package className="h-10 w-10 text-primary/40" />
             </div>
-            <h3 className="font-black text-foreground mb-1.5 text-lg">لا توجد طلبات بعد</h3>
-            <p className="text-sm text-muted-foreground mb-5">ابدأ التسوق واطلب منتجاتك المفضلة</p>
+            <h3 className="font-black text-foreground mb-1.5 text-lg">{t('myorders_no_orders_yet')}</h3>
+            <p className="text-sm text-muted-foreground mb-5">{t('myorders_no_orders_desc')}</p>
             <Button onClick={() => navigate('/products')} className="rounded-xl">
               <ShoppingBag className="h-4 w-4 ml-1.5" />
-              تصفح المنتجات
+              {t('myorders_browse_products')}
             </Button>
           </div>
         ) : (
@@ -475,8 +475,8 @@ const MyOrders = () => {
                     <ShoppingBag className="h-[18px] w-[18px] text-amber-500" />
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-foreground">الحجز المسبق</p>
-                    <p className="text-[11px] text-muted-foreground">{preorders.length} طلب</p>
+                    <p className="text-sm font-black text-foreground">{t('myorders_section_preorder')}</p>
+                    <p className="text-[11px] text-muted-foreground">{t('myorders_section_orders_count', { count: preorders.length })}</p>
                   </div>
                 </div>
                 <div className="relative z-[1] flex items-center gap-2">
@@ -497,8 +497,8 @@ const MyOrders = () => {
 
               {preorderExpanded && (
                 <div className="mt-2">
-                  {renderTabs(PREORDER_TABS, preorderTab, setPreorderTab, preorderCounts, preorders.length)}
-                  {renderOrderList(filteredPreorders, ALL_STATUS_LABELS[preorderTab] || '')}
+                  {renderTabs(PREORDER_TAB_KEYS, preorderTab, setPreorderTab, preorderCounts, preorders.length)}
+                  {renderOrderList(filteredPreorders, STATUS_TKEY[preorderTab] ? t(STATUS_TKEY[preorderTab] as any) : '')}
                 </div>
               )}
             </div>
@@ -557,8 +557,8 @@ const MyOrders = () => {
 
               {directExpanded && (
                 <div className="mt-2">
-                  {renderTabs(DIRECT_TABS, directTab, setDirectTab, directCounts, directOrders.length)}
-                  {renderOrderList(filteredDirect, ALL_STATUS_LABELS[directTab] || '')}
+                  {renderTabs(DIRECT_TAB_KEYS, directTab, setDirectTab, directCounts, directOrders.length)}
+                  {renderOrderList(filteredDirect, STATUS_TKEY[directTab] ? t(STATUS_TKEY[directTab] as any) : '')}
                 </div>
               )}
             </div>
