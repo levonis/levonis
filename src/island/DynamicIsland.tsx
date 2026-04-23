@@ -562,18 +562,16 @@ export const DynamicIsland = () => {
                   <BackIcon className="h-4 w-4" strokeWidth={2.25} />
                 </button>
                 <div className="flex-1 overflow-hidden text-center">
-                  <AnimatePresence mode="popLayout" initial={false}>
+                  <AnimatePresence mode="wait" initial={false}>
                     <motion.span
                       key={title ?? "cat-default"}
-                      layout
-                      initial={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
-                      animate={{ opacity: 1, scaleX: 1, filter: "blur(0px)" }}
-                      exit={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
-                      style={{ transformOrigin: "center" }}
+                      initial={{ opacity: 0, scaleX: 0.6 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      exit={{ opacity: 0, scaleX: 0.6 }}
+                      style={{ transformOrigin: "center", willChange: "transform, opacity" }}
                       transition={{
-                        scaleX: { type: "spring", stiffness: 200, damping: 28, mass: 1 },
-                        opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
-                        filter: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                        scaleX: { type: "spring", stiffness: 220, damping: 30, mass: 0.9 },
+                        opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
                       }}
                       className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
                     >
@@ -607,18 +605,16 @@ export const DynamicIsland = () => {
                   <BackIcon className="h-4 w-4" strokeWidth={2.25} />
                 </button>
                 <div className="flex-1 overflow-hidden text-center">
-                  <AnimatePresence mode="popLayout" initial={false}>
+                  <AnimatePresence mode="wait" initial={false}>
                     <motion.span
                       key={title ?? "prod-default"}
-                      layout
-                      initial={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
-                      animate={{ opacity: 1, scaleX: 1, filter: "blur(0px)" }}
-                      exit={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
-                      style={{ transformOrigin: "center" }}
+                      initial={{ opacity: 0, scaleX: 0.6 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      exit={{ opacity: 0, scaleX: 0.6 }}
+                      style={{ transformOrigin: "center", willChange: "transform, opacity" }}
                       transition={{
-                        scaleX: { type: "spring", stiffness: 200, damping: 28, mass: 1 },
-                        opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
-                        filter: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                        scaleX: { type: "spring", stiffness: 220, damping: 30, mass: 0.9 },
+                        opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
                       }}
                       className="block truncate text-[12.5px] font-semibold tracking-tight text-foreground"
                     >
