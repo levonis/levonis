@@ -31,18 +31,25 @@ const ProfileOrb = memo(() => {
 
   // Progressive merge with the Dynamic Island as the user scrolls.
   // 0 = fully visible orb, 1 = fully merged into the island.
-  // Range chosen to overlap the island's promo→search morph (≈ 0–80px).
+  // The range is auto-calibrated to the island's actual morph window:
+  //   start ≈ a bit before the island's promo→search threshold (40px)
+  //   end   ≈ start + island height (so the orb is gone by the time the
+  //           search shape has fully settled — taller islands get a longer fade).
   const [mergeProgress, setMergeProgress] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
     let raf = 0;
+    const ISLAND_THRESHOLD = 40; // matches IslandContext scroll threshold
     const compute = () => {
+      // Auto-calibrate: read the live island height when present, fall back
+      // to a sane default (≈ search shape height) otherwise.
+      const islandEl = document.querySelector<HTMLElement>("[data-dynamic-island]");
+      const islandH = islandEl?.getBoundingClientRect().height ?? 52;
+      const start = Math.max(8, ISLAND_THRESHOLD - 12); // ≈ 28px
+      const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9); // ≈ 88–110px
       const y = window.scrollY;
-      const start = 8;
-      const end = 80;
       const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
-      // ease-out cubic for a soft tail
-      const eased = 1 - Math.pow(1 - t, 3);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
       setMergeProgress(eased);
     };
     const onScroll = () => {
@@ -54,8 +61,10 @@ const ProfileOrb = memo(() => {
     };
     compute();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", compute);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", compute);
       if (raf) window.cancelAnimationFrame(raf);
     };
   }, []);
