@@ -50,6 +50,9 @@ const ProfileExpansionShell = ({ children }: Props) => {
   // Snapshot the origin used for THIS open cycle so resize/RTL during open
   // doesn't yank the collapse target away from the orb.
   const lockedOriginRef = useRef<{ x: number; y: number; size: number } | null>(null);
+  // Gate the children: only render the page content AFTER the circle has
+  // finished expanding, so the user sees the disc grow first, then content.
+  const [circleOpened, setCircleOpened] = useState(false);
   useEffect(() => {
     if (present) {
       lockedOriginRef.current = origin
@@ -58,6 +61,7 @@ const ProfileExpansionShell = ({ children }: Props) => {
     } else {
       // After collapse animation completes the shell unmounts; clear lock.
       lockedOriginRef.current = null;
+      setCircleOpened(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [present]);
