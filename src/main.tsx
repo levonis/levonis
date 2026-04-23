@@ -97,11 +97,8 @@ try {
   localStorage.removeItem('__levo_recovery_attempts');
 } catch {}
 
-// Remove initial HTML loader after first paint
+// Remove initial HTML loader container after first paint
 requestAnimationFrame(() => {
   const loader = document.getElementById('initial-loader');
-  if (loader) {
-    loader.classList.add('fade-out');
-    setTimeout(() => loader.remove(), 300);
-  }
+  if (loader) loader.remove();
 });

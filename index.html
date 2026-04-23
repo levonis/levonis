@@ -143,13 +143,14 @@
         }
 
         function showRecovery(message) {
+          var loader = document.getElementById('initial-loader');
           var rec = document.getElementById('il-recover');
-          if (!rec) return;
+          if (!rec || !loader) return;
           if (message) {
             var p = rec.querySelector('p');
             if (p) p.textContent = message;
           }
-          rec.classList.add('show');
+          loader.classList.add('show');
         }
 
         var showTimer = setTimeout(function () {
