@@ -124,9 +124,7 @@ const Home = () => {
         </section>
 
         <section className="container mx-auto px-0">
-          <Suspense fallback={<div className="h-24" />}>
-            <ReelsBar />
-          </Suspense>
+          <ReelsBar />
         </section>
 
         <section className="container mx-auto px-4 py-6 md:py-10 text-center">
@@ -162,9 +160,7 @@ const Home = () => {
         </section>
 
         <section className="container mx-auto px-0">
-          <Suspense fallback={<div className="h-24" />}>
-            <StoriesBar />
-          </Suspense>
+          <StoriesBar />
         </section>
 
         <ProgressiveSection minHeight="180px" rootMargin="500px">
