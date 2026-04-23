@@ -14,6 +14,7 @@ import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 const UserInfo = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t, dir } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
@@ -72,7 +73,7 @@ const UserInfo = () => {
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error('حدث خطأ في تحميل البيانات');
+      toast.error(t('ui_load_error'));
     } finally {
       setLoading(false);
     }
@@ -122,13 +123,13 @@ const UserInfo = () => {
 
       setProfile({ ...profile, avatar_url: avatarUrl });
       setAvatarFile(null);
-      toast.success('تم حفظ التغييرات بنجاح');
+      toast.success(t('ui_save_success'));
     } catch (error: any) {
       console.error('Error updating profile:', error);
       if (error.code === '23505') {
-        toast.error('اسم المستخدم موجود بالفعل، الرجاء اختيار اسم آخر');
+        toast.error(t('ui_username_taken'));
       } else {
-        toast.error('حدث خطأ في حفظ التغييرات');
+        toast.error(t('ui_save_error'));
       }
     } finally {
       setSaving(false);
@@ -140,12 +141,12 @@ const UserInfo = () => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('كلمة المرور الجديدة غير متطابقة');
+      toast.error(t('ui_pwd_mismatch'));
       return;
     }
     
     if (passwordData.newPassword.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      toast.error(t('ui_pwd_too_short'));
       return;
     }
     
@@ -158,7 +159,7 @@ const UserInfo = () => {
       });
       
       if (signInError) {
-        toast.error('كلمة المرور الحالية غير صحيحة');
+        toast.error(t('ui_pwd_current_wrong'));
         setChangingPassword(false);
         return;
       }
@@ -169,7 +170,7 @@ const UserInfo = () => {
       setShowEmailVerification(true);
     } catch (error: any) {
       console.error('Error verifying password:', error);
-      toast.error('حدث خطأ في التحقق من كلمة المرور');
+      toast.error(t('ui_pwd_verify_error'));
       setChangingPassword(false);
     }
   };
@@ -183,16 +184,16 @@ const UserInfo = () => {
       
       if (updateError) {
         console.error('Password update error:', updateError);
-        toast.error(updateError.message || 'فشل في تحديث كلمة المرور');
+        toast.error(updateError.message || t('ui_pwd_update_failed'));
         return;
       }
       
-      toast.success('تم تغيير كلمة المرور بنجاح');
+      toast.success(t('ui_pwd_change_success'));
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setShowPasswordForm(false);
     } catch (error: any) {
       console.error('Error changing password:', error);
-      toast.error('حدث خطأ في تغيير كلمة المرور');
+      toast.error(t('ui_pwd_change_error'));
     } finally {
       setChangingPassword(false);
       setPendingPasswordChange(false);
@@ -210,7 +211,7 @@ const UserInfo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm" dir={dir}>
       <main className="container mx-auto px-4 pt-6 pb-10 max-w-4xl">
         <UserInfoPageHeader />
 
