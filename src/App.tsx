@@ -14,7 +14,7 @@ import AdminRoute from "@/components/AdminRoute";
 // Defer chrome and non-critical hooks for faster first paint on mobile
 const AppNavBar = lazy(() => import("@/components/AppNavBar"));
 const DeferredEffects = lazy(() => import("@/components/DeferredEffects"));
-import { IslandProvider } from "@/island/IslandContext";
+import { IslandProvider, useIsland } from "@/island/IslandContext";
 import { DynamicIsland } from "@/island/DynamicIsland";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
@@ -142,9 +142,13 @@ import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 
 function AppContent() {
   const location = useLocation();
+  const { visible: islandVisible } = useIsland();
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const hideChrome = isGamesPage || isReelsPage;
+
+  // Padding mirrors island visibility so the layout breathes in/out smoothly.
+  const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
   return (
     <>
@@ -152,8 +156,11 @@ function AppContent() {
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
-      {!hideChrome && <DynamicIsland />}
-      <main style={{ paddingTop: hideChrome ? 0 : 64 }}>
+      <DynamicIsland />
+      <main
+        style={{ paddingTop: mainPaddingTop }}
+        className="transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
+      >
         <Suspense fallback={<RouteAwareSkeleton />}>
           <Routes>
             <Route path="/" element={<Home />} />

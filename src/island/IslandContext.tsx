@@ -11,6 +11,7 @@ interface IslandContextValue {
   title?: string;
   setContext: (ctx: { state: IslandState; title?: string } | null) => void;
   promoMessages: string[];
+  visible: boolean;
 }
 
 const IslandContext = createContext<IslandContextValue | null>(null);
@@ -20,6 +21,47 @@ export const useIsland = () => {
   if (!ctx) throw new Error("useIsland must be used inside IslandProvider");
   return ctx;
 };
+
+/**
+ * Routes where the Dynamic Island must be HIDDEN.
+ * Checked via `startsWith` so nested paths inherit the hidden state.
+ */
+const HIDDEN_PREFIXES: string[] = [
+  "/cart",
+  "/rewards",
+  "/games",
+  "/chats",
+  "/community/messages",
+  "/community/cart",
+  "/community/checkout",
+  "/community/customer/profile",
+  "/community/customer/dashboard",
+  "/community/merchant/dashboard",
+  "/notifications",
+  "/notification-settings",
+  "/telegram-settings",
+  "/profile/settings",
+  "/user-info",
+  "/addresses",
+  "/my-orders",
+  "/order/",
+  "/my-requests",
+  "/my-referral",
+  "/my-purchased",
+  "/my-offer-purchases",
+  "/confirm-delivery",
+  "/activate-printer",
+  "/warranty-dashboard",
+  "/download",
+  "/printer-protection",
+  "/financial-drafts",
+  "/inventory",
+  "/auth",
+  "/admin",
+];
+
+export const isIslandHidden = (path: string): boolean =>
+  HIDDEN_PREFIXES.some((p) => path === p || path.startsWith(p + "/") || path.startsWith(p));
 
 export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
@@ -67,15 +109,32 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     const p = location.pathname;
     if (p.startsWith("/product/")) return { state: "product" };
     if (p.startsWith("/category/")) return { state: "category" };
-    if (p === "/" || p === "/home") return { state: scrolled ? "search" : "promo" };
+    // Show promo marquee when not scrolled on the main shopping & community surfaces.
+    const promoSurfaces =
+      p === "/" ||
+      p === "/home" ||
+      p === "/products" ||
+      p === "/categories" ||
+      p === "/bundles" ||
+      p === "/favorites" ||
+      p === "/community" ||
+      p.startsWith("/community/merchants") ||
+      p.startsWith("/community/requests") ||
+      p.startsWith("/community/reels");
+    if (promoSurfaces) {
+      return {
+        state: scrolled ? "search" : promoMessages.length > 0 ? "promo" : "search",
+      };
+    }
     return { state: "search" };
-  }, [location.pathname, scrolled]);
+  }, [location.pathname, scrolled, promoMessages.length]);
 
   // reset override when path changes
   useEffect(() => {
     setOverride(null);
   }, [location.pathname]);
 
+  const visible = !isIslandHidden(location.pathname);
   const active = override ?? routeDefault;
 
   return (
@@ -85,6 +144,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
         title: active.title,
         setContext: (ctx) => setOverride(ctx),
         promoMessages,
+        visible,
       }}
     >
       {children}
