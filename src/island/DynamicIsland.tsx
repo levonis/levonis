@@ -23,12 +23,18 @@ const contentMotion = {
   exit: { opacity: 0, scale: 0.985 },
 };
 
-const shapeFor = (state: IslandState): { width: number; height: number; radius: number } => {
+const shapeFor = (
+  state: IslandState,
+  title?: string,
+): { width: number; height: number; radius: number } => {
+  // approximate width per character (semi-bold 13px ≈ 7.5px, Arabic glyphs a bit wider)
+  const titleLen = title ? Array.from(title).length : 0;
+  const titleWidth = Math.min(220, Math.max(60, titleLen * 9));
   switch (state) {
     case "promo":    return { width: 280, height: 40, radius: 22 };
     case "search":   return { width: 340, height: 48, radius: 26 };
-    case "category": return { width: 340, height: 52, radius: 26 };
-    case "product":  return { width: 280, height: 46, radius: 24 };
+    case "category": return { width: 96 + titleWidth, height: 52, radius: 26 }; // back + search buttons + title
+    case "product":  return { width: 56 + titleWidth, height: 46, radius: 24 }; // back button + title (right spacer)
   }
 };
 
@@ -36,7 +42,7 @@ export const DynamicIsland = () => {
   const { state, title, promoMessages } = useIsland();
   const { t, isRtl } = useLanguage();
   const navigate = useNavigate();
-  const shape = shapeFor(state);
+  const shape = shapeFor(state, title);
   const [searchQuery, setSearchQuery] = useState("");
 
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
