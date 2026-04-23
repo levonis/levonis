@@ -30,6 +30,7 @@ import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { usePageTitle } from "@/island/usePageTitle";
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {

@@ -27,6 +27,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useLanguage } from '@/lib/i18n';
+import { usePageTitle } from '@/island/usePageTitle';
 
 type SortKey =
   | 'default'
