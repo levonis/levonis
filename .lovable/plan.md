@@ -1,33 +1,69 @@
 
 
-## جعل خلفية بطاقة المنتج في صفحة `/category` زجاجية فقط
+## خلفية تطبيق موحّدة بهوية لونية جديدة + بقعة حمراء متحركة
 
-### الملف المعني
-بطاقات المنتجات في `/category/:slug` تأتي من `src/components/FloatingProductCard.tsx` (الفرع غير-featured، السطور 115–157). هي التي تظهر في شبكة المنتجات داخل القسم — وليست `ProductCard.tsx` (التي عُدّلت سابقاً وتُستخدم في الرئيسية).
+### الهدف
+طبقة خلفية ثابتة (fixed) تغطي كامل النافذة في كل الصفحات، تتكوّن من:
+- **#15382c (أخضر داكن)** كقاعدة ≥75%
+- **أسود** كتدرّجات/زوايا ≥20%
+- **بقعة ضوئية حمراء** ≤5% تتحرك ديناميكياً عبر الـ scroll والتنقل بين الصفحات
 
-### الوضع الحالي للبطاقة (الحاوية الخارجية)
-```tsx
-<div className="... border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300">
-```
-+ تدرّج سفلي فوق الصورة `bg-gradient-to-t from-card to-transparent` يمتزج مع الخلفية الصلبة.
-+ تكبير عند hover للصورة (`group-hover:scale-105`).
+البقعة الحمراء تنتقل داخل canvas بصري كبير: **يمين عند النزول بالـscroll**، و**تنزلق عبر الحافّة (تنزل أسفل ثم تعبر للأسفل اليسار ثم تصعد)** عند الانتقال لصفحة جديدة، فتظهر دائماً في الجهة المقابلة بعد التنقّل.
 
-النتيجة: الخلفية ليست زجاجاً نقياً (شفافية ضعيفة + لون كرت صلب)، ويوجد إطار وتأثيرات إضافية.
+---
 
-### التغيير المطلوب
-**ملف واحد فقط:** `src/components/FloatingProductCard.tsx` — الحاوية في الفرع العادي (السطور 117–127):
+### البنية التقنية
 
-1. استبدال `border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300` بخلفية زجاجية نقية عبر `style`:
-   - `backdropFilter: blur(20px) saturate(1.4)`
-   - `background: linear-gradient(170deg, hsl(160 35% 14% / 0.3), hsl(160 30% 10% / 0.4), hsl(160 25% 8% / 0.5))`
-   - بدون `border` ولا `hover` ولا transition للحدود.
-2. إزالة شريط التدرّج السفلي `<div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />` لأنه يستند للون الكرت الصلب ولن يندمج مع الخلفية الزجاجية.
-3. إزالة `group-hover:scale-105` من الصورة (إبقاء الـtransition بدون تكبير) للحفاظ على هدوء البطاقة كما طلب المستخدم سابقاً.
+**1) تحديث متغيرات اللون — `src/index.css`**
+- استبدال `--background: 160 46% 15%` بـ `160 38% 15%` ≈ `#15382c` (الثيم الداكن الأصلي فقط — الثيمات الباهت/الليلي تبقى كما هي).
+- استبدال `--background-2` بـ `0 0% 4%` (أسود شبه نقي).
+- إضافة `--accent-red: 0 75% 45%` كمرجع للبقعة.
 
-محتوى البطاقة (الصورة + الاسم + السعر + شارة الخصم) يبقى كما هو تماماً.
+**2) مكوّن جديد `src/components/AppBackground.tsx`**
+طبقة `position: fixed; inset: 0; z-index: -1; pointer-events: none` خلف كل المحتوى، تحتوي:
+- **قاعدة لونية**: `linear-gradient(160deg, #15382c 0% 70%, #0a0a0a 100%)` + radial gradient أسود من الزاوية السفلية اليسرى → يضمن نسبة الأسود ≥20%.
+- **بقعة حمراء** عبر `<motion.div>`:
+  - قطر `38vmax`، خلفية `radial-gradient(circle, hsl(0 80% 50% / 0.55) 0%, transparent 65%)`
+  - `mix-blend-mode: screen` + `filter: blur(60px)` لتمتزج بسلاسة مع الأخضر/الأسود
+  - حركة "نَفَس" خفيفة: `scale [1, 1.05, 1]` كل 12s
+
+**3) منطق تحريك البقعة (داخل نفس المكوّن)**
+استخدام `useMotionValue` + `useSpring` (stiffness: 60, damping: 18) لإحداثيات `x, y`:
+
+- متغيّر داخلي `side: 'right' | 'left'` يبدأ من `'right'`.
+- **عند Scroll** (listener `passive` مع `requestAnimationFrame` throttle):
+  - `y = clamp(20vh + scrollY * 0.15, 20vh, 75vh)` → البقعة تنزل تدريجياً
+  - `x = sideBaseX + sin(scrollY/300) * 4vw` → تمايل خفيف حول الجهة الحالية
+- **عند تغيّر `location.pathname`** (`useEffect` على router):
+  1. تشغيل sequence عبر `animate()`:
+     - `y → 92vh` (نزول للأسفل)
+     - `x → الجهة المقابلة` عبر الحافة السفلية
+     - `y → 8vh` (صعود عبر الحافة المقابلة)
+     - استقرار في الموضع الجديد
+  2. قلب `side`، إعادة ربط حركة الـscroll للجهة الجديدة
+  3. مدة إجمالية ≈ 700ms بمنحنى `easeInOut`
+
+**4) تركيب المكوّن — `src/App.tsx`**
+- استيراد عادي (ليس lazy، بسيط وحرج بصرياً).
+- وضعه داخل `<BrowserRouter>` مباشرة قبل `<Routes>` ليصل إليه `useLocation`.
+- لا حاجة لتعديل أي صفحة فردية — الخلفية تعمل تلقائياً للجميع لأن أغلب الصفحات تكشف عن `body` في الفراغات.
+
+---
+
+### الملفات المتأثرة
+| ملف | التغيير |
+|---|---|
+| `src/components/AppBackground.tsx` | **جديد** — طبقة الخلفية + البقعة المتحركة |
+| `src/index.css` | تعديل `--background`/`--background-2` للثيم الداكن + إضافة `--accent-red` |
+| `src/App.tsx` | استيراد ووضع `<AppBackground />` داخل `BrowserRouter` |
+
+### الأداء
+- طبقة GPU واحدة، بلا إعادة ترتيب DOM.
+- scroll listener مع rAF throttle.
+- لا تأثير على lazy routes أو الـbackend.
 
 ### خارج النطاق
-- لا تغيير على الفرع `featured` (المنتج الرئيسي ثلاثي الأبعاد على المنصة).
-- لا تغيير على `ProductCard.tsx` أو الرئيسية.
-- لا تغييرات قاعدة بيانات.
+- لا تغيير على بطاقات المنتجات أو ألوان النصوص.
+- لا تغيير على ثيمي light/dark-night.
+- لا migrations.
 
