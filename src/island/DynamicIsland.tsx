@@ -413,13 +413,25 @@ export const DynamicIsland = () => {
                   }}
                 >
                   {messages.length > 0 ? (
-                    <div className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
-                      {[...messages, ...messages].map((m, i) => (
-                        <span key={i} className="inline-flex items-center">
-                          <span className="text-foreground/90">{m}</span>
-                        </span>
-                      ))}
-                    </div>
+                    (() => {
+                      // Repeat messages enough times to fill a wide marquee
+                      // track. The animation uses translateX(-50%) so the
+                      // content MUST be exactly two identical halves for the
+                      // loop to be seamless. We build one "half" with enough
+                      // repetitions to be visually long, then duplicate it.
+                      const REPEAT = Math.max(6, Math.ceil(20 / messages.length));
+                      const half = Array.from({ length: REPEAT }, () => messages).flat();
+                      const full = [...half, ...half];
+                      return (
+                        <div className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
+                          {full.map((m, i) => (
+                            <span key={i} className="inline-flex items-center">
+                              <span className="text-foreground/90">{m}</span>
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()
                   ) : (
                     <span className="text-[12px] font-medium text-foreground/70">LEVONIS</span>
                   )}
