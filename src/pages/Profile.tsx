@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserCardFrame } from "@/hooks/useUserCardFrame";
+import { useLanguage } from "@/lib/i18n";
 
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import OrdersCenter from "@/components/profile/OrdersCenter";
@@ -13,6 +14,7 @@ import NotificationPromptBanner from "@/components/profile/NotificationPromptBan
 
 export default function Profile() {
   const { user } = useAuth();
+  const { dir } = useLanguage();
 
   const { data: profile } = useQuery({
     queryKey: ["my-profile", user?.id],
@@ -32,7 +34,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 pt-6 pb-24 max-w-lg space-y-4" dir="rtl">
+      <main className="container mx-auto px-4 pt-6 pb-24 max-w-lg space-y-4" dir={dir}>
         {user?.id && (
           <ProfileHeader
             userId={user.id}

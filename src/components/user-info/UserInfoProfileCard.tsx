@@ -10,6 +10,7 @@ import type { FrameAnimationType } from "@/components/merchant/AvatarWithFrame";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 type ProfileState = {
   full_name: string;
@@ -38,6 +39,7 @@ export default function UserInfoProfileCard({
   uploadingAvatar: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const { t, isRtl } = useLanguage();
   const [uploadingCover, setUploadingCover] = useState(false);
 
   const objectUrl = useMemo(() => {
@@ -67,10 +69,10 @@ export default function UserInfoProfileCard({
       const coverUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       await supabase.from('profiles').update({ cover_image_url: coverUrl }).eq('id', userId);
       setProfile({ ...profile, cover_image_url: coverUrl });
-      toast.success('تم تحديث صورة الخلفية');
+      toast.success(t('ui_cover_updated'));
     } catch (err) {
       console.error(err);
-      toast.error('فشل رفع صورة الخلفية');
+      toast.error(t('ui_cover_failed'));
     } finally {
       setUploadingCover(false);
     }
@@ -89,9 +91,9 @@ export default function UserInfoProfileCard({
         )}
         <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-card to-transparent" />
         {/* Cover upload button */}
-        <label htmlFor="cover-upload" className="absolute top-2 left-2 h-7 px-2 rounded-lg bg-card/80 text-foreground flex items-center gap-1 cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold border border-border/30 hover:bg-card">
+        <label htmlFor="cover-upload" className={`absolute top-2 ${isRtl ? 'left-2' : 'right-2'} h-7 px-2 rounded-lg bg-card/80 text-foreground flex items-center gap-1 cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold border border-border/30 hover:bg-card`}>
           {uploadingCover ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
-          تغيير الخلفية
+          {t('ui_cover_change')}
           <Input id="cover-upload" type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
         </label>
       </div>
@@ -109,7 +111,7 @@ export default function UserInfoProfileCard({
               badgeColor={cardFrame?.card_color}
               isUser
             />
-            <label htmlFor="avatar" className="absolute -bottom-1 -left-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
+            <label htmlFor="avatar" className={`absolute -bottom-1 ${isRtl ? '-left-1' : '-right-1'} h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform`}>
               <Camera className="h-3 w-3" />
               <Input
                 id="avatar"
@@ -124,7 +126,7 @@ export default function UserInfoProfileCard({
           </div>
           <div className="pb-1.5 flex-1 min-w-0">
             <h2 className="font-black text-base text-foreground truncate">
-              {profile.full_name || "مستخدم جديد"}
+              {profile.full_name || t('ui_new_user')}
             </h2>
             <div className="flex items-center gap-2 mt-0.5">
               {profile.username && (
@@ -142,13 +144,13 @@ export default function UserInfoProfileCard({
           <div className="space-y-1">
             <Label htmlFor="full_name" className="text-[10px] font-bold flex items-center gap-1.5 text-muted-foreground">
               <User className="h-3 w-3 text-primary" />
-              الاسم الكامل
+              {t('ui_full_name')}
             </Label>
             <Input
               id="full_name"
               value={profile.full_name}
               onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-              placeholder="أدخل اسمك الكامل"
+              placeholder={t('ui_full_name_placeholder')}
               className="h-10 rounded-xl border-border/40 focus:border-primary/40 bg-muted/20"
             />
           </div>
@@ -156,13 +158,13 @@ export default function UserInfoProfileCard({
           <div className="space-y-1">
             <Label htmlFor="username" className="text-[10px] font-bold flex items-center gap-1.5 text-muted-foreground">
               <AtSign className="h-3 w-3 text-primary" />
-              اسم المستخدم
+              {t('ui_username')}
             </Label>
             <Input
               id="username"
               value={profile.username}
               onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-              placeholder="اختر اسم مستخدم فريد"
+              placeholder={t('ui_username_placeholder')}
               className="h-10 rounded-xl border-border/40 focus:border-primary/40 bg-muted/20"
             />
           </div>
@@ -171,10 +173,10 @@ export default function UserInfoProfileCard({
         <div className="space-y-1">
           <Label htmlFor="email" className="text-[10px] font-bold flex items-center gap-1.5 text-muted-foreground">
             <Mail className="h-3 w-3 text-primary" />
-            البريد الإلكتروني
+            {t('ui_email')}
           </Label>
           <Input id="email" value={profile.email} disabled className="h-10 rounded-xl bg-muted/30 text-muted-foreground border-border/20" />
-          <p className="text-[9px] text-muted-foreground/60">لا يمكن تغيير البريد الإلكتروني</p>
+          <p className="text-[9px] text-muted-foreground/60">{t('ui_email_locked_hint')}</p>
         </div>
 
         {/* Theme Switcher */}
@@ -187,8 +189,8 @@ export default function UserInfoProfileCard({
           className="w-full h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/15 hover:shadow-xl hover:shadow-primary/25 transition-all"
           disabled={saving || uploadingAvatar || uploadingCover}
         >
-          {(saving || uploadingAvatar) && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-          {uploadingAvatar ? "جاري رفع الصورة..." : "حفظ التغييرات"}
+          {(saving || uploadingAvatar) && <Loader2 className={`${isRtl ? 'ml-2' : 'mr-2'} h-4 w-4 animate-spin`} />}
+          {uploadingAvatar ? t('ui_uploading_avatar') : t('ui_save_btn')}
         </Button>
       </form>
     </div>
