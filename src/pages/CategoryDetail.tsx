@@ -192,45 +192,72 @@ const CategoryDetail = () => {
               <ProductGridSkeleton count={8} />
             ) : products && products.length > 0 ? (
               <div className="space-y-10 md:space-y-16">
-                {/* Hero section: Title + Featured product side by side */}
+                {/* Hero card: glassmorphism rectangular card with product image (left) + info (right) */}
                 {featuredProduct && (
-                  <div className="flex flex-row items-center gap-4 md:gap-16">
-                    {/* Title & description — right side (RTL) */}
-                    <div className="flex-1 text-right pt-2 md:pt-12">
-                      <h1 className="text-xl sm:text-3xl md:text-6xl font-black text-foreground/90 mb-1 md:mb-2 tracking-tight leading-tight">
-                        {pickName(featuredProduct.name as any, featuredProduct.name_ar as any)}
-                      </h1>
-                      {(featuredProduct.description_ar || (featuredProduct as any).description) && (
-                        <div>
-                          <p className="text-foreground/40 text-xs sm:text-sm md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
+                  <Link
+                    to={`/product/${featuredProduct.slug}`}
+                    className="group block relative rounded-3xl overflow-hidden isolate transition-transform duration-300 hover:scale-[1.01]"
+                    style={{
+                      backdropFilter: 'blur(40px) saturate(1.6)',
+                      WebkitBackdropFilter: 'blur(40px) saturate(1.6)',
+                      background:
+                        'linear-gradient(135deg, hsl(160 35% 16% / 0.32) 0%, hsl(160 30% 11% / 0.42) 55%, hsl(160 25% 7% / 0.55) 100%)',
+                      border: '1px solid hsl(160 30% 30% / 0.22)',
+                      boxShadow:
+                        '0 18px 50px -12px hsl(0 0% 0% / 0.55), inset 0 1px 0 hsl(160 45% 55% / 0.12)',
+                    }}
+                  >
+                    {/* Soft inner highlight */}
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 opacity-60"
+                      style={{
+                        background:
+                          'radial-gradient(ellipse 70% 60% at 0% 100%, hsl(160 50% 35% / 0.18) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 100% 0%, hsl(0 80% 50% / 0.10) 0%, transparent 60%)',
+                      }}
+                    />
+
+                    <div className="relative flex flex-row-reverse items-center gap-3 sm:gap-5 md:gap-8 p-3 sm:p-5 md:p-8">
+                      {/* Product image — left side (visually) */}
+                      <div className="flex-shrink-0 w-28 h-28 sm:w-44 sm:h-44 md:w-64 md:h-64 relative">
+                        <img
+                          src={featuredProduct.image_url || '/placeholder.svg'}
+                          alt={pickName(featuredProduct.name as any, featuredProduct.name_ar as any)}
+                          loading="eager"
+                          className="w-full h-full object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </div>
+
+                      {/* Info — right side (visually) */}
+                      <div className="flex-1 min-w-0 text-right">
+                        <h1 className="text-lg sm:text-2xl md:text-4xl font-black text-foreground mb-1 md:mb-2 tracking-tight leading-tight line-clamp-2">
+                          {pickName(featuredProduct.name as any, featuredProduct.name_ar as any)}
+                        </h1>
+                        {(featuredProduct.description_ar || (featuredProduct as any).description) && (
+                          <p className="text-foreground/55 text-[11px] sm:text-sm md:text-base line-clamp-2 mb-2 md:mb-3">
                             {pickDesc((featuredProduct as any).description, featuredProduct.description_ar)}
                           </p>
-                          <Link
-                            to={`/product/${featuredProduct.slug}`}
-                            className="text-primary text-xs md:text-sm mt-1 md:mt-2 hover:underline inline-block"
-                          >
-                            {t('catdetail_view_more')}
-                          </Link>
+                        )}
+                        <div className="flex items-baseline justify-end gap-1.5 mb-2 md:mb-3">
+                          <span className="text-base sm:text-xl md:text-3xl font-black text-primary">
+                            {Number(featuredProduct.price).toLocaleString()}
+                          </span>
+                          <span className="text-[10px] sm:text-xs md:text-sm text-primary/70 font-bold">
+                            {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
+                          </span>
+                          {featuredProduct.original_price && Number(featuredProduct.original_price) > Number(featuredProduct.price) && (
+                            <span className="text-[10px] sm:text-xs md:text-sm text-foreground/40 line-through mr-2">
+                              {Number(featuredProduct.original_price).toLocaleString()}
+                            </span>
+                          )}
                         </div>
-                      )}
+                        <span className="inline-flex items-center gap-1 text-primary text-[11px] sm:text-sm font-semibold group-hover:underline">
+                          {t('catdetail_view_more')}
+                          <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 rtl:rotate-180" />
+                        </span>
+                      </div>
                     </div>
-
-                    {/* Featured product on left (smaller on mobile) */}
-                    <div className="flex-shrink-0 w-32 sm:w-48 md:w-full md:max-w-sm">
-                      <FloatingProductCard
-                        id={featuredProduct.id}
-                        name={featuredProduct.name}
-                        nameAr={featuredProduct.name_ar}
-                        price={Number(featuredProduct.price)}
-                        originalPrice={featuredProduct.original_price ? Number(featuredProduct.original_price) : undefined}
-                        imageUrl={featuredProduct.image_url || undefined}
-                        currency={featuredProduct.currency || undefined}
-                        slug={featuredProduct.slug}
-                        hasDirectSale={(featuredProduct.has_in_stock ?? false) && !isAllDirectStockDepleted(featuredProduct)}
-                        featured
-                      />
-                    </div>
-                  </div>
+                  </Link>
                 )}
 
                 {/* Sort & Filter toolbar */}
