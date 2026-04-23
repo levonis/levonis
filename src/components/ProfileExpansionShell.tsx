@@ -7,18 +7,13 @@ interface Props {
   children: ReactNode;
 }
 
-const expandSpring: Transition = {
+// Symmetric spring used for both expand and collapse so the inverse motion
+// feels like the same balloon deflating. Tuned for premium softness.
+const balloonSpring: Transition = {
   type: "spring",
-  stiffness: 220,
-  damping: 28,
-  mass: 0.9,
-};
-
-const collapseSpring: Transition = {
-  type: "spring",
-  stiffness: 260,
+  stiffness: 230,
   damping: 30,
-  mass: 0.85,
+  mass: 0.9,
 };
 
 const PROFILE_PATH = "/profile";
