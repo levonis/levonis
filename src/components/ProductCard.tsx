@@ -85,7 +85,7 @@ const ProductCard = ({
   const statusLabel = !inStock
     ? t('product_out_of_stock')
     : hasDirectSale
-      ? t('product_direct_sale_label') ?? 'بيع مباشر'
+      ? 'بيع مباشر'
       : displayDescription || null;
 
   const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
