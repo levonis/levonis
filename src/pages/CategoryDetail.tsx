@@ -165,8 +165,8 @@ const CategoryDetail = () => {
     maxPrice !== '';
 
   return (
-    <div className="min-h-screen category-luxury-bg">
-      <main className="container mx-auto px-4 py-8 relative z-10 bg-background">
+    <div className="min-h-screen">
+      <main className="container mx-auto px-4 py-8 relative z-10">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-8 text-sm text-foreground/50">
           <Link to="/" className="hover:text-primary transition-colors">{t('nav_home')}</Link>
