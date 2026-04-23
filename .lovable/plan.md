@@ -1,62 +1,87 @@
 
 
-## فتح/إغلاق النوافذ كأنها توسعة من الزر (Origin-Expand Animation)
+## ضبط موحّد لتأثير الزجاج (Glassmorphism) عبر بطاقات /profile
 
-بدلاً من ظهور النوافذ المنبثقة في وسط الشاشة بشكل مفاجئ، ستفتح كأنها تنمو من البطاقة المضغوطة في الـ Header (التوفير، المحفظة، الكوبونات)، وتنكمش للعودة إليها عند الإغلاق — تأثير مشابه لـ Dynamic Island / iOS App Open.
+### الفكرة
+إنشاء طبقة CSS موحّدة (`.glass-card`) تحدّد قيم الشفافية، الحدود، الـ blur، والظل في **مكان واحد** — ثم تطبيقها على جميع بطاقات صفحة `/profile`. هذا يضمن تطابقاً كاملاً بصرياً عبر كل الأجهزة، ويجعل أي تعديل مستقبلي على المظهر الزجاجي يتم من ملف واحد فقط.
 
-### الفكرة التقنية
-- التقاط إحداثيات الزر المضغوط (`getBoundingClientRect`) لحظة النقر، وتمريرها للنافذة كـ "نقطة أصل".
-- استبدال `Dialog` (Radix) في الـ popups الثلاثة بطبقة `motion.div` (framer-motion موجود مسبقاً في المشروع) مع `transform-origin` محسوب وانيميشن `scale` + `opacity`.
-- عند الفتح: تبدأ النافذة من حجم/موقع الزر الصغير (`scale ~0.15`، `x/y` للـ origin) وتنمو إلى الحجم الطبيعي مع opacity من 0 → 1.
-- عند الإغلاق: العملية العكسية فينكمش النافذة للزر نفسه قبل أن تختفي.
-- Backdrop ضبابي يتلاشى بسلاسة (fade) متزامناً.
-- المحتوى الداخلي (rendered كما هو) يتلاشى/يكبر مع الحاوية.
+### 1) Design Tokens — `src/index.css`
+إضافة متغيرات CSS تحت `:root` و `.dark` ضمن `@layer base`:
 
-### الملفات المعدّلة
+```css
+:root {
+  /* Glassmorphism — unified across profile cards */
+  --glass-bg: 255 255 255 / 0.10;          /* خلفية شبه شفافة (light) */
+  --glass-bg-strong: 255 255 255 / 0.18;   /* للهيدر/CTA داخل البطاقة */
+  --glass-border: 255 255 255 / 0.20;
+  --glass-blur: 20px;
+  --glass-saturation: 140%;
+  --glass-shadow: 0 8px 32px -12px hsl(var(--foreground) / 0.18);
+}
+.dark {
+  --glass-bg: 255 255 255 / 0.05;
+  --glass-bg-strong: 255 255 255 / 0.10;
+  --glass-border: 255 255 255 / 0.10;
+  --glass-shadow: 0 8px 32px -12px hsl(0 0% 0% / 0.45);
+}
+```
 
-**1. مكوّن جديد: `src/components/profile/OriginExpandShell.tsx`**
-- يستقبل `open`, `onOpenChange`, `originRect` (DOMRect أو null), `children`, `title?`.
-- يرندر:
-  - `AnimatePresence` + backdrop (fixed inset-0, bg-black/40 backdrop-blur-sm, fade in/out).
-  - حاوية النافذة (fixed، centered، max-w-md، rounded-3xl، glass) مع:
-    - `initial`: `{ opacity: 0, scale: originScale, x: originX - centerX, y: originY - centerY }`
-    - `animate`: `{ opacity: 1, scale: 1, x: 0, y: 0 }`
-    - `exit`: نفس الـ initial
-    - `transition`: spring ناعم (`stiffness: 320, damping: 32, mass: 0.9`).
-  - زر إغلاق (X) في الزاوية.
-  - حاوية scrollable للمحتوى.
-- يحسب `transformOrigin` ديناميكياً من `originRect` ليبدو كأن النافذة تخرج من الزر فعلاً.
-- يدعم إغلاق بالنقر على الـ backdrop وبزر Escape.
+ثم، تحت `@layer components`:
 
-**2. `src/components/profile/ProfileHeader.tsx`**
-- إضافة `useRef<HTMLButtonElement>` لكل زر من الأزرار الأربعة في `stats`.
-- إضافة `originRect` state يلتقط `rect` الزر عند النقر، ويُمرَّر للـ popup.
-- تمرير `originRect` إلى:
-  - `<WalletDialog ... originRect={walletOrigin} />`
-  - `<SavingsPopup ... originRect={savingsOrigin} />`
-  - `<CouponsPopup ... originRect={couponsOrigin} />`
+```css
+.glass-card {
+  background: rgb(var(--glass-bg));
+  border: 1px solid rgb(var(--glass-border));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  box-shadow: var(--glass-shadow);
+  border-radius: 1.5rem; /* rounded-3xl */
+}
+.glass-card-inner {                /* للعناصر الفرعية داخل البطاقة (stats، CTA) */
+  background: rgb(var(--glass-bg-strong));
+  border: 1px solid rgb(var(--glass-border));
+  backdrop-filter: blur(calc(var(--glass-blur) - 6px));
+}
+/* Fallback لو المتصفح لا يدعم backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-card { background: hsl(var(--card) / 0.85); }
+}
+```
 
-**3. `src/components/profile/SavingsPopup.tsx`**
-- استبدال `<Dialog><DialogContent>` بـ `<OriginExpandShell originRect={originRect} title="التوفير الخاص بك">`.
-- نقل المحتوى الحالي (الإجمالي، التفصيل، القائمة) داخل الـ shell كما هو.
+### 2) توحيد البطاقات الخمس
+استبدال الأصناف الحالية المتفرقة (`bg-white/10 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg`) بـ `glass-card p-4` في:
 
-**4. `src/components/profile/CouponsPopup.tsx`**
-- نفس استبدال `Dialog` بـ `OriginExpandShell`.
-- الاحتفاظ بـ `Sheet` الداخلي للـ Discount Detail كما هو (ليس المقصود في الطلب).
+- `src/components/profile/OrdersCenter.tsx`
+- `src/components/profile/QuickServicesGrid.tsx`
+- `src/components/profile/CouponsStrip.tsx`
+- `src/components/profile/RecentOrders.tsx`
 
-**5. `src/components/WalletDialog.tsx`**
-- استبدال الـ `Dialog` الخارجي فقط بـ `OriginExpandShell` مع تمرير `originRect`.
-- باقي محتوى المحفظة (Tabs، Forms، إلخ) يبقى كما هو.
+وللهيدر `src/components/profile/ProfileHeader.tsx`:
+- الحاوية الخارجية تبقى تستخدم `linear-gradient` بلون المستوى + `glass-card` (تُستبدل أصناف backdrop/border/shadow الحالية).
+- بطاقات الإحصائيات الأربع (Points/Coupons/Wallet/Savings) داخل الهيدر تُستبدل بـ `glass-card-inner` بدلاً من `bg-white/10 backdrop-blur-md border border-white/15`.
+- زر CTA السفلي يستخدم نفس `glass-card-inner`.
 
-### تفاصيل الانيميشن
-- المدّة الكلية ~280ms للفتح، ~220ms للإغلاق (spring tuned).
-- `transformOrigin` يُحسب كنسبة مئوية من حدود النافذة بناءً على موقع الزر، ليبدو النمو طبيعياً (إذا كان الزر يسار أسفل، النافذة تنمو من زاويتها اليسرى السفلية).
-- backdrop ينتقل بـ fade منفصل (200ms ease-out) لتجنب وميض.
-- `prefers-reduced-motion`: تعطيل الـ scale ويُستبدل بـ fade بسيط.
+### 3) ضبط الموبايل (اتساق عبر الأجهزة)
+بعض المتصفحات على الموبايل (خاصة Safari iOS الأقدم وWebView على Android) تتعامل مع `backdrop-filter` بشكل غير متسق. لتفادي الاختلافات:
+- استخدام `-webkit-backdrop-filter` كنسخة مكررة (مضافة في الـ CSS أعلاه).
+- إضافة `transform: translateZ(0)` و `isolation: isolate` على `.glass-card` لتفعيل الـ GPU compositing وتثبيت تأثير الزجاج عبر الأجهزة.
+- تخفيف القيم على الشاشات الضعيفة عبر media query:
+  ```css
+  @media (max-width: 480px) and (prefers-reduced-transparency: reduce) {
+    :root { --glass-bg: 255 255 255 / 0.18; --glass-blur: 12px; }
+  }
+  ```
 
 ### بدون تغييرات
-- زر النقاط (Points) لا يفتح Popup أصلاً (ينتقل إلى `/rewards`)، لا تعديل عليه.
-- منطق البيانات (queries, mutations) في الـ popups دون تعديل.
-- Sheet داخلي في `CouponsPopup` (تفاصيل الخصم) يبقى كما هو.
-- لا تغيير على ProfileExpansionShell أو الـ Orb transition الحالي.
+- بنية المكونات وعناصر المحتوى داخل البطاقات.
+- قاعدة البيانات / المنطق / الترجمة.
+- باقي الصفحات (التغيير محصور في بطاقات `/profile`، وفئة `.glass-card` متاحة لاحقاً للاستخدام في أي مكان).
+
+### الملفات المعدّلة
+- `src/index.css` — تعريف المتغيرات والفئات الموحّدة.
+- `src/components/profile/ProfileHeader.tsx`
+- `src/components/profile/OrdersCenter.tsx`
+- `src/components/profile/QuickServicesGrid.tsx`
+- `src/components/profile/CouponsStrip.tsx`
+- `src/components/profile/RecentOrders.tsx`
 
