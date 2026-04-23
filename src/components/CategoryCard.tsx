@@ -63,6 +63,7 @@ const CategoryCard = ({
 
   return (
     <Link
+      ref={linkRef}
       to={`/category/${slug}`}
       className="group relative block rounded-2xl h-[160px] sm:h-[172px] p-3 sm:p-4 overflow-hidden
                  backdrop-blur-xl bg-card/40 border border-white/15
