@@ -281,18 +281,16 @@ export const DynamicIsland = () => {
               key="island-shell"
               ref={islandRef}
               layout
-              initial={{ opacity: 0, scaleX: 0.05, scaleY: 0.7, y: -8, filter: "blur(4px)" }}
+              initial={{ opacity: 0, scaleX: 0.02, scaleY: 0.85 }}
               animate={{
                 opacity: 1,
                 scaleX: 1,
                 scaleY: 1,
-                y: 0,
-                filter: "blur(0px)",
                 width: shape.width,
                 height: shape.height,
                 borderRadius: shape.radius,
               }}
-              exit={{ opacity: 0, scaleX: 0.05, scaleY: 0.7, y: -8, filter: "blur(4px)" }}
+              exit={{ opacity: 0, scaleX: 0.02, scaleY: 0.85 }}
               style={{
                 maxWidth: "calc(100vw - 16px)",
                 borderRadius: shape.radius,
@@ -323,11 +321,19 @@ export const DynamicIsland = () => {
                   damping: 28,
                   mass: 1.1,
                 },
-                opacity: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-                scaleX: shellEnterExit,
-                scaleY: shellEnterExit,
-                y: shellEnterExit,
-                filter: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
+                scaleX: {
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 30,
+                  mass: 1,
+                },
+                scaleY: {
+                  type: "spring",
+                  stiffness: 220,
+                  damping: 32,
+                  mass: 1,
+                },
               }}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
             >
@@ -560,10 +566,15 @@ export const DynamicIsland = () => {
                     <motion.span
                       key={title ?? "cat-default"}
                       layout
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                      initial={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
+                      animate={{ opacity: 1, scaleX: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
+                      style={{ transformOrigin: "center" }}
+                      transition={{
+                        scaleX: { type: "spring", stiffness: 200, damping: 28, mass: 1 },
+                        opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                        filter: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                      }}
                       className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
                     >
                       {title ?? t("nav_categories")}
@@ -600,10 +611,15 @@ export const DynamicIsland = () => {
                     <motion.span
                       key={title ?? "prod-default"}
                       layout
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+                      initial={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
+                      animate={{ opacity: 1, scaleX: 1, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, scaleX: 0.4, filter: "blur(2px)" }}
+                      style={{ transformOrigin: "center" }}
+                      transition={{
+                        scaleX: { type: "spring", stiffness: 200, damping: 28, mass: 1 },
+                        opacity: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                        filter: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                      }}
                       className="block truncate text-[12.5px] font-semibold tracking-tight text-foreground"
                     >
                       {title ?? t("nav_products")}
