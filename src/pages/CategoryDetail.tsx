@@ -165,7 +165,7 @@ const CategoryDetail = () => {
           <Link to="/categories" className="hover:text-primary transition-colors">{t('nav_categories')}</Link>
           <span>/</span>
           {categoryLoading ? <span>...</span> : (
-            <span className="text-primary font-medium">{category?.name_ar}</span>
+            <span className="text-primary font-medium">{pickName(category?.name as any, category?.name_ar as any)}</span>
           )}
         </div>
 
@@ -183,12 +183,12 @@ const CategoryDetail = () => {
                     {/* Title & description — right side (RTL) */}
                     <div className="flex-1 text-right pt-2 md:pt-12">
                       <h1 className="text-xl sm:text-3xl md:text-6xl font-black text-foreground/90 mb-1 md:mb-2 tracking-tight leading-tight">
-                        {featuredProduct.name_ar}
+                        {pickName(featuredProduct.name as any, featuredProduct.name_ar as any)}
                       </h1>
-                      {featuredProduct.description_ar && (
+                      {(featuredProduct.description_ar || (featuredProduct as any).description) && (
                         <div>
                           <p className="text-foreground/40 text-xs sm:text-sm md:text-lg max-w-md mr-0 ml-auto line-clamp-2">
-                            {featuredProduct.description_ar}
+                            {pickDesc((featuredProduct as any).description, featuredProduct.description_ar)}
                           </p>
                           <Link
                             to={`/product/${featuredProduct.slug}`}
