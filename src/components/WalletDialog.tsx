@@ -346,8 +346,8 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
         }}
         originRect={originRect ?? null}
         panelClassName="pointer-events-auto relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-background via-background to-card/50 shadow-2xl flex flex-col p-0"
-        hideClose
       >
+
 
           {/* Compact Balance Header */}
           <div className="relative p-4 pb-3 border-b border-border/50">
