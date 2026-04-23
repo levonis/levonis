@@ -137,15 +137,24 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Smoothly interpolate visual properties so the orb appears to dissolve
-  // into the island instead of snapping out.
+  // Smoothly interpolate visual properties so the orb appears to be absorbed
+  // into the island (and detach back out on scroll up).
   const p = mergeProgress;
-  const opacity = 1 - p;
-  const scale = 1 - p * 0.45; // 1 → 0.55
-  const translateX = (isRtl ? 1 : -1) * p * 6; // drift toward the screen edge
-  const translateY = -p * 6; // and a touch up toward the island
-  const blurPx = p * 2.5; // soft gaussian as it fades into the island
-  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  // Travel ~70% of the way toward the island center — last 30% is covered by
+  // the island's own expansion so the join looks continuous, not jarring.
+  const travel = p * 0.72;
+  const translateX = islandTarget.dx * travel;
+  const translateY = islandTarget.dy * travel;
+  // Shrink the orb height to roughly match the island, while widening slightly
+  // so it morphs into a tiny pill before disappearing into the surface.
+  const targetScaleY = Math.max(0.45, islandTarget.height / 40); // ~1.0 → ~1.3
+  const scaleY = 1 + (targetScaleY - 1) * p * 0.35; // very subtle
+  const scaleX = 1 - p * 0.35; // narrows as it dives in
+  const baseScale = 1 - p * 0.15; // gentle overall shrink
+  // Fade only late in the merge so the absorption is the dominant cue.
+  const opacity = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
+  const blurPx = p > 0.55 ? (p - 0.55) * 6 : 0; // soft dissolve at the end
+  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${baseScale * scaleX}, ${baseScale * scaleY})`;
 
   return (
     <button
@@ -164,6 +173,7 @@ const ProfileOrb = memo(() => {
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
+        transformOrigin: "center center",
         transform: tuckTransform,
         opacity,
         filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
