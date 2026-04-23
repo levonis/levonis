@@ -91,11 +91,9 @@ const ProfileExpansionShell = ({ children }: Props) => {
   const initialClip = `circle(${initialRadius}px at ${o.x}px ${o.y}px)`;
   const openClip = `circle(${maxRadius}px at ${o.x}px ${o.y}px)`;
 
-  // Glass surface tokens — translucent so the site's primary background
-  // shows through (no secondary opaque background).
-  const glassBg =
-    "linear-gradient(135deg, hsl(var(--background) / 0.55) 0%, hsl(var(--background) / 0.35) 100%)";
-  const glassFilter = "blur(22px) saturate(1.4)";
+  // No extra background — let the site's primary background show through fully.
+  const glassBg = "transparent";
+  const glassFilter = "none";
 
   // Reduced motion: just fade.
   if (reducedMotion) {
@@ -128,17 +126,7 @@ const ProfileExpansionShell = ({ children }: Props) => {
         <>
           {/* Soft dim — no longer an opaque secondary surface; just a faint
               tint so the glass disc reads against the live page behind it. */}
-          <motion.div
-            key="profile-shell-backdrop"
-            aria-hidden
-            className="fixed inset-0 z-[35] pointer-events-none"
-            style={{ background: "hsl(var(--background) / 0.18)" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          />
-
+          {/* Dim backdrop removed — show the site's primary background as-is. */}
           {/* Circular reveal layer — glassmorphism instead of solid bg. */}
           <motion.div
             key="profile-shell"
@@ -147,8 +135,6 @@ const ProfileExpansionShell = ({ children }: Props) => {
               background: glassBg,
               backdropFilter: glassFilter,
               WebkitBackdropFilter: glassFilter,
-              boxShadow:
-                "inset 0 1px 0 hsl(0 0% 100% / 0.18), inset 0 0 0 1px hsl(var(--primary) / 0.12)",
             }}
             initial={
               {
