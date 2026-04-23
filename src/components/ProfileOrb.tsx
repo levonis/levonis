@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/lib/i18n";
 import { useProfileTransition } from "./ProfileTransitionProvider";
+import { computeOrbMagnet } from "./profileOrbMagnet";
 import { cn } from "@/lib/utils";
 
 const ProfileOrb = memo(() => {
@@ -145,32 +146,15 @@ const ProfileOrb = memo(() => {
   // toward the island like a magnet, then disappears once contact is made
   // (the island stands alone as the search bar). On scroll up the orb
   // re-emerges from the island edge and slides back to its origin.
-  const p = mergeProgress;
-
-  // Smoothstep gives a slow start + accelerating pull near contact.
-  const smoothstep = p * p * (3 - 2 * p);
-  // Tiny overshoot (~2%) right before contact for the magnet snap feel.
-  const travel = p < 0.92 ? smoothstep : Math.min(1.02, smoothstep + (p - 0.92) * 0.25);
-
-  const translateX = fusion.dx * travel;
-  const translateY = fusion.dy * travel;
-
-  // Stretch toward the contact edge, then snap back.
-  const stretch = p < 0.92 ? p * 0.12 : Math.max(0, 0.12 - (p - 0.92) * 1.5);
-  const scaleX = 1 + stretch;
-  const scaleY = 1 - Math.max(0, p - 0.6) * 0.15;
-
-  // Dissolve into the island in the final 12% of the merge.
-  const opacity = p < 0.88 ? 1 : Math.max(0, 1 - (p - 0.88) / 0.1);
-  const blurPx = p > 0.85 ? (p - 0.85) * 14 : 0;
+  // The visual math lives in `profileOrbMagnet.ts` so it can be inspected
+  // / tested at any progress value without rendering this component.
+  const visual = computeOrbMagnet(mergeProgress, { dx: fusion.dx, dy: fusion.dy });
+  const { translateX, translateY, scaleX, scaleY, opacity, blurPx, fullyMerged } =
+    visual;
 
   // Origin on the contact edge so the stretch happens on the seam side.
   const originX = isRtl ? "0% 50%" : "100% 50%";
   const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
-
-  // Once fully merged, take the orb out of interaction entirely so the
-  // island's search bar stands alone with no profile button.
-  const fullyMerged = p >= 0.98;
 
   return (
     <button
@@ -193,7 +177,7 @@ const ProfileOrb = memo(() => {
         transform: tuckTransform,
         opacity,
         filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
-        pointerEvents: fullyMerged || p > 0.6 ? "none" : "auto",
+        pointerEvents: visual.pointerEventsAuto ? "auto" : "none",
         visibility: fullyMerged ? "hidden" : "visible",
       }}
     >
