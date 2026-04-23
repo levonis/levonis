@@ -3626,6 +3626,7 @@ const Admin = () => {
                               setCategoryMediaUrl(null);
                               setCategoryMediaType(null);
                               setCategoryMediaTransparent(false);
+                              setCategoryMediaChromaKey('none');
                             }}
                           >
                             <X className="h-4 w-4 ml-1" />
