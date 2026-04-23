@@ -10,6 +10,7 @@ import type { FrameAnimationType } from "@/components/merchant/AvatarWithFrame";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 type ProfileState = {
   full_name: string;
