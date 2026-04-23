@@ -1385,4 +1385,9 @@ export const ar: TranslationKeys = {
   island_search_in_category: 'ابحث في هذا القسم…',
   island_search_in_community: 'ابحث في المجتمع…',
   island_back: 'رجوع',
+  island_recent: 'عمليات بحث سابقة',
+  island_suggestions: 'اقتراحات',
+  island_results: 'منتجات',
+  island_view_all: 'عرض كل النتائج',
+  island_no_results: 'لا توجد نتائج',
 };
