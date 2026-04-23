@@ -36,6 +36,19 @@ const contentMotion = {
   exit: { opacity: 0, y: -4, scale: 0.99 },
 };
 
+// Softer cross-fade used specifically for promo↔search swaps so the surface
+// morphs continuously without a hard wipe.
+const morphMotion = {
+  initial: { opacity: 0, y: 4, filter: "blur(4px)" },
+  animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+  exit: { opacity: 0, y: -4, filter: "blur(4px)" },
+};
+
+const morphTransition: Transition = {
+  duration: 0.32,
+  ease: [0.32, 0.72, 0, 1],
+};
+
 /* -------------------------------------------------------------------------- */
 /*  Search sub-stages                                                         */
 /* -------------------------------------------------------------------------- */
@@ -254,13 +267,13 @@ export const DynamicIsland = () => {
               transition={shellSpring}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden"
             >
-          <AnimatePresence mode="wait" initial={false}>
+          <AnimatePresence mode="popLayout" initial={false}>
             {/* PROMO ----------------------------------------------------- */}
             {state === "promo" && (
               <motion.div
                 key="promo"
-                {...contentMotion}
-                transition={contentTransition}
+                {...morphMotion}
+                transition={morphTransition}
                 className="relative flex h-full w-full items-center gap-2 overflow-hidden px-3"
               >
                 <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={2.5} />
@@ -292,8 +305,8 @@ export const DynamicIsland = () => {
             {state === "search" && (
               <motion.div
                 key="search"
-                {...contentMotion}
-                transition={contentTransition}
+                {...morphMotion}
+                transition={morphTransition}
                 className="flex h-full w-full flex-col"
               >
                 {/* Input row — always visible while in search state */}
