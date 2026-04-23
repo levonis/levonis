@@ -38,7 +38,7 @@ const FEATURE_ICONS: Record<string, any> = {
 };
 
 const ProductDetailSkeleton = () => (
-  <div className="min-h-screen bg-background" dir="rtl">
+  <div className="min-h-screen" dir="rtl">
     {/* Full-width image skeleton */}
     <div className="relative">
       <Skeleton className="w-full aspect-square" />
