@@ -345,7 +345,14 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
           if (!o) resetDepositForm();
         }}
         originRect={originRect ?? null}
-        panelClassName="pointer-events-auto relative w-full max-w-md max-h-[90vh] overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-background via-background to-card/50 shadow-2xl flex flex-col p-0"
+        size="lg"
+        bodyClassName="!p-0"
+        title={
+          <span className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-primary" />
+            المحفظة
+          </span>
+        }
       >
 
 
