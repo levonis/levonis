@@ -1978,10 +1978,9 @@
   transform: perspective(800px) rotateX(0.5deg) translateY(-3px);
 }
 
-/* Glass card for ProductCard (main store) */
+/* Glass background only for ProductCard (flat, no 3D, no border, no glare) */
 .product-card-glass {
   position: relative;
-  overflow: hidden;
   border-radius: 0.5rem;
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
@@ -1991,40 +1990,9 @@
     hsl(160 30% 10% / 0.4) 50%,
     hsl(160 25% 8% / 0.5) 100%
   );
-  border: 1px solid hsl(160 40% 35% / 0.18);
-  box-shadow:
-    0 4px 20px hsl(160 30% 4% / 0.35),
-    inset 0 1px 0 hsl(155 60% 50% / 0.12),
-    inset 0 -1px 0 hsl(160 20% 5% / 0.25);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-  transform: perspective(800px) rotateX(0.8deg);
-  transform-style: preserve-3d;
-}
-
-.product-card-glass::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -15%;
-  width: 55%;
-  height: 40%;
-  background: linear-gradient(
-    135deg,
-    hsl(155 50% 60% / 0.1) 0%,
-    transparent 55%
-  );
-  border-radius: 0 0 50% 0;
-  pointer-events: none;
-  z-index: 15;
-}
-
-.product-card-glass:hover {
-  box-shadow:
-    0 8px 32px hsl(160 40% 8% / 0.5),
-    inset 0 1px 0 hsl(155 60% 50% / 0.2),
-    inset 0 -1px 0 hsl(160 20% 5% / 0.25),
-    0 0 16px hsl(155 50% 30% / 0.12);
-  transform: perspective(800px) rotateX(0.4deg) translateY(-2px);
+  border: none;
+  box-shadow: none;
+  transition: background 0.2s ease;
 }
 
 /* Telegram Mini App viewport fix */
