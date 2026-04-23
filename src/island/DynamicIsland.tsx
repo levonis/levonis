@@ -65,17 +65,35 @@ const morphTransition: Transition = {
 type SearchStage = "idle" | "typing" | "suggestions" | "results";
 type SearchScope = "global" | "category" | "community";
 
+/**
+ * Computes the island shape. For category/product titles, the width budget
+ * scales per-language (Arabic/Kurdish glyphs are visually wider than Latin)
+ * and respects the viewport so long names show in full instead of being cut
+ * to a few letters.
+ */
 const baseShape = (
   state: IslandState,
-  title?: string,
+  title: string | undefined,
+  language: string,
 ): { width: number; height: number; radius: number } => {
   const titleLen = title ? Array.from(title).length : 0;
-  const titleWidth = Math.min(220, Math.max(60, titleLen * 9));
+  const isWideScript = language === "ar" || language === "ku";
+  const perChar = isWideScript ? 11 : 8.5;
+  const minBudget = 120;
+  const viewportBudget =
+    typeof window !== "undefined" ? window.innerWidth - 48 : 520;
+  const cap = Math.min(viewportBudget, 560);
+  const titleWidth = Math.min(
+    cap,
+    Math.max(minBudget, Math.round(titleLen * perChar) + 24),
+  );
   switch (state) {
     case "promo":    return { width: 280, height: 40, radius: 22 };
     case "search":   return { width: 360, height: 52, radius: 26 };
-    case "category": return { width: 96 + titleWidth, height: 52, radius: 26 };
-    case "product":  return { width: 56 + titleWidth, height: 46, radius: 24 };
+    // chrome = back button + search button (~96 px) + paddings
+    case "category": return { width: Math.min(cap, 96 + titleWidth), height: 52, radius: 26 };
+    // chrome = back button only (~56 px)
+    case "product":  return { width: Math.min(cap, 64 + titleWidth), height: 46, radius: 24 };
   }
 };
 
@@ -103,7 +121,7 @@ const searchShape = (
 /* -------------------------------------------------------------------------- */
 
 export const DynamicIsland = () => {
-  const { state, title: rawTitle, promoMessages, visible } = useIsland();
+  const { state, title: rawTitle, promoMessages, visible, setContext } = useIsland();
 
   /* ---------- Debounce rapid title changes ----------
    * Coalesces fast successive title updates (e.g. switching products while
@@ -234,7 +252,7 @@ export const DynamicIsland = () => {
   const shape =
     state === "search"
       ? searchShape(stage, products.length)
-      : baseShape(state, title);
+      : baseShape(state, title, language);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
@@ -268,18 +286,17 @@ export const DynamicIsland = () => {
   };
 
   const goSearch = () => {
-    // Triggered by the magnifier in category state — focus the island input
-    if (state === "search") {
+    // Switch the island into search mode in-place and focus the input.
+    // We must NOT navigate away — staying on the current category/community
+    // page lets the user search within that scope.
+    if (state !== "search") {
+      setContext({ state: "search" });
+    }
+    // Wait one frame so the input mounts (search shell renders) before focusing.
+    requestAnimationFrame(() => {
+      setFocused(true);
       inputRef.current?.focus();
-      return;
-    }
-    if (scope === "category" && params.slug) {
-      navigate(`/category/${params.slug}?focus=search`, { replace: true });
-    } else if (scope === "community") {
-      navigate("/community/merchants/all-products");
-    } else {
-      navigate("/");
-    }
+    });
   };
 
   const pickSuggestion = (s: string) => {
@@ -340,9 +357,9 @@ export const DynamicIsland = () => {
                 },
                 width: {
                   type: "spring",
-                  stiffness: 360,
-                  damping: 36,
-                  mass: 0.75,
+                  stiffness: 300,
+                  damping: 32,
+                  mass: 0.8,
                   restDelta: 0.5,
                   restSpeed: 0.5,
                 },
@@ -604,12 +621,13 @@ export const DynamicIsland = () => {
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span
                       key={title ?? "cat-default"}
-                      initial={{ opacity: 0, scaleX: 0.6 }}
-                      animate={{ opacity: 1, scaleX: 1 }}
-                      exit={{ opacity: 0, scaleX: 0.6 }}
-                      style={{ transformOrigin: "center", willChange: "transform, opacity" }}
+                      dir="auto"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -3 }}
+                      style={{ unicodeBidi: "plaintext", willChange: "opacity, transform" }}
                       transition={{
-                        scaleX: { type: "spring", stiffness: 220, damping: 30, mass: 0.9 },
+                        y: { type: "spring", stiffness: 320, damping: 32, mass: 0.7 },
                         opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
                       }}
                       className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
@@ -647,15 +665,16 @@ export const DynamicIsland = () => {
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span
                       key={title ?? "prod-default"}
-                      initial={{ opacity: 0, scaleX: 0.6 }}
-                      animate={{ opacity: 1, scaleX: 1 }}
-                      exit={{ opacity: 0, scaleX: 0.6 }}
-                      style={{ transformOrigin: "center", willChange: "transform, opacity" }}
+                      dir="auto"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -3 }}
+                      style={{ unicodeBidi: "plaintext", willChange: "opacity, transform" }}
                       transition={{
-                        scaleX: { type: "spring", stiffness: 220, damping: 30, mass: 0.9 },
+                        y: { type: "spring", stiffness: 320, damping: 32, mass: 0.7 },
                         opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
                       }}
-                      className="block truncate text-[12.5px] font-semibold tracking-tight text-foreground"
+                      className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
                     >
                       {title ?? ""}
                     </motion.span>
