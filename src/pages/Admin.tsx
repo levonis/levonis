@@ -64,7 +64,7 @@ const categorySchema = z.object({
   media_url: z.string().nullable().optional(),
   media_type: z.string().nullable().optional(),
   media_transparent: z.boolean().optional(),
-  media_chroma_key: z.enum(['none', 'black', 'white']).optional(),
+  media_chroma_key: z.enum(['none', 'black', 'white', 'green', 'blue']).optional(),
 });
 
 const mainSectionSchema = z.object({
