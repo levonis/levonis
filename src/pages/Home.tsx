@@ -1,8 +1,6 @@
 import { useMemo, lazy, Suspense, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { Link } from 'react-router-dom';
 
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
