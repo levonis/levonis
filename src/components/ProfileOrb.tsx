@@ -114,11 +114,8 @@ const ProfileOrb = memo(() => {
     },
   });
 
-  // Hide on /profile (page is the orb expanded) and on chrome-less pages
-  const onProfile = location.pathname === "/profile";
-  const hideRoutes =
-    location.pathname === "/games" || location.pathname.startsWith("/community/reels");
-  if (onProfile || hideRoutes) return null;
+  // Show the orb only on the home page; hide everywhere else.
+  if (location.pathname !== "/") return null;
 
   const handleClick = () => {
     const el = btnRef.current;
