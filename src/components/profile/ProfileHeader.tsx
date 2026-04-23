@@ -202,13 +202,13 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
   return (
     <>
       <div
-        className="relative overflow-hidden rounded-3xl"
+        className="relative overflow-hidden rounded-3xl border border-white/20 shadow-lg backdrop-blur-xl"
         style={{
-          background: `linear-gradient(135deg, ${levelColor}dd, ${levelColor}88, ${levelColor}44)`,
+          background: `linear-gradient(135deg, ${levelColor}99, ${levelColor}55, ${levelColor}22)`,
         }}
       >
         {/* Glassmorphism overlay */}
-        <div className="relative p-5 backdrop-blur-sm">
+        <div className="relative p-5 backdrop-blur-xl">
           {/* Admin quick access */}
           {isAdmin && (
             <button
