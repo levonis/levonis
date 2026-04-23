@@ -145,8 +145,6 @@ const ProfileExpansionShell = ({ children }: Props) => {
               background: glassBg,
               backdropFilter: glassFilter,
               WebkitBackdropFilter: glassFilter,
-              boxShadow:
-                "inset 0 1px 0 hsl(0 0% 100% / 0.18), inset 0 0 0 1px hsl(var(--primary) / 0.12)",
             }}
             initial={
               {
