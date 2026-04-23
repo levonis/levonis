@@ -60,12 +60,9 @@ const DialogContent = React.forwardRef<
           "max-h-[85vh] overflow-y-auto overscroll-contain",
           // Touch scrolling for iOS - using inline style for webkit
           "touch-pan-y",
-          // Professional styling matching site theme
-          "bg-gradient-to-b from-[hsl(160_52%_18%)] via-[hsl(160_52%_16%)] to-[hsl(160_48%_14%)]",
-          "border border-[hsl(var(--border))]",
-          "rounded-xl sm:rounded-2xl",
-          // Premium shadows
-          "shadow-[0_8px_32px_hsl(160_50%_8%/0.5),0_1px_2px_hsl(0_0%_0%/0.1),inset_0_1px_0_hsl(var(--primary)/0.1)]",
+          // Glassmorphism Professional
+          "glass-floating",
+          "rounded-2xl sm:rounded-3xl",
           // Default padding - can be overridden
           "p-5 sm:p-6 gap-4",
           // Animations
