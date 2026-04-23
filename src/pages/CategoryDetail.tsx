@@ -75,7 +75,7 @@ const CategoryDetail = () => {
       if (!category?.id) return [];
       let query = supabase
         .from('products')
-        .select('id, name, name_ar, description, description_ar, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, product_options(stock_quantity, available_for_direct_sale)')
+        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, product_options(stock_quantity, available_for_direct_sale)')
         .eq('category_id', category.id)
         .eq('in_stock', true)
         .order('price', { ascending: false });
@@ -98,6 +98,21 @@ const CategoryDetail = () => {
     const minP = minPrice ? Number(minPrice) : null;
     const maxP = maxPrice ? Number(maxPrice) : null;
 
+    // Score for search ranking: 0 name-prefix, 1 name-contains, 2 desc-contains, 3 no match
+    const scoreFor = (p: any): number => {
+      if (!searchQ) return 0;
+      const names = [p.name, p.name_ar, p.name_en, p.name_ku]
+        .filter(Boolean)
+        .map((s: string) => String(s).toLowerCase());
+      const descs = [p.description, p.description_ar, p.description_en, p.description_ku]
+        .filter(Boolean)
+        .map((s: string) => String(s).toLowerCase());
+      if (names.some((n) => n.startsWith(searchQ))) return 0;
+      if (names.some((n) => n.includes(searchQ))) return 1;
+      if (descs.some((d) => d.includes(searchQ))) return 2;
+      return 3;
+    };
+
     let arr = products.filter((p: any) => {
       const priceNum = Number(p.price) || 0;
       const hasDirect = (p.has_in_stock ?? false) && !isAllDirectStockDepleted(p);
@@ -107,10 +122,7 @@ const CategoryDetail = () => {
       if (directOnly && !hasDirect) return false;
       if (minP != null && priceNum < minP) return false;
       if (maxP != null && priceNum > maxP) return false;
-      if (searchQ) {
-        const hay = `${p.name ?? ''} ${p.name_ar ?? ''} ${p.description ?? ''} ${p.description_ar ?? ''}`.toLowerCase();
-        if (!hay.includes(searchQ)) return false;
-      }
+      if (searchQ && scoreFor(p) === 3) return false;
       return true;
     });
 
@@ -123,10 +135,15 @@ const CategoryDetail = () => {
       'best-selling': (a, b) => (b.sold_count ?? 0) - (a.sold_count ?? 0),
       'name-asc': (a, b) => String(a.name_ar || '').localeCompare(String(b.name_ar || ''), 'ar'),
     };
-    // Always prioritize direct-sale products first, then apply chosen sort as tie-breaker
+    // When searching, prioritize match quality first.
+    // Otherwise, prioritize direct-sale products first, then apply chosen sort as tie-breaker.
     const directRank = (p: any) =>
       (p.has_in_stock ?? false) && !isAllDirectStockDepleted(p) ? 0 : 1;
     arr = [...arr].sort((a, b) => {
+      if (searchQ) {
+        const s = scoreFor(a) - scoreFor(b);
+        if (s !== 0) return s;
+      }
       const d = directRank(a) - directRank(b);
       if (d !== 0) return d;
       return sorters[sortBy](a, b);
