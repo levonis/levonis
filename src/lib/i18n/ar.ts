@@ -1381,6 +1381,8 @@ export const ar: TranslationKeys = {
   evd_resend_after: 'إعادة الإرسال بعد {seconds} ثانية',
   evd_resend_btn: 'إعادة إرسال الرمز',
 
-  island_search_placeholder: 'ابحث عن المنتجات…',
+  island_search_placeholder: 'ابحث في المتجر…',
+  island_search_in_category: 'ابحث في هذا القسم…',
+  island_search_in_community: 'ابحث في المجتمع…',
   island_back: 'رجوع',
 };

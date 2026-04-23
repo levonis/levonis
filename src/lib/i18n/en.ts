@@ -1381,6 +1381,8 @@ export const en: TranslationKeys = {
   evd_resend_after: 'Resend in {seconds} s',
   evd_resend_btn: 'Resend code',
 
-  island_search_placeholder: 'Search products…',
+  island_search_placeholder: 'Search the store…',
+  island_search_in_category: 'Search in this category…',
+  island_search_in_community: 'Search the community…',
   island_back: 'Back',
 };

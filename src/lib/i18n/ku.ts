@@ -1381,6 +1381,8 @@ export const ku: TranslationKeys = {
   evd_resend_after: 'دوبارە بنێرە دوای {seconds} چرکە',
   evd_resend_btn: 'دووبارە ناردنی کۆد',
 
-  island_search_placeholder: 'گەڕان بۆ بەرهەمەکان…',
+  island_search_placeholder: 'گەڕان لە فرۆشگادا…',
+  island_search_in_category: 'گەڕان لەم بەشەدا…',
+  island_search_in_community: 'گەڕان لە کۆمەڵگادا…',
   island_back: 'گەڕانەوە',
 };

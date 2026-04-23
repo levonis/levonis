@@ -1391,5 +1391,7 @@ export type TranslationKeys = {
 
   // Dynamic Island
   island_search_placeholder: string;
+  island_search_in_category: string;
+  island_search_in_community: string;
   island_back: string;
 };
