@@ -69,7 +69,7 @@ const discountLabels: Record<string, string> = {
   min_purchase_delivery: "توصيل مجاني عند الشراء",
 };
 
-export default function CouponsPopup({ open, onOpenChange }: CouponsPopupProps) {
+export default function CouponsPopup({ open, onOpenChange, originRect }: CouponsPopupProps) {
   const navigate = useNavigate();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedDiscount, setSelectedDiscount] = useState<StoreDiscount | null>(null);
