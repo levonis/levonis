@@ -321,7 +321,7 @@ export const DynamicIsland = () => {
   const messages = promoMessages.length ? promoMessages : [];
   const marqueeItems = useMemo(() => {
     if (!messages.length) return [] as string[];
-    const repeatCount = Math.max(8, Math.ceil(24 / messages.length));
+    const repeatCount = Math.max(4, Math.ceil(12 / messages.length));
     return Array.from({ length: repeatCount }, () => messages).flat();
   }, [messages]);
 
