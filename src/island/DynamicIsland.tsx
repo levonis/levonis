@@ -423,10 +423,11 @@ export const DynamicIsland = () => {
                       const half = Array.from({ length: REPEAT }, () => messages).flat();
                       const full = [...half, ...half];
                       return (
-                        <div className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
+                        <div dir="ltr" className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
                           {full.map((m, i) => (
-                            <span key={i} className="inline-flex items-center">
-                              <span className="text-foreground/90">{m}</span>
+                            <span key={i} className="inline-flex items-center gap-3">
+                              <span dir="auto" className="text-foreground/90">{m}</span>
+                              <span aria-hidden="true" className="text-foreground/35">•</span>
                             </span>
                           ))}
                         </div>

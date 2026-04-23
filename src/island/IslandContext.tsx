@@ -112,10 +112,9 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     if (p.startsWith("/product/")) return { state: "search" };
     if (p.startsWith("/category/")) return { state: "search" };
     // Show promo marquee when not scrolled on the main shopping & community surfaces.
+    const isHomeSurface = p === "/" || p === "/home" || p === "/index";
     const promoSurfaces =
-      p === "/" ||
-      p === "/home" ||
-      
+      isHomeSurface ||
       p === "/bundles" ||
       p === "/favorites" ||
       p === "/community" ||
