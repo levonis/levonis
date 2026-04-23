@@ -13,6 +13,7 @@ import { ADMIN_ROUTES } from "@/config/adminConfig";
 import WalletDialog from "@/components/WalletDialog";
 import SavingsPopup from "./SavingsPopup";
 import CouponsPopup from "./CouponsPopup";
+import { useLanguage } from "@/lib/i18n";
 
 interface ProfileHeaderProps {
   userId: string;
@@ -31,6 +32,7 @@ interface ProfileHeaderProps {
 export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHeaderProps) {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
+  const { t, language } = useLanguage();
   const [walletOpen, setWalletOpen] = useState(false);
   const [savingsOpen, setSavingsOpen] = useState(false);
   const [couponsOpen, setCouponsOpen] = useState(false);
