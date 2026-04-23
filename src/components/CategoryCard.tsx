@@ -13,7 +13,7 @@ interface CategoryCardProps {
   mediaUrl?: string | null;
   mediaType?: string | null; // 'image' | 'gif' | 'video'
   mediaTransparent?: boolean;
-  mediaChromaKey?: 'none' | 'black' | 'white' | string | null;
+  mediaChromaKey?: 'none' | 'black' | 'white' | 'green' | 'blue' | string | null;
 }
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url);
@@ -38,36 +38,60 @@ const CategoryCard = ({
   const useFullMedia = !!mediaUrl && !!mediaTransparent;
 
   const filterId = useId().replace(/:/g, "");
-  const chromaActive = mediaChromaKey === "black" || mediaChromaKey === "white";
+  const chromaActive =
+    mediaChromaKey === "black" ||
+    mediaChromaKey === "white" ||
+    mediaChromaKey === "green" ||
+    mediaChromaKey === "blue";
   const filterStyle = chromaActive ? { filter: `url(#chroma-${filterId})` } : undefined;
 
-  // SVG filter that converts a chosen color (black/white) to transparent.
-  // Black-removal: alpha = max(R,G,B). White-removal: alpha = 1 - min(R,G,B).
+  // Color matrices to extract an alpha mask from a key color, with steep
+  // contrast + slight blur to despill / kill halos around the subject.
+  // black: alpha ≈ luminance
+  // white: alpha ≈ 1 - luminance
+  // green: alpha ≈ G - max(R,B)  → use G high, R/B negative
+  // blue:  alpha ≈ B - max(R,G)
+  const matrixValues = (() => {
+    switch (mediaChromaKey) {
+      case "black":
+        // alpha row weights luminance (Rec. 709-ish), bias slightly negative to bite into dark fringes
+        return "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0.6 0.85 0.35 0 -0.18";
+      case "white":
+        // invert luminance, bias positive so near-white goes fully transparent
+        return "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -0.6 -0.85 -0.35 0 1.15";
+      case "green":
+        // suppress green spill in RGB and build alpha from G dominance
+        return "1 0 -0.2 0 0  0 0.4 0 0 0  -0.2 0 1 0 0  -1.4 1.6 -1.4 0 0";
+      case "blue":
+        return "1 -0.2 0 0 0  -0.2 1 0 0 0  0 0 0.4 0 0  -1.4 -1.4 1.6 0 0";
+      default:
+        return "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0";
+    }
+  })();
+
+  // SVG filter pipeline:
+  //  1. feColorMatrix → builds raw alpha mask from key color
+  //  2. feComponentTransfer → steep alpha curve (kills semi-transparent fringe)
+  //  3. feGaussianBlur on alpha only → softens jaggies
+  //  4. feComposite in → re-applies cleaned alpha to original colors
   const chromaFilter = chromaActive ? (
     <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
       <defs>
-        <filter id={`chroma-${filterId}`} x="0" y="0" width="1" height="1">
-          {mediaChromaKey === "black" ? (
-            <feColorMatrix
-              type="matrix"
-              values="
-                1 0 0 0 0
-                0 1 0 0 0
-                0 0 1 0 0
-                1 1 1 0 -0.15
-              "
-            />
-          ) : (
-            <feColorMatrix
-              type="matrix"
-              values="
-                1 0 0 0 0
-                0 1 0 0 0
-                0 0 1 0 0
-                -1 -1 -1 0 2.85
-              "
-            />
-          )}
+        <filter
+          id={`chroma-${filterId}`}
+          x="-2%"
+          y="-2%"
+          width="104%"
+          height="104%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feColorMatrix in="SourceGraphic" type="matrix" values={matrixValues} result="keyed" />
+          <feComponentTransfer in="keyed" result="sharpAlpha">
+            {/* Steep S-curve on alpha: clips low alpha to 0, ramps fast to 1 → eliminates fringe */}
+            <feFuncA type="table" tableValues="0 0 0.05 0.6 1 1" />
+          </feComponentTransfer>
+          <feGaussianBlur in="sharpAlpha" stdDeviation="0.4" result="softAlpha" />
+          <feComposite in="SourceGraphic" in2="softAlpha" operator="in" />
         </filter>
       </defs>
     </svg>
