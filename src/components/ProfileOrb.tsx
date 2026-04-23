@@ -29,44 +29,50 @@ const ProfileOrb = memo(() => {
     remeasureOrigin();
   }, [isRtl, remeasureOrigin]);
 
-  // Progressive merge with the Dynamic Island as the user scrolls.
-  // 0 = fully visible orb, 1 = fully merged into the island.
-  // Also tracks the live island center so the orb visually travels toward
-  // it (absorption) and back (detachment) instead of drifting off-edge.
+  // Progressive fusion with the Dynamic Island as the user scrolls.
+  // 0 = fully separate orb, 1 = edges fused with the island.
+  // We measure the live gap between the orb's inner edge and the island's
+  // near edge, then translate the orb by exactly that amount so the two
+  // shapes meet seam-to-seam (no overshoot, no disappearing).
   const [mergeProgress, setMergeProgress] = useState(0);
-  const [islandTarget, setIslandTarget] = useState<{
-    dx: number;
-    dy: number;
-    height: number;
-  }>({ dx: 0, dy: 0, height: 52 });
+  const [fusion, setFusion] = useState<{
+    dx: number; // horizontal travel needed to touch the island edge
+    dy: number; // vertical alignment offset (orb center → island center)
+    gap: number; // live gap in px (for the bridge width)
+    islandH: number;
+  }>({ dx: 0, dy: 0, gap: 0, islandH: 52 });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let raf = 0;
-    const ISLAND_THRESHOLD = 40; // matches IslandContext scroll threshold
+    const ISLAND_THRESHOLD = 40;
     const compute = () => {
       const orbEl = btnRef.current;
       const islandEl = document.querySelector<HTMLElement>("[data-dynamic-island]");
       const islandH = islandEl?.getBoundingClientRect().height ?? 52;
 
-      // Vector from orb center → island center (used to "fly into" it).
       if (orbEl && islandEl) {
         const o = orbEl.getBoundingClientRect();
         const i = islandEl.getBoundingClientRect();
-        const ocx = o.left + o.width / 2;
+        // Horizontal gap between orb's inner edge and the island's near edge.
+        // In LTR the orb sits on the left → its inner (right) edge approaches
+        // the island's left edge. Mirror in RTL.
+        const gap = isRtl ? o.left - i.right : i.left - o.right;
+        const dx = isRtl ? -Math.max(0, gap) : Math.max(0, gap);
+        // Vertical alignment so the seam is clean.
         const ocy = o.top + o.height / 2;
-        const icx = i.left + i.width / 2;
         const icy = i.top + i.height / 2;
-        setIslandTarget({ dx: icx - ocx, dy: icy - ocy, height: islandH });
+        const dy = icy - ocy;
+        setFusion({ dx, dy, gap: Math.max(0, gap), islandH });
       } else {
-        setIslandTarget((prev) => ({ ...prev, height: islandH }));
+        setFusion((prev) => ({ ...prev, islandH }));
       }
 
-      const start = Math.max(8, ISLAND_THRESHOLD - 12); // ≈ 28px
-      const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9); // ≈ 88–110px
+      const start = Math.max(8, ISLAND_THRESHOLD - 12);
+      const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9);
       const y = window.scrollY;
       const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       setMergeProgress(eased);
     };
     const onScroll = () => {
@@ -84,10 +90,8 @@ const ProfileOrb = memo(() => {
       window.removeEventListener("resize", compute);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [isRtl]);
 
-  // Re-measure origin when the orb settles at either extreme so clip-path
-  // stays anchored on the visible position when the user clicks.
   const settled = mergeProgress === 0 || mergeProgress === 1;
   useEffect(() => {
     if (!settled) return;
@@ -137,24 +141,25 @@ const ProfileOrb = memo(() => {
   // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Smoothly interpolate visual properties so the orb appears to be absorbed
-  // into the island (and detach back out on scroll up).
+  // Fusion math: translate the orb so its inner edge meets the island's
+  // near edge exactly when p === 1. The orb stays fully visible — fusion
+  // is about contact, not disappearance.
   const p = mergeProgress;
-  // Travel ~70% of the way toward the island center — last 30% is covered by
-  // the island's own expansion so the join looks continuous, not jarring.
-  const travel = p * 0.72;
-  const translateX = islandTarget.dx * travel;
-  const translateY = islandTarget.dy * travel;
-  // Shrink the orb height to roughly match the island, while widening slightly
-  // so it morphs into a tiny pill before disappearing into the surface.
-  const targetScaleY = Math.max(0.45, islandTarget.height / 40); // ~1.0 → ~1.3
-  const scaleY = 1 + (targetScaleY - 1) * p * 0.35; // very subtle
-  const scaleX = 1 - p * 0.35; // narrows as it dives in
-  const baseScale = 1 - p * 0.15; // gentle overall shrink
-  // Fade only late in the merge so the absorption is the dominant cue.
-  const opacity = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
-  const blurPx = p > 0.55 ? (p - 0.55) * 6 : 0; // soft dissolve at the end
-  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${baseScale * scaleX}, ${baseScale * scaleY})`;
+  const translateX = fusion.dx * p;
+  const translateY = fusion.dy * p;
+  // Vertical scale eases gently toward the island height for a liquid seam.
+  const targetScaleY = Math.max(0.85, Math.min(1.15, fusion.islandH / 40));
+  const scaleY = 1 + (targetScaleY - 1) * p;
+  const scaleX = 1 + p * 0.06; // tiny stretch toward the contact side
+  // Origin on the contact edge so the stretch happens where the seam forms.
+  const originX = isRtl ? "0% 50%" : "100% 50%";
+  const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+
+  // Bridge: a glassy pill that fills the residual seam in the final phase
+  // of the merge so the two surfaces weld together visually.
+  const bridgeVisible = p > 0.55;
+  const bridgeW = bridgeVisible ? Math.min(20, 4 + (p - 0.55) * 36) : 0;
+  const bridgeH = Math.max(14, Math.min(22, fusion.islandH * 0.55));
 
   return (
     <button
@@ -162,10 +167,10 @@ const ProfileOrb = memo(() => {
       onClick={handleClick}
       aria-label="Profile"
       className={cn(
-        "fixed top-3 z-[55] w-10 h-10 rounded-full overflow-hidden",
+        "fixed top-3 z-[55] w-10 h-10 rounded-full",
         "glass-panel !rounded-full",
         "flex items-center justify-center",
-        "transition-[transform,opacity,filter] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        "transition-[transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
         "ring-1 ring-white/20 hover:ring-primary/50",
         "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
@@ -173,13 +178,31 @@ const ProfileOrb = memo(() => {
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
-        transformOrigin: "center center",
+        transformOrigin: originX,
         transform: tuckTransform,
-        opacity,
-        filter: blurPx > 0.05 ? `blur(${blurPx}px)` : undefined,
-        pointerEvents: p > 0.6 ? "none" : "auto",
+        overflow: "visible", // allow the fusion bridge to escape the orb
       }}
     >
+      {/* Fusion bridge — connects the orb's contact edge to the island. */}
+      <span
+        aria-hidden
+        className="absolute pointer-events-none glass-panel"
+        style={{
+          top: "50%",
+          [isRtl ? "right" : "left"]: "100%",
+          width: `${bridgeW}px`,
+          height: `${bridgeH}px`,
+          transform: "translateY(-50%)",
+          opacity: bridgeVisible ? 1 : 0,
+          transition: "opacity 180ms ease-out, width 180ms ease-out",
+          borderRadius: "0",
+          boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.35)",
+        }}
+      />
+      {/* Inner clipping wrapper — keeps avatar/glass overlays circular while
+          letting the fusion bridge extend outside the orb. */}
+      <span className="absolute inset-0 rounded-full overflow-hidden">
+
       {/* Avatar — softened with blur + lowered opacity for a frosted feel */}
       {avatarUrl ? (
         <img
@@ -219,6 +242,7 @@ const ProfileOrb = memo(() => {
           filter: "blur(0.5px)",
         }}
       />
+      </span>
     </button>
   );
 });
