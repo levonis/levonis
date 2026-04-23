@@ -632,8 +632,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
               </ScrollArea>
             </TabsContent>
           </Tabs>
-        </DialogContent>
-      </Dialog>
+      </OriginExpandShell>
 
       {/* Deposit Confirmation */}
       <AlertDialog open={showDepositConfirm} onOpenChange={setShowDepositConfirm}>
