@@ -81,7 +81,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("announcements")
-        .select("message_ar, message_en, message_ku")
+        .select("message, message_ar, color")
         .eq("active", true)
         .order("created_at", { ascending: false })
         .limit(8);
@@ -95,15 +95,9 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const promoMessages = useMemo<string[]>(() => {
     if (!announcements?.length) return [];
     return announcements
-      .map((a: any) =>
-        language === "en"
-          ? a.message_en || a.message_ar
-          : language === "ku"
-          ? a.message_ku || a.message_ar
-          : a.message_ar || a.message_en
-      )
+      .map((a: any) => a.message_ar || a.message || "")
       .filter(Boolean);
-  }, [announcements, language]);
+  }, [announcements]);
 
   const routeDefault = useMemo<{ state: IslandState; title?: string }>(() => {
     const p = location.pathname;
