@@ -14,19 +14,8 @@ interface ReelThumb {
 }
 
 export default function ReelsBar() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-  const suppressClickRef = useRef(false);
-  const suppressTimerRef = useRef<number | null>(null);
+  const scrollRef = useHorizontalDragScroll<HTMLDivElement>();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    return () => {
-      if (suppressTimerRef.current !== null) {
-        window.clearTimeout(suppressTimerRef.current);
-      }
-    };
-  }, []);
 
   const { data: reels = [] } = useQuery({
     queryKey: ['home-reels-bar'],
@@ -56,44 +45,7 @@ export default function ReelsBar() {
     return n.toString();
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (suppressTimerRef.current !== null) {
-      window.clearTimeout(suppressTimerRef.current);
-      suppressTimerRef.current = null;
-    }
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
-    suppressClickRef.current = false;
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const start = pointerStartRef.current;
-    if (!start) return;
-
-    if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) {
-      suppressClickRef.current = true;
-    }
-  };
-
-  const handlePointerEnd = () => {
-    pointerStartRef.current = null;
-
-    if (!suppressClickRef.current) return;
-
-    suppressTimerRef.current = window.setTimeout(() => {
-      suppressClickRef.current = false;
-      suppressTimerRef.current = null;
-    }, 140);
-  };
-
-  const openReels = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    if (suppressClickRef.current) {
-      e?.preventDefault();
-      e?.stopPropagation();
-      return;
-    }
-
-    navigate('/community/reels');
-  };
+  const openReels = () => navigate('/community/reels');
 
   return (
     <>
