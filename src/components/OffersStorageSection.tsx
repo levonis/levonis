@@ -125,7 +125,10 @@ export default function OffersStorageSection() {
           </CardContent>
         </Card>
       ) : (
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+        <div
+          className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4"
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
+        >
           {offers.map((offer) => (
             <div 
               key={offer.id}
