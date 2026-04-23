@@ -155,7 +155,7 @@ const Admin = () => {
   const [categoryMediaUrl, setCategoryMediaUrl] = useState<string | null>(null);
   const [categoryMediaType, setCategoryMediaType] = useState<string | null>(null);
   const [categoryMediaTransparent, setCategoryMediaTransparent] = useState(false);
-  const [categoryMediaChromaKey, setCategoryMediaChromaKey] = useState<'none' | 'black' | 'white'>('none');
+  const [categoryMediaChromaKey, setCategoryMediaChromaKey] = useState<'none' | 'black' | 'white' | 'green' | 'blue'>('none');
   const [categoryMediaUploading, setCategoryMediaUploading] = useState(false);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
