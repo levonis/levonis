@@ -1,31 +1,56 @@
-import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
-  CartSkeleton,
+  CartPageSkeleton,
   OrderListSkeleton,
   NotificationsSkeleton,
   FormSkeleton,
-  ProfileSkeleton,
+  ProfilePageSkeleton,
   ChatSkeleton,
   DetailPageSkeleton,
   ProductGridSkeleton,
   AdminPageSkeleton,
   CompetitionGridSkeleton,
-  GridCardsSkeleton,
   HeaderSkeleton,
+  HomePageSkeleton,
+  CategoryPageSkeleton,
 } from "@/components/ui/PageSkeletons";
 
+/**
+ * Returns a skeleton whose layout matches the real page. Each entry below
+ * mirrors the actual final markup (sections, paddings, grid columns, aspect
+ * ratios) so when the real content swaps in there is no layout shift and the
+ * transition feels instantaneous.
+ */
 function pickSkeleton(pathname: string) {
   const p = pathname.toLowerCase();
 
+  // Home
+  if (p === "/" || p === "/home") return <HomePageSkeleton />;
+
   // Cart
-  if (p === "/cart" || p === "/community-cart") return <CartSkeleton />;
+  if (p === "/cart" || p === "/community-cart") return <CartPageSkeleton />;
 
   // Orders
-  if (p.startsWith("/orders") || p.startsWith("/my-orders") || p.startsWith("/order-")) return <OrderListSkeleton />;
+  if (
+    p.startsWith("/orders") ||
+    p.startsWith("/my-orders") ||
+    p.startsWith("/order-")
+  )
+    return (
+      <div className="container mx-auto px-4 py-6 space-y-4">
+        <HeaderSkeleton />
+        <OrderListSkeleton count={5} />
+      </div>
+    );
 
   // Notifications
-  if (p === "/notifications") return <NotificationsSkeleton />;
+  if (p === "/notifications")
+    return (
+      <div className="container mx-auto px-4 py-6 space-y-4">
+        <HeaderSkeleton />
+        <NotificationsSkeleton count={6} />
+      </div>
+    );
 
   // Forms / settings
   if (
@@ -36,21 +61,32 @@ function pickSkeleton(pathname: string) {
     p.startsWith("/address") ||
     p === "/telegram-settings"
   )
-    return <FormSkeleton />;
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <FormSkeleton fields={6} />
+      </div>
+    );
 
   // Profile
-  if (p.startsWith("/profile")) return <ProfileSkeleton />;
+  if (p.startsWith("/profile")) return <ProfilePageSkeleton />;
 
   // Chat / messages
-  if (p.startsWith("/chat") || p.startsWith("/messages") || p.includes("maintenance-chat") || p.startsWith("/conversations"))
+  if (
+    p.startsWith("/chat") ||
+    p.startsWith("/messages") ||
+    p.includes("maintenance-chat") ||
+    p.startsWith("/conversations")
+  )
     return <ChatSkeleton />;
 
-  // Detail pages
+  // Category detail (precise layout)
+  if (p.startsWith("/category/")) return <CategoryPageSkeleton />;
+
+  // Other detail pages
   if (
     p.startsWith("/product/") ||
     p.startsWith("/bundles/") ||
     p.startsWith("/bundle/") ||
-    p.startsWith("/category/") ||
     p.startsWith("/competitions/") ||
     p.startsWith("/offer/")
   )
@@ -65,7 +101,12 @@ function pickSkeleton(pathname: string) {
     p === "/products-gifts" ||
     p === "/bundles"
   )
-    return <ProductGridSkeleton />;
+    return (
+      <div className="container mx-auto px-4 py-6 space-y-4">
+        <HeaderSkeleton />
+        <ProductGridSkeleton count={10} />
+      </div>
+    );
 
   // Admin / management
   if (
@@ -76,13 +117,25 @@ function pickSkeleton(pathname: string) {
     p === "/printer-protection" ||
     p === "/price-match"
   )
-    return <AdminPageSkeleton />;
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <AdminPageSkeleton />
+      </div>
+    );
 
   // Competitions / rewards
-  if (p === "/competitions" || p === "/rewards" || p === "/community" || p === "/community/print-requests")
-    return <CompetitionGridSkeleton />;
-
-  // Categories landing removed — handled by Home skeleton
+  if (
+    p === "/competitions" ||
+    p === "/rewards" ||
+    p === "/community" ||
+    p === "/community/print-requests"
+  )
+    return (
+      <div className="container mx-auto px-4 py-6 space-y-4">
+        <HeaderSkeleton />
+        <CompetitionGridSkeleton count={4} />
+      </div>
+    );
 
   // Download app — simple
   if (p === "/download-app") {
@@ -96,7 +149,7 @@ function pickSkeleton(pathname: string) {
     );
   }
 
-  // Default — generic
+  // Default — generic shell
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-lg space-y-4">
@@ -106,33 +159,24 @@ function pickSkeleton(pathname: string) {
           <div className="h-4 w-3/4 rounded bg-muted/70 animate-pulse" />
           <div className="h-4 w-1/2 rounded bg-muted/60 animate-pulse" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-xl border border-border/30 bg-card p-3 space-y-2">
-              <div className="aspect-square w-full rounded-lg bg-muted animate-pulse" />
-              <div className="h-3 w-3/4 rounded bg-muted/70 animate-pulse" />
-              <div className="h-3 w-1/2 rounded bg-muted/60 animate-pulse" />
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
 }
 
 /**
- * Route-aware Suspense fallback. Waits 80ms before showing any skeleton
- * to avoid flicker on instant (cached) loads.
+ * Route-aware Suspense fallback.
+ *
+ * Renders a precisely-sized skeleton immediately (no flicker delay) so the
+ * user sees a structural outline of the final page from the very first paint.
+ * The skeleton fades out smoothly once the real content takes over (handled
+ * by the routes' own animation wrappers).
  */
 export default function RouteAwareSkeleton() {
   const location = useLocation();
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setShow(true), 80);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (!show) return null;
-  return pickSkeleton(location.pathname);
+  return (
+    <div className="animate-in fade-in duration-200">
+      {pickSkeleton(location.pathname)}
+    </div>
+  );
 }
