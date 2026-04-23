@@ -4,37 +4,53 @@ import { motion, useMotionValue, useSpring, useTransform, animate } from 'framer
 
 /**
  * Premium fixed full-viewport background:
- * - Dominant base: #15382c (deep emerald)
- * - Subtle red "living light" — small, soft, drifts on scroll & route change
- * - Black depth wash for cinematic vignette / luxury feel
- *
- * All accents use soft-light / multiply blends with heavy blur so nothing
- * reads as a separate layer — just a single, breathing gradient.
+ * - Dominant base: deep emerald (#15382c) blending into black
+ * - Cinematic red light "ribbons" flowing along the edges (top-right & bottom-left)
+ * - Soft drift on scroll & route change so the red feels alive
  */
 export default function AppBackground() {
   const location = useLocation();
-  const sideRef = useRef<'right' | 'left'>('right');
   const transitioningRef = useRef(false);
 
-  // Red glow position (% of viewport)
-  const xPct = useMotionValue(75);
-  const yPct = useMotionValue(30);
+  // Drift offsets for the red ribbons (in %)
+  const driftA = useMotionValue(0); // top-right ribbon
+  const driftB = useMotionValue(0); // bottom-left ribbon
 
-  const xSpring = useSpring(xPct, { stiffness: 40, damping: 22, mass: 0.9 });
-  const ySpring = useSpring(yPct, { stiffness: 40, damping: 22, mass: 0.9 });
+  const driftASpring = useSpring(driftA, { stiffness: 28, damping: 24, mass: 1 });
+  const driftBSpring = useSpring(driftB, { stiffness: 28, damping: 24, mass: 1 });
 
-  const left = useTransform(xSpring, (v) => `${v}vw`);
-  const top = useTransform(ySpring, (v) => `${v}vh`);
-
-  // Secondary red ember on opposite side — even subtler
-  const left2 = useTransform(xSpring, (v) => `${100 - v}vw`);
-  const top2 = useTransform(ySpring, (v) => `${100 - v * 0.6}vh`);
+  const ribbonATransform = useTransform(
+    driftASpring,
+    (v) => `translate3d(${v * 0.6}%, ${-v * 0.4}%, 0) rotate(${-8 + v * 0.05}deg)`
+  );
+  const ribbonBTransform = useTransform(
+    driftBSpring,
+    (v) => `translate3d(${-v * 0.6}%, ${v * 0.4}%, 0) rotate(${-8 - v * 0.05}deg)`
+  );
 
   // Cinematic intensity pulse on route change
   const intensity = useMotionValue(1);
-  const intensityOpacity = useTransform(intensity, [1, 1.6], [0.85, 1]);
+  const intensityOpacity = useTransform(intensity, [1, 1.6], [0.9, 1]);
 
-  // Scroll choreography
+  // Continuous gentle breathing
+  useEffect(() => {
+    const a = animate(driftA, [0, 6, -4, 0], {
+      duration: 18,
+      repeat: Infinity,
+      ease: 'easeInOut',
+    });
+    const b = animate(driftB, [0, -5, 4, 0], {
+      duration: 22,
+      repeat: Infinity,
+      ease: 'easeInOut',
+    });
+    return () => {
+      a.stop();
+      b.stop();
+    };
+  }, [driftA, driftB]);
+
+  // Scroll: subtle parallax shift
   useEffect(() => {
     let pending = false;
     const onScroll = () => {
@@ -44,49 +60,80 @@ export default function AppBackground() {
         pending = false;
         if (transitioningRef.current) return;
         const scrollY = window.scrollY || 0;
-        const baseX = sideRef.current === 'right' ? 75 : 25;
-        const sway = Math.sin(scrollY / 380) * 5;
-        const targetY = Math.min(72, Math.max(24, 24 + scrollY * 0.035));
-        xPct.set(baseX + sway);
-        yPct.set(targetY);
+        const sway = Math.sin(scrollY / 420) * 8;
+        driftA.set(sway);
+        driftB.set(-sway);
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
     return () => window.removeEventListener('scroll', onScroll);
-  }, [xPct, yPct]);
+  }, [driftA, driftB]);
 
-  // Route change: cinematic subtle motion
+  // Route change: cinematic flare
   useEffect(() => {
-    const nextSide: 'right' | 'left' = sideRef.current === 'right' ? 'left' : 'right';
-    const targetX = nextSide === 'right' ? 75 : 25;
     transitioningRef.current = true;
-
-    const ease = [0.22, 1, 0.36, 1] as const; // cinematic easeOutQuint
-    const flare = animate(intensity, [1, 1.6, 1], { duration: 1.2, ease });
-    const dip = animate(yPct, 88, { duration: 0.45, ease });
-    let cross: ReturnType<typeof animate> | null = null;
-    let rise: ReturnType<typeof animate> | null = null;
-
-    dip.then(() => {
-      cross = animate(xPct, targetX, { duration: 0.55, ease });
-      cross.then(() => {
-        rise = animate(yPct, 28, { duration: 0.45, ease });
-        rise.then(() => {
-          sideRef.current = nextSide;
-          transitioningRef.current = false;
-        });
-      });
+    const ease = [0.22, 1, 0.36, 1] as const;
+    const flare = animate(intensity, [1, 1.6, 1], { duration: 1.4, ease });
+    flare.then(() => {
+      transitioningRef.current = false;
     });
-
     return () => {
       flare.stop();
-      dip.stop();
-      cross?.stop();
-      rise?.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
+
+  // The red ribbon — an SVG curve with a soft red glow stroke
+  const RedRibbon = ({ flip = false }: { flip?: boolean }) => (
+    <svg
+      viewBox="0 0 1000 600"
+      preserveAspectRatio="none"
+      className="absolute inset-0 w-full h-full"
+      style={{ transform: flip ? 'scale(-1, -1)' : undefined }}
+    >
+      <defs>
+        <linearGradient id={`ribbon-grad-${flip ? 'b' : 'a'}`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="hsl(0 90% 55%)" stopOpacity="0" />
+          <stop offset="35%" stopColor="hsl(0 95% 58%)" stopOpacity="0.85" />
+          <stop offset="65%" stopColor="hsl(0 100% 62%)" stopOpacity="1" />
+          <stop offset="100%" stopColor="hsl(0 90% 50%)" stopOpacity="0" />
+        </linearGradient>
+        <filter id={`ribbon-blur-${flip ? 'b' : 'a'}`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.2" />
+        </filter>
+        <filter id={`ribbon-glow-${flip ? 'b' : 'a'}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="14" />
+        </filter>
+      </defs>
+
+      {/* Wide soft halo */}
+      <path
+        d="M 1100 80 C 850 180, 700 240, 520 300 S 200 420, -100 520"
+        stroke={`url(#ribbon-grad-${flip ? 'b' : 'a'})`}
+        strokeWidth="55"
+        fill="none"
+        opacity="0.35"
+        filter={`url(#ribbon-glow-${flip ? 'b' : 'a'})`}
+      />
+      {/* Mid glow */}
+      <path
+        d="M 1100 80 C 850 180, 700 240, 520 300 S 200 420, -100 520"
+        stroke={`url(#ribbon-grad-${flip ? 'b' : 'a'})`}
+        strokeWidth="14"
+        fill="none"
+        opacity="0.7"
+        filter={`url(#ribbon-blur-${flip ? 'b' : 'a'})`}
+      />
+      {/* Sharp core line */}
+      <path
+        d="M 1100 80 C 850 180, 700 240, 520 300 S 200 420, -100 520"
+        stroke={`url(#ribbon-grad-${flip ? 'b' : 'a'})`}
+        strokeWidth="2"
+        fill="none"
+        opacity="1"
+      />
+    </svg>
+  );
 
   return (
     <div
@@ -95,75 +142,87 @@ export default function AppBackground() {
       style={{
         zIndex: 0,
         background:
-          'radial-gradient(140% 120% at 18% 14%, hsl(var(--background) / 0.96) 0%, hsl(var(--background)) 42%, hsl(var(--background-2) / 0.92) 100%), linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 58%, hsl(var(--background-2) / 0.88) 100%)',
+          'radial-gradient(120% 100% at 30% 20%, hsl(160 45% 12%) 0%, hsl(160 40% 8%) 38%, hsl(0 0% 3%) 100%)',
       }}
     >
-      {/* Primary red living light — screen blend so it actually glows on dark green */}
-      <motion.div
-        className="absolute"
-        style={{
-          left,
-          top,
-          width: '85vmax',
-          height: '85vmax',
-          marginLeft: '-42.5vmax',
-          marginTop: '-42.5vmax',
-          mixBlendMode: 'screen',
-          opacity: intensityOpacity,
-          willChange: 'left, top, opacity',
-        }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(circle, hsl(var(--accent-red) / 0.52) 0%, hsl(var(--accent-red) / 0.24) 20%, hsl(var(--accent-red) / 0.08) 42%, transparent 68%)',
-            filter: 'blur(120px)',
-          }}
-        />
-      </motion.div>
-
-      {/* Secondary faint red ember — mirrors the primary on opposite side */}
-      <motion.div
-        className="absolute"
-        style={{
-          left: left2,
-          top: top2,
-          width: '60vmax',
-          height: '60vmax',
-          marginLeft: '-30vmax',
-          marginTop: '-30vmax',
-          mixBlendMode: 'screen',
-          opacity: 0.4,
-          willChange: 'left, top',
-        }}
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(circle, hsl(var(--accent-red) / 0.22) 0%, hsl(var(--accent-red) / 0.10) 32%, transparent 62%)',
-            filter: 'blur(140px)',
-          }}
-        />
-      </motion.div>
-
-      {/* Black depth wash — diagonal, adds luxurious depth without flatness */}
+      {/* Subtle hex/dot texture overlay for depth (very faint) */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 opacity-[0.06]"
         style={{
-          background:
-            'linear-gradient(215deg, transparent 0%, transparent 55%, hsl(0 0% 0% / 0.40) 100%)',
-          mixBlendMode: 'multiply',
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, hsl(160 40% 40% / 0.6) 1px, transparent 1.5px)',
+          backgroundSize: '22px 22px',
+          maskImage:
+            'radial-gradient(ellipse at 15% 15%, black 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, black 0%, transparent 55%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse at 15% 15%, black 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, black 0%, transparent 55%)',
         }}
       />
 
-      {/* Final cinematic vignette */}
+      {/* Top-right red ribbon */}
+      <motion.div
+        className="absolute"
+        style={{
+          top: '-10%',
+          right: '-15%',
+          width: '85vw',
+          height: '85vh',
+          transform: ribbonATransform,
+          opacity: intensityOpacity,
+          mixBlendMode: 'screen',
+          willChange: 'transform, opacity',
+        }}
+      >
+        <RedRibbon />
+      </motion.div>
+
+      {/* Bottom-left red ribbon (mirrored) */}
+      <motion.div
+        className="absolute"
+        style={{
+          bottom: '-10%',
+          left: '-15%',
+          width: '85vw',
+          height: '85vh',
+          transform: ribbonBTransform,
+          opacity: intensityOpacity,
+          mixBlendMode: 'screen',
+          willChange: 'transform, opacity',
+        }}
+      >
+        <RedRibbon flip />
+      </motion.div>
+
+      {/* Soft green light bloom at top-center for depth (matches reference) */}
+      <div
+        className="absolute"
+        style={{
+          top: '-20%',
+          left: '20%',
+          width: '60vw',
+          height: '50vh',
+          background:
+            'radial-gradient(ellipse at center, hsl(155 50% 22% / 0.6) 0%, hsl(160 45% 14% / 0.3) 40%, transparent 70%)',
+          filter: 'blur(40px)',
+          mixBlendMode: 'screen',
+        }}
+      />
+
+      {/* Black depth wash */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(150% 110% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.30) 100%)',
+            'linear-gradient(180deg, transparent 0%, transparent 50%, hsl(0 0% 0% / 0.45) 100%)',
+        }}
+      />
+
+      {/* Cinematic vignette */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(140% 100% at 50% 50%, transparent 55%, hsl(0 0% 0% / 0.45) 100%)',
         }}
       />
     </div>
