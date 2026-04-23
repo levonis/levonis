@@ -214,8 +214,8 @@ export const DynamicIsland = () => {
       // Stay inside the current community page; the page filters by ?q=.
       navigate(`${location.pathname}?q=${encoded}`, { replace: true });
     } else {
-      // Global search opens the dedicated /products listing.
-      navigate(`/products?search=${encoded}`);
+      // Global search → categories browsing surface (acts as catalog hub).
+      navigate(`/categories?q=${encoded}`);
     }
   };
 
@@ -246,7 +246,7 @@ export const DynamicIsland = () => {
     } else if (scope === "community") {
       navigate("/community/merchants/all-products");
     } else {
-      navigate("/products");
+      navigate("/categories");
     }
   };
 
