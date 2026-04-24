@@ -170,12 +170,16 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
       p.startsWith("/community/requests") ||
       p.startsWith("/community/reels");
     if (promoSurfaces) {
+      // When "alwaysMove" is enabled, keep the promo ticker visible even after
+      // the user scrolls so the marquee never stops/disappears.
+      const showPromo =
+        promoMessages.length > 0 && (promoSettings.alwaysMove || !scrolled);
       return {
-        state: !scrolled && promoMessages.length > 0 ? "promo" : "search",
+        state: showPromo ? "promo" : "search",
       };
     }
     return { state: "search" };
-  }, [location.pathname, promoMessages.length, scrolled]);
+  }, [location.pathname, promoMessages.length, scrolled, promoSettings.alwaysMove]);
 
   useEffect(() => {
     setOverride(null);
