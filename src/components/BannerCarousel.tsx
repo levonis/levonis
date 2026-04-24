@@ -106,16 +106,9 @@ const BannerCarousel = memo(() => {
     gcTime: 30 * 60 * 1000, // 30 minutes - match other queries
   });
 
-  // Auto-play - single timeout for slide transition (progress bar is CSS-only)
-  useEffect(() => {
-    if (!banners || banners.length <= 1 || !isAutoPlaying) return;
-
-    const timer = setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % banners.length);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [banners, isAutoPlaying, currentIndex]);
+  // Auto-play is driven entirely by the golden border animation's onAnimationEnd
+  // (see SVG below). This guarantees the counter and slide transition are perfectly
+  // in sync, and pausing the animation also pauses the slide change.
 
   // Touch handlers for swipe + pause-while-touching
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -334,6 +327,11 @@ const BannerCarousel = memo(() => {
             style={{
               filter: "drop-shadow(0 0 3px rgba(255, 215, 0, 0.6))",
               animationPlayState: isAutoPlaying ? "running" : "paused",
+            }}
+            onAnimationEnd={() => {
+              if (isAutoPlaying) {
+                setCurrentIndex((prev) => (prev + 1) % banners.length);
+              }
             }}
           />
         </svg>
