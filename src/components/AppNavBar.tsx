@@ -103,6 +103,7 @@ const AppNavBar = memo(() => {
 
     return (
       <nav
+        data-app-navbar
         className={cn(
           "z-50 flex items-center gap-1.5 p-2 glass-panel !rounded-full transition-all duration-500",
           positionClasses[dockPosition]
