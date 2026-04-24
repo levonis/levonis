@@ -324,7 +324,10 @@ const AdminAnnouncements = () => {
     >
       {/* ---------------- Global Settings Card ---------------- */}
       <AdminSection>
-        <AdminCard hover={false}>
+        <AdminCard
+          hover={false}
+          className="!bg-card/30 backdrop-blur-2xl !border-white/10 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.25)] relative overflow-hidden before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-transparent before:pointer-events-none"
+        >
           <AdminCardContent>
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
@@ -423,9 +426,9 @@ const AdminAnnouncements = () => {
             </div>
 
             {/* Live Preview */}
-            <div className="space-y-2 pt-4 mt-4 border-t border-border/50">
+            <div className="space-y-2 pt-4 mt-4 border-t border-white/10">
               <Label>معاينة مباشرة داخل الجزيرة</Label>
-              <div className="flex justify-center py-4 rounded-md bg-gradient-to-b from-background to-muted/30">
+              <div className="flex justify-center py-4 rounded-xl bg-card/20 backdrop-blur-xl border border-white/10 shadow-inner">
                 <IslandPromoPreview
                   messages={activeMessages.length > 0 ? activeMessages : ['نص الإعلان']}
                   color={settings.color}
@@ -443,7 +446,10 @@ const AdminAnnouncements = () => {
 
       {/* ---------------- Texts Table ---------------- */}
       <AdminSection>
-        <AdminCard hover={false}>
+        <AdminCard
+          hover={false}
+          className="!bg-card/30 backdrop-blur-2xl !border-white/10 shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.25)] relative overflow-hidden before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:bg-gradient-to-br before:from-white/10 before:via-transparent before:to-transparent before:pointer-events-none"
+        >
           <AdminCardContent noPadding>
             {!announcements || announcements.length === 0 ? (
               <AdminEmptyState
