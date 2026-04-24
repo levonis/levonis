@@ -3833,6 +3833,8 @@ const Admin = () => {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="main_section_id">القسم الرئيسي</Label>
                       <select
                         id="main_section_id"
                         name="main_section_id"
