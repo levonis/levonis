@@ -142,6 +142,10 @@ const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
 const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const About = lazy(() => import("./pages/About"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Faq = lazy(() => import("./pages/Faq"));
 
 import RouteAwareSkeleton from "@/components/RouteAwareSkeleton";
 import PageFade from "@/components/PageFade";
@@ -193,6 +197,10 @@ function AppContent() {
           <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/faq" element={<Faq />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/products" element={<Navigate to="/" replace />} />
