@@ -82,6 +82,7 @@ const BannerCarousel = memo(() => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isFlashing, setIsFlashing] = useState(false);
   const progressKey = useRef(0);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
