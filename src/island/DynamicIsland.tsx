@@ -75,23 +75,20 @@ const baseShape = (
   state: IslandState,
   title: string | undefined,
   language: string,
+  viewportWidth: number,
 ): { width: number; height: number; radius: number } => {
   const titleLen = title ? Array.from(title).length : 0;
   const isWideScript = language === "ar" || language === "ku";
   const perChar = isWideScript ? 11 : 8.5;
   const minBudget = 120;
-  const viewportBudget =
-    typeof window !== "undefined" ? window.innerWidth - 48 : 520;
+  const viewportBudget = viewportWidth - 48;
   const cap = Math.min(viewportBudget, 560);
   const titleWidth = Math.min(
     cap,
     Math.max(minBudget, Math.round(titleLen * perChar) + 24),
   );
-  // Responsive promo width: scales with viewport, clamped to a sensible range
-  // so it never overflows on phones nor looks tiny on tablets/desktops.
-  const vw = typeof window !== "undefined" ? window.innerWidth : 390;
-  const promoWidth = Math.round(Math.min(640, Math.max(240, vw - 32)));
-  const searchWidth = Math.round(Math.min(560, Math.max(280, vw - 32)));
+  const promoWidth = Math.round(Math.min(640, Math.max(240, viewportWidth - 32)));
+  const searchWidth = Math.round(Math.min(560, Math.max(280, viewportWidth - 32)));
   switch (state) {
     case "promo":    return { width: promoWidth, height: 40, radius: 22 };
     case "search":   return { width: searchWidth, height: 52, radius: 26 };
@@ -105,11 +102,11 @@ const baseShape = (
 const searchShape = (
   stage: SearchStage,
   resultsCount: number,
+  viewportWidth: number,
 ): { width: number; height: number; radius: number } => {
-  const vw = typeof window !== "undefined" ? window.innerWidth : 390;
-  const idleWidth = Math.round(Math.min(560, Math.max(280, vw - 32)));
-  const typingWidth = Math.round(Math.min(620, Math.max(300, vw - 24)));
-  const panelWidth = Math.round(Math.min(680, Math.max(320, vw - 24)));
+  const idleWidth = Math.round(Math.min(560, Math.max(280, viewportWidth - 32)));
+  const typingWidth = Math.round(Math.min(620, Math.max(300, viewportWidth - 24)));
+  const panelWidth = Math.round(Math.min(680, Math.max(320, viewportWidth - 24)));
   switch (stage) {
     case "idle":
       return { width: idleWidth, height: 52, radius: 26 };
