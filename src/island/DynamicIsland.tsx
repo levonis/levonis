@@ -515,7 +515,6 @@ export const DynamicIsland = () => {
                         </div>
                       ))}
                     </div>
-                    </div>
                   ) : (
                     <span className="text-[12px] font-medium text-foreground/70">LEVONIS</span>
                   )}

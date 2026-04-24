@@ -2182,7 +2182,6 @@ body {
     flex: none;
     white-space: nowrap;
     will-change: transform;
-    animation: island-marquee var(--marquee-duration, 18s) linear infinite;
   }
 
   .marquee-group {
@@ -2198,7 +2197,7 @@ body {
   }
 
   .marquee-track[data-direction="right"] {
-    animation-name: island-marquee-rtl;
+    animation-name: none;
   }
 
   .island-search-row {
@@ -2212,15 +2211,6 @@ body {
   }
 }
 
-@keyframes island-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(calc(var(--marquee-distance, 50%) * -1)); }
-}
-
-@keyframes island-marquee-rtl {
-  from { transform: translateX(calc(var(--marquee-distance, 50%) * -1)); }
-  to   { transform: translateX(0); }
-}
 
 /* ===========================================================
    Native App Feel — applies on mobile + Capacitor builds
