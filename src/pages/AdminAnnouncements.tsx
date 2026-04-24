@@ -270,7 +270,7 @@ const AdminAnnouncements = () => {
                 إضافة نص
               </Button>
             </DialogTrigger>
-            <DialogContent className="admin-dialog max-w-lg !max-h-[90vh] !overflow-hidden flex flex-col p-0">
+            <DialogContent className="admin-dialog max-w-lg !max-h-[90vh] !overflow-hidden flex flex-col p-0 !bg-card/40 backdrop-blur-2xl !border-white/10 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.4)]">
               <DialogHeader className="p-6 pb-2 shrink-0">
                 <DialogTitle>{editing ? 'تعديل النص' : 'إضافة نص جديد'}</DialogTitle>
               </DialogHeader>
