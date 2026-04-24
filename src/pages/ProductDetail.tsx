@@ -31,6 +31,8 @@ import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedD
 import { Skeleton } from '@/components/ui/skeleton';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { usePageTitle } from "@/island/usePageTitle";
+import SEO from '@/components/SEO';
+import { productLd, breadcrumbLd } from '@/lib/seo/structured';
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
@@ -746,8 +748,43 @@ const ProductDetail = () => {
     }
   };
 
+  const seoName = pickName(product.name, product.name_ar);
+  const seoDesc = pickName(product.description, product.description_ar) || seoName;
+  const seoUrl = `https://levonisiq.com/product/${product.slug || product.id}`;
+  const seoImages = (product.images && product.images.length > 0
+    ? product.images
+    : product.image_url
+    ? [product.image_url]
+    : []
+  ).filter(Boolean).slice(0, 6);
+  const inStockSeo = !!(product.in_stock || product.has_in_stock || product.has_pre_order);
+
   return (
     <div className="min-h-screen" dir="rtl">
+      <SEO
+        title={seoName}
+        description={(seoDesc || '').slice(0, 158)}
+        url={seoUrl}
+        type="product"
+        image={seoImages[0]}
+        jsonLd={[
+          productLd({
+            name: seoName,
+            description: seoDesc,
+            image: seoImages,
+            sku: product.sku || product.id,
+            brand: product.brand || 'LEVONIS',
+            priceIqd: Number(product.price) || null,
+            inStock: inStockSeo,
+            url: seoUrl,
+            category: product.category_name_ar || product.category_name || null,
+          }),
+          breadcrumbLd([
+            { name: language === 'en' ? 'Home' : language === 'ku' ? 'سەرەکی' : 'الرئيسية', url: '/' },
+            { name: seoName, url: `/product/${product.slug || product.id}` },
+          ]),
+        ]}
+      />
       {/* Full-width image section (mobile) / grid (desktop) */}
       <div className="md:container md:mx-auto md:px-4 md:pt-6">
         <div className="md:grid md:grid-cols-2 md:gap-8">
