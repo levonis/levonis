@@ -1477,6 +1477,15 @@
   animation: progress-bar-fill 5s linear forwards;
 }
 
+@keyframes banner-border-progress {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-banner-border-progress {
+  animation: banner-border-progress 5s linear forwards;
+}
+
 .skeleton-gradient {
   background: linear-gradient(
     90deg,
