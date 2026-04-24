@@ -81,6 +81,7 @@ const BannerImage = memo(({
 BannerImage.displayName = 'BannerImage';
 
 const BannerCarousel = memo(() => {
+  const { language } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -89,6 +90,9 @@ const BannerCarousel = memo(() => {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const localizedTitle = useCallback((b: Banner) => pickI18n(b as any, 'title', language), [language]);
+  const localizedButton = useCallback((b: Banner) => pickI18n(b as any, 'button_text', language), [language]);
 
   const { data: banners, isLoading } = useQuery({
     queryKey: ['active-banners'],
