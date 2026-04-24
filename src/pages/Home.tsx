@@ -146,12 +146,6 @@ const Home = () => {
           <StoriesBar />
         </section>
 
-        <ProgressiveSection minHeight="180px" rootMargin="500px">
-          <Suspense fallback={<div className="h-32" />}>
-            <BundlesSection />
-          </Suspense>
-        </ProgressiveSection>
-
         <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout' }}>
           
           <div className="text-center mb-6 md:mb-8 relative z-10">
@@ -219,6 +213,12 @@ const Home = () => {
             </div>
           )}
         </section>
+
+        <ProgressiveSection minHeight="180px" rootMargin="500px">
+          <Suspense fallback={<div className="h-32" />}>
+            <BundlesSection />
+          </Suspense>
+        </ProgressiveSection>
 
         <ProgressiveSection minHeight="200px" rootMargin="500px">
           <Suspense fallback={<div className="h-32 flex items-center justify-center"><div className="w-full max-w-md space-y-2 px-4"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div></div>}>
