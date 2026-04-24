@@ -73,6 +73,48 @@ export type Database = {
           },
         ]
       }
+      announcement_settings: {
+        Row: {
+          always_move: boolean
+          auto_rotate: boolean
+          color: string
+          created_at: string
+          direction: string
+          display_duration: number
+          gap: number
+          id: string
+          is_singleton: boolean
+          speed: number
+          updated_at: string
+        }
+        Insert: {
+          always_move?: boolean
+          auto_rotate?: boolean
+          color?: string
+          created_at?: string
+          direction?: string
+          display_duration?: number
+          gap?: number
+          id?: string
+          is_singleton?: boolean
+          speed?: number
+          updated_at?: string
+        }
+        Update: {
+          always_move?: boolean
+          auto_rotate?: boolean
+          color?: string
+          created_at?: string
+          direction?: string
+          display_duration?: number
+          gap?: number
+          id?: string
+          is_singleton?: boolean
+          speed?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           active: boolean
