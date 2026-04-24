@@ -132,7 +132,7 @@ export default function ProductOfferDetailModal({
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="w-[320px] max-w-[90vw] max-h-[85vh] p-0 overflow-hidden rounded-lg" dir="rtl" hideClose>
           <DialogHeader className="sr-only">
-            <DialogTitle>{offer.title_ar}</DialogTitle>
+            <DialogTitle>{offerTitle}</DialogTitle>
             <DialogDescription>تفاصيل العرض</DialogDescription>
           </DialogHeader>
 
@@ -154,7 +154,7 @@ export default function ProductOfferDetailModal({
             {displayImage ? (
               <OptimizedImage
                 src={displayImage}
-                alt={offer.title_ar}
+                alt={offerTitle}
                 className="w-full h-full object-contain"
               />
             ) : (
@@ -191,7 +191,7 @@ export default function ProductOfferDetailModal({
           {/* Scrollable Content */}
           <div className="overflow-y-auto flex-1 max-h-[50vh]">
             <div className="p-3 space-y-2.5">
-              <h2 className="text-sm font-bold line-clamp-1">{offer.title_ar}</h2>
+              <h2 className="text-sm font-bold line-clamp-1">{offerTitle}</h2>
 
               {/* Price Row */}
               <div className="flex items-center justify-between text-sm">
@@ -339,7 +339,7 @@ export default function ProductOfferDetailModal({
               <div className="space-y-2 text-right text-sm">
                 <div className="p-2 bg-secondary/50 rounded-lg space-y-1.5">
                   <div className="flex justify-between text-xs">
-                    <span>{offer.title_ar}</span>
+                    <span>{offerTitle}</span>
                     <span>×{quantity}</span>
                   </div>
                   {selectedColor && (
