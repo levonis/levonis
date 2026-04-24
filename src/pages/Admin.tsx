@@ -196,6 +196,9 @@ const Admin = () => {
     discount_amount: number; // Amount in IQD
   }>>([]);
   const [productAIContent, setProductAIContent] = useState<any>({});
+  const [productShortSummary, setProductShortSummary] = useState<{ ar?: string; en?: string; ku?: string }>({});
+  const [productSearchableAttrs, setProductSearchableAttrs] = useState<string[]>([]);
+  const [searchableAttrInput, setSearchableAttrInput] = useState('');
   // preOrderShippingOptions removed - now handled by AdminProductPricingSection
   
   // AI extraction states
