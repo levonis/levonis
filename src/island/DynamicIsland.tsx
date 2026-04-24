@@ -357,7 +357,12 @@ export const DynamicIsland = () => {
         setMarqueeRepeatCount((current) => (current === nextRepeatCount ? current : nextRepeatCount));
       }
 
-      const next = marqueeGroupRef.current?.getBoundingClientRect().width ?? 0;
+      // Loop distance MUST equal the width of the base (un-repeated) sequence
+      // so the wrap is visually invisible. Using the full repeated group would
+      // cause a long forward run followed by a perceptible snap-back.
+      const next = baseWidth > 0
+        ? baseWidth
+        : marqueeGroupRef.current?.getBoundingClientRect().width ?? 0;
       setMarqueeDistance(next > 0 ? next : null);
     };
 
