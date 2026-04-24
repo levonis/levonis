@@ -172,9 +172,29 @@ export const DynamicIsland = () => {
     typeof window !== "undefined" ? window.innerWidth : 390,
   );
   useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
+    // Debounced + rAF-throttled resize handler. Avoids re-rendering the
+    // island on every intermediate width during drag / orientation change,
+    // which would otherwise cause visible width "jitter".
+    let frameId = 0;
+    let timeoutId: number | null = null;
+    const apply = () => {
+      setViewportWidth((prev) => (prev === window.innerWidth ? prev : window.innerWidth));
+    };
+    const onResize = () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        if (frameId) cancelAnimationFrame(frameId);
+        frameId = requestAnimationFrame(apply);
+      }, 80);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", apply);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      if (frameId) cancelAnimationFrame(frameId);
+    };
   }, []);
 
   /* ---------- Search context ---------- */
@@ -269,11 +289,17 @@ export const DynamicIsland = () => {
     setFocused(false);
   }, [location.pathname]);
 
-  /* ---------- Shape ---------- */
-  const shape =
-    state === "search"
+  /* ---------- Shape (memoized) ----------
+   * Recomputed only when an actual input changes — viewport width, product
+   * count, search stage, island state, the (debounced) title or language.
+   * This stops cascading re-layouts of the framer-motion shell while the
+   * user is just scrolling or dragging the page.
+   */
+  const shape = useMemo(() => {
+    return state === "search"
       ? searchShape(stage, products.length, viewportWidth)
       : baseShape(state, title, language, viewportWidth);
+  }, [state, stage, products.length, title, language, viewportWidth]);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
