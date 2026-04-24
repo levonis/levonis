@@ -499,21 +499,20 @@ export const DynamicIsland = () => {
                       "linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%)",
                   }}
                 >
-                  {marqueeItems.length > 0 ? (
+                  {marqueeBaseItems.length > 0 ? (
                     <>
+                      {/* Hidden base used to measure a single message width */}
                       <div
-                        ref={marqueeMeasureRef}
+                        ref={marqueeBaseRef}
                         dir="ltr"
                         aria-hidden="true"
                         className="pointer-events-none absolute opacity-0 whitespace-nowrap"
-                        style={{
-                          ['--marquee-gap' as any]: `${promoSettings.gap}px`,
-                        }}
+                        style={{ ['--marquee-gap' as any]: `${promoSettings.gap}px` }}
                       >
                         <div className="marquee-group text-[12px] font-medium tracking-tight text-foreground/85">
-                          {messages.map((message, itemIndex) => (
-                            <span key={`measure-${itemIndex}`} className="inline-flex items-center gap-3">
-                              <span dir="auto" className="text-foreground/90">{message}</span>
+                          {marqueeBaseItems.map((item) => (
+                            <span key={`base-${item.id}`} className="inline-flex items-center gap-3">
+                              <span dir="auto" className="text-foreground/90">{item.text}</span>
                               <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
                             </span>
                           ))}
@@ -521,13 +520,13 @@ export const DynamicIsland = () => {
                       </div>
 
                       <div
-                        key={`promo-track-${marqueeItems.length}-${promoSettings.direction}-${promoSettings.speed}-${promoSettings.gap}`}
-                        ref={marqueeTrackRef}
+                        key={`promo-track-${marqueeBaseItems.length}-${promoSettings.direction}-${promoSettings.gap}`}
                         dir="ltr"
                         data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                         className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
                         style={{
                           ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                          animation: `${promoSettings.direction === 'right' ? 'marquee-scroll-reverse' : 'marquee-scroll'} ${marqueeDuration}s linear infinite`,
                         }}
                       >
                         {[0, 1].map((group) => (
@@ -537,7 +536,7 @@ export const DynamicIsland = () => {
                             className="marquee-group"
                             aria-hidden={group === 1}
                           >
-                            {marqueeItems.map((item) => (
+                            {marqueeBaseItems.map((item) => (
                               <span key={`${group}-${item.id}`} className="inline-flex items-center gap-3">
                                 <span dir="auto" className="text-foreground/90">{item.text}</span>
                                 <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
