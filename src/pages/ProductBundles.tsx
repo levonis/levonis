@@ -16,6 +16,7 @@ const SALE_TYPE_LABELS: Record<string, string> = {
 };
 
 const ProductBundles = () => {
+  const { language } = useLanguage();
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
