@@ -68,6 +68,7 @@ const AdminAnnouncements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       queryClient.invalidateQueries({ queryKey: ['active-announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['island-announcements'] });
       toast.success('تم إضافة الإعلان بنجاح');
       setDialogOpen(false);
       resetForm();
