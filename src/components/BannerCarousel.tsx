@@ -311,29 +311,32 @@ const BannerCarousel = memo(() => {
             {/* Content - glassmorphism */}
             <div className="absolute bottom-0 right-0 left-0 p-3 md:p-5 flex items-end justify-between">
               <div className="flex flex-col gap-2">
-                {banner.title_ar && (
-                  <div
-                    className={cn(
-                      "inline-flex w-fit rounded-full backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ease-out",
-                      "bg-black/35 border border-white/40 ring-1 ring-inset ring-white/15",
-                      "shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]",
-                      !isAutoPlaying
-                        ? "px-4 py-1.5 md:px-5 md:py-2 lg:px-6 lg:py-2.5 bg-black/50 border-white/60 scale-105 shadow-[0_8px_28px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.3)]"
-                        : "px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2.5"
-                    )}
-                  >
-                    <h3
+                {(() => {
+                  const t = localizedTitle(banner);
+                  return t ? (
+                    <div
                       className={cn(
-                        "text-white font-bold max-w-md transition-all duration-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
+                        "inline-flex w-fit rounded-full backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ease-out",
+                        "bg-black/35 border border-white/40 ring-1 ring-inset ring-white/15",
+                        "shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]",
                         !isAutoPlaying
-                          ? "text-sm md:text-base lg:text-lg line-clamp-2"
-                          : "text-xs md:text-sm lg:text-base line-clamp-1"
+                          ? "px-4 py-1.5 md:px-5 md:py-2 lg:px-6 lg:py-2.5 bg-black/50 border-white/60 scale-105 shadow-[0_8px_28px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.3)]"
+                          : "px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2.5"
                       )}
                     >
-                      {banner.title_ar}
-                    </h3>
-                  </div>
-                )}
+                      <h3
+                        className={cn(
+                          "text-white font-bold max-w-md transition-all duration-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
+                          !isAutoPlaying
+                            ? "text-sm md:text-base lg:text-lg line-clamp-2"
+                            : "text-xs md:text-sm lg:text-base line-clamp-1"
+                        )}
+                      >
+                        {t}
+                      </h3>
+                    </div>
+                  ) : null;
+                })()}
                 {renderActionButton(banner)}
               </div>
             </div>
