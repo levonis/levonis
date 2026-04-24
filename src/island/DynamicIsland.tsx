@@ -461,10 +461,16 @@ export const DynamicIsland = () => {
                       style={{
                         ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
                         ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                        ['--marquee-distance' as any]: marqueeDistance ? `${marqueeDistance}px` : '50%',
                       }}
                     >
                       {[0, 1].map((group) => (
-                        <div key={group} className="marquee-group" aria-hidden={group === 1}>
+                        <div
+                          key={group}
+                          ref={group === 0 ? marqueeGroupRef : undefined}
+                          className="marquee-group"
+                          aria-hidden={group === 1}
+                        >
                           {marqueeItems.map((m, i) => (
                             <span key={`${group}-${i}`} className="inline-flex items-center gap-3">
                               <span dir="auto" className="text-foreground/90">{m}</span>
