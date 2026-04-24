@@ -178,7 +178,7 @@ const BundleDetail = () => {
           <Link to="/bundles" className="w-8 h-8 rounded-lg bg-card border border-border/50 flex items-center justify-center">
             <ArrowRight className="h-4 w-4 text-foreground" />
           </Link>
-          <h1 className="text-sm font-bold text-foreground truncate flex-1">{bundle.title_ar}</h1>
+          <h1 className="text-sm font-bold text-foreground truncate flex-1">{pickI18n(bundle as any, 'title', language)}</h1>
           <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0.5 border border-border/30">
             {SALE_TYPE_LABELS[saleType] || saleType}
           </Badge>
