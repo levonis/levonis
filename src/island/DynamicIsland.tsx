@@ -170,6 +170,16 @@ export const DynamicIsland = () => {
 
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
+  /* ---------- Track viewport width so shape recalculates on resize ---------- */
+  const [viewportWidth, setViewportWidth] = useState<number>(
+    typeof window !== "undefined" ? window.innerWidth : 390,
+  );
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   /* ---------- Search context ---------- */
   const [searchQuery, setSearchQuery] = useState("");
   const [focused, setFocused] = useState(false);
