@@ -473,9 +473,23 @@ export const DynamicIsland = () => {
     };
   }, [state, messages, marqueeRepeatCount, promoSettings.gap, promoSettings.speed]);
 
-  /* ---------- Render ---------- */
+  /* ---------- Render ----------
+   * The outer wrapper has a FIXED reserved height equal to the tallest
+   * possible island shape (panel = 250px) so vertical position never shifts
+   * when `shape.height` changes. The island itself is anchored to the top
+   * of that reserved strip via `items-start`, so width/height springs only
+   * morph the pill — they never push the pill up or down on the page.
+   *
+   * NOTE: We intentionally do NOT use framer's `layout` prop on the shell.
+   * `layout` measures the rendered box and competes with the animated
+   * `width` / `height` values, producing a visible vertical "jump" on every
+   * route change. The width/height springs alone handle the morph cleanly.
+   */
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-3">
+    <div
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center items-start pt-3"
+      style={{ height: 280 }}
+    >
       <LayoutGroup>
         <AnimatePresence initial={false}>
           {visible && (
@@ -483,7 +497,6 @@ export const DynamicIsland = () => {
               key="island-shell"
               ref={islandRef}
               data-dynamic-island
-              layout
               initial={{ opacity: 0, scaleX: 0.02, scaleY: 0.85 }}
               animate={{
                 opacity: 1,
@@ -497,7 +510,7 @@ export const DynamicIsland = () => {
               style={{
                 maxWidth: "calc(100vw - 16px)",
                 borderRadius: shape.radius,
-                transformOrigin: "center center",
+                transformOrigin: "top center",
                 touchAction: "pan-y",
               }}
               transition={{
