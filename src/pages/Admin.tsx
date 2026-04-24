@@ -3654,7 +3654,26 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="cat_slug">الرابط (Slug) *</Label>
+                        <Label htmlFor="cat_name_en">Name (English) — for SEO/i18n</Label>
+                        <Input
+                          id="cat_name_en"
+                          name="name_en"
+                          defaultValue={editingCategory?.name_en || editingCategory?.name || ''}
+                          placeholder="e.g. 3D Printers"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_name_ku">ناوی کوردی</Label>
+                        <Input
+                          id="cat_name_ku"
+                          name="name_ku"
+                          defaultValue={editingCategory?.name_ku || ''}
+                          placeholder="بۆ نموونە: پرینتەری 3D"
+                          dir="rtl"
+                        />
+                      </div>
+                    </div>
                         <Input 
                           id="cat_slug" 
                           name="slug"
