@@ -117,9 +117,10 @@ const BannerCarousel = memo(() => {
     return () => clearTimeout(timer);
   }, [banners, isAutoPlaying, currentIndex]);
 
-  // Touch handlers for swipe
+  // Touch handlers for swipe + pause-while-touching
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    setIsAutoPlaying(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -127,25 +128,23 @@ const BannerCarousel = memo(() => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current || !banners) return;
-    
-    const diff = touchStartX.current - touchEndX.current;
-    const threshold = 50;
+    if (banners && touchStartX.current !== null && touchEndX.current !== null) {
+      const diff = touchStartX.current - touchEndX.current;
+      const threshold = 50;
 
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
-        // Swipe left - next (RTL: previous)
-        setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
-      } else {
-        // Swipe right - previous (RTL: next)
-        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      if (Math.abs(diff) > threshold) {
+        if (diff > 0) {
+          setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+        } else {
+          setCurrentIndex((prev) => (prev + 1) % banners.length);
+        }
       }
-      setIsAutoPlaying(false);
-      setTimeout(() => setIsAutoPlaying(true), 10000);
     }
 
     touchStartX.current = null;
     touchEndX.current = null;
+    // Resume after a short delay so user can read the highlighted title
+    setTimeout(() => setIsAutoPlaying(true), 2500);
   };
 
   const handleCopyCoupon = async (code: string) => {
@@ -274,8 +273,22 @@ const BannerCarousel = memo(() => {
             <div className="absolute bottom-0 right-0 left-0 p-3 md:p-5 flex items-end justify-between">
               <div className="flex flex-col gap-2">
                 {banner.title_ar && (
-                  <div className="inline-flex w-fit px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
-                    <h3 className="text-white font-bold text-xs md:text-sm lg:text-base drop-shadow-sm max-w-md line-clamp-1">
+                  <div
+                    className={cn(
+                      "inline-flex w-fit rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all duration-300 ease-out",
+                      !isAutoPlaying
+                        ? "px-4 py-1.5 md:px-5 md:py-2 bg-white/20 border-white/40 scale-105 shadow-[0_6px_24px_rgba(0,0,0,0.35)]"
+                        : "px-3 py-1 md:px-4 md:py-1.5"
+                    )}
+                  >
+                    <h3
+                      className={cn(
+                        "text-white font-bold drop-shadow-sm max-w-md transition-all duration-300",
+                        !isAutoPlaying
+                          ? "text-sm md:text-base lg:text-lg line-clamp-2"
+                          : "text-xs md:text-sm lg:text-base line-clamp-1"
+                      )}
+                    >
                       {banner.title_ar}
                     </h3>
                   </div>
@@ -290,7 +303,7 @@ const BannerCarousel = memo(() => {
       {/* Golden border progress counter - SVG that traces the rounded rectangle border */}
       {banners.length > 1 && (
         <svg
-          key={`border-${currentIndex}-${isAutoPlaying}`}
+          key={`border-${currentIndex}`}
           className="pointer-events-none absolute inset-0 w-full h-full z-20"
           preserveAspectRatio="none"
           viewBox="0 0 100 100"
@@ -317,9 +330,10 @@ const BannerCarousel = memo(() => {
             pathLength={1}
             strokeDasharray={1}
             strokeDashoffset={1}
-            className={isAutoPlaying ? "animate-banner-border-progress" : ""}
+            className="animate-banner-border-progress"
             style={{
               filter: "drop-shadow(0 0 3px rgba(255, 215, 0, 0.6))",
+              animationPlayState: isAutoPlaying ? "running" : "paused",
             }}
           />
         </svg>
