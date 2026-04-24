@@ -43,7 +43,8 @@ const validatePassword = (password: string): { valid: boolean; error?: string } 
 };
 
 const findUserIdByEmail = async (
-  supabase: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   email: string,
 ): Promise<string | null> => {
   // First try profiles table (faster and more reliable in this project)
