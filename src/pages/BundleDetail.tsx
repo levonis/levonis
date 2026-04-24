@@ -50,6 +50,7 @@ const SALE_TYPE_LABELS: Record<string, string> = {
 const BundleDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { addBundleToCart, cartSaleType, items: cartItems } = useCart();
   const navigate = useNavigate();
   const [isAdding, setIsAdding] = useState(false);
