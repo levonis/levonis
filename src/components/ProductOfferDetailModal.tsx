@@ -6,6 +6,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle, X, Palette, Settings2 } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface ProductOption {
   name_ar: string;
