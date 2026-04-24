@@ -87,8 +87,24 @@ const baseShape = (
     cap,
     Math.max(minBudget, Math.round(titleLen * perChar) + 24),
   );
-  const promoWidth = Math.round(Math.min(640, Math.max(240, viewportWidth - 32)));
-  const searchWidth = Math.round(Math.min(560, Math.max(280, viewportWidth - 32)));
+  // Responsive promo/search width tuned per breakpoint so the island never
+  // overlaps adjacent UI (profile/avatar) on phones, while still scaling up
+  // gracefully on tablets / desktops.
+  // - Phones (<480):   ~62% of viewport, capped at 260
+  // - Tablets (<900):  ~50% of viewport, capped at 420
+  // - Desktops:        fixed 480 (promo) / 520 (search)
+  const promoWidth =
+    viewportWidth < 480
+      ? Math.round(Math.min(260, Math.max(200, viewportWidth * 0.62)))
+      : viewportWidth < 900
+        ? Math.round(Math.min(420, viewportWidth * 0.5))
+        : 480;
+  const searchWidth =
+    viewportWidth < 480
+      ? Math.round(Math.min(280, Math.max(220, viewportWidth * 0.7)))
+      : viewportWidth < 900
+        ? Math.round(Math.min(440, viewportWidth * 0.55))
+        : 520;
   switch (state) {
     case "promo":    return { width: promoWidth, height: 40, radius: 22 };
     case "search":   return { width: searchWidth, height: 52, radius: 26 };
@@ -104,9 +120,25 @@ const searchShape = (
   resultsCount: number,
   viewportWidth: number,
 ): { width: number; height: number; radius: number } => {
-  const idleWidth = Math.round(Math.min(560, Math.max(280, viewportWidth - 32)));
-  const typingWidth = Math.round(Math.min(620, Math.max(300, viewportWidth - 24)));
-  const panelWidth = Math.round(Math.min(680, Math.max(320, viewportWidth - 24)));
+  // Search states need a bit more room when active (typing/results), but
+  // still stay within phone-friendly bounds.
+  const isPhone = viewportWidth < 480;
+  const isTablet = viewportWidth < 900;
+  const idleWidth = isPhone
+    ? Math.round(Math.min(280, Math.max(220, viewportWidth * 0.7)))
+    : isTablet
+      ? Math.round(Math.min(440, viewportWidth * 0.55))
+      : 520;
+  const typingWidth = isPhone
+    ? Math.round(Math.min(330, viewportWidth - 32))
+    : isTablet
+      ? Math.round(Math.min(520, viewportWidth * 0.65))
+      : 580;
+  const panelWidth = isPhone
+    ? Math.round(Math.min(350, viewportWidth - 24))
+    : isTablet
+      ? Math.round(Math.min(560, viewportWidth * 0.7))
+      : 620;
   switch (stage) {
     case "idle":
       return { width: idleWidth, height: 52, radius: 26 };
