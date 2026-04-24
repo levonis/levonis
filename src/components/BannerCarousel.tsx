@@ -331,6 +331,32 @@ const BannerCarousel = memo(() => {
         ))}
       </div>
 
+      {/* Soft color halo — full border in new color, fades in on banner change for smooth color transition */}
+      {banners.length > 1 && (
+        <svg
+          key={`halo-${currentIndex}`}
+          className="pointer-events-none absolute inset-0 w-full h-full z-10 animate-banner-color-fade"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient id={`haloGradient-${currentIndex}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={borderGradient.from} stopOpacity="0.35" />
+              <stop offset="50%" stopColor={borderGradient.mid} stopOpacity="0.5" />
+              <stop offset="100%" stopColor={borderGradient.to} stopOpacity="0.35" />
+            </linearGradient>
+          </defs>
+          <rect
+            x="0.4" y="0.4" width="99.2" height="99.2" rx="2.5" ry="2.5"
+            fill="none"
+            stroke={`url(#haloGradient-${currentIndex})`}
+            strokeWidth="0.8"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      )}
+
       {/* Golden border progress counter - SVG that traces the rounded rectangle border */}
       {banners.length > 1 && (
         <svg
@@ -341,7 +367,7 @@ const BannerCarousel = memo(() => {
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={`goldGradient-${currentIndex}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor={borderGradient.from} />
               <stop offset="50%" stopColor={borderGradient.mid} />
               <stop offset="100%" stopColor={borderGradient.to} />
@@ -355,7 +381,7 @@ const BannerCarousel = memo(() => {
             rx="2.5"
             ry="2.5"
             fill="none"
-            stroke="url(#goldGradient)"
+            stroke={`url(#goldGradient-${currentIndex})`}
             strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"
             pathLength={1}
