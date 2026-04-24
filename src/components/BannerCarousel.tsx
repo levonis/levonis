@@ -163,6 +163,30 @@ const BannerCarousel = memo(() => {
 
   const currentBanner = banners[currentIndex];
 
+  // Pick a gradient palette based on the action type, with a hash fallback for variety
+  const getBorderGradient = (banner: Banner): { from: string; mid: string; to: string; glow: string } => {
+    const palettes: Record<string, { from: string; mid: string; to: string; glow: string }> = {
+      product:  { from: '#FFD700', mid: '#FFA500', to: '#FFD700', glow: 'rgba(255,180,0,0.65)' },   // gold
+      page:     { from: '#7DD3FC', mid: '#3B82F6', to: '#7DD3FC', glow: 'rgba(59,130,246,0.65)' }, // azure
+      external: { from: '#A78BFA', mid: '#7C3AED', to: '#A78BFA', glow: 'rgba(124,58,237,0.65)' }, // violet
+      coupon:   { from: '#FCA5A5', mid: '#EF4444', to: '#FCA5A5', glow: 'rgba(239,68,68,0.65)' },  // ruby
+    };
+    if (palettes[banner.action_type]) return palettes[banner.action_type];
+
+    // Hash title to a hue for unknown action types
+    const title = banner.title_ar || banner.title || '';
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
+    const hue = hash % 360;
+    return {
+      from: `hsl(${hue}, 90%, 70%)`,
+      mid:  `hsl(${(hue + 20) % 360}, 95%, 55%)`,
+      to:   `hsl(${hue}, 90%, 70%)`,
+      glow: `hsla(${(hue + 20) % 360}, 95%, 55%, 0.65)`,
+    };
+  };
+  const borderGradient = getBorderGradient(currentBanner);
+
   const renderActionButton = (banner: Banner) => {
     const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
     
@@ -304,9 +328,9 @@ const BannerCarousel = memo(() => {
         >
           <defs>
             <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FFD700" />
-              <stop offset="50%" stopColor="#FFA500" />
-              <stop offset="100%" stopColor="#FFD700" />
+              <stop offset="0%" stopColor={borderGradient.from} />
+              <stop offset="50%" stopColor={borderGradient.mid} />
+              <stop offset="100%" stopColor={borderGradient.to} />
             </linearGradient>
           </defs>
           <rect
@@ -325,7 +349,7 @@ const BannerCarousel = memo(() => {
             strokeDashoffset={1}
             className="animate-banner-border-progress"
             style={{
-              filter: "drop-shadow(0 0 3px rgba(255, 215, 0, 0.6))",
+              filter: `drop-shadow(0 0 3px ${borderGradient.glow})`,
               animationPlayState: isAutoPlaying ? "running" : "paused",
             }}
             onAnimationEnd={() => {
