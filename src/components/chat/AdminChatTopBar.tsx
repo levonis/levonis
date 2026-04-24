@@ -139,7 +139,7 @@ export default function AdminChatTopBar({
 
   return (
     <>
-      <div className="flex items-center gap-2 px-2 py-2.5 border-b bg-card shadow-sm">
+      <div className="flex items-center gap-2 px-2 py-2.5 border-b glass-chat-surface">
         {/* Back Button */}
         <Button
           variant="ghost"
