@@ -10,6 +10,8 @@ import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Package, Plus, Minus,
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/lib/i18n';
+import { pickI18n } from '@/lib/i18nField';
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
