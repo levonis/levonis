@@ -87,9 +87,14 @@ const baseShape = (
     cap,
     Math.max(minBudget, Math.round(titleLen * perChar) + 24),
   );
+  // Responsive promo width: scales with viewport, clamped to a sensible range
+  // so it never overflows on phones nor looks tiny on tablets/desktops.
+  const vw = typeof window !== "undefined" ? window.innerWidth : 390;
+  const promoWidth = Math.round(Math.min(640, Math.max(240, vw - 32)));
+  const searchWidth = Math.round(Math.min(560, Math.max(280, vw - 32)));
   switch (state) {
-    case "promo":    return { width: 280, height: 40, radius: 22 };
-    case "search":   return { width: 360, height: 52, radius: 26 };
+    case "promo":    return { width: promoWidth, height: 40, radius: 22 };
+    case "search":   return { width: searchWidth, height: 52, radius: 26 };
     // chrome = back button + search button (~96 px) + paddings
     case "category": return { width: Math.min(cap, 96 + titleWidth), height: 52, radius: 26 };
     // chrome = back button only (~56 px)
@@ -101,17 +106,21 @@ const searchShape = (
   stage: SearchStage,
   resultsCount: number,
 ): { width: number; height: number; radius: number } => {
+  const vw = typeof window !== "undefined" ? window.innerWidth : 390;
+  const idleWidth = Math.round(Math.min(560, Math.max(280, vw - 32)));
+  const typingWidth = Math.round(Math.min(620, Math.max(300, vw - 24)));
+  const panelWidth = Math.round(Math.min(680, Math.max(320, vw - 24)));
   switch (stage) {
     case "idle":
-      return { width: 360, height: 52, radius: 26 };
+      return { width: idleWidth, height: 52, radius: 26 };
     case "typing":
-      return { width: 420, height: 60, radius: 26 };
+      return { width: typingWidth, height: 60, radius: 26 };
     case "suggestions":
-      return { width: 480, height: 200, radius: 28 };
+      return { width: panelWidth, height: 200, radius: 28 };
     case "results": {
       // 60 (input row) + 12 (label) + count * 56 (rows) + 44 (view all) + 18 (padding)
       const rows = Math.max(1, Math.min(5, resultsCount));
-      return { width: 520, height: 60 + 12 + rows * 56 + 44 + 18, radius: 30 };
+      return { width: panelWidth, height: 60 + 12 + rows * 56 + 44 + 18, radius: 30 };
     }
   }
 };
