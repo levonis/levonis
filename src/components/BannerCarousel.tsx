@@ -300,7 +300,7 @@ const BannerCarousel = memo(() => {
           >
             <BannerImage
               src={banner.image_url}
-              alt={banner.title_ar || banner.title}
+              alt={localizedTitle(banner) || banner.title}
               isFirst={index === 0}
               isActive={index === currentIndex}
             />
