@@ -94,7 +94,7 @@ export default function AssistanceCoupons() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-bold text-sm text-foreground">{coupon.title_ar}</h4>
+                  <h4 className="font-bold text-sm text-foreground">{pickI18n(coupon, "title", language)}</h4>
                   <Badge variant="secondary" className="text-[10px]">
                     {coupon.discount_type === "percentage"
                       ? `${coupon.discount_value}%`
