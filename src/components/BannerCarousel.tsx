@@ -193,7 +193,7 @@ const BannerCarousel = memo(() => {
         return (
           <Link to={`/product/${banner.product_id}`} className={glassClass}>
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
           </Link>
         );
       
@@ -202,7 +202,7 @@ const BannerCarousel = memo(() => {
         return (
           <Link to={banner.page_url} className={glassClass}>
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
           </Link>
         );
       
@@ -216,7 +216,7 @@ const BannerCarousel = memo(() => {
             className={glassClass}
           >
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
           </a>
         );
       
@@ -229,12 +229,12 @@ const BannerCarousel = memo(() => {
           >
             {copiedCoupon === banner.coupon_code ? (
               <>
-                <Check className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <Check className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
                 تم النسخ!
               </>
             ) : (
               <>
-                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
                 <span className="font-mono tracking-wide">{banner.coupon_code}</span>
               </>
             )}
