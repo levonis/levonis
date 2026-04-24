@@ -2530,9 +2530,37 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             </DialogContent>
           </Dialog>
         )}
+    </>
+  );
+
+  // Embedded mode: render as a full-page panel inside the host page layout — no Dialog, no backdrop.
+  if (embedded) {
+    return (
+      <div className="relative w-full h-full min-h-[calc(100dvh-8rem)] flex bg-background overflow-hidden">
+        {innerContent}
+      </div>
+    );
+  }
+
+  // Default mode: render inside a Dialog (popup) for inline triggers across the app.
+  return (
+    <Dialog open={open} onOpenChange={(v) => v ? setOpen(true) : handleClose()}>
+      {!listingId && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button variant="outline" size="sm" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              المحادثات
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      <DialogContent hideClose className="!max-w-none !w-full sm:!w-[95vw] lg:!w-[90vw] xl:!w-[85vw] 2xl:!w-[80vw] !max-h-none h-[100dvh] sm:h-[85vh] lg:h-[80vh] !p-0 !gap-0 overflow-hidden border-0">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );
+
 };
 
 export default ListingConversations;
