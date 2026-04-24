@@ -2182,6 +2182,7 @@ body {
     flex: none;
     white-space: nowrap;
     will-change: transform;
+    gap: var(--marquee-gap, 2.5rem);
     animation: island-marquee var(--marquee-duration, 18s) linear infinite;
   }
 
@@ -2191,7 +2192,6 @@ body {
     justify-content: flex-start;
     flex: none;
     gap: var(--marquee-gap, 2.5rem);
-    padding-inline-end: var(--marquee-gap, 2.5rem);
     will-change: transform;
   }
 
