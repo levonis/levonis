@@ -334,57 +334,41 @@ const BannerCarousel = memo(() => {
         ))}
       </div>
 
-      {/* Soft color halo — full border in new color, fades in on banner change for smooth color transition */}
+      {/* Single SVG: halo (color fade-in) + animated golden counter — fewer DOM nodes & defs */}
       {banners.length > 1 && (
         <svg
-          key={`halo-${currentIndex}`}
-          className="pointer-events-none absolute inset-0 w-full h-full z-10 animate-banner-color-fade"
+          className="pointer-events-none absolute inset-0 w-full h-full z-10"
           preserveAspectRatio="none"
           viewBox="0 0 100 100"
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id={`haloGradient-${currentIndex}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={borderGradient.from} stopOpacity="0.35" />
-              <stop offset="50%" stopColor={borderGradient.mid} stopOpacity="0.5" />
-              <stop offset="100%" stopColor={borderGradient.to} stopOpacity="0.35" />
-            </linearGradient>
-          </defs>
-          <rect
-            x="0.4" y="0.4" width="99.2" height="99.2" rx="2.5" ry="2.5"
-            fill="none"
-            stroke={`url(#haloGradient-${currentIndex})`}
-            strokeWidth="0.8"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      )}
-
-      {/* Golden border progress counter - SVG that traces the rounded rectangle border */}
-      {banners.length > 1 && (
-        <svg
-          key={`border-${currentIndex}`}
-          className="pointer-events-none absolute inset-0 w-full h-full z-20"
-          preserveAspectRatio="none"
-          viewBox="0 0 100 100"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id={`goldGradient-${currentIndex}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            {/* Stable IDs — gradient stops update via React props, no defs re-keying */}
+            <linearGradient id="bannerBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor={borderGradient.from} />
               <stop offset="50%" stopColor={borderGradient.mid} />
               <stop offset="100%" stopColor={borderGradient.to} />
             </linearGradient>
           </defs>
+
+          {/* Halo: fades in on banner change */}
           <rect
-            x="0.4"
-            y="0.4"
-            width="99.2"
-            height="99.2"
-            rx="2.5"
-            ry="2.5"
+            key={`halo-${currentIndex}`}
+            x="0.4" y="0.4" width="99.2" height="99.2" rx="2.5" ry="2.5"
             fill="none"
-            stroke={`url(#goldGradient-${currentIndex})`}
+            stroke="url(#bannerBorderGrad)"
+            strokeWidth="0.8"
+            strokeOpacity="0.4"
+            vectorEffect="non-scaling-stroke"
+            className="animate-banner-color-fade"
+          />
+
+          {/* Animated counter trace */}
+          <rect
+            key={`border-${currentIndex}`}
+            x="0.4" y="0.4" width="99.2" height="99.2" rx="2.5" ry="2.5"
+            fill="none"
+            stroke="url(#bannerBorderGrad)"
             strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"
             pathLength={1}
@@ -393,11 +377,10 @@ const BannerCarousel = memo(() => {
             className="animate-banner-border-progress"
             style={{
               filter: `drop-shadow(0 0 3px ${borderGradient.glow})`,
-              animationPlayState: isAutoPlaying ? "running" : "paused",
+              animationPlayState: isAutoPlaying ? 'running' : 'paused',
             }}
             onAnimationEnd={() => {
               if (!isAutoPlaying) return;
-              // Trigger flash, then transition to next banner
               setIsFlashing(true);
               window.setTimeout(() => {
                 setCurrentIndex((prev) => (prev + 1) % banners.length);
