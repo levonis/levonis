@@ -14,6 +14,7 @@ import { Plus, Pencil, Trash2, Megaphone, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import IslandPromoPreview from '@/components/admin/IslandPromoPreview';
 
 const AdminAnnouncements = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
