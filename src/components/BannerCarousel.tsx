@@ -372,8 +372,7 @@ const BannerCarousel = memo(() => {
             strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"
             pathLength={1}
-            strokeDasharray={1}
-            strokeDashoffset={1}
+            // dasharray/dashoffset are driven by the keyframes (snake trace)
             className="animate-banner-border-progress"
             style={{
               filter: `drop-shadow(0 0 3px ${borderGradient.glow})`,

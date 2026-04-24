@@ -1477,9 +1477,20 @@
   animation: progress-bar-fill 5s linear forwards;
 }
 
+/*
+ * Snake-style border tracer:
+ *  - pathLength is normalized to 1
+ *  - dasharray is "<visible> <gap>", offset positions the visible segment
+ *  - Phase 1 (0% → 80%): head grows from 0 to full perimeter (visible 0 → 1)
+ *  - Phase 2 (80% → 100%): tail catches up fast (visible 1 → 0) while offset
+ *    advances so the tail moves toward the head's position
+ */
 @keyframes banner-border-progress {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
+  /* Phase 1: grow head around the rectangle */
+  0%   { stroke-dasharray: 0 1;       stroke-dashoffset: 0; }
+  80%  { stroke-dasharray: 1 0;       stroke-dashoffset: 0; }
+  /* Phase 2: tail rushes to catch the head */
+  100% { stroke-dasharray: 0 1;       stroke-dashoffset: -1; }
 }
 
 .animate-banner-border-progress {
