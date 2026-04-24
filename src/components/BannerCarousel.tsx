@@ -6,6 +6,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Json } from '@/integrations/supabase/types';
+import { useLanguage } from '@/lib/i18n';
+import { pickI18n } from '@/lib/i18nField';
 
 interface CropSettings {
   x: number;
