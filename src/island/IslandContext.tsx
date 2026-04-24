@@ -111,21 +111,32 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     gcTime: 600_000,
   });
 
-  const promoMessages = useMemo<string[]>(() => {
+  const promoItems = useMemo<PromoItem[]>(() => {
     if (!announcements?.length) return [];
     return announcements
-      .map((a: any) => a.message_ar || a.message || "")
-      .filter(Boolean);
+      .map((a: any) => ({
+        text: (a.message_ar || a.message || "").trim(),
+        speed: typeof a.speed === "number" && a.speed > 0 ? a.speed : 20,
+        direction: a.direction === "left" ? "left" : "right",
+        gap: typeof a.gap === "number" && a.gap >= 0 ? a.gap : 16,
+        color: a.color || undefined,
+      }))
+      .filter((i) => i.text.length > 0) as PromoItem[];
   }, [announcements]);
 
+  const promoMessages = useMemo<string[]>(
+    () => promoItems.map((i) => i.text),
+    [promoItems],
+  );
+
   const promoSettings = useMemo<PromoSettings>(() => {
-    const first: any = announcements?.[0];
+    const first = promoItems[0];
     return {
-      speed: typeof first?.speed === "number" && first.speed > 0 ? first.speed : 20,
-      direction: first?.direction === "left" ? "left" : "right",
-      gap: typeof first?.gap === "number" && first.gap >= 0 ? first.gap : 16,
+      speed: first?.speed ?? 20,
+      direction: first?.direction ?? "right",
+      gap: first?.gap ?? 16,
     };
-  }, [announcements]);
+  }, [promoItems]);
 
   const routeDefault = useMemo<{ state: IslandState; title?: string }>(() => {
     const p = location.pathname;
