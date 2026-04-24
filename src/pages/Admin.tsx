@@ -3280,6 +3280,96 @@ const Admin = () => {
                       )}
                     </div>
 
+                    {/* SEO: short summary + searchable attributes */}
+                    <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                      <div>
+                        <h3 className="font-bold text-sm mb-1">ملخص قصير (SEO + Meta Description)</h3>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          سطر واحد يلخص المنتج. يستخدم في وصف صفحة جوجل و OG ومساعدي الذكاء الاصطناعي.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <Input
+                            value={productShortSummary.ar || ''}
+                            onChange={(e) => setProductShortSummary({ ...productShortSummary, ar: e.target.value })}
+                            placeholder="بالعربية (≤ 160 حرف)"
+                            dir="rtl"
+                            maxLength={200}
+                          />
+                          <Input
+                            value={productShortSummary.en || ''}
+                            onChange={(e) => setProductShortSummary({ ...productShortSummary, en: e.target.value })}
+                            placeholder="English (≤ 160 chars)"
+                            dir="ltr"
+                            maxLength={200}
+                          />
+                          <Input
+                            value={productShortSummary.ku || ''}
+                            onChange={(e) => setProductShortSummary({ ...productShortSummary, ku: e.target.value })}
+                            placeholder="بە کوردی"
+                            dir="rtl"
+                            maxLength={200}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="font-bold text-sm mb-1">صفات قابلة للبحث (Tags / Keywords)</h3>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          كلمات مفتاحية تساعد جوجل والذكاء الاصطناعي على ربط المنتج بنية المستخدم: استخدام، مادة، علامة، جمهور...
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            value={searchableAttrInput}
+                            onChange={(e) => setSearchableAttrInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault();
+                                const v = searchableAttrInput.trim().replace(/,$/, '').trim();
+                                if (v && !productSearchableAttrs.includes(v)) {
+                                  setProductSearchableAttrs([...productSearchableAttrs, v]);
+                                }
+                                setSearchableAttrInput('');
+                              }
+                            }}
+                            placeholder="أضف كلمة مفتاحية ثم اضغط Enter"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              const v = searchableAttrInput.trim();
+                              if (v && !productSearchableAttrs.includes(v)) {
+                                setProductSearchableAttrs([...productSearchableAttrs, v]);
+                              }
+                              setSearchableAttrInput('');
+                            }}
+                          >
+                            إضافة
+                          </Button>
+                        </div>
+                        {productSearchableAttrs.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {productSearchableAttrs.map((tag, i) => (
+                              <span
+                                key={i}
+                                className="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1"
+                              >
+                                #{tag}
+                                <button
+                                  type="button"
+                                  onClick={() => setProductSearchableAttrs(productSearchableAttrs.filter((_, idx) => idx !== i))}
+                                  className="hover:text-destructive"
+                                  aria-label="remove tag"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <AdminProductAIContentEditor
                       value={productAIContent}
                       onChange={setProductAIContent}
