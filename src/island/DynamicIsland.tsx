@@ -166,6 +166,7 @@ export const DynamicIsland = () => {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
+  const marqueeTrackRef = useRef<HTMLDivElement>(null);
   const marqueeGroupRef = useRef<HTMLDivElement>(null);
   const [marqueeDistance, setMarqueeDistance] = useState<number | null>(null);
 
@@ -348,6 +349,41 @@ export const DynamicIsland = () => {
     };
   }, [state, marqueeItems, promoSettings.gap]);
 
+  useEffect(() => {
+    const track = marqueeTrackRef.current;
+    if (!track || state !== "promo" || !marqueeDistance) return;
+
+    let frameId = 0;
+    let lastTime = 0;
+    let offset = promoSettings.direction === "right" ? -marqueeDistance : 0;
+
+    const pixelsPerSecond = Math.max(12, marqueeDistance / Math.max(4, promoSettings.speed));
+
+    const step = (time: number) => {
+      if (!lastTime) lastTime = time;
+      const delta = (time - lastTime) / 1000;
+      lastTime = time;
+
+      if (promoSettings.direction === "right") {
+        offset += pixelsPerSecond * delta;
+        if (offset >= 0) offset -= marqueeDistance;
+      } else {
+        offset -= pixelsPerSecond * delta;
+        if (offset <= -marqueeDistance) offset += marqueeDistance;
+      }
+
+      track.style.transform = `translate3d(${offset}px, 0, 0)`;
+      frameId = window.requestAnimationFrame(step);
+    };
+
+    track.style.transform = `translate3d(${offset}px, 0, 0)`;
+    frameId = window.requestAnimationFrame(step);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [state, marqueeDistance, promoSettings.direction, promoSettings.speed]);
+
   /* ---------- Render ---------- */
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-3">
@@ -455,13 +491,12 @@ export const DynamicIsland = () => {
                   {marqueeItems.length > 0 ? (
                     <div
                       key={`promo-track-${marqueeItems.length}-${promoSettings.direction}-${promoSettings.speed}-${promoSettings.gap}`}
+                      ref={marqueeTrackRef}
                       dir="ltr"
                       data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                       className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
                       style={{
-                        ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
                         ['--marquee-gap' as any]: `${promoSettings.gap}px`,
-                        ['--marquee-distance' as any]: marqueeDistance ? `${marqueeDistance}px` : '50%',
                       }}
                     >
                       {[0, 1].map((group) => (
