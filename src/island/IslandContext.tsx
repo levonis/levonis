@@ -170,10 +170,10 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
       p.startsWith("/community/requests") ||
       p.startsWith("/community/reels");
     if (promoSurfaces) {
-      // When "alwaysMove" is enabled, keep the promo ticker visible even after
-      // the user scrolls so the marquee never stops/disappears.
-      const showPromo =
-        promoMessages.length > 0 && (promoSettings.alwaysMove || !scrolled);
+      // Always switch to "search" once the user scrolls down. The
+      // "alwaysMove" setting only controls whether the marquee keeps
+      // animating continuously — it must NOT block the state change.
+      const showPromo = promoMessages.length > 0 && !scrolled;
       return {
         state: showPromo ? "promo" : "search",
       };
