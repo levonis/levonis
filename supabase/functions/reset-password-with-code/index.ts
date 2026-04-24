@@ -75,7 +75,7 @@ const findUserIdByEmail = async (
     }
 
     const foundUser = data.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
+      (u: { email?: string | null; id: string }) => u.email?.toLowerCase() === email.toLowerCase()
     );
 
     if (foundUser) {
