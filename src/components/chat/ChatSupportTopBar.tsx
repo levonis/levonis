@@ -13,7 +13,8 @@ interface ChatSupportTopBarProps {
 
 export default function ChatSupportTopBar({ onBack }: ChatSupportTopBarProps) {
   return (
-    <div className="flex items-center gap-2 px-3 py-3 border-b bg-gradient-to-l from-primary/10 via-primary/5 to-transparent shadow-sm">
+    <div className="relative flex items-center gap-2 px-3 py-3 border-b glass-chat-surface before:content-[''] before:absolute before:inset-0 before:bg-gradient-to-l before:from-primary/15 before:via-primary/5 before:to-transparent before:pointer-events-none">
+      <div className="relative flex items-center gap-2 w-full">
       {/* Back Button */}
       <Button
         variant="ghost"
@@ -50,6 +51,7 @@ export default function ChatSupportTopBar({ onBack }: ChatSupportTopBarProps) {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      </div>
     </div>
   );
 }
