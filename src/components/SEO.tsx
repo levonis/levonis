@@ -26,6 +26,7 @@ const SEO = ({
   noindex = false,
   canonical,
   locale = 'ar_IQ',
+  keywords,
 }: SEOProps) => {
   const fullTitle = title ? `${title} — LEVONIS` : 'LEVONIS — متجرك الموثوق للتقنية في العراق';
   const finalUrl = url || (typeof window !== 'undefined' ? window.location.href : SITE);
