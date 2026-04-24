@@ -863,7 +863,7 @@ export const ku: TranslationKeys = {
   qs_track_shipments: 'شوێنکەوتنی بارەکان',
   qs_favorites: 'دڵخوازەکان',
   qs_notifications: 'ئاگاداریەکان',
-  qs_browse_history: 'مێژووی گەڕان',
+  qs_price_protection: 'پاراستنی نرخ',
   qs_addresses: 'ناونیشانەکان',
   qs_customer_service: 'خزمەتگوزاری کڕیار',
   qs_prizes: 'خەڵاتەکان',
