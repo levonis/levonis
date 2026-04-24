@@ -278,8 +278,8 @@ export default function CommunityMessages() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-0 max-w-6xl h-[100dvh] flex flex-col">
+    <div className="bg-background community-messages-shell">
+      <main className="container mx-auto px-0 max-w-6xl flex flex-col community-messages-main">
         {(loading || creatingConversation) && (
           <div className="space-y-3 px-4 py-6">
             {[1,2,3].map(i => (
