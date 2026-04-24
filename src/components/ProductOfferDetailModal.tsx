@@ -61,11 +61,14 @@ export default function ProductOfferDetailModal({
   walletBalance,
   isAuthenticated,
 }: ProductOfferDetailModalProps) {
+  const { language } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
   const [selectedOption, setSelectedOption] = useState<ProductOption | null>(null);
+  const offerTitle = offer ? pickI18n(offer as any, 'title', language) : '';
+  const offerDescription = offer ? pickI18n(offer as any, 'description', language) : '';
 
   // Reset selections when offer changes
   useEffect(() => {
