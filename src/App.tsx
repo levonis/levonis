@@ -127,6 +127,7 @@ const AdminFinancialDrafts = lazy(() => import("./pages/AdminFinancialDrafts"));
 const AdminInventory = lazy(() => import("./pages/AdminInventory"));
 const AdminReviews = lazy(() => import("./pages/AdminReviews"));
 const AdminPriceProtection = lazy(() => import("./pages/AdminPriceProtection"));
+const PriceProtection = lazy(() => import("./pages/PriceProtection"));
 const AdminWinners = lazy(() => import("./pages/AdminWinners"));
 const AdminProductColorQa = lazy(() => import("./pages/AdminProductColorQa"));
 const Wishes = lazy(() => import("./pages/Wishes"));
@@ -293,6 +294,7 @@ function AppContent() {
             {/* /profile is rendered by ProfileExpansionShell at app level (overlay) */}
             <Route path="/profile" element={<div />} />
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
+            <Route path="/price-protection" element={<RequireAuth><PriceProtection /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/my-referral" element={<RequireAuth><MyReferral /></RequireAuth>} />
             <Route path="/games" element={<MiniGames />} />
