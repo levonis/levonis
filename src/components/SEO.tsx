@@ -10,6 +10,7 @@ interface SEOProps {
   noindex?: boolean;
   canonical?: string;
   locale?: string; // ar_IQ, en_US, ku_IQ
+  keywords?: string[];
 }
 
 const SITE = 'https://levonisiq.com';
