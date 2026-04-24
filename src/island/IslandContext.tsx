@@ -11,14 +11,10 @@ export interface PromoSettings {
   speed: number;
   direction: "left" | "right";
   gap: number;
-}
-
-export interface PromoItem {
-  text: string;
-  speed: number;
-  direction: "left" | "right";
-  gap: number;
-  color?: string;
+  color: string;
+  autoRotate: boolean;
+  displayDuration: number;
+  alwaysMove: boolean;
 }
 
 interface IslandContextValue {
@@ -26,7 +22,6 @@ interface IslandContextValue {
   title?: string;
   setContext: (ctx: { state: IslandState; title?: string } | null) => void;
   promoMessages: string[];
-  promoItems: PromoItem[];
   promoSettings: PromoSettings;
   visible: boolean;
 }
@@ -39,9 +34,18 @@ export const useIsland = () => {
   return ctx;
 };
 
+const DEFAULT_SETTINGS: PromoSettings = {
+  speed: 20,
+  direction: "right",
+  gap: 16,
+  color: "#3b82f6",
+  autoRotate: true,
+  displayDuration: 5,
+  alwaysMove: false,
+};
+
 /**
  * Routes where the Dynamic Island must be HIDDEN.
- * Checked via `startsWith` so nested paths inherit the hidden state.
  */
 const HIDDEN_PREFIXES: string[] = [
   "/cart",
@@ -84,7 +88,7 @@ export const isIslandHidden = (path: string): boolean =>
 
 export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { language } = useLanguage();
+  useLanguage();
   const [override, setOverride] = useState<{ state: IslandState; title?: string } | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
@@ -95,59 +99,67 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Active announcement texts (only the message content matters now)
   const { data: announcements } = useQuery({
     queryKey: ["island-announcements"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("announcements")
-        .select("message, message_ar, color, speed, direction, gap")
+        .select("message, message_ar")
         .eq("active", true)
         .order("created_at", { ascending: false })
         .limit(8);
       if (error) throw error;
       return data || [];
     },
-    staleTime: 120_000,
+    staleTime: 60_000,
     gcTime: 600_000,
   });
 
-  const promoItems = useMemo<PromoItem[]>(() => {
+  // Global, single-row settings shared by ALL announcements
+  const { data: settingsRow } = useQuery({
+    queryKey: ["island-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("announcement_settings")
+        .select("speed, direction, gap, color, auto_rotate, display_duration, always_move")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 60_000,
+    gcTime: 600_000,
+  });
+
+  const promoMessages = useMemo<string[]>(() => {
     if (!announcements?.length) return [];
     return announcements
-      .map((a: any) => ({
-        text: (a.message_ar || a.message || "").trim(),
-        speed: typeof a.speed === "number" && a.speed > 0 ? a.speed : 20,
-        direction: a.direction === "left" ? "left" : "right",
-        gap: typeof a.gap === "number" && a.gap >= 0 ? a.gap : 16,
-        color: a.color || undefined,
-      }))
-      .filter((i) => i.text.length > 0) as PromoItem[];
+      .map((a: any) => (a.message_ar || a.message || "").trim())
+      .filter(Boolean);
   }, [announcements]);
 
-  const promoMessages = useMemo<string[]>(
-    () => promoItems.map((i) => i.text),
-    [promoItems],
-  );
-
   const promoSettings = useMemo<PromoSettings>(() => {
-    const first = promoItems[0];
+    if (!settingsRow) return DEFAULT_SETTINGS;
+    const s: any = settingsRow;
     return {
-      speed: first?.speed ?? 20,
-      direction: first?.direction ?? "right",
-      gap: first?.gap ?? 16,
+      speed: typeof s.speed === "number" && s.speed > 0 ? s.speed : DEFAULT_SETTINGS.speed,
+      direction: s.direction === "left" ? "left" : "right",
+      gap: typeof s.gap === "number" && s.gap >= 0 ? s.gap : DEFAULT_SETTINGS.gap,
+      color: s.color || DEFAULT_SETTINGS.color,
+      autoRotate: s.auto_rotate ?? DEFAULT_SETTINGS.autoRotate,
+      displayDuration:
+        typeof s.display_duration === "number" && s.display_duration > 0
+          ? s.display_duration
+          : DEFAULT_SETTINGS.displayDuration,
+      alwaysMove: s.always_move ?? DEFAULT_SETTINGS.alwaysMove,
     };
-  }, [promoItems]);
+  }, [settingsRow]);
 
   const routeDefault = useMemo<{ state: IslandState; title?: string }>(() => {
     const p = location.pathname;
-    // For product/category pages we intentionally do NOT preset state here.
-    // The page itself will call setContext(state, title) once the real title
-    // is loaded — until then the island stays in its neutral search state so
-    // the user never sees a flash of the generic "Categories" / "Products"
-    // label before the actual name appears.
     if (p.startsWith("/product/")) return { state: "search" };
     if (p.startsWith("/category/")) return { state: "search" };
-    // Show promo marquee when not scrolled on the main shopping & community surfaces.
     const isHomeSurface = p === "/" || p === "/home" || p === "/index";
     const promoSurfaces =
       isHomeSurface ||
@@ -158,8 +170,6 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
       p.startsWith("/community/requests") ||
       p.startsWith("/community/reels");
     if (promoSurfaces) {
-      // Switch from promo (news ticker) to search when the user scrolls past
-      // the threshold so the island stays useful while browsing the page.
       return {
         state: !scrolled && promoMessages.length > 0 ? "promo" : "search",
       };
@@ -167,7 +177,6 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     return { state: "search" };
   }, [location.pathname, promoMessages.length, scrolled]);
 
-  // reset override when path changes
   useEffect(() => {
     setOverride(null);
   }, [location.pathname]);
@@ -175,7 +184,6 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const visible = !isIslandHidden(location.pathname);
   const active = override ?? routeDefault;
 
-  // Stable reference so consumers' useEffect deps don't loop.
   const setContext = useCallback(
     (ctx: { state: IslandState; title?: string } | null) => setOverride(ctx),
     [],
@@ -188,7 +196,6 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
         title: active.title,
         setContext,
         promoMessages,
-        promoItems,
         promoSettings,
         visible,
       }}
