@@ -117,9 +117,10 @@ const BannerCarousel = memo(() => {
     return () => clearTimeout(timer);
   }, [banners, isAutoPlaying, currentIndex]);
 
-  // Touch handlers for swipe
+  // Touch handlers for swipe + pause-while-touching
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    setIsAutoPlaying(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -127,25 +128,23 @@ const BannerCarousel = memo(() => {
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current || !banners) return;
-    
-    const diff = touchStartX.current - touchEndX.current;
-    const threshold = 50;
+    if (banners && touchStartX.current !== null && touchEndX.current !== null) {
+      const diff = touchStartX.current - touchEndX.current;
+      const threshold = 50;
 
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
-        // Swipe left - next (RTL: previous)
-        setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
-      } else {
-        // Swipe right - previous (RTL: next)
-        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      if (Math.abs(diff) > threshold) {
+        if (diff > 0) {
+          setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+        } else {
+          setCurrentIndex((prev) => (prev + 1) % banners.length);
+        }
       }
-      setIsAutoPlaying(false);
-      setTimeout(() => setIsAutoPlaying(true), 10000);
     }
 
     touchStartX.current = null;
     touchEndX.current = null;
+    // Resume after a short delay so user can read the highlighted title
+    setTimeout(() => setIsAutoPlaying(true), 2500);
   };
 
   const handleCopyCoupon = async (code: string) => {
