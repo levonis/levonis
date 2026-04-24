@@ -14,10 +14,10 @@ export default function ReplyBubble({ senderName, content, isMe, isParentMe, onC
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full text-right rounded-lg px-2.5 py-1.5 mb-1 border-r-2",
+        "w-full text-right rounded-lg px-2.5 py-1.5 mb-1 border-r-2 backdrop-blur-md",
         isParentMe 
           ? "bg-primary-foreground/15 border-primary-foreground/50" 
-          : "bg-background/60 border-primary/50"
+          : "bg-white/10 dark:bg-white/[0.04] border-primary/50"
       )}
     >
       <p className={cn(

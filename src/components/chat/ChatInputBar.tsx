@@ -295,7 +295,7 @@ export default function ChatInputBar({
   ];
 
   return (
-    <div className="border-t bg-card">
+    <div className="border-t glass-chat-surface">
       {/* Reply Preview Bar */}
       {replyTo && (
         <ReplyPreviewBar replyTo={replyTo} onClose={() => onCancelReply?.()} />

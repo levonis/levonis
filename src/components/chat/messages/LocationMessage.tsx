@@ -36,7 +36,7 @@ export default function LocationMessage({ location, isMe, timestamp }: LocationM
     <div className={cn("flex my-1.5", isMe ? "justify-start" : "justify-end")}>
       <div className={cn(
         "w-[280px] rounded-xl overflow-hidden shadow-md border",
-        isMe ? "bg-primary/10 border-primary/20" : "bg-card border-border"
+        isMe ? "glass-bubble-me" : "glass-bubble-other"
       )}>
         {/* Map Preview */}
         <a 

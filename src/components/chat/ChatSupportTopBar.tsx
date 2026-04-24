@@ -51,6 +51,7 @@ export default function ChatSupportTopBar({ onBack }: ChatSupportTopBarProps) {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      </div>
     </div>
   );
 }

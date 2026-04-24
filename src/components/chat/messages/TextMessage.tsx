@@ -70,10 +70,10 @@ export default function TextMessage({
     <div className={cn("flex", isMe ? "justify-start" : "justify-end")}>
       <div
         className={cn(
-          "max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-sm relative",
+          "max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 py-2 relative",
           isMe
-            ? "bg-primary text-primary-foreground rounded-tl-sm"
-            : "bg-card border border-border/50 rounded-tr-sm",
+            ? "glass-bubble-me text-primary-foreground rounded-tl-sm"
+            : "glass-bubble-other text-foreground rounded-tr-sm",
           showTail && (isMe ? "rounded-tl-2xl" : "rounded-tr-2xl")
         )}
       >

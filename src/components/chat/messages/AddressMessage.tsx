@@ -43,7 +43,7 @@ export default function AddressMessage({ address, isMe, timestamp }: AddressMess
     <div className={cn("flex my-1.5", isMe ? "justify-start" : "justify-end")}>
       <div className={cn(
         "w-[280px] rounded-xl overflow-hidden shadow-md border",
-        isMe ? "bg-primary/10 border-primary/20" : "bg-card border-border"
+        isMe ? "glass-bubble-me" : "glass-bubble-other"
       )}>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-l from-primary/15 via-primary/10 to-transparent border-b border-border/50">
