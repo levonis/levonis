@@ -2214,11 +2214,11 @@ body {
 
 @keyframes island-marquee {
   from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  to   { transform: translateX(calc(var(--marquee-distance, 50%) * -1)); }
 }
 
 @keyframes island-marquee-rtl {
-  from { transform: translateX(-50%); }
+  from { transform: translateX(calc(var(--marquee-distance, 50%) * -1)); }
   to   { transform: translateX(0); }
 }
 
