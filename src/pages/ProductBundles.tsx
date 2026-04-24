@@ -6,6 +6,8 @@ import { ListCardsSkeleton } from '@/components/ui/PageSkeletons';
 import { formatPrice } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/lib/i18n';
+import { pickI18n } from '@/lib/i18nField';
 
 const SALE_TYPE_LABELS: Record<string, string> = {
   'direct': 'بيع مباشر',
