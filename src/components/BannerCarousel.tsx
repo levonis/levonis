@@ -405,14 +405,19 @@ const BannerCarousel = memo(() => {
         </svg>
       )}
 
-      {/* Gold flash overlay — fires on counter completion */}
+      {/* Glassmorphism flash overlay — frosted sweep on counter completion */}
       {isFlashing && (
         <div
           key={`flash-${currentIndex}`}
-          className="pointer-events-none absolute inset-0 z-30 rounded-lg animate-banner-flash"
+          className="pointer-events-none absolute inset-0 z-30 rounded-lg overflow-hidden animate-banner-flash"
           style={{
-            background: `radial-gradient(circle at center, ${borderGradient.glow} 0%, transparent 70%)`,
-            boxShadow: `inset 0 0 24px 4px ${borderGradient.glow}`,
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.18) 100%)',
+            backdropFilter: 'blur(8px) saturate(140%)',
+            WebkitBackdropFilter: 'blur(8px) saturate(140%)',
+            border: '1px solid rgba(255,255,255,0.35)',
+            boxShadow:
+              'inset 0 1px 0 rgba(255,255,255,0.4), inset 0 0 24px rgba(255,255,255,0.15)',
           }}
         />
       )}
