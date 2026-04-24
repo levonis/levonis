@@ -9,7 +9,6 @@ import ProfileHeader from "@/components/profile/ProfileHeader";
 import OrdersCenter from "@/components/profile/OrdersCenter";
 import QuickServicesGrid from "@/components/profile/QuickServicesGrid";
 import CouponsStrip from "@/components/profile/CouponsStrip";
-import PriceProtectionSection from "@/components/profile/PriceProtectionSection";
 import NotificationPromptBanner from "@/components/profile/NotificationPromptBanner";
 
 export default function Profile() {
@@ -50,8 +49,6 @@ export default function Profile() {
         <QuickServicesGrid />
 
         {user?.id && <CouponsStrip userId={user.id} />}
-
-        {user?.id && <PriceProtectionSection userId={user.id} />}
       </main>
     </div>
   );

@@ -863,7 +863,7 @@ export const ar: TranslationKeys = {
   qs_track_shipments: 'تتبّع الشحنات',
   qs_favorites: 'المفضّلة',
   qs_notifications: 'الإشعارات',
-  qs_browse_history: 'سجلّ التصفّح',
+  qs_price_protection: 'حماية السعر',
   qs_addresses: 'العناوين',
   qs_customer_service: 'خدمة العملاء',
   qs_prizes: 'الجوائز',

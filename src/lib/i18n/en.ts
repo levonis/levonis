@@ -863,7 +863,7 @@ export const en: TranslationKeys = {
   qs_track_shipments: 'Track shipments',
   qs_favorites: 'Favorites',
   qs_notifications: 'Notifications',
-  qs_browse_history: 'Browsing history',
+  qs_price_protection: 'Price Protection',
   qs_addresses: 'Addresses',
   qs_customer_service: 'Customer service',
   qs_prizes: 'Rewards',

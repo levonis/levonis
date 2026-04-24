@@ -865,7 +865,7 @@ export type TranslationKeys = {
   qs_track_shipments: string;
   qs_favorites: string;
   qs_notifications: string;
-  qs_browse_history: string;
+  qs_price_protection: string;
   qs_addresses: string;
   qs_customer_service: string;
   qs_prizes: string;
