@@ -60,10 +60,10 @@ export default function IslandPromoPreview({
       >
         <div
           dir="ltr"
+          data-direction={direction === 'right' ? 'right' : 'left'}
           className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
           style={{
             ['--marquee-duration' as any]: `${Math.max(4, safeSpeed)}s`,
-            ['--marquee-direction' as any]: direction === 'left' ? 'reverse' : 'normal',
             ['--marquee-gap' as any]: `${safeGap}px`,
           }}
         >
