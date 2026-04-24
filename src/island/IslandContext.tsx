@@ -13,11 +13,20 @@ export interface PromoSettings {
   gap: number;
 }
 
+export interface PromoItem {
+  text: string;
+  speed: number;
+  direction: "left" | "right";
+  gap: number;
+  color?: string;
+}
+
 interface IslandContextValue {
   state: IslandState;
   title?: string;
   setContext: (ctx: { state: IslandState; title?: string } | null) => void;
   promoMessages: string[];
+  promoItems: PromoItem[];
   promoSettings: PromoSettings;
   visible: boolean;
 }
