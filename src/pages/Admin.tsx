@@ -269,6 +269,7 @@ const Admin = () => {
         : [];
       setProductColors(colorsWithStock);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
+      setProductAIContent(editingProduct.ai_content && typeof editingProduct.ai_content === 'object' ? editingProduct.ai_content : {});
       // preOrderShippingOptions removed
       
       // Load card discounts from product
