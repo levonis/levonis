@@ -174,30 +174,25 @@ const BannerCarousel = memo(() => {
   const renderActionButton = (banner: Banner) => {
     const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
     
-    const buttonBaseClass = "inline-flex items-center gap-1 px-2.5 py-1 md:px-3 md:py-1.5 rounded-md font-medium text-[10px] md:text-xs transition-all duration-300 shadow-sm hover:shadow-md";
+    // Glassmorphism light style
+    const glassClass = "inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-full font-medium text-[11px] md:text-xs transition-all duration-300 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)]";
     
     switch (banner.action_type) {
       case 'product':
         if (!banner.product_id) return null;
         return (
-          <Link
-            to={`/product/${banner.product_id}`}
-            className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
-          >
+          <Link to={`/product/${banner.product_id}`} className={glassClass}>
             {buttonText}
-            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
+            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           </Link>
         );
       
       case 'page':
         if (!banner.page_url) return null;
         return (
-          <Link
-            to={banner.page_url}
-            className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
-          >
+          <Link to={banner.page_url} className={glassClass}>
             {buttonText}
-            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
+            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           </Link>
         );
       
@@ -208,10 +203,10 @@ const BannerCarousel = memo(() => {
             href={banner.external_url}
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
+            className={glassClass}
           >
             {buttonText}
-            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
+            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           </a>
         );
       
@@ -220,17 +215,17 @@ const BannerCarousel = memo(() => {
         return (
           <button
             onClick={() => handleCopyCoupon(banner.coupon_code!)}
-            className={cn(buttonBaseClass, "bg-white/95 text-gray-800 hover:bg-white border border-white/20")}
+            className={glassClass}
           >
             {copiedCoupon === banner.coupon_code ? (
               <>
-                <Check className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                <Check className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 تم النسخ!
               </>
             ) : (
               <>
-                <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                {banner.coupon_code}
+                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <span className="font-mono tracking-wide">{banner.coupon_code}</span>
               </>
             )}
           </button>
