@@ -997,6 +997,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   };
 
   const handleClose = () => {
+    if (embedded) {
+      // In embedded (full-page) mode, "close" only clears the selected conversation
+      // (acts as back-to-list on mobile). It must NOT close any dialog or page.
+      setSelectedConversation(null);
+      return;
+    }
     setOpen(false);
     setSelectedConversation(null);
     if (onClose) onClose();
@@ -1012,20 +1018,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     return groups;
   }, {});
 
-  return (
-    <Dialog open={open} onOpenChange={(v) => v ? setOpen(true) : handleClose()}>
-      {!listingId && (
-        <DialogTrigger asChild>
-          {children || (
-            <Button variant="outline" size="sm" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              المحادثات
-            </Button>
-          )}
-        </DialogTrigger>
-      )}
-      <DialogContent hideClose className="!max-w-none !w-full sm:!w-[95vw] lg:!w-[90vw] xl:!w-[85vw] 2xl:!w-[80vw] !max-h-none h-[100dvh] sm:h-[85vh] lg:h-[80vh] !p-0 !gap-0 overflow-hidden border-0">
-        {/* Close Button - always visible on desktop, only when no conversation on mobile */}
+  // Inner content shared between Dialog mode and embedded (full-page) mode.
+  const innerContent = (
+    <>
+      {/* Close Button - only in Dialog mode. In embedded mode the page handles navigation. */}
+      {!embedded && (
         <button
           onClick={handleClose}
           className={cn(
@@ -1036,6 +1033,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         >
           <X className="w-4 h-4" />
         </button>
+      )}
 
         <div className="flex flex-1 min-h-0 h-full w-full overflow-hidden">
           {/* Conversations List - Fixed width sidebar */}
@@ -2532,9 +2530,37 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             </DialogContent>
           </Dialog>
         )}
+    </>
+  );
+
+  // Embedded mode: render as a full-page panel inside the host page layout — no Dialog, no backdrop.
+  if (embedded) {
+    return (
+      <div className="relative w-full h-full min-h-[calc(100dvh-8rem)] flex bg-background overflow-hidden">
+        {innerContent}
+      </div>
+    );
+  }
+
+  // Default mode: render inside a Dialog (popup) for inline triggers across the app.
+  return (
+    <Dialog open={open} onOpenChange={(v) => v ? setOpen(true) : handleClose()}>
+      {!listingId && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button variant="outline" size="sm" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              المحادثات
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      <DialogContent hideClose className="!max-w-none !w-full sm:!w-[95vw] lg:!w-[90vw] xl:!w-[85vw] 2xl:!w-[80vw] !max-h-none h-[100dvh] sm:h-[85vh] lg:h-[80vh] !p-0 !gap-0 overflow-hidden border-0">
+        {innerContent}
       </DialogContent>
     </Dialog>
   );
+
 };
 
 export default ListingConversations;
