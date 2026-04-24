@@ -75,21 +75,23 @@ const baseShape = (
   state: IslandState,
   title: string | undefined,
   language: string,
+  viewportWidth: number,
 ): { width: number; height: number; radius: number } => {
   const titleLen = title ? Array.from(title).length : 0;
   const isWideScript = language === "ar" || language === "ku";
   const perChar = isWideScript ? 11 : 8.5;
   const minBudget = 120;
-  const viewportBudget =
-    typeof window !== "undefined" ? window.innerWidth - 48 : 520;
+  const viewportBudget = viewportWidth - 48;
   const cap = Math.min(viewportBudget, 560);
   const titleWidth = Math.min(
     cap,
     Math.max(minBudget, Math.round(titleLen * perChar) + 24),
   );
+  const promoWidth = Math.round(Math.min(640, Math.max(240, viewportWidth - 32)));
+  const searchWidth = Math.round(Math.min(560, Math.max(280, viewportWidth - 32)));
   switch (state) {
-    case "promo":    return { width: 280, height: 40, radius: 22 };
-    case "search":   return { width: 360, height: 52, radius: 26 };
+    case "promo":    return { width: promoWidth, height: 40, radius: 22 };
+    case "search":   return { width: searchWidth, height: 52, radius: 26 };
     // chrome = back button + search button (~96 px) + paddings
     case "category": return { width: Math.min(cap, 96 + titleWidth), height: 52, radius: 26 };
     // chrome = back button only (~56 px)
@@ -100,18 +102,22 @@ const baseShape = (
 const searchShape = (
   stage: SearchStage,
   resultsCount: number,
+  viewportWidth: number,
 ): { width: number; height: number; radius: number } => {
+  const idleWidth = Math.round(Math.min(560, Math.max(280, viewportWidth - 32)));
+  const typingWidth = Math.round(Math.min(620, Math.max(300, viewportWidth - 24)));
+  const panelWidth = Math.round(Math.min(680, Math.max(320, viewportWidth - 24)));
   switch (stage) {
     case "idle":
-      return { width: 360, height: 52, radius: 26 };
+      return { width: idleWidth, height: 52, radius: 26 };
     case "typing":
-      return { width: 420, height: 60, radius: 26 };
+      return { width: typingWidth, height: 60, radius: 26 };
     case "suggestions":
-      return { width: 480, height: 200, radius: 28 };
+      return { width: panelWidth, height: 200, radius: 28 };
     case "results": {
       // 60 (input row) + 12 (label) + count * 56 (rows) + 44 (view all) + 18 (padding)
       const rows = Math.max(1, Math.min(5, resultsCount));
-      return { width: 520, height: 60 + 12 + rows * 56 + 44 + 18, radius: 30 };
+      return { width: panelWidth, height: 60 + 12 + rows * 56 + 44 + 18, radius: 30 };
     }
   }
 };
@@ -160,6 +166,16 @@ export const DynamicIsland = () => {
   const params = useParams();
 
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+
+  /* ---------- Track viewport width so shape recalculates on resize ---------- */
+  const [viewportWidth, setViewportWidth] = useState<number>(
+    typeof window !== "undefined" ? window.innerWidth : 390,
+  );
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   /* ---------- Search context ---------- */
   const [searchQuery, setSearchQuery] = useState("");
@@ -256,8 +272,8 @@ export const DynamicIsland = () => {
   /* ---------- Shape ---------- */
   const shape =
     state === "search"
-      ? searchShape(stage, products.length)
-      : baseShape(state, title, language);
+      ? searchShape(stage, products.length, viewportWidth)
+      : baseShape(state, title, language, viewportWidth);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
