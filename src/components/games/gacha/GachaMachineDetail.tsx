@@ -9,6 +9,8 @@ import { useGachaMachinePrizes, useGachaGuaranteedRules } from "./useGachaData";
 import GameBalanceBar from "@/components/games/GameBalanceBar";
 import GachaSpinReveal3D from "./GachaSpinReveal3D";
 import GachaMachine3D from "./GachaMachine3D";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface Props {
   machineId: string;
