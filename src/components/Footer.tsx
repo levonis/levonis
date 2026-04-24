@@ -5,7 +5,7 @@ const Footer = () => {
   const { t } = useLanguage();
 
   return (
-    <footer className="w-full py-12 bg-card/50 border-t border-border/30 mt-16">
+    <footer className="w-full py-12 border-t mt-16 bg-transparent border-card">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="w-24 h-24 relative">
