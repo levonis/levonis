@@ -1289,6 +1289,9 @@ const ProductDetail = () => {
                 </div>
               )}
 
+              {/* AI-Friendly "Why this product" */}
+              <ProductAIContent aiContent={(product as any).ai_content} productName={localizedName || seoName} />
+
               {/* Reviews */}
               <ProductReviews productId={product.id} />
 
