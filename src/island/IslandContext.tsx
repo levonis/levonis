@@ -7,11 +7,18 @@ import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
 export type IslandState = "promo" | "search" | "category" | "product";
 
+export interface PromoSettings {
+  speed: number;
+  direction: "left" | "right";
+  gap: number;
+}
+
 interface IslandContextValue {
   state: IslandState;
   title?: string;
   setContext: (ctx: { state: IslandState; title?: string } | null) => void;
   promoMessages: string[];
+  promoSettings: PromoSettings;
   visible: boolean;
 }
 
@@ -84,7 +91,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("announcements")
-        .select("message, message_ar, color")
+        .select("message, message_ar, color, speed, direction, gap")
         .eq("active", true)
         .order("created_at", { ascending: false })
         .limit(8);
@@ -100,6 +107,15 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     return announcements
       .map((a: any) => a.message_ar || a.message || "")
       .filter(Boolean);
+  }, [announcements]);
+
+  const promoSettings = useMemo<PromoSettings>(() => {
+    const first: any = announcements?.[0];
+    return {
+      speed: typeof first?.speed === "number" && first.speed > 0 ? first.speed : 20,
+      direction: first?.direction === "left" ? "left" : "right",
+      gap: typeof first?.gap === "number" && first.gap >= 0 ? first.gap : 16,
+    };
   }, [announcements]);
 
   const routeDefault = useMemo<{ state: IslandState; title?: string }>(() => {
@@ -152,6 +168,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
         title: active.title,
         setContext,
         promoMessages,
+        promoSettings,
         visible,
       }}
     >
