@@ -121,7 +121,7 @@ const searchShape = (
 /* -------------------------------------------------------------------------- */
 
 export const DynamicIsland = () => {
-  const { state, title: rawTitle, promoMessages, promoSettings, visible, setContext } = useIsland();
+  const { state, title: rawTitle, promoMessages, promoItems, promoSettings, visible, setContext } = useIsland();
 
   /* ---------- Debounce rapid title changes ----------
    * Coalesces fast successive title updates (e.g. switching products while
