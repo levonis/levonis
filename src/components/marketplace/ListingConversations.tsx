@@ -136,15 +136,15 @@ function AdminUserSearchResults({
   if (!newUsers.length) return null;
 
   return (
-    <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
-      <div className="px-2 py-1 bg-muted/30 text-[10px] font-medium text-muted-foreground">
+    <div className="rounded-lg overflow-hidden glass-chat-panel border">
+      <div className="px-2 py-1 glass-chat-subtle text-[10px] font-medium text-muted-foreground">
         بدء محادثة جديدة
       </div>
       {newUsers.map(u => (
         <button
           key={u.id}
           onClick={() => onSelectUser(u.id)}
-          className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 transition-colors text-right"
+          className="w-full flex items-center gap-2 p-2 glass-row-hover transition-colors text-right"
         >
           <AvatarWithFrame imageUrl={u.avatar_url} frameUrl={null} size="xs" />
           <div className="flex-1 min-w-0">
@@ -1038,13 +1038,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         <div className="flex flex-1 min-h-0 h-full w-full overflow-hidden">
           {/* Conversations List - Fixed width sidebar */}
           <div className={cn(
-            "flex flex-col md:border-l bg-card h-full min-h-0",
+            "flex flex-col md:border-l border-white/10 dark:border-white/5 glass-chat-panel h-full min-h-0",
             selectedConversation 
               ? 'hidden md:flex md:w-72 lg:w-80 xl:w-96 flex-shrink-0' 
               : 'flex w-full'
           )}>
             {/* Header */}
-             <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-shrink-0">
+             <div className="p-3 border-b border-white/10 dark:border-white/5 glass-chat-subtle flex items-center justify-between flex-shrink-0">
                <div className="flex items-center gap-2">
                  <MessageSquare className="w-5 h-5 text-primary" />
                  <h2 className="font-bold text-sm">المحادثات</h2>
@@ -1052,7 +1052,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
              </div>
              
              {/* Search Bar - available for all users, admin gets new conversation feature */}
-             <div className="p-2 border-b bg-muted/10 space-y-2">
+             <div className="p-2 border-b border-white/10 dark:border-white/5 glass-chat-subtle space-y-2">
                <div className="relative">
                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                  <Input
@@ -1349,8 +1349,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               key={conv.id}
                               onClick={() => setSelectedConversation(conv.id)}
                               className={cn(
-                                "w-full p-3 flex gap-3 hover:bg-muted/50 transition-colors border-b border-border/50",
-                                isActive && "bg-muted"
+                                "w-full p-3 flex gap-3 glass-row-hover transition-colors border-b border-white/10 dark:border-white/5",
+                                isActive && "glass-row-active"
                               )}
                             >
                                {/* Avatar - Dual avatar for disputes (admin view) */}
@@ -1485,7 +1485,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
           {/* Messages Area - Expands to fill ALL remaining space */}
           <div className={cn(
-            "flex flex-col min-h-0 bg-background h-full overflow-hidden min-w-0",
+            "flex flex-col min-h-0 h-full overflow-hidden min-w-0 bg-transparent",
             selectedConversation ? 'flex-1' : 'hidden md:flex md:flex-1',
           )}
             style={{
@@ -1586,7 +1586,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     <div className="flex justify-center py-2">
                       <button 
                         onClick={() => setMessageLimit(prev => prev + 50)}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1 rounded-full bg-muted/50"
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1 rounded-full glass-chat-subtle border border-white/15"
                       >
                         {loadingOlder ? (
                           <Loader2 className="w-3 h-3 animate-spin inline ml-1" />
@@ -1600,7 +1600,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     </div>
                   ) : messages?.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="text-center bg-card/80 backdrop-blur-sm rounded-lg p-4 max-w-xs">
+                      <div className="text-center glass-chat-surface border border-white/15 rounded-2xl p-4 max-w-xs">
                         <MessageSquare className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
                         <p className="text-sm text-muted-foreground">ابدأ المحادثة</p>
                       </div>
@@ -1611,7 +1611,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         <div key={date}>
                           {/* Date separator */}
                           <div className="flex justify-center my-4">
-                            <span className="bg-card/80 backdrop-blur-sm text-muted-foreground text-xs px-3 py-1 rounded-full shadow-sm">
+                            <span className="glass-chat-surface border border-white/15 text-muted-foreground text-xs px-3 py-1 rounded-full">
                               {date}
                             </span>
                           </div>
