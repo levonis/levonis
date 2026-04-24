@@ -56,7 +56,17 @@ const Footer = () => {
             </a>
           </div>
 
-          <div className="text-center space-y-2 mt-6">
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 text-sm">
+            <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">{labels.about}</Link>
+            <span className="text-border">•</span>
+            <Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">{labels.faq}</Link>
+            <span className="text-border">•</span>
+            <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">{labels.privacy}</Link>
+            <span className="text-border">•</span>
+            <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">{labels.terms}</Link>
+          </nav>
+
+          <div className="text-center space-y-2 mt-2">
             <p className="text-muted-foreground text-sm">
               © {new Date().getFullYear()} {t('footer_rights')}
             </p>
