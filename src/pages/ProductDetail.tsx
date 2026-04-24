@@ -762,9 +762,15 @@ const ProductDetail = () => {
   const inStockSeo = !!(product.in_stock || product.has_in_stock || product.has_pre_order);
   const aiContentNorm = normalizeAIContent((product as any).ai_content);
   const aiLd = buildAIContentForLd(aiContentNorm, (language || 'ar') as any);
+  const shortSummaryRaw = (product as any).short_summary || {};
+  const shortSummary = (shortSummaryRaw[language] || shortSummaryRaw.ar || shortSummaryRaw.en || shortSummaryRaw.ku || '').toString().trim();
+  const searchableAttrs: string[] = Array.isArray((product as any).searchable_attributes)
+    ? ((product as any).searchable_attributes as string[]).filter(Boolean)
+    : [];
+  const baseDesc = shortSummary || seoDesc;
   const seoDescFinal = (aiLd.descriptionAppendix
-    ? `${seoDesc} — ${aiLd.descriptionAppendix}`
-    : seoDesc) || seoName;
+    ? `${baseDesc} — ${aiLd.descriptionAppendix}`
+    : baseDesc) || seoName;
 
   return (
     <div className="min-h-screen" dir="rtl">
@@ -774,6 +780,7 @@ const ProductDetail = () => {
         url={seoUrl}
         type="product"
         image={seoImages[0]}
+        keywords={searchableAttrs}
         jsonLd={[
           productLd({
             name: seoName,
@@ -786,6 +793,7 @@ const ProductDetail = () => {
             url: seoUrl,
             category: product.category_name_ar || product.category_name || null,
             additionalProperty: aiLd.additionalProperty,
+            keywords: searchableAttrs,
           }),
           breadcrumbLd([
             { name: language === 'en' ? 'Home' : language === 'ku' ? 'سەرەکی' : 'الرئيسية', url: '/' },
@@ -1291,6 +1299,25 @@ const ProductDetail = () => {
 
               {/* AI-Friendly "Why this product" */}
               <ProductAIContent aiContent={(product as any).ai_content} productName={localizedName || seoName} />
+
+              {/* Searchable attribute chips (SEO + AI matching) */}
+              {searchableAttrs.length > 0 && (
+                <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-4">
+                  <h3 className="text-sm font-bold text-foreground mb-2">
+                    {language === 'en' ? 'Tags' : language === 'ku' ? 'تاگەکان' : 'الوسوم'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {searchableAttrs.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Reviews */}
               <ProductReviews productId={product.id} />

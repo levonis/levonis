@@ -10,6 +10,7 @@ interface SEOProps {
   noindex?: boolean;
   canonical?: string;
   locale?: string; // ar_IQ, en_US, ku_IQ
+  keywords?: string[];
 }
 
 const SITE = 'https://levonisiq.com';
@@ -25,6 +26,7 @@ const SEO = ({
   noindex = false,
   canonical,
   locale = 'ar_IQ',
+  keywords,
 }: SEOProps) => {
   const fullTitle = title ? `${title} — LEVONIS` : 'LEVONIS — متجرك الموثوق للتقنية في العراق';
   const finalUrl = url || (typeof window !== 'undefined' ? window.location.href : SITE);
@@ -35,6 +37,7 @@ const SEO = ({
     <Helmet>
       <title>{fullTitle}</title>
       {description && <meta name="description" content={description} />}
+      {keywords && keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
       <link rel="canonical" href={finalCanonical} />
       {noindex && <meta name="robots" content="noindex,nofollow" />}
 

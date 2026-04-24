@@ -66,6 +66,7 @@ export interface ProductLdInput {
   reviewCount?: number | null;
   category?: string | null;
   additionalProperty?: any[];
+  keywords?: string[];
 }
 
 export const productLd = (p: ProductLdInput) => {
@@ -81,6 +82,7 @@ export const productLd = (p: ProductLdInput) => {
     category: p.category || undefined,
     url: p.url.startsWith('http') ? p.url : `${SITE}${p.url}`,
     additionalProperty: p.additionalProperty && p.additionalProperty.length ? p.additionalProperty : undefined,
+    keywords: p.keywords && p.keywords.length ? p.keywords.join(', ') : undefined,
   };
 
   if (p.priceIqd != null && p.priceIqd > 0) {

@@ -8355,8 +8355,10 @@ export type Database = {
           referral_earnings_iqd: number
           round_up_price: boolean | null
           sea_price: number | null
+          searchable_attributes: string[] | null
           shipping_cost_iqd: number | null
           shipping_type: string | null
+          short_summary: Json | null
           slug: string
           sold_count: number
           taobao_availability_cache: Json | null
@@ -8422,8 +8424,10 @@ export type Database = {
           referral_earnings_iqd?: number
           round_up_price?: boolean | null
           sea_price?: number | null
+          searchable_attributes?: string[] | null
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
+          short_summary?: Json | null
           slug: string
           sold_count?: number
           taobao_availability_cache?: Json | null
@@ -8489,8 +8493,10 @@ export type Database = {
           referral_earnings_iqd?: number
           round_up_price?: boolean | null
           sea_price?: number | null
+          searchable_attributes?: string[] | null
           shipping_cost_iqd?: number | null
           shipping_type?: string | null
+          short_summary?: Json | null
           slug?: string
           sold_count?: number
           taobao_availability_cache?: Json | null
