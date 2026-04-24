@@ -2194,8 +2194,11 @@ body {
     gap: var(--marquee-gap, 2.5rem);
     padding-inline-end: var(--marquee-gap, 2.5rem);
     animation: island-marquee var(--marquee-duration, 18s) linear infinite;
-    animation-direction: var(--marquee-direction, normal);
     will-change: transform;
+  }
+
+  .marquee-track[data-direction="right"] .marquee-group {
+    animation-name: island-marquee-rtl;
   }
 
   .island-search-row {
@@ -2212,6 +2215,11 @@ body {
 @keyframes island-marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-100%); }
+}
+
+@keyframes island-marquee-rtl {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
 }
 
 /* ===========================================================
