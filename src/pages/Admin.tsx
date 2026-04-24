@@ -3810,8 +3810,29 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="main_section_id">القسم الرئيسي</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_description_en">Description (English)</Label>
+                        <Textarea
+                          id="cat_description_en"
+                          name="description_en"
+                          defaultValue={editingCategory?.description_en || editingCategory?.description || ''}
+                          rows={3}
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_description_ku">وەسف بە کوردی</Label>
+                        <Textarea
+                          id="cat_description_ku"
+                          name="description_ku"
+                          defaultValue={editingCategory?.description_ku || ''}
+                          rows={3}
+                          dir="rtl"
+                        />
+                      </div>
+                    </div>
+
                       <select
                         id="main_section_id"
                         name="main_section_id"
