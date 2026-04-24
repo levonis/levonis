@@ -22,6 +22,7 @@ import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
 import AdminProductPricingSection from '@/components/admin/AdminProductPricingSection';
+import AdminProductAIContentEditor from '@/components/admin/AdminProductAIContentEditor';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 
 const productSchema = z.object({
