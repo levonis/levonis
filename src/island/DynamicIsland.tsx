@@ -453,11 +453,11 @@ export const DynamicIsland = () => {
                     <div
                       key={`promo-${promoIndex}`}
                       dir="ltr"
-                      data-direction={activeDirection === 'right' ? 'right' : 'left'}
+                      data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                       className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
                       style={{
-                        ['--marquee-duration' as any]: `${Math.max(4, activeSpeed)}s`,
-                        ['--marquee-gap' as any]: `${activeGap}px`,
+                        ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
+                        ['--marquee-gap' as any]: `${promoSettings.gap}px`,
                       }}
                     >
                       {[0, 1].map((group) => (
