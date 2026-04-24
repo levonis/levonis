@@ -3674,6 +3674,10 @@ const Admin = () => {
                         />
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_slug">الرابط (Slug) *</Label>
                         <Input 
                           id="cat_slug" 
                           name="slug"
