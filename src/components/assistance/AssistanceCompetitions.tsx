@@ -4,8 +4,11 @@ import { Trophy, Calendar, Crown, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function AssistanceCompetitions() {
+  const { language } = useLanguage();
   const { data: giveaways, isLoading } = useQuery({
     queryKey: ["assistance-merchant-giveaways"],
     queryFn: async () => {

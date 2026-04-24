@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function AssistanceCoupons() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
 
   const { data: coupons, isLoading } = useQuery({
     queryKey: ["assistance-coupons"],

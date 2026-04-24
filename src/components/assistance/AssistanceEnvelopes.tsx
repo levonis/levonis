@@ -5,10 +5,13 @@ import { Mail, CheckCircle, Banknote, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function AssistanceEnvelopes() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
 
   const { data: envelopes, isLoading } = useQuery({
     queryKey: ["assistance-envelopes"],
