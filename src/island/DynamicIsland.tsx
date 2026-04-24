@@ -35,26 +35,31 @@ const shellEnterExit: Transition = {
 };
 
 const contentTransition: Transition = {
-  duration: 0.36,
+  duration: 0.32,
   ease: [0.22, 1, 0.36, 1],
 };
 
+// IMPORTANT: no `y` translation on enter/exit — otherwise children appear to
+// "drop in" from above/below when AnimatePresence (mode="popLayout")
+// absolutely-positions the exiting child during a state swap. We morph in
+// place via opacity + a hairline scale so the transition follows the shell's
+// own width/height spring smoothly.
 const contentMotion = {
-  initial: { opacity: 0, y: 6, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -4, scale: 0.99 },
+  initial: { opacity: 0, scale: 0.985 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.99 },
 };
 
-// Softer cross-fade used specifically for promo↔search swaps so the surface
-// morphs continuously without a hard wipe.
+// Cross-fade used specifically for promo↔search swaps so the surface morphs
+// continuously without a vertical jump.
 const morphMotion = {
-  initial: { opacity: 0, y: 4, filter: "blur(4px)" },
-  animate: { opacity: 1, y: 0, filter: "blur(0px)" },
-  exit: { opacity: 0, y: -4, filter: "blur(4px)" },
+  initial: { opacity: 0, filter: "blur(4px)" },
+  animate: { opacity: 1, filter: "blur(0px)" },
+  exit: { opacity: 0, filter: "blur(4px)" },
 };
 
 const morphTransition: Transition = {
-  duration: 0.45,
+  duration: 0.4,
   ease: [0.22, 1, 0.36, 1],
 };
 
