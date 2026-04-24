@@ -7,9 +7,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/lib/i18n";
 import { useProfileTransition } from "./ProfileTransitionProvider";
 import { computeOrbMagnet } from "./profileOrbMagnet";
-import { setLiquidFusion, rectFromDOMRect } from "@/island/useLiquidFusion";
 import { cn } from "@/lib/utils";
 
+/**
+ * Profile Orb
+ * -----------
+ * A small circular avatar button that lives at the top edge next to the
+ * Dynamic Island. As the user scrolls, the orb is magnetically pulled toward
+ * the island and visually disappears INTO it (no extra overlay layer).
+ *
+ * Important: there is intentionally no separate "bridge" / SVG goo layer.
+ * Stacking two translucent glass surfaces on top of each other is what made
+ * the previous version look like a second skin floating above the island.
+ * Instead, the orb here is rendered as ONE element using the same `.island-surface`
+ * material as the island itself, so when it slides into the island the two
+ * shapes read as one continuous body of glass.
+ */
 const ProfileOrb = memo(() => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -26,23 +39,16 @@ const ProfileOrb = memo(() => {
     [registerOrb],
   );
 
-  // Re-measure when RTL flips so the side class change is reflected immediately.
   useEffect(() => {
     remeasureOrigin();
   }, [isRtl, remeasureOrigin]);
 
-  // Progressive fusion with the Dynamic Island as the user scrolls.
-  // 0 = fully separate orb, 1 = edges fused with the island.
-  // We measure the live gap between the orb's inner edge and the island's
-  // near edge, then translate the orb by exactly that amount so the two
-  // shapes meet seam-to-seam (no overshoot, no disappearing).
   const [mergeProgress, setMergeProgress] = useState(0);
-  const [fusion, setFusion] = useState<{
-    dx: number; // horizontal travel needed to touch the island edge
-    dy: number; // vertical alignment offset (orb center → island center)
-    gap: number; // live gap in px (for the bridge width)
-    islandH: number;
-  }>({ dx: 0, dy: 0, gap: 0, islandH: 52 });
+  const [fusion, setFusion] = useState<{ dx: number; dy: number; islandH: number }>({
+    dx: 0,
+    dy: 0,
+    islandH: 52,
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -53,42 +59,31 @@ const ProfileOrb = memo(() => {
       const islandEl = document.querySelector<HTMLElement>("[data-dynamic-island]");
       const islandH = islandEl?.getBoundingClientRect().height ?? 52;
 
-      let orbRect: DOMRect | null = null;
-      let islandRect: DOMRect | null = null;
-
       if (orbEl && islandEl) {
         const o = orbEl.getBoundingClientRect();
         const i = islandEl.getBoundingClientRect();
-        orbRect = o;
-        islandRect = i;
-        // Horizontal gap between orb's inner edge and the island's near edge.
+        // Aim slightly INTO the island (overlap by ~30% of orb width) so the
+        // orb truly sinks under the pill rather than parking next to it.
+        const overlap = o.width * 0.3;
         const gap = isRtl ? o.left - i.right : i.left - o.right;
-        const dx = isRtl ? -Math.max(0, gap) : Math.max(0, gap);
+        const travel = Math.max(0, gap) + overlap;
+        const dx = isRtl ? -travel : travel;
         const ocy = o.top + o.height / 2;
         const icy = i.top + i.height / 2;
         const dy = icy - ocy;
-        setFusion({ dx, dy, gap: Math.max(0, gap), islandH });
+        setFusion({ dx, dy, islandH });
       } else {
         setFusion((prev) => ({ ...prev, islandH }));
       }
 
+      // Slower, more controlled curve — no exaggerated goo.
       const start = Math.max(8, ISLAND_THRESHOLD - 12);
-      const end = ISLAND_THRESHOLD + Math.round(islandH * 0.9);
+      const end = ISLAND_THRESHOLD + Math.round(islandH * 1.6);
       const y = window.scrollY;
       const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
-      const eased = 1 - Math.pow(1 - t, 3);
+      // Soft easeInOutCubic — feels like absorption, not a snap.
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       setMergeProgress(eased);
-
-      // Publish geometry + progress to the bridge layer. We publish the
-      // *current* (un-translated) orb rect; the bridge interpolates the
-      // visual position itself using progress + island rect so the merged
-      // blob always meets the seam exactly.
-      setLiquidFusion({
-        progress: eased,
-        orb: orbRect ? rectFromDOMRect(orbRect) : null,
-        island: islandRect ? rectFromDOMRect(islandRect) : null,
-        isRtl,
-      });
     };
     const onScroll = () => {
       if (raf) return;
@@ -128,7 +123,6 @@ const ProfileOrb = memo(() => {
     },
   });
 
-  // Show the orb only on the home page; hide everywhere else.
   if (location.pathname !== "/") return null;
 
   const handleClick = () => {
@@ -137,8 +131,6 @@ const ProfileOrb = memo(() => {
       navigate(user ? "/profile" : "/auth");
       return;
     }
-    // Force a fresh measure right at click time so any pending layout
-    // (sticky bars, RTL flip, viewport resize) is reflected in the origin.
     remeasureOrigin();
     const r = el.getBoundingClientRect();
     beginExpand({
@@ -149,22 +141,16 @@ const ProfileOrb = memo(() => {
     navigate(user ? "/profile" : "/auth");
   };
 
-  // Position: top, opposite side of the screen edge based on RTL.
-  // Island sits centered, so the orb hugs the start edge.
   const sideClass = isRtl ? "right-3" : "left-3";
 
-  // Magnetic pull: as the user scrolls, the orb is dragged edge-to-edge
-  // toward the island like a magnet, then disappears once contact is made
-  // (the island stands alone as the search bar). On scroll up the orb
-  // re-emerges from the island edge and slides back to its origin.
-  // The visual math lives in `profileOrbMagnet.ts` so it can be inspected
-  // / tested at any progress value without rendering this component.
   const visual = computeOrbMagnet(mergeProgress, { dx: fusion.dx, dy: fusion.dy });
-  const { translateX, translateY, scaleX, scaleY, contentOpacity, fullyMerged } =
-    visual;
+  const { translateX, translateY, scaleX, scaleY, contentOpacity, fullyMerged } = visual;
 
-  // Origin on the contact edge so the stretch happens on the seam side.
+  // Origin on the contact edge so the squash happens on the seam side.
   const originX = isRtl ? "0% 50%" : "100% 50%";
+  // Once the orb has overlapped the island, fade the orb shell itself so the
+  // island reads as the single remaining surface (no double glass).
+  const shellOpacity = mergeProgress < 0.7 ? 1 : Math.max(0, 1 - (mergeProgress - 0.7) / 0.25);
   const tuckTransform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
 
   return (
@@ -173,75 +159,43 @@ const ProfileOrb = memo(() => {
       onClick={handleClick}
       aria-label="Profile"
       className={cn(
-        "fixed top-3 z-[55] w-10 h-10 rounded-full overflow-hidden",
-        "glass-panel !rounded-full",
+        // z-[49] — placed BELOW the island (z-50) so it slides UNDER the
+        // island as it merges, instead of sitting on top of it.
+        "fixed top-3 z-[49] w-10 h-10 rounded-full overflow-hidden",
+        "island-surface",
         "flex items-center justify-center",
-        "transition-[transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
         "hover:scale-105 active:scale-95",
-        "ring-1 ring-white/20 hover:ring-primary/50",
-        "shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.4)]",
         sideClass,
       )}
       style={{
         WebkitTapHighlightColor: "transparent",
         transformOrigin: originX,
         transform: tuckTransform,
-        // Orb itself stays fully opaque — the gooey filter on
-        // <LiquidIslandBridge /> performs the visual absorption.
+        opacity: shellOpacity,
+        // Soft, single transition — no blur stacking.
+        transition: "opacity 220ms cubic-bezier(0.22, 1, 0.36, 1)",
         pointerEvents: visual.pointerEventsAuto ? "auto" : "none",
+        borderRadius: "9999px",
       }}
     >
-
-      {/* Avatar — softened with blur + lowered opacity for a frosted feel.
-          Inner content fades in the last ~18% of the merge so the remaining
-          glass shell blends seamlessly into the island. */}
       {avatarUrl ? (
         <img
           src={avatarUrl}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover rounded-full"
           style={{
-            opacity: 0.7 * contentOpacity,
-            filter: "blur(1.5px) saturate(1.1)",
-            transition: "opacity 120ms linear",
+            opacity: contentOpacity,
+            transition: "opacity 160ms linear",
           }}
           draggable={false}
         />
       ) : (
         <User
-          className="relative z-[2] w-5 h-5 text-foreground/85"
+          className="relative z-[1] w-5 h-5 text-foreground/85"
           strokeWidth={2.2}
-          style={{ opacity: contentOpacity, transition: "opacity 120ms linear" }}
+          style={{ opacity: contentOpacity, transition: "opacity 160ms linear" }}
         />
       )}
-
-      {/* Glass overlay above the avatar — stays the whole way so the orb
-          shell keeps reading as the same liquid-glass material as the island. */}
-      <span
-        aria-hidden
-        className="absolute inset-0 rounded-full pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(135deg, hsl(0 0% 100% / 0.32) 0%, hsl(0 0% 100% / 0.06) 45%, hsl(0 0% 100% / 0.18) 100%)",
-          backdropFilter: "blur(2px) saturate(1.15)",
-          WebkitBackdropFilter: "blur(2px) saturate(1.15)",
-          boxShadow:
-            "inset 0 1px 0 hsl(0 0% 100% / 0.45), inset 0 -1px 0 hsl(0 0% 0% / 0.15)",
-        }}
-      />
-      {/* Top sheen highlight */}
-      <span
-        aria-hidden
-        className="absolute inset-x-1 top-0.5 h-1.5 rounded-full pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(180deg, hsl(0 0% 100% / 0.55) 0%, transparent 100%)",
-          filter: "blur(0.5px)",
-          opacity: 0.6 + 0.4 * (1 - mergeProgress),
-        }}
-      />
-      {/* Suppress hit-testing once fully merged but keep painting so the
-          gooey filter has both blobs to combine. */}
       {fullyMerged ? null : null}
     </button>
   );
