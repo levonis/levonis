@@ -108,7 +108,7 @@ export default function PriceProtectionSection({ userId }: PriceProtectionSectio
       const { error: msgErr } = await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: userId,
-        content: `🔔 ${JSON.stringify(cardPayload)}`,
+        content: JSON.stringify(cardPayload),
         is_read: false,
       });
       if (msgErr) throw msgErr;
