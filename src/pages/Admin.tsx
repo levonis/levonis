@@ -3264,6 +3264,11 @@ const Admin = () => {
                       )}
                     </div>
 
+                    <AdminProductAIContentEditor
+                      value={productAIContent}
+                      onChange={setProductAIContent}
+                    />
+
                     <Button
                       type="submit" 
                       className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
