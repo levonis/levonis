@@ -190,8 +190,19 @@ const BannerCarousel = memo(() => {
   const renderActionButton = (banner: Banner) => {
     const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
     
-    // Glassmorphism light style
-    const glassClass = "inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-full font-medium text-[11px] md:text-xs transition-all duration-300 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)]";
+    // Glassmorphism — responsive sizing + high-contrast for readability
+    const glassClass = cn(
+      "inline-flex items-center gap-1.5 md:gap-2 rounded-full font-semibold transition-all duration-300",
+      "px-3 py-1.5 text-[11px]",                       // mobile
+      "md:px-4 md:py-2 md:text-sm md:gap-2",           // tablet
+      "lg:px-5 lg:py-2.5 lg:text-base",                // desktop
+      "bg-black/35 hover:bg-black/45 backdrop-blur-xl backdrop-saturate-150",
+      "border border-white/40 ring-1 ring-inset ring-white/15",
+      "text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
+      "shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]",
+      "hover:shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.3)]",
+      "hover:-translate-y-0.5 active:translate-y-0"
+    );
     
     switch (banner.action_type) {
       case 'product':
@@ -199,7 +210,7 @@ const BannerCarousel = memo(() => {
         return (
           <Link to={`/product/${banner.product_id}`} className={glassClass}>
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
           </Link>
         );
       
@@ -208,7 +219,7 @@ const BannerCarousel = memo(() => {
         return (
           <Link to={banner.page_url} className={glassClass}>
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
           </Link>
         );
       
@@ -222,7 +233,7 @@ const BannerCarousel = memo(() => {
             className={glassClass}
           >
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
           </a>
         );
       
@@ -235,12 +246,12 @@ const BannerCarousel = memo(() => {
           >
             {copiedCoupon === banner.coupon_code ? (
               <>
-                <Check className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <Check className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
                 تم النسخ!
               </>
             ) : (
               <>
-                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <Copy className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
                 <span className="font-mono tracking-wide">{banner.coupon_code}</span>
               </>
             )}
@@ -292,15 +303,17 @@ const BannerCarousel = memo(() => {
                 {banner.title_ar && (
                   <div
                     className={cn(
-                      "inline-flex w-fit rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all duration-300 ease-out",
+                      "inline-flex w-fit rounded-full backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 ease-out",
+                      "bg-black/35 border border-white/40 ring-1 ring-inset ring-white/15",
+                      "shadow-[0_4px_16px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.2)]",
                       !isAutoPlaying
-                        ? "px-4 py-1.5 md:px-5 md:py-2 bg-white/20 border-white/40 scale-105 shadow-[0_6px_24px_rgba(0,0,0,0.35)]"
-                        : "px-3 py-1 md:px-4 md:py-1.5"
+                        ? "px-4 py-1.5 md:px-5 md:py-2 lg:px-6 lg:py-2.5 bg-black/50 border-white/60 scale-105 shadow-[0_8px_28px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.3)]"
+                        : "px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2.5"
                     )}
                   >
                     <h3
                       className={cn(
-                        "text-white font-bold drop-shadow-sm max-w-md transition-all duration-300",
+                        "text-white font-bold max-w-md transition-all duration-300 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]",
                         !isAutoPlaying
                           ? "text-sm md:text-base lg:text-lg line-clamp-2"
                           : "text-xs md:text-sm lg:text-base line-clamp-1"
