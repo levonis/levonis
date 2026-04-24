@@ -33,6 +33,8 @@ import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { usePageTitle } from "@/island/usePageTitle";
 import SEO from '@/components/SEO';
 import { productLd, breadcrumbLd } from '@/lib/seo/structured';
+import ProductAIContent from '@/components/ProductAIContent';
+import { buildAIContentForLd, normalizeAIContent } from '@/lib/aiContent';
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
