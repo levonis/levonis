@@ -1,8 +1,14 @@
 const logoNew = '/og-logo.png';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/i18n';
 
 const Footer = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const labels = {
+    ar: { about: 'من نحن', privacy: 'الخصوصية', terms: 'الشروط والأحكام', faq: 'الأسئلة الشائعة' },
+    en: { about: 'About', privacy: 'Privacy', terms: 'Terms', faq: 'FAQ' },
+    ku: { about: 'دەربارە', privacy: 'تایبەتمەندی', terms: 'مەرجەکان', faq: 'پرسیارەکان' },
+  }[language === 'en' ? 'en' : language === 'ku' ? 'ku' : 'ar'];
 
   return (
     <footer className="w-full py-12 border-t mt-16 bg-transparent border-card">
