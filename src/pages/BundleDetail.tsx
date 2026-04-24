@@ -227,9 +227,9 @@ const BundleDetail = () => {
 
         {/* Title & Description */}
         <div className="mt-4 space-y-2">
-          <h2 className="text-lg font-black text-foreground">{bundle.title_ar}</h2>
-          {bundle.description_ar && (
-            <p className="text-xs text-muted-foreground leading-relaxed">{bundle.description_ar}</p>
+          <h2 className="text-lg font-black text-foreground">{pickI18n(bundle as any, 'title', language)}</h2>
+          {pickI18n(bundle as any, 'description', language) && (
+            <p className="text-xs text-muted-foreground leading-relaxed">{pickI18n(bundle as any, 'description', language)}</p>
           )}
         </div>
 
