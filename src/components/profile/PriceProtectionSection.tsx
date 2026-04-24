@@ -201,7 +201,7 @@ export default function PriceProtectionSection({ userId }: PriceProtectionSectio
 
                   <Badge variant="outline" className={`${meta.cls} text-[10px] gap-1 self-start`}>
                     <StatusIcon className="h-3 w-3" />
-                    {t(meta.tKey as any)}
+                    {t(meta.tKey as keyof import("@/lib/i18n/types").TranslationKeys)}
                   </Badge>
                 </div>
 
