@@ -59,7 +59,7 @@ export default function IslandPromoPreview({
         }}
       >
         <div
-          key={`preview-${list.length}-${direction}`}
+          key={`preview-${list.length}-${direction}-${safeSpeed}-${safeGap}-${color}`}
           dir="ltr"
           data-direction={direction === 'right' ? 'right' : 'left'}
           className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
