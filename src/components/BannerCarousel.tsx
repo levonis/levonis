@@ -349,7 +349,7 @@ const BannerCarousel = memo(() => {
             strokeDashoffset={1}
             className="animate-banner-border-progress"
             style={{
-              filter: "drop-shadow(0 0 3px rgba(255, 215, 0, 0.6))",
+              filter: `drop-shadow(0 0 3px ${borderGradient.glow})`,
               animationPlayState: isAutoPlaying ? "running" : "paused",
             }}
             onAnimationEnd={() => {
