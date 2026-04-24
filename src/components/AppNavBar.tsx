@@ -103,6 +103,7 @@ const AppNavBar = memo(() => {
 
     return (
       <nav
+        data-app-navbar
         className={cn(
           "z-50 flex items-center gap-1.5 p-2 glass-panel !rounded-full transition-all duration-500",
           positionClasses[dockPosition]
@@ -159,6 +160,7 @@ const AppNavBar = memo(() => {
   // Mobile: floating oval glass bottom bar
   return (
     <nav
+      data-app-navbar
       className="fixed bottom-0 left-0 right-0 z-50 px-3 pointer-events-none"
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.5rem)' }}
       aria-label={t('nav_home' as any) as string}

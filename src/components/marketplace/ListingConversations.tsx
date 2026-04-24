@@ -228,6 +228,19 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     setReplyTo(null);
   }, [selectedConversation]);
 
+  // In embedded (full-page) mode, hide the global bottom nav while a conversation is open
+  useEffect(() => {
+    if (!embedded) return;
+    if (selectedConversation) {
+      document.body.classList.add('chat-fullscreen');
+    } else {
+      document.body.classList.remove('chat-fullscreen');
+    }
+    return () => {
+      document.body.classList.remove('chat-fullscreen');
+    };
+  }, [embedded, selectedConversation]);
+
   // Auto open if listingId is provided
   useEffect(() => {
     if (listingId) {

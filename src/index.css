@@ -2411,6 +2411,17 @@ body.keyboard-open .fixed.bottom-0 {
   to   { opacity: 0; transform: translateY(-6px) scale(0.97); }
 }
 
+/* Hide the global bottom nav and any floating bottom UI when a chat
+   conversation is open in full-screen embedded mode. */
+body.chat-fullscreen nav[class*="fixed bottom-0"],
+body.chat-fullscreen .app-nav-bar,
+body.chat-fullscreen [data-app-navbar] {
+  display: none !important;
+}
+body.chat-fullscreen {
+  overscroll-behavior: contain;
+}
+
 
 /* ============================================================
    Professional Glassmorphism — unified tokens & utilities
