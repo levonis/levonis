@@ -1234,6 +1234,7 @@ const Admin = () => {
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
+        ai_content: productAIContent || {},
         // Taobao sync fields
         taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
         // Product rewards - points from form (can be auto-calculated or manually set)
