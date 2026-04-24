@@ -2191,9 +2191,10 @@ body {
     justify-content: flex-start;
     min-width: 100%;
     flex: none;
-    gap: 2.5rem;
-    padding-inline-end: 2.5rem;
-    animation: island-marquee 18s linear infinite;
+    gap: var(--marquee-gap, 2.5rem);
+    padding-inline-end: var(--marquee-gap, 2.5rem);
+    animation: island-marquee var(--marquee-duration, 18s) linear infinite;
+    animation-direction: var(--marquee-direction, normal);
     will-change: transform;
   }
 
