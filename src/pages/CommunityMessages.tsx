@@ -279,7 +279,7 @@ export default function CommunityMessages() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-0 pt-16 max-w-6xl h-screen">
+      <main className="container mx-auto px-0 max-w-6xl h-[100dvh] flex flex-col">
         {(loading || creatingConversation) && (
           <div className="space-y-3 px-4 py-6">
             {[1,2,3].map(i => (
@@ -292,16 +292,18 @@ export default function CommunityMessages() {
           </div>
         )}
 
-        <ListingConversations
-          externalOpen={true}
-          onExternalOpenChange={() => {}}
-          onClose={() => navigate('/')}
-          autoOpenConversationId={autoOpenConversationId}
-          entryContext={entryContext}
-          embedded
-        >
-          <span className="sr-only">المحادثات</span>
-        </ListingConversations>
+        <div className="flex-1 min-h-0">
+          <ListingConversations
+            externalOpen={true}
+            onExternalOpenChange={() => {}}
+            onClose={() => navigate('/')}
+            autoOpenConversationId={autoOpenConversationId}
+            entryContext={entryContext}
+            embedded
+          >
+            <span className="sr-only">المحادثات</span>
+          </ListingConversations>
+        </div>
       </main>
     </div>
   );
