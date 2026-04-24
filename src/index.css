@@ -2179,7 +2179,6 @@ body {
     display: flex;
     align-items: center;
     width: max-content;
-    min-width: 200%;
     flex: none;
     white-space: nowrap;
     will-change: transform;
@@ -2190,7 +2189,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    min-width: 100%;
     flex: none;
     gap: var(--marquee-gap, 2.5rem);
     padding-inline-end: var(--marquee-gap, 2.5rem);
