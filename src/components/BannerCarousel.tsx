@@ -258,7 +258,6 @@ const BannerCarousel = memo(() => {
                 ? "opacity-100 z-10" 
                 : "opacity-0 z-0"
             )}
-            // Use CSS containment for better performance
             style={{ contain: 'layout paint' }}
           >
             <BannerImage
@@ -271,13 +270,15 @@ const BannerCarousel = memo(() => {
             {/* Overlay Gradient - subtle */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
             
-            {/* Content - compact */}
-            <div className="absolute bottom-0 right-0 left-0 p-2 md:p-4 flex items-end justify-between">
-              <div className="flex flex-col gap-1.5">
+            {/* Content - glassmorphism */}
+            <div className="absolute bottom-0 right-0 left-0 p-3 md:p-5 flex items-end justify-between">
+              <div className="flex flex-col gap-2">
                 {banner.title_ar && (
-                  <h3 className="text-white font-bold text-xs md:text-base lg:text-lg drop-shadow-lg max-w-md line-clamp-1">
-                    {banner.title_ar}
-                  </h3>
+                  <div className="inline-flex w-fit px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.15)]">
+                    <h3 className="text-white font-bold text-xs md:text-sm lg:text-base drop-shadow-sm max-w-md line-clamp-1">
+                      {banner.title_ar}
+                    </h3>
+                  </div>
                 )}
                 {renderActionButton(banner)}
               </div>
@@ -286,40 +287,42 @@ const BannerCarousel = memo(() => {
         ))}
       </div>
 
-      {/* Progress Bar Indicator - CSS animation only, no re-renders */}
+      {/* Golden border progress counter - SVG that traces the rounded rectangle border */}
       {banners.length > 1 && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
-          <div 
-            key={`progress-${currentIndex}-${isAutoPlaying}`}
-            className={cn(
-              "h-full bg-white/80",
-              isAutoPlaying ? "animate-progress-bar" : "w-0"
-            )}
+        <svg
+          key={`border-${currentIndex}-${isAutoPlaying}`}
+          className="pointer-events-none absolute inset-0 w-full h-full z-20"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FFD700" />
+              <stop offset="50%" stopColor="#FFA500" />
+              <stop offset="100%" stopColor="#FFD700" />
+            </linearGradient>
+          </defs>
+          <rect
+            x="0.4"
+            y="0.4"
+            width="99.2"
+            height="99.2"
+            rx="2.5"
+            ry="2.5"
+            fill="none"
+            stroke="url(#goldGradient)"
+            strokeWidth="0.8"
+            vectorEffect="non-scaling-stroke"
+            pathLength={1}
+            strokeDasharray={1}
+            strokeDashoffset={1}
+            className={isAutoPlaying ? "animate-banner-border-progress" : ""}
+            style={{
+              filter: "drop-shadow(0 0 3px rgba(255, 215, 0, 0.6))",
+            }}
           />
-        </div>
-      )}
-
-      {/* Dots Indicator - minimal */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-1.5 md:bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setCurrentIndex(index);
-                setIsAutoPlaying(false);
-                setTimeout(() => setIsAutoPlaying(true), 10000);
-              }}
-              className={cn(
-                "h-1 md:h-1.5 rounded-full transition-all duration-300",
-                index === currentIndex 
-                  ? "bg-white w-4 md:w-5" 
-                  : "bg-white/40 hover:bg-white/60 w-1 md:w-1.5"
-              )}
-              aria-label={`الانتقال إلى البانر ${index + 1}`}
-            />
-          ))}
-        </div>
+        </svg>
       )}
     </div>
   );
