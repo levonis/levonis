@@ -66,6 +66,7 @@ export interface ProductLdInput {
   reviewCount?: number | null;
   category?: string | null;
   additionalProperty?: any[];
+  keywords?: string[];
 }
 
 export const productLd = (p: ProductLdInput) => {
