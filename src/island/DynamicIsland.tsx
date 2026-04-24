@@ -199,32 +199,50 @@ export const DynamicIsland = () => {
 
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
-  /* ---------- Track viewport width so shape recalculates on resize ---------- */
+  /* ---------- Track viewport width so shape recalculates on resize ----------
+   * Strategy to keep updates "live" but jitter-free:
+   * 1) Quantize the width to an 8px grid → micro pixel drifts (mobile URL bar
+   *    show/hide, scrollbar appearing) never trigger a re-render.
+   * 2) Use a single rAF tick coalescing burst events (resize + scroll +
+   *    orientationchange) into one state update per frame.
+   * 3) Listen to matchMedia breakpoint crossings explicitly so layout buckets
+   *    (<480 / <900 / desktop) flip instantly without any debounce delay.
+   */
+  const QUANTUM = 8;
+  const quantize = (w: number) => Math.round(w / QUANTUM) * QUANTUM;
   const [viewportWidth, setViewportWidth] = useState<number>(
-    typeof window !== "undefined" ? window.innerWidth : 390,
+    typeof window !== "undefined" ? quantize(window.innerWidth) : 390,
   );
   useEffect(() => {
-    // Debounced + rAF-throttled resize handler. Avoids re-rendering the
-    // island on every intermediate width during drag / orientation change,
-    // which would otherwise cause visible width "jitter".
+    if (typeof window === "undefined") return;
     let frameId = 0;
-    let timeoutId: number | null = null;
+    let scheduled = false;
     const apply = () => {
-      setViewportWidth((prev) => (prev === window.innerWidth ? prev : window.innerWidth));
+      scheduled = false;
+      const next = quantize(window.innerWidth);
+      setViewportWidth((prev) => (prev === next ? prev : next));
     };
-    const onResize = () => {
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(() => {
-        if (frameId) cancelAnimationFrame(frameId);
-        frameId = requestAnimationFrame(apply);
-      }, 80);
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      frameId = requestAnimationFrame(apply);
     };
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", apply);
+    // Instant flip when crossing a layout breakpoint — bypasses quantization.
+    const mqls = [
+      window.matchMedia("(max-width: 479px)"),
+      window.matchMedia("(max-width: 899px)"),
+    ];
+    const onMqChange = () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      apply();
+    };
+    mqls.forEach((m) => m.addEventListener?.("change", onMqChange));
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("orientationchange", onMqChange);
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", apply);
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      mqls.forEach((m) => m.removeEventListener?.("change", onMqChange));
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("orientationchange", onMqChange);
       if (frameId) cancelAnimationFrame(frameId);
     };
   }, []);
