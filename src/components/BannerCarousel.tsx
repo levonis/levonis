@@ -258,7 +258,7 @@ const BannerCarousel = memo(() => {
             {copiedCoupon === banner.coupon_code ? (
               <>
                 <Check className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-[18px] lg:h-[18px]" />
-                تم النسخ!
+                {language === 'en' ? 'Copied!' : language === 'ku' ? 'کۆپی کرا!' : 'تم النسخ!'}
               </>
             ) : (
               <>
