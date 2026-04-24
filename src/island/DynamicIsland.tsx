@@ -432,10 +432,10 @@ export const DynamicIsland = () => {
                   {messages.length > 0 ? (
                     <div
                       dir="ltr"
+                      data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                       className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
                       style={{
                         ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
-                        ['--marquee-direction' as any]: promoSettings.direction === 'left' ? 'reverse' : 'normal',
                         ['--marquee-gap' as any]: `${promoSettings.gap}px`,
                       }}
                     >
