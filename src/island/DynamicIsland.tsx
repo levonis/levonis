@@ -870,12 +870,11 @@ export const DynamicIsland = () => {
                     <motion.span
                       key={title ?? "prod-default"}
                       dir="auto"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -3 }}
-                      style={{ unicodeBidi: "plaintext", willChange: "opacity, transform" }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      style={{ unicodeBidi: "plaintext", willChange: "opacity" }}
                       transition={{
-                        y: { type: "spring", stiffness: 320, damping: 32, mass: 0.7 },
                         opacity: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
                       }}
                       className="block truncate text-[13px] font-semibold tracking-tight text-foreground"
