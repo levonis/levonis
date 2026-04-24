@@ -109,7 +109,7 @@ const ProductBundles = () => {
                       {bundle.image_url ? (
                         <img
                           src={bundle.image_url}
-                          alt={bundle.title_ar}
+                          alt={pickI18n(bundle, "title", language)}
                           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${bundle.outOfStock ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
@@ -142,7 +142,7 @@ const ProductBundles = () => {
 
                     {/* Info */}
                     <div className="p-2 space-y-1">
-                      <p className="text-[11px] font-bold text-foreground line-clamp-2 leading-tight">{bundle.title_ar}</p>
+                      <p className="text-[11px] font-bold text-foreground line-clamp-2 leading-tight">{pickI18n(bundle, "title", language)}</p>
                       <div className="flex items-baseline gap-1">
                         <span className="text-sm font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
                         <span className="text-[8px] text-muted-foreground">د.ع</span>
