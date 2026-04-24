@@ -22,7 +22,6 @@ import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 // EmailVerificationBanner available for post-login verification
 import AppBackground from "@/components/AppBackground";
 import ProfileOrb from "@/components/ProfileOrb";
-import LiquidIslandBridge from "@/components/LiquidIslandBridge";
 import ProfileExpansionShell from "@/components/ProfileExpansionShell";
 import { ProfileTransitionProvider } from "@/components/ProfileTransitionProvider";
 
@@ -176,7 +175,6 @@ function AppContent() {
         <DeferredEffects />
       </Suspense>
       <DynamicIsland />
-      <LiquidIslandBridge />
       <ProfileOrb />
       <ProfileExpansionShell>
         <Suspense fallback={null}>
