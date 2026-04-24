@@ -2190,9 +2190,11 @@ body {
     align-items: center;
     justify-content: flex-start;
     flex: none;
-    gap: var(--marquee-gap, 2.5rem);
-    padding-inline-end: var(--marquee-gap, 2.5rem);
     will-change: transform;
+  }
+
+  .marquee-group > * {
+    padding-inline-end: var(--marquee-gap, 2.5rem);
   }
 
   .marquee-track[data-direction="right"] {
