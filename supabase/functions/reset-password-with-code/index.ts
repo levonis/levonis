@@ -48,12 +48,15 @@ const findUserIdByEmail = async (
   email: string,
 ): Promise<string | null> => {
   // First try profiles table (faster and more reliable in this project)
-  const { data: profileData, error: profileError } = await supabase
+  const profileResult = await supabase
     .from('profiles')
     .select('id')
     .ilike('email', email)
     .limit(1)
-    .maybeSingle();
+    .maybeSingle() as { data: { id: string } | null; error: unknown };
+
+  const profileData = profileResult.data;
+  const profileError = profileResult.error;
 
   if (!profileError && profileData?.id) {
     return profileData.id;
@@ -72,7 +75,7 @@ const findUserIdByEmail = async (
     }
 
     const foundUser = data.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
+      (u: { email?: string | null; id: string }) => u.email?.toLowerCase() === email.toLowerCase()
     );
 
     if (foundUser) {
