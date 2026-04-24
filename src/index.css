@@ -2420,6 +2420,32 @@ body.chat-fullscreen [data-app-navbar] {
 }
 body.chat-fullscreen {
   overscroll-behavior: contain;
+  /* Lock the page to the small viewport so the mobile keyboard show/hide
+     does not leave a blank gap at the bottom of the chat. */
+  height: 100svh;
+  max-height: 100svh;
+  overflow: hidden;
+}
+body.chat-fullscreen #root {
+  height: 100svh;
+  max-height: 100svh;
+  overflow: hidden;
+}
+
+/* CommunityMessages page sizing — keeps room for bottom nav on the list view,
+   and goes fullscreen automatically when a conversation is opened (the
+   embedded chat itself becomes 100svh and body.chat-fullscreen kicks in). */
+.community-messages-shell {
+  min-height: 100dvh;
+}
+.community-messages-main {
+  height: 100dvh;
+}
+body.chat-fullscreen .community-messages-shell,
+body.chat-fullscreen .community-messages-main {
+  height: 100svh;
+  min-height: 100svh;
+  max-height: 100svh;
 }
 
 
