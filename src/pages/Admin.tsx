@@ -1250,6 +1250,8 @@ const Admin = () => {
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
         ai_content: productAIContent || {},
+        short_summary: productShortSummary || {},
+        searchable_attributes: productSearchableAttrs || [],
         // Taobao sync fields
         taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
         // Product rewards - points from form (can be auto-calculated or manually set)
