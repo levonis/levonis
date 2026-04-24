@@ -990,6 +990,7 @@ export type Database = {
           media_url: string | null
           name: string
           name_ar: string
+          name_en: string | null
           name_ku: string | null
           slug: string
           tax_rate: number | null
@@ -1011,6 +1012,7 @@ export type Database = {
           media_url?: string | null
           name: string
           name_ar: string
+          name_en?: string | null
           name_ku?: string | null
           slug: string
           tax_rate?: number | null
@@ -1032,6 +1034,7 @@ export type Database = {
           media_url?: string | null
           name?: string
           name_ar?: string
+          name_en?: string | null
           name_ku?: string | null
           slug?: string
           tax_rate?: number | null
@@ -2836,6 +2839,7 @@ export type Database = {
           base_price_units_per_delivery: number
           created_at: string
           description_ar: string | null
+          description_en: string | null
           display_order: number
           free_delivery_enabled: boolean
           free_delivery_min_order: number
@@ -2844,6 +2848,7 @@ export type Database = {
           is_active: boolean
           method_key: string
           name_ar: string
+          name_en: string | null
           updated_at: string
         }
         Insert: {
@@ -2853,6 +2858,7 @@ export type Database = {
           base_price_units_per_delivery?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
           display_order?: number
           free_delivery_enabled?: boolean
           free_delivery_min_order?: number
@@ -2861,6 +2867,7 @@ export type Database = {
           is_active?: boolean
           method_key: string
           name_ar: string
+          name_en?: string | null
           updated_at?: string
         }
         Update: {
@@ -2870,6 +2877,7 @@ export type Database = {
           base_price_units_per_delivery?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
           display_order?: number
           free_delivery_enabled?: boolean
           free_delivery_min_order?: number
@@ -2878,6 +2886,7 @@ export type Database = {
           is_active?: boolean
           method_key?: string
           name_ar?: string
+          name_en?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -8252,6 +8261,7 @@ export type Database = {
           in_stock: boolean | null
           name: string
           name_ar: string
+          name_en: string | null
           price_adjustment: number | null
           product_id: string
           stock_quantity: number | null
@@ -8268,6 +8278,7 @@ export type Database = {
           in_stock?: boolean | null
           name: string
           name_ar: string
+          name_en?: string | null
           price_adjustment?: number | null
           product_id: string
           stock_quantity?: number | null
@@ -8284,6 +8295,7 @@ export type Database = {
           in_stock?: boolean | null
           name?: string
           name_ar?: string
+          name_en?: string | null
           price_adjustment?: number | null
           product_id?: string
           stock_quantity?: number | null

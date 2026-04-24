@@ -56,10 +56,14 @@ const productSchema = z.object({
 const categorySchema = z.object({
   name_ar: z.string().min(1, 'الاسم بالعربي مطلوب'),
   name: z.string().min(1, 'الاسم بالإنجليزي مطلوب'),
+  name_en: z.string().optional(),
+  name_ku: z.string().optional(),
   slug: z.string().min(1, 'الرابط مطلوب'),
   icon: z.string().min(1, 'الأيقونة مطلوبة'),
   description_ar: z.string().optional(),
   description: z.string().optional(),
+  description_en: z.string().optional(),
+  description_ku: z.string().optional(),
   main_section_id: z.string().uuid().optional(),
   featured_product_id: z.string().uuid().nullable().optional(),
   media_url: z.string().nullable().optional(),
@@ -1614,10 +1618,14 @@ const Admin = () => {
       const values = categorySchema.parse({
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
+        name_en: (formData.get('name_en') as string) || undefined,
+        name_ku: (formData.get('name_ku') as string) || undefined,
         slug: formData.get('slug') as string,
         icon: formData.get('icon') as string,
         description_ar: formData.get('description_ar') as string || undefined,
         description: formData.get('description') as string || undefined,
+        description_en: (formData.get('description_en') as string) || undefined,
+        description_ku: (formData.get('description_ku') as string) || undefined,
         main_section_id: mainSectionVal || undefined,
         featured_product_id: featuredVal || null,
         media_url: categoryMediaUrl,
@@ -3646,6 +3654,29 @@ const Admin = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
+                        <Label htmlFor="cat_name_en">Name (English) — for SEO/i18n</Label>
+                        <Input
+                          id="cat_name_en"
+                          name="name_en"
+                          defaultValue={editingCategory?.name_en || editingCategory?.name || ''}
+                          placeholder="e.g. 3D Printers"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_name_ku">ناوی کوردی</Label>
+                        <Input
+                          id="cat_name_ku"
+                          name="name_ku"
+                          defaultValue={editingCategory?.name_ku || ''}
+                          placeholder="بۆ نموونە: پرینتەری 3D"
+                          dir="rtl"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
                         <Label htmlFor="cat_slug">الرابط (Slug) *</Label>
                         <Input 
                           id="cat_slug" 
@@ -3775,6 +3806,29 @@ const Admin = () => {
                           name="description"
                           defaultValue={editingCategory?.description}
                           rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_description_en">Description (English)</Label>
+                        <Textarea
+                          id="cat_description_en"
+                          name="description_en"
+                          defaultValue={editingCategory?.description_en || editingCategory?.description || ''}
+                          rows={3}
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cat_description_ku">وەسف بە کوردی</Label>
+                        <Textarea
+                          id="cat_description_ku"
+                          name="description_ku"
+                          defaultValue={editingCategory?.description_ku || ''}
+                          rows={3}
+                          dir="rtl"
                         />
                       </div>
                     </div>
