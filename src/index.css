@@ -1486,6 +1486,16 @@
   animation: banner-border-progress 5s linear forwards;
 }
 
+@keyframes banner-flash {
+  0%   { opacity: 0; transform: scale(1); }
+  30%  { opacity: 1; transform: scale(1.01); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+.animate-banner-flash {
+  animation: banner-flash 350ms ease-out forwards;
+}
+
 .skeleton-gradient {
   background: linear-gradient(
     90deg,
