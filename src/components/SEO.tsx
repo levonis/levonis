@@ -37,6 +37,7 @@ const SEO = ({
     <Helmet>
       <title>{fullTitle}</title>
       {description && <meta name="description" content={description} />}
+      {keywords && keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
       <link rel="canonical" href={finalCanonical} />
       {noindex && <meta name="robots" content="noindex,nofollow" />}
 
