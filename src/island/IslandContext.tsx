@@ -188,6 +188,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
         title: active.title,
         setContext,
         promoMessages,
+        promoItems,
         promoSettings,
         visible,
       }}
