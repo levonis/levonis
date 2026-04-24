@@ -189,7 +189,7 @@ const BundleDetail = () => {
         {/* Main Image */}
         {activeImage && (
           <div className="relative mt-3 rounded-2xl overflow-hidden border border-border/20">
-            <img src={activeImage} alt={bundle.title_ar} className="w-full aspect-square object-cover" />
+            <img src={activeImage} alt={pickI18n(bundle as any, 'title', language)} className="w-full aspect-square object-cover" />
             {bundle.isOutOfStock && (
               <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
                 <Badge className="bg-destructive text-destructive-foreground text-sm px-4 py-1.5">انتهى العرض</Badge>
