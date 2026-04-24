@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 
 interface IslandPromoPreviewProps {
@@ -7,13 +7,15 @@ interface IslandPromoPreviewProps {
   speed: number;
   direction: 'left' | 'right';
   gap: number;
+  // kept for API compatibility (no longer used — single seamless loop now)
   autoRotate?: boolean;
   displayDuration?: number;
 }
 
 /**
  * Live preview of the news ticker inside the Dynamic Island.
- * All texts share the same (global) animation settings.
+ * All texts share the same global animation settings and scroll one after the
+ * other in a single, seamless, infinite loop (no cuts / restarts).
  */
 export default function IslandPromoPreview({
   messages,
@@ -21,8 +23,6 @@ export default function IslandPromoPreview({
   speed,
   direction,
   gap,
-  autoRotate = true,
-  displayDuration = 5,
 }: IslandPromoPreviewProps) {
   const cleanMessages = useMemo(
     () => messages.map((m) => m?.trim()).filter(Boolean) as string[],
@@ -31,25 +31,6 @@ export default function IslandPromoPreview({
   const list = cleanMessages.length > 0 ? cleanMessages : ['نص الإعلان'];
   const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 20;
   const safeGap = Number.isFinite(gap) && gap >= 0 ? gap : 16;
-
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    if (list.length <= 1 || !autoRotate) {
-      setIndex(0);
-      return;
-    }
-    const ms = Math.max(2, displayDuration) * 1000;
-    const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % list.length);
-    }, ms);
-    return () => window.clearInterval(id);
-  }, [list.length, autoRotate, displayDuration]);
-
-  const activeText = list[index] ?? list[0];
-  const marqueeItems = useMemo(
-    () => Array.from({ length: 6 }, () => activeText),
-    [activeText],
-  );
 
   return (
     <div
@@ -78,7 +59,7 @@ export default function IslandPromoPreview({
         }}
       >
         <div
-          key={`preview-${index}`}
+          key={`preview-${list.length}-${direction}`}
           dir="ltr"
           data-direction={direction === 'right' ? 'right' : 'left'}
           className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
@@ -89,7 +70,7 @@ export default function IslandPromoPreview({
         >
           {[0, 1].map((group) => (
             <div key={group} className="marquee-group" aria-hidden={group === 1}>
-              {marqueeItems.map((m, i) => (
+              {list.map((m, i) => (
                 <span key={`${group}-${i}`} className="inline-flex items-center gap-3">
                   <span dir="auto" className="text-foreground/90">{m}</span>
                   <span aria-hidden="true" style={{ color }} className="opacity-70">•</span>
