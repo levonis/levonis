@@ -405,7 +405,7 @@ const AdminAnnouncements = () => {
               </div>
 
               <div className="admin-form-group">
-                <Label htmlFor="display_duration">مدة عرض كل نص (ثانية)</Label>
+                <Label htmlFor="display_duration">المسافة الزمنية بين كل نص وآخر (ثانية)</Label>
                 <Input
                   id="display_duration"
                   type="number"

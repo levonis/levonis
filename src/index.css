@@ -2179,10 +2179,11 @@ body {
     display: flex;
     align-items: center;
     width: max-content;
-    min-width: 100%;
+    min-width: 200%;
     flex: none;
     white-space: nowrap;
     will-change: transform;
+    animation: island-marquee var(--marquee-duration, 18s) linear infinite;
   }
 
   .marquee-group {
@@ -2193,11 +2194,10 @@ body {
     flex: none;
     gap: var(--marquee-gap, 2.5rem);
     padding-inline-end: var(--marquee-gap, 2.5rem);
-    animation: island-marquee var(--marquee-duration, 18s) linear infinite;
     will-change: transform;
   }
 
-  .marquee-track[data-direction="right"] .marquee-group {
+  .marquee-track[data-direction="right"] {
     animation-name: island-marquee-rtl;
   }
 
@@ -2214,11 +2214,11 @@ body {
 
 @keyframes island-marquee {
   from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
+  to   { transform: translateX(-50%); }
 }
 
 @keyframes island-marquee-rtl {
-  from { transform: translateX(-100%); }
+  from { transform: translateX(-50%); }
   to   { transform: translateX(0); }
 }
 
