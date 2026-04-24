@@ -274,6 +274,14 @@ const Admin = () => {
       setProductColors(colorsWithStock);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
       setProductAIContent(editingProduct.ai_content && typeof editingProduct.ai_content === 'object' ? editingProduct.ai_content : {});
+      setProductShortSummary(
+        editingProduct.short_summary && typeof editingProduct.short_summary === 'object'
+          ? editingProduct.short_summary
+          : {}
+      );
+      setProductSearchableAttrs(
+        Array.isArray(editingProduct.searchable_attributes) ? editingProduct.searchable_attributes : []
+      );
       // preOrderShippingOptions removed
       
       // Load card discounts from product
