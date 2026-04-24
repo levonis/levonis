@@ -762,9 +762,15 @@ const ProductDetail = () => {
   const inStockSeo = !!(product.in_stock || product.has_in_stock || product.has_pre_order);
   const aiContentNorm = normalizeAIContent((product as any).ai_content);
   const aiLd = buildAIContentForLd(aiContentNorm, (language || 'ar') as any);
+  const shortSummaryRaw = (product as any).short_summary || {};
+  const shortSummary = (shortSummaryRaw[language] || shortSummaryRaw.ar || shortSummaryRaw.en || shortSummaryRaw.ku || '').toString().trim();
+  const searchableAttrs: string[] = Array.isArray((product as any).searchable_attributes)
+    ? ((product as any).searchable_attributes as string[]).filter(Boolean)
+    : [];
+  const baseDesc = shortSummary || seoDesc;
   const seoDescFinal = (aiLd.descriptionAppendix
-    ? `${seoDesc} — ${aiLd.descriptionAppendix}`
-    : seoDesc) || seoName;
+    ? `${baseDesc} — ${aiLd.descriptionAppendix}`
+    : baseDesc) || seoName;
 
   return (
     <div className="min-h-screen" dir="rtl">
@@ -774,6 +780,7 @@ const ProductDetail = () => {
         url={seoUrl}
         type="product"
         image={seoImages[0]}
+        keywords={searchableAttrs}
         jsonLd={[
           productLd({
             name: seoName,
@@ -786,6 +793,7 @@ const ProductDetail = () => {
             url: seoUrl,
             category: product.category_name_ar || product.category_name || null,
             additionalProperty: aiLd.additionalProperty,
+            keywords: searchableAttrs,
           }),
           breadcrumbLd([
             { name: language === 'en' ? 'Home' : language === 'ku' ? 'سەرەکی' : 'الرئيسية', url: '/' },
