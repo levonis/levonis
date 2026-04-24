@@ -385,7 +385,7 @@ const BannerCarousel = memo(() => {
               window.setTimeout(() => {
                 setCurrentIndex((prev) => (prev + 1) % banners.length);
                 setIsFlashing(false);
-              }, 350);
+              }, 900);
             }}
           />
         </svg>
