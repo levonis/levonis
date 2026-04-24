@@ -166,6 +166,8 @@ export const DynamicIsland = () => {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
+  const marqueeGroupRef = useRef<HTMLDivElement>(null);
+  const [marqueeDistance, setMarqueeDistance] = useState<number | null>(null);
 
   const { scope, placeholderKey } = useMemo<{
     scope: SearchScope;
@@ -330,6 +332,22 @@ export const DynamicIsland = () => {
    */
   const marqueeItems = useMemo(() => messages, [messages]);
 
+  useEffect(() => {
+    if (state !== "promo") return;
+
+    const updateMarqueeDistance = () => {
+      const next = marqueeGroupRef.current?.getBoundingClientRect().width ?? 0;
+      setMarqueeDistance(next > 0 ? next : null);
+    };
+
+    updateMarqueeDistance();
+    window.addEventListener("resize", updateMarqueeDistance);
+
+    return () => {
+      window.removeEventListener("resize", updateMarqueeDistance);
+    };
+  }, [state, marqueeItems, promoSettings.gap]);
+
   /* ---------- Render ---------- */
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-3">
@@ -443,10 +461,16 @@ export const DynamicIsland = () => {
                       style={{
                         ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
                         ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                        ['--marquee-distance' as any]: marqueeDistance ? `${marqueeDistance}px` : '50%',
                       }}
                     >
                       {[0, 1].map((group) => (
-                        <div key={group} className="marquee-group" aria-hidden={group === 1}>
+                        <div
+                          key={group}
+                          ref={group === 0 ? marqueeGroupRef : undefined}
+                          className="marquee-group"
+                          aria-hidden={group === 1}
+                        >
                           {marqueeItems.map((m, i) => (
                             <span key={`${group}-${i}`} className="inline-flex items-center gap-3">
                               <span dir="auto" className="text-foreground/90">{m}</span>
