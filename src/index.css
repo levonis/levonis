@@ -1496,6 +1496,15 @@
   animation: banner-flash 350ms ease-out forwards;
 }
 
+@keyframes banner-color-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-banner-color-fade {
+  animation: banner-color-fade 600ms ease-out forwards;
+}
+
 .skeleton-gradient {
   background: linear-gradient(
     90deg,
