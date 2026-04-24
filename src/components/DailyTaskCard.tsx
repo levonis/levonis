@@ -3,12 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Coins, LogIn, Share2, UserPlus, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface DailyTaskCardProps {
   task: {
     task_key: string;
     title_ar: string;
+    title_en?: string | null;
+    title_ku?: string | null;
     description_ar: string;
+    description_en?: string | null;
+    description_ku?: string | null;
     icon: string;
     points_reward: number;
     task_type: string;
@@ -31,6 +37,22 @@ const getIcon = (iconName: string) => {
 };
 
 export default function DailyTaskCard({ task, isCompleted, onComplete, isLoading }: DailyTaskCardProps) {
+  const { language } = useLanguage();
+  const title = pickI18n(task as any, 'title', language);
+  const description = pickI18n(task as any, 'description', language);
+
+  const tx = {
+    points: language === 'en' ? 'pts' : language === 'ku' ? 'خاڵ' : 'نقطة',
+    loading: language === 'en' ? 'Loading…' : language === 'ku' ? 'بارکردن…' : 'جاري...',
+    complete: language === 'en' ? 'Complete' : language === 'ku' ? 'تەواوکردن' : 'إكمال',
+    done: language === 'en' ? 'Completed' : language === 'ku' ? 'تەواو بوو' : 'تم الإكمال',
+    daily: language === 'en'
+      ? '* This task can be completed daily'
+      : language === 'ku'
+        ? '* ئەم ئەرکە ڕۆژانە دەتوانرێت تەواو بکرێت'
+        : '* يمكن إكمال هذه المهمة يومياً',
+  };
+
   return (
     <Card className={cn(
       "relative overflow-hidden transition-all hover:shadow-lg",
@@ -46,9 +68,9 @@ export default function DailyTaskCard({ task, isCompleted, onComplete, isLoading
               {getIcon(task.icon)}
             </div>
             <div>
-              <CardTitle className="text-lg">{task.title_ar}</CardTitle>
+              <CardTitle className="text-lg">{title}</CardTitle>
               <CardDescription className="text-sm mt-1">
-                {task.description_ar}
+                {description}
               </CardDescription>
             </div>
           </div>
@@ -61,7 +83,7 @@ export default function DailyTaskCard({ task, isCompleted, onComplete, isLoading
         <div className="flex items-center justify-between">
           <Badge variant="secondary" className="gap-1">
             <Coins className="h-3 w-3" />
-            {task.points_reward} نقطة
+            {task.points_reward} {tx.points}
           </Badge>
           {!isCompleted ? (
             <Button
@@ -69,17 +91,17 @@ export default function DailyTaskCard({ task, isCompleted, onComplete, isLoading
               onClick={() => onComplete(task.task_key)}
               disabled={isLoading}
             >
-              {isLoading ? "جاري..." : "إكمال"}
+              {isLoading ? tx.loading : tx.complete}
             </Button>
           ) : (
             <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/50">
-              تم الإكمال
+              {tx.done}
             </Badge>
           )}
         </div>
         {task.task_type === 'daily' && (
           <p className="text-xs text-muted-foreground mt-2">
-            * يمكن إكمال هذه المهمة يومياً
+            {tx.daily}
           </p>
         )}
       </CardContent>

@@ -6,6 +6,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle, X, Palette, Settings2 } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface ProductOption {
   name_ar: string;
@@ -25,7 +27,11 @@ interface ProductColor {
 interface ProductOffer {
   id: string;
   title_ar: string;
+  title_en?: string | null;
+  title_ku?: string | null;
   description_ar?: string | null;
+  description_en?: string | null;
+  description_ku?: string | null;
   image_url: string | null;
   images: string[] | null;
   price: number;
@@ -55,11 +61,14 @@ export default function ProductOfferDetailModal({
   walletBalance,
   isAuthenticated,
 }: ProductOfferDetailModalProps) {
+  const { language } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
   const [selectedOption, setSelectedOption] = useState<ProductOption | null>(null);
+  const offerTitle = offer ? pickI18n(offer as any, 'title', language) : '';
+  const offerDescription = offer ? pickI18n(offer as any, 'description', language) : '';
 
   // Reset selections when offer changes
   useEffect(() => {
@@ -123,7 +132,7 @@ export default function ProductOfferDetailModal({
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="w-[320px] max-w-[90vw] max-h-[85vh] p-0 overflow-hidden rounded-lg" dir="rtl" hideClose>
           <DialogHeader className="sr-only">
-            <DialogTitle>{offer.title_ar}</DialogTitle>
+            <DialogTitle>{offerTitle}</DialogTitle>
             <DialogDescription>تفاصيل العرض</DialogDescription>
           </DialogHeader>
 
@@ -145,7 +154,7 @@ export default function ProductOfferDetailModal({
             {displayImage ? (
               <OptimizedImage
                 src={displayImage}
-                alt={offer.title_ar}
+                alt={offerTitle}
                 className="w-full h-full object-contain"
               />
             ) : (
@@ -182,7 +191,7 @@ export default function ProductOfferDetailModal({
           {/* Scrollable Content */}
           <div className="overflow-y-auto flex-1 max-h-[50vh]">
             <div className="p-3 space-y-2.5">
-              <h2 className="text-sm font-bold line-clamp-1">{offer.title_ar}</h2>
+              <h2 className="text-sm font-bold line-clamp-1">{offerTitle}</h2>
 
               {/* Price Row */}
               <div className="flex items-center justify-between text-sm">
@@ -330,7 +339,7 @@ export default function ProductOfferDetailModal({
               <div className="space-y-2 text-right text-sm">
                 <div className="p-2 bg-secondary/50 rounded-lg space-y-1.5">
                   <div className="flex justify-between text-xs">
-                    <span>{offer.title_ar}</span>
+                    <span>{offerTitle}</span>
                     <span>×{quantity}</span>
                   </div>
                   {selectedColor && (

@@ -10,6 +10,8 @@ import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Package, Plus, Minus,
 import { formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/lib/i18n';
+import { pickI18n } from '@/lib/i18nField';
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
@@ -48,6 +50,7 @@ const SALE_TYPE_LABELS: Record<string, string> = {
 const BundleDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { addBundleToCart, cartSaleType, items: cartItems } = useCart();
   const navigate = useNavigate();
   const [isAdding, setIsAdding] = useState(false);
@@ -175,7 +178,7 @@ const BundleDetail = () => {
           <Link to="/bundles" className="w-8 h-8 rounded-lg bg-card border border-border/50 flex items-center justify-center">
             <ArrowRight className="h-4 w-4 text-foreground" />
           </Link>
-          <h1 className="text-sm font-bold text-foreground truncate flex-1">{bundle.title_ar}</h1>
+          <h1 className="text-sm font-bold text-foreground truncate flex-1">{pickI18n(bundle as any, 'title', language)}</h1>
           <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0.5 border border-border/30">
             {SALE_TYPE_LABELS[saleType] || saleType}
           </Badge>
@@ -186,7 +189,7 @@ const BundleDetail = () => {
         {/* Main Image */}
         {activeImage && (
           <div className="relative mt-3 rounded-2xl overflow-hidden border border-border/20">
-            <img src={activeImage} alt={bundle.title_ar} className="w-full aspect-square object-cover" />
+            <img src={activeImage} alt={pickI18n(bundle as any, 'title', language)} className="w-full aspect-square object-cover" />
             {bundle.isOutOfStock && (
               <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
                 <Badge className="bg-destructive text-destructive-foreground text-sm px-4 py-1.5">انتهى العرض</Badge>
@@ -224,9 +227,9 @@ const BundleDetail = () => {
 
         {/* Title & Description */}
         <div className="mt-4 space-y-2">
-          <h2 className="text-lg font-black text-foreground">{bundle.title_ar}</h2>
-          {bundle.description_ar && (
-            <p className="text-xs text-muted-foreground leading-relaxed">{bundle.description_ar}</p>
+          <h2 className="text-lg font-black text-foreground">{pickI18n(bundle as any, 'title', language)}</h2>
+          {pickI18n(bundle as any, 'description', language) && (
+            <p className="text-xs text-muted-foreground leading-relaxed">{pickI18n(bundle as any, 'description', language)}</p>
           )}
         </div>
 
