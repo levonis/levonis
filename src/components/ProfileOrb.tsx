@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/lib/i18n";
 import { useProfileTransition } from "./ProfileTransitionProvider";
 import { computeOrbMagnet } from "./profileOrbMagnet";
+import { setLiquidFusion, rectFromDOMRect } from "@/island/useLiquidFusion";
 import { cn } from "@/lib/utils";
 
 const ProfileOrb = memo(() => {
