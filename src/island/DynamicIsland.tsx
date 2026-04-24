@@ -319,11 +319,34 @@ export const DynamicIsland = () => {
   };
 
   const messages = promoMessages.length ? promoMessages : [];
+
+  /* ---------- Rotate through announcements ----------
+   * Each announcement carries its own speed/direction/gap. We cycle one at a
+   * time every 6s so every text is shown with its own settings respected.
+   */
+  const [promoIndex, setPromoIndex] = useState(0);
+  useEffect(() => {
+    if (promoItems.length <= 1) {
+      setPromoIndex(0);
+      return;
+    }
+    const id = window.setInterval(() => {
+      setPromoIndex((i) => (i + 1) % promoItems.length);
+    }, 6000);
+    return () => window.clearInterval(id);
+  }, [promoItems.length]);
+
+  const activePromo = promoItems[promoIndex] ?? promoItems[0];
+  const activeText = activePromo?.text ?? "";
+  const activeSpeed = activePromo?.speed ?? promoSettings.speed;
+  const activeDirection = activePromo?.direction ?? promoSettings.direction;
+  const activeGap = activePromo?.gap ?? promoSettings.gap;
+
   const marqueeItems = useMemo(() => {
-    if (!messages.length) return [] as string[];
-    const repeatCount = Math.max(4, Math.ceil(12 / messages.length));
-    return Array.from({ length: repeatCount }, () => messages).flat();
-  }, [messages]);
+    if (!activeText) return [] as string[];
+    // Repeat the active message enough times to fill the track smoothly.
+    return Array.from({ length: 6 }, () => activeText);
+  }, [activeText]);
 
   /* ---------- Render ---------- */
   return (
