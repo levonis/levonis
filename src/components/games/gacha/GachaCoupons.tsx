@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { useUserGachaCoupons } from "./useGachaData";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface Props {
   onBack: () => void;
@@ -67,8 +69,11 @@ export default function GachaCoupons({ onBack }: Props) {
 }
 
 function CouponCard({ coupon }: { coupon: any }) {
+  const { language } = useLanguage();
   const def = coupon.gacha_coupons;
   const isExpired = coupon.expires_at && new Date(coupon.expires_at) <= new Date();
+  const title = pickI18n(def, "title", language) || (language === 'en' ? 'Coupon' : language === 'ku' ? 'کوپۆن' : 'كوبون');
+  const description = pickI18n(def, "description", language);
 
   return (
     <div className={`flex items-center gap-3 p-3 rounded-xl bg-card border ${coupon.is_used || isExpired ? "border-border/10" : "border-green-500/20"}`}>
@@ -76,9 +81,9 @@ function CouponCard({ coupon }: { coupon: any }) {
         🎟️
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-foreground">{def?.title_ar || "كوبون"}</p>
-        {def?.description_ar && (
-          <p className="text-[10px] text-muted-foreground line-clamp-1">{def.description_ar}</p>
+        <p className="text-xs font-medium text-foreground">{title}</p>
+        {description && (
+          <p className="text-[10px] text-muted-foreground line-clamp-1">{description}</p>
         )}
         {coupon.expires_at && !coupon.is_used && !isExpired && (
           <p className="text-[10px] text-amber-500 flex items-center gap-1 mt-0.5">

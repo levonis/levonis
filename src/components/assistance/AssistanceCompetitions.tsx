@@ -4,8 +4,11 @@ import { Trophy, Calendar, Crown, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function AssistanceCompetitions() {
+  const { language } = useLanguage();
   const { data: giveaways, isLoading } = useQuery({
     queryKey: ["assistance-merchant-giveaways"],
     queryFn: async () => {
@@ -67,8 +70,8 @@ export default function AssistanceCompetitions() {
                   <div className="flex items-center gap-2 mb-1">
                     <Badge className="bg-primary/10 text-primary text-[10px] border-0">نشطة</Badge>
                   </div>
-                  <h4 className="font-bold text-sm text-foreground truncate">{c.title_ar}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">{c.prize_name_ar}</p>
+                  <h4 className="font-bold text-sm text-foreground truncate">{pickI18n(c, "title", language)}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">{pickI18n(c, "prize_name", language)}</p>
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
                     {c.draw_date && (
                       <span className="flex items-center gap-1">
@@ -100,8 +103,8 @@ export default function AssistanceCompetitions() {
                   <CheckCircle className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-xs text-foreground truncate">{c.title_ar}</h4>
-                  <p className="text-[10px] text-muted-foreground">{c.prize_name_ar}</p>
+                  <h4 className="font-bold text-xs text-foreground truncate">{pickI18n(c, "title", language)}</h4>
+                  <p className="text-[10px] text-muted-foreground">{pickI18n(c, "prize_name", language)}</p>
                   {c.winner_merchant_id && (
                     <div className="flex items-center gap-1 mt-1">
                       <Crown className="h-3 w-3 text-primary" />

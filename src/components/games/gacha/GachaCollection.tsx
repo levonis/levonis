@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface Props {
   onBack: () => void;
@@ -17,6 +19,7 @@ export default function GachaCollection({ onBack }: Props) {
   const { data: inventory = [], isLoading } = useUserGachaInventory();
   const { data: settings } = useGachaSettings();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -26,7 +29,7 @@ export default function GachaCollection({ onBack }: Props) {
   const [showSellDialog, setShowSellDialog] = useState(false);
 
   const filtered = inventory.filter((item: any) =>
-    item.gacha_dolls?.name_ar?.includes(search) || item.gacha_dolls?.name?.toLowerCase().includes(search.toLowerCase())
+    pickI18n(item.gacha_dolls, "name", language)?.includes(search) || item.gacha_dolls?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleInstantSell = async (item: any) => {
@@ -131,7 +134,7 @@ export default function GachaCollection({ onBack }: Props) {
                 >
                   <div className="aspect-square bg-card flex items-center justify-center p-2">
                     {doll?.image_url ? (
-                      <img src={doll.image_url} alt={doll.name_ar} className="w-full h-full object-contain" />
+                      <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-3xl">🧸</span>
                     )}
@@ -142,11 +145,11 @@ export default function GachaCollection({ onBack }: Props) {
                     </div>
                   )}
                   <div className="p-1.5 bg-card/80">
-                    <p className="text-[10px] font-medium text-foreground truncate">{doll?.name_ar}</p>
+                    <p className="text-[10px] font-medium text-foreground truncate">{pickI18n(doll, "name", language)}</p>
                     {rarity && (
                       <div className="flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: rarity.color }} />
-                        <span className="text-[8px] text-muted-foreground">{rarity.name_ar}</span>
+                        <span className="text-[8px] text-muted-foreground">{pickI18n(rarity, "name", language)}</span>
                       </div>
                     )}
                   </div>
@@ -167,21 +170,21 @@ export default function GachaCollection({ onBack }: Props) {
             return (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-right">{doll?.name_ar}</DialogTitle>
+                  <DialogTitle className="text-right">{pickI18n(doll, "name", language)}</DialogTitle>
                 </DialogHeader>
                 <div className="text-center py-4">
                   {doll?.image_url ? (
-                    <img src={doll.image_url} alt={doll.name_ar} className="w-24 h-24 mx-auto object-contain mb-3" />
+                    <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-24 h-24 mx-auto object-contain mb-3" />
                   ) : (
                     <span className="text-5xl block mb-3">🧸</span>
                   )}
                   {rarity && (
                     <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-2"
                       style={{ backgroundColor: `${rarity.color}20`, color: rarity.color, border: `1px solid ${rarity.color}30` }}>
-                      {rarity.name_ar}
+                      {pickI18n(rarity, "name", language)}
                     </span>
                   )}
-                  {doll?.description_ar && <p className="text-xs text-muted-foreground mb-3">{doll.description_ar}</p>}
+                  {pickI18n(doll, "description", language) && <p className="text-xs text-muted-foreground mb-3">{pickI18n(doll, "description", language)}</p>}
                   
                   <div className="flex items-center justify-center gap-4 text-xs mb-4">
                     <div className="text-center">

@@ -3,12 +3,15 @@ import { Button } from "@/components/ui/button";
 import { useUserSpinHistory } from "./useGachaData";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface Props {
   onBack: () => void;
 }
 
 export default function GachaSpinHistory({ onBack }: Props) {
+  const { language } = useLanguage();
   const { data: spins = [], isLoading } = useUserSpinHistory();
 
   return (
@@ -44,15 +47,15 @@ export default function GachaSpinHistory({ onBack }: Props) {
                     {spin.prize_type === "doll" ? "🧸" : spin.prize_type === "coupon" ? "🎟️" : spin.prize_type === "points" ? "⭐" : "💡"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{spin.prize_name_ar}</p>
+                    <p className="text-xs font-medium text-foreground truncate">{pickI18n(spin, "prize_name", language)}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">{spin.gacha_machines?.name_ar}</span>
+                      <span className="text-[10px] text-muted-foreground">{pickI18n(spin.gacha_machines, "name", language)}</span>
                       {spin.gacha_rarity_tiers && (
                         <>
                           <span className="text-[10px] text-muted-foreground">•</span>
                           <span className="text-[10px] flex items-center gap-0.5" style={{ color: rarityColor }}>
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: rarityColor }} />
-                            {spin.gacha_rarity_tiers.name_ar}
+                            {pickI18n(spin.gacha_rarity_tiers, "name", language)}
                           </span>
                         </>
                       )}

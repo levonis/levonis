@@ -5,10 +5,13 @@ import { Gift, CheckCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function AssistanceGifts() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
 
   const { data: gifts, isLoading } = useQuery({
     queryKey: ["assistance-gifts"],
@@ -88,9 +91,9 @@ export default function AssistanceGifts() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-sm text-foreground">{gift.title_ar}</h4>
-                {gift.description_ar && (
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{gift.description_ar}</p>
+                <h4 className="font-bold text-sm text-foreground">{pickI18n(gift, "title", language)}</h4>
+                {pickI18n(gift, "description", language) && (
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{pickI18n(gift, "description", language)}</p>
                 )}
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">

@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface Props {
   onBack: () => void;
@@ -18,6 +20,7 @@ type SortOption = "newest" | "price_high" | "price_low" | "demand";
 export default function GachaMarketplace({ onBack }: Props) {
   const { data: listings = [], isLoading } = useGachaMarketplace();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -26,7 +29,7 @@ export default function GachaMarketplace({ onBack }: Props) {
   const [confirmItem, setConfirmItem] = useState<any>(null);
 
   let filtered = listings.filter((l: any) =>
-    l.gacha_dolls?.name_ar?.includes(search) || l.gacha_dolls?.name?.toLowerCase().includes(search.toLowerCase())
+    pickI18n(l.gacha_dolls, "name", language)?.includes(search) || l.gacha_dolls?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   // Sort
@@ -131,7 +134,7 @@ export default function GachaMarketplace({ onBack }: Props) {
                 >
                   <div className="aspect-square bg-card flex items-center justify-center p-3 relative">
                     {doll?.image_url ? (
-                      <img src={doll.image_url} alt={doll.name_ar} className="w-full h-full object-contain" />
+                      <img src={doll.image_url} alt={pickI18n(doll, "name", language)} className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-4xl">🧸</span>
                     )}
@@ -145,7 +148,7 @@ export default function GachaMarketplace({ onBack }: Props) {
                     )}
                   </div>
                   <div className="p-2 bg-card/80">
-                    <p className="text-xs font-medium text-foreground truncate">{doll?.name_ar}</p>
+                    <p className="text-xs font-medium text-foreground truncate">{pickI18n(doll, "name", language)}</p>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs font-bold text-primary">{listing.asking_price} ⭐</span>
                       {doll?.demand_score > 0 && (
@@ -175,7 +178,7 @@ export default function GachaMarketplace({ onBack }: Props) {
               ) : (
                 <span className="text-4xl block mb-3">🧸</span>
               )}
-              <p className="font-bold text-foreground mb-1">{confirmItem.gacha_dolls?.name_ar}</p>
+              <p className="font-bold text-foreground mb-1">{pickI18n(confirmItem.gacha_dolls, "name", language)}</p>
               <p className="text-lg font-bold text-primary mb-4">{confirmItem.asking_price} نقطة</p>
               <Button
                 onClick={() => handleBuy(confirmItem)}

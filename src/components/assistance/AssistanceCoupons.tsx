@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function AssistanceCoupons() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
 
   const { data: coupons, isLoading } = useQuery({
     queryKey: ["assistance-coupons"],
@@ -91,15 +94,15 @@ export default function AssistanceCoupons() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-bold text-sm text-foreground">{coupon.title_ar}</h4>
+                  <h4 className="font-bold text-sm text-foreground">{pickI18n(coupon, "title", language)}</h4>
                   <Badge variant="secondary" className="text-[10px]">
                     {coupon.discount_type === "percentage"
                       ? `${coupon.discount_value}%`
                       : `${coupon.discount_value.toLocaleString()} د.ع`}
                   </Badge>
                 </div>
-                {coupon.description_ar && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">{coupon.description_ar}</p>
+                {pickI18n(coupon, "description", language) && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{pickI18n(coupon, "description", language)}</p>
                 )}
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
