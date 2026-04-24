@@ -343,16 +343,17 @@ const AdminAnnouncements = () => {
                 </div>
               </div>
 
-              {/* Preview */}
+              {/* Live Preview */}
               <div className="space-y-2 pt-4 border-t border-border/50">
-                <Label>معاينة الإعلان</Label>
-                <div 
-                  className="text-white py-2 px-4 rounded-md overflow-hidden h-10 flex items-center"
-                  style={{ backgroundColor: formData.color }}
-                >
-                  <div className="text-center w-full">
-                    <span>{formData.message_ar || 'نص الإعلان'}</span>
-                  </div>
+                <Label>معاينة مباشرة داخل الجزيرة</Label>
+                <div className="flex justify-center py-4 rounded-md bg-gradient-to-b from-background to-muted/30">
+                  <IslandPromoPreview
+                    message={formData.message_ar || 'نص الإعلان'}
+                    color={formData.color}
+                    speed={formData.speed}
+                    direction={formData.direction as 'left' | 'right'}
+                    gap={formData.gap}
+                  />
                 </div>
               </div>
 
