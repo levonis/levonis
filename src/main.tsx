@@ -83,9 +83,13 @@ if (typeof window !== 'undefined' && /Telegram/i.test(navigator.userAgent)) {
   else window.addEventListener('load', () => initTelegramWebApp());
 }
 
+import { HelmetProvider } from 'react-helmet-async';
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </StrictMode>
 );
 

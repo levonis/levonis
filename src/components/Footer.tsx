@@ -1,8 +1,14 @@
 const logoNew = '/og-logo.png';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/i18n';
 
 const Footer = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const labels = {
+    ar: { about: 'من نحن', privacy: 'الخصوصية', terms: 'الشروط والأحكام', faq: 'الأسئلة الشائعة' },
+    en: { about: 'About', privacy: 'Privacy', terms: 'Terms', faq: 'FAQ' },
+    ku: { about: 'دەربارە', privacy: 'تایبەتمەندی', terms: 'مەرجەکان', faq: 'پرسیارەکان' },
+  }[language === 'en' ? 'en' : language === 'ku' ? 'ku' : 'ar'];
 
   return (
     <footer className="w-full py-12 border-t mt-16 bg-transparent border-card">
@@ -50,7 +56,17 @@ const Footer = () => {
             </a>
           </div>
 
-          <div className="text-center space-y-2 mt-6">
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 text-sm">
+            <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">{labels.about}</Link>
+            <span className="text-border">•</span>
+            <Link to="/faq" className="text-muted-foreground hover:text-primary transition-colors">{labels.faq}</Link>
+            <span className="text-border">•</span>
+            <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors">{labels.privacy}</Link>
+            <span className="text-border">•</span>
+            <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors">{labels.terms}</Link>
+          </nav>
+
+          <div className="text-center space-y-2 mt-2">
             <p className="text-muted-foreground text-sm">
               © {new Date().getFullYear()} {t('footer_rights')}
             </p>
