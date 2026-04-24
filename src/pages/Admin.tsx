@@ -319,6 +319,9 @@ const Admin = () => {
       setProductFeatures([]);
       setProductCardDiscounts([]);
       setProductAIContent({});
+      setProductShortSummary({});
+      setProductSearchableAttrs([]);
+      setSearchableAttrInput('');
       setProductUrl(''); // Clear URL when opening for new product
       setFormKey(prev => prev + 1); // Force form to re-render with correct defaults
       
