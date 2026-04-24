@@ -166,6 +166,7 @@ export const DynamicIsland = () => {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
+  const marqueeTrackRef = useRef<HTMLDivElement>(null);
   const marqueeGroupRef = useRef<HTMLDivElement>(null);
   const [marqueeDistance, setMarqueeDistance] = useState<number | null>(null);
 
