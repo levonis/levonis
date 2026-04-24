@@ -272,8 +272,8 @@ export const DynamicIsland = () => {
   /* ---------- Shape ---------- */
   const shape =
     state === "search"
-      ? searchShape(stage, products.length)
-      : baseShape(state, title, language);
+      ? searchShape(stage, products.length, viewportWidth)
+      : baseShape(state, title, language, viewportWidth);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
