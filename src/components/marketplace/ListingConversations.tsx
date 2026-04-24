@@ -58,6 +58,7 @@ import ProductCard from '@/components/chat/messages/ProductCard';
 import OrderCard from '@/components/chat/messages/OrderCard';
 import ConfirmationCard from '@/components/chat/messages/ConfirmationCard';
 import OrderTrackingCard from '@/components/chat/messages/OrderTrackingCard';
+import PriceProtectionCard from '@/components/chat/messages/PriceProtectionCard';
 import LocationMessage from '@/components/chat/messages/LocationMessage';
 import AddressMessage from '@/components/chat/messages/AddressMessage';
 import ProductSelector from '@/components/chat/ProductSelector';
@@ -1752,6 +1753,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     key={msg.id}
                                     orderNumber={parsedContent.order_number}
                                     orderId={parsedContent.order_id}
+                                    isMe={isMe}
+                                    timestamp={timestamp}
+                                  />
+                                );
+                              }
+
+                              // Render Price Protection Card
+                              if (parsedContent?.type === 'price_protection') {
+                                return (
+                                  <PriceProtectionCard
+                                    key={msg.id}
+                                    payload={parsedContent}
                                     isMe={isMe}
                                     timestamp={timestamp}
                                   />

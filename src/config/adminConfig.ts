@@ -58,6 +58,7 @@ export const ADMIN_ROUTES = {
   financialDrafts: `${ADMIN_BASE_PATH}/financial-drafts`,
   inventory: `${ADMIN_BASE_PATH}/inventory`,
   reviews: `${ADMIN_BASE_PATH}/reviews`,
+  priceProtection: `${ADMIN_BASE_PATH}/price-protection`,
   winners: `${ADMIN_BASE_PATH}/winners`,
   productColorQa: `${ADMIN_BASE_PATH}/product-color-qa`,
 } as const;

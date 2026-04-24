@@ -29,6 +29,7 @@ import { ar } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
 import OptimizedImage from './OptimizedImage';
 import OrderTrackingCard from './chat/messages/OrderTrackingCard';
+import PriceProtectionCard from './chat/messages/PriceProtectionCard';
 
 interface Message {
   id: string;
@@ -390,6 +391,17 @@ export default function AdminUserChat({
                       key={msg.id}
                       orderNumber={parsedContent.order_number}
                       orderId={parsedContent.order_id}
+                      isMe={isOwn}
+                      timestamp={formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ar })}
+                    />
+                  );
+                }
+
+                if (parsedContent?.type === 'price_protection') {
+                  return (
+                    <PriceProtectionCard
+                      key={msg.id}
+                      payload={parsedContent}
                       isMe={isOwn}
                       timestamp={formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ar })}
                     />

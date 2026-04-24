@@ -1399,4 +1399,30 @@ export type TranslationKeys = {
   island_results: string;
   island_view_all: string;
   island_no_results: string;
+  // Price Protection
+  pp_title: string;
+  pp_subtitle: string;
+  pp_status_pending: string;
+  pp_status_awaiting: string;
+  pp_status_processed: string;
+  pp_status_rejected: string;
+  pp_eligible_badge: string;
+  pp_old_price: string;
+  pp_new_price: string;
+  pp_difference: string;
+  pp_btn_request_refund: string;
+  pp_btn_track_request: string;
+  pp_refunded_to_wallet: string;
+  pp_request_sent: string;
+  pp_request_failed: string;
+  pp_product_default: string;
+  pp_empty_title: string;
+  pp_empty_desc: string;
+  // Admin price protection
+  admin_pp_title: string;
+  admin_pp_approve: string;
+  admin_pp_reject: string;
+  admin_pp_refund_amount: string;
+  admin_pp_rejection_reason: string;
+  admin_pp_no_claims: string;
 };

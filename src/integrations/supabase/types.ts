@@ -7388,6 +7388,87 @@ export type Database = {
           },
         ]
       }
+      price_protection_claims: {
+        Row: {
+          admin_id: string | null
+          admin_notes: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          new_price: number
+          old_price: number
+          order_id: string
+          order_item_id: string
+          order_number: string | null
+          price_difference: number
+          processed_at: string | null
+          product_id: string
+          product_image: string | null
+          product_name_ar: string | null
+          purchase_date: string
+          quantity: number
+          refunded_amount: number | null
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["price_protection_status"]
+          total_refund: number
+          updated_at: string
+          user_id: string
+          user_requested_at: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          new_price: number
+          old_price: number
+          order_id: string
+          order_item_id: string
+          order_number?: string | null
+          price_difference: number
+          processed_at?: string | null
+          product_id: string
+          product_image?: string | null
+          product_name_ar?: string | null
+          purchase_date: string
+          quantity?: number
+          refunded_amount?: number | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["price_protection_status"]
+          total_refund: number
+          updated_at?: string
+          user_id: string
+          user_requested_at?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          new_price?: number
+          old_price?: number
+          order_id?: string
+          order_item_id?: string
+          order_number?: string | null
+          price_difference?: number
+          processed_at?: string | null
+          product_id?: string
+          product_image?: string | null
+          product_name_ar?: string | null
+          purchase_date?: string
+          quantity?: number
+          refunded_amount?: number | null
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["price_protection_status"]
+          total_refund?: number
+          updated_at?: string
+          user_id?: string
+          user_requested_at?: string | null
+        }
+        Relationships: []
+      }
       print_offers: {
         Row: {
           accepted_at: string | null
@@ -11376,6 +11457,14 @@ export type Database = {
         Args: { p_buyer_user_id: string; p_code: string }
         Returns: Json
       }
+      approve_price_protection_claim: {
+        Args: {
+          p_admin_notes?: string
+          p_claim_id: string
+          p_refund_amount: number
+        }
+        Returns: Json
+      }
       auto_award_expired_seasons: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
@@ -11519,6 +11608,10 @@ export type Database = {
         Returns: boolean
       }
       delete_old_notifications: { Args: never; Returns: undefined }
+      detect_price_protection_for_product: {
+        Args: { p_new_price: number; p_product_id: string }
+        Returns: number
+      }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
       end_crossy_road: {
@@ -11805,6 +11898,10 @@ export type Database = {
         Args: { p_serial_number: string; p_user_id: string }
         Returns: string
       }
+      reject_price_protection_claim: {
+        Args: { p_claim_id: string; p_reason: string }
+        Returns: Json
+      }
       request_offer_shipment: {
         Args: { p_purchase_ids: string[] }
         Returns: Json
@@ -11886,6 +11983,11 @@ export type Database = {
         | "flash_sale"
         | "growing_prize"
         | "collect_letters"
+      price_protection_status:
+        | "pending"
+        | "awaiting_admin"
+        | "processed"
+        | "rejected"
       print_offer_status:
         | "submitted"
         | "withdrawn"
@@ -12047,6 +12149,12 @@ export const Constants = {
         "flash_sale",
         "growing_prize",
         "collect_letters",
+      ],
+      price_protection_status: [
+        "pending",
+        "awaiting_admin",
+        "processed",
+        "rejected",
       ],
       print_offer_status: [
         "submitted",
