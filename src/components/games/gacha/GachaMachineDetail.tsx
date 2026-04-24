@@ -19,6 +19,7 @@ interface Props {
 
 export default function GachaMachineDetail({ machineId, onBack }: Props) {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [spinning, setSpinning] = useState(false);

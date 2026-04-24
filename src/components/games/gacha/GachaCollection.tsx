@@ -19,6 +19,7 @@ export default function GachaCollection({ onBack }: Props) {
   const { data: inventory = [], isLoading } = useUserGachaInventory();
   const { data: settings } = useGachaSettings();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");

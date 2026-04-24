@@ -20,6 +20,7 @@ type SortOption = "newest" | "price_high" | "price_low" | "demand";
 export default function GachaMarketplace({ onBack }: Props) {
   const { data: listings = [], isLoading } = useGachaMarketplace();
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
