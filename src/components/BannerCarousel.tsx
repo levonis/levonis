@@ -328,9 +328,9 @@ const BannerCarousel = memo(() => {
         >
           <defs>
             <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FFD700" />
-              <stop offset="50%" stopColor="#FFA500" />
-              <stop offset="100%" stopColor="#FFD700" />
+              <stop offset="0%" stopColor={borderGradient.from} />
+              <stop offset="50%" stopColor={borderGradient.mid} />
+              <stop offset="100%" stopColor={borderGradient.to} />
             </linearGradient>
           </defs>
           <rect
