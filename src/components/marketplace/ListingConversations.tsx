@@ -2548,8 +2548,19 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
   // Embedded mode: render as a full-page panel inside the host page layout — no Dialog, no backdrop.
   if (embedded) {
+    // When a conversation is open we hide the bottom navbar and lock to the small
+    // viewport (svh) so the mobile keyboard show/hide does not leave empty space.
+    // When showing the conversations list we keep room for the bottom navbar.
+    const fullscreen = !!selectedConversation;
     return (
-      <div className="relative w-full h-full min-h-[calc(100dvh-8rem)] flex bg-background overflow-hidden">
+      <div
+        className={cn(
+          "relative w-full flex bg-background overflow-hidden",
+          fullscreen
+            ? "h-[100svh] min-h-[100svh]"
+            : "h-full min-h-[calc(100dvh-8rem)]"
+        )}
+      >
         {innerContent}
       </div>
     );
