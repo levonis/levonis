@@ -167,11 +167,10 @@ export const DynamicIsland = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
   const marqueeViewportRef = useRef<HTMLDivElement>(null);
-  const marqueeTrackRef = useRef<HTMLDivElement>(null);
-  const marqueeMeasureRef = useRef<HTMLDivElement>(null);
+  const marqueeBaseRef = useRef<HTMLDivElement>(null);
   const marqueeGroupRef = useRef<HTMLDivElement>(null);
-  const [marqueeDistance, setMarqueeDistance] = useState<number | null>(null);
   const [marqueeRepeatCount, setMarqueeRepeatCount] = useState(1);
+  const [marqueeDuration, setMarqueeDuration] = useState<number>(20);
 
   const { scope, placeholderKey } = useMemo<{
     scope: SearchScope;
@@ -334,9 +333,11 @@ export const DynamicIsland = () => {
    * consecutive texts is exactly the same everywhere (incl. between text N
    * and text 1 on the loop boundary).
    */
-  const marqueeItems = useMemo(() => {
+  // The base sequence (one logical pass). When the natural width is smaller
+  // than the viewport, we repeat it enough times so a single "group" already
+  // fills/exceeds the viewport — that way the CSS -50% loop is invisible.
+  const marqueeBaseItems = useMemo(() => {
     if (!messages.length) return [];
-
     return Array.from({ length: marqueeRepeatCount }, (_, repeatIndex) =>
       messages.map((message, itemIndex) => ({
         id: `${repeatIndex}-${itemIndex}`,
@@ -350,20 +351,27 @@ export const DynamicIsland = () => {
 
     const updateMarqueeMetrics = () => {
       const viewportWidth = marqueeViewportRef.current?.getBoundingClientRect().width ?? 0;
-      const baseWidth = marqueeMeasureRef.current?.getBoundingClientRect().width ?? 0;
+      const baseWidth = marqueeBaseRef.current?.getBoundingClientRect().width ?? 0;
 
       if (viewportWidth > 0 && baseWidth > 0) {
-        const nextRepeatCount = Math.max(1, Math.ceil((viewportWidth * 1.75) / baseWidth));
-        setMarqueeRepeatCount((current) => (current === nextRepeatCount ? current : nextRepeatCount));
+        // Compute repeats based on a single message's natural width so the
+        // repeat count is independent of itself (avoids feedback loops).
+        const singleMessageWidth = baseWidth / Math.max(1, marqueeRepeatCount);
+        if (singleMessageWidth > 0) {
+          const needed = Math.max(1, Math.ceil((viewportWidth * 1.5) / singleMessageWidth));
+          setMarqueeRepeatCount((current) => (current === needed ? current : needed));
+        }
       }
 
-      // Loop distance MUST equal the width of the base (un-repeated) sequence
-      // so the wrap is visually invisible. Using the full repeated group would
-      // cause a long forward run followed by a perceptible snap-back.
-      const next = baseWidth > 0
-        ? baseWidth
-        : marqueeGroupRef.current?.getBoundingClientRect().width ?? 0;
-      setMarqueeDistance(next > 0 ? next : null);
+      // Duration = base group width / pixels-per-second. We translate the
+      // whole track by exactly -50% (one group), so timing is based on the
+      // base group only.
+      const groupWidth = marqueeGroupRef.current?.getBoundingClientRect().width ?? baseWidth;
+      if (groupWidth > 0) {
+        const pixelsPerSecond = Math.max(20, groupWidth / Math.max(4, promoSettings.speed));
+        const seconds = groupWidth / pixelsPerSecond;
+        setMarqueeDuration(Math.max(4, seconds));
+      }
     };
 
     updateMarqueeMetrics();
@@ -374,7 +382,7 @@ export const DynamicIsland = () => {
 
     if (resizeObserver) {
       if (marqueeViewportRef.current) resizeObserver.observe(marqueeViewportRef.current);
-      if (marqueeMeasureRef.current) resizeObserver.observe(marqueeMeasureRef.current);
+      if (marqueeBaseRef.current) resizeObserver.observe(marqueeBaseRef.current);
       if (marqueeGroupRef.current) resizeObserver.observe(marqueeGroupRef.current);
     }
 
@@ -384,40 +392,7 @@ export const DynamicIsland = () => {
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateMarqueeMetrics);
     };
-  }, [state, messages, marqueeItems, promoSettings.gap]);
-
-  useEffect(() => {
-    const track = marqueeTrackRef.current;
-    if (!track || state !== "promo" || !marqueeDistance) return;
-
-    let frameId = 0;
-    let lastTime = 0;
-    let progress = 0;
-
-    const pixelsPerSecond = Math.max(12, marqueeDistance / Math.max(4, promoSettings.speed));
-
-    const step = (time: number) => {
-      if (!lastTime) lastTime = time;
-      const delta = (time - lastTime) / 1000;
-      lastTime = time;
-
-      progress = (progress + pixelsPerSecond * delta) % marqueeDistance;
-      const offset =
-        promoSettings.direction === "right"
-          ? progress - marqueeDistance
-          : -progress;
-
-      track.style.transform = `translate3d(${offset}px, 0, 0)`;
-      frameId = window.requestAnimationFrame(step);
-    };
-
-    track.style.transform = `translate3d(${promoSettings.direction === "right" ? -marqueeDistance : 0}px, 0, 0)`;
-    frameId = window.requestAnimationFrame(step);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [state, marqueeDistance, promoSettings.direction, promoSettings.speed]);
+  }, [state, messages, marqueeRepeatCount, promoSettings.gap, promoSettings.speed]);
 
   /* ---------- Render ---------- */
   return (
@@ -524,21 +499,20 @@ export const DynamicIsland = () => {
                       "linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%)",
                   }}
                 >
-                  {marqueeItems.length > 0 ? (
+                  {marqueeBaseItems.length > 0 ? (
                     <>
+                      {/* Hidden base used to measure a single message width */}
                       <div
-                        ref={marqueeMeasureRef}
+                        ref={marqueeBaseRef}
                         dir="ltr"
                         aria-hidden="true"
                         className="pointer-events-none absolute opacity-0 whitespace-nowrap"
-                        style={{
-                          ['--marquee-gap' as any]: `${promoSettings.gap}px`,
-                        }}
+                        style={{ ['--marquee-gap' as any]: `${promoSettings.gap}px` }}
                       >
                         <div className="marquee-group text-[12px] font-medium tracking-tight text-foreground/85">
-                          {messages.map((message, itemIndex) => (
-                            <span key={`measure-${itemIndex}`} className="inline-flex items-center gap-3">
-                              <span dir="auto" className="text-foreground/90">{message}</span>
+                          {marqueeBaseItems.map((item) => (
+                            <span key={`base-${item.id}`} className="inline-flex items-center gap-3">
+                              <span dir="auto" className="text-foreground/90">{item.text}</span>
                               <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
                             </span>
                           ))}
@@ -546,13 +520,13 @@ export const DynamicIsland = () => {
                       </div>
 
                       <div
-                        key={`promo-track-${marqueeItems.length}-${promoSettings.direction}-${promoSettings.speed}-${promoSettings.gap}`}
-                        ref={marqueeTrackRef}
+                        key={`promo-track-${marqueeBaseItems.length}-${promoSettings.direction}-${promoSettings.gap}`}
                         dir="ltr"
                         data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                         className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
                         style={{
                           ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                          animation: `${promoSettings.direction === 'right' ? 'marquee-scroll-reverse' : 'marquee-scroll'} ${marqueeDuration}s linear infinite`,
                         }}
                       >
                         {[0, 1].map((group) => (
@@ -562,7 +536,7 @@ export const DynamicIsland = () => {
                             className="marquee-group"
                             aria-hidden={group === 1}
                           >
-                            {marqueeItems.map((item) => (
+                            {marqueeBaseItems.map((item) => (
                               <span key={`${group}-${item.id}`} className="inline-flex items-center gap-3">
                                 <span dir="auto" className="text-foreground/90">{item.text}</span>
                                 <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
