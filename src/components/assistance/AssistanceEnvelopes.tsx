@@ -88,15 +88,15 @@ export default function AssistanceEnvelopes() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-sm text-foreground">{env.title_ar}</h4>
+                    <h4 className="font-bold text-sm text-foreground">{pickI18n(env, "title", language)}</h4>
                     {env.is_limited && remaining !== null && (
                       <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive">
                         متبقي {remaining}
                       </Badge>
                     )}
                   </div>
-                  {env.description_ar && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{env.description_ar}</p>
+                  {pickI18n(env, "description", language) && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{pickI18n(env, "description", language)}</p>
                   )}
                 </div>
               </div>

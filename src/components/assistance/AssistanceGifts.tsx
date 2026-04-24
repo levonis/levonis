@@ -91,9 +91,9 @@ export default function AssistanceGifts() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-sm text-foreground">{gift.title_ar}</h4>
-                {gift.description_ar && (
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{gift.description_ar}</p>
+                <h4 className="font-bold text-sm text-foreground">{pickI18n(gift, "title", language)}</h4>
+                {pickI18n(gift, "description", language) && (
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{pickI18n(gift, "description", language)}</p>
                 )}
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">

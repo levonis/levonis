@@ -101,8 +101,8 @@ export default function AssistanceCoupons() {
                       : `${coupon.discount_value.toLocaleString()} د.ع`}
                   </Badge>
                 </div>
-                {coupon.description_ar && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">{coupon.description_ar}</p>
+                {pickI18n(coupon, "description", language) && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{pickI18n(coupon, "description", language)}</p>
                 )}
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">

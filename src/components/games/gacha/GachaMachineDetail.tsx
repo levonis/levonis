@@ -144,9 +144,9 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
             />
           </div>
 
-          <h1 className="text-xl font-bold text-foreground mb-1">{machine.name_ar}</h1>
-          {machine.description_ar && (
-            <p className="text-sm text-muted-foreground mb-4">{machine.description_ar}</p>
+          <h1 className="text-xl font-bold text-foreground mb-1">{pickI18n(machine, "name", language)}</h1>
+          {pickI18n(machine, "description", language) && (
+            <p className="text-sm text-muted-foreground mb-4">{pickI18n(machine, "description", language)}</p>
           )}
 
           {/* Cost display */}
@@ -201,7 +201,7 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
                   <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg">🎁</div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground">{rule.reward_name_ar}</p>
+                  <p className="text-xs font-medium text-foreground">{pickI18n(rule, "reward_name", language)}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {getConditionLabel(rule.condition_type, rule.condition_value)}
                   </p>
@@ -239,9 +239,9 @@ export default function GachaMachineDetail({ machineId, onBack }: Props) {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{prize.prize_name_ar}</p>
+                    <p className="text-xs font-medium text-foreground truncate">{pickI18n(prize, "prize_name", language)}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {prize.gacha_rarity_tiers?.name_ar || "عادي"}
+                      {pickI18n(prize.gacha_rarity_tiers, "name", language) || "عادي"}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
