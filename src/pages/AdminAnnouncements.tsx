@@ -115,6 +115,7 @@ const AdminAnnouncements = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
       queryClient.invalidateQueries({ queryKey: ['active-announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['island-announcements'] });
       toast.success('تم حذف الإعلان بنجاح');
     },
     onError: (error) => {
