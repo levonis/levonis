@@ -65,6 +65,7 @@ export interface ProductLdInput {
   ratingValue?: number | null;
   reviewCount?: number | null;
   category?: string | null;
+  additionalProperty?: any[];
 }
 
 export const productLd = (p: ProductLdInput) => {
@@ -79,6 +80,7 @@ export const productLd = (p: ProductLdInput) => {
     brand: { '@type': 'Brand', name: p.brand || 'LEVONIS' },
     category: p.category || undefined,
     url: p.url.startsWith('http') ? p.url : `${SITE}${p.url}`,
+    additionalProperty: p.additionalProperty && p.additionalProperty.length ? p.additionalProperty : undefined,
   };
 
   if (p.priceIqd != null && p.priceIqd > 0) {

@@ -8303,6 +8303,7 @@ export type Database = {
       }
       products: {
         Row: {
+          ai_content: Json | null
           air_price: number | null
           availability_type: string
           card_discounts: Json | null
@@ -8369,6 +8370,7 @@ export type Database = {
           width_cm: number | null
         }
         Insert: {
+          ai_content?: Json | null
           air_price?: number | null
           availability_type?: string
           card_discounts?: Json | null
@@ -8435,6 +8437,7 @@ export type Database = {
           width_cm?: number | null
         }
         Update: {
+          ai_content?: Json | null
           air_price?: number | null
           availability_type?: string
           card_discounts?: Json | null

@@ -33,6 +33,8 @@ import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { usePageTitle } from "@/island/usePageTitle";
 import SEO from '@/components/SEO';
 import { productLd, breadcrumbLd } from '@/lib/seo/structured';
+import ProductAIContent from '@/components/ProductAIContent';
+import { buildAIContentForLd, normalizeAIContent } from '@/lib/aiContent';
 
 // Dynamic icon map for features
 const FEATURE_ICONS: Record<string, any> = {
@@ -758,19 +760,24 @@ const ProductDetail = () => {
     : []
   ).filter(Boolean).slice(0, 6);
   const inStockSeo = !!(product.in_stock || product.has_in_stock || product.has_pre_order);
+  const aiContentNorm = normalizeAIContent((product as any).ai_content);
+  const aiLd = buildAIContentForLd(aiContentNorm, (language || 'ar') as any);
+  const seoDescFinal = (aiLd.descriptionAppendix
+    ? `${seoDesc} — ${aiLd.descriptionAppendix}`
+    : seoDesc) || seoName;
 
   return (
     <div className="min-h-screen" dir="rtl">
       <SEO
         title={seoName}
-        description={(seoDesc || '').slice(0, 158)}
+        description={(seoDescFinal || '').slice(0, 158)}
         url={seoUrl}
         type="product"
         image={seoImages[0]}
         jsonLd={[
           productLd({
             name: seoName,
-            description: seoDesc,
+            description: seoDescFinal,
             image: seoImages,
             sku: product.sku || product.id,
             brand: product.brand || 'LEVONIS',
@@ -778,6 +785,7 @@ const ProductDetail = () => {
             inStock: inStockSeo,
             url: seoUrl,
             category: product.category_name_ar || product.category_name || null,
+            additionalProperty: aiLd.additionalProperty,
           }),
           breadcrumbLd([
             { name: language === 'en' ? 'Home' : language === 'ku' ? 'سەرەکی' : 'الرئيسية', url: '/' },
@@ -1280,6 +1288,9 @@ const ProductDetail = () => {
                   </div>
                 </div>
               )}
+
+              {/* AI-Friendly "Why this product" */}
+              <ProductAIContent aiContent={(product as any).ai_content} productName={localizedName || seoName} />
 
               {/* Reviews */}
               <ProductReviews productId={product.id} />

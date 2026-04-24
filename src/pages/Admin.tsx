@@ -22,6 +22,7 @@ import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
 import AdminProductPricingSection from '@/components/admin/AdminProductPricingSection';
+import AdminProductAIContentEditor from '@/components/admin/AdminProductAIContentEditor';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 
 const productSchema = z.object({
@@ -194,6 +195,7 @@ const Admin = () => {
     level_id: string;
     discount_amount: number; // Amount in IQD
   }>>([]);
+  const [productAIContent, setProductAIContent] = useState<any>({});
   // preOrderShippingOptions removed - now handled by AdminProductPricingSection
   
   // AI extraction states
@@ -268,6 +270,7 @@ const Admin = () => {
         : [];
       setProductColors(colorsWithStock);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
+      setProductAIContent(editingProduct.ai_content && typeof editingProduct.ai_content === 'object' ? editingProduct.ai_content : {});
       // preOrderShippingOptions removed
       
       // Load card discounts from product
@@ -304,6 +307,7 @@ const Admin = () => {
       setProductColors([]);
       setProductFeatures([]);
       setProductCardDiscounts([]);
+      setProductAIContent({});
       setProductUrl(''); // Clear URL when opening for new product
       setFormKey(prev => prev + 1); // Force form to re-render with correct defaults
       
@@ -1231,6 +1235,7 @@ const Admin = () => {
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
+        ai_content: productAIContent || {},
         // Taobao sync fields
         taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
         // Product rewards - points from form (can be auto-calculated or manually set)
@@ -3258,6 +3263,11 @@ const Admin = () => {
                         </div>
                       )}
                     </div>
+
+                    <AdminProductAIContentEditor
+                      value={productAIContent}
+                      onChange={setProductAIContent}
+                    />
 
                     <Button
                       type="submit" 

@@ -1,0 +1,2 @@
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS ai_content jsonb DEFAULT '{}'::jsonb;
+COMMENT ON COLUMN public.products.ai_content IS 'Structured "Why this product" content: { benefits: {ar,en,ku}[], usage: {ar,en,ku}[], specifications: { key:{ar,en,ku}, value:{ar,en,ku} }[], target_audience: {ar,en,ku}, problem_solved: {ar,en,ku} }';
