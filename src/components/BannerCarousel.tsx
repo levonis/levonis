@@ -82,6 +82,7 @@ const BannerCarousel = memo(() => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isFlashing, setIsFlashing] = useState(false);
   const progressKey = useRef(0);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -366,12 +367,28 @@ const BannerCarousel = memo(() => {
               animationPlayState: isAutoPlaying ? "running" : "paused",
             }}
             onAnimationEnd={() => {
-              if (isAutoPlaying) {
+              if (!isAutoPlaying) return;
+              // Trigger flash, then transition to next banner
+              setIsFlashing(true);
+              window.setTimeout(() => {
                 setCurrentIndex((prev) => (prev + 1) % banners.length);
-              }
+                setIsFlashing(false);
+              }, 350);
             }}
           />
         </svg>
+      )}
+
+      {/* Gold flash overlay — fires on counter completion */}
+      {isFlashing && (
+        <div
+          key={`flash-${currentIndex}`}
+          className="pointer-events-none absolute inset-0 z-30 rounded-lg animate-banner-flash"
+          style={{
+            background: `radial-gradient(circle at center, ${borderGradient.glow} 0%, transparent 70%)`,
+            boxShadow: `inset 0 0 24px 4px ${borderGradient.glow}`,
+          }}
+        />
       )}
     </div>
   );
