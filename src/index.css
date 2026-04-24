@@ -2687,28 +2687,89 @@ body.keyboard-open .fixed.bottom-0 {
     border-color: rgb(255 255 255 / 0.12) !important;
   }
 
-  /* Fallback for browsers without backdrop-filter */
+  /* Smooth, GPU-friendly transitions for row states (desktop hover) */
+  .glass-row-hover,
+  .glass-row-active {
+    transition: background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  /* Fallback for browsers without backdrop-filter — keep full legibility */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-chat-surface,
     .glass-chat-panel,
-    .glass-chat-subtle {
-      background: hsl(var(--card) / 0.92);
+    .glass-chat-subtle,
+    .glass-chat-input {
+      background: hsl(var(--card) / 0.94) !important;
+      border-color: hsl(var(--border)) !important;
     }
     .glass-bubble-other {
-      background: hsl(var(--card) / 0.95);
+      background: hsl(var(--card) / 0.96);
+      border-color: hsl(var(--border));
+    }
+    .glass-bubble-me {
+      background: hsl(var(--primary));
+      border-color: hsl(var(--primary));
     }
   }
 
-  /* Reduced transparency — bump opacity, reduce blur */
+  /* Reduced transparency — bump opacity, reduce blur across all chat glass */
   @media (prefers-reduced-transparency: reduce) {
     .glass-chat-surface,
-    .glass-chat-panel {
+    .glass-chat-panel,
+    .glass-chat-subtle {
       background: hsl(var(--card) / 0.94);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .glass-chat-input {
+      background: hsl(var(--card) / 0.94) !important;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
     .glass-bubble-other {
       background: hsl(var(--card) / 0.96);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .glass-bubble-me {
+      background: hsl(var(--primary) / 0.98);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .glass-row-hover:hover,
+    .glass-row-active {
+      background: hsl(var(--muted) / 0.7);
+    }
+  }
+
+  /* Reduced motion — disable transitions on chat surfaces */
+  @media (prefers-reduced-motion: reduce) {
+    .glass-row-hover,
+    .glass-row-active,
+    .glass-chat-surface,
+    .glass-chat-panel,
+    .glass-chat-subtle,
+    .glass-bubble-me,
+    .glass-bubble-other {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  /* Mobile (small viewports) — lighten blur for GPU/perf on low-end devices */
+  @media (max-width: 480px) {
+    .glass-chat-surface,
+    .glass-chat-panel {
+      -webkit-backdrop-filter: blur(16px) saturate(170%);
+      backdrop-filter: blur(16px) saturate(170%);
+    }
+    .glass-bubble-other {
+      -webkit-backdrop-filter: blur(12px) saturate(170%);
+      backdrop-filter: blur(12px) saturate(170%);
+    }
+    .glass-bubble-me {
+      -webkit-backdrop-filter: blur(10px) saturate(150%);
+      backdrop-filter: blur(10px) saturate(150%);
     }
   }
 }
