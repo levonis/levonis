@@ -152,20 +152,14 @@ const BannerCarousel = memo(() => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-full aspect-[2.5/1] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-lg" />
-    );
-  }
-
-  if (!banners || banners.length === 0) {
-    return null;
-  }
-
-  const currentBanner = banners[currentIndex];
+  // Active banner (safe before early returns: may be undefined)
+  const currentBanner = banners?.[currentIndex];
 
   // Memoized palette — only recomputes when the active banner changes
   const borderGradient = useMemo(() => {
+    if (!currentBanner) {
+      return { from: '#FFD700', mid: '#FFA500', to: '#FFD700', glow: 'rgba(255,180,0,0.65)' };
+    }
     const palettes: Record<string, { from: string; mid: string; to: string; glow: string }> = {
       product:  { from: '#FFD700', mid: '#FFA500', to: '#FFD700', glow: 'rgba(255,180,0,0.65)' },
       page:     { from: '#7DD3FC', mid: '#3B82F6', to: '#7DD3FC', glow: 'rgba(59,130,246,0.65)' },
@@ -184,7 +178,17 @@ const BannerCarousel = memo(() => {
       to:   `hsl(${hue}, 90%, 70%)`,
       glow: `hsla(${(hue + 20) % 360}, 95%, 55%, 0.65)`,
     };
-  }, [currentBanner.id, currentBanner.action_type, currentBanner.title_ar, currentBanner.title]);
+  }, [currentBanner?.id, currentBanner?.action_type, currentBanner?.title_ar, currentBanner?.title]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full aspect-[2.5/1] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-lg" />
+    );
+  }
+
+  if (!banners || banners.length === 0 || !currentBanner) {
+    return null;
+  }
 
 
   const renderActionButton = (banner: Banner) => {
