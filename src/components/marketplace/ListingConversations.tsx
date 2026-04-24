@@ -997,6 +997,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   };
 
   const handleClose = () => {
+    if (embedded) {
+      // In embedded (full-page) mode, "close" only clears the selected conversation
+      // (acts as back-to-list on mobile). It must NOT close any dialog or page.
+      setSelectedConversation(null);
+      return;
+    }
     setOpen(false);
     setSelectedConversation(null);
     if (onClose) onClose();
