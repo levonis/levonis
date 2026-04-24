@@ -198,7 +198,8 @@ const BannerCarousel = memo(() => {
 
 
   const renderActionButton = (banner: Banner) => {
-    const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
+    const fallbackBtn = language === 'en' ? 'View' : language === 'ku' ? 'بینین' : 'عرض';
+    const buttonText = localizedButton(banner) || banner.button_text || fallbackBtn;
     
     // Glassmorphism — responsive sizing + high-contrast for readability
     const glassClass = cn(
