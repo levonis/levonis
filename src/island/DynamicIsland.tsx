@@ -430,7 +430,15 @@ export const DynamicIsland = () => {
                   }}
                 >
                   {messages.length > 0 ? (
-                    <div dir="ltr" className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85">
+                    <div
+                      dir="ltr"
+                      className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
+                      style={{
+                        ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
+                        ['--marquee-direction' as any]: promoSettings.direction === 'left' ? 'reverse' : 'normal',
+                        ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                      }}
+                    >
                       {[0, 1].map((group) => (
                         <div key={group} className="marquee-group" aria-hidden={group === 1}>
                           {marqueeItems.map((m, i) => (
