@@ -1,48 +1,58 @@
-## Plan
+# Live Preview للشريط الإخباري داخل الجزيرة
 
-I will replace the current merge approach because the issue is real: the effect is being drawn as a separate fixed SVG layer (`LiquidIslandBridge`) above the base island, so it reads as an added sheet instead of one continuous material.
+استبدال المعاينة الحالية البسيطة (مستطيل ملوّن) في `AdminAnnouncements` بمعاينة حية تحاكي الجزيرة (Dynamic Island) بنفس شكلها وحركتها، وتتفاعل فوراً مع تعديلات الحقول (النص، اللون، السرعة، الاتجاه، المسافة).
 
-### What I will change
+## ماذا سيرى المستخدم
 
-1. Remove the extra overlay merge layer
-- Delete the shell-level `LiquidIslandBridge` render from `App.tsx`.
-- Remove the shared `useLiquidFusion` bridge store if it is no longer needed.
-- Stop using the current gooey SVG bridge that sits on top of the main island.
+داخل نافذة "إضافة/تعديل إعلان" بدلاً من شريط المعاينة الحالي:
+- جزيرة سوداء مصغّرة بنفس الشكل (`280×40`, `radius 22`) ونفس مادة الزجاج (`island-surface`).
+- النص يتحرك داخلها مع أيقونة Sparkles على اليسار.
+- أي تعديل في الحقول يُطبَّق فوراً بدون حفظ:
+  - تغيير **سرعة الحركة** → يتغير زمن الأنيميشن.
+  - تغيير **اتجاه الحركة** → ينعكس اتجاه السحب.
+  - تغيير **المسافة بين التكرارات** → يتسع/يضيق الفراغ.
+  - تغيير **النص** أو **اللون** → ينعكس مباشرة (اللون يُستخدم كتوهج/borders خفيف للحفاظ على شكل الجزيرة الزجاجي).
+- تسمية الحقل تتغير إلى "معاينة مباشرة داخل الجزيرة".
 
-2. Rebuild the interaction as one visual surface
-- Move the right orb merge rendering into the same visual system as the island instead of a separate layer.
-- Keep the orb visible while scrolling, but make its motion and deformation happen as part of one coordinated composition.
-- Use one host/container and one stacking context so the island and orb feel like the same glass body.
+## التغييرات التقنية
 
-3. Replace the fake “bridge overlay” with a cleaner morph
-- Use either a shared SVG/path or a single in-component masked shape so the neck/connection is part of the main shape, not painted above it.
-- Match the same blur, highlight, border sheen, and shadow model across the orb and island.
-- Remove any geometry that creates a visible “second skin” or floating layer.
+### 1) مكوّن جديد: `src/components/admin/IslandPromoPreview.tsx`
+- props: `{ message, color, speed, direction, gap }`
+- يُصيّر:
+  - حاوية مركزة بعرض 280px وارتفاع 40px وradius 22px باستخدام كلاس `island-surface` (نفس المادة المستخدمة في الجزيرة الفعلية).
+  - بداخله نفس بنية الـ marquee: `marquee-track` + `marquee-group` بأيقونة Sparkles + نص متكرر.
+  - يمرر متغيرات CSS inline تماماً مثل المكون الحقيقي:
+    ```ts
+    style={{
+      ['--marquee-duration']: `${Math.max(4, speed)}s`,
+      ['--marquee-direction']: direction === 'left' ? 'reverse' : 'normal',
+      ['--marquee-gap']: `${gap}px`,
+    }}
+    ```
+  - يستخدم `color` كتوهج خفيف (`box-shadow: 0 0 24px color/30`) ولون نقاط الفصل، دون كسر الشكل الزجاجي.
+  - يحرس على تكرار النص بعدد كافٍ (مثل DynamicIsland: `Math.max(4, ceil(12/n))`).
 
-4. Retune the motion
-- Keep the right circular element present during scroll.
-- Make the attraction slower and more controlled so it reads as absorption, not as a separate object sliding under/over another one.
-- Reduce the exaggerated goo so the result is closer to Apple-like precision than a blob effect.
+### 2) تعديل `src/pages/AdminAnnouncements.tsx`
+- استيراد `IslandPromoPreview`.
+- استبدال البلوك في الأسطر ~347-357 (قسم "معاينة الإعلان") بـ:
+  ```tsx
+  <div className="space-y-2 pt-4 border-t border-border/50">
+    <Label>معاينة مباشرة داخل الجزيرة</Label>
+    <div className="flex justify-center py-3 rounded-md bg-gradient-to-b from-background to-muted/30">
+      <IslandPromoPreview
+        message={formData.message_ar || 'نص الإعلان'}
+        color={formData.color}
+        speed={formData.speed}
+        direction={formData.direction as 'left' | 'right'}
+        gap={formData.gap}
+      />
+    </div>
+  </div>
+  ```
 
-5. Preserve interaction and accessibility
-- Keep the orb clickable before the merge threshold.
-- Preserve RTL positioning and responsive behavior.
-- Keep `prefers-reduced-motion` as a simplified non-morph translation.
-- Keep the glass effect stable without extra transparency artifacts.
+### 3) لا تعديل على CSS
+- متغيرات `--marquee-duration`, `--marquee-direction`, `--marquee-gap` و كلاس `island-surface` و كيframes `island-marquee` موجودة بالفعل ضمن `src/index.css` ويُعاد استخدامها مباشرة.
 
-### Files likely affected
-- `src/App.tsx`
-- `src/components/ProfileOrb.tsx`
-- `src/components/profileOrbMagnet.ts`
-- `src/island/DynamicIsland.tsx`
-- `src/index.css`
-- Remove or stop using:
-  - `src/components/LiquidIslandBridge.tsx`
-  - `src/island/useLiquidFusion.ts`
-
-### Technical details
-- Root cause: the current implementation uses a separate fixed SVG layer at `z-[54]` between the island and orb, while the orb itself remains another independent glass surface at `z-[55]`. That creates the visible “layer above the original” artifact.
-- Fix direction: use a single render pipeline for the island + orb morph so the merge is composed once, not stacked visually in multiple translucent layers.
-- Result: cleaner material continuity, no extra floating sheet, and a more correct premium merge behavior.
-
-Once approved, I’ll implement this refactor directly.
+## الملفات المتأثرة
+- `src/components/admin/IslandPromoPreview.tsx` (إنشاء)
+- `src/pages/AdminAnnouncements.tsx` (تعديل بسيط في قسم المعاينة فقط)
