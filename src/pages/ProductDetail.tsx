@@ -1300,6 +1300,25 @@ const ProductDetail = () => {
               {/* AI-Friendly "Why this product" */}
               <ProductAIContent aiContent={(product as any).ai_content} productName={localizedName || seoName} />
 
+              {/* Searchable attribute chips (SEO + AI matching) */}
+              {searchableAttrs.length > 0 && (
+                <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-4">
+                  <h3 className="text-sm font-bold text-foreground mb-2">
+                    {language === 'en' ? 'Tags' : language === 'ku' ? 'تاگەکان' : 'الوسوم'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {searchableAttrs.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Reviews */}
               <ProductReviews productId={product.id} />
 
