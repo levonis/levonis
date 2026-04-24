@@ -248,36 +248,48 @@ export type Database = {
           claimed_count: number
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           discount_type: string
           discount_value: number
           id: string
           is_active: boolean
           max_claims: number
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           valid_until: string | null
         }
         Insert: {
           claimed_count?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_type?: string
           discount_value?: number
           id?: string
           is_active?: boolean
           max_claims?: number
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           valid_until?: string | null
         }
         Update: {
           claimed_count?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_type?: string
           discount_value?: number
           id?: string
           is_active?: boolean
           max_claims?: number
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           valid_until?: string | null
         }
         Relationships: []
@@ -351,34 +363,46 @@ export type Database = {
           claimed_count: number
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           id: string
           image_url: string | null
           is_active: boolean
           max_claims: number
           product_id: string | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
         }
         Insert: {
           claimed_count?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           max_claims?: number
           product_id?: string | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
         }
         Update: {
           claimed_count?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           max_claims?: number
           product_id?: string | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
         }
         Relationships: []
       }
@@ -387,6 +411,8 @@ export type Database = {
           claimed_count: number
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           discount_amount: number
           id: string
           is_active: boolean
@@ -395,11 +421,15 @@ export type Database = {
           max_discount: number
           spend_threshold: number
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
         }
         Insert: {
           claimed_count?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_amount?: number
           id?: string
           is_active?: boolean
@@ -408,11 +438,15 @@ export type Database = {
           max_discount?: number
           spend_threshold?: number
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
         }
         Update: {
           claimed_count?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_amount?: number
           id?: string
           is_active?: boolean
@@ -421,6 +455,8 @@ export type Database = {
           max_discount?: number
           spend_threshold?: number
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
         }
         Relationships: []
       }
@@ -433,6 +469,8 @@ export type Database = {
           is_active: boolean
           is_free: boolean
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           points_cost: number | null
           updated_at: string
         }
@@ -444,6 +482,8 @@ export type Database = {
           is_active?: boolean
           is_free?: boolean
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           points_cost?: number | null
           updated_at?: string
         }
@@ -455,6 +495,8 @@ export type Database = {
           is_active?: boolean
           is_free?: boolean
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           points_cost?: number | null
           updated_at?: string
         }
@@ -504,6 +546,8 @@ export type Database = {
           action_type: string
           button_text: string | null
           button_text_ar: string | null
+          button_text_en: string | null
+          button_text_ku: string | null
           coupon_code: string | null
           created_at: string
           crop_settings: Json | null
@@ -518,12 +562,16 @@ export type Database = {
           start_date: string | null
           title: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
           action_type?: string
           button_text?: string | null
           button_text_ar?: string | null
+          button_text_en?: string | null
+          button_text_ku?: string | null
           coupon_code?: string | null
           created_at?: string
           crop_settings?: Json | null
@@ -538,12 +586,16 @@ export type Database = {
           start_date?: string | null
           title: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
           action_type?: string
           button_text?: string | null
           button_text_ar?: string | null
+          button_text_en?: string | null
+          button_text_ku?: string | null
           coupon_code?: string | null
           created_at?: string
           crop_settings?: Json | null
@@ -558,6 +610,8 @@ export type Database = {
           start_date?: string | null
           title?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -720,6 +774,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -727,6 +783,8 @@ export type Database = {
           offer_type: string
           offer_value: number | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
           valid_from: string | null
           valid_until: string | null
@@ -734,6 +792,8 @@ export type Database = {
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -741,6 +801,8 @@ export type Database = {
           offer_type?: string
           offer_value?: number | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -748,6 +810,8 @@ export type Database = {
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -755,6 +819,8 @@ export type Database = {
           offer_type?: string
           offer_value?: number | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -2594,6 +2660,8 @@ export type Database = {
           created_at: string
           current_uses: number | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           discount_value: number | null
           id: string
           image_url: string | null
@@ -2603,6 +2671,8 @@ export type Database = {
           merchant_store_name: string | null
           product_id: string | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
           valid_from: string | null
           valid_until: string | null
@@ -2613,6 +2683,8 @@ export type Database = {
           created_at?: string
           current_uses?: number | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_value?: number | null
           id?: string
           image_url?: string | null
@@ -2622,6 +2694,8 @@ export type Database = {
           merchant_store_name?: string | null
           product_id?: string | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -2632,6 +2706,8 @@ export type Database = {
           created_at?: string
           current_uses?: number | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_value?: number | null
           id?: string
           image_url?: string | null
@@ -2641,6 +2717,8 @@ export type Database = {
           merchant_store_name?: string | null
           product_id?: string | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -2687,6 +2765,8 @@ export type Database = {
           confirmation_type: string | null
           created_at: string
           description_ar: string
+          description_en: string | null
+          description_ku: string | null
           display_order: number
           icon: string
           id: string
@@ -2699,12 +2779,16 @@ export type Database = {
           task_key: string
           task_type: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
           confirmation_type?: string | null
           created_at?: string
           description_ar: string
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           icon: string
           id?: string
@@ -2717,12 +2801,16 @@ export type Database = {
           task_key: string
           task_type: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
           confirmation_type?: string | null
           created_at?: string
           description_ar?: string
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           icon?: string
           id?: string
@@ -2735,6 +2823,8 @@ export type Database = {
           task_key?: string
           task_type?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2840,6 +2930,7 @@ export type Database = {
           created_at: string
           description_ar: string | null
           description_en: string | null
+          description_ku: string | null
           display_order: number
           free_delivery_enabled: boolean
           free_delivery_min_order: number
@@ -2849,6 +2940,7 @@ export type Database = {
           method_key: string
           name_ar: string
           name_en: string | null
+          name_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -2859,6 +2951,7 @@ export type Database = {
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           free_delivery_enabled?: boolean
           free_delivery_min_order?: number
@@ -2868,6 +2961,7 @@ export type Database = {
           method_key: string
           name_ar: string
           name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -2878,6 +2972,7 @@ export type Database = {
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           free_delivery_enabled?: boolean
           free_delivery_min_order?: number
@@ -2887,6 +2982,7 @@ export type Database = {
           method_key?: string
           name_ar?: string
           name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3294,6 +3390,8 @@ export type Database = {
           rarity_tier_id: string | null
           title: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -3306,6 +3404,8 @@ export type Database = {
           rarity_tier_id?: string | null
           title: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -3318,6 +3418,8 @@ export type Database = {
           rarity_tier_id?: string | null
           title?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3336,6 +3438,8 @@ export type Database = {
           created_at: string
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           discount_type: string | null
           discount_value: number | null
           id: string
@@ -3345,6 +3449,8 @@ export type Database = {
           min_purchase: number | null
           title: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
           validity_days: number | null
         }
@@ -3353,6 +3459,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_type?: string | null
           discount_value?: number | null
           id?: string
@@ -3362,6 +3470,8 @@ export type Database = {
           min_purchase?: number | null
           title: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           validity_days?: number | null
         }
@@ -3370,6 +3480,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_type?: string | null
           discount_value?: number | null
           id?: string
@@ -3379,6 +3491,8 @@ export type Database = {
           min_purchase?: number | null
           title?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           validity_days?: number | null
         }
@@ -3393,6 +3507,8 @@ export type Database = {
           demand_score: number
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           doll_number: number
           id: string
           image_url: string | null
@@ -3402,6 +3518,8 @@ export type Database = {
           model_url: string | null
           name: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           rarity_tier_id: string | null
           season_tag: string | null
           supply_count: number
@@ -3415,6 +3533,8 @@ export type Database = {
           demand_score?: number
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           doll_number: number
           id?: string
           image_url?: string | null
@@ -3424,6 +3544,8 @@ export type Database = {
           model_url?: string | null
           name: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           rarity_tier_id?: string | null
           season_tag?: string | null
           supply_count?: number
@@ -3437,6 +3559,8 @@ export type Database = {
           demand_score?: number
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           doll_number?: number
           id?: string
           image_url?: string | null
@@ -3446,6 +3570,8 @@ export type Database = {
           model_url?: string | null
           name?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           rarity_tier_id?: string | null
           season_tag?: string | null
           supply_count?: number
@@ -3653,6 +3779,8 @@ export type Database = {
           created_at: string
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           display_order: number
           id: string
           image_url: string | null
@@ -3662,6 +3790,8 @@ export type Database = {
           multi_spin_options: Json
           name: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           theme: string
           ticket_cost: number
           updated_at: string
@@ -3672,6 +3802,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -3681,6 +3813,8 @@ export type Database = {
           multi_spin_options?: Json
           name: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           theme?: string
           ticket_cost?: number
           updated_at?: string
@@ -3691,6 +3825,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -3700,6 +3836,8 @@ export type Database = {
           multi_spin_options?: Json
           name?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           theme?: string
           ticket_cost?: number
           updated_at?: string
@@ -3805,6 +3943,8 @@ export type Database = {
           id: string
           name: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -3816,6 +3956,8 @@ export type Database = {
           id?: string
           name: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -3827,6 +3969,8 @@ export type Database = {
           id?: string
           name?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3939,6 +4083,8 @@ export type Database = {
           created_at: string
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           id: string
           reference_id: string | null
           reference_type: string | null
@@ -3951,6 +4097,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           reference_id?: string | null
           reference_type?: string | null
@@ -3963,6 +4111,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           reference_id?: string | null
           reference_type?: string | null
@@ -4075,6 +4225,8 @@ export type Database = {
           id: string
           is_active: boolean
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -4084,6 +4236,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -4093,6 +4247,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -4178,6 +4334,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           display_order: number
           id: string
           image_url: string | null
@@ -4187,11 +4345,15 @@ export type Database = {
           reward_type: string
           reward_value: number
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -4201,11 +4363,15 @@ export type Database = {
           reward_type?: string
           reward_value?: number
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -4215,6 +4381,8 @@ export type Database = {
           reward_type?: string
           reward_value?: number
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -4270,12 +4438,16 @@ export type Database = {
           deadline: string | null
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           id: string
           manager_id: string
           skills_required: string[] | null
           status: string
           title: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -4287,12 +4459,16 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           manager_id: string
           skills_required?: string[] | null
           status?: string
           title: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -4304,12 +4480,16 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           manager_id?: string
           skills_required?: string[] | null
           status?: string
           title?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -4410,6 +4590,8 @@ export type Database = {
           is_default: boolean | null
           name: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           template_config: Json
           updated_at: string | null
         }
@@ -4419,6 +4601,8 @@ export type Database = {
           is_default?: boolean | null
           name: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           template_config?: Json
           updated_at?: string | null
         }
@@ -4428,6 +4612,8 @@ export type Database = {
           is_default?: boolean | null
           name?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           template_config?: Json
           updated_at?: string | null
         }
@@ -4855,6 +5041,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           display_order: number | null
           id: string
           image_url: string | null
@@ -4863,11 +5051,15 @@ export type Database = {
           prize_type: string
           prize_value: number | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number | null
           id?: string
           image_url?: string | null
@@ -4876,11 +5068,15 @@ export type Database = {
           prize_type?: string
           prize_value?: number | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number | null
           id?: string
           image_url?: string | null
@@ -4889,6 +5085,8 @@ export type Database = {
           prize_type?: string
           prize_value?: number | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -5249,6 +5447,8 @@ export type Database = {
           id: string
           is_active: boolean
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           phone: string | null
           specialization: string | null
           updated_at: string
@@ -5259,6 +5459,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           phone?: string | null
           specialization?: string | null
           updated_at?: string
@@ -5269,6 +5471,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           phone?: string | null
           specialization?: string | null
           updated_at?: string
@@ -5708,6 +5912,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           draw_date: string | null
           end_date: string | null
           id: string
@@ -5719,12 +5925,16 @@ export type Database = {
           start_date: string
           status: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
           winner_merchant_id: string | null
         }
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           draw_date?: string | null
           end_date?: string | null
           id?: string
@@ -5736,12 +5946,16 @@ export type Database = {
           start_date?: string
           status?: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           winner_merchant_id?: string | null
         }
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           draw_date?: string | null
           end_date?: string | null
           id?: string
@@ -5753,6 +5967,8 @@ export type Database = {
           start_date?: string
           status?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           winner_merchant_id?: string | null
         }
@@ -6283,6 +6499,8 @@ export type Database = {
           is_active: boolean
           merchant_id: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           parent_id: string | null
           updated_at: string
         }
@@ -6294,6 +6512,8 @@ export type Database = {
           is_active?: boolean
           merchant_id: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           parent_id?: string | null
           updated_at?: string
         }
@@ -6305,6 +6525,8 @@ export type Database = {
           is_active?: boolean
           merchant_id?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           parent_id?: string | null
           updated_at?: string
         }
@@ -6323,6 +6545,8 @@ export type Database = {
           created_at: string
           current_uses: number | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           discount_type: string
           discount_value: number | null
           gift_description: string | null
@@ -6334,6 +6558,8 @@ export type Database = {
           merchant_store_name: string | null
           min_purchase_amount: number | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
           valid_from: string | null
           valid_until: string | null
@@ -6342,6 +6568,8 @@ export type Database = {
           created_at?: string
           current_uses?: number | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_type?: string
           discount_value?: number | null
           gift_description?: string | null
@@ -6353,6 +6581,8 @@ export type Database = {
           merchant_store_name?: string | null
           min_purchase_amount?: number | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -6361,6 +6591,8 @@ export type Database = {
           created_at?: string
           current_uses?: number | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           discount_type?: string
           discount_value?: number | null
           gift_description?: string | null
@@ -6372,6 +6604,8 @@ export type Database = {
           merchant_store_name?: string | null
           min_purchase_amount?: number | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_from?: string | null
           valid_until?: string | null
@@ -6496,6 +6730,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           display_chance: string | null
           display_only: boolean
           display_order: number | null
@@ -6504,6 +6740,8 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           product_id: string | null
           product_option_id: string | null
           rarity: string
@@ -6515,6 +6753,8 @@ export type Database = {
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_chance?: string | null
           display_only?: boolean
           display_order?: number | null
@@ -6523,6 +6763,8 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           product_id?: string | null
           product_option_id?: string | null
           rarity?: string
@@ -6534,6 +6776,8 @@ export type Database = {
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_chance?: string | null
           display_only?: boolean
           display_order?: number | null
@@ -6542,6 +6786,8 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           product_id?: string | null
           product_option_id?: string | null
           rarity?: string
@@ -7270,6 +7516,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -7278,6 +7526,8 @@ export type Database = {
           product_type: string
           stock_quantity: number | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
           valid_days: number | null
           value_amount: number
@@ -7285,6 +7535,8 @@ export type Database = {
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -7293,6 +7545,8 @@ export type Database = {
           product_type?: string
           stock_quantity?: number | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_days?: number | null
           value_amount?: number
@@ -7300,6 +7554,8 @@ export type Database = {
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -7308,6 +7564,8 @@ export type Database = {
           product_type?: string
           stock_quantity?: number | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
           valid_days?: number | null
           value_amount?: number
@@ -8000,6 +8258,8 @@ export type Database = {
           bundle_price: number
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           display_order: number
           id: string
           image_url: string | null
@@ -8009,12 +8269,15 @@ export type Database = {
           sale_type: string
           title_ar: string
           title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
           bundle_price?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -8024,12 +8287,15 @@ export type Database = {
           sale_type?: string
           title_ar: string
           title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
           bundle_price?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           id?: string
           image_url?: string | null
@@ -8039,6 +8305,7 @@ export type Database = {
           sale_type?: string
           title_ar?: string
           title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -8190,6 +8457,8 @@ export type Database = {
           currency: string | null
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           gift_tickets: number
           id: string
           image_url: string | null
@@ -8202,6 +8471,8 @@ export type Database = {
           stock_quantity: number | null
           title: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           total_sold: number | null
           updated_at: string
         }
@@ -8212,6 +8483,8 @@ export type Database = {
           currency?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           gift_tickets?: number
           id?: string
           image_url?: string | null
@@ -8224,6 +8497,8 @@ export type Database = {
           stock_quantity?: number | null
           title: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           total_sold?: number | null
           updated_at?: string
         }
@@ -8234,6 +8509,8 @@ export type Database = {
           currency?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           gift_tickets?: number
           id?: string
           image_url?: string | null
@@ -8246,6 +8523,8 @@ export type Database = {
           stock_quantity?: number | null
           title?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           total_sold?: number | null
           updated_at?: string
         }
@@ -8262,6 +8541,7 @@ export type Database = {
           name: string
           name_ar: string
           name_en: string | null
+          name_ku: string | null
           price_adjustment: number | null
           product_id: string
           stock_quantity: number | null
@@ -8279,6 +8559,7 @@ export type Database = {
           name: string
           name_ar: string
           name_en?: string | null
+          name_ku?: string | null
           price_adjustment?: number | null
           product_id: string
           stock_quantity?: number | null
@@ -8296,6 +8577,7 @@ export type Database = {
           name?: string
           name_ar?: string
           name_en?: string | null
+          name_ku?: string | null
           price_adjustment?: number | null
           product_id?: string
           stock_quantity?: number | null
@@ -8780,6 +9062,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           display_order: number
           icon: string | null
           id: string
@@ -8787,6 +9071,8 @@ export type Database = {
           max_daily_points: number | null
           min_points: number
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           points_per_unit: number
           redemption_type: string
           unit_value: number
@@ -8795,6 +9081,8 @@ export type Database = {
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           icon?: string | null
           id?: string
@@ -8802,6 +9090,8 @@ export type Database = {
           max_daily_points?: number | null
           min_points?: number
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           points_per_unit?: number
           redemption_type: string
           unit_value?: number
@@ -8810,6 +9100,8 @@ export type Database = {
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           display_order?: number
           icon?: string | null
           id?: string
@@ -8817,6 +9109,8 @@ export type Database = {
           max_daily_points?: number | null
           min_points?: number
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           points_per_unit?: number
           redemption_type?: string
           unit_value?: number
@@ -9555,6 +9849,8 @@ export type Database = {
         Row: {
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           id: string
           setting_key: string
           setting_value: number
@@ -9563,6 +9859,8 @@ export type Database = {
         Insert: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           setting_key: string
           setting_value: number
@@ -9571,6 +9869,8 @@ export type Database = {
         Update: {
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           id?: string
           setting_key?: string
           setting_value?: number
@@ -10092,6 +10392,8 @@ export type Database = {
           is_active: boolean
           thumbnail_url: string | null
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -10101,6 +10403,8 @@ export type Database = {
           is_active?: boolean
           thumbnail_url?: string | null
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -10110,6 +10414,8 @@ export type Database = {
           is_active?: boolean
           thumbnail_url?: string | null
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -10327,33 +10633,45 @@ export type Database = {
           bonus_tickets: number
           created_at: string
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           ends_at: string
           id: string
           is_active: boolean
           starts_at: string
           title_ar: string
+          title_en: string | null
+          title_ku: string | null
           updated_at: string
         }
         Insert: {
           bonus_tickets?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           ends_at: string
           id?: string
           is_active?: boolean
           starts_at?: string
           title_ar: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Update: {
           bonus_tickets?: number
           created_at?: string
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           ends_at?: string
           id?: string
           is_active?: boolean
           starts_at?: string
           title_ar?: string
+          title_en?: string | null
+          title_ku?: string | null
           updated_at?: string
         }
         Relationships: []
