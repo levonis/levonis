@@ -27,7 +27,11 @@ interface ProductColor {
 interface ProductOffer {
   id: string;
   title_ar: string;
+  title_en?: string | null;
+  title_ku?: string | null;
   description_ar?: string | null;
+  description_en?: string | null;
+  description_ku?: string | null;
   image_url: string | null;
   images: string[] | null;
   price: number;
