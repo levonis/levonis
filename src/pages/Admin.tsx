@@ -194,6 +194,7 @@ const Admin = () => {
     level_id: string;
     discount_amount: number; // Amount in IQD
   }>>([]);
+  const [productAIContent, setProductAIContent] = useState<any>({});
   // preOrderShippingOptions removed - now handled by AdminProductPricingSection
   
   // AI extraction states
