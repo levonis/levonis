@@ -10,6 +10,8 @@ import ReelsBar from '@/components/reels/ReelsBar';
 
 import { useLanguage } from '@/lib/i18n';
 import ProgressiveSection from '@/components/ProgressiveSection';
+import SEO from '@/components/SEO';
+import { organizationLd, websiteLd } from '@/lib/seo/structured';
 
 // Lazy-load only sections gated by ProgressiveSection (genuinely below-the-fold)
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
@@ -92,6 +94,12 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
+      <SEO
+        title="LEVONIS — متجرك الموثوق للتقنية"
+        description="LEVONIS — متجر إلكتروني عراقي متخصص في طابعات 3D، الإلكترونيات، الأجهزة الذكية، الألعاب ومجتمع التجار. ضمان رسمي وتوصيل سريع لكل العراق."
+        url="https://levonisiq.com/"
+        jsonLd={[organizationLd(), websiteLd()]}
+      />
       <main className="relative z-10 pt-6">
 
         <section className="w-full">
