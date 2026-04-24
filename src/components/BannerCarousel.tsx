@@ -328,6 +328,11 @@ const BannerCarousel = memo(() => {
               filter: "drop-shadow(0 0 3px rgba(255, 215, 0, 0.6))",
               animationPlayState: isAutoPlaying ? "running" : "paused",
             }}
+            onAnimationEnd={() => {
+              if (isAutoPlaying) {
+                setCurrentIndex((prev) => (prev + 1) % banners.length);
+              }
+            }}
           />
         </svg>
       )}
