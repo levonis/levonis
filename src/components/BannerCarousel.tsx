@@ -385,25 +385,22 @@ const BannerCarousel = memo(() => {
               window.setTimeout(() => {
                 setCurrentIndex((prev) => (prev + 1) % banners.length);
                 setIsFlashing(false);
-              }, 350);
+              }, 900);
             }}
           />
         </svg>
       )}
 
-      {/* Glassmorphism flash overlay — frosted sweep on counter completion */}
+      {/* Glassmorphism flash overlay — single, soft, slow */}
       {isFlashing && (
         <div
           key={`flash-${currentIndex}`}
           className="pointer-events-none absolute inset-0 z-30 rounded-lg overflow-hidden animate-banner-flash"
           style={{
             background:
-              'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.18) 100%)',
-            backdropFilter: 'blur(8px) saturate(140%)',
-            WebkitBackdropFilter: 'blur(8px) saturate(140%)',
-            border: '1px solid rgba(255,255,255,0.35)',
-            boxShadow:
-              'inset 0 1px 0 rgba(255,255,255,0.4), inset 0 0 24px rgba(255,255,255,0.15)',
+              'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.10) 100%)',
+            backdropFilter: 'blur(4px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(4px) saturate(120%)',
           }}
         />
       )}
