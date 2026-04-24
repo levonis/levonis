@@ -1,5 +1,7 @@
 import { Ticket } from "lucide-react";
 import GachaMachineVisual from "./GachaMachineVisual";
+import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 interface Props {
   machine: any;
@@ -7,8 +9,11 @@ interface Props {
 }
 
 export default function GachaMachineCard({ machine, onSelect }: Props) {
+  const { language } = useLanguage();
   const isTimeLimited = machine.is_limited && machine.available_until;
   const timeLeft = isTimeLimited ? getTimeLeft(machine.available_until) : null;
+  const name = pickI18n(machine, "name", language);
+  const description = pickI18n(machine, "description", language);
 
   return (
     <button
@@ -39,9 +44,9 @@ export default function GachaMachineCard({ machine, onSelect }: Props) {
 
         {/* Name */}
         <div className="w-full">
-          <h3 className="font-bold text-xs text-foreground mb-0.5 text-center">{machine.name_ar}</h3>
-          {machine.description_ar && (
-            <p className="text-[9px] text-muted-foreground line-clamp-1 text-center">{machine.description_ar}</p>
+          <h3 className="font-bold text-xs text-foreground mb-0.5 text-center">{name}</h3>
+          {description && (
+            <p className="text-[9px] text-muted-foreground line-clamp-1 text-center">{description}</p>
           )}
         </div>
       </div>
