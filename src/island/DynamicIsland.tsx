@@ -166,9 +166,12 @@ export const DynamicIsland = () => {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const islandRef = useRef<HTMLDivElement>(null);
+  const marqueeViewportRef = useRef<HTMLDivElement>(null);
   const marqueeTrackRef = useRef<HTMLDivElement>(null);
+  const marqueeMeasureRef = useRef<HTMLDivElement>(null);
   const marqueeGroupRef = useRef<HTMLDivElement>(null);
   const [marqueeDistance, setMarqueeDistance] = useState<number | null>(null);
+  const [marqueeRepeatCount, setMarqueeRepeatCount] = useState(1);
 
   const { scope, placeholderKey } = useMemo<{
     scope: SearchScope;
@@ -331,23 +334,52 @@ export const DynamicIsland = () => {
    * consecutive texts is exactly the same everywhere (incl. between text N
    * and text 1 on the loop boundary).
    */
-  const marqueeItems = useMemo(() => messages, [messages]);
+  const marqueeItems = useMemo(() => {
+    if (!messages.length) return [];
+
+    return Array.from({ length: marqueeRepeatCount }, (_, repeatIndex) =>
+      messages.map((message, itemIndex) => ({
+        id: `${repeatIndex}-${itemIndex}`,
+        text: message,
+      })),
+    ).flat();
+  }, [messages, marqueeRepeatCount]);
 
   useEffect(() => {
     if (state !== "promo") return;
 
-    const updateMarqueeDistance = () => {
+    const updateMarqueeMetrics = () => {
+      const viewportWidth = marqueeViewportRef.current?.getBoundingClientRect().width ?? 0;
+      const baseWidth = marqueeMeasureRef.current?.getBoundingClientRect().width ?? 0;
+
+      if (viewportWidth > 0 && baseWidth > 0) {
+        const nextRepeatCount = Math.max(1, Math.ceil((viewportWidth * 1.75) / baseWidth));
+        setMarqueeRepeatCount((current) => (current === nextRepeatCount ? current : nextRepeatCount));
+      }
+
       const next = marqueeGroupRef.current?.getBoundingClientRect().width ?? 0;
       setMarqueeDistance(next > 0 ? next : null);
     };
 
-    updateMarqueeDistance();
-    window.addEventListener("resize", updateMarqueeDistance);
+    updateMarqueeMetrics();
+
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => updateMarqueeMetrics())
+      : null;
+
+    if (resizeObserver) {
+      if (marqueeViewportRef.current) resizeObserver.observe(marqueeViewportRef.current);
+      if (marqueeMeasureRef.current) resizeObserver.observe(marqueeMeasureRef.current);
+      if (marqueeGroupRef.current) resizeObserver.observe(marqueeGroupRef.current);
+    }
+
+    window.addEventListener("resize", updateMarqueeMetrics);
 
     return () => {
-      window.removeEventListener("resize", updateMarqueeDistance);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateMarqueeMetrics);
     };
-  }, [state, marqueeItems, promoSettings.gap]);
+  }, [state, messages, marqueeItems, promoSettings.gap]);
 
   useEffect(() => {
     const track = marqueeTrackRef.current;
@@ -355,7 +387,7 @@ export const DynamicIsland = () => {
 
     let frameId = 0;
     let lastTime = 0;
-    let offset = promoSettings.direction === "right" ? -marqueeDistance : 0;
+    let progress = 0;
 
     const pixelsPerSecond = Math.max(12, marqueeDistance / Math.max(4, promoSettings.speed));
 
@@ -364,19 +396,17 @@ export const DynamicIsland = () => {
       const delta = (time - lastTime) / 1000;
       lastTime = time;
 
-      if (promoSettings.direction === "right") {
-        offset += pixelsPerSecond * delta;
-        if (offset >= 0) offset -= marqueeDistance;
-      } else {
-        offset -= pixelsPerSecond * delta;
-        if (offset <= -marqueeDistance) offset += marqueeDistance;
-      }
+      progress = (progress + pixelsPerSecond * delta) % marqueeDistance;
+      const offset =
+        promoSettings.direction === "right"
+          ? progress - marqueeDistance
+          : -progress;
 
       track.style.transform = `translate3d(${offset}px, 0, 0)`;
       frameId = window.requestAnimationFrame(step);
     };
 
-    track.style.transform = `translate3d(${offset}px, 0, 0)`;
+    track.style.transform = `translate3d(${promoSettings.direction === "right" ? -marqueeDistance : 0}px, 0, 0)`;
     frameId = window.requestAnimationFrame(step);
 
     return () => {
@@ -480,6 +510,7 @@ export const DynamicIsland = () => {
                   <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </button>
                 <div
+                  ref={marqueeViewportRef}
                   className="relative flex-1 overflow-hidden"
                   style={{
                     WebkitMaskImage:
@@ -489,32 +520,53 @@ export const DynamicIsland = () => {
                   }}
                 >
                   {marqueeItems.length > 0 ? (
-                    <div
-                      key={`promo-track-${marqueeItems.length}-${promoSettings.direction}-${promoSettings.speed}-${promoSettings.gap}`}
-                      ref={marqueeTrackRef}
-                      dir="ltr"
-                      data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
-                      className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
-                      style={{
-                        ['--marquee-gap' as any]: `${promoSettings.gap}px`,
-                      }}
-                    >
-                      {[0, 1].map((group) => (
-                        <div
-                          key={group}
-                          ref={group === 0 ? marqueeGroupRef : undefined}
-                          className="marquee-group"
-                          aria-hidden={group === 1}
-                        >
-                          {marqueeItems.map((m, i) => (
-                            <span key={`${group}-${i}`} className="inline-flex items-center gap-3">
-                              <span dir="auto" className="text-foreground/90">{m}</span>
+                    <>
+                      <div
+                        ref={marqueeMeasureRef}
+                        dir="ltr"
+                        aria-hidden="true"
+                        className="pointer-events-none absolute opacity-0 whitespace-nowrap"
+                        style={{
+                          ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                        }}
+                      >
+                        <div className="marquee-group text-[12px] font-medium tracking-tight text-foreground/85">
+                          {messages.map((message, itemIndex) => (
+                            <span key={`measure-${itemIndex}`} className="inline-flex items-center gap-3">
+                              <span dir="auto" className="text-foreground/90">{message}</span>
                               <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
                             </span>
                           ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+
+                      <div
+                        key={`promo-track-${marqueeItems.length}-${promoSettings.direction}-${promoSettings.speed}-${promoSettings.gap}`}
+                        ref={marqueeTrackRef}
+                        dir="ltr"
+                        data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
+                        className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
+                        style={{
+                          ['--marquee-gap' as any]: `${promoSettings.gap}px`,
+                        }}
+                      >
+                        {[0, 1].map((group) => (
+                          <div
+                            key={group}
+                            ref={group === 0 ? marqueeGroupRef : undefined}
+                            className="marquee-group"
+                            aria-hidden={group === 1}
+                          >
+                            {marqueeItems.map((item) => (
+                              <span key={`${group}-${item.id}`} className="inline-flex items-center gap-3">
+                                <span dir="auto" className="text-foreground/90">{item.text}</span>
+                                <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
+                              </span>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   ) : (
                     <span className="text-[12px] font-medium text-foreground/70">LEVONIS</span>
                   )}
