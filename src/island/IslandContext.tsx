@@ -7,11 +7,18 @@ import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 
 export type IslandState = "promo" | "search" | "category" | "product";
 
+export interface PromoSettings {
+  speed: number;
+  direction: "left" | "right";
+  gap: number;
+}
+
 interface IslandContextValue {
   state: IslandState;
   title?: string;
   setContext: (ctx: { state: IslandState; title?: string } | null) => void;
   promoMessages: string[];
+  promoSettings: PromoSettings;
   visible: boolean;
 }
 
