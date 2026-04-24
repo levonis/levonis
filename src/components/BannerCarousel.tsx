@@ -174,7 +174,7 @@ const BannerCarousel = memo(() => {
     };
     if (palettes[currentBanner.action_type]) return palettes[currentBanner.action_type];
 
-    const title = currentBanner.title_ar || currentBanner.title || '';
+    const title = localizedTitle(currentBanner) || currentBanner.title || '';
     let hash = 0;
     for (let i = 0; i < title.length; i++) hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
     const hue = hash % 360;
@@ -184,7 +184,7 @@ const BannerCarousel = memo(() => {
       to:   `hsl(${hue}, 90%, 70%)`,
       glow: `hsla(${(hue + 20) % 360}, 95%, 55%, 0.65)`,
     };
-  }, [currentBanner?.id, currentBanner?.action_type, currentBanner?.title_ar, currentBanner?.title]);
+  }, [currentBanner?.id, currentBanner?.action_type, currentBanner, localizedTitle]);
 
   if (isLoading) {
     return (
