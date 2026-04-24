@@ -434,9 +434,9 @@ export const DynamicIsland = () => {
                       "linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%)",
                   }}
                 >
-                  {messages.length > 0 ? (
+                  {marqueeItems.length > 0 ? (
                     <div
-                      key={`promo-${promoIndex}`}
+                      key={`promo-track-${marqueeItems.length}`}
                       dir="ltr"
                       data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                       className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
