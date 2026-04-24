@@ -436,7 +436,7 @@ export const DynamicIsland = () => {
                 >
                   {marqueeItems.length > 0 ? (
                     <div
-                      key={`promo-track-${marqueeItems.length}`}
+                      key={`promo-track-${marqueeItems.length}-${promoSettings.direction}-${promoSettings.speed}-${promoSettings.gap}`}
                       dir="ltr"
                       data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                       className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
@@ -450,7 +450,7 @@ export const DynamicIsland = () => {
                           {marqueeItems.map((m, i) => (
                             <span key={`${group}-${i}`} className="inline-flex items-center gap-3">
                               <span dir="auto" className="text-foreground/90">{m}</span>
-                              <span aria-hidden="true" className="text-foreground/35">•</span>
+                              <span aria-hidden="true" style={{ color: promoSettings.color }} className="opacity-70">•</span>
                             </span>
                           ))}
                         </div>

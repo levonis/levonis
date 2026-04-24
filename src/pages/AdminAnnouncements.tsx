@@ -404,37 +404,15 @@ const AdminAnnouncements = () => {
                 />
               </div>
 
-              <div className="admin-form-group">
-                <Label htmlFor="display_duration">المسافة الزمنية بين كل نص وآخر (ثانية)</Label>
-                <Input
-                  id="display_duration"
-                  type="number"
-                  min={2}
-                  max={60}
-                  value={settings.display_duration}
-                  onChange={(e) =>
-                    updateSetting('display_duration', parseInt(e.target.value) || DEFAULT_SETTINGS.display_duration)
-                  }
-                />
-              </div>
             </div>
 
             <div className="space-y-3 pt-4 mt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="auto_rotate" className="text-base">التقلب التلقائي</Label>
-                  <p className="text-xs text-muted-foreground">الانتقال تلقائياً بين النصوص</p>
-                </div>
-                <Switch
-                  id="auto_rotate"
-                  checked={settings.auto_rotate}
-                  onCheckedChange={(v) => updateSetting('auto_rotate', v)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="always_move" className="text-base">تحريك دائم</Label>
-                  <p className="text-xs text-muted-foreground">حركة مستمرة للنص بدون توقف</p>
+                  <Label htmlFor="always_move" className="text-base">إبقاء الشريط ظاهراً دائماً</Label>
+                  <p className="text-xs text-muted-foreground">
+                    عند التفعيل يبقى الشريط ظاهراً ومتحركاً حتى بعد التمرير للأسفل
+                  </p>
                 </div>
                 <Switch
                   id="always_move"
