@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.translate-product]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false
