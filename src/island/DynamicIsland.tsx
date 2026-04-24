@@ -320,30 +320,15 @@ export const DynamicIsland = () => {
 
   const messages = promoMessages.length ? promoMessages : [];
 
-  /* ---------- Rotate through announcement texts ----------
-   * All texts share the same global settings (speed/direction/gap/color).
-   * We cycle one text at a time using `displayDuration` from settings so the
-   * admin controls how long each message stays on screen.
+  /* ---------- Build a single seamless marquee sequence ----------
+   * All texts are concatenated one after another inside the marquee track
+   * and share the same global settings (speed/direction/gap). The track is
+   * duplicated (two identical groups) and shifted by -50% on loop, giving an
+   * infinite, seamless scroll with NO restarts and NO cuts. The "gap" between
+   * consecutive texts is exactly the same everywhere (incl. between text N
+   * and text 1 on the loop boundary).
    */
-  const [promoIndex, setPromoIndex] = useState(0);
-  useEffect(() => {
-    if (messages.length <= 1 || !promoSettings.autoRotate) {
-      setPromoIndex(0);
-      return;
-    }
-    const intervalMs = Math.max(2, promoSettings.displayDuration) * 1000;
-    const id = window.setInterval(() => {
-      setPromoIndex((i) => (i + 1) % messages.length);
-    }, intervalMs);
-    return () => window.clearInterval(id);
-  }, [messages.length, promoSettings.autoRotate, promoSettings.displayDuration]);
-
-  const activeText = messages[promoIndex] ?? messages[0] ?? "";
-
-  const marqueeItems = useMemo(() => {
-    if (!activeText) return [] as string[];
-    return Array.from({ length: 6 }, () => activeText);
-  }, [activeText]);
+  const marqueeItems = useMemo(() => messages, [messages]);
 
   /* ---------- Render ---------- */
   return (
