@@ -1,36 +1,55 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 
 interface IslandPromoPreviewProps {
-  message: string;
+  messages: string[];
   color: string;
   speed: number;
   direction: 'left' | 'right';
   gap: number;
+  autoRotate?: boolean;
+  displayDuration?: number;
 }
 
 /**
- * Live preview that mirrors the news-ticker rendering inside the real
- * Dynamic Island (see src/island/DynamicIsland.tsx — promo state).
- * Reuses the same .island-surface, .marquee-track, .marquee-group classes
- * and CSS variables so any change in the admin form is reflected exactly
- * as it will appear to end users.
+ * Live preview of the news ticker inside the Dynamic Island.
+ * All texts share the same (global) animation settings.
  */
 export default function IslandPromoPreview({
-  message,
+  messages,
   color,
   speed,
   direction,
   gap,
+  autoRotate = true,
+  displayDuration = 5,
 }: IslandPromoPreviewProps) {
-  const safeMessage = message?.trim() || 'نص الإعلان';
+  const cleanMessages = useMemo(
+    () => messages.map((m) => m?.trim()).filter(Boolean) as string[],
+    [messages],
+  );
+  const list = cleanMessages.length > 0 ? cleanMessages : ['نص الإعلان'];
   const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 20;
   const safeGap = Number.isFinite(gap) && gap >= 0 ? gap : 16;
 
-  const marqueeItems = useMemo(() => {
-    const repeatCount = Math.max(4, Math.ceil(12 / 1));
-    return Array.from({ length: repeatCount }, () => safeMessage);
-  }, [safeMessage]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (list.length <= 1 || !autoRotate) {
+      setIndex(0);
+      return;
+    }
+    const ms = Math.max(2, displayDuration) * 1000;
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % list.length);
+    }, ms);
+    return () => window.clearInterval(id);
+  }, [list.length, autoRotate, displayDuration]);
+
+  const activeText = list[index] ?? list[0];
+  const marqueeItems = useMemo(
+    () => Array.from({ length: 6 }, () => activeText),
+    [activeText],
+  );
 
   return (
     <div
@@ -59,6 +78,7 @@ export default function IslandPromoPreview({
         }}
       >
         <div
+          key={`preview-${index}`}
           dir="ltr"
           data-direction={direction === 'right' ? 'right' : 'left'}
           className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"

@@ -121,7 +121,7 @@ const searchShape = (
 /* -------------------------------------------------------------------------- */
 
 export const DynamicIsland = () => {
-  const { state, title: rawTitle, promoMessages, promoItems, promoSettings, visible, setContext } = useIsland();
+  const { state, title: rawTitle, promoMessages, promoSettings, visible, setContext } = useIsland();
 
   /* ---------- Debounce rapid title changes ----------
    * Coalesces fast successive title updates (e.g. switching products while
@@ -320,31 +320,28 @@ export const DynamicIsland = () => {
 
   const messages = promoMessages.length ? promoMessages : [];
 
-  /* ---------- Rotate through announcements ----------
-   * Each announcement carries its own speed/direction/gap. We cycle one at a
-   * time every 6s so every text is shown with its own settings respected.
+  /* ---------- Rotate through announcement texts ----------
+   * All texts share the same global settings (speed/direction/gap/color).
+   * We cycle one text at a time using `displayDuration` from settings so the
+   * admin controls how long each message stays on screen.
    */
   const [promoIndex, setPromoIndex] = useState(0);
   useEffect(() => {
-    if (promoItems.length <= 1) {
+    if (messages.length <= 1 || !promoSettings.autoRotate) {
       setPromoIndex(0);
       return;
     }
+    const intervalMs = Math.max(2, promoSettings.displayDuration) * 1000;
     const id = window.setInterval(() => {
-      setPromoIndex((i) => (i + 1) % promoItems.length);
-    }, 6000);
+      setPromoIndex((i) => (i + 1) % messages.length);
+    }, intervalMs);
     return () => window.clearInterval(id);
-  }, [promoItems.length]);
+  }, [messages.length, promoSettings.autoRotate, promoSettings.displayDuration]);
 
-  const activePromo = promoItems[promoIndex] ?? promoItems[0];
-  const activeText = activePromo?.text ?? "";
-  const activeSpeed = activePromo?.speed ?? promoSettings.speed;
-  const activeDirection = activePromo?.direction ?? promoSettings.direction;
-  const activeGap = activePromo?.gap ?? promoSettings.gap;
+  const activeText = messages[promoIndex] ?? messages[0] ?? "";
 
   const marqueeItems = useMemo(() => {
     if (!activeText) return [] as string[];
-    // Repeat the active message enough times to fill the track smoothly.
     return Array.from({ length: 6 }, () => activeText);
   }, [activeText]);
 
@@ -456,11 +453,11 @@ export const DynamicIsland = () => {
                     <div
                       key={`promo-${promoIndex}`}
                       dir="ltr"
-                      data-direction={activeDirection === 'right' ? 'right' : 'left'}
+                      data-direction={promoSettings.direction === 'right' ? 'right' : 'left'}
                       className="marquee-track text-[12px] font-medium tracking-tight text-foreground/85"
                       style={{
-                        ['--marquee-duration' as any]: `${Math.max(4, activeSpeed)}s`,
-                        ['--marquee-gap' as any]: `${activeGap}px`,
+                        ['--marquee-duration' as any]: `${Math.max(4, promoSettings.speed)}s`,
+                        ['--marquee-gap' as any]: `${promoSettings.gap}px`,
                       }}
                     >
                       {[0, 1].map((group) => (
