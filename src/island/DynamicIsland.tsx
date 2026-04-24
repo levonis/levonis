@@ -332,6 +332,22 @@ export const DynamicIsland = () => {
    */
   const marqueeItems = useMemo(() => messages, [messages]);
 
+  useEffect(() => {
+    if (state !== "promo") return;
+
+    const updateMarqueeDistance = () => {
+      const next = marqueeGroupRef.current?.getBoundingClientRect().width ?? 0;
+      setMarqueeDistance(next > 0 ? next : null);
+    };
+
+    updateMarqueeDistance();
+    window.addEventListener("resize", updateMarqueeDistance);
+
+    return () => {
+      window.removeEventListener("resize", updateMarqueeDistance);
+    };
+  }, [state, marqueeItems, promoSettings.gap]);
+
   /* ---------- Render ---------- */
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center pt-3">
