@@ -10,5 +10,33 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# AI crawlers — explicit allow so models can cite our products
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /cart
+Disallow: /user-info
+Disallow: /addresses
+Disallow: /my-orders
+Disallow: /notifications
+
+Sitemap: https://levonisiq.com/sitemap.xml
