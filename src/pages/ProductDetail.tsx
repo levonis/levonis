@@ -52,7 +52,7 @@ const ProductDetailSkeleton = () => (
     </div>
     {/* Content card */}
     <div className="px-4 -mt-6 relative z-10">
-      <div className="rounded-2xl border bg-card p-4 space-y-4">
+      <div className="glass-panel p-4 space-y-4">
         <Skeleton className="h-5 w-16 rounded-full" />
         <Skeleton className="h-7 w-3/4" />
         <Skeleton className="h-4 w-full" />
