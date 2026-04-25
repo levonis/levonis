@@ -256,28 +256,46 @@ const Auth = () => {
     }
   };
 
+  // Shared glass styles
+  const glassInput = "h-12 bg-white/5 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all";
+  const glassPrimaryBtn = "w-full h-12 rounded-2xl font-bold backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.5),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const glassGhostBtn = "w-full h-11 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-foreground/80 hover:text-foreground transition-all";
+  const glassOutlineBtn = "w-full h-12 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const glassIconBox = "inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-xl border border-white/20 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.15)] mb-4";
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
+      {/* Glassmorphism background orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/30 blur-[120px] animate-pulse" />
+        <div className="absolute top-1/3 -left-40 w-[26rem] h-[26rem] rounded-full bg-purple-500/20 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute -bottom-40 right-1/4 w-[30rem] h-[30rem] rounded-full bg-cyan-400/20 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,hsl(var(--background)/0.4)_100%)]" />
+      </div>
+
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4">
-            <Sparkles className="w-8 h-8 text-primary mr-2" />
+          <div className="inline-flex items-center justify-center mb-4 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.1)]">
+            <Sparkles className="w-8 h-8 text-primary mr-2 drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
             <h1 className="text-4xl font-black tracking-tight">
-              <span className="text-primary">LEV</span>
+              <span className="text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]">LEV</span>
               <span className="text-foreground">ONIS</span>
             </h1>
           </div>
           <p className="text-muted-foreground text-sm">{t('auth_platform_desc')}</p>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 border border-border/50 shadow-2xl shadow-primary/5">
+        {/* Main Glass Card */}
+        <div className="relative rounded-3xl p-8 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.15)] overflow-hidden">
+          {/* Subtle inner glow */}
+          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+          <div className="relative z-10">
           {showNewPasswordForm ? (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                  <Lock className="w-7 h-7 text-primary" />
+                <div className={glassIconBox}>
+                  <Lock className="w-7 h-7 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
                 </div>
                 <h2 className="text-2xl font-bold">{t('auth_new_password')}</h2>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -297,7 +315,7 @@ const Auth = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20"
+                      className={`${glassInput} pl-12`}
                     />
                     <button
                       type="button"
@@ -323,7 +341,7 @@ const Auth = () => {
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20"
+                      className={`${glassInput} pl-12`}
                     />
                     <button
                       type="button"
@@ -338,7 +356,7 @@ const Auth = () => {
 
                 <Button 
                   type="submit"
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                  className={glassPrimaryBtn}
                   disabled={loading || !isStrongPassword(newPassword) || newPassword !== confirmNewPassword}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
@@ -348,7 +366,7 @@ const Auth = () => {
                 <Button 
                   type="button"
                   variant="ghost"
-                  className="w-full h-11"
+                  className={glassGhostBtn}
                   onClick={() => {
                     setShowNewPasswordForm(false);
                     setShowResetPassword(false);
@@ -365,8 +383,8 @@ const Auth = () => {
           ) : showResetPassword ? (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                  <Mail className="w-7 h-7 text-primary" />
+                <div className={glassIconBox}>
+                  <Mail className="w-7 h-7 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
                 </div>
                 <h2 className="text-2xl font-bold">{t('auth_account_recovery')}</h2>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -385,14 +403,14 @@ const Auth = () => {
                     onChange={(e) => setResetEmail(e.target.value)}
                     dir="ltr"
                     disabled={loading}
-                    className="h-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 text-left"
+                    className={`${glassInput} text-left`}
                   />
                 </div>
 
                 <Button 
                   type="button"
                   onClick={handleSendResetEmail}
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                  className={glassPrimaryBtn}
                   disabled={loading || resendTimer > 0}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
@@ -402,7 +420,7 @@ const Auth = () => {
                 <Button 
                   type="button"
                   variant="ghost"
-                  className="w-full h-11"
+                  className={glassGhostBtn}
                   onClick={() => {
                     setShowResetPassword(false);
                     setResetEmail('');
@@ -436,7 +454,7 @@ const Auth = () => {
                       dir="ltr"
                       required
                       disabled={loading}
-                      className="h-12 pr-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 text-left"
+                      className={`${glassInput} pr-12 text-left`}
                     />
                     <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   </div>
@@ -453,7 +471,7 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 px-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20"
+                      className={`${glassInput} px-12`}
                     />
                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <button
@@ -481,7 +499,7 @@ const Auth = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                  className={glassPrimaryBtn}
                   disabled={loading}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
@@ -491,17 +509,17 @@ const Auth = () => {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border/50"></div>
+                  <div className="w-full border-t border-white/15"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card px-4 text-muted-foreground">{t('common_or')}</span>
+                  <span className="px-4 text-muted-foreground bg-white/5 backdrop-blur-xl rounded-full py-1 border border-white/10">{t('common_or')}</span>
                 </div>
               </div>
 
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 rounded-xl border-border/50 hover:bg-primary/5 hover:border-primary/50 transition-all"
+                className={glassOutlineBtn}
                 onClick={() => setShowSignup(true)}
               >
                 {t('auth_create_account')}
@@ -515,6 +533,7 @@ const Auth = () => {
               </p>
             </div>
           )}
+          </div>
         </div>
       </div>
 
