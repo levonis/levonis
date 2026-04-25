@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+import { usePageTitle } from '@/island/usePageTitle';
 
 function getItemStock(product: any, colorName?: string, optionId?: string): number {
   const colors = Array.isArray(product?.colors) ? product.colors : [];
@@ -113,6 +114,8 @@ const BundleDetail = () => {
     },
     enabled: !!id,
   });
+
+  usePageTitle('product', bundle ? pickI18n(bundle as any, 'title', language) : undefined);
 
   const handleAddToCart = async () => {
     if (!user) { navigate('/auth'); return; }
