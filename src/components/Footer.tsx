@@ -5,9 +5,9 @@ import { useLanguage } from '@/lib/i18n';
 const Footer = () => {
   const { t, language } = useLanguage();
   const labels = {
-    ar: { about: 'من نحن', privacy: 'الخصوصية', terms: 'الشروط والأحكام', faq: 'الأسئلة الشائعة' },
-    en: { about: 'About', privacy: 'Privacy', terms: 'Terms', faq: 'FAQ' },
-    ku: { about: 'دەربارە', privacy: 'تایبەتمەندی', terms: 'مەرجەکان', faq: 'پرسیارەکان' },
+    ar: { about: 'من نحن', privacy: 'الخصوصية', terms: 'الشروط والأحكام', faq: 'الأسئلة الشائعة', download: 'تحميل التطبيق' },
+    en: { about: 'About', privacy: 'Privacy', terms: 'Terms', faq: 'FAQ', download: 'Download App' },
+    ku: { about: 'دەربارە', privacy: 'تایبەتمەندی', terms: 'مەرجەکان', faq: 'پرسیارەکان', download: 'دابەزاندنی ئەپ' },
   }[language === 'en' ? 'en' : language === 'ku' ? 'ku' : 'ar'];
 
   return (
