@@ -325,12 +325,12 @@ export default function ProductOffersPage() {
                       <div className="w-full h-full bg-secondary flex items-center justify-center"><Package className="h-12 w-12 text-muted-foreground" /></div>
                     )}
                     <TicketBadge offer={offer} />
-                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">نفذت الكمية</Badge>}
+                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive/30 backdrop-blur-md border border-destructive/40 text-destructive-foreground">نفذت الكمية</Badge>}
                     {hasMultipleImages && (
                       <>
-                        <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'next', images); }}><ChevronRight className="h-4 w-4" /></Button>
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">{images.map((_, idx) => (<button key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentIndex ? 'bg-white' : 'bg-white/50'}`} onClick={(e) => { e.stopPropagation(); setImageIndices(prev => ({ ...prev, [offer.id]: idx })); }} />))}</div>
+                        <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-background/30 backdrop-blur-md border border-border/40 hover:bg-background/50 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-background/30 backdrop-blur-md border border-border/40 hover:bg-background/50 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'next', images); }}><ChevronRight className="h-4 w-4" /></Button>
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">{images.map((_, idx) => (<button key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentIndex ? 'bg-foreground' : 'bg-foreground/40'}`} onClick={(e) => { e.stopPropagation(); setImageIndices(prev => ({ ...prev, [offer.id]: idx })); }} />))}</div>
                       </>
                     )}
                   </div>
