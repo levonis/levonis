@@ -1,13 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.eae9743ef7d4438dbfb8c27f25184241',
+  appId: 'app.levonis.iq',
   appName: 'levonis',
   webDir: 'dist',
-  server: {
-    url: 'https://eae9743e-f7d4-438d-bfb8-c27f25184241.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
-  },
   ios: {
     contentInset: 'always',
     backgroundColor: '#103d33',
