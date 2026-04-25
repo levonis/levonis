@@ -213,22 +213,31 @@ const BundleDetail = () => {
         {/* Image thumbnails */}
         {bundle.allImages.length > 1 && (
           <div
+            role="tablist"
+            aria-label="معرض صور الباقة"
             className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide pb-1"
             style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', overscrollBehaviorY: 'auto' }}
           >
-            {bundle.allImages.map((img: string, i: number) => (
-              <button
-                key={i}
-                onClick={() => setSelectedImageIndex(i)}
-                className={`w-14 h-14 rounded-xl overflow-hidden border shrink-0 backdrop-blur-xl transition-all ${
-                  selectedImageIndex === i
-                    ? 'border-primary/60 bg-primary/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.4)] scale-105'
-                    : 'border-white/15 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] opacity-70 hover:opacity-100'
-                }`}
-              >
-                <img src={img} className="w-full h-full object-cover pointer-events-none" draggable={false} />
-              </button>
-            ))}
+            {bundle.allImages.map((img: string, i: number) => {
+              const isActive = selectedImageIndex === i;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={`عرض الصورة ${i + 1} من ${bundle.allImages.length}`}
+                  onClick={() => setSelectedImageIndex(i)}
+                  className={`w-14 h-14 rounded-xl overflow-hidden border shrink-0 backdrop-blur-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                    isActive
+                      ? 'border-primary bg-primary/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.4)] scale-105'
+                      : 'border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] opacity-80 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover pointer-events-none" draggable={false} />
+                </button>
+              );
+            })}
           </div>
         )}
 
