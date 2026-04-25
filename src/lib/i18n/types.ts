@@ -376,8 +376,8 @@ export type TranslationKeys = {
   cart_preorder_options: string;
   cart_preorder_full: string;
   cart_preorder_full_desc: string;
-  cart_preorder_quarter: string;
-  cart_preorder_quarter_pay: string;
+  cart_preorder_half: string;
+  cart_preorder_half_pay: string;
   cart_preorder_remaining: string;
   cart_preorder_extra_fees: string;
   cart_preorder_required_now: string;
@@ -1048,7 +1048,7 @@ export type TranslationKeys = {
   cart_cod_fee: string;
   cart_cod_paid_on_receipt: string;
   cart_cod_paid_on_receipt_no_wallet: string;
-  cart_quarter_label: string;
+  cart_half_label: string;
   cart_extra_fees: string;
   cart_remaining_on_receipt: string;
   cart_products_value: string;
