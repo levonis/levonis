@@ -1279,7 +1279,7 @@ const ProductDetail = () => {
 
               {/* Features */}
               {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-                <div className="rounded-xl border border-border/30 p-4">
+                <div className="glass-tile p-4">
                   <h3 className="text-sm font-black text-primary mb-3">{t('product_features')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {product.features.map((feature: any, index: number) => {
