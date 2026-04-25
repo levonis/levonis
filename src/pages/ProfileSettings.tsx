@@ -84,7 +84,7 @@ function ChangePasswordButton() {
 
   if (!showInput) {
     return (
-      <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => setShowInput(true)}>
+      <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-1" onClick={() => setShowInput(true)}>
         <KeyRound className="h-3.5 w-3.5" />
         تغيير
       </Button>
@@ -98,12 +98,12 @@ function ChangePasswordButton() {
         value={newPass}
         onChange={e => setNewPass(e.target.value)}
         placeholder="كلمة المرور الجديدة"
-        className="h-8 w-36 rounded-lg text-sm"
+        className="h-8 w-36 bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all text-sm"
       />
-      <Button size="sm" className="rounded-lg h-8" onClick={handleChange} disabled={loading}>
+      <Button size="sm" className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] h-8 px-4" onClick={handleChange} disabled={loading}>
         {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "حفظ"}
       </Button>
-      <Button size="sm" variant="ghost" className="rounded-lg h-8" onClick={() => { setShowInput(false); setNewPass(""); }}>
+      <Button size="sm" variant="ghost" className="rounded-2xl h-8 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10" onClick={() => { setShowInput(false); setNewPass(""); }}>
         ×
       </Button>
     </div>
@@ -130,18 +130,25 @@ function isValidPhone(raw: string) {
   return /^\+9647\d{8,9}$/.test(v) || /^07\d{8,9}$/.test(v);
 }
 
-// Section wrapper component
+// Glass shared classes
+const glassInput = "bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all";
+const glassPrimaryBtn = "rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98]";
+const glassOutlineBtn = "rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all";
+
+// Section wrapper component - glassmorphism
 const SettingsSection = ({ icon: Icon, title, children, className }: { icon: any; title: string; children: React.ReactNode; className?: string }) => (
-  <div className={cn("rounded-2xl border border-border/40 bg-card overflow-hidden", className)}>
-    <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/30 bg-card">
-      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Icon className="h-4 w-4 text-primary" />
+  <div className={cn("relative rounded-3xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2),inset_0_1px_0_0_hsl(0_0%_100%/0.1)] overflow-hidden", className)}>
+    <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+    <div className="relative flex items-center gap-2.5 px-4 py-3 border-b border-white/10">
+      <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.15)]">
+        <Icon className="h-4 w-4 text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
       </div>
       <h2 className="text-sm font-black text-foreground">{title}</h2>
     </div>
-    <div className="p-4">{children}</div>
+    <div className="relative p-4">{children}</div>
   </div>
 );
+
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
@@ -396,22 +403,30 @@ export default function ProfileSettings() {
     : `يمكن تغيير اسم المستخدم بعد ${cooldownDaysLeft} يوم`;
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-card border-b border-border/30">
+    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
+      {/* Glassmorphism background orbs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/25 blur-[120px] animate-pulse" />
+        <div className="absolute top-1/2 -left-40 w-[26rem] h-[26rem] rounded-full bg-primary/15 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute -bottom-40 right-1/4 w-[30rem] h-[30rem] rounded-full bg-accent/20 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,hsl(var(--background)/0.4)_100%)]" />
+      </div>
+
+      {/* Header - glass */}
+      <div className="sticky top-0 z-50 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border-b border-white/15 dark:border-white/10 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.2)]">
         <div className="container mx-auto max-w-2xl px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9 rounded-xl">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/15 backdrop-blur-xl border border-white/10">
             <ArrowRight className="h-4 w-4" />
           </Button>
           <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
         </div>
       </div>
 
-      <main className="container mx-auto max-w-2xl px-4 pt-4 pb-28 space-y-3">
+      <main className="relative container mx-auto max-w-2xl px-4 pt-4 pb-28 space-y-3">
         {/* Avatar Section - Centered */}
         <div className="flex flex-col items-center py-4">
           <div className="relative mb-3">
-            <Avatar className="h-24 w-24 ring-4 ring-primary/20 shadow-lg">
+            <Avatar className="h-28 w-28 ring-4 ring-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4)]">
               <AvatarImage src={previewAvatar} />
               <AvatarFallback className="bg-primary/10 text-primary text-2xl font-black">
                 {((profile as any)?.username?.[0] || (profile as any)?.full_name?.[0] || "م").toUpperCase()}
@@ -420,7 +435,7 @@ export default function ProfileSettings() {
             <Button
               type="button"
               size="icon"
-              className="absolute -bottom-1 -left-1 h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+              className="absolute -bottom-1 -left-1 h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground border border-white/20 shadow-[0_4px_16px_-2px_hsl(var(--primary)/0.5),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] hover:scale-110 transition-transform"
               onClick={() => fileRef.current?.click()}
             >
               <Camera className="h-4 w-4" />
@@ -437,7 +452,7 @@ export default function ProfileSettings() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">الاسم</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="اسمك" className="rounded-xl" />
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="اسمك" className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all" />
             </div>
 
             <div className="space-y-1.5">
@@ -448,7 +463,7 @@ export default function ProfileSettings() {
                 disabled={!canEditUsername}
                 placeholder="مثال: levo_user"
                 maxLength={30}
-                className="rounded-xl"
+                className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
               />
               <p className="text-[11px] text-muted-foreground">{usernameHint}</p>
             </div>
@@ -463,23 +478,23 @@ export default function ProfileSettings() {
                     placeholder="07xxxxxxxxx"
                     inputMode="tel"
                     dir="ltr"
-                    className="rounded-xl"
+                    className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" className="rounded-xl flex-1" onClick={handleSavePhone} disabled={savingPhone}>
+                    <Button size="sm" className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] flex-1" onClick={handleSavePhone} disabled={savingPhone}>
                       {savingPhone && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
                       حفظ الرقم
                     </Button>
-                    <Button size="sm" variant="outline" className="rounded-xl" onClick={() => { setEditingPhone(false); setNewPhoneNumber(""); }}>
+                    <Button size="sm" variant="outline" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => { setEditingPhone(false); setNewPhoneNumber(""); }}>
                       إلغاء
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Input value={phoneNumber || "—"} disabled placeholder="—" inputMode="tel" className="rounded-xl flex-1" />
+                  <Input value={phoneNumber || "—"} disabled placeholder="—" inputMode="tel" className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all flex-1" />
                   {canEditPhone ? (
-                    <Button size="sm" variant="outline" className="rounded-xl text-xs" onClick={() => { setEditingPhone(true); setNewPhoneNumber(phoneNumber); }}>
+                    <Button size="sm" variant="outline" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  text-xs" onClick={() => { setEditingPhone(true); setNewPhoneNumber(phoneNumber); }}>
                       تغيير
                     </Button>
                   ) : (
@@ -502,7 +517,7 @@ export default function ProfileSettings() {
           ) : !addresses || addresses.length === 0 ? (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground mb-3">لا توجد عناوين بعد</p>
-              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/addresses')}>
+              <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => navigate('/addresses')}>
                 إضافة عنوان
               </Button>
             </div>
@@ -515,7 +530,7 @@ export default function ProfileSettings() {
                   return (
                     <label
                       key={a.id}
-                      className="flex items-start gap-3 rounded-xl border border-border/40 bg-background/50 p-3 cursor-pointer hover:border-primary/30 transition-colors"
+                      className="flex items-start gap-3 rounded-2xl border border-white/15 bg-white/5 backdrop-blur-xl p-3 cursor-pointer hover:bg-white/10 hover:border-primary/40 transition-all"
                     >
                       <RadioGroupItem value={a.id} className="mt-0.5" />
                       <div className="min-w-0">
@@ -541,7 +556,7 @@ export default function ProfileSettings() {
                   onChange={(e) => setCommunityDisplayName(e.target.value)}
                   placeholder="اسمك في مجتمع ليفو"
                   maxLength={120}
-                  className="rounded-xl"
+                  className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
                 />
               </div>
 
@@ -553,20 +568,20 @@ export default function ProfileSettings() {
                   placeholder="اكتب نبذة قصيرة عنك..."
                   maxLength={500}
                   rows={3}
-                  className="rounded-xl resize-none"
+                  className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all resize-none"
                 />
                 <p className="text-[11px] text-muted-foreground text-left">{communityBio.length}/500</p>
               </div>
 
               {communityProfile.is_verified && (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-primary/10 backdrop-blur-xl border border-primary/30 shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.2)]">
                   <ShieldCheck className="h-4 w-4 text-primary" />
                   <span className="text-xs font-bold text-primary">حساب موثّق</span>
                 </div>
               )}
 
               {(communityProfile.reputation_score != null && communityProfile.reputation_score > 0) && (
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/15">
                   <span className="text-xs text-muted-foreground">نقاط السمعة</span>
                   <span className="text-sm font-black text-foreground">{communityProfile.reputation_score}</span>
                 </div>
@@ -584,7 +599,7 @@ export default function ProfileSettings() {
                 <p className="text-sm font-bold text-foreground">بطاقة الملف الشخصي</p>
                 <p className="text-xs text-muted-foreground">تغيير إطار وتصميم بطاقتك</p>
               </div>
-              <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => navigate("/rewards?tab=cards")}>
+              <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-1" onClick={() => navigate("/rewards?tab=cards")}>
                 <CreditCard className="h-3.5 w-3.5" />
                 تغيير
               </Button>
@@ -600,7 +615,7 @@ export default function ProfileSettings() {
                 <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
                 <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
               </div>
-              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setShowPinDialog(true)}>
+              <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => setShowPinDialog(true)}>
                 تعيين / تغيير
               </Button>
             </div>
@@ -622,7 +637,7 @@ export default function ProfileSettings() {
                 key={lang}
                 variant={language === lang ? 'default' : 'outline'}
                 size="sm"
-                className="flex-1 rounded-xl"
+                className={`flex-1 rounded-2xl backdrop-blur-xl border transition-all ${language === lang ? "bg-gradient-to-br from-primary/90 to-primary/70 text-primary-foreground border-white/20 shadow-[0_4px_16px_-2px_hsl(var(--primary)/0.4)]" : "bg-white/5 hover:bg-white/10 border-white/15 text-foreground"}`}
                 onClick={() => setLanguage(lang)}
               >
                 {LANGUAGE_LABELS[lang]}
@@ -640,7 +655,7 @@ export default function ProfileSettings() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-xl gap-2"
+                className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-2"
                 onClick={() => navigate('/notifications')}
               >
                 <Bell className="h-4 w-4" />
@@ -676,7 +691,7 @@ export default function ProfileSettings() {
         {/* Logout */}
         <Button
           variant="outline"
-          className="w-full rounded-2xl h-12 text-destructive border-destructive/30 hover:bg-destructive/10 font-bold gap-2"
+          className="w-full rounded-2xl h-12 text-destructive bg-destructive/10 hover:bg-destructive/20 backdrop-blur-xl border border-destructive/30 font-bold gap-2 transition-all"
           onClick={async () => {
             await signOut();
             navigate('/');
@@ -688,10 +703,10 @@ export default function ProfileSettings() {
       </main>
 
       {/* Sticky Save Button */}
-      <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2">
+      <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pt-3 bg-gradient-to-t from-background via-background/80 to-transparent">
         <div className="container mx-auto max-w-2xl">
           <Button
-            className="w-full rounded-xl h-12 text-base font-black shadow-lg"
+            className="w-full rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] h-14 text-base font-black"
             disabled={loadingProfile || saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
           >
