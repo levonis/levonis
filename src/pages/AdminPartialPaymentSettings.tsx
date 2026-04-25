@@ -29,10 +29,10 @@ const defaultSettings: PartialPaymentSettings = {
   fee_label_ar: 'رسوم الدفع الجزئي',
   fee_label_en: 'Partial Payment Fee',
   fee_tiers: [
-    { min_amount: 0, max_amount: 250000, fee_percentage: 10 },
+    { min_amount: 1, max_amount: 250000, fee_percentage: 10 },
     { min_amount: 250001, max_amount: 500000, fee_percentage: 7 },
     { min_amount: 500001, max_amount: 1000000, fee_percentage: 5 },
-    { min_amount: 1000001, max_amount: 2000000, fee_percentage: 3 },
+    { min_amount: 1000001, max_amount: 999999999, fee_percentage: 3 },
   ],
   cod_label_ar: 'رسوم الدفع عند الاستلام',
   cod_default_fee_type: 'percentage',
@@ -327,7 +327,7 @@ export default function AdminPartialPaymentSettings() {
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>• قيمة الطلب: {formatAmount(exampleAmount)} د.ع</p>
                 <p>• الشريحة المطبقة: {applicableTier ? `${formatAmount(applicableTier.min_amount)} - ${formatAmount(applicableTier.max_amount)} د.ع (${applicableTier.fee_percentage}%)` : 'لا توجد شريحة'}</p>
-                <p>• ربع المبلغ (25%): {formatAmount(Math.ceil(exampleAmount * 0.25))} د.ع</p>
+                <p>• نصف المبلغ (50%): {formatAmount(Math.ceil(exampleAmount * 0.5))} د.ع</p>
                 <p>• رسوم الدفع الجزئي: {formatAmount(exampleFee)} د.ع</p>
                 <div className="pt-2 mt-2 border-t border-border/40">
                   <p className="font-semibold text-foreground">ما يراه العميل في صفحة الطلب:</p>
