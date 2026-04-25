@@ -1349,7 +1349,7 @@ const ProductDetail = () => {
 
       {/* Sticky bottom bar — floats above the bottom navbar */}
       <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-4 left-0 right-0 z-[60] px-3 pointer-events-none">
-        <div className="mx-auto w-full max-w-md rounded-full border border-border/50 bg-card/85 backdrop-blur-xl p-1.5 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.45),0_4px_12px_-4px_rgba(0,0,0,0.3)] pointer-events-auto">
+        <div className="mx-auto w-full max-w-md rounded-full glass-floating p-1.5 pointer-events-auto">
           <div className="flex items-center gap-1 min-w-0">
             {/* Quantity */}
             {isAvailableForCurrentSaleType && (
