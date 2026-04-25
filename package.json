@@ -11,7 +11,12 @@
     "preview": "vite preview",
     "verify:build": "node scripts/verify-build.mjs",
     "verify:build:full": "node scripts/verify-build.mjs --preview",
-    "verify:dist": "node scripts/verify-build.mjs --skip-build"
+    "verify:dist": "node scripts/verify-build.mjs --skip-build",
+    "android:doctor": "node scripts/android-build.mjs doctor",
+    "android:sync": "node scripts/android-build.mjs sync",
+    "android:gradle": "node scripts/android-build.mjs gradle",
+    "android:build": "node scripts/android-build.mjs full",
+    "android:release": "node scripts/android-build.mjs release"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",
