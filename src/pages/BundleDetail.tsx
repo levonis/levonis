@@ -344,17 +344,18 @@ const BundleDetail = () => {
                 <Link
                   key={idx}
                   to={`/product/${productSlug}`}
-                  className="group shrink-0 w-[110px] rounded-2xl overflow-hidden border border-white/15 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.1)] hover:border-primary/30 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.25)] transition-all duration-300"
+                  aria-label={`عرض المنتج ${item.products?.name_ar || 'منتج'}`}
+                  className="group shrink-0 w-[110px] rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.1)] hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.25)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   {itemImage && (
                     <div className="h-[80px] overflow-hidden relative">
-                      <img src={itemImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" draggable={false} />
+                      <img src={itemImage} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" draggable={false} />
                       <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-background/30 to-transparent" />
                     </div>
                   )}
                   <div className="p-1.5 relative z-10">
-                    <p className="text-[9px] font-bold text-foreground line-clamp-2 leading-tight">{item.products?.name_ar || 'منتج'}</p>
-                    <p className="text-[8px] text-primary mt-0.5 font-medium">عرض المنتج ←</p>
+                    <p className="text-[10px] font-bold text-foreground line-clamp-2 leading-tight">{item.products?.name_ar || 'منتج'}</p>
+                    <p className="text-[9px] text-primary mt-0.5 font-semibold">عرض المنتج ←</p>
                   </div>
                 </Link>
               );
