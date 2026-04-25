@@ -157,7 +157,8 @@ function AppContent() {
   const { visible: islandVisible } = useIsland();
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
-  const hideChrome = isGamesPage || isReelsPage;
+  const isAuthPage = location.pathname === "/auth";
+  const hideChrome = isGamesPage || isReelsPage || isAuthPage;
 
   useEffect(() => {
     if (isReelsPage) return;
