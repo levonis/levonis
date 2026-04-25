@@ -10,6 +10,7 @@ import OrdersCenter from "@/components/profile/OrdersCenter";
 import QuickServicesGrid from "@/components/profile/QuickServicesGrid";
 import CouponsStrip from "@/components/profile/CouponsStrip";
 import NotificationPromptBanner from "@/components/profile/NotificationPromptBanner";
+import Footer from "@/components/Footer";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -50,6 +51,11 @@ export default function Profile() {
 
         {user?.id && <CouponsStrip userId={user.id} />}
       </main>
+      {/* Footer rendered here so the native app shows it only inside
+          the profile page (CSS hides other footers when is-native). */}
+      <div data-native-footer-wrapper>
+        <Footer />
+      </div>
     </div>
   );
 }
