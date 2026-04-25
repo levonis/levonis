@@ -322,7 +322,7 @@ export default function MiniGames() {
       </div>
 
       {/* Game Grid */}
-      <div className="max-w-2xl mx-auto px-4 py-4 relative z-10">
+      <div className="max-w-2xl mx-auto px-4 py-4 pb-[calc(8rem+env(safe-area-inset-bottom))] relative z-10">
         <div className="grid grid-cols-2 gap-3">
           {filteredGames.map(game => (
             <GameCard
