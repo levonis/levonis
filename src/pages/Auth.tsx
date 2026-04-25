@@ -256,23 +256,40 @@ const Auth = () => {
     }
   };
 
+  // Shared glass styles
+  const glassInput = "h-12 bg-white/5 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all";
+  const glassPrimaryBtn = "w-full h-12 rounded-2xl font-bold backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.5),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const glassGhostBtn = "w-full h-11 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-foreground/80 hover:text-foreground transition-all";
+  const glassOutlineBtn = "w-full h-12 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const glassIconBox = "inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-xl border border-white/20 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.15)] mb-4";
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
+      {/* Glassmorphism background orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/30 blur-[120px] animate-pulse" />
+        <div className="absolute top-1/3 -left-40 w-[26rem] h-[26rem] rounded-full bg-purple-500/20 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute -bottom-40 right-1/4 w-[30rem] h-[30rem] rounded-full bg-cyan-400/20 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,hsl(var(--background)/0.4)_100%)]" />
+      </div>
+
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4">
-            <Sparkles className="w-8 h-8 text-primary mr-2" />
+          <div className="inline-flex items-center justify-center mb-4 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.1)]">
+            <Sparkles className="w-8 h-8 text-primary mr-2 drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
             <h1 className="text-4xl font-black tracking-tight">
-              <span className="text-primary">LEV</span>
+              <span className="text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]">LEV</span>
               <span className="text-foreground">ONIS</span>
             </h1>
           </div>
           <p className="text-muted-foreground text-sm">{t('auth_platform_desc')}</p>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-card/80 backdrop-blur-xl rounded-3xl p-8 border border-border/50 shadow-2xl shadow-primary/5">
+        {/* Main Glass Card */}
+        <div className="relative rounded-3xl p-8 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.15)] overflow-hidden">
+          {/* Subtle inner glow */}
+          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 via-transparent to-transparent" />
           {showNewPasswordForm ? (
             <div className="space-y-6">
               <div className="text-center">
