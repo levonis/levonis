@@ -576,7 +576,6 @@ export default function CommunityMerchantStore() {
                 {[
                   { key: 'full_prepayment', label: 'دفع مقدم كامل', desc: 'افتراضي' },
                   { key: 'half_payment', label: 'دفع نصف المبلغ', desc: '50% مقدماً' },
-                  { key: 'quarter_payment', label: 'دفع ربع المبلغ', desc: '25% مقدماً' },
                 ].map(method => {
                   const isChecked = paymentMethods.includes(method.key);
                   return (
