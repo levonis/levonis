@@ -110,7 +110,8 @@ const ProductBundles = () => {
                 >
                   <Link
                     to={`/bundles/${bundle.id}`}
-                    className="group relative block rounded-2xl overflow-hidden border border-white/15 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.3)] hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300"
+                    aria-label={`${pickI18n(bundle, "title", language)} — ${formatPrice(bundle.bundle_price)} دينار${discount > 0 ? `، خصم ${discount}%` : ''}${bundle.outOfStock ? '، نفذ من المخزون' : ''}`}
+                    className="group relative block rounded-2xl overflow-hidden border border-white/15 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.3)] hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     {/* Top highlight */}
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent z-20 pointer-events-none" />
@@ -122,20 +123,20 @@ const ProductBundles = () => {
                       {bundle.image_url ? (
                         <img
                           src={bundle.image_url}
-                          alt={pickI18n(bundle, "title", language)}
+                          alt=""
                           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${bundle.outOfStock ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/5">
-                          <Package className="h-8 w-8 text-primary/30" />
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/5" aria-hidden="true">
+                          <Package className="h-8 w-8 text-primary/40" />
                         </div>
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background/40 to-transparent backdrop-blur-[1px]" />
 
                       {/* Out of stock diagonal ribbon */}
                       {bundle.outOfStock && (
-                        <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-                          <div className="absolute bg-destructive/80 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap"
+                        <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+                          <div className="absolute bg-destructive text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap shadow-lg"
                             style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
                             نفذ من المخزون
                           </div>
@@ -144,11 +145,11 @@ const ProductBundles = () => {
 
                       {/* Badges */}
                       {discount > 0 && (
-                        <div className="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 rounded-md bg-destructive/85 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-[9px] font-bold leading-none shadow-lg">
+                        <div className="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 rounded-md bg-destructive text-destructive-foreground text-[9px] font-bold leading-none shadow-lg" aria-hidden="true">
                           -{discount}%
                         </div>
                       )}
-                      <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/25 dark:border-white/15 text-foreground text-[8px] font-medium leading-none shadow-sm">
+                      <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-background/70 backdrop-blur-xl border border-white/30 dark:border-white/15 text-foreground text-[8px] font-semibold leading-none shadow-sm" aria-hidden="true">
                         {SALE_TYPE_LABELS[saleType] || saleType}
                       </div>
                     </div>
