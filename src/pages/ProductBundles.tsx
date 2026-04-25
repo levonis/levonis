@@ -159,10 +159,10 @@ const ProductBundles = () => {
                       <p className="text-[11px] font-bold text-foreground line-clamp-2 leading-tight">{pickI18n(bundle, "title", language)}</p>
                       <div className="flex items-baseline gap-1">
                         <span className="text-sm font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
-                        <span className="text-[8px] text-muted-foreground">د.ع</span>
+                        <span className="text-[9px] text-foreground/70 font-medium">د.ع</span>
                       </div>
                       {bundle.original_price > 0 && bundle.original_price > bundle.bundle_price && (
-                        <span className="text-[9px] text-muted-foreground/60 line-through block leading-none">
+                        <span className="text-[9px] text-foreground/55 line-through block leading-none">
                           {formatPrice(bundle.original_price)}
                         </span>
                       )}
