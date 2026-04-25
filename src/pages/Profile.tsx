@@ -51,6 +51,9 @@ export default function Profile() {
 
         {user?.id && <CouponsStrip userId={user.id} />}
       </main>
+      {/* Footer rendered here so the native app shows it only inside
+          the profile page (CSS hides other footers when is-native). */}
+      <Footer />
     </div>
   );
 }
