@@ -177,7 +177,7 @@ function AppContent() {
 
   return (
     <>
-      {!isAuthPage && <AppBackground />}
+      <AppBackground />
       <ScrollRestoration />
       <Suspense fallback={null}>
         <DeferredEffects />
