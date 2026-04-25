@@ -173,32 +173,32 @@ const BundleDetail = () => {
   return (
     <div className="min-h-screen bg-transparent" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/30">
+      <div className="sticky top-0 z-30 bg-background/40 backdrop-blur-2xl border-b border-white/15 dark:border-white/10">
         <div className="container max-w-lg mx-auto px-3 py-2.5 flex items-center gap-2">
-          <Link to="/bundles" className="w-8 h-8 rounded-lg bg-card border border-border/50 flex items-center justify-center">
+          <Link to="/bundles" className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] flex items-center justify-center hover:border-primary/30 transition-colors">
             <ArrowRight className="h-4 w-4 text-foreground" />
           </Link>
           <h1 className="text-sm font-bold text-foreground truncate flex-1">{pickI18n(bundle as any, 'title', language)}</h1>
-          <Badge className="bg-muted text-muted-foreground text-[9px] px-1.5 py-0.5 border border-border/30">
+          <div className="px-2 py-1 rounded-md bg-white/15 dark:bg-white/[0.06] backdrop-blur-xl border border-white/20 dark:border-white/10 text-foreground text-[9px] font-medium">
             {SALE_TYPE_LABELS[saleType] || saleType}
-          </Badge>
+          </div>
         </div>
       </div>
 
       <div className="container max-w-lg mx-auto px-3 pb-32">
         {/* Main Image */}
         {activeImage && (
-          <div className="relative mt-3 rounded-2xl overflow-hidden border border-border/20">
+          <div className="relative mt-3 rounded-2xl overflow-hidden border border-white/15 dark:border-white/10 shadow-[0_8px_32px_-8px_hsl(var(--primary)/0.25)]">
             <img src={activeImage} alt={pickI18n(bundle as any, 'title', language)} className="w-full aspect-square object-cover" />
             {bundle.isOutOfStock && (
-              <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                <Badge className="bg-destructive text-destructive-foreground text-sm px-4 py-1.5">انتهى العرض</Badge>
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-md flex items-center justify-center">
+                <div className="px-4 py-1.5 rounded-xl bg-destructive/85 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-sm font-bold shadow-lg">انتهى العرض</div>
               </div>
             )}
             {!bundle.isOutOfStock && discount > 0 && (
-              <Badge className="absolute top-3 left-3 bg-destructive/90 text-destructive-foreground text-xs px-2.5 py-1">
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-destructive/85 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-xs font-bold shadow-lg">
                 خصم {discount}%
-              </Badge>
+              </div>
             )}
           </div>
         )}
