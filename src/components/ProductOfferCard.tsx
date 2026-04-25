@@ -59,7 +59,7 @@ export default function ProductOfferCard({
   };
 
   return (
-    <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-primary/10">
+    <Card className="overflow-hidden group transition-all duration-300 border border-border/30 bg-card/40 backdrop-blur-2xl shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.25)] hover:shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.4)] hover:border-primary/40 hover:-translate-y-0.5">
       <div className="relative aspect-square">
         {images.length > 0 ? (
           <OptimizedImage
@@ -74,7 +74,7 @@ export default function ProductOfferCard({
         )}
 
         {/* Gift Badge */}
-        <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg">
+        <Badge className="absolute top-2 right-2 bg-green-500/20 backdrop-blur-md border border-green-400/40 text-green-50 gap-1 shadow-lg">
           <Gift className="h-3 w-3" />
           {giftTickets} تذكرة هدية
         </Badge>
