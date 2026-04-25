@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: true,
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
-    cssMinify: true,
+    cssMinify: 'esbuild',
     target: 'es2020',
     // Trim modulepreload graph: the initial HTML must NOT preload heavy lazy chunks
     // (three.js, html2canvas, jspdf, qr, charts, motion, sanitize, day-picker) — they
