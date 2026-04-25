@@ -1302,7 +1302,7 @@ const ProductDetail = () => {
 
               {/* Searchable attribute chips (SEO + AI matching) */}
               {searchableAttrs.length > 0 && (
-                <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-4">
+                <div className="glass-tile p-4">
                   <h3 className="text-sm font-bold text-foreground mb-2">
                     {language === 'en' ? 'Tags' : language === 'ku' ? 'تاگەکان' : 'الوسوم'}
                   </h3>
