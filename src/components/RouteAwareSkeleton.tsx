@@ -149,6 +149,26 @@ function pickSkeleton(pathname: string) {
     );
   }
 
+  // Auth (login / signup) — match the real Auth page background so there is
+  // no flash of a different layout on first paint.
+  if (p === "/auth" || p.startsWith("/auth")) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center space-y-3">
+            <div className="h-8 w-40 mx-auto rounded bg-muted/60 animate-pulse" />
+            <div className="h-3 w-56 mx-auto rounded bg-muted/40 animate-pulse" />
+          </div>
+          <div className="rounded-3xl border border-border/50 bg-card/80 backdrop-blur-xl p-8 space-y-4 shadow-2xl shadow-primary/5">
+            <div className="h-12 w-full rounded-xl bg-muted/60 animate-pulse" />
+            <div className="h-12 w-full rounded-xl bg-muted/60 animate-pulse" />
+            <div className="h-12 w-full rounded-xl bg-primary/20 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Default — generic shell
   return (
     <div className="min-h-screen bg-background">
