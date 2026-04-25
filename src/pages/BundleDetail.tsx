@@ -245,23 +245,23 @@ const BundleDetail = () => {
         <div className="mt-4 space-y-2">
           <h2 className="text-lg font-black text-foreground">{pickI18n(bundle as any, 'title', language)}</h2>
           {pickI18n(bundle as any, 'description', language) && (
-            <p className="text-xs text-muted-foreground leading-relaxed">{pickI18n(bundle as any, 'description', language)}</p>
+            <p className="text-sm text-foreground/80 leading-relaxed">{pickI18n(bundle as any, 'description', language)}</p>
           )}
         </div>
 
         {/* Price section */}
-        <div className="mt-4 p-3 rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)]">
+        <div className="mt-4 p-3 rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)]">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
-                <span className="text-[10px] text-muted-foreground">د.ع</span>
+                <span className="text-xl font-black text-primary" aria-label={`السعر ${formatPrice(bundle.bundle_price)} دينار عراقي`}>{formatPrice(bundle.bundle_price)}</span>
+                <span className="text-[11px] text-foreground/70 font-medium" aria-hidden="true">د.ع</span>
               </div>
               {bundle.original_price > 0 && (
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground/60 line-through">{formatPrice(bundle.original_price)}</span>
+                  <span className="text-xs text-foreground/55 line-through" aria-label={`السعر الأصلي ${formatPrice(bundle.original_price)}`}>{formatPrice(bundle.original_price)}</span>
                   {discount > 0 && (
-                    <span className="text-[10px] text-primary font-bold">وفّر {formatPrice(bundle.original_price - bundle.bundle_price)} د.ع</span>
+                    <span className="text-[11px] text-primary font-bold">وفّر {formatPrice(bundle.original_price - bundle.bundle_price)} د.ع</span>
                   )}
                 </div>
               )}
