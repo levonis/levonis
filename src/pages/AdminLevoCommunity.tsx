@@ -365,27 +365,27 @@ function CommissionPaymentSettings() {
   });
 
   const [halfFee, setHalfFee] = useState(5);
-  const [quarterFee, setQuarterFee] = useState(10);
+  
   const [codFee, setCodFee] = useState(10);
   const [fixedFee, setFixedFee] = useState(0);
   const [maxDebt, setMaxDebt] = useState(10000);
   const [maxDebtDays, setMaxDebtDays] = useState(3);
   const [codEnabled, setCodEnabled] = useState(false);
   const [halfEnabled, setHalfEnabled] = useState(true);
-  const [quarterEnabled, setQuarterEnabled] = useState(false);
+  
   const [fixedEnabled, setFixedEnabled] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   if (config && !initialized) {
     setHalfFee(config.half_payment_fee ?? 5);
-    setQuarterFee(config.quarter_payment_fee ?? 10);
+    
     setCodFee(config.cod_merchant_fee ?? 10);
     setFixedFee(config.fixed_amount_fee ?? 0);
     setMaxDebt(config.max_debt_amount ?? 10000);
     setMaxDebtDays(config.max_debt_days ?? 3);
     setCodEnabled(config.cod_enabled ?? false);
     setHalfEnabled(config.half_payment_enabled ?? true);
-    setQuarterEnabled(config.quarter_payment_enabled ?? false);
+    
     setFixedEnabled(config.fixed_amount_enabled ?? false);
     setInitialized(true);
   }
@@ -394,14 +394,14 @@ function CommissionPaymentSettings() {
     mutationFn: async () => {
       const value = {
         half_payment_fee: halfFee,
-        quarter_payment_fee: quarterFee,
+        
         cod_merchant_fee: codFee,
         fixed_amount_fee: fixedFee,
         max_debt_amount: maxDebt,
         max_debt_days: maxDebtDays,
         cod_enabled: codEnabled,
         half_payment_enabled: halfEnabled,
-        quarter_payment_enabled: quarterEnabled,
+        
         fixed_amount_enabled: fixedEnabled,
       };
 
@@ -461,24 +461,7 @@ function CommissionPaymentSettings() {
           <p className="text-[9px] text-muted-foreground">العميل يدفع 50% مقدماً + {halfFee}% عمولة، والباقي عند الاستلام</p>
         </div>
 
-        {/* Quarter Payment */}
-        <div className="rounded-lg border border-border/60 p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Banknote className="h-3.5 w-3.5 text-purple-500" />
-              <span className="text-xs font-bold">ربع المبلغ</span>
-              <Badge variant="secondary" className="text-[8px] h-4">عمولة من العميل</Badge>
-            </div>
-            <Switch checked={quarterEnabled} onCheckedChange={setQuarterEnabled} />
-          </div>
-          {quarterEnabled && (
-            <div className="flex items-center gap-2">
-              <Input type="number" value={quarterFee} onChange={(e) => setQuarterFee(Number(e.target.value))} className="h-7 text-xs flex-1" min={0} max={50} step={0.5} />
-              <span className="text-[10px] text-muted-foreground">% إضافية</span>
-            </div>
-          )}
-          <p className="text-[9px] text-muted-foreground">العميل يدفع 25% مقدماً + {quarterFee}% عمولة، والباقي عند الاستلام</p>
-        </div>
+
 
         {/* COD */}
         <div className="rounded-lg border border-border/60 p-3 space-y-2">
