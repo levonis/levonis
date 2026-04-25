@@ -130,18 +130,25 @@ function isValidPhone(raw: string) {
   return /^\+9647\d{8,9}$/.test(v) || /^07\d{8,9}$/.test(v);
 }
 
-// Section wrapper component
+// Glass shared classes
+const glassInput = "bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all";
+const glassPrimaryBtn = "rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98]";
+const glassOutlineBtn = "rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all";
+
+// Section wrapper component - glassmorphism
 const SettingsSection = ({ icon: Icon, title, children, className }: { icon: any; title: string; children: React.ReactNode; className?: string }) => (
-  <div className={cn("rounded-2xl border border-border/40 bg-card overflow-hidden", className)}>
-    <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/30 bg-card">
-      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Icon className="h-4 w-4 text-primary" />
+  <div className={cn("relative rounded-3xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.2),inset_0_1px_0_0_hsl(0_0%_100%/0.1)] overflow-hidden", className)}>
+    <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+    <div className="relative flex items-center gap-2.5 px-4 py-3 border-b border-white/10">
+      <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.15)]">
+        <Icon className="h-4 w-4 text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
       </div>
       <h2 className="text-sm font-black text-foreground">{title}</h2>
     </div>
-    <div className="p-4">{children}</div>
+    <div className="relative p-4">{children}</div>
   </div>
 );
+
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
