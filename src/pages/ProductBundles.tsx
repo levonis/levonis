@@ -71,18 +71,22 @@ const ProductBundles = () => {
       <div className="container max-w-lg mx-auto px-3 pt-4 pb-24">
         {/* Page title */}
         <div className="flex items-center gap-2 mb-4">
-          <Link to="/" className="w-8 h-8 rounded-lg bg-card border border-border/50 flex items-center justify-center">
+          <Link to="/" className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] flex items-center justify-center hover:border-primary/30 transition-colors">
             <ArrowRight className="h-4 w-4 text-foreground" />
           </Link>
-          <Sparkles className="h-4 w-4 text-primary" />
-          <h1 className="text-lg font-black text-foreground">باقات وعروض</h1>
+          <div className="w-8 h-8 rounded-xl bg-primary/10 backdrop-blur-xl border border-primary/20 flex items-center justify-center">
+            <Sparkles className="h-4 w-4 text-primary" />
+          </div>
+          <h1 className="text-lg font-black text-foreground tracking-tight">باقات وعروض</h1>
         </div>
 
         {isLoading ? (
           <ListCardsSkeleton count={4} />
         ) : !bundles?.length ? (
           <div className="text-center py-20 space-y-3">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground/30" />
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 flex items-center justify-center">
+              <Package className="h-8 w-8 text-muted-foreground/40" />
+            </div>
             <p className="text-sm text-muted-foreground">لا توجد باقات متاحة حالياً</p>
           </div>
         ) : (
@@ -102,8 +106,13 @@ const ProductBundles = () => {
                 >
                   <Link
                     to={`/bundles/${bundle.id}`}
-                    className="block rounded-xl overflow-hidden border border-border/30 bg-card/80 backdrop-blur-md hover:border-primary/30 transition-all duration-300 group"
+                    className="group relative block rounded-2xl overflow-hidden border border-white/15 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)] hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.3)] hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300"
                   >
+                    {/* Top highlight */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent z-20 pointer-events-none" />
+                    {/* Glass tint */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/5 pointer-events-none z-[5]" />
+
                     {/* Image */}
                     <div className="relative aspect-square overflow-hidden">
                       {bundle.image_url ? (
@@ -113,16 +122,16 @@ const ProductBundles = () => {
                           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${bundle.outOfStock ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted/20">
-                          <Package className="h-8 w-8 text-muted-foreground/20" />
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/5">
+                          <Package className="h-8 w-8 text-primary/30" />
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background/40 to-transparent backdrop-blur-[1px]" />
 
                       {/* Out of stock diagonal ribbon */}
                       {bundle.outOfStock && (
                         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-                          <div className="absolute bg-destructive/90 text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap"
+                          <div className="absolute bg-destructive/80 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap"
                             style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
                             نفذ من المخزون
                           </div>
@@ -131,13 +140,13 @@ const ProductBundles = () => {
 
                       {/* Badges */}
                       {discount > 0 && (
-                        <Badge className="absolute top-1.5 left-1.5 bg-destructive/90 text-destructive-foreground text-[8px] px-1.5 py-0.5">
+                        <div className="absolute top-1.5 left-1.5 z-20 px-1.5 py-0.5 rounded-md bg-destructive/85 backdrop-blur-md border border-destructive-foreground/20 text-destructive-foreground text-[9px] font-bold leading-none shadow-lg">
                           -{discount}%
-                        </Badge>
+                        </div>
                       )}
-                      <Badge className="absolute top-1.5 right-1.5 bg-card/70 text-foreground text-[7px] px-1 py-0.5 backdrop-blur-md border border-border/30">
+                      <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/25 dark:border-white/15 text-foreground text-[8px] font-medium leading-none shadow-sm">
                         {SALE_TYPE_LABELS[saleType] || saleType}
-                      </Badge>
+                      </div>
                     </div>
 
                     {/* Info */}
