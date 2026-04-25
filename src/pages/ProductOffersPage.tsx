@@ -326,7 +326,7 @@ export default function ProductOffersPage() {
                       </>
                     )}
                   </div>
-                  <CardContent className="p-3 space-y-2">
+                  <CardContent className="p-3 space-y-2 bg-transparent">
                     <h3 className="font-semibold text-sm line-clamp-2">{offer.title_ar}</h3>
                     {offer.description_ar && <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>}
                     
