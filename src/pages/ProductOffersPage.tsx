@@ -193,12 +193,20 @@ export default function ProductOffersPage() {
   const TicketBadge = ({ offer }: { offer: ProductOffer }) => {
     const total = getTotalTickets(offer);
     if (!hasPromo) {
-      return <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة</Badge>;
+      return (
+        <Badge className="absolute top-2 right-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
+          <Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة
+        </Badge>
+      );
     }
     return (
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-        <Badge className="bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{total} تذكرة</Badge>
-        <Badge className="bg-amber-500 text-white gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse"><Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية</Badge>
+        <Badge className="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
+          <Gift className="h-3 w-3" />{total} تذكرة
+        </Badge>
+        <Badge className="bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-50 gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse">
+          <Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية
+        </Badge>
       </div>
     );
   };
@@ -207,19 +215,19 @@ export default function ProductOffersPage() {
     const total = getTotalTickets(offer);
     if (!hasPromo) {
       return (
-        <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
-          <p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
+        <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
         </div>
       );
     }
     return (
       <div className="space-y-1.5">
-        <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
-          <p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
+        <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
         </div>
-        <div className="text-center py-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center gap-1">
+        <div className="text-center py-1.5 bg-amber-500/10 backdrop-blur-md rounded-lg border border-amber-400/25 flex items-center justify-center gap-1">
           <PartyPopper className="h-3 w-3 text-amber-500" />
-          <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-bold">
             +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
           </p>
         </div>
@@ -317,12 +325,12 @@ export default function ProductOffersPage() {
                       <div className="w-full h-full bg-secondary flex items-center justify-center"><Package className="h-12 w-12 text-muted-foreground" /></div>
                     )}
                     <TicketBadge offer={offer} />
-                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">نفذت الكمية</Badge>}
+                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive/30 backdrop-blur-md border border-destructive/40 text-destructive-foreground">نفذت الكمية</Badge>}
                     {hasMultipleImages && (
                       <>
-                        <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'next', images); }}><ChevronRight className="h-4 w-4" /></Button>
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">{images.map((_, idx) => (<button key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentIndex ? 'bg-white' : 'bg-white/50'}`} onClick={(e) => { e.stopPropagation(); setImageIndices(prev => ({ ...prev, [offer.id]: idx })); }} />))}</div>
+                        <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-background/30 backdrop-blur-md border border-border/40 hover:bg-background/50 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-background/30 backdrop-blur-md border border-border/40 hover:bg-background/50 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'next', images); }}><ChevronRight className="h-4 w-4" /></Button>
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">{images.map((_, idx) => (<button key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentIndex ? 'bg-foreground' : 'bg-foreground/40'}`} onClick={(e) => { e.stopPropagation(); setImageIndices(prev => ({ ...prev, [offer.id]: idx })); }} />))}</div>
                       </>
                     )}
                   </div>
@@ -348,28 +356,28 @@ export default function ProductOffersPage() {
                     {offer.options && (offer.options as ProductOption[]).length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {(offer.options as ProductOption[]).filter(o => o.in_stock).slice(0, 3).map((opt, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                          <Badge key={idx} className="text-[10px] px-1.5 py-0.5 bg-secondary/40 backdrop-blur-md border border-border/40 text-foreground">
                             {opt.name_ar}
                           </Badge>
                         ))}
                         {(offer.options as ProductOption[]).filter(o => o.in_stock).length > 3 && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                          <Badge className="text-[10px] px-1.5 py-0.5 bg-secondary/40 backdrop-blur-md border border-border/40 text-foreground">
                             +{(offer.options as ProductOption[]).filter(o => o.in_stock).length - 3}
                           </Badge>
                         )}
                       </div>
                     )}
                     
-                    <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center justify-between pt-2 border-t border-border/40">
                       <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
-                      <Button size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
+                      <Button size="sm" className="gap-1 bg-primary/80 backdrop-blur-md border border-primary/40 hover:bg-primary/90 shadow-lg" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
                         {purchaseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
                         {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
                       </Button>
                     </div>
                     <TicketInfoBar offer={offer} />
                     {offer.stock_quantity !== null && !isOutOfStock && (
-                      <p className="text-xs text-center text-amber-600 font-medium bg-amber-500/10 py-1 rounded">
+                      <p className="text-xs text-center text-amber-700 dark:text-amber-300 font-medium bg-amber-500/10 backdrop-blur-md border border-amber-400/25 py-1 rounded">
                         📦 متبقي: {offer.stock_quantity} فقط
                       </p>
                     )}
