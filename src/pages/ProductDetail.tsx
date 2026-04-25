@@ -829,8 +829,8 @@ const ProductDetail = () => {
                         </CarouselItem>
                       ))}
                     </CarouselContent>
-                    <CarouselPrevious className="right-2 left-auto h-9 w-9 bg-card/80 hover:bg-card border-border/30 hidden md:flex" />
-                    <CarouselNext className="left-2 right-auto h-9 w-9 bg-card/80 hover:bg-card border-border/30 hidden md:flex" />
+                    <CarouselPrevious className="right-2 left-auto h-9 w-9 glass-trigger hidden md:flex" />
+                    <CarouselNext className="left-2 right-auto h-9 w-9 glass-trigger hidden md:flex" />
                   </Carousel>
                 ) : (
                   <div className="aspect-square overflow-hidden md:rounded-2xl bg-muted">
