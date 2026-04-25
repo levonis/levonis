@@ -2699,18 +2699,7 @@ body.chat-fullscreen .community-messages-main {
       background: hsl(var(--card) / 0.92);
     }
   }
-  /* Accessibility: reduce transparency */
-  @media (prefers-reduced-transparency: reduce) {
-    :root {
-      --glass-bg-from: 255 255 255 / 0.32;
-      --glass-bg-to:   255 255 255 / 0.22;
-      --glass-blur:    12px;
-    }
-    .dark {
-      --glass-bg-from: 255 255 255 / 0.16;
-      --glass-bg-to:   255 255 255 / 0.08;
-    }
-  }
+  /* Removed prefers-reduced-transparency block: lightningcss/rolldown can mis-minify it into an empty selector. */
   /* Accessibility: reduce motion */
   @media (prefers-reduced-motion: reduce) {
     .glass-card-interactive {
