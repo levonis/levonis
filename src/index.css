@@ -2367,10 +2367,12 @@ body.keyboard-open .fixed.bottom-0 {
 }
 
 /* In the native app, hide the global Footer everywhere except inside
-   the user's profile page (where it is intentionally rendered with the
-   `data-native-footer` marker). */
-html.is-native footer:not([data-native-footer]) {
+   the user's profile page (where it sits inside `[data-native-footer-wrapper]`). */
+html.is-native footer {
   display: none !important;
+}
+html.is-native [data-native-footer-wrapper] footer {
+  display: block !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
