@@ -878,7 +878,7 @@ const ProductDetail = () => {
 
           {/* Product Info - Overlap card on mobile */}
           <div className="relative z-10 px-4 -mt-5 md:mt-0 md:px-0 pb-40 md:pb-12">
-            <div className="rounded-2xl border border-border/40 bg-card p-4 md:p-6 space-y-4 md:border-0 md:bg-transparent md:p-0">
+            <div className="glass-panel p-4 md:p-6 space-y-4 md:border-0 md:bg-transparent md:backdrop-blur-none md:shadow-none md:p-0">
               {/* Desktop back removed — handled by Dynamic Island */}
 
               {/* Category */}
