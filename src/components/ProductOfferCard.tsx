@@ -74,7 +74,7 @@ export default function ProductOfferCard({
         )}
 
         {/* Gift Badge */}
-        <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg">
+        <Badge className="absolute top-2 right-2 bg-green-500/20 backdrop-blur-md border border-green-400/40 text-green-50 gap-1 shadow-lg">
           <Gift className="h-3 w-3" />
           {giftTickets} تذكرة هدية
         </Badge>
