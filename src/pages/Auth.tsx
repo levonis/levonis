@@ -287,12 +287,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
-      {/* Glassmorphism background orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/30 blur-[120px] animate-pulse" />
-        <div className="absolute top-1/3 -left-40 w-[26rem] h-[26rem] rounded-full bg-purple-500/20 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute -bottom-40 right-1/4 w-[30rem] h-[30rem] rounded-full bg-cyan-400/20 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,hsl(var(--background)/0.4)_100%)]" />
       </div>
 
       <div className="w-full max-w-md relative z-10">
