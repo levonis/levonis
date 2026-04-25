@@ -10,6 +10,7 @@ import OrdersCenter from "@/components/profile/OrdersCenter";
 import QuickServicesGrid from "@/components/profile/QuickServicesGrid";
 import CouponsStrip from "@/components/profile/CouponsStrip";
 import NotificationPromptBanner from "@/components/profile/NotificationPromptBanner";
+import Footer from "@/components/Footer";
 
 export default function Profile() {
   const { user } = useAuth();
