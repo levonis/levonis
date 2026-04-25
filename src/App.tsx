@@ -176,20 +176,22 @@ function AppContent() {
 
   return (
     <>
-      <AppBackground />
+      {!isAuthPage && <AppBackground />}
       <ScrollRestoration />
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
-      <DynamicIsland />
-      <ProfileOrb />
-      <ProfileExpansionShell>
-        <Suspense fallback={null}>
-          <RequireAuth>
-            <Profile />
-          </RequireAuth>
-        </Suspense>
-      </ProfileExpansionShell>
+      {!isAuthPage && <DynamicIsland />}
+      {!isAuthPage && <ProfileOrb />}
+      {!isAuthPage && (
+        <ProfileExpansionShell>
+          <Suspense fallback={null}>
+            <RequireAuth>
+              <Profile />
+            </RequireAuth>
+          </Suspense>
+        </ProfileExpansionShell>
+      )}
       <main
         style={{ paddingTop: mainPaddingTop }}
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
