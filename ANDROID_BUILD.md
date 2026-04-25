@@ -135,7 +135,34 @@ cd android
 
 ---
 
-## 6. Troubleshooting
+## 6. Detailed build logs (recommended)
+
+Use the bundled runner at `scripts/android-build.mjs` for **timestamped,
+file-saved logs** of every step. All output is mirrored to your terminal
+**and** written to `logs/android-build-<timestamp>.log`.
+
+| Command | What it runs |
+|---|---|
+| `npm run android:doctor` | Environment diagnostics only (Java, SDK, env vars, project files) |
+| `npm run android:sync` | `vite build` + `npx cap sync android` |
+| `npm run android:gradle` | `./gradlew assembleDebug --stacktrace --info` |
+| `npm run android:build` | Full: build + sync + Gradle debug |
+| `npm run android:release` | Full + `./gradlew assembleRelease --stacktrace --info` |
+
+Each run produces:
+- A live colored console stream
+- A complete log file under `logs/` (timestamped)
+- A **summary section** listing every captured `error/failure/exception` line
+
+**Always run `npm run android:doctor` first** if you hit issues — it will
+tell you immediately whether `JAVA_HOME`, `ANDROID_HOME`, or `dist/` are
+missing.
+
+> Add `logs/` to `.gitignore` so log files aren't committed.
+
+---
+
+## 7. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
