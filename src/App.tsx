@@ -197,7 +197,7 @@ function AppContent() {
         style={{ paddingTop: mainPaddingTop }}
         className="relative z-10 transition-[padding] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
       >
-        <Suspense fallback={<RouteAwareSkeleton />}>
+        <Suspense fallback={isAuthPage ? null : <RouteAwareSkeleton />}>
           <PageFade>
           <Routes>
             <Route path="/" element={<Home />} />
