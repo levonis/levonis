@@ -2850,35 +2850,7 @@ body.chat-fullscreen .community-messages-main {
     }
   }
 
-  /* Reduced transparency — bump opacity, reduce blur across all chat glass */
-  @media (prefers-reduced-transparency: reduce) {
-    .glass-chat-surface,
-    .glass-chat-panel,
-    .glass-chat-subtle {
-      background: hsl(var(--card) / 0.94);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    .glass-chat-input {
-      background: hsl(var(--card) / 0.94) !important;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    .glass-bubble-other {
-      background: hsl(var(--card) / 0.96);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-    }
-    .glass-bubble-me {
-      background: hsl(var(--primary) / 0.98);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-    }
-    .glass-row-hover:hover,
-    .glass-row-active {
-      background: hsl(var(--muted) / 0.7);
-    }
-  }
+  /* Reduced transparency block removed for compatibility with rolldown/lightningcss builds. */
 
   /* Reduced motion — disable transitions on chat surfaces */
   @media (prefers-reduced-motion: reduce) {
