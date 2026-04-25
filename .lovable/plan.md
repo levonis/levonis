@@ -1,44 +1,54 @@
-# توحيد إعدادات الشريط الإخباري
+# خطة: حذف "ربع المبلغ"، توسيع شرائح الدفع الجزئي، وحد كمية 50 لكل منتج
 
-## الهدف
-جعل إعدادات الحركة (السرعة، الاتجاه، المسافة، اللون) **موحّدة وعامة** تُطبَّق على جميع النصوص دفعة واحدة، مع إبقاء إمكانية إضافة عدة نصوص كل واحد منها يظهر بالتتابع داخل نفس الشريط.
+## 1) حذف خيار "ربع المبلغ" نهائياً واستبداله بـ "نصف المبلغ"
 
-## الوضع الحالي
-- كل إعلان في الجدول يحمل إعداداته الخاصة (`speed`, `direction`, `gap`, `color`).
-- الجزيرة تتنقّل بين النصوص وكل نص يستخدم إعداداته → سلوك غير متّسق.
+**`src/pages/Cart.tsx`**
+- تغيير نوع `preOrderPaymentOption` من `'full' | 'quarter' | 'cod'` إلى `'full' | 'half' | 'cod'`.
+- تحديث `calculatePartialPaymentFee` و `preOrderPaymentAmount` و `remainingAmount` لاستخدام `0.5` بدلاً من `0.25`.
+- تغيير جميع شروط `=== 'quarter'` إلى `=== 'half'`، ونصوص الواجهة من "ربع" إلى "نصف"، وقيم RadioGroup.
+- تحديث مفاتيح الترجمة (`cart_preorder_quarter*` → `cart_preorder_half*`) في `src/lib/i18n/*` أو إعادة استخدام مفاتيح half إن وُجدت.
 
-## التغييرات المطلوبة
+**`src/pages/ChatOrderCheckout.tsx`**
+- إزالة `'quarter'` من `PaymentMethod` وكل الشروط/الرسوم/التسميات والـ RadioGroupItem الخاص به (يبقى `wallet | half`).
 
-### 1. لوحة الإدارة `/admin/announcements`
-- **فصل الإعدادات عن النصوص**: تظهر الإعدادات (السرعة، الاتجاه، المسافة، اللون، التقلب التلقائي، التحريك الدائم، مدة العرض) في **بطاقة إعدادات عامة واحدة** أعلى الصفحة بدل تكرارها داخل كل إعلان.
-- **نموذج إضافة/تعديل النص**: يحتوي فقط على:
-  - نص الإعلان (عربي)
-  - نص الإعلان (إنجليزي - اختياري)
-  - تفعيل/إيقاف
-- زر "حفظ الإعدادات العامة" يحدّث صف إعدادات واحد في قاعدة البيانات.
-- **المعاينة المباشرة** تستخدم الإعدادات العامة وتعرض جميع النصوص النشطة.
+**`src/pages/CommunityMerchantStore.tsx`**
+- حذف عنصر `{ key: 'quarter_payment', label: 'دفع ربع المبلغ' ... }` من قائمة طرق الدفع.
 
-### 2. قاعدة البيانات
-- إنشاء جدول جديد `announcement_settings` (صف واحد فقط - singleton):
-  - `id`, `speed`, `direction`, `gap`, `color`, `auto_rotate`, `display_duration`, `always_move`, `updated_at`.
-- جدول `announcements` يحتفظ فقط بـ: `id`, `message_ar`, `message`, `active`, `created_at`.
-- الأعمدة القديمة (`speed`, `direction`, `gap`, `color`...) في جدول `announcements` تُهجَر بياناتها لصف الإعدادات العامة ثم تُحذف.
-- RLS: قراءة عامة لجدول الإعدادات، كتابة للأدمن فقط.
+**`src/pages/AdminLevoCommunity.tsx`**
+- حذف بطاقة "ربع المبلغ" بالكامل (الحالات `quarterFee/quarterEnabled` والـ Switch والحقل) وإزالتها من `saveMutation.value`.
 
-### 3. الجزيرة `DynamicIsland`
-- جلب الإعدادات العامة من `announcement_settings` + قائمة النصوص النشطة من `announcements`.
-- جميع النصوص تستخدم نفس `speed/direction/gap`.
-- التنقل بين النصوص يحترم `display_duration` و `auto_rotate` من الإعدادات العامة.
-- إبطال الكاش (`island-announcements` + `island-settings`) فور حفظ الأدمن.
+**`src/hooks/useCommissionSettings.ts`**
+- حذف الحقلين `quarter_payment_fee` و `quarter_payment_enabled` من الواجهة والقيم الافتراضية.
 
-## التفاصيل التقنية
-- استخدام `useQuery` منفصل لإعدادات الجزيرة بمفتاح `island-settings`.
-- Migration ينقل بيانات الإعلان الأحدث كقيم افتراضية لصف الإعدادات.
-- `IslandContext` يُغيَّر `PromoItem` ليحتوي فقط على `text`، والإعدادات تأتي من `promoSettings` المشتركة.
+## 2) توسيع شرائح الدفع الجزئي من 1 د.ع إلى ما لا نهاية
 
-## الملفات المتأثرة
-- migration جديد لإنشاء الجدول وترحيل البيانات
-- `src/pages/AdminAnnouncements.tsx` - إعادة هيكلة الواجهة
-- `src/components/admin/IslandPromoPreview.tsx` - استخدام الإعدادات العامة
-- `src/island/IslandContext.tsx` - فصل الجلب وتبسيط `PromoItem`
-- `src/island/DynamicIsland.tsx` - تطبيق الإعدادات الموحدة على كل النصوص
+**Migration على جدول `default_settings`**
+- تحديث السجل `partial_payment_settings.fee_tiers` بحيث:
+  - أول شريحة `min_amount = 1`
+  - آخر شريحة `max_amount = 999999999` (عملياً ∞)
+  - الحفاظ على نفس النسب الحالية بين الشرائح.
+
+**`src/pages/Cart.tsx`**
+- منطق fallback لـ آخر شريحة موجود مسبقاً ويبقى. مراجعة فقط للتأكد أن المبالغ الصغيرة (1 د.ع) لا تُستثنى من خيار الدفع الجزئي.
+
+**واجهة تحرير الشرائح (إن وُجدت)**
+- رفع الحد الأقصى في حقل `max_amount` لقبول قيم كبيرة جداً.
+
+## 3) حد عام ثابت 50 وحدة لكل منتج في السلة
+
+**`src/hooks/useCart.tsx`**
+- إضافة ثابت `const MAX_QUANTITY_PER_ITEM = 50;` في أعلى الملف.
+- في `addToCart`:
+  - إذا وُجد `existingItem`: التحقق `existingItem.quantity + quantity ≤ 50`، وإلا toast: «الحد الأقصى 50 قطعة لكل منتج في السلة» وإرجاع `false`.
+  - عند الإدراج الجديد: التحقق `quantity ≤ 50`.
+  - في فرع معالجة `23505`: نفس التحقق قبل `updateQuantity`.
+- في `updateQuantity`: إذا `quantity > 50` → toast وإرجاع مبكر.
+- في فرع البندلز (السطر ~712): تطبيق نفس الحد على `existingBundle.quantity + quantity`.
+
+**واجهة السلة `src/pages/Cart.tsx` و `src/components/GroupedCartItem.tsx`**
+- تعطيل زر `+` عند بلوغ 50 مع نص خفيف توضيحي.
+
+## ملاحظات
+- لا حاجة لتعديل قاعدة البيانات لحد الكمية (يكفي على مستوى التطبيق + UI).
+- الـ migration الوحيد المطلوب هو تحديث `partial_payment_settings.fee_tiers`.
+- بعد التطبيق نتحقق بـ `rg "quarter"` من خلو الكود من أي مرجع متبقٍ.
