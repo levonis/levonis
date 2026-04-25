@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { LogIn, UserPlus, User as UserIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
