@@ -234,7 +234,7 @@ const BundleDetail = () => {
         </div>
 
         {/* Price section */}
-        <div className="mt-4 p-3 rounded-xl bg-card border border-border/30">
+        <div className="mt-4 p-3 rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.15)]">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-baseline gap-1.5">
@@ -251,7 +251,7 @@ const BundleDetail = () => {
               )}
             </div>
             {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
-              <div className="text-[10px] text-muted-foreground text-left">
+              <div className="text-[10px] text-muted-foreground text-left px-2.5 py-1.5 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-md border border-white/15 dark:border-white/10">
                 <span className="block">متوفر</span>
                 <span className="font-bold text-foreground">{maxQty} باقة</span>
               </div>
@@ -261,8 +261,10 @@ const BundleDetail = () => {
 
         {/* Bundle Contents */}
         <div className="mt-4">
-          <div className="flex items-center gap-1.5 mb-2.5">
-            <Package className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 backdrop-blur-xl border border-primary/20 flex items-center justify-center">
+              <Package className="h-3.5 w-3.5 text-primary" />
+            </div>
             <h3 className="text-sm font-bold text-foreground">محتويات الباقة</h3>
             <span className="text-[10px] text-muted-foreground">({bundle.items.length} منتجات)</span>
           </div>
