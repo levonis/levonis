@@ -116,6 +116,7 @@ export const useIslandSearch = ({ query, scope, categoryId, enabled = true, limi
           "id, slug, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, image_url, price, category_id, in_stock",
         )
         .eq("in_stock", true)
+        .eq("is_pricing_updated", true)
         .or(
           [
             `name.ilike.${term}`,
