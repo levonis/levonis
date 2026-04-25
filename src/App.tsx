@@ -345,10 +345,12 @@ function AppContent() {
       {!hideChrome && <div className="h-16 md:hidden" />}
       {!hideChrome &&
       <>
-          {/* Levo Help Bot - floating assistant (above chat button) */}
-          <Suspense fallback={null}>
-            <LevoHelpBot />
-          </Suspense>
+          {/* Levo Help Bot - only on home page */}
+          {location.pathname === "/" && (
+            <Suspense fallback={null}>
+              <LevoHelpBot />
+            </Suspense>
+          )}
           {/* PWA Install Prompt */}
           <Suspense fallback={null}>
             <InstallPrompt />
