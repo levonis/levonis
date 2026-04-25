@@ -287,9 +287,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      </div>
-
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -305,8 +302,6 @@ const Auth = () => {
 
         {/* Main Glass Card */}
         <div className="relative rounded-3xl p-8 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.15)] overflow-hidden">
-          {/* Subtle inner glow */}
-          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 via-transparent to-transparent" />
           <div className="relative z-10">
           {showNewPasswordForm ? (
             <div className="space-y-6">
