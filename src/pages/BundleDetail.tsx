@@ -282,7 +282,7 @@ const BundleDetail = () => {
               <Package className="h-3.5 w-3.5 text-primary" />
             </div>
             <h3 className="text-sm font-bold text-foreground">محتويات الباقة</h3>
-            <span className="text-[10px] text-muted-foreground">({bundle.items.length} منتجات)</span>
+            <span className="text-[11px] text-foreground/70 font-medium">({bundle.items.length} منتجات)</span>
           </div>
 
           <div className="space-y-2">
@@ -291,28 +291,31 @@ const BundleDetail = () => {
               const colorObj = item.selected_color ? colors.find((c: any) => (c.color || c.name) === item.selected_color) : null;
               const itemImage = colorObj?.image_url || colorObj?.image || item.products?.image_url || item.products?.images?.[0];
               const productSlug = item.products?.slug || item.products?.id || item.product_id;
+              const productName = item.products?.name_ar || 'منتج';
               return (
                 <Link
                   to={`/product/${productSlug}`}
                   key={idx}
+                  aria-label={`عرض المنتج: ${productName}، الكمية ${item.quantity}${item.selected_color ? `، اللون ${item.selected_color}` : ''}`}
+                  className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.1)] hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300"
+                    className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.1)] hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300"
                   >
                   {itemImage && (
-                    <img src={itemImage} className="w-14 h-14 rounded-xl object-cover shrink-0 border border-white/15 dark:border-white/10" />
+                    <img src={itemImage} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-white/20 dark:border-white/10" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-foreground truncate">{item.products?.name_ar || 'منتج'}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                    <p className="text-xs font-bold text-foreground truncate">{productName}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-foreground/70">
                       <span>الكمية: {item.quantity}</span>
                       {item.selected_color && <span>• {item.selected_color}</span>}
                     </div>
                   </div>
-                  <ChevronLeft className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                  <ChevronLeft className="h-4 w-4 text-foreground/50 shrink-0" aria-hidden="true" />
                 </motion.div>
                 </Link>
               );
