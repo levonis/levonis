@@ -2354,6 +2354,13 @@ html.is-native .sticky.top-0 {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Push fixed elements anchored at top-3 (e.g. ProfileOrb) below the
+   status bar / Dynamic Island on native, so they align with the in-app
+   Dynamic Island shell which already adds safe-area padding via top-0. */
+html.is-native .fixed.top-3 {
+  top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+}
+
 body.keyboard-open .fixed.bottom-0 {
   transform: translateY(calc(-1 * var(--keyboard-height)));
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
