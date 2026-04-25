@@ -52,7 +52,7 @@ const ProductDetailSkeleton = () => (
     </div>
     {/* Content card */}
     <div className="px-4 -mt-6 relative z-10">
-      <div className="rounded-2xl border bg-card p-4 space-y-4">
+      <div className="glass-panel p-4 space-y-4">
         <Skeleton className="h-5 w-16 rounded-full" />
         <Skeleton className="h-7 w-3/4" />
         <Skeleton className="h-4 w-full" />
@@ -829,8 +829,8 @@ const ProductDetail = () => {
                         </CarouselItem>
                       ))}
                     </CarouselContent>
-                    <CarouselPrevious className="right-2 left-auto h-9 w-9 bg-card/80 hover:bg-card border-border/30 hidden md:flex" />
-                    <CarouselNext className="left-2 right-auto h-9 w-9 bg-card/80 hover:bg-card border-border/30 hidden md:flex" />
+                    <CarouselPrevious className="right-2 left-auto h-9 w-9 glass-trigger hidden md:flex" />
+                    <CarouselNext className="left-2 right-auto h-9 w-9 glass-trigger hidden md:flex" />
                   </Carousel>
                 ) : (
                   <div className="aspect-square overflow-hidden md:rounded-2xl bg-muted">
@@ -878,7 +878,7 @@ const ProductDetail = () => {
 
           {/* Product Info - Overlap card on mobile */}
           <div className="relative z-10 px-4 -mt-5 md:mt-0 md:px-0 pb-40 md:pb-12">
-            <div className="rounded-2xl border border-border/40 bg-card p-4 md:p-6 space-y-4 md:border-0 md:bg-transparent md:p-0">
+            <div className="glass-panel p-4 md:p-6 space-y-4 md:border-0 md:bg-transparent md:backdrop-blur-none md:shadow-none md:p-0">
               {/* Desktop back removed — handled by Dynamic Island */}
 
               {/* Category */}
@@ -918,7 +918,7 @@ const ProductDetail = () => {
               )}
 
               {/* Price section */}
-              <div className="rounded-xl bg-primary/8 border border-primary/20 p-3 backdrop-blur-sm shadow-[0_4px_16px_hsl(var(--primary)/0.1),inset_0_1px_0_hsl(var(--primary)/0.1)]">
+              <div className="glass-tile rounded-xl p-3">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-black text-primary">{formatPrice(finalPrice)}</span>
                   <span className="text-sm text-muted-foreground">{currency}</span>
@@ -983,7 +983,7 @@ const ProductDetail = () => {
               {/* Sale Type Tabs */}
               {hasBothTypes && (
                 <Tabs value={activeSaleType} onValueChange={handleSaleTypeChange}>
-                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-card/40 backdrop-blur-sm border border-border/30 shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 glass-tile">
                     <TabsTrigger value="direct" className="rounded-lg gap-1.5 text-xs font-black transition-all data-[state=active]:shadow-[0_4px_12px_hsl(var(--primary)/0.25),inset_0_1px_0_hsl(var(--primary-glow)/0.3)] bg-card text-primary text-center">
                       <Package className="h-3.5 w-3.5" />{t('product_direct_sale')}
                     </TabsTrigger>
@@ -1020,7 +1020,7 @@ const ProductDetail = () => {
                   }
                   if (displayOptions.length === 0) return null;
                   return (
-                    <AccordionItem value="shipping" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                    <AccordionItem value="shipping" className="glass-tile rounded-xl">
                       <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                         <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" />{t('product_shipping_type')}
                           {selectedShippingOption === null && displayOptions.length > 1 && <Badge variant="destructive" className="text-[8px] px-1.5 py-0 h-4 mr-1">{t('pd_required_badge')}</Badge>}
@@ -1059,7 +1059,7 @@ const ProductDetail = () => {
 
                 {/* Product Options */}
                 {filteredOptions.length > 0 && (
-                  <AccordionItem value="options" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <AccordionItem value="options" className="glass-tile rounded-xl">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" />{t('product_options_available')}</span>
                     </AccordionTrigger>
@@ -1151,7 +1151,7 @@ const ProductDetail = () => {
 
                 {/* Colors */}
                 {filteredColors.length > 0 && (
-                  <AccordionItem value="colors" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <AccordionItem value="colors" className="glass-tile rounded-xl">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
@@ -1279,7 +1279,7 @@ const ProductDetail = () => {
 
               {/* Features */}
               {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-                <div className="rounded-xl border border-border/30 p-4">
+                <div className="glass-tile p-4">
                   <h3 className="text-sm font-black text-primary mb-3">{t('product_features')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {product.features.map((feature: any, index: number) => {
@@ -1302,7 +1302,7 @@ const ProductDetail = () => {
 
               {/* Searchable attribute chips (SEO + AI matching) */}
               {searchableAttrs.length > 0 && (
-                <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-4">
+                <div className="glass-tile p-4">
                   <h3 className="text-sm font-bold text-foreground mb-2">
                     {language === 'en' ? 'Tags' : language === 'ku' ? 'تاگەکان' : 'الوسوم'}
                   </h3>
@@ -1349,7 +1349,7 @@ const ProductDetail = () => {
 
       {/* Sticky bottom bar — floats above the bottom navbar */}
       <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-4 left-0 right-0 z-[60] px-3 pointer-events-none">
-        <div className="mx-auto w-full max-w-md rounded-full border border-border/50 bg-card/85 backdrop-blur-xl p-1.5 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.45),0_4px_12px_-4px_rgba(0,0,0,0.3)] pointer-events-auto">
+        <div className="mx-auto w-full max-w-md rounded-full glass-floating p-1.5 pointer-events-auto">
           <div className="flex items-center gap-1 min-w-0">
             {/* Quantity */}
             {isAvailableForCurrentSaleType && (
