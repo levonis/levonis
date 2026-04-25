@@ -278,19 +278,19 @@ const Auth = () => {
     }
   };
 
-  // Shared glass styles
-  const glassInput = "h-12 bg-white/5 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all";
-  const glassPrimaryBtn = "w-full h-12 rounded-2xl font-bold backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.5),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98]";
-  const glassGhostBtn = "w-full h-11 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 text-foreground/80 hover:text-foreground transition-all";
-  const glassOutlineBtn = "w-full h-12 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all hover:scale-[1.02] active:scale-[0.98]";
-  const glassIconBox = "inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-xl border border-white/20 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.15)] mb-4";
+  // Shared styles
+  const glassInput = "h-12 bg-card border border-border rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all";
+  const glassPrimaryBtn = "w-full h-12 rounded-2xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground border border-primary/40 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.35)] transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const glassGhostBtn = "w-full h-11 rounded-2xl bg-card hover:bg-card/80 border border-border text-foreground/80 hover:text-foreground transition-all";
+  const glassOutlineBtn = "w-full h-12 rounded-2xl bg-card hover:bg-card/80 border border-border hover:border-primary/40 text-foreground transition-all hover:scale-[1.02] active:scale-[0.98]";
+  const glassIconBox = "inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-card border border-border shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.08)] mb-4";
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
+    <div className="min-h-screen bg-card relative overflow-hidden flex items-center justify-center p-4">
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.1)]">
+          <div className="inline-flex items-center justify-center mb-4 px-6 py-3 rounded-2xl bg-card border border-border shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.08)]">
             <Sparkles className="w-8 h-8 text-primary mr-2 drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
             <h1 className="text-4xl font-black tracking-tight">
               <span className="text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]">LEV</span>
@@ -301,7 +301,7 @@ const Auth = () => {
         </div>
 
         {/* Main Glass Card */}
-        <div className="relative rounded-3xl p-8 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.15)] overflow-hidden">
+        <div className="relative rounded-3xl p-8 bg-card border border-border shadow-[0_20px_60px_-15px_hsl(var(--background)/0.45),inset_0_1px_0_0_hsl(var(--foreground)/0.08)] overflow-hidden">
           <div className="relative z-10">
           {showNewPasswordForm ? (
             <div className="space-y-6">
