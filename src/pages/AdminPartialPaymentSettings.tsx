@@ -331,7 +331,7 @@ export default function AdminPartialPaymentSettings() {
                 <p>• رسوم الدفع الجزئي: {formatAmount(exampleFee)} د.ع</p>
                 <div className="pt-2 mt-2 border-t border-border/40">
                   <p className="font-semibold text-foreground">ما يراه العميل في صفحة الطلب:</p>
-                  <p>• المبلغ المتبقي: {formatAmount(exampleAmount - Math.ceil(exampleAmount * 0.25) + exampleFee)} د.ع</p>
+                  <p>• المبلغ المتبقي: {formatAmount(exampleAmount - Math.ceil(exampleAmount * 0.5) + exampleFee)} د.ع</p>
                   <p className="text-xs text-muted-foreground italic">(النسبة مخفية - يظهر المبلغ الإضافي فقط)</p>
                 </div>
               </div>
