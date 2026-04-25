@@ -3,7 +3,10 @@ import { useLanguage } from '@/lib/i18n';
 import SEO from '@/components/SEO';
 import Footer from '@/components/Footer';
 import { organizationLd, breadcrumbLd } from '@/lib/seo/structured';
-import { Package, Truck, ShieldCheck, Users, Gamepad2, Printer } from 'lucide-react';
+import {
+  Package, Truck, ShieldCheck, Users, Gamepad2, Printer,
+  Award, Headphones, Globe, Smartphone, Heart, Sparkles, Download, MapPin
+} from 'lucide-react';
 
 const About = () => {
   const { language } = useLanguage();
@@ -16,19 +19,44 @@ const About = () => {
       sub: 'وجهتك الأولى للتقنية في العراق',
       story: 'قصتنا',
       storyText:
-        'انطلق LEVONIS برؤية واضحة: تقديم منتجات تقنية أصلية بأسعار منافسة لكل بيت عراقي. نجمع بين تجربة تسوق سلسة، ضمان رسمي، وتوصيل سريع لجميع المحافظات. نحن أكثر من متجر — نحن منصة متكاملة تضم متجر التجار، الألعاب، طابعات 3D، نظام الولاء، والكثير.',
+        'انطلق LEVONIS من بغداد برؤية بسيطة لكنها طموحة: تقديم منتجات تقنية أصلية بأسعار منافسة وخدمة تليق بطموح العراقيين. منذ التأسيس ونحن نعمل على بناء منصة متكاملة تجمع بين تجربة تسوق سلسة، ضمان رسمي معتمد، توصيل سريع لكل المحافظات، ومجتمع نابض بالحياة من المشترين والتجار. اليوم، LEVONIS أكثر من متجر — هي نظام بيئي يضم متجر التجار، الألعاب التفاعلية، طابعات 3D، نظام نقاط ومكافآت، طلبات مخصصة، وخدمات صيانة معتمدة.',
       what: 'ماذا نقدّم',
       services: [
-        { icon: Printer, title: 'طابعات 3D', text: 'طابعات Bambu Lab وغيرها مع خيوط، إكسسوارات، وضمان كامل.' },
-        { icon: Package, title: 'إلكترونيات وأجهزة ذكية', text: 'هواتف، إكسسوارات، أجهزة منزلية بأسعار تنافسية.' },
-        { icon: Users, title: 'مجتمع التجار', text: 'منصة تربط المشترين بتجار محليين موثوقين بنظام دفع آمن.' },
-        { icon: Gamepad2, title: 'ألعاب ومكافآت', text: 'العب لتربح نقاط وتذاكر وقسائم خصم حقيقية.' },
-        { icon: Truck, title: 'توصيل لكل العراق', text: 'استلام من المخزن، توصيل اعتيادي، أو توصيل شخصي.' },
-        { icon: ShieldCheck, title: 'ضمان وأمان', text: 'ضمان رسمي على المنتجات وحماية للمدفوعات والبيانات.' },
+        { icon: Printer, title: 'طابعات 3D وملحقاتها', text: 'وكلاء معتمدون لـ Bambu Lab مع خيوط، إكسسوارات، قطع غيار، وضمان رسمي وصيانة محلية.' },
+        { icon: Package, title: 'إلكترونيات وأجهزة ذكية', text: 'هواتف، ساعات، إكسسوارات، أجهزة منزلية، وألعاب — بأسعار تنافسية ومخزون متجدد.' },
+        { icon: Users, title: 'مجتمع التجار', text: 'منصة موثوقة تربط المشترين بتجار محليين معتمدين مع نظام دفع آمن وحماية للطرفين.' },
+        { icon: Gamepad2, title: 'ألعاب ومكافآت حقيقية', text: 'ألعاب تفاعلية ومسابقات تمنحك نقاطاً، تذاكر، قسائم خصم، وجوائز عينية حقيقية.' },
+        { icon: Truck, title: 'توصيل لكل العراق', text: 'استلام من المخزن، توصيل اعتيادي، أو توصيل شخصي — مع تتبّع لحظي لطلبك.' },
+        { icon: ShieldCheck, title: 'ضمان وأمان', text: 'ضمان رسمي على المنتجات، تشفير كامل للمدفوعات، وحماية صارمة للبيانات.' },
+        { icon: Headphones, title: 'دعم فني محلي', text: 'فريق دعم باللغة العربية متاح يومياً عبر WhatsApp و Telegram لخدمتك.' },
+        { icon: Award, title: 'برنامج ولاء متقدم', text: 'بطاقات ولاء بمستويات متعددة وخصومات حصرية للمشتركين.' },
+        { icon: Smartphone, title: 'تطبيق Android رسمي', text: 'تطبيق سريع للأندرويد لتسوق أسهل وإشعارات فورية بالطلبات والعروض.' },
+      ],
+      values: 'قيمنا',
+      valuesList: [
+        { icon: Heart, t: 'الثقة', d: 'منتجات أصلية ووعود نُنفّذها — بدون مفاجآت.' },
+        { icon: Sparkles, t: 'الابتكار', d: 'نُحدّث منصتنا باستمرار ونقدّم تجارب لم يسبقها متجر عراقي.' },
+        { icon: Users, t: 'المجتمع', d: 'ندعم التجار المحليين ونبني علاقة طويلة الأمد مع كل عميل.' },
+        { icon: ShieldCheck, t: 'الجودة', d: 'كل منتج نختاره يمر بفحص دقيق قبل الطرح.' },
       ],
       vision: 'رؤيتنا',
       visionText:
-        'أن نكون المنصة التقنية الأولى في العراق، نمكّن الأفراد والتجار، ونقدم تجربة شراء تليق بطموحاتهم.',
+        'أن نكون المنصة التقنية الأولى في العراق والشرق الأوسط، نُمكّن الأفراد والتجار، ونرفع مستوى تجربة التسوق الإلكتروني لتواكب أرقى المعايير العالمية.',
+      mission: 'مهمتنا',
+      missionText:
+        'نُتيح للجميع الوصول إلى أحدث المنتجات التقنية بأسعار عادلة، مع خدمة استثنائية وضمان حقيقي، وتمكين التجار المحليين من النمو في بيئة رقمية متقدمة وآمنة.',
+      stats: 'بالأرقام',
+      statsList: [
+        { v: '+18', l: 'محافظة نخدمها' },
+        { v: '+1000', l: 'منتج متوفر' },
+        { v: '+500', l: 'تاجر معتمد' },
+        { v: '24/7', l: 'متابعة الطلبات' },
+      ],
+      coverage: 'نخدم كل العراق',
+      coverageText: 'بغداد، البصرة، أربيل، السليمانية، نينوى، النجف، كربلاء، بابل، الأنبار، ديالى، صلاح الدين، كركوك، دهوك، ميسان، القادسية، المثنى، ذي قار، واسط.',
+      app: 'حمّل تطبيق LEVONIS',
+      appText: 'تجربة أسرع، إشعارات فورية، ومزايا حصرية للتطبيق. متاح الآن لأجهزة Android.',
+      appBtn: 'تحميل التطبيق (APK)',
       contact: 'تواصل معنا',
       contactText: 'WhatsApp: +964 783 845 5220 — متوفرون يومياً للرد على استفساراتك.',
     },
@@ -39,41 +67,90 @@ const About = () => {
       sub: 'Your #1 tech destination in Iraq',
       story: 'Our Story',
       storyText:
-        'LEVONIS was built on a clear vision: deliver authentic tech products at competitive prices to every Iraqi home. We combine a smooth shopping experience, official warranty, and fast nationwide delivery. We are more than a store — we are a full platform with a merchant marketplace, games, 3D printers, loyalty program, and much more.',
+        'LEVONIS launched from Baghdad with a simple yet ambitious vision: bring authentic tech products at competitive prices with service worthy of Iraqi ambitions. Since day one, we have been building a complete platform that combines a seamless shopping experience, certified official warranty, fast nationwide delivery, and a vibrant community of buyers and merchants. Today, LEVONIS is more than a store — it is an ecosystem: merchant marketplace, interactive games, 3D printers, points & rewards, custom orders, and certified maintenance services.',
       what: 'What We Offer',
       services: [
-        { icon: Printer, title: '3D Printers', text: 'Bambu Lab and other printers with filaments, accessories, and full warranty.' },
-        { icon: Package, title: 'Electronics & Smart Devices', text: 'Phones, accessories, and home appliances at competitive prices.' },
-        { icon: Users, title: 'Merchant Marketplace', text: 'Platform connecting buyers with trusted local merchants and secure payments.' },
-        { icon: Gamepad2, title: 'Games & Rewards', text: 'Play to earn real points, tickets, and discount coupons.' },
-        { icon: Truck, title: 'Iraq-wide Delivery', text: 'Pickup, standard delivery, or personal delivery options.' },
-        { icon: ShieldCheck, title: 'Warranty & Safety', text: 'Official product warranty and secure payments & data.' },
+        { icon: Printer, title: '3D Printers & Accessories', text: 'Authorized Bambu Lab dealer with filaments, accessories, spare parts, official warranty and local service.' },
+        { icon: Package, title: 'Electronics & Smart Devices', text: 'Phones, watches, accessories, appliances, and games at competitive prices with fresh stock.' },
+        { icon: Users, title: 'Merchant Marketplace', text: 'A trusted platform connecting buyers with verified local merchants, with secure payments and protection for both sides.' },
+        { icon: Gamepad2, title: 'Real Games & Rewards', text: 'Interactive games and competitions for points, tickets, coupons, and real physical prizes.' },
+        { icon: Truck, title: 'Nationwide Delivery', text: 'Pickup, standard, or personal delivery — with live order tracking.' },
+        { icon: ShieldCheck, title: 'Warranty & Safety', text: 'Official product warranty, full payment encryption, and strict data protection.' },
+        { icon: Headphones, title: 'Local Support', text: 'Arabic-speaking support team available daily via WhatsApp and Telegram.' },
+        { icon: Award, title: 'Advanced Loyalty Program', text: 'Multi-tier loyalty cards with exclusive discounts for members.' },
+        { icon: Smartphone, title: 'Official Android App', text: 'Fast Android app with instant push notifications for orders and offers.' },
+      ],
+      values: 'Our Values',
+      valuesList: [
+        { icon: Heart, t: 'Trust', d: 'Authentic products and promises we keep — no surprises.' },
+        { icon: Sparkles, t: 'Innovation', d: 'We constantly update our platform with experiences no Iraqi store had before.' },
+        { icon: Users, t: 'Community', d: 'We empower local merchants and build long-term relationships with every customer.' },
+        { icon: ShieldCheck, t: 'Quality', d: 'Every product is rigorously vetted before listing.' },
       ],
       vision: 'Our Vision',
       visionText:
-        'To be Iraq’s #1 tech platform, empowering people and merchants with a shopping experience worthy of their ambition.',
+        'To be the #1 tech platform in Iraq and the Middle East, empowering people and merchants and elevating e-commerce to global standards.',
+      mission: 'Our Mission',
+      missionText:
+        'Make the latest tech accessible to everyone at fair prices, with exceptional service and a real warranty, while empowering local merchants to grow in a secure, advanced digital environment.',
+      stats: 'In Numbers',
+      statsList: [
+        { v: '+18', l: 'Governorates served' },
+        { v: '+1000', l: 'Products in stock' },
+        { v: '+500', l: 'Verified merchants' },
+        { v: '24/7', l: 'Order monitoring' },
+      ],
+      coverage: 'We serve all of Iraq',
+      coverageText: 'Baghdad, Basra, Erbil, Sulaymaniyah, Nineveh, Najaf, Karbala, Babil, Anbar, Diyala, Salah al-Din, Kirkuk, Duhok, Maysan, Al-Qadisiyah, Muthanna, Dhi Qar, Wasit.',
+      app: 'Download the LEVONIS App',
+      appText: 'Faster experience, instant notifications, and exclusive in-app perks. Available now for Android.',
+      appBtn: 'Download App (APK)',
       contact: 'Contact Us',
       contactText: 'WhatsApp: +964 783 845 5220 — available daily for your inquiries.',
     },
     ku: {
       title: 'دەربارەی ئێمە',
-      desc: 'LEVONIS — فرۆشگای پێشەنگ لە عێراق بۆ پرینتەری 3D، ئامێری زیرەک، ئەلیکترۆنیات و بازاڕی بازرگانان. گەرەنتی فەرمی و گەیاندن بۆ هەموو پارێزگاکان.',
+      desc: 'LEVONIS — فرۆشگای پێشەنگ لە عێراق بۆ پرینتەری 3D، ئامێری زیرەک، ئەلیکترۆنیات و بازاڕی بازرگانان.',
       hero: 'بەخێربێیت بۆ LEVONIS',
       sub: 'یەکەم شوێنی تەکنەلۆجیات لە عێراق',
       story: 'چیرۆکمان',
       storyText:
-        'LEVONIS بە بینایەکی ڕوون دەستی پێکرد: پێشکەشکردنی بەرهەمی ڕەسەن بە نرخی گونجاو بۆ هەر ماڵێکی عێراقی. ئێمە تەنها فرۆشگا نین — پلاتفۆڕمێکی تەواوین.',
+        'LEVONIS لە بەغدا دەستی پێکرد بە بینایەکی ڕوون: پێشکەشکردنی بەرهەمی ڕەسەن بە نرخی گونجاو و خزمەتگوزاری شایستە بۆ هەموو ماڵێکی عێراقی. ئەمڕۆ پلاتفۆڕمێکی تەواوین کە بازاڕی بازرگانان، یاری، پرینتەری 3D، خاڵ و خەڵات و خزمەتگوزاری چاککردنەوە لەخۆ دەگرێت.',
       what: 'چی پێشکەش دەکەین',
       services: [
-        { icon: Printer, title: 'پرینتەری 3D', text: 'Bambu Lab و پرینتەری دیکە لەگەڵ خشتە و گەرەنتی تەواو.' },
+        { icon: Printer, title: 'پرینتەری 3D', text: 'Bambu Lab و خشتە و گەرەنتی تەواو.' },
         { icon: Package, title: 'ئەلیکترۆنیات', text: 'مۆبایل و ئامێری ماڵ بە نرخی گونجاو.' },
         { icon: Users, title: 'بازاڕی بازرگانان', text: 'پلاتفۆڕمێک بۆ بەستنەوەی کڕیار بە بازرگانانی متمانەپێکراو.' },
-        { icon: Gamepad2, title: 'یاری و خەڵات', text: 'یاری بکە بۆ بەدەستهێنانی خاڵ و تکێت و کوپۆن.' },
+        { icon: Gamepad2, title: 'یاری و خەڵات', text: 'یاری بکە بۆ بەدەستهێنانی خاڵ و تکێت.' },
         { icon: Truck, title: 'گەیاندن', text: 'وەرگرتن لە کۆگا، گەیاندنی ئاسایی یان تایبەت.' },
         { icon: ShieldCheck, title: 'گەرەنتی', text: 'گەرەنتی فەرمی و پاراستنی پارە و زانیاری.' },
+        { icon: Headphones, title: 'پشتگیری ناوخۆیی', text: 'تیمی پشتگیری ڕۆژانە لە WhatsApp.' },
+        { icon: Award, title: 'بەرنامەی دڵسۆزی', text: 'کارتی دڵسۆزی بە پلە جیاوازەکان.' },
+        { icon: Smartphone, title: 'ئەپی ئەندرۆید', text: 'ئەپێکی خێرا بۆ کڕینی ئاسانتر.' },
+      ],
+      values: 'نرخەکانمان',
+      valuesList: [
+        { icon: Heart, t: 'متمانە', d: 'بەرهەمی ڕەسەن و بەڵێنی جێبەجێکراو.' },
+        { icon: Sparkles, t: 'داهێنان', d: 'پلاتفۆڕمی بەردەوام نوێبووەوە.' },
+        { icon: Users, t: 'کۆمەڵگا', d: 'پشتگیری بازرگانانی ناوخۆیی.' },
+        { icon: ShieldCheck, t: 'کوالیتی', d: 'هەموو بەرهەمێک بە دیقەت تاقیدەکرێتەوە.' },
       ],
       vision: 'بینایمان',
-      visionText: 'ببینە یەکەم پلاتفۆڕمی تەکنەلۆجی لە عێراق.',
+      visionText: 'ببینە یەکەم پلاتفۆڕمی تەکنەلۆجی لە عێراق و ڕۆژهەڵاتی ناوەڕاست.',
+      mission: 'ئەرکمان',
+      missionText: 'دەستڕاگەیشتن بە تەکنەلۆجیای نوێ بۆ هەمووان بە نرخی دادپەروەرانە.',
+      stats: 'بە ژمارەکان',
+      statsList: [
+        { v: '+18', l: 'پارێزگا' },
+        { v: '+1000', l: 'بەرهەم' },
+        { v: '+500', l: 'بازرگان' },
+        { v: '24/7', l: 'چاودێری' },
+      ],
+      coverage: 'خزمەتی هەموو عێراق دەکەین',
+      coverageText: 'بەغدا، بەسرە، هەولێر، سلێمانی، نەینەوا، نەجەف، کەربەلا، بابل، ئەنبار، دیالە، سەلاحەدین، کەرکوک، دهۆک، میسان، قادسیە، موسەننا، زی قار، واست.',
+      app: 'ئەپی LEVONIS دابگرە',
+      appText: 'ئەزموونی خێراتر و ئاگادارکردنەوەی دەستبەجێ. بەردەستە بۆ ئەندرۆید.',
+      appBtn: 'دابگرە (APK)',
       contact: 'پەیوەندیمان پێوە بکە',
       contactText: 'WhatsApp: +964 783 845 5220',
     },
@@ -101,35 +178,107 @@ const About = () => {
           <p className="text-lg text-muted-foreground">{t.sub}</p>
         </header>
 
-        <section className="rounded-2xl glass-panel p-6 md:p-8 mb-8">
+        {/* Story */}
+        <section className="rounded-2xl glass-tile glass-edge-top p-6 md:p-8 mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-3">{t.story}</h2>
           <p className="text-foreground/80 leading-relaxed">{t.storyText}</p>
         </section>
 
+        {/* Stats */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          {t.statsList.map((s, i) => (
+            <div key={i} className="rounded-2xl glass-tile p-4 text-center">
+              <div className="text-2xl md:text-3xl font-black text-primary mb-1">{s.v}</div>
+              <div className="text-xs md:text-sm text-foreground/70 font-medium">{s.l}</div>
+            </div>
+          ))}
+        </section>
+
+        {/* Services */}
         <section className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-5 text-center">{t.what}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {t.services.map((s, i) => {
               const Icon = s.icon;
               return (
-                <div key={i} className="rounded-2xl glass-panel p-5 hover:border-primary/40 transition-colors">
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                <div key={i} className="rounded-2xl glass-tile glass-tile-interactive p-5">
+                  <div className="glass-icon-btn w-11 h-11 mb-3" aria-hidden="true">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="font-bold text-foreground mb-1">{s.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{s.text}</p>
+                  <p className="text-sm text-foreground/75 leading-relaxed">{s.text}</p>
                 </div>
               );
             })}
           </div>
         </section>
 
-        <section className="rounded-2xl glass-panel p-6 md:p-8 mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-3">{t.vision}</h2>
-          <p className="text-foreground/80 leading-relaxed">{t.visionText}</p>
+        {/* Vision & Mission */}
+        <section className="grid md:grid-cols-2 gap-4 mb-8">
+          <div className="rounded-2xl glass-tile glass-edge-top p-6">
+            <h2 className="text-xl font-bold text-foreground mb-3">{t.vision}</h2>
+            <p className="text-foreground/80 leading-relaxed">{t.visionText}</p>
+          </div>
+          <div className="rounded-2xl glass-tile glass-edge-top p-6">
+            <h2 className="text-xl font-bold text-foreground mb-3">{t.mission}</h2>
+            <p className="text-foreground/80 leading-relaxed">{t.missionText}</p>
+          </div>
         </section>
 
-        <section className="rounded-2xl glass-panel p-6 md:p-8 text-center">
+        {/* Values */}
+        <section className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-5 text-center">{t.values}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {t.valuesList.map((v, i) => {
+              const Icon = v.icon;
+              return (
+                <div key={i} className="rounded-2xl glass-tile p-4 text-center">
+                  <div className="glass-icon-btn w-10 h-10 mx-auto mb-2" aria-hidden="true">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-foreground text-sm mb-1">{v.t}</h3>
+                  <p className="text-xs text-foreground/70 leading-relaxed">{v.d}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Coverage */}
+        <section className="rounded-2xl glass-tile glass-edge-top p-6 md:p-8 mb-8">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="glass-icon-btn w-10 h-10" aria-hidden="true">
+              <Globe className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">{t.coverage}</h2>
+          </div>
+          <p className="text-foreground/80 leading-relaxed flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-primary shrink-0 mt-1" aria-hidden="true" />
+            <span>{t.coverageText}</span>
+          </p>
+        </section>
+
+        {/* Download App CTA */}
+        <section className="rounded-2xl glass-tile glass-edge-top p-6 md:p-8 mb-8 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent-red/5 pointer-events-none" aria-hidden="true" />
+          <div className="relative">
+            <div className="glass-icon-btn w-14 h-14 mx-auto mb-3" aria-hidden="true">
+              <Download className="w-6 h-6 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">{t.app}</h2>
+            <p className="text-foreground/80 mb-4 max-w-xl mx-auto">{t.appText}</p>
+            <Link
+              to="/download-app"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold backdrop-blur-xl border border-primary/40 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_24px_-4px_hsl(var(--primary)/0.65)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <Download className="w-4 h-4" aria-hidden="true" />
+              {t.appBtn}
+            </Link>
+          </div>
+        </section>
+
+        {/* Contact */}
+        <section className="rounded-2xl glass-tile p-6 md:p-8 text-center">
           <h2 className="text-2xl font-bold text-foreground mb-3">{t.contact}</h2>
           <p className="text-foreground/80">{t.contactText}</p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
@@ -138,6 +287,8 @@ const About = () => {
             <Link to="/terms" className="text-primary hover:underline">{language === 'en' ? 'Terms of Use' : language === 'ku' ? 'مەرجەکانی بەکارهێنان' : 'الشروط والأحكام'}</Link>
             <span className="text-muted-foreground">•</span>
             <Link to="/faq" className="text-primary hover:underline">{language === 'en' ? 'FAQ' : language === 'ku' ? 'پرسیارە دووبارەکان' : 'الأسئلة الشائعة'}</Link>
+            <span className="text-muted-foreground">•</span>
+            <Link to="/download-app" className="text-primary hover:underline">{language === 'en' ? 'Download App' : language === 'ku' ? 'دابگرە' : 'تحميل التطبيق'}</Link>
           </div>
         </section>
 
