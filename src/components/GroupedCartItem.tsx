@@ -168,7 +168,8 @@ const GroupedCartItem = ({
                         </Button>
                         <AnimatedQuantity value={item.quantity} className="w-5 text-center font-bold text-[11px]" />
                         <Button type="button" size="icon" variant="ghost" className="h-6 w-6 touch-manipulation active:scale-90 transition-transform"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}>
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQuantity(item.id, item.quantity + 1); }}
+                          disabled={item.quantity >= 50}>
                           <Plus className="h-2.5 w-2.5" />
                         </Button>
                       </div>

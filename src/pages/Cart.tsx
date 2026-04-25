@@ -2142,10 +2142,12 @@ const Cart = () => {
                                 </Button>
                                 <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
                                 <Button
+                                <Button
                                   type="button"
                                   size="icon"
                                   variant="ghost"
                                   className="h-7 w-7 touch-manipulation active:scale-90 transition-transform"
+                                  disabled={item.quantity >= 50}
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
