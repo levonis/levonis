@@ -739,7 +739,7 @@ const Cart = () => {
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
   const calculatePartialPaymentFee = () => {
-    if (!hasPreOrderItems || preOrderPaymentOption !== 'quarter') return 0;
+    if (!hasPreOrderItems || preOrderPaymentOption !== 'half') return 0;
     
     // استخدام الشرائح إذا كانت موجودة
     if (partialPaymentSettings?.fee_tiers && partialPaymentSettings.fee_tiers.length > 0) {
