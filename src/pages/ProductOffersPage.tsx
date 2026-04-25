@@ -307,7 +307,7 @@ export default function ProductOffersPage() {
               return (
                 <Card 
                   key={offer.id} 
-                  className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-green-500/20 cursor-pointer"
+                  className="overflow-hidden group transition-all duration-300 border border-border/30 bg-card/40 backdrop-blur-2xl shadow-[0_8px_32px_-12px_hsl(var(--primary)/0.2)] hover:shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.4)] hover:border-primary/40 hover:-translate-y-0.5 cursor-pointer"
                   onClick={() => handleOfferClick(offer)}
                 >
                   <div className="relative aspect-square">
