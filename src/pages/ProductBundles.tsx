@@ -67,7 +67,7 @@ const ProductBundles = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-transparent" dir="rtl">
       <div className="container max-w-lg mx-auto px-3 pt-4 pb-24">
         {/* Page title */}
         <div className="flex items-center gap-2 mb-4">
