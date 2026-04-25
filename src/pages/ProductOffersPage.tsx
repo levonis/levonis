@@ -356,28 +356,28 @@ export default function ProductOffersPage() {
                     {offer.options && (offer.options as ProductOption[]).length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {(offer.options as ProductOption[]).filter(o => o.in_stock).slice(0, 3).map((opt, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                          <Badge key={idx} className="text-[10px] px-1.5 py-0.5 bg-secondary/40 backdrop-blur-md border border-border/40 text-foreground">
                             {opt.name_ar}
                           </Badge>
                         ))}
                         {(offer.options as ProductOption[]).filter(o => o.in_stock).length > 3 && (
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                          <Badge className="text-[10px] px-1.5 py-0.5 bg-secondary/40 backdrop-blur-md border border-border/40 text-foreground">
                             +{(offer.options as ProductOption[]).filter(o => o.in_stock).length - 3}
                           </Badge>
                         )}
                       </div>
                     )}
                     
-                    <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center justify-between pt-2 border-t border-border/40">
                       <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
-                      <Button size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
+                      <Button size="sm" className="gap-1 bg-primary/80 backdrop-blur-md border border-primary/40 hover:bg-primary/90 shadow-lg" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
                         {purchaseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
                         {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
                       </Button>
                     </div>
                     <TicketInfoBar offer={offer} />
                     {offer.stock_quantity !== null && !isOutOfStock && (
-                      <p className="text-xs text-center text-amber-600 font-medium bg-amber-500/10 py-1 rounded">
+                      <p className="text-xs text-center text-amber-700 dark:text-amber-300 font-medium bg-amber-500/10 backdrop-blur-md border border-amber-400/25 py-1 rounded">
                         📦 متبقي: {offer.stock_quantity} فقط
                       </p>
                     )}
