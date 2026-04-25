@@ -57,7 +57,7 @@ const Cart = () => {
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter' | 'cod'>('full');
+  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'half' | 'cod'>('full');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
@@ -739,7 +739,7 @@ const Cart = () => {
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
   const calculatePartialPaymentFee = () => {
-    if (!hasPreOrderItems || preOrderPaymentOption !== 'quarter') return 0;
+    if (!hasPreOrderItems || preOrderPaymentOption !== 'half') return 0;
     
     // استخدام الشرائح إذا كانت موجودة
     if (partialPaymentSettings?.fee_tiers && partialPaymentSettings.fee_tiers.length > 0) {
@@ -796,8 +796,8 @@ const Cart = () => {
 
   const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
 
-  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter'
-    ? Math.ceil(subtotalWithTax * 0.25)
+  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'half'
+    ? Math.ceil(subtotalWithTax * 0.5)
     : (isCodPayment ? 0 : subtotalWithTax);
 
   // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي/COD لأنها تُدفع لاحقاً)
@@ -812,7 +812,7 @@ const Cart = () => {
   // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
   const remainingAmount = isCodPayment
     ? subtotalWithTax + codFee
-    : (hasPreOrderItems && preOrderPaymentOption === 'quarter'
+    : (hasPreOrderItems && preOrderPaymentOption === 'half'
         ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
         : 0);
 
@@ -1363,11 +1363,11 @@ const Cart = () => {
       const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
       
       // Calculate payment info for pre-orders
-      const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
+      const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'half';
       const isPreOrderCod = hasPreOrderItems && isCodPayment;
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
       const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
-      const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal);
+      const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.5) : orderSubtotal);
       const orderRemaining = isPreOrderCod
         ? orderSubtotal + codFee
         : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
@@ -2146,6 +2146,7 @@ const Cart = () => {
                                   size="icon"
                                   variant="ghost"
                                   className="h-7 w-7 touch-manipulation active:scale-90 transition-transform"
+                                  disabled={item.quantity >= 50}
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -2602,7 +2603,7 @@ const Cart = () => {
                       </div>
                       <RadioGroup 
                         value={preOrderPaymentOption} 
-                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'quarter' | 'cod')}
+                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'half' | 'cod')}
                         className="space-y-3"
                       >
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
@@ -2619,18 +2620,18 @@ const Cart = () => {
                           </Label>
                         </div>
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
-                          preOrderPaymentOption === 'quarter' 
+                          preOrderPaymentOption === 'half' 
                             ? 'border-primary bg-primary/5' 
                             : 'border-border/40 hover:border-primary/50'
                         }`}>
-                          <RadioGroupItem value="quarter" id="payment-quarter" />
-                          <Label htmlFor="payment-quarter" className="flex-1 cursor-pointer">
-                            <div className="font-bold text-foreground">{t('cart_preorder_quarter')}</div>
+                          <RadioGroupItem value="half" id="payment-half" />
+                          <Label htmlFor="payment-half" className="flex-1 cursor-pointer">
+                            <div className="font-bold text-foreground">{t('cart_preorder_half')}</div>
                             <div className="text-xs text-muted-foreground">
-                              {t('cart_preorder_quarter_pay', { amount: formatPrice(Math.ceil(subtotalWithTax * 0.25)) })}
+                              {t('cart_preorder_half_pay', { amount: formatPrice(Math.ceil(subtotalWithTax * 0.5)) })}
                             </div>
                             <div className="text-xs text-orange-500 mt-1">
-                              {t('cart_preorder_remaining', { amount: formatPrice((subtotalWithTax - Math.ceil(subtotalWithTax * 0.25)) + partialPaymentFee) })}
+                              {t('cart_preorder_remaining', { amount: formatPrice((subtotalWithTax - Math.ceil(subtotalWithTax * 0.5)) + partialPaymentFee) })}
                             </div>
                           </Label>
                         </div>
@@ -2707,10 +2708,10 @@ const Cart = () => {
                   )}
                   
                   <div className="border-t border-border/40 pt-3 mt-3">
-                    {hasPreOrderItems && preOrderPaymentOption === 'quarter' && (
+                    {hasPreOrderItems && preOrderPaymentOption === 'half' && (
                       <>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                          <span>{t('cart_quarter_label')}</span>
+                          <span>{t('cart_half_label')}</span>
                           <span className="font-bold">{formatPrice(preOrderPaymentAmount)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-amber-600 mb-2">
@@ -2759,7 +2760,7 @@ const Cart = () => {
                     )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
-                        {isCodPayment ? t('cart_required_now') : (hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total'))}
+                        {isCodPayment ? t('cart_required_now') : (hasPreOrderItems && preOrderPaymentOption === 'half' ? t('cart_preorder_required_now') : t('common_total'))}
                       </span>
                       <span className="text-primary"><AnimatedPrice value={grandTotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                     </div>
@@ -2866,7 +2867,7 @@ const Cart = () => {
               <p className="text-sm text-muted-foreground">
                 {t('cart_confirm_balance_after', { current: formatPrice(walletBalance), after: formatPrice(walletBalance - requiredPaymentNow) })}
               </p>
-              {hasPreOrderItems && preOrderPaymentOption === 'quarter' && remainingAmount > 0 && (
+              {hasPreOrderItems && preOrderPaymentOption === 'half' && remainingAmount > 0 && (
                 <p className="text-orange-600 text-sm">
                   {t('cart_confirm_remaining', { amount: formatPrice(remainingAmount) })}
                 </p>

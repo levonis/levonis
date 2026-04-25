@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import AddressDialog from '@/components/AddressDialog';
 import { useCommissionSettings } from '@/hooks/useCommissionSettings';
 
-type PaymentMethod = 'wallet' | 'half' | 'quarter';
+type PaymentMethod = 'wallet' | 'half';
 
 interface ChatOrder {
   id: string;
@@ -113,7 +113,6 @@ export default function ChatOrderCheckout() {
     if (!commissionConfig) return 0;
     switch (paymentMethod) {
       case 'half': return commissionConfig.half_payment_fee;
-      case 'quarter': return commissionConfig.quarter_payment_fee;
       default: return 0; // wallet = no extra fee
     }
   };
@@ -121,7 +120,6 @@ export default function ChatOrderCheckout() {
   const getPartialPercent = (): number => {
     switch (paymentMethod) {
       case 'half': return 50;
-      case 'quarter': return 25;
       default: return 100;
     }
   };
@@ -142,7 +140,6 @@ export default function ChatOrderCheckout() {
       const paymentLabels: Record<PaymentMethod, string> = {
         wallet: 'المحفظة',
         half: 'نصف المبلغ',
-        quarter: 'ربع المبلغ',
       };
 
       // Deduct wallet
@@ -437,31 +434,6 @@ export default function ChatOrderCheckout() {
                     </div>
                     <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-bold">
                       +{commissionConfig.half_payment_fee}%
-                    </span>
-                  </Label>
-                )}
-
-                {/* Quarter Payment */}
-                {commissionConfig?.quarter_payment_enabled && (
-                  <Label
-                    htmlFor="pay-quarter"
-                    className={cn(
-                      "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
-                      paymentMethod === 'quarter' 
-                        ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
-                        : "border-primary/10 hover:border-primary/30"
-                    )}
-                  >
-                    <RadioGroupItem value="quarter" id="pay-quarter" />
-                    <div className="w-9 h-9 rounded-lg bg-purple-500/15 flex items-center justify-center">
-                      <Percent className="h-4 w-4 text-purple-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm text-foreground">ربع المبلغ</p>
-                      <p className="text-[10px] text-muted-foreground">ادفع 25% والباقي عند الاستلام</p>
-                    </div>
-                    <span className="text-[10px] bg-purple-500/15 text-purple-400 px-2 py-0.5 rounded-full font-bold">
-                      +{commissionConfig.quarter_payment_fee}%
                     </span>
                   </Label>
                 )}

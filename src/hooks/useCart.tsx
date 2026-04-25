@@ -6,6 +6,8 @@ import { useShippingSettings } from './useShippingCalculator';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { toast } from 'sonner';
 
+export const MAX_QUANTITY_PER_ITEM = 50;
+
 export interface CartItem {
   id: string;
   product_id: string | null;
@@ -434,8 +436,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       );
       
       if (existingItem) {
-        await updateQuantity(existingItem.id, existingItem.quantity + quantity);
+        const newQty = existingItem.quantity + quantity;
+        if (newQty > MAX_QUANTITY_PER_ITEM) {
+          toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
+          return false;
+        }
+        await updateQuantity(existingItem.id, newQty);
         return true;
+      }
+
+      if (quantity > MAX_QUANTITY_PER_ITEM) {
+        toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
+        return false;
       }
 
       const insertData: any = { 
@@ -488,7 +500,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             .limit(1)
             .maybeSingle();
           if (existing) {
-            await updateQuantity(existing.id, existing.quantity + quantity);
+            const newQty = existing.quantity + quantity;
+            if (newQty > MAX_QUANTITY_PER_ITEM) {
+              toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
+              return false;
+            }
+            await updateQuantity(existing.id, newQty);
             return true;
           }
         }
@@ -549,6 +566,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     if (quantity < 1) return;
+    if (quantity > MAX_QUANTITY_PER_ITEM) {
+      toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
+      return;
+    }
 
     // Optimistic update with lock to prevent fetchCart from overwriting
     optimisticLockRef.current++;
@@ -709,8 +730,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Check if this bundle already exists in the cart
       const existingBundle = items.find(item => item.bundle_id === bundleId);
       if (existingBundle) {
-        await updateQuantity(existingBundle.id, existingBundle.quantity + quantity);
+        const newQty = existingBundle.quantity + quantity;
+        if (newQty > MAX_QUANTITY_PER_ITEM) {
+          toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
+          return false;
+        }
+        await updateQuantity(existingBundle.id, newQty);
         return true;
+      }
+      if (quantity > MAX_QUANTITY_PER_ITEM) {
+        toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
+        return false;
       }
 
       const { error } = await supabase
