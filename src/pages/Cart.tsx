@@ -2142,7 +2142,6 @@ const Cart = () => {
                                 </Button>
                                 <AnimatedQuantity value={item.quantity} className="w-6 text-center font-bold text-xs" />
                                 <Button
-                                <Button
                                   type="button"
                                   size="icon"
                                   variant="ghost"
