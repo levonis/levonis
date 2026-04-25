@@ -918,7 +918,7 @@ const ProductDetail = () => {
               )}
 
               {/* Price section */}
-              <div className="rounded-xl bg-primary/8 border border-primary/20 p-3 backdrop-blur-sm shadow-[0_4px_16px_hsl(var(--primary)/0.1),inset_0_1px_0_hsl(var(--primary)/0.1)]">
+              <div className="glass-tile rounded-xl p-3">
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-black text-primary">{formatPrice(finalPrice)}</span>
                   <span className="text-sm text-muted-foreground">{currency}</span>
@@ -1020,7 +1020,7 @@ const ProductDetail = () => {
                   }
                   if (displayOptions.length === 0) return null;
                   return (
-                    <AccordionItem value="shipping" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                    <AccordionItem value="shipping" className="glass-tile rounded-xl">
                       <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                         <span className="flex items-center gap-2"><Truck className="h-4 w-4 text-primary" />{t('product_shipping_type')}
                           {selectedShippingOption === null && displayOptions.length > 1 && <Badge variant="destructive" className="text-[8px] px-1.5 py-0 h-4 mr-1">{t('pd_required_badge')}</Badge>}
@@ -1059,7 +1059,7 @@ const ProductDetail = () => {
 
                 {/* Product Options */}
                 {filteredOptions.length > 0 && (
-                  <AccordionItem value="options" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <AccordionItem value="options" className="glass-tile rounded-xl">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2"><Package className="h-4 w-4 text-primary" />{t('product_options_available')}</span>
                     </AccordionTrigger>
@@ -1151,7 +1151,7 @@ const ProductDetail = () => {
 
                 {/* Colors */}
                 {filteredColors.length > 0 && (
-                  <AccordionItem value="colors" className="border border-border/20 rounded-xl overflow-hidden bg-card/30 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <AccordionItem value="colors" className="glass-tile rounded-xl">
                     <AccordionTrigger className="px-3 py-2.5 text-xs font-black hover:no-underline">
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
