@@ -427,11 +427,11 @@ const BundleDetail = () => {
               }`}
             >
               {isAdding ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : bundle.isOutOfStock ? (
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <ShoppingCart className="h-4 w-4" />
+                <ShoppingCart className="h-4 w-4" aria-hidden="true" />
               )}
               {isAdding ? 'جارٍ...' : bundle.isOutOfStock ? 'انتهى' : 'أضف للسلة'}
             </Button>
