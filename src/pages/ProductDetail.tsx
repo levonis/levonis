@@ -983,7 +983,7 @@ const ProductDetail = () => {
               {/* Sale Type Tabs */}
               {hasBothTypes && (
                 <Tabs value={activeSaleType} onValueChange={handleSaleTypeChange}>
-                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 bg-card/40 backdrop-blur-sm border border-border/30 shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <TabsList className="w-full grid grid-cols-2 h-11 rounded-xl p-1 glass-tile">
                     <TabsTrigger value="direct" className="rounded-lg gap-1.5 text-xs font-black transition-all data-[state=active]:shadow-[0_4px_12px_hsl(var(--primary)/0.25),inset_0_1px_0_hsl(var(--primary-glow)/0.3)] bg-card text-primary text-center">
                       <Package className="h-3.5 w-3.5" />{t('product_direct_sale')}
                     </TabsTrigger>
