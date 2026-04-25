@@ -178,11 +178,15 @@ const BundleDetail = () => {
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/40 backdrop-blur-2xl border-b border-white/15 dark:border-white/10">
         <div className="container max-w-lg mx-auto px-3 py-2.5 flex items-center gap-2">
-          <Link to="/bundles" className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] flex items-center justify-center hover:border-primary/30 transition-colors">
-            <ArrowRight className="h-4 w-4 text-foreground" />
+          <Link
+            to="/bundles"
+            aria-label="العودة إلى قائمة الباقات"
+            className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] flex items-center justify-center hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <ArrowRight className="h-4 w-4 text-foreground" aria-hidden="true" />
           </Link>
           <h1 className="text-sm font-bold text-foreground truncate flex-1">{pickI18n(bundle as any, 'title', language)}</h1>
-          <div className="px-2 py-1 rounded-md bg-white/15 dark:bg-white/[0.06] backdrop-blur-xl border border-white/20 dark:border-white/10 text-foreground text-[9px] font-medium">
+          <div className="px-2 py-1 rounded-md bg-background/60 backdrop-blur-xl border border-white/25 dark:border-white/15 text-foreground text-[10px] font-semibold" aria-label={`نوع البيع: ${SALE_TYPE_LABELS[saleType] || saleType}`}>
             {SALE_TYPE_LABELS[saleType] || saleType}
           </div>
         </div>
