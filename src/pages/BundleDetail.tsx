@@ -115,6 +115,8 @@ const BundleDetail = () => {
     enabled: !!id,
   });
 
+  usePageTitle('product', bundle ? pickI18n(bundle as any, 'title', language) : undefined);
+
   const handleAddToCart = async () => {
     if (!user) { navigate('/auth'); return; }
     if (!bundle || bundle.isOutOfStock) { toast.error('هذا العرض انتهى - المخزون غير كافٍ'); return; }
