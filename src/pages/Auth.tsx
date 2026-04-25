@@ -117,7 +117,7 @@ const Auth = () => {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error(t('auth_google_error') || 'Google sign-in failed');
+        toast.error('فشل تسجيل الدخول عبر Google');
         setGoogleLoading(false);
         return;
       }
@@ -125,7 +125,7 @@ const Auth = () => {
       toast.success(t('auth_login_success'));
       navigate('/');
     } catch (err) {
-      toast.error(t('auth_google_error') || 'Google sign-in failed');
+      toast.error('فشل تسجيل الدخول عبر Google');
       setGoogleLoading(false);
     }
   };
