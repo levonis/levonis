@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { LogIn, UserPlus, User as UserIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +25,16 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { language, dir } = useLanguage();
 
-  const [isNative, setIsNative] = useState(false);
+  // Detect native synchronously so the very first render of the app already
+  // hides the children behind the gate (avoids any flash of the home page).
+  const [isNative] = useState<boolean>(() => {
+    try {
+      return Capacitor.isNativePlatform();
+    } catch {
+      return false;
+    }
+  });
+
   const [guestAccepted, setGuestAccepted] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -33,11 +43,6 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
       return false;
     }
   });
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    setIsNative(document.documentElement.classList.contains("is-native"));
-  }, []);
 
   // Once authenticated, clear the guest flag so re-launching after logout
   // shows the gate again.
