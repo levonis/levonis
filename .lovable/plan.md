@@ -1,54 +1,32 @@
-# خطة: حذف "ربع المبلغ"، توسيع شرائح الدفع الجزئي، وحد كمية 50 لكل منتج
+# إصلاح فشل البناء المحلي – العودة إلى lightningcss
 
-## 1) حذف خيار "ربع المبلغ" نهائياً واستبداله بـ "نصف المبلغ"
+## المشكلة
+عند تشغيل `npm run build` محلياً يظهر:
+```
+[plugin vite:css-post]
+Cannot find package 'esbuild' imported from .../node_modules/vite/dist/node/chunks/node.js
+```
 
-**`src/pages/Cart.tsx`**
-- تغيير نوع `preOrderPaymentOption` من `'full' | 'quarter' | 'cod'` إلى `'full' | 'half' | 'cod'`.
-- تحديث `calculatePartialPaymentFee` و `preOrderPaymentAmount` و `remainingAmount` لاستخدام `0.5` بدلاً من `0.25`.
-- تغيير جميع شروط `=== 'quarter'` إلى `=== 'half'`، ونصوص الواجهة من "ربع" إلى "نصف"، وقيم RadioGroup.
-- تحديث مفاتيح الترجمة (`cart_preorder_quarter*` → `cart_preorder_half*`) في `src/lib/i18n/*` أو إعادة استخدام مفاتيح half إن وُجدت.
+## السبب الجذري
+- المشروع المحلي يستخدم **Rolldown-Vite** (واضح من المسار `node_modules/rolldown/...` في الـ stack trace).
+- Rolldown-Vite **لا يتضمن حزمة `esbuild`** كاعتماد افتراضي.
+- في رسالة سابقة أضفنا `cssMinify: 'esbuild'` لتفادي خطأ `Invalid empty selector` في lightningcss، فأصبح Vite يحاول استيراد حزمة غير موجودة.
+- أما خطأ lightningcss الأصلي فكان سببه كتلة `@media (prefers-reduced-transparency: reduce)` وقد **تم حذفها بالفعل** من `src/index.css` في رسائل سابقة، فلم يعد هناك سبب لتجنب lightningcss.
 
-**`src/pages/ChatOrderCheckout.tsx`**
-- إزالة `'quarter'` من `PaymentMethod` وكل الشروط/الرسوم/التسميات والـ RadioGroupItem الخاص به (يبقى `wallet | half`).
+## التغيير المطلوب
+ملف واحد فقط:
 
-**`src/pages/CommunityMerchantStore.tsx`**
-- حذف عنصر `{ key: 'quarter_payment', label: 'دفع ربع المبلغ' ... }` من قائمة طرق الدفع.
+### `vite.config.ts`
+حذف السطر:
+```ts
+cssMinify: 'esbuild',
+```
+وترك بقية إعدادات `build` كما هي. النتيجة: Vite يستخدم lightningcss الافتراضي المضمَّن مع Rolldown-Vite، بدون أي اعتمادات إضافية، وبدون تغيير `package.json`.
 
-**`src/pages/AdminLevoCommunity.tsx`**
-- حذف بطاقة "ربع المبلغ" بالكامل (الحالات `quarterFee/quarterEnabled` والـ Switch والحقل) وإزالتها من `saveMutation.value`.
+## التحقق بعد الموافقة
+1. سيتم تطبيق التعديل على `vite.config.ts` فقط.
+2. شغّل محلياً: `npm run build`
+3. المتوقع: نجاح البناء بدون أخطاء.
 
-**`src/hooks/useCommissionSettings.ts`**
-- حذف الحقلين `quarter_payment_fee` و `quarter_payment_enabled` من الواجهة والقيم الافتراضية.
-
-## 2) توسيع شرائح الدفع الجزئي من 1 د.ع إلى ما لا نهاية
-
-**Migration على جدول `default_settings`**
-- تحديث السجل `partial_payment_settings.fee_tiers` بحيث:
-  - أول شريحة `min_amount = 1`
-  - آخر شريحة `max_amount = 999999999` (عملياً ∞)
-  - الحفاظ على نفس النسب الحالية بين الشرائح.
-
-**`src/pages/Cart.tsx`**
-- منطق fallback لـ آخر شريحة موجود مسبقاً ويبقى. مراجعة فقط للتأكد أن المبالغ الصغيرة (1 د.ع) لا تُستثنى من خيار الدفع الجزئي.
-
-**واجهة تحرير الشرائح (إن وُجدت)**
-- رفع الحد الأقصى في حقل `max_amount` لقبول قيم كبيرة جداً.
-
-## 3) حد عام ثابت 50 وحدة لكل منتج في السلة
-
-**`src/hooks/useCart.tsx`**
-- إضافة ثابت `const MAX_QUANTITY_PER_ITEM = 50;` في أعلى الملف.
-- في `addToCart`:
-  - إذا وُجد `existingItem`: التحقق `existingItem.quantity + quantity ≤ 50`، وإلا toast: «الحد الأقصى 50 قطعة لكل منتج في السلة» وإرجاع `false`.
-  - عند الإدراج الجديد: التحقق `quantity ≤ 50`.
-  - في فرع معالجة `23505`: نفس التحقق قبل `updateQuantity`.
-- في `updateQuantity`: إذا `quantity > 50` → toast وإرجاع مبكر.
-- في فرع البندلز (السطر ~712): تطبيق نفس الحد على `existingBundle.quantity + quantity`.
-
-**واجهة السلة `src/pages/Cart.tsx` و `src/components/GroupedCartItem.tsx`**
-- تعطيل زر `+` عند بلوغ 50 مع نص خفيف توضيحي.
-
-## ملاحظات
-- لا حاجة لتعديل قاعدة البيانات لحد الكمية (يكفي على مستوى التطبيق + UI).
-- الـ migration الوحيد المطلوب هو تحديث `partial_payment_settings.fee_tiers`.
-- بعد التطبيق نتحقق بـ `rg "quarter"` من خلو الكود من أي مرجع متبقٍ.
+## ملاحظة
+لا حاجة لأي تعديلات أخرى — `src/index.css` نظيف فعلاً من الكتلة المسببة لخطأ lightningcss السابق.
