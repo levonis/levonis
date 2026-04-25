@@ -213,10 +213,10 @@ const BundleDetail = () => {
               <button
                 key={i}
                 onClick={() => setSelectedImageIndex(i)}
-                className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+                className={`w-14 h-14 rounded-xl overflow-hidden border shrink-0 backdrop-blur-xl transition-all ${
                   selectedImageIndex === i
-                    ? 'border-primary shadow-sm shadow-primary/20'
-                    : 'border-border/30 opacity-60 hover:opacity-100'
+                    ? 'border-primary/60 bg-primary/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.4)] scale-105'
+                    : 'border-white/15 dark:border-white/10 bg-white/10 dark:bg-white/[0.04] opacity-70 hover:opacity-100'
                 }`}
               >
                 <img src={img} className="w-full h-full object-cover pointer-events-none" draggable={false} />
