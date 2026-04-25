@@ -370,23 +370,35 @@ const BundleDetail = () => {
           <div className="px-3 py-3 flex items-center gap-3">
             {/* Quantity selector */}
             {isDirect && !bundle.isOutOfStock && maxQty > 0 && (
-              <div className="flex items-center border border-white/20 dark:border-white/10 rounded-xl overflow-hidden shrink-0 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl">
+              <div
+                role="group"
+                aria-label="تعديل الكمية"
+                className="flex items-center border border-white/25 dark:border-white/10 rounded-xl overflow-hidden shrink-0 bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl"
+              >
                 <button
+                  type="button"
                   onClick={() => setQuantity(q => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
-                  className="h-9 w-9 flex items-center justify-center text-foreground hover:bg-primary/10 disabled:opacity-30 transition-colors"
+                  aria-label="إنقاص الكمية"
+                  className="h-9 w-9 flex items-center justify-center text-foreground hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                 >
-                  <Minus className="h-3.5 w-3.5" />
+                  <Minus className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
-                <span className="h-9 w-10 flex items-center justify-center text-sm font-bold text-foreground border-x border-white/20 dark:border-white/10 bg-white/5">
+                <span
+                  aria-live="polite"
+                  aria-label={`الكمية الحالية ${quantity}`}
+                  className="h-9 w-10 flex items-center justify-center text-sm font-bold text-foreground border-x border-white/25 dark:border-white/10 bg-white/5"
+                >
                   {quantity}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
                   disabled={quantity >= maxQty}
-                  className="h-9 w-9 flex items-center justify-center text-foreground hover:bg-primary/10 disabled:opacity-30 transition-colors"
+                  aria-label="زيادة الكمية"
+                  className="h-9 w-9 flex items-center justify-center text-foreground hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
             )}
@@ -394,11 +406,11 @@ const BundleDetail = () => {
             {/* Price */}
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-1">
-                <span className="text-base font-black text-primary">{formatPrice(bundle.bundle_price * quantity)}</span>
-                <span className="text-[9px] text-muted-foreground">د.ع</span>
+                <span className="text-base font-black text-primary" aria-label={`السعر الإجمالي ${formatPrice(bundle.bundle_price * quantity)} دينار`}>{formatPrice(bundle.bundle_price * quantity)}</span>
+                <span className="text-[10px] text-foreground/70 font-medium" aria-hidden="true">د.ع</span>
               </div>
               {quantity > 1 && (
-                <span className="text-[9px] text-muted-foreground">{formatPrice(bundle.bundle_price)} × {quantity}</span>
+                <span className="text-[10px] text-foreground/65">{formatPrice(bundle.bundle_price)} × {quantity}</span>
               )}
             </div>
 
@@ -407,10 +419,11 @@ const BundleDetail = () => {
               onClick={handleAddToCart}
               disabled={isAdding || bundle.isOutOfStock}
               size="sm"
-              className={`h-10 text-xs gap-2 px-5 backdrop-blur-xl border transition-all ${
+              aria-label={isAdding ? 'جارٍ إضافة الباقة للسلة' : bundle.isOutOfStock ? 'الباقة نفذت من المخزون' : 'إضافة الباقة إلى السلة'}
+              className={`h-10 text-xs gap-2 px-5 backdrop-blur-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 bundle.isOutOfStock
-                  ? 'bg-muted/40 border-white/10 text-muted-foreground'
-                  : 'bg-primary/90 hover:bg-primary border-primary/40 text-primary-foreground shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.6)]'
+                  ? 'bg-muted/60 border-white/15 text-foreground/70'
+                  : 'bg-primary hover:bg-primary border-primary/50 text-primary-foreground shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.6)]'
               }`}
             >
               {isAdding ? (
