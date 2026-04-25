@@ -290,11 +290,12 @@ const Auth = () => {
         <div className="relative rounded-3xl p-8 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_0_0_hsl(0_0%_100%/0.15)] overflow-hidden">
           {/* Subtle inner glow */}
           <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+          <div className="relative z-10">
           {showNewPasswordForm ? (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                  <Lock className="w-7 h-7 text-primary" />
+                <div className={glassIconBox}>
+                  <Lock className="w-7 h-7 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
                 </div>
                 <h2 className="text-2xl font-bold">{t('auth_new_password')}</h2>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -314,7 +315,7 @@ const Auth = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20"
+                      className={`${glassInput} pl-12`}
                     />
                     <button
                       type="button"
@@ -340,7 +341,7 @@ const Auth = () => {
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 pl-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20"
+                      className={`${glassInput} pl-12`}
                     />
                     <button
                       type="button"
@@ -355,7 +356,7 @@ const Auth = () => {
 
                 <Button 
                   type="submit"
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                  className={glassPrimaryBtn}
                   disabled={loading || !isStrongPassword(newPassword) || newPassword !== confirmNewPassword}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
@@ -365,7 +366,7 @@ const Auth = () => {
                 <Button 
                   type="button"
                   variant="ghost"
-                  className="w-full h-11"
+                  className={glassGhostBtn}
                   onClick={() => {
                     setShowNewPasswordForm(false);
                     setShowResetPassword(false);
@@ -382,8 +383,8 @@ const Auth = () => {
           ) : showResetPassword ? (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-                  <Mail className="w-7 h-7 text-primary" />
+                <div className={glassIconBox}>
+                  <Mail className="w-7 h-7 text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
                 </div>
                 <h2 className="text-2xl font-bold">{t('auth_account_recovery')}</h2>
                 <p className="text-sm text-muted-foreground mt-2">
@@ -402,14 +403,14 @@ const Auth = () => {
                     onChange={(e) => setResetEmail(e.target.value)}
                     dir="ltr"
                     disabled={loading}
-                    className="h-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 text-left"
+                    className={`${glassInput} text-left`}
                   />
                 </div>
 
                 <Button 
                   type="button"
                   onClick={handleSendResetEmail}
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                  className={glassPrimaryBtn}
                   disabled={loading || resendTimer > 0}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
@@ -419,7 +420,7 @@ const Auth = () => {
                 <Button 
                   type="button"
                   variant="ghost"
-                  className="w-full h-11"
+                  className={glassGhostBtn}
                   onClick={() => {
                     setShowResetPassword(false);
                     setResetEmail('');
@@ -453,7 +454,7 @@ const Auth = () => {
                       dir="ltr"
                       required
                       disabled={loading}
-                      className="h-12 pr-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20 text-left"
+                      className={`${glassInput} pr-12 text-left`}
                     />
                     <Mail className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   </div>
@@ -470,7 +471,7 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={loading}
-                      className="h-12 px-12 bg-background/50 border-border/50 rounded-xl focus:ring-2 focus:ring-primary/20"
+                      className={`${glassInput} px-12`}
                     />
                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <button
@@ -498,7 +499,7 @@ const Auth = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                  className={glassPrimaryBtn}
                   disabled={loading}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
@@ -508,17 +509,17 @@ const Auth = () => {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border/50"></div>
+                  <div className="w-full border-t border-white/15"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card px-4 text-muted-foreground">{t('common_or')}</span>
+                  <span className="px-4 text-muted-foreground bg-white/5 backdrop-blur-xl rounded-full py-1 border border-white/10">{t('common_or')}</span>
                 </div>
               </div>
 
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 rounded-xl border-border/50 hover:bg-primary/5 hover:border-primary/50 transition-all"
+                className={glassOutlineBtn}
                 onClick={() => setShowSignup(true)}
               >
                 {t('auth_create_account')}
@@ -532,6 +533,7 @@ const Auth = () => {
               </p>
             </div>
           )}
+          </div>
         </div>
       </div>
 
