@@ -115,7 +115,9 @@ const BundleDetail = () => {
     enabled: !!id,
   });
 
-  usePageTitle('product', bundle ? pickI18n(bundle as any, 'title', language) : undefined);
+  // Unified with ProductDetail: resolve localized title once, then feed Dynamic Island
+  const localizedTitle = bundle ? pickI18n(bundle as any, 'title', language) : undefined;
+  usePageTitle('product', localizedTitle || (bundle as any)?.title_ar || (bundle as any)?.title);
 
   const handleAddToCart = async () => {
     if (!user) { navigate('/auth'); return; }
