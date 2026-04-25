@@ -140,7 +140,7 @@ const BundleDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-transparent p-4">
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="h-64 w-full rounded-lg bg-muted animate-pulse" />
           <div className="h-7 w-3/4 rounded bg-muted animate-pulse" />
@@ -154,7 +154,7 @@ const BundleDetail = () => {
 
   if (!bundle) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3" dir="rtl">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center gap-3" dir="rtl">
         <Package className="h-12 w-12 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">الباقة غير موجودة</p>
         <Link to="/bundles" className="text-xs text-primary">العودة للباقات</Link>
@@ -171,7 +171,7 @@ const BundleDetail = () => {
   const maxQty = bundle.maxQuantity || 0;
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-transparent" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/30">
         <div className="container max-w-lg mx-auto px-3 py-2.5 flex items-center gap-2">
