@@ -6,8 +6,6 @@ export interface CommissionSettings {
   platform_rate: number;
   /** Extra customer fee for half payment (percent, e.g. 5) */
   half_payment_fee: number;
-  /** Extra customer fee for quarter payment (percent, e.g. 10) */
-  quarter_payment_fee: number;
   /** Extra customer fee for COD (percent, e.g. 10) - deducted from merchant since payment is outside platform */
   cod_merchant_fee: number;
   /** Fixed amount option fee (IQD) */
@@ -20,8 +18,6 @@ export interface CommissionSettings {
   cod_enabled: boolean;
   /** Whether half payment is enabled */
   half_payment_enabled: boolean;
-  /** Whether quarter payment is enabled */
-  quarter_payment_enabled: boolean;
   /** Whether fixed amount is enabled */
   fixed_amount_enabled: boolean;
 }
@@ -29,14 +25,12 @@ export interface CommissionSettings {
 const DEFAULT_SETTINGS: CommissionSettings = {
   platform_rate: 0.017,
   half_payment_fee: 5,
-  quarter_payment_fee: 10,
   cod_merchant_fee: 10,
   fixed_amount_fee: 0,
   max_debt_amount: 10000,
   max_debt_days: 3,
   cod_enabled: false,
   half_payment_enabled: true,
-  quarter_payment_enabled: false,
   fixed_amount_enabled: false,
 };
 
