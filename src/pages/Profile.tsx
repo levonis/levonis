@@ -53,7 +53,9 @@ export default function Profile() {
       </main>
       {/* Footer rendered here so the native app shows it only inside
           the profile page (CSS hides other footers when is-native). */}
-      <Footer />
+      <div data-native-footer-wrapper>
+        <Footer />
+      </div>
     </div>
   );
 }
