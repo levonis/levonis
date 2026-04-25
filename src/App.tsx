@@ -19,6 +19,7 @@ import { DynamicIsland } from "@/island/DynamicIsland";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
+import NativeAuthGate from "@/components/auth/NativeAuthGate";
 // EmailVerificationBanner available for post-login verification
 import AppBackground from "@/components/AppBackground";
 import ProfileOrb from "@/components/ProfileOrb";
@@ -383,7 +384,9 @@ export default function App() {
               <CartProvider>
                 <IslandProvider>
                   <ProfileTransitionProvider>
-                    <AppContent />
+                    <NativeAuthGate>
+                      <AppContent />
+                    </NativeAuthGate>
                   </ProfileTransitionProvider>
                 </IslandProvider>
               </CartProvider>
