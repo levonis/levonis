@@ -193,12 +193,20 @@ export default function ProductOffersPage() {
   const TicketBadge = ({ offer }: { offer: ProductOffer }) => {
     const total = getTotalTickets(offer);
     if (!hasPromo) {
-      return <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة</Badge>;
+      return (
+        <Badge className="absolute top-2 right-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
+          <Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة
+        </Badge>
+      );
     }
     return (
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-        <Badge className="bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{total} تذكرة</Badge>
-        <Badge className="bg-amber-500 text-white gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse"><Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية</Badge>
+        <Badge className="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
+          <Gift className="h-3 w-3" />{total} تذكرة
+        </Badge>
+        <Badge className="bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-50 gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse">
+          <Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية
+        </Badge>
       </div>
     );
   };
@@ -207,19 +215,19 @@ export default function ProductOffersPage() {
     const total = getTotalTickets(offer);
     if (!hasPromo) {
       return (
-        <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
-          <p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
+        <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
         </div>
       );
     }
     return (
       <div className="space-y-1.5">
-        <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
-          <p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
+        <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
         </div>
-        <div className="text-center py-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center gap-1">
+        <div className="text-center py-1.5 bg-amber-500/10 backdrop-blur-md rounded-lg border border-amber-400/25 flex items-center justify-center gap-1">
           <PartyPopper className="h-3 w-3 text-amber-500" />
-          <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-bold">
             +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
           </p>
         </div>
