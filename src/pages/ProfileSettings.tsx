@@ -403,18 +403,26 @@ export default function ProfileSettings() {
     : `يمكن تغيير اسم المستخدم بعد ${cooldownDaysLeft} يوم`;
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-card border-b border-border/30">
+    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
+      {/* Glassmorphism background orbs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/25 blur-[120px] animate-pulse" />
+        <div className="absolute top-1/2 -left-40 w-[26rem] h-[26rem] rounded-full bg-primary/15 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute -bottom-40 right-1/4 w-[30rem] h-[30rem] rounded-full bg-accent/20 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,hsl(var(--background)/0.4)_100%)]" />
+      </div>
+
+      {/* Header - glass */}
+      <div className="sticky top-0 z-50 bg-white/10 dark:bg-white/[0.04] backdrop-blur-2xl border-b border-white/15 dark:border-white/10 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.2)]">
         <div className="container mx-auto max-w-2xl px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9 rounded-xl">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/15 backdrop-blur-xl border border-white/10">
             <ArrowRight className="h-4 w-4" />
           </Button>
           <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
         </div>
       </div>
 
-      <main className="container mx-auto max-w-2xl px-4 pt-4 pb-28 space-y-3">
+      <main className="relative container mx-auto max-w-2xl px-4 pt-4 pb-28 space-y-3">
         {/* Avatar Section - Centered */}
         <div className="flex flex-col items-center py-4">
           <div className="relative mb-3">
