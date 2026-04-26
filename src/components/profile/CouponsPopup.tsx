@@ -379,8 +379,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                         <Package className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold">الحد الأدنى</p>
-                        <p className="text-[9px] text-muted-foreground">{selectedDiscount.min_purchase_amount.toLocaleString()} د.ع</p>
+                        <p className="text-[10px] font-bold">{t('cp_min_purchase')}</p>
+                        <p className="text-[9px] text-muted-foreground">{selectedDiscount.min_purchase_amount.toLocaleString(numLocale)} {t('ph_currency_iqd')}</p>
                       </div>
                     </div>
                   )}
