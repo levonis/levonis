@@ -13,6 +13,7 @@ import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
 import { useLanguage } from '@/lib/i18n';
 import { Check, X } from 'lucide-react';
+import { getFriendlyFunctionErrorMessage } from '@/lib/functionErrors';
 
 const PasswordRequirements = ({ password }: { password: string }) => {
   const { t } = useLanguage();
@@ -41,51 +42,8 @@ const PasswordRequirements = ({ password }: { password: string }) => {
   );
 };
 
-const extractFunctionErrorMessage = async (error: unknown): Promise<string | null> => {
-  if (!error || typeof error !== 'object') return null;
-
-  const functionError = error as {
-    message?: string;
-    context?: {
-      clone?: () => { json?: () => Promise<any>; text?: () => Promise<string> };
-    };
-  };
-
-  const responseClone = functionError.context?.clone?.();
-
-  if (responseClone?.json) {
-    try {
-      const body = await responseClone.json();
-      if (typeof body?.error === 'string' && body.error.trim()) return body.error;
-      if (typeof body?.message === 'string' && body.message.trim()) return body.message;
-    } catch {
-      // Ignore JSON parsing errors and fall back to text/message parsing
-    }
-  }
-
-  if (responseClone?.text) {
-    try {
-      const text = await responseClone.text();
-      if (!text) return null;
-
-      try {
-        const parsed = JSON.parse(text);
-        if (typeof parsed?.error === 'string' && parsed.error.trim()) return parsed.error;
-        if (typeof parsed?.message === 'string' && parsed.message.trim()) return parsed.message;
-      } catch {
-        if (text.trim()) return text.trim();
-      }
-    } catch {
-      // Ignore text parsing errors and fall back to generic message
-    }
-  }
-
-  if (functionError.message && !functionError.message.includes('non-2xx')) {
-    return functionError.message;
-  }
-
-  return null;
-};
+const extractFunctionErrorMessage = (error: unknown): Promise<string | null> =>
+  getFriendlyFunctionErrorMessage(error, '').then((message) => message || null);
 
 const isStrongPassword = (password: string) => {
   return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
