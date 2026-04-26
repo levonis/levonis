@@ -48,7 +48,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         .maybeSingle();
 
       if (existingProfile) {
-        toast.error('هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.');
+        toast.error(t('signup_email_already'));
         return;
       }
     } catch (error: any) {
@@ -71,7 +71,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         .maybeSingle();
 
       if (existingUsername) {
-        toast.error('اسم المستخدم مأخوذ بالفعل. اختر اسماً آخر.');
+        toast.error(t('signup_username_check_error'));
         setLoading(false);
         return;
       }
@@ -80,7 +80,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       setCurrentStep(3);
     } catch (error) {
       console.error('Username check error:', error);
-      toast.error('حدث خطأ غير متوقع');
+      toast.error(t('signup_unexpected_error'));
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
 
       if (error) {
         if (error.message.includes('already registered')) {
-          toast.error('هذا البريد الإلكتروني مسجل بالفعل');
+          toast.error(t('signup_email_already'));
           setCurrentStep(1);
         } else {
           toast.error(error.message);
@@ -149,7 +149,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       }
 
       if (!data.user) {
-        toast.error('فشل إنشاء الحساب');
+        toast.error(t('signup_account_create_fail'));
         return;
       }
 
@@ -163,7 +163,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         });
         if (signInError) {
           console.error('Auto sign-in failed:', signInError);
-          toast.error('تم إنشاء الحساب لكن فشل تسجيل الدخول التلقائي. يرجى تسجيل الدخول يدوياً.');
+          toast.error(t('signup_account_create_error'));
           navigate('/');
           return;
         }
@@ -242,11 +242,11 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         }
       }
 
-      toast.success('تم إنشاء حسابك بنجاح! مرحباً بك في عائلة ليفو 🎉');
+      toast.success(t('signup_account_created'));
       navigate('/');
     } catch (error) {
       console.error('Error completing signup:', error);
-      toast.error('حدث خطأ أثناء إكمال التسجيل');
+      toast.error(t('signup_account_create_error'));
     } finally {
       setSubmitting(false);
     }
