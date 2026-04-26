@@ -219,6 +219,26 @@ const Admin = () => {
   // AI extraction states
   const [productUrl, setProductUrl] = useState('');
   const [extractingInfo, setExtractingInfo] = useState(false);
+  const [extractionSteps, setExtractionSteps] = useState<ExtractionStep[]>([]);
+  const [extractionFilledFields, setExtractionFilledFields] = useState<string[]>([]);
+
+  const initExtractionSteps = useCallback(() => {
+    setExtractionSteps(EXTRACTION_STEP_DEFS.map((s) => ({ ...s, status: 'pending' as const })));
+    setExtractionFilledFields([]);
+  }, []);
+
+  const advanceExtractionStep = useCallback((key: string, status: 'active' | 'done') => {
+    setExtractionSteps((prev) => prev.map((s) => {
+      if (s.key === key) return { ...s, status };
+      // mark earlier-still-active as done when a later step starts
+      if (status === 'active' && s.status === 'active') return { ...s, status: 'done' };
+      return s;
+    }));
+  }, []);
+
+  const markFieldFilled = useCallback((field: string) => {
+    setExtractionFilledFields((prev) => (prev.includes(field) ? prev : [...prev, field]));
+  }, []);
   const [showManualInput, setShowManualInput] = useState(false);
   const [extractionItemId, setExtractionItemId] = useState<string>('');
   const [extractionPlatform, setExtractionPlatform] = useState<string>('');
