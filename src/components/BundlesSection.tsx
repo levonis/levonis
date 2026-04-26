@@ -33,13 +33,13 @@ const BundlesSection = () => {
           <div className="w-7 h-7 rounded-lg bg-primary/10 backdrop-blur-md border border-primary/20 flex items-center justify-center">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
           </div>
-          <h2 className="text-sm font-black text-foreground tracking-tight">باقات وعروض</h2>
+          <h2 className="text-sm font-black text-foreground tracking-tight">{t('section_bundles_title')}</h2>
         </div>
         <Link
           to="/bundles"
           className="flex items-center gap-1 text-[11px] font-medium text-primary px-2.5 py-1 rounded-full bg-primary/5 backdrop-blur-md border border-primary/15 hover:bg-primary/10 transition-colors"
         >
-          الكل
+          {t('section_view_all')}
           <ArrowLeft className="h-2.5 w-2.5" />
         </Link>
       </div>
