@@ -23,7 +23,18 @@ import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
 import AdminProductPricingSection from '@/components/admin/AdminProductPricingSection';
 import AdminProductAIContentEditor from '@/components/admin/AdminProductAIContentEditor';
+import { ExtractionProgress, type ExtractionStep } from '@/components/admin/ExtractionProgress';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
+
+const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
+  { key: 'fetch', label: 'جلب صفحة المنتج' },
+  { key: 'parse', label: 'تحليل البيانات الأساسية' },
+  { key: 'price', label: 'استخراج الأسعار' },
+  { key: 'images', label: 'استخراج الصور' },
+  { key: 'options', label: 'استخراج الخيارات والألوان' },
+  { key: 'ai', label: 'إنشاء الملخص ومحتوى SEO بالذكاء الاصطناعي' },
+  { key: 'apply', label: 'تعبئة الحقول تلقائياً' },
+];
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -208,6 +219,26 @@ const Admin = () => {
   // AI extraction states
   const [productUrl, setProductUrl] = useState('');
   const [extractingInfo, setExtractingInfo] = useState(false);
+  const [extractionSteps, setExtractionSteps] = useState<ExtractionStep[]>([]);
+  const [extractionFilledFields, setExtractionFilledFields] = useState<string[]>([]);
+
+  const initExtractionSteps = useCallback(() => {
+    setExtractionSteps(EXTRACTION_STEP_DEFS.map((s) => ({ ...s, status: 'pending' as const })));
+    setExtractionFilledFields([]);
+  }, []);
+
+  const advanceExtractionStep = useCallback((key: string, status: 'active' | 'done') => {
+    setExtractionSteps((prev) => prev.map((s) => {
+      if (s.key === key) return { ...s, status };
+      // mark earlier-still-active as done when a later step starts
+      if (status === 'active' && s.status === 'active') return { ...s, status: 'done' };
+      return s;
+    }));
+  }, []);
+
+  const markFieldFilled = useCallback((field: string) => {
+    setExtractionFilledFields((prev) => (prev.includes(field) ? prev : [...prev, field]));
+  }, []);
   const [showManualInput, setShowManualInput] = useState(false);
   const [extractionItemId, setExtractionItemId] = useState<string>('');
   const [extractionPlatform, setExtractionPlatform] = useState<string>('');
@@ -792,12 +823,24 @@ const Admin = () => {
     }
 
     setExtractingInfo(true);
+    initExtractionSteps();
+    advanceExtractionStep('fetch', 'active');
     toast.info('جاري فحص إمكانية الاستخراج...');
     
+    // Simulate progressive backend phases (since edge function is a single call)
+    const phaseTimers: ReturnType<typeof setTimeout>[] = [];
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('parse', 'active'), 800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('price', 'active'), 1800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('images', 'active'), 2800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('options', 'active'), 3800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('ai', 'active'), 4800));
+
     try {
       const response = await supabase.functions.invoke('extract-product-info', {
         body: { url: productUrl }
       });
+
+      phaseTimers.forEach(clearTimeout);
 
       if (response.error) {
         // Try to read data even on error - edge function may return useful info
@@ -841,6 +884,10 @@ const Admin = () => {
         return;
       }
 
+      // Mark backend phases as done
+      ['fetch','parse','price','images','options','ai'].forEach((k) => advanceExtractionStep(k, 'done'));
+      advanceExtractionStep('apply', 'active');
+
       // Fill form with extracted data
       console.log('[AI Extract] Product info received:', {
         dimensions: productInfo.dimensions,
@@ -848,8 +895,11 @@ const Admin = () => {
         name: productInfo.name
       });
       applyProductInfo(productInfo);
+      advanceExtractionStep('apply', 'done');
+      toast.success('تم الاستخراج والتعبئة بنجاح');
       
     } catch (error) {
+      phaseTimers.forEach(clearTimeout);
       console.error('Error extracting product info:', error);
       setShowManualInput(true);
       toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء الاستخراج - استخدم الإدخال اليدوي');
@@ -884,29 +934,35 @@ const Admin = () => {
     if (productInfo.name_ar) {
       const input = form.querySelector('#name_ar') as HTMLInputElement;
       if (input) input.value = productInfo.name_ar;
+      markFieldFilled('name_ar');
     }
     if (productInfo.name) {
       const input = form.querySelector('#name') as HTMLInputElement;
       if (input) input.value = productInfo.name;
+      markFieldFilled('name');
     }
     if (productInfo.name_ar && productInfo.name) {
       const slug = productInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const input = form.querySelector('#slug') as HTMLInputElement;
       if (input) input.value = slug;
+      markFieldFilled('slug');
     }
     if (productInfo.description_ar) {
       const textarea = form.querySelector('#description_ar') as HTMLTextAreaElement;
       if (textarea) textarea.value = productInfo.description_ar;
+      markFieldFilled('description_ar');
     }
     if (productInfo.description) {
       const textarea = form.querySelector('#description') as HTMLTextAreaElement;
       if (textarea) textarea.value = productInfo.description;
+      markFieldFilled('description');
     }
 
     // Set price (current price after discount)
     if (productInfo.price && productInfo.price > 0) {
       const priceInput = form.querySelector('#price') as HTMLInputElement;
       if (priceInput) priceInput.value = String(productInfo.price);
+      markFieldFilled('price');
     }
 
     // Set original source price ($) used by the pricing section.
@@ -921,9 +977,11 @@ const Admin = () => {
       window.dispatchEvent(new CustomEvent('admin-product-pricing-autofill', {
         detail: { originalPriceUsd: productInfo.original_price_usd }
       }));
+      markFieldFilled('original_price');
     } else if (productInfo.original_price && productInfo.original_price > 0) {
       const originalPriceInput = form.querySelector('input[name="original_price"]') as HTMLInputElement;
       if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
+      markFieldFilled('original_price');
     }
 
     // Auto-fill SEO short summary (tri-lang)
@@ -933,6 +991,7 @@ const Admin = () => {
         en: productInfo.short_summary.en || '',
         ku: productInfo.short_summary.ku || '',
       });
+      markFieldFilled('short_summary');
     }
 
     // Auto-fill searchable tags (keywords)
@@ -941,12 +1000,20 @@ const Admin = () => {
         .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
         .filter((t: string) => t.length > 0);
       setProductSearchableAttrs(Array.from(new Set(cleaned)));
+      markFieldFilled('searchable_tags');
     }
 
     // Auto-fill "Why this product" AI content
     if (productInfo.ai_content && typeof productInfo.ai_content === 'object') {
       setProductAIContent(productInfo.ai_content);
+      markFieldFilled('ai_content');
     }
+
+    if (productInfo.dimensions) markFieldFilled('dimensions');
+    if (productInfo.weight_kg) markFieldFilled('weight_kg');
+    if (Array.isArray(productInfo.images) && productInfo.images.length > 0) markFieldFilled('images');
+    if (Array.isArray(productInfo.options) && productInfo.options.length > 0) markFieldFilled('options');
+    if (Array.isArray(productInfo.colors) && productInfo.colors.length > 0) markFieldFilled('colors');
 
     // Collect option/color image URLs to exclude from main product images
     const optionColorImageUrls = new Set<string>();
@@ -2250,6 +2317,11 @@ const Admin = () => {
                           )}
                         </Button>
                       </div>
+                      <ExtractionProgress
+                        active={extractingInfo}
+                        steps={extractionSteps}
+                        filledFields={extractionFilledFields}
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
