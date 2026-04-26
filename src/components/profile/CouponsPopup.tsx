@@ -410,7 +410,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                 <div className="p-4 pt-2 border-t border-border/30">
                   <Button className="w-full h-10 gap-2 rounded-2xl text-xs font-black shadow-lg shadow-primary/20"
                     onClick={() => { navigate(`/community/store/${selectedDiscount.merchant_id}`); setSelectedDiscount(null); onOpenChange(false); }}>
-                    <Store className="h-3.5 w-3.5" />تسوّق من المتجر
+                    <Store className="h-3.5 w-3.5" />{t('cp_shop_store')}
                   </Button>
                 </div>
               </div>
