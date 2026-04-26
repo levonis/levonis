@@ -309,9 +309,10 @@ export default function DailyTasksPanel() {
         .insert({ user_id: user.id, task_key: task.task_key, points_earned: totalPoints });
       if (taskError) throw taskError;
 
+      const taskTitle = pickI18n(task as any, 'title', language);
       const desc = bonusPoints > 0
-        ? `${t('dt_task_label')}: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
-        : `${t('dt_task_label')}: ${task.title_ar}`;
+        ? `${t('dt_task_label')}: ${taskTitle} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
+        : `${t('dt_task_label')}: ${taskTitle}`;
 
       const { error: pointsError } = await supabase
         .from('points_transactions')
