@@ -60,24 +60,25 @@ function ThemeSwitcherInline() {
 
 // Password change button
 function ChangePasswordButton() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [newPass, setNewPass] = useState("");
   const [showInput, setShowInput] = useState(false);
 
   const handleChange = async () => {
     if (newPass.length < 6) {
-      sonnerToast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      sonnerToast.error(t('settings_password_min'));
       return;
     }
     setLoading(true);
     try {
       const { error } = await supabaseClient.auth.updateUser({ password: newPass });
       if (error) throw error;
-      sonnerToast.success("تم تغيير كلمة المرور بنجاح");
+      sonnerToast.success(t('settings_password_changed'));
       setShowInput(false);
       setNewPass("");
     } catch (err: any) {
-      sonnerToast.error("فشل في تغيير كلمة المرور: " + (err?.message || ""));
+      sonnerToast.error(t('settings_password_change_failed') + ": " + (err?.message || ""));
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ function ChangePasswordButton() {
     return (
       <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-1" onClick={() => setShowInput(true)}>
         <KeyRound className="h-3.5 w-3.5" />
-        تغيير
+        {t('settings_change')}
       </Button>
     );
   }
@@ -98,11 +99,11 @@ function ChangePasswordButton() {
         type="password"
         value={newPass}
         onChange={e => setNewPass(e.target.value)}
-        placeholder="كلمة المرور الجديدة"
+        placeholder={t('settings_password_new_placeholder')}
         className="h-8 w-36 bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all text-sm"
       />
       <Button size="sm" className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] h-8 px-4" onClick={handleChange} disabled={loading}>
-        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "حفظ"}
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('settings_password_save')}
       </Button>
       <Button size="sm" variant="ghost" className="rounded-2xl h-8 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10" onClick={() => { setShowInput(false); setNewPass(""); }}>
         ×
