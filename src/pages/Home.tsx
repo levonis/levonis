@@ -229,7 +229,7 @@ const Home = () => {
                           slug={category.slug}
                           icon={category.icon}
                           description={category.description}
-                          descriptionAr={category.description_ar}
+                          descriptionAr={getCategoryDescription(category)}
                           hasDirectSale={directSaleCategoryIds?.has(category.id)}
                           mediaUrl={(category as any).media_url}
                           mediaType={(category as any).media_type}
