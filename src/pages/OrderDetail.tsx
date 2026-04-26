@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/lib/i18n';
 
 import OrderInvoiceDialog from '@/components/OrderInvoiceDialog';
 import UnifiedChatButton from '@/components/UnifiedChatButton';
