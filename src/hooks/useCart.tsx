@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 
 export const MAX_QUANTITY_PER_ITEM = 50;
