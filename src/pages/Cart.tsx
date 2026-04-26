@@ -471,6 +471,8 @@ const Cart = () => {
     min_amount: number;
     max_amount: number;
     fee_percentage: number;
+    cod_fee_type?: 'percentage' | 'fixed';
+    cod_fee_value?: number;
   }
   
   interface PartialPaymentSettingsData {
