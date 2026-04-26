@@ -1861,4 +1861,34 @@ export type TranslationKeys = {
   pwa_notif_denied: string;
   pwa_notif_default_hint: string;
   pwa_notif_error: string;
+
+  // Sections / View all
+  section_bundles_title: string;
+  section_reels_title: string;
+  section_view_all: string;
+  section_view_details: string;
+
+  // Bundles page
+  bundles_back_home: string;
+  bundles_empty: string;
+  bundles_out_of_stock: string;
+
+  // Sale type badges
+  sale_type_direct: string;
+  sale_type_preorder_air: string;
+  sale_type_preorder_sea: string;
+
+  // Cart shipping option labels (per-product shipping mode under product name)
+  shipping_opt_air: string;
+  shipping_opt_sea: string;
+  shipping_opt_direct: string;
+  shipping_opt_preorder: string;
+
+  // Delivery methods (cart)
+  delivery_method_standard_name: string;
+  delivery_method_standard_desc: string;
+  delivery_method_pickup_name: string;
+  delivery_method_pickup_desc: string;
+  delivery_method_personal_name: string;
+  delivery_method_personal_desc: string;
 };
