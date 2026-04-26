@@ -11886,6 +11886,10 @@ export type Database = {
       }
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
+      admin_gift_loyalty_card: {
+        Args: { p_level_id: string; p_message?: string; p_recipient_id: string }
+        Returns: Json
+      }
       apply_referral_coupon: {
         Args: { p_buyer_user_id: string; p_code: string }
         Returns: Json
