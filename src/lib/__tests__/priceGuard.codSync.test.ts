@@ -86,11 +86,17 @@ describe("COD% live sync — direct sale price", () => {
     expect(fixed5000! - fixed500!).toBe(5000 - 500);
   });
 
-  it("بدون codDefaults يرجع السعر المخزّن (سلوك آمن)", () => {
+  it("بدون codDefaults مع تفعيل الربط: يُرجع 0 (حماية من القيم الناقصة) ولا يستخدم السعر المخزّن", () => {
     const cartItem = { sale_type: "direct", products: baseProduct };
-    const fallback = getGuardedCartItemPrice(cartItem, 1500, null);
-    // بدون codDefaults، الدالة لا تحسب liveDirect وتستخدم direct_sale_price المخزّن
-    expect(fallback).toBe(99999);
+    const guarded = getGuardedCartItemPrice(cartItem, 1500, null);
+    expect(guarded).toBe(0);
+  });
+
+  it("عندما الربط معطّل: يُستخدم direct_sale_price المخزّن كالمعتاد", () => {
+    const unlinked = { ...baseProduct, link_direct_commission_to_cod: false };
+    const cartItem = { sale_type: "direct", products: unlinked };
+    const guarded = getGuardedCartItemPrice(cartItem, 1500, null);
+    expect(guarded).toBe(99999);
   });
 
   it("سيناريو إدارة: محاكاة تغيير COD% من 5 → 8 → 12 على عدة منتجات في السلة", () => {
