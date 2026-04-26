@@ -1850,4 +1850,34 @@ export const ar: TranslationKeys = {
   pwa_notif_denied: 'تم رفض الإشعارات. يمكنك تفعيلها من إعدادات المتصفح',
   pwa_notif_default_hint: 'يرجى السماح بالإشعارات عند ظهور نافذة الإذن',
   pwa_notif_error: 'حدث خطأ في تفعيل الإشعارات',
+
+  // Sections / View all
+  section_bundles_title: 'باقات وعروض',
+  section_reels_title: 'ريلز',
+  section_view_all: 'عرض الكل',
+  section_view_details: 'عرض التفاصيل',
+
+  // Bundles page
+  bundles_back_home: 'العودة إلى الصفحة الرئيسية',
+  bundles_empty: 'لا توجد باقات متاحة حالياً',
+  bundles_out_of_stock: 'نفذ من المخزون',
+
+  // Sale type badges
+  sale_type_direct: 'بيع مباشر',
+  sale_type_preorder_air: 'طلب مسبق (جوي)',
+  sale_type_preorder_sea: 'طلب مسبق (بحري)',
+
+  // Cart shipping option labels
+  shipping_opt_air: 'شحن جوي',
+  shipping_opt_sea: 'شحن بحري',
+  shipping_opt_direct: 'بيع مباشر',
+  shipping_opt_preorder: 'طلب مسبق',
+
+  // Delivery methods (cart)
+  delivery_method_standard_name: 'التوصيل الاعتيادي',
+  delivery_method_standard_desc: 'توصيل عبر شركات الشحن المحلية',
+  delivery_method_pickup_name: 'الاستلام من المخزن',
+  delivery_method_pickup_desc: 'استلم طلبك مباشرة من مخزننا - مجاناً',
+  delivery_method_personal_name: 'التوصيل الشخصي',
+  delivery_method_personal_desc: 'توصيل شخصي مباشر لباب منزلك',
 };
