@@ -12,6 +12,10 @@ export interface CardDiscountResult {
   hasDiscount: boolean;
   freeShipping: boolean;
   freeShippingMinOrder: number;
+  freeShippingMethods: string[];
+  freeShippingMaxUses: number | null;
+  freeShippingUsedSoFar: number;
+  freeShippingRemainingUses: number | null;
   // Percentage discount on subtotal (with optional cap during card validity)
   percentageDiscount: number;
   percentageRate: number;
