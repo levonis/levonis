@@ -74,7 +74,7 @@ const BundlesSection = () => {
                 <div className="relative h-[88px] overflow-hidden">
                   <img
                     src={bundle.image_url}
-                    alt={bundle.title_ar}
+                    alt={pickI18n(bundle, 'title', language)}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none"
                     draggable={false}
                   />
