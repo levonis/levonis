@@ -11,8 +11,8 @@ import { Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft, Sparkles } from 'lucide-re
 import { z } from 'zod';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
-import { useLanguage } from '@/lib/i18n';
-import { Check, X } from 'lucide-react';
+import { useLanguage, LANGUAGE_LABELS, type Language } from '@/lib/i18n';
+import { Check, X, Globe } from 'lucide-react';
 import { getFriendlyFunctionErrorMessage } from '@/lib/functionErrors';
 
 const PasswordRequirements = ({ password }: { password: string }) => {
@@ -50,7 +50,7 @@ const isStrongPassword = (password: string) => {
 };
 
 const Auth = () => {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -246,6 +246,28 @@ const Auth = () => {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       <div className="w-full max-w-md relative z-10">
+        {/* Language picker */}
+        <div className="flex items-center justify-center mb-4">
+          <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.08)]">
+            <Globe className="w-3.5 h-3.5 text-muted-foreground mx-2" />
+            {(['ar', 'en', 'ku'] as Language[]).map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setLanguage(lang)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                  language === lang
+                    ? 'bg-gradient-to-br from-primary/90 to-primary/70 text-primary-foreground shadow-[0_4px_12px_-2px_hsl(var(--primary)/0.5)]'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                }`}
+                aria-pressed={language === lang}
+              >
+                {LANGUAGE_LABELS[lang]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.1)]">
