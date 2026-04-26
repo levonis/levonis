@@ -741,7 +741,7 @@ export default function ProfileSettings() {
       <WalletPinDialog
         open={showPinDialog}
         onOpenChange={setShowPinDialog}
-        onVerified={() => toast({ title: "تم تعيين رمز PIN بنجاح ✓" })}
+        onVerified={() => toast({ title: t('settings_pin_set_success') })}
         mode="set"
       />
     </div>
