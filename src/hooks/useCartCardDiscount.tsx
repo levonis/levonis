@@ -186,6 +186,17 @@ export function useCartCardDiscount(
   // Free shipping check
   const freeShipping = level.free_shipping || false;
   const freeShippingMinOrder = level.free_shipping_min_order || 0;
+  const rawMethods = level.free_shipping_methods;
+  const freeShippingMethods: string[] = Array.isArray(rawMethods)
+    ? rawMethods.filter((m: any) => typeof m === "string")
+    : ["standard"];
+  const freeShippingMaxUses = level.free_shipping_max_uses != null
+    ? Number(level.free_shipping_max_uses)
+    : null;
+  const freeShippingUsedSoFar = Number(freeShippingUsedData) || 0;
+  const freeShippingRemainingUses = freeShippingMaxUses != null
+    ? Math.max(0, freeShippingMaxUses - freeShippingUsedSoFar)
+    : null;
 
   return {
     cardDiscount: {
@@ -197,6 +208,10 @@ export function useCartCardDiscount(
       hasDiscount: (totalDiscount + percentageDiscount) > 0,
       freeShipping,
       freeShippingMinOrder,
+      freeShippingMethods,
+      freeShippingMaxUses,
+      freeShippingUsedSoFar,
+      freeShippingRemainingUses,
       percentageDiscount,
       percentageRate,
       percentageMaxAmount,
