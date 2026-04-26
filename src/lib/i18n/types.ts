@@ -626,6 +626,17 @@ export type TranslationKeys = {
   points_available_for_redeem: string;
   points_unit: string;
   points_no_transactions: string;
+  points_src_daily_task: string;
+  points_src_admin_adjustment: string;
+  points_src_verified_review: string;
+  points_src_review: string;
+  points_src_game_store: string;
+  points_src_order_delivered: string;
+  points_src_offer_purchase: string;
+  points_src_coupon: string;
+  points_src_referral: string;
+  points_src_signup: string;
+  points_src_default: string;
   points_no_products: string;
   points_no_products_desc: string;
   points_remaining_stock: string;
