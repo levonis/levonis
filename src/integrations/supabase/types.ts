@@ -128,6 +128,8 @@ export type Database = {
           id: string
           message: string
           message_ar: string
+          message_en: string | null
+          message_ku: string | null
           speed: number | null
           type: string
           updated_at: string
@@ -144,6 +146,8 @@ export type Database = {
           id?: string
           message: string
           message_ar: string
+          message_en?: string | null
+          message_ku?: string | null
           speed?: number | null
           type?: string
           updated_at?: string
@@ -160,6 +164,8 @@ export type Database = {
           id?: string
           message?: string
           message_ar?: string
+          message_en?: string | null
+          message_ku?: string | null
           speed?: number | null
           type?: string
           updated_at?: string
