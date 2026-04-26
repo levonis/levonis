@@ -3,6 +3,9 @@ import { StrictMode } from 'react';
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { installFriendlyFunctionErrorMessages } from "@/lib/functionErrors";
+
+installFriendlyFunctionErrorMessages();
 
 // Service Worker kill-switch removed — it was wiping caches on every load,
 // forcing every asset to be re-downloaded and making the site very slow.
