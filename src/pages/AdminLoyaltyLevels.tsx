@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles, User, Headphones, CalendarIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles, User, Headphones, CalendarIcon, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
