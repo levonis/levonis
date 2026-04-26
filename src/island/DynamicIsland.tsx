@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useIsland, type IslandState } from "./IslandContext";
 import { useIslandSearch, pushRecent, pickName } from "./useIslandSearch";
+import { usePageSearchContext, filterPageItems, type PageSearchItem } from "./PageSearchContext";
 import { useLanguage } from "@/lib/i18n";
 import type { TranslationKeys } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
