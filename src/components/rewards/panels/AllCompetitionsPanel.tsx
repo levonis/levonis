@@ -802,12 +802,12 @@ export default function AllCompetitionsPanel() {
                   {isFree ? (
                     <>
                       <Gift className="h-2.5 w-2.5 ml-0.5" />
-                      مجاني
+                      {t('ac_free')}
                     </>
                   ) : (
                     <>
                       <Ticket className="h-2.5 w-2.5 ml-0.5" />
-                      {requiredTickets} تذكرة
+                      {t('ac_ticket_unit', { count: requiredTickets })}
                     </>
                   )}
                 </Badge>
