@@ -353,6 +353,7 @@ export default function AdminLoyaltyLevels() {
       min_points: level.min_points,
       color: level.color,
       discount_percentage: level.discount_percentage || 0,
+      discount_percentage_max_amount: level.discount_percentage_max_amount ?? null,
       bonus_points_percentage: level.bonus_points_percentage || 0,
       free_shipping: level.free_shipping || false,
       free_shipping_min_order: level.free_shipping_min_order || 0,
