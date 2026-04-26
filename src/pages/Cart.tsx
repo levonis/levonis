@@ -30,6 +30,7 @@ import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { ensurePriceIqd, getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
@@ -44,25 +45,8 @@ const Cart = () => {
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
 
-  // Global COD defaults (used to live-recompute direct sale price for products
-  // linked via `link_direct_commission_to_cod`). Fetched early because price
-  // helpers below depend on it.
-  const { data: codDefaults } = useQuery({
-    queryKey: ['cod-default-settings-cart'],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('default_settings')
-        .select('setting_value')
-        .eq('setting_key', 'partial_payment_settings')
-        .single();
-      const v: any = data?.setting_value || {};
-      return {
-        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
-        value: Number(v.cod_default_fee_value) || 0,
-      };
-    },
-  });
+  // Global COD defaults — shared hook with realtime sync.
+  const { data: codDefaults } = useCodDefaults();
 
   // Simple item price getter for protection discount calculation
   const getCartItemPrice = (item: CartItem): number => {

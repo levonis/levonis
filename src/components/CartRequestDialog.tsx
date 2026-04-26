@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,22 +45,7 @@ export default function CartRequestDialog({
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
 
-  const { data: codDefaults } = useQuery({
-    queryKey: ['cod-default-settings-cart-request'],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('default_settings')
-        .select('setting_value')
-        .eq('setting_key', 'partial_payment_settings')
-        .single();
-      const v: any = data?.setting_value || {};
-      return {
-        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
-        value: Number(v.cod_default_fee_value) || 0,
-      };
-    },
-  });
+  const { data: codDefaults } = useCodDefaults();
 
   // Check for existing pending request
   const { data: existingRequest, isLoading } = useQuery({

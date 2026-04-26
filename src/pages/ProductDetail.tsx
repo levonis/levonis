@@ -28,6 +28,7 @@ import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
+import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { usePageTitle } from "@/island/usePageTitle";
@@ -90,23 +91,10 @@ const ProductDetail = () => {
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
 
-  // Global COD default settings (for products linked to COD %)
-  const { data: codDefaults } = useQuery({
-    queryKey: ['cod-default-settings-product-detail'],
-    staleTime: 10 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('default_settings')
-        .select('setting_value')
-        .eq('setting_key', 'partial_payment_settings')
-        .single();
-      const v: any = data?.setting_value || {};
-      return {
-        type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
-        value: Number(v.cod_default_fee_value) || 0,
-      };
-    },
-  });
+  // Global COD default settings (shared hook with realtime sync — updates
+  // instantly when admin changes COD %, so any product linked via
+  // `link_direct_commission_to_cod` reflects the new price without reload).
+  const { data: codDefaults } = useCodDefaults();
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
     staleTime: 5 * 60 * 1000,
