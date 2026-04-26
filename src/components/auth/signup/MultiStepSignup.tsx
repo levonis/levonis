@@ -10,14 +10,21 @@ import Step4OptionalInfo from './Step4OptionalInfo';
 import Step5Review from './Step5Review';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import { SignupFormData, initialFormData } from './types';
-
-const STEP_LABELS = ['الحساب', 'الملف', 'التحقق', 'إضافية', 'مراجعة'];
+import { useLanguage } from '@/lib/i18n';
 
 interface MultiStepSignupProps {
   onSwitchToLogin: () => void;
 }
 
 export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
+  const { t } = useLanguage();
+  const STEP_LABELS = [
+    t('signup_step_account'),
+    t('signup_step_profile'),
+    t('signup_step_verify'),
+    t('signup_step_optional'),
+    t('signup_step_review'),
+  ];
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<SignupFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
@@ -41,7 +48,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         .maybeSingle();
 
       if (existingProfile) {
-        toast.error('هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول.');
+        toast.error(t('signup_email_already'));
         return;
       }
     } catch (error: any) {
@@ -64,7 +71,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         .maybeSingle();
 
       if (existingUsername) {
-        toast.error('اسم المستخدم مأخوذ بالفعل. اختر اسماً آخر.');
+        toast.error(t('signup_username_check_error'));
         setLoading(false);
         return;
       }
@@ -73,7 +80,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       setCurrentStep(3);
     } catch (error) {
       console.error('Username check error:', error);
-      toast.error('حدث خطأ غير متوقع');
+      toast.error(t('signup_unexpected_error'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +140,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
 
       if (error) {
         if (error.message.includes('already registered')) {
-          toast.error('هذا البريد الإلكتروني مسجل بالفعل');
+          toast.error(t('signup_email_already'));
           setCurrentStep(1);
         } else {
           toast.error(error.message);
@@ -142,7 +149,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       }
 
       if (!data.user) {
-        toast.error('فشل إنشاء الحساب');
+        toast.error(t('signup_account_create_fail'));
         return;
       }
 
@@ -156,7 +163,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         });
         if (signInError) {
           console.error('Auto sign-in failed:', signInError);
-          toast.error('تم إنشاء الحساب لكن فشل تسجيل الدخول التلقائي. يرجى تسجيل الدخول يدوياً.');
+          toast.error(t('signup_account_create_error'));
           navigate('/');
           return;
         }
@@ -235,11 +242,11 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         }
       }
 
-      toast.success('تم إنشاء حسابك بنجاح! مرحباً بك في عائلة ليفو 🎉');
+      toast.success(t('signup_account_created'));
       navigate('/');
     } catch (error) {
       console.error('Error completing signup:', error);
-      toast.error('حدث خطأ أثناء إكمال التسجيل');
+      toast.error(t('signup_account_create_error'));
     } finally {
       setSubmitting(false);
     }
@@ -276,9 +283,9 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         return (
           <div className="space-y-6 text-center py-8">
             <div className="space-y-2">
-              <h3 className="text-lg font-bold">التحقق من البريد الإلكتروني</h3>
+              <h3 className="text-lg font-bold">{t('signup_email_verify_title')}</h3>
               <p className="text-sm text-muted-foreground">
-                يرجى التحقق من بريدك الإلكتروني لتأكيد حسابك
+                {t('signup_email_verify_desc')}
               </p>
               <p className="text-sm font-medium" dir="ltr">{formData.email}</p>
             </div>
@@ -287,7 +294,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
                 <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
                   <span className="text-emerald-500 text-2xl">✓</span>
                 </div>
-                <p className="text-emerald-500 font-bold">تم التحقق بنجاح!</p>
+                <p className="text-emerald-500 font-bold">{t('signup_verify_success')}</p>
                 <button
                   onClick={() => setCurrentStep(4)}
                   className="mt-4 px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold"
@@ -352,7 +359,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       
       {currentStep === 1 && (
         <p className="text-center text-sm text-muted-foreground">
-          لديك حساب بالفعل؟{' '}
+          {t('signup_have_account')}{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
