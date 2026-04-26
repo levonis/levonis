@@ -146,7 +146,7 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
                 <Skeleton key={i} className="h-16 rounded-xl" />
               ))
             ) : !data?.items.length ? (
-              <p className="text-center text-sm text-muted-foreground py-6">لم تقم بأي توفير بعد! تسوق واستفد من الخصومات</p>
+              <p className="text-center text-sm text-muted-foreground py-6">{t('savings_empty')}</p>
             ) : (
               data.items.map((item, i) => (
                 <div key={`${item.orderId}-${i}`} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-card/50">
