@@ -1,6 +1,10 @@
-import { useMemo, lazy, Suspense, memo } from 'react';
+import { useMemo, lazy, Suspense, memo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
