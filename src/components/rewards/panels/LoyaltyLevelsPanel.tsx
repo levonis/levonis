@@ -15,9 +15,10 @@ import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function LoyaltyLevelsPanel() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showRoadmap, setShowRoadmap] = useState(false);
