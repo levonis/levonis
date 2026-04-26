@@ -1410,6 +1410,24 @@ ${pageContent.substring(0, 100000)}${extraContext}
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
+
+          // SEO short summary (tri-lang) + searchable tags + AI content (why this product)
+          if (ai.short_summary && typeof ai.short_summary === 'object') {
+            productInfo.short_summary = {
+              ar: typeof ai.short_summary.ar === 'string' ? ai.short_summary.ar.slice(0, 200) : '',
+              en: typeof ai.short_summary.en === 'string' ? ai.short_summary.en.slice(0, 200) : '',
+              ku: typeof ai.short_summary.ku === 'string' ? ai.short_summary.ku.slice(0, 200) : '',
+            };
+          }
+          if (Array.isArray(ai.searchable_tags)) {
+            productInfo.searchable_tags = ai.searchable_tags
+              .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
+              .filter((t: string) => t.length > 0)
+              .slice(0, 20);
+          }
+          if (ai.ai_content && typeof ai.ai_content === 'object') {
+            productInfo.ai_content = ai.ai_content;
+          }
           
           const extractedCurrency = ai.currency || structuredPrices.currency || 'CNY';
           const aiPrice = parseFloat(ai.price) || 0;
