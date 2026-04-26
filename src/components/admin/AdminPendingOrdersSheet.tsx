@@ -31,7 +31,12 @@ interface Order {
   governorate: string | null;
   created_at: string;
   priority: string | null;
+  user_id: string | null;
   order_items: OrderItem[];
+  // injected client-side
+  priority_rank?: number;
+  priority_card_name?: string | null;
+  priority_card_color?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
