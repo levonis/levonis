@@ -747,6 +747,8 @@ export default function LoyaltyLevelsPanel() {
         levelPrizes={levelPrizes || []}
         currentLevelIndex={currentLevelIndex}
         totalXp={totalXp}
+        currentLevelXp={currentLevelXp}
+        currentLevelNumber={currentLevelNumber}
         activeCardLevelId={activeCardLevel?.id}
       />
     </div>
