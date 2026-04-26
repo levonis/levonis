@@ -405,7 +405,7 @@ export default function ProfileSettings() {
     : t('settings_username_cooldown', { days: cooldownDaysLeft });
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-background relative overflow-hidden" dir={dir}>
       {/* Glassmorphism background orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/25 blur-[120px] animate-pulse" />
