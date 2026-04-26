@@ -23,7 +23,18 @@ import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
 import AdminProductPricingSection from '@/components/admin/AdminProductPricingSection';
 import AdminProductAIContentEditor from '@/components/admin/AdminProductAIContentEditor';
+import { ExtractionProgress, type ExtractionStep } from '@/components/admin/ExtractionProgress';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
+
+const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
+  { key: 'fetch', label: 'جلب صفحة المنتج' },
+  { key: 'parse', label: 'تحليل البيانات الأساسية' },
+  { key: 'price', label: 'استخراج الأسعار' },
+  { key: 'images', label: 'استخراج الصور' },
+  { key: 'options', label: 'استخراج الخيارات والألوان' },
+  { key: 'ai', label: 'إنشاء الملخص ومحتوى SEO بالذكاء الاصطناعي' },
+  { key: 'apply', label: 'تعبئة الحقول تلقائياً' },
+];
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
