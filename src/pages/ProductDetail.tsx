@@ -90,7 +90,7 @@ const ProductDetail = () => {
   const [userManuallySelected, setUserManuallySelected] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
   const { data: shippingSettings } = useShippingSettings();
-  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
 
   // Global COD default settings (shared hook with realtime sync — updates
   // instantly when admin changes COD %, so any product linked via
