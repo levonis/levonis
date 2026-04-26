@@ -13,7 +13,7 @@ const BundlesSection = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, image_url, bundle_price, original_price, sale_type')
+        .select('id, title_ar, title_en, title_ku, image_url, bundle_price, original_price, sale_type')
         .eq('is_active', true)
         .order('display_order')
         .limit(6);
