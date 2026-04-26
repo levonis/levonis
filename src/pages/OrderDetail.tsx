@@ -192,11 +192,11 @@ const OrderDetail = () => {
           <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-4">
             <Package className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-black text-foreground mb-2">الطلب غير موجود</h3>
-          <p className="text-sm text-muted-foreground mb-6">لم نتمكن من العثور على هذا الطلب</p>
+          <h3 className="text-xl font-black text-foreground mb-2">{t('od_not_found_title')}</h3>
+          <p className="text-sm text-muted-foreground mb-6">{t('od_not_found_desc')}</p>
           <Button onClick={() => navigate(isAdmin ? ADMIN_ROUTES.orders : '/my-orders')} className="w-full">
             <ArrowRight className="ml-2 h-4 w-4" />
-            {isAdmin ? 'العودة إلى لوحة الطلبات' : 'العودة إلى طلباتي'}
+            {isAdmin ? t('od_back_to_orders_admin') : t('od_back_to_orders_user')}
           </Button>
         </GlassCard>
       </div>
