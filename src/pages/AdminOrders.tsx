@@ -1701,8 +1701,19 @@ const AdminOrders = () => {
           onOpenChange={setItemEditorOpen}
           orderId={editingOrder.id}
           orderItems={editingOrder.order_items || []}
-          onSaved={() => {
+          onSaved={(updated) => {
             queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+            if (updated && editingOrder) {
+              // Update local editingOrder so the financial summary refreshes immediately
+              setEditingOrder({
+                ...editingOrder,
+                subtotal: updated.subtotal,
+                total_amount: updated.total_amount,
+                order_items: updated.items as any,
+              });
+              setSubtotalAmount(updated.subtotal);
+              setTotalAmount(updated.total_amount);
+            }
           }}
         />
       )}
