@@ -469,7 +469,7 @@ export default function AllOffersPanel() {
                       </p>
                     )}
                   </div>
-                  <div className="bg-primary/10 rounded-lg px-2 py-1.5 shrink-0">
+                  <div className="glass-badge !rounded-lg px-2 py-1.5 shrink-0">
                     <span className="text-base font-black text-primary">{formatPrice(basePrice)}</span>
                     <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || t('ao_currency_iqd')}</span>
                   </div>
