@@ -3028,6 +3028,107 @@ const Cart = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Tier breakdown dialog */}
+      <Dialog open={showTierBreakdown} onOpenChange={setShowTierBreakdown}>
+        <DialogContent dir="rtl" className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5" />
+              عرض حساب الشريحة
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm">
+            {/* Half payment block */}
+            <div className="rounded-xl border border-border/40 p-3 bg-card/40">
+              <div className="font-bold mb-2">رسوم نصف الدفع</div>
+              {!partialPaymentSettings?.fee_tiers?.length ? (
+                <div className="text-muted-foreground">لا توجد شرائح مُعرَّفة في الإعدادات.</div>
+              ) : !partialPaymentTier ? (
+                <div className="text-muted-foreground">لم تُحدَّد شريحة مطابقة.</div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span>إجمالي السلة</span>
+                    <span className="font-mono">{formatPrice(subtotalWithTax)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>الشريحة المطابقة</span>
+                    <span className="font-mono">
+                      {formatPrice(partialPaymentTier.min_amount)} – {formatPrice(partialPaymentTier.max_amount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>نسبة رسوم نصف الدفع</span>
+                    <span className="font-mono">{partialPaymentTier.fee_percentage}%</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground text-xs">
+                    <span>المعادلة</span>
+                    <span className="font-mono">⌈{formatPrice(subtotalWithTax)} × {partialPaymentTier.fee_percentage}%⌉</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-border/40 text-amber-600 font-bold">
+                    <span>الرسوم</span>
+                    <span className="font-mono">+{formatPrice(Math.ceil(subtotalWithTax * (Number(partialPaymentTier.fee_percentage ?? 0) / 100)))}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* COD per item */}
+            <div className="rounded-xl border border-border/40 p-3 bg-card/40">
+              <div className="font-bold mb-2">رسوم الدفع عند الاستلام (لكل منتج)</div>
+              {!partialPaymentSettings?.fee_tiers?.length ? (
+                <div className="text-muted-foreground">لا توجد شرائح مُعرَّفة في الإعدادات.</div>
+              ) : codBreakdown.length === 0 ? (
+                <div className="text-muted-foreground">لا توجد منتجات.</div>
+              ) : (
+                <div className="space-y-3">
+                  {codBreakdown.map((b) => (
+                    <div key={b.id} className="rounded-lg border border-border/30 p-2">
+                      <div className="font-semibold mb-1 truncate">{b.title}</div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <div className="flex justify-between col-span-2">
+                          <span>سعر الوحدة × الكمية</span>
+                          <span className="font-mono">{formatPrice(b.unitPrice)} × {b.qty} = {formatPrice(b.lineTotal)}</span>
+                        </div>
+                        <div className="flex justify-between col-span-2">
+                          <span>الشريحة</span>
+                          <span className="font-mono">
+                            {b.tier ? `${formatPrice(b.tier.min_amount)} – ${formatPrice(b.tier.max_amount)}` : 'لا توجد'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between col-span-2">
+                          <span>قيمة الرسوم</span>
+                          <span className="font-mono">
+                            {b.codType === 'percentage' ? `${b.codVal}%` : `${formatPrice(b.codVal)} ثابت`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between col-span-2">
+                          <span>المعادلة</span>
+                          <span className="font-mono">
+                            {b.codType === 'percentage'
+                              ? `⌈${formatPrice(b.lineTotal)} × ${b.codVal}%⌉`
+                              : `⌈${formatPrice(b.codVal)} × ${b.qty}⌉`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between pt-1 mt-1 border-t border-border/30 text-amber-600 font-bold">
+                        <span>الرسوم</span>
+                        <span className="font-mono">+{formatPrice(b.fee)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between pt-2 border-t border-border/40 font-bold">
+                    <span>إجمالي رسوم COD</span>
+                    <span className="font-mono text-amber-600">+{formatPrice(codBreakdown.reduce((s, b) => s + b.fee, 0))}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
