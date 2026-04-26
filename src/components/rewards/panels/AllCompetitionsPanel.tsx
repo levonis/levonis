@@ -616,7 +616,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded">
             <Package className="h-2.5 w-2.5" />
-            {boxes.length} صناديق مختلفة
+            {t('ac_different_boxes', { count: boxes.length })}
           </div>
         );
       }
