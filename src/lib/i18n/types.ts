@@ -1377,6 +1377,17 @@ export type TranslationKeys = {
   savings_details: string;
   savings_empty: string;
   savings_coupon_for_order: string;
+  wallet_current_balance: string;
+  wallet_recent_transactions: string;
+  wallet_no_transactions: string;
+  wallet_type_deposit: string;
+  wallet_type_refund: string;
+  wallet_type_admin_credit: string;
+  wallet_type_withdrawal: string;
+  wallet_type_payment: string;
+  wallet_status_completed: string;
+  wallet_status_pending: string;
+  wallet_status_rejected: string;
   np_dont_show_again: string;
   np_title: string;
   np_subtitle: string;
