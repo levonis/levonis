@@ -126,13 +126,13 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-border/30 bg-card/50 p-3 text-center">
               <Tag className="h-4 w-4 text-primary mx-auto mb-1" />
-              <p className="text-sm font-bold tabular-nums">{data.totalProductSavings.toLocaleString('ar-IQ')}</p>
-              <p className="text-[10px] text-muted-foreground">وفر من الخصومات</p>
+              <p className="text-sm font-bold tabular-nums">{data.totalProductSavings.toLocaleString(numLocale)}</p>
+              <p className="text-[10px] text-muted-foreground">{t('savings_from_discounts')}</p>
             </div>
             <div className="rounded-xl border border-border/30 bg-card/50 p-3 text-center">
               <Ticket className="h-4 w-4 text-amber-500 mx-auto mb-1" />
-              <p className="text-sm font-bold tabular-nums">{data.totalCouponSavings.toLocaleString('ar-IQ')}</p>
-              <p className="text-[10px] text-muted-foreground">وفر من الكوبونات</p>
+              <p className="text-sm font-bold tabular-nums">{data.totalCouponSavings.toLocaleString(numLocale)}</p>
+              <p className="text-[10px] text-muted-foreground">{t('savings_from_coupons')}</p>
             </div>
           </div>
         )}
