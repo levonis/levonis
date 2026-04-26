@@ -2154,4 +2154,123 @@ export type TranslationKeys = {
   loyalty_benefit_exclusive_products: string;
   product_card_discount_up_to: string; // "Up to {n}% for members"
   product_card_upgrade_bigger: string; // "Upgrade = bigger discount"
+
+  // ===== Multi-step Signup =====
+  signup_step_account: string;
+  signup_step_profile: string;
+  signup_step_verify: string;
+  signup_step_optional: string;
+  signup_step_review: string;
+  signup_have_account: string;
+  signup_login_link: string;
+  // Step1
+  signup_s1_title: string;
+  signup_s1_subtitle: string;
+  signup_email_label: string;
+  signup_email_required: string;
+  signup_email_invalid: string;
+  signup_password_label: string;
+  signup_password_required: string;
+  signup_password_weak: string;
+  signup_confirm_password_label: string;
+  signup_confirm_password_required: string;
+  signup_password_mismatch: string;
+  signup_pw_check_length: string;
+  signup_pw_check_upper: string;
+  signup_pw_check_lower: string;
+  signup_pw_check_number: string;
+  signup_pw_strength_weak: string;
+  signup_pw_strength_ok: string;
+  signup_pw_strength_mid: string;
+  signup_pw_strength_strong: string;
+  signup_email_already: string;
+  // Common nav
+  signup_next: string;
+  signup_prev: string;
+  // Step2
+  signup_s2_title: string;
+  signup_s2_subtitle: string;
+  signup_avatar_label: string;
+  signup_avatar_pick_default: string;
+  signup_avatar_invalid_file: string;
+  signup_avatar_too_large: string;
+  signup_avatar_process_fail: string;
+  signup_full_name_label: string;
+  signup_full_name_placeholder: string;
+  signup_full_name_required: string;
+  signup_full_name_too_long: string;
+  signup_full_name_hint: string;
+  signup_username_label: string;
+  signup_username_required: string;
+  signup_username_invalid: string;
+  signup_username_taken: string;
+  signup_username_taken_short: string;
+  signup_username_available: string;
+  signup_username_hint: string;
+  signup_username_check_error: string;
+  // Step3
+  signup_s3_title: string;
+  signup_s3_subtitle: string;
+  signup_code_validity: string;
+  signup_verify_button: string;
+  signup_verifying: string;
+  signup_verify_success: string;
+  signup_verify_must_first: string;
+  signup_code_invalid: string;
+  signup_code_enter_full: string;
+  signup_verify_error: string;
+  signup_resend_question: string;
+  signup_resend_after: string; // "Resend after {n} sec"
+  signup_resend_button: string;
+  signup_resend_sent: string;
+  signup_resend_fail: string;
+  signup_referral_label: string;
+  signup_referral_hint: string;
+  // Step4
+  signup_s4_title: string;
+  signup_s4_subtitle: string;
+  signup_phone_label: string;
+  signup_phone_placeholder: string;
+  signup_address_add: string;
+  signup_address_governorate: string;
+  signup_address_select_gov: string;
+  signup_address_city: string;
+  signup_address_city_placeholder: string;
+  signup_address_area: string;
+  signup_address_area_placeholder: string;
+  signup_address_street: string;
+  signup_address_street_placeholder: string;
+  signup_address_landmark: string;
+  signup_address_landmark_placeholder: string;
+  signup_social_add: string;
+  signup_social_instagram: string;
+  signup_social_instagram_placeholder: string;
+  signup_social_whatsapp: string;
+  signup_social_whatsapp_placeholder: string;
+  signup_social_facebook: string;
+  signup_social_facebook_placeholder: string;
+  signup_skip_step: string;
+  // Step5
+  signup_s5_title: string;
+  signup_s5_subtitle: string;
+  signup_account_info: string;
+  signup_extra_info: string;
+  signup_referral_code_label: string; // "Referral code: {code}"
+  signup_edit: string;
+  signup_create_account: string;
+  signup_creating: string;
+  signup_terms_prefix: string;
+  signup_terms_link: string;
+  signup_and: string;
+  signup_privacy_link: string;
+  signup_account_created: string;
+  signup_account_create_fail: string;
+  signup_account_create_error: string;
+  signup_unexpected_error: string;
+  // Email verify dialog (signup intermediate)
+  signup_email_verify_title: string;
+  signup_email_verify_desc: string;
+  signup_send_code: string;
+  signup_back: string;
 };
+
