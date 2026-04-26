@@ -246,15 +246,15 @@ export default function ProductOffersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-background flex flex-col" dir={dir}>
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowRight className="h-5 w-5" /></Button>
               <div>
-                <h1 className="text-lg font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" />عروض المنتجات</h1>
-                <p className="text-xs text-muted-foreground">اشترِ منتجات واحصل على تذاكر هدية!</p>
+                <h1 className="text-lg font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" />{t('offers_page_title')}</h1>
+                <p className="text-xs text-muted-foreground">{t('offers_page_subtitle')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
