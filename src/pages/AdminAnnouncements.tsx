@@ -46,6 +46,8 @@ const AdminAnnouncements = () => {
   const [textForm, setTextForm] = useState({
     message_ar: '',
     message: '',
+    message_en: '',
+    message_ku: '',
     active: true,
   });
   const [settings, setSettings] = useState<AnnouncementSettings>(DEFAULT_SETTINGS);
@@ -221,13 +223,15 @@ const AdminAnnouncements = () => {
     setTextForm({
       message_ar: announcement.message_ar || '',
       message: announcement.message || '',
+      message_en: announcement.message_en || '',
+      message_ku: announcement.message_ku || '',
       active: announcement.active ?? true,
     });
     setDialogOpen(true);
   };
 
   const resetTextForm = () => {
-    setTextForm({ message_ar: '', message: '', active: true });
+    setTextForm({ message_ar: '', message: '', message_en: '', message_ku: '', active: true });
     setEditing(null);
   };
 
@@ -290,12 +294,31 @@ const AdminAnnouncements = () => {
                   />
                 </div>
                 <div className="admin-form-group">
-                  <Label htmlFor="message">نص الإعلان (إنجليزي - اختياري)</Label>
+                  <Label htmlFor="message_en">نص الإعلان (إنجليزي)</Label>
+                  <Input
+                    id="message_en"
+                    value={textForm.message_en}
+                    onChange={(e) => setTextForm({ ...textForm, message_en: e.target.value })}
+                    placeholder="Special offer - 20% off all products"
+                  />
+                </div>
+                <div className="admin-form-group">
+                  <Label htmlFor="message_ku">نص الإعلان (كردي)</Label>
+                  <Input
+                    id="message_ku"
+                    value={textForm.message_ku}
+                    onChange={(e) => setTextForm({ ...textForm, message_ku: e.target.value })}
+                    placeholder="پێشکەشکراوی تایبەت - ٢٠٪ داشکاندن"
+                    dir="rtl"
+                  />
+                </div>
+                <div className="admin-form-group">
+                  <Label htmlFor="message">نص قديم (legacy - اختياري)</Label>
                   <Input
                     id="message"
                     value={textForm.message}
                     onChange={(e) => setTextForm({ ...textForm, message: e.target.value })}
-                    placeholder="Special offer - 20% off all products"
+                    placeholder="حقل قديم للتوافق"
                   />
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-border/50">
