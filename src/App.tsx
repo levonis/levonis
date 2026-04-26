@@ -333,7 +333,14 @@ function AppContent() {
             <Route path="/my-printers" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
             <Route path="/activate-printer" element={<ActivatePrinter />} />
             <Route path="/warranty-dashboard/:printerId" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
-            
+
+            {/* Backward-compat redirects for removed/renamed routes — keeps old links working without heavy NotFound mounts */}
+            <Route path="/bundle" element={<Navigate to="/bundles" replace />} />
+            <Route path="/bundle/:id" element={<Navigate to="/bundles" replace />} />
+            <Route path="/wallet" element={<Navigate to="/profile" replace />} />
+            <Route path="/marketplace" element={<Navigate to="/community/merchant/store" replace />} />
+            <Route path="/marketplace/*" element={<Navigate to="/community/merchant/store" replace />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
           </PageFade>
