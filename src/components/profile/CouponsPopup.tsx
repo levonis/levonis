@@ -111,16 +111,16 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
   const copyCode = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
     setCopiedId(id);
-    toast.success("تم نسخ الكود! 📋");
+    toast.success(t('cp_code_copied'));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const getDiscountDisplay = (d: StoreDiscount) => {
     switch (d.discount_type) {
       case 'percentage': case 'min_purchase_percentage': return `${d.discount_value}%`;
-      case 'fixed_amount': return `${d.discount_value?.toLocaleString()} د.ع`;
-      case 'free_delivery': case 'min_purchase_delivery': return 'مجاني';
-      case 'free_gift': return 'هدية';
+      case 'fixed_amount': return `${d.discount_value?.toLocaleString(numLocale)} ${t('ph_currency_iqd')}`;
+      case 'free_delivery': case 'min_purchase_delivery': return t('cp_label_free');
+      case 'free_gift': return t('cp_label_gift');
       default: return '';
     }
   };
