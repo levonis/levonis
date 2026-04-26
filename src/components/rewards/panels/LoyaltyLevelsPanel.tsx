@@ -15,9 +15,10 @@ import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function LoyaltyLevelsPanel() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -58,7 +59,7 @@ export default function LoyaltyLevelsPanel() {
       if (error) throw error;
       const result = data as any;
       if (!result?.success) { toast.error(result?.error || t('ll_error_generic')); return; }
-      toast.success(t('ll_success_gift', { name: giftDialog.level.name_ar }));
+      toast.success(t('ll_success_gift', { name: pickLocalized(giftDialog.level, 'name', language) }));
       setGiftDialog({ open: false, level: null, method: 'points' });
       setSelectedRecipient(null); setGiftSearch(''); setGiftMessage(''); setSearchResults([]);
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
@@ -180,7 +181,7 @@ export default function LoyaltyLevelsPanel() {
         return;
       }
 
-      toast.success(t('ll_success_purchase', { name: purchaseDialog.level.name_ar }));
+      toast.success(t('ll_success_purchase', { name: pickLocalized(purchaseDialog.level, 'name', language) }));
       setPurchaseDialog({ open: false, level: null, method: 'points' });
       
       // Invalidate related queries
@@ -269,6 +270,7 @@ export default function LoyaltyLevelsPanel() {
               id: activeCardLevel.id,
               name_ar: activeCardLevel.name_ar,
               name_en: activeCardLevel.name_en,
+              name_ku: (activeCardLevel as any).name_ku,
               color: activeCardLevel.color,
               discount_percentage: activeCardLevel.discount_percentage,
               bonus_points_percentage: activeCardLevel.bonus_points_percentage,
@@ -342,7 +344,7 @@ export default function LoyaltyLevelsPanel() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className={`font-bold text-sm ${isVipPlus ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                          {level.name_ar}
+                          {pickLocalized(level, 'name', language)}
                         </p>
                         {isOwned && (
                           <Badge className="text-[10px] bg-primary/15 text-primary border-0">{t('ll_owned_badge')}</Badge>
@@ -471,7 +473,7 @@ export default function LoyaltyLevelsPanel() {
           <DialogHeader>
             <DialogTitle>{t('ll_purchase_dialog_title')}</DialogTitle>
             <DialogDescription>
-              {t('ll_purchase_dialog_desc', { name: purchaseDialog.level?.name_ar || '' })}
+              {t('ll_purchase_dialog_desc', { name: pickLocalized(purchaseDialog.level, 'name', language) })}
             </DialogDescription>
           </DialogHeader>
           
@@ -480,7 +482,7 @@ export default function LoyaltyLevelsPanel() {
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('ll_field_card')}</span>
-                  <span className="font-bold">{purchaseDialog.level.name_ar}</span>
+                  <span className="font-bold">{pickLocalized(purchaseDialog.level, 'name', language)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('ll_field_duration')}</span>
@@ -552,7 +554,7 @@ export default function LoyaltyLevelsPanel() {
               {t('ll_gift_dialog_title')}
             </DialogTitle>
             <DialogDescription>
-              {t('ll_gift_dialog_desc', { name: giftDialog.level?.name_ar || '' })}
+              {t('ll_gift_dialog_desc', { name: pickLocalized(giftDialog.level, 'name', language) })}
             </DialogDescription>
           </DialogHeader>
 
@@ -656,7 +658,7 @@ export default function LoyaltyLevelsPanel() {
               <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('ll_field_card')}</span>
-                  <span className="font-bold">{giftDialog.level.name_ar}</span>
+                  <span className="font-bold">{pickLocalized(giftDialog.level, 'name', language)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('ll_field_cost')}</span>

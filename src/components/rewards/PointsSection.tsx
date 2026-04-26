@@ -10,6 +10,7 @@ import DailyTasksPanel from "./panels/DailyTasksPanel";
 import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 import PointsStorePanel from "./panels/PointsStorePanel";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;
@@ -17,7 +18,7 @@ interface PointsSectionProps {
 
 export default function PointsSection({ activeSubTab }: PointsSectionProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Only fetch when summary tab is active
   const { data: userPoints, isLoading: loadingPoints } = useQuery({
@@ -132,7 +133,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                   <div>
                     <p className="text-xs text-muted-foreground">{t('points_current_card')}</p>
                     <p className="font-bold" style={{ color: (userCard.loyalty_levels as any).color }}>
-                      {(userCard.loyalty_levels as any).name_ar}
+                      {pickLocalized(userCard.loyalty_levels as any, 'name', language)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {((userPoints as any)?.total_xp || 0).toLocaleString()} XP

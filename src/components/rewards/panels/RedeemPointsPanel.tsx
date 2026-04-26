@@ -9,10 +9,11 @@ import { Coins, Ticket, Trophy, Loader2, AlertCircle, Wallet } from "lucide-reac
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function RedeemPointsPanel() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [pointsToRedeem, setPointsToRedeem] = useState('');
@@ -260,8 +261,8 @@ export default function RedeemPointsPanel() {
                       <Icon className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{option.name_ar}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{option.description_ar}</p>
+                      <p className="font-medium">{pickLocalized(option, 'name', language)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{pickLocalized(option, 'description', language)}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
                           {t('rp_points_eq_unit')
