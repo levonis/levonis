@@ -226,19 +226,19 @@ export default function ProductOffersPage() {
     if (!hasPromo) {
       return (
         <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 {t('offers_tickets_with_each_purchase').replace('{n}', String(offer.gift_tickets))}</p>
         </div>
       );
     }
     return (
       <div className="space-y-1.5">
         <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 {t('offers_tickets_count_each_purchase').replace('{n}', String(total))}</p>
         </div>
         <div className="text-center py-1.5 bg-amber-500/10 backdrop-blur-md rounded-lg border border-amber-400/25 flex items-center justify-center gap-1">
           <PartyPopper className="h-3 w-3 text-amber-500" />
           <p className="text-[10px] text-amber-700 dark:text-amber-300 font-bold">
-            +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
+            {t('offers_bonus_tickets_promo').replace('{n}', String(activePromotion!.bonus_tickets)).replace('{title}', activePromotion!.title_ar)}
           </p>
         </div>
       </div>
