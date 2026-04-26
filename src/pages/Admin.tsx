@@ -926,6 +926,28 @@ const Admin = () => {
       if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
     }
 
+    // Auto-fill SEO short summary (tri-lang)
+    if (productInfo.short_summary && typeof productInfo.short_summary === 'object') {
+      setProductShortSummary({
+        ar: productInfo.short_summary.ar || '',
+        en: productInfo.short_summary.en || '',
+        ku: productInfo.short_summary.ku || '',
+      });
+    }
+
+    // Auto-fill searchable tags (keywords)
+    if (Array.isArray(productInfo.searchable_tags) && productInfo.searchable_tags.length > 0) {
+      const cleaned = productInfo.searchable_tags
+        .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
+        .filter((t: string) => t.length > 0);
+      setProductSearchableAttrs(Array.from(new Set(cleaned)));
+    }
+
+    // Auto-fill "Why this product" AI content
+    if (productInfo.ai_content && typeof productInfo.ai_content === 'object') {
+      setProductAIContent(productInfo.ai_content);
+    }
+
     // Collect option/color image URLs to exclude from main product images
     const optionColorImageUrls = new Set<string>();
     const optionsData = productInfo.options || productInfo.sizes || [];
