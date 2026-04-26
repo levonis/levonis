@@ -342,7 +342,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
 
       {/* Discount Detail Sheet */}
       <Sheet open={!!selectedDiscount} onOpenChange={() => setSelectedDiscount(null)}>
-        <SheetContent side="bottom" className="h-[55vh] rounded-t-3xl p-0" dir="rtl">
+        <SheetContent side="bottom" className="h-[55vh] rounded-t-3xl p-0" dir={dir}>
           {selectedDiscount && (() => {
             const Icon = discountIcons[selectedDiscount.discount_type] || Percent;
             return (
@@ -355,7 +355,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                     </div>
                     <div className="flex-1">
                       <Badge className="bg-primary-foreground/20 text-primary-foreground border-0 text-[8px] mb-0.5">
-                        {discountLabels[selectedDiscount.discount_type]}
+                        {t((discountLabelKeys[selectedDiscount.discount_type] as any) || 'cp_dt_default')}
                       </Badge>
                       <h2 className="text-primary-foreground font-black text-sm">{selectedDiscount.title_ar}</h2>
                     </div>
