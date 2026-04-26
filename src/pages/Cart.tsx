@@ -2651,8 +2651,19 @@ const Cart = () => {
                               <RadioGroupItem value={method.method_key} id={`dm-${method.method_key}`} />
                               <div className="text-primary/70">{iconMap[method.icon] || <Package className="h-4 w-4" />}</div>
                               <Label htmlFor={`dm-${method.method_key}`} className="flex-1 cursor-pointer">
-                                <div className="font-bold text-sm text-foreground">{method.name_ar}</div>
-                                {method.description_ar && <div className="text-[11px] text-muted-foreground">{method.description_ar}</div>}
+                                <div className="font-bold text-sm text-foreground">{
+                                  method.method_key === 'standard' ? t('delivery_method_standard_name')
+                                  : method.method_key === 'pickup' ? t('delivery_method_pickup_name')
+                                  : method.method_key === 'personal' ? t('delivery_method_personal_name')
+                                  : method.name_ar
+                                }</div>
+                                {(() => {
+                                  const desc = method.method_key === 'standard' ? t('delivery_method_standard_desc')
+                                    : method.method_key === 'pickup' ? t('delivery_method_pickup_desc')
+                                    : method.method_key === 'personal' ? t('delivery_method_personal_desc')
+                                    : method.description_ar;
+                                  return desc ? <div className="text-[11px] text-muted-foreground">{desc}</div> : null;
+                                })()}
                               </Label>
                               <span className={`text-sm font-bold ${(method.method_key === 'pickup' || methodFreeApplied) ? 'text-green-500' : 'text-primary'}`}>
                                 {method.method_key === 'pickup' || methodFreeApplied ? t('cart_free_label') : `${formatPrice(previewFee)} ${t('cart_iqd_short')}`}
