@@ -210,7 +210,7 @@ const OrderDetail = () => {
   const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');
 
   return (
-    <div className="min-h-screen bg-background relative" dir="rtl">
+    <div className="min-h-screen bg-background relative" dir={dir}>
       <main className="container mx-auto px-4 py-6 pb-32 max-w-2xl space-y-4">
         
         {/* Back Button */}
@@ -222,7 +222,7 @@ const OrderDetail = () => {
             className="hover:bg-primary/10 -mr-2"
           >
             <ArrowRight className="ml-1 h-4 w-4" />
-            {isAdmin ? 'لوحة الطلبات' : 'طلباتي'}
+            {isAdmin ? t('od_back_to_panel') : t('od_back_to_my_orders')}
           </Button>
         </motion.div>
 
@@ -236,7 +236,7 @@ const OrderDetail = () => {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <p className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
-                  <Hash className="h-3 w-3" /> رقم الطلب
+                  <Hash className="h-3 w-3" /> {t('od_order_number_label')}
                 </p>
                 <h1 className="text-2xl font-black text-foreground tracking-tight">
                   {order.order_number}
@@ -255,7 +255,7 @@ const OrderDetail = () => {
                   : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
               }`}>
                 <ShoppingBag className="h-3 w-3" />
-                {isPreOrder ? 'طلب مسبق' : 'بيع مباشر'}
+                {isPreOrder ? t('od_type_preorder') : t('od_type_direct')}
               </div>
               {isPreOrder && shippingOptionName && (
                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
@@ -270,7 +270,7 @@ const OrderDetail = () => {
             {/* Date */}
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {format(new Date(order.created_at), 'PPP - p', { locale: ar })}
+              {format(new Date(order.created_at), 'PPP - p', { locale: dateLocale })}
             </p>
           </div>
         </GlassCard>
