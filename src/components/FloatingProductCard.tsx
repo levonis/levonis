@@ -17,6 +17,12 @@ interface FloatingProductCardProps {
   nameEn?: string | null;
   nameKu?: string | null;
   hasDirectSale?: boolean;
+  /**
+   * Live-computed direct sale price (in IQD) for products linked to global COD %.
+   * When provided (>0), overrides `price` so the card always shows the up-to-date
+   * value reflecting the current COD setting / exchange rate — no reload needed.
+   */
+  directSalePriceLive?: number | null;
 }
 
 const FloatingProductCard = memo(({
@@ -30,12 +36,17 @@ const FloatingProductCard = memo(({
   nameEn = null,
   nameKu = null,
   hasDirectSale = false,
+  directSalePriceLive = null,
 }: FloatingProductCardProps) => {
   const { language } = useLanguage();
   const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu };
   const displayName = getLocalizedField(localProduct, 'name', language);
-  const discount = originalPrice && originalPrice > price
-    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+  // Prefer live direct sale price when product is linked to global COD %
+  const displayPrice = directSalePriceLive != null && directSalePriceLive > 0
+    ? directSalePriceLive
+    : price;
+  const discount = originalPrice && originalPrice > displayPrice
+    ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
   if (featured) {
