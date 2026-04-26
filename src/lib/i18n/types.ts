@@ -1796,4 +1796,35 @@ export type TranslationKeys = {
   as_confirm_shipping: string;
   as_bulk_shipping_title: string;
   as_items_selected_for_shipping: string;
+
+  // Printer Activation Panel
+  pa_enter_serial: string;
+  pa_not_found: string;
+  pa_already_owned: string;
+  pa_incomplete_data: string;
+  pa_notif_title: string;
+  pa_notif_message: string;
+  pa_activation_success: string;
+  pa_activation_error: string;
+  pa_camera_error: string;
+  pa_qr_read_success: string;
+  pa_qr_not_found: string;
+  pa_login_to_activate: string;
+  pa_title: string;
+  pa_subtitle: string;
+  pa_open_camera: string;
+  pa_upload_qr: string;
+  pa_close_camera: string;
+  pa_or_manual: string;
+  pa_serial_label: string;
+  pa_warranty_active: string;
+  pa_warranty_expired: string;
+  pa_warranty_duration: string;
+  pa_warranty_months_value: string;
+  pa_warranty_start: string;
+  pa_warranty_end: string;
+  pa_days_remaining: string;
+  pa_pending_activation: string;
+  pa_expires_on: string;
+  pa_confirm_activate: string;
 };

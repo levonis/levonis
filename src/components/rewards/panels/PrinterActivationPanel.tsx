@@ -12,12 +12,14 @@ import { toast } from 'sonner';
 import { QrCode, Printer, Shield, Calendar, Loader2, Camera, CheckCircle, AlertTriangle, Search, Clock, Upload } from 'lucide-react';
 import { addMonths, format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useLanguage } from '@/lib/i18n';
 
 interface PrinterActivationPanelProps {
   onActivated?: () => void;
 }
 
 export default function PrinterActivationPanel({ onActivated }: PrinterActivationPanelProps) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [serialInput, setSerialInput] = useState(searchParams.get('serial') || '');
@@ -39,7 +41,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
 
   const lookupSerial = async (serial: string) => {
     if (!serial.trim()) {
-      setLookupError('الرجاء إدخال الرقم التسلسلي');
+      setLookupError(t('pa_enter_serial'));
       return;
     }
     setLookupLoading(true);
@@ -56,7 +58,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
     setLookupLoading(false);
 
     if (error || !data) {
-      setLookupError('لم يتم العثور على طابعة بهذا الرقم التسلسلي');
+      setLookupError(t('pa_not_found'));
       return;
     }
 
@@ -67,7 +69,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
         setWarrantyData(data);
         return;
       } else {
-        setLookupError('هذه الطابعة مسجلة بالفعل لدى مستخدم آخر');
+        setLookupError(t('pa_already_owned'));
         return;
       }
     }
@@ -77,7 +79,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
 
   const activateMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !printerData) throw new Error('بيانات غير كاملة');
+      if (!user || !printerData) throw new Error(t('pa_incomplete_data'));
 
       const activationDate = new Date();
       const expiryDate = addMonths(activationDate, printerData.warranty_months || 6);
@@ -107,15 +109,15 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
 
       await supabase.from('notifications').insert({
         user_id: user.id,
-        title: '🎉 تم تفعيل الطابعة بنجاح!',
-        message: `تم تفعيل طابعتك "${printerData.model_name_ar}" بنجاح. فترة الضمان: ${printerData.warranty_months} شهر.`,
+        title: t('pa_notif_title'),
+        message: t('pa_notif_message', { name: printerData.model_name_ar, months: printerData.warranty_months }),
         type: 'success',
         related_id: printerData.id,
         is_general: false,
       });
     },
     onSuccess: () => {
-      toast.success('🎉 تم تفعيل الطابعة بنجاح!');
+      toast.success(t('pa_activation_success'));
       // Show warranty data after activation
       if (printerData) {
         const activationDate = new Date();
@@ -132,7 +134,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       onActivated?.();
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ أثناء التفعيل');
+      toast.error(error.message || t('pa_activation_error'));
     },
   });
 
@@ -161,7 +163,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       );
     } catch (err) {
       console.error('Scanner error:', err);
-      toast.error('لا يمكن الوصول إلى الكاميرا');
+      toast.error(t('pa_camera_error'));
       setScannerActive(false);
     }
   };
@@ -180,10 +182,10 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       } catch {}
       setSerialInput(serial);
       lookupSerial(serial);
-      toast.success('تم قراءة الباركود بنجاح');
+      toast.success(t('pa_qr_read_success'));
     } catch (err) {
       console.error('QR scan from image failed:', err);
-      toast.error('لم يتم العثور على باركود في الصورة');
+      toast.error(t('pa_qr_not_found'));
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -205,7 +207,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
       <Card>
         <CardContent className="p-6 text-center">
           <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">سجّل الدخول لتفعيل طابعتك</p>
+          <p className="text-muted-foreground">{t('pa_login_to_activate')}</p>
         </CardContent>
       </Card>
     );
@@ -226,8 +228,8 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
         <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center">
           <QrCode className="w-6 h-6 text-primary" />
         </div>
-        <h2 className="text-lg font-bold">تفعيل الطابعة</h2>
-        <p className="text-xs text-muted-foreground">امسح رمز QR أو أدخل الرقم التسلسلي</p>
+        <h2 className="text-lg font-bold">{t('pa_title')}</h2>
+        <p className="text-xs text-muted-foreground">{t('pa_subtitle')}</p>
       </div>
 
       {/* Scanner + Input */}
@@ -245,18 +247,18 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" className="h-28 flex-col gap-2" onClick={startScanner}>
                 <Camera className="w-7 h-7 text-muted-foreground" />
-                <span className="text-sm">فتح الكاميرا</span>
+                <span className="text-sm">{t('pa_open_camera')}</span>
               </Button>
               <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="w-7 h-7 text-muted-foreground" />
-                <span className="text-sm">رفع صورة QR</span>
+                <span className="text-sm">{t('pa_upload_qr')}</span>
               </Button>
             </div>
           ) : (
             <div className="space-y-2">
               <div id={scannerContainerId} className="rounded-lg overflow-hidden" />
               <Button variant="outline" size="sm" className="w-full" onClick={stopScanner}>
-                إغلاق الكاميرا
+                {t('pa_close_camera')}
               </Button>
             </div>
           )}
@@ -266,12 +268,12 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">أو أدخل يدوياً</span>
+              <span className="bg-card px-2 text-muted-foreground">{t('pa_or_manual')}</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>الرقم التسلسلي</Label>
+            <Label>{t('pa_serial_label')}</Label>
             <div className="flex gap-2">
               <Input
                 value={serialInput}
@@ -316,12 +318,12 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
                   {active ? (
                     <Badge className="mt-1 bg-green-500/20 text-green-600 border-green-500/30">
                       <CheckCircle className="w-3 h-3 ml-1" />
-                      ضمان نشط
+                      {t('pa_warranty_active')}
                     </Badge>
                   ) : (
                     <Badge className="mt-1 bg-destructive/20 text-destructive border-destructive/30">
                       <AlertTriangle className="w-3 h-3 ml-1" />
-                      الضمان منتهي
+                      {t('pa_warranty_expired')}
                     </Badge>
                   )}
                 </div>
@@ -331,14 +333,14 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                     <Shield className="w-3.5 h-3.5" />
-                    مدة الضمان
+                    {t('pa_warranty_duration')}
                   </div>
-                  <p className="font-bold">{warrantyData.warranty_months} شهر</p>
+                  <p className="font-bold">{t('pa_warranty_months_value', { months: warrantyData.warranty_months })}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                     <Calendar className="w-3.5 h-3.5" />
-                    بدء الضمان
+                    {t('pa_warranty_start')}
                   </div>
                   <p className="font-bold text-xs">
                     {warrantyData.activation_date
@@ -349,7 +351,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                     <Calendar className="w-3.5 h-3.5" />
-                    انتهاء الضمان
+                    {t('pa_warranty_end')}
                   </div>
                   <p className="font-bold text-xs">
                     {warrantyData.expiry_date
@@ -363,7 +365,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
                   <p className="text-sm text-green-700 dark:text-green-400">
                     <Clock className="w-4 h-4 inline-block ml-1" />
-                    متبقي <span className="font-bold">{daysLeft}</span> يوم على انتهاء الضمان
+                    {t('pa_days_remaining', { days: daysLeft })}
                   </p>
                 </div>
               )}
@@ -389,7 +391,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
                 <p className="text-xs text-muted-foreground font-mono" dir="ltr">{printerData.serial_number}</p>
                 <Badge className="mt-1 bg-amber-500/20 text-amber-600 border-amber-500/30">
                   <Clock className="w-3 h-3 ml-1" />
-                  في انتظار التفعيل
+                  {t('pa_pending_activation')}
                 </Badge>
               </div>
             </div>
@@ -398,14 +400,14 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
               <div className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                   <Shield className="w-3.5 h-3.5" />
-                  مدة الضمان
+                  {t('pa_warranty_duration')}
                 </div>
-                <p className="font-bold">{printerData.warranty_months} شهر</p>
+                <p className="font-bold">{t('pa_warranty_months_value', { months: printerData.warranty_months })}</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                   <Calendar className="w-3.5 h-3.5" />
-                  ينتهي في
+                  {t('pa_expires_on')}
                 </div>
                 <p className="font-bold text-sm">
                   {format(addMonths(new Date(), printerData.warranty_months || 6), 'dd MMM yyyy', { locale: ar })}
@@ -423,7 +425,7 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
               ) : (
                 <>
                   <CheckCircle className="w-5 h-5 ml-2" />
-                  تأكيد وتفعيل الطابعة
+                  {t('pa_confirm_activate')}
                 </>
               )}
             </Button>
