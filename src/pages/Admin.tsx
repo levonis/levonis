@@ -909,9 +909,17 @@ const Admin = () => {
       if (priceInput) priceInput.value = String(productInfo.price);
     }
 
-    // Set original price (before discount)
-    if (productInfo.original_price && productInfo.original_price > 0) {
-      const originalPriceInput = form.querySelector('#original_price') as HTMLInputElement;
+    // Set original source price ($) used by the pricing section.
+    // The final original_price (IQD) is calculated on save as source × exchange rate only.
+    if (productInfo.original_price_usd && productInfo.original_price_usd > 0) {
+      const originalPriceUsdInput = form.querySelector('#original_price_usd') as HTMLInputElement;
+      if (originalPriceUsdInput) {
+        originalPriceUsdInput.value = String(productInfo.original_price_usd);
+        originalPriceUsdInput.dispatchEvent(new Event('input', { bubbles: true }));
+        originalPriceUsdInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    } else if (productInfo.original_price && productInfo.original_price > 0) {
+      const originalPriceInput = form.querySelector('input[name="original_price"]') as HTMLInputElement;
       if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
     }
 
