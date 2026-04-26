@@ -174,13 +174,33 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         }
       }
 
-      // 3. Update order total
-      const newTotal = items.reduce((sum, i) => sum + i.total_price, 0);
-      await supabase.from("orders").update({ total_amount: newTotal }).eq("id", orderId);
+      // 3. Update order subtotal + total (preserve delivery fee, discount, tax deltas)
+      const newSubtotal = items.reduce((sum, i) => sum + (i.total_price || 0), 0);
+
+      // Fetch current order to compute the delta accurately
+      const { data: currentOrder } = await supabase
+        .from('orders')
+        .select('subtotal, total_amount, discount_amount, tax_amount, admin_shipping_cost')
+        .eq('id', orderId)
+        .maybeSingle();
+
+      const prevSubtotal = Number(currentOrder?.subtotal) || 0;
+      const prevTotal = Number(currentOrder?.total_amount) || 0;
+      const prevDiscount = Number(currentOrder?.discount_amount) || 0;
+      // Derive delivery+tax bucket from previous values so we don't lose it
+      const extras = prevSubtotal > 0
+        ? Math.max(0, prevTotal - prevSubtotal + prevDiscount)
+        : 0;
+      const newTotal = Math.max(0, newSubtotal + extras - prevDiscount);
+
+      await supabase
+        .from('orders')
+        .update({ subtotal: newSubtotal, total_amount: newTotal })
+        .eq('id', orderId);
 
       toast.success("تم تحديث المنتجات والمخزون بنجاح");
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-      onSaved();
+      onSaved({ subtotal: newSubtotal, total_amount: newTotal, items });
       onOpenChange(false);
     } catch (err: any) {
       toast.error("فشل في تحديث المنتجات: " + (err?.message || "خطأ غير متوقع"));
