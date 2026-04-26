@@ -26,30 +26,31 @@ import { supabase as supabaseClient } from "@/integrations/supabase/client";
 // Inline theme switcher for settings
 function ThemeSwitcherInline() {
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const themes: { key: ThemeMode; label: string; colors: string[] }[] = [
-    { key: "default", label: "الأساسي", colors: ["hsl(160,46%,15%)", "hsl(44,39%,60%)"] },
-    { key: "light", label: "فاتح", colors: ["hsl(45,30%,92%)", "hsl(44,50%,55%)"] },
-    { key: "dark", label: "ليلي", colors: ["hsl(220,20%,8%)", "hsl(44,50%,55%)"] },
+    { key: "default", label: t('settings_theme_default'), colors: ["hsl(160,46%,15%)", "hsl(44,39%,60%)"] },
+    { key: "light", label: t('settings_theme_light'), colors: ["hsl(45,30%,92%)", "hsl(44,50%,55%)"] },
+    { key: "dark", label: t('settings_theme_dark'), colors: ["hsl(220,20%,8%)", "hsl(44,50%,55%)"] },
   ];
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-bold text-foreground">المظهر</p>
-        <p className="text-xs text-muted-foreground">اختر ثيم الواجهة</p>
+        <p className="text-sm font-bold text-foreground">{t('settings_theme_label')}</p>
+        <p className="text-xs text-muted-foreground">{t('settings_theme_desc')}</p>
       </div>
       <div className="flex gap-1.5">
-        {themes.map((t) => (
+        {themes.map((th) => (
           <button
-            key={t.key}
-            onClick={() => setTheme(t.key)}
+            key={th.key}
+            onClick={() => setTheme(th.key)}
             className={`relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${
-              theme === t.key
+              theme === th.key
                 ? "border-primary ring-2 ring-primary/30 scale-110"
                 : "border-border/50 hover:border-primary/40"
             }`}
-            title={t.label}
+            title={th.label}
           >
-            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(135deg, ${t.colors[0]} 50%, ${t.colors[1]} 50%)` }} />
+            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(135deg, ${th.colors[0]} 50%, ${th.colors[1]} 50%)` }} />
           </button>
         ))}
       </div>
@@ -59,24 +60,25 @@ function ThemeSwitcherInline() {
 
 // Password change button
 function ChangePasswordButton() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [newPass, setNewPass] = useState("");
   const [showInput, setShowInput] = useState(false);
 
   const handleChange = async () => {
     if (newPass.length < 6) {
-      sonnerToast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      sonnerToast.error(t('settings_password_min'));
       return;
     }
     setLoading(true);
     try {
       const { error } = await supabaseClient.auth.updateUser({ password: newPass });
       if (error) throw error;
-      sonnerToast.success("تم تغيير كلمة المرور بنجاح");
+      sonnerToast.success(t('settings_password_changed'));
       setShowInput(false);
       setNewPass("");
     } catch (err: any) {
-      sonnerToast.error("فشل في تغيير كلمة المرور: " + (err?.message || ""));
+      sonnerToast.error(t('settings_password_change_failed') + ": " + (err?.message || ""));
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,7 @@ function ChangePasswordButton() {
     return (
       <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-1" onClick={() => setShowInput(true)}>
         <KeyRound className="h-3.5 w-3.5" />
-        تغيير
+        {t('settings_change')}
       </Button>
     );
   }
@@ -97,11 +99,11 @@ function ChangePasswordButton() {
         type="password"
         value={newPass}
         onChange={e => setNewPass(e.target.value)}
-        placeholder="كلمة المرور الجديدة"
+        placeholder={t('settings_password_new_placeholder')}
         className="h-8 w-36 bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all text-sm"
       />
       <Button size="sm" className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] h-8 px-4" onClick={handleChange} disabled={loading}>
-        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "حفظ"}
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('settings_password_save')}
       </Button>
       <Button size="sm" variant="ghost" className="rounded-2xl h-8 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10" onClick={() => { setShowInput(false); setNewPass(""); }}>
         ×
@@ -155,7 +157,7 @@ export default function ProfileSettings() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language, setLanguage, dir } = useLanguage();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -265,7 +267,7 @@ export default function ProfileSettings() {
     if (!user?.id) return;
     const normalized = normalizePhone(newPhoneNumber);
     if (!isValidPhone(normalized)) {
-      toast({ title: "رقم الهاتف غير صحيح", description: "أدخل رقم عراقي صحيح (07xxxxxxxxx)", variant: "destructive" });
+      toast({ title: t('settings_phone_invalid_title'), description: t('settings_phone_invalid_desc'), variant: "destructive" });
       return;
     }
     setSavingPhone(true);
@@ -277,12 +279,12 @@ export default function ProfileSettings() {
         last_phone_change_at: new Date().toISOString(),
       }).eq("id", user.id);
       if (error) throw error;
-      toast({ title: "تم تغيير رقم الهاتف" });
+      toast({ title: t('settings_phone_changed') });
       setEditingPhone(false);
       setNewPhoneNumber("");
       qc.invalidateQueries({ queryKey: ["profile-settings-profile", user.id] });
     } catch (err: any) {
-      toast({ title: "فشل في تغيير الرقم", description: err?.message, variant: "destructive" });
+      toast({ title: t('settings_phone_change_failed'), description: err?.message, variant: "destructive" });
     } finally {
       setSavingPhone(false);
     }
@@ -291,10 +293,10 @@ export default function ProfileSettings() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Not authenticated");
-      if (!fullName.trim()) throw new Error("الاسم مطلوب");
+      if (!fullName.trim()) throw new Error(t('settings_name_required'));
 
       if (phoneNumber && !isValidPhone(phoneNumber)) {
-        throw new Error("رقم الهاتف غير صحيح.");
+        throw new Error(t('settings_phone_invalid_save'));
       }
 
       let nextAvatarUrl: string | null = (profile as any)?.avatar_url ?? null;
@@ -353,19 +355,19 @@ export default function ProfileSettings() {
         qc.invalidateQueries({ queryKey: ["community-profile-settings", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-status", user?.id] }),
       ]);
-      toast({ title: "تم حفظ الإعدادات" });
+      toast({ title: t('settings_saved') });
       setAvatarFile(null);
     },
     onError: (err: any) => {
       if (err?.code === "23505") {
-        toast({ title: "تعذر الحفظ", description: "اسم المستخدم مستخدم بالفعل", variant: "destructive" });
+        toast({ title: t('settings_save_error'), description: t('settings_username_taken'), variant: "destructive" });
         return;
       }
       if (err?.code === "P0001" && String(err?.message || "").includes("USERNAME_CHANGE_COOLDOWN")) {
-        toast({ title: "تعذر الحفظ", description: "لا يمكن تغيير اسم المستخدم حالياً.", variant: "destructive" });
+        toast({ title: t('settings_save_error'), description: t('settings_username_cooldown_error'), variant: "destructive" });
         return;
       }
-      toast({ title: "تعذر الحفظ", description: err?.message ?? "حدث خطأ غير متوقع", variant: "destructive" });
+      toast({ title: t('settings_save_error'), description: err?.message ?? t('settings_unexpected_error'), variant: "destructive" });
     },
   });
 
@@ -399,11 +401,11 @@ export default function ProfileSettings() {
   };
 
   const usernameHint = canEditUsername
-    ? "يمكنك تغيير اليوزرنيم مرة كل 14 يوم."
-    : `يمكن تغيير اسم المستخدم بعد ${cooldownDaysLeft} يوم`;
+    ? t('settings_username_hint')
+    : t('settings_username_cooldown', { days: cooldownDaysLeft });
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-background relative overflow-hidden" dir={dir}>
       {/* Glassmorphism background orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-32 w-[28rem] h-[28rem] rounded-full bg-primary/25 blur-[120px] animate-pulse" />
@@ -418,7 +420,7 @@ export default function ProfileSettings() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/15 backdrop-blur-xl border border-white/10">
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
+          <h1 className="text-lg font-black text-foreground">{t('settings_title')}</h1>
         </div>
       </div>
 
@@ -448,20 +450,20 @@ export default function ProfileSettings() {
         </div>
 
         {/* Personal Info Section */}
-        <SettingsSection icon={User} title="المعلومات الشخصية">
+        <SettingsSection icon={User} title={t('settings_personal_info')}>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">الاسم</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="اسمك" className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all" />
+              <Label className="text-xs text-muted-foreground">{t('settings_name')}</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('settings_name_placeholder')} className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all" />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">اليوزرنيم</Label>
+              <Label className="text-xs text-muted-foreground">{t('settings_username')}</Label>
               <Input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={!canEditUsername}
-                placeholder="مثال: levo_user"
+                placeholder={t('settings_username_placeholder')}
                 maxLength={30}
                 className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
               />
@@ -469,7 +471,7 @@ export default function ProfileSettings() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">رقم الهاتف</Label>
+              <Label className="text-xs text-muted-foreground">{t('settings_phone')}</Label>
               {editingPhone ? (
                 <div className="space-y-2">
                   <Input
@@ -483,10 +485,10 @@ export default function ProfileSettings() {
                   <div className="flex gap-2">
                     <Button size="sm" className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] flex-1" onClick={handleSavePhone} disabled={savingPhone}>
                       {savingPhone && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
-                      حفظ الرقم
+                      {t('settings_save_phone')}
                     </Button>
                     <Button size="sm" variant="outline" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => { setEditingPhone(false); setNewPhoneNumber(""); }}>
-                      إلغاء
+                      {t('settings_cancel')}
                     </Button>
                   </div>
                 </div>
@@ -495,30 +497,30 @@ export default function ProfileSettings() {
                   <Input value={phoneNumber || "—"} disabled placeholder="—" inputMode="tel" className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all flex-1" />
                   {canEditPhone ? (
                     <Button size="sm" variant="outline" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  text-xs" onClick={() => { setEditingPhone(true); setNewPhoneNumber(phoneNumber); }}>
-                      تغيير
+                      {t('settings_change')}
                     </Button>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground whitespace-nowrap">بعد {phoneCooldownDaysLeft} يوم</p>
+                    <p className="text-[10px] text-muted-foreground whitespace-nowrap">{t('settings_after_days', { days: phoneCooldownDaysLeft })}</p>
                   )}
                 </div>
               )}
               <Badge variant={phoneVerified ? "secondary" : "outline"} className="gap-1.5 text-[11px]">
                 {phoneVerified ? <ShieldCheck className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
-                {phoneVerified ? "تم تأكيد الرقم" : "غير مؤكد"}
+                {phoneVerified ? t('settings_phone_verified') : t('settings_phone_unverified')}
               </Badge>
             </div>
           </div>
         </SettingsSection>
 
         {/* Default Address Section */}
-        <SettingsSection icon={MapPin} title="العنوان الافتراضي">
+        <SettingsSection icon={MapPin} title={t('settings_default_address')}>
           {loadingAddresses ? (
-            <p className="text-sm text-muted-foreground">جارٍ تحميل العناوين…</p>
+            <p className="text-sm text-muted-foreground">{t('settings_loading_addresses')}</p>
           ) : !addresses || addresses.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-3">لا توجد عناوين بعد</p>
+              <p className="text-sm text-muted-foreground mb-3">{t('settings_no_addresses_short')}</p>
               <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => navigate('/addresses')}>
-                إضافة عنوان
+                {t('settings_add_address')}
               </Button>
             </div>
           ) : (
@@ -526,7 +528,7 @@ export default function ProfileSettings() {
               <div className="space-y-2">
                 {addresses.map((a: any) => {
                   const title = `${a.governorate} • ${a.area}${a.neighborhood ? ` • ${a.neighborhood}` : ""}`;
-                  const sub = a.nearest_landmark ? `أقرب نقطة: ${a.nearest_landmark}` : "";
+                  const sub = a.nearest_landmark ? `${a.nearest_landmark}` : "";
                   return (
                     <label
                       key={a.id}
@@ -547,25 +549,25 @@ export default function ProfileSettings() {
 
         {/* Community Profile Section */}
         {communityProfile && (
-          <SettingsSection icon={Users} title="ملف المجتمع">
+          <SettingsSection icon={Users} title={t('settings_community_profile')}>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">الاسم المعروض في المجتمع</Label>
+                <Label className="text-xs text-muted-foreground">{t('settings_community_display_name')}</Label>
                 <Input
                   value={communityDisplayName}
                   onChange={(e) => setCommunityDisplayName(e.target.value)}
-                  placeholder="اسمك في مجتمع ليفو"
+                  placeholder={t('settings_community_display_name_placeholder')}
                   maxLength={120}
                   className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">النبذة التعريفية</Label>
+                <Label className="text-xs text-muted-foreground">{t('settings_community_bio')}</Label>
                 <Textarea
                   value={communityBio}
                   onChange={(e) => setCommunityBio(e.target.value)}
-                  placeholder="اكتب نبذة قصيرة عنك..."
+                  placeholder={t('settings_community_bio_placeholder')}
                   maxLength={500}
                   rows={3}
                   className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all resize-none"
@@ -576,13 +578,13 @@ export default function ProfileSettings() {
               {communityProfile.is_verified && (
                 <div className="flex items-center gap-2 p-3 rounded-2xl bg-primary/10 backdrop-blur-xl border border-primary/30 shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.2)]">
                   <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold text-primary">حساب موثّق</span>
+                  <span className="text-xs font-bold text-primary">{t('settings_verified_account')}</span>
                 </div>
               )}
 
               {(communityProfile.reputation_score != null && communityProfile.reputation_score > 0) && (
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/15">
-                  <span className="text-xs text-muted-foreground">نقاط السمعة</span>
+                  <span className="text-xs text-muted-foreground">{t('settings_reputation_score')}</span>
                   <span className="text-sm font-black text-foreground">{communityProfile.reputation_score}</span>
                 </div>
               )}
@@ -591,38 +593,38 @@ export default function ProfileSettings() {
         )}
 
         {/* Appearance Section */}
-        <SettingsSection icon={Palette} title="المظهر">
+        <SettingsSection icon={Palette} title={t('settings_appearance')}>
           <div className="space-y-3">
             <ThemeSwitcherInline />
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-foreground">بطاقة الملف الشخصي</p>
-                <p className="text-xs text-muted-foreground">تغيير إطار وتصميم بطاقتك</p>
+                <p className="text-sm font-bold text-foreground">{t('settings_profile_card')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings_profile_card_desc')}</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-1" onClick={() => navigate("/rewards?tab=cards")}>
                 <CreditCard className="h-3.5 w-3.5" />
-                تغيير
+                {t('settings_change')}
               </Button>
             </div>
           </div>
         </SettingsSection>
 
         {/* Security Section */}
-        <SettingsSection icon={Lock} title="الأمان">
+        <SettingsSection icon={Lock} title={t('settings_security')}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
-                <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+                <p className="text-sm font-bold text-foreground">{t('settings_wallet_pin')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings_wallet_pin_desc')}</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => setShowPinDialog(true)}>
-                تعيين / تغيير
+                {t('settings_set_change')}
               </Button>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-foreground">تغيير كلمة المرور</p>
-                <p className="text-xs text-muted-foreground">تحديث كلمة مرور حسابك</p>
+                <p className="text-sm font-bold text-foreground">{t('settings_change_password')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings_change_password_desc')}</p>
               </div>
               <ChangePasswordButton />
             </div>
@@ -647,11 +649,11 @@ export default function ProfileSettings() {
         </SettingsSection>
 
         {/* Telegram Notifications */}
-        <SettingsSection icon={Bell} title="إشعارات التليجرام">
+        <SettingsSection icon={Bell} title={t('settings_telegram_notifs')}>
           {!(profile as any)?.telegram_chat_id ? (
             <div className="text-center py-3 space-y-3">
-              <p className="text-sm text-muted-foreground">لم يتم ربط حسابك بتليجرام بعد</p>
-              <p className="text-xs text-muted-foreground">أرسل <span className="font-mono font-bold">/start</span> للبوت على تليجرام ثم أضف الـ Chat ID من صفحة الإشعارات</p>
+              <p className="text-sm text-muted-foreground">{t('settings_telegram_not_linked')}</p>
+              <p className="text-xs text-muted-foreground">{t('settings_telegram_link_hint')}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -659,19 +661,19 @@ export default function ProfileSettings() {
                 onClick={() => navigate('/notifications')}
               >
                 <Bell className="h-4 w-4" />
-                ربط حساب تليجرام
+                {t('settings_telegram_link_btn')}
               </Button>
             </div>
           ) : (
             <div className="space-y-3">
               {[
-                { key: 'orders' as const, label: 'الطلبات', desc: 'إشعارات حالة الطلبات والشحن' },
-                { key: 'wallet' as const, label: 'المحفظة', desc: 'إشعارات الإيداع والسحب' },
-                { key: 'support' as const, label: 'الدعم', desc: 'رسائل خدمة العملاء' },
-                { key: 'promotions' as const, label: 'العروض', desc: 'العروض والخصومات الجديدة' },
-                { key: 'community_messages' as const, label: 'رسائل المجتمع', desc: 'رسائل محادثات السوق والتجار' },
-                { key: 'print_offers' as const, label: 'عروض الطباعة', desc: 'عروض أسعار جديدة على طلباتك' },
-                { key: 'merchant_updates' as const, label: 'تحديثات التاجر', desc: 'شارات التوثيق وتحديثات الحساب' },
+                { key: 'orders' as const, label: t('settings_notif_orders'), desc: t('settings_notif_orders_desc') },
+                { key: 'wallet' as const, label: t('settings_notif_wallet'), desc: t('settings_notif_wallet_desc') },
+                { key: 'support' as const, label: t('settings_notif_support'), desc: t('settings_notif_support_desc') },
+                { key: 'promotions' as const, label: t('settings_notif_promotions'), desc: t('settings_notif_promotions_desc') },
+                { key: 'community_messages' as const, label: t('settings_notif_community'), desc: t('settings_notif_community_desc') },
+                { key: 'print_offers' as const, label: t('settings_notif_print_offers'), desc: t('settings_notif_print_offers_desc') },
+                { key: 'merchant_updates' as const, label: t('settings_notif_merchant_updates'), desc: t('settings_notif_merchant_updates_desc') },
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between">
                   <div>
@@ -698,7 +700,7 @@ export default function ProfileSettings() {
           }}
         >
           <LogOut className="h-4 w-4" />
-          تسجيل الخروج
+          {t('settings_logout')}
         </Button>
       </main>
 
@@ -713,12 +715,12 @@ export default function ProfileSettings() {
             {saveMutation.isPending ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                جارٍ الحفظ…
+                {t('settings_saving')}
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Save className="h-4 w-4" />
-                حفظ الإعدادات
+                {t('settings_save_btn')}
               </span>
             )}
           </Button>
@@ -739,7 +741,7 @@ export default function ProfileSettings() {
       <WalletPinDialog
         open={showPinDialog}
         onOpenChange={setShowPinDialog}
-        onVerified={() => toast({ title: "تم تعيين رمز PIN بنجاح ✓" })}
+        onVerified={() => toast({ title: t('settings_pin_set_success') })}
         mode="set"
       />
     </div>
