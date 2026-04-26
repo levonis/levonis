@@ -359,7 +359,7 @@ export default function LoyaltyLevelsPanel() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{fmt((level.purchase_price_points || 0))}} {t('ll_points_unit')}</span>
+                        <span>{fmt(level.purchase_price_points || 0)} {t('ll_points_unit')}</span>
                         {hasWalletPrice && (
                           <>
                             <span>•</span>
@@ -502,8 +502,8 @@ export default function LoyaltyLevelsPanel() {
                   <span className="text-muted-foreground">{t('ll_field_balance')}</span>
                   <span>
                     {purchaseDialog.method === 'wallet'
-                      ? fmt(`${walletBalance)} ${t('ll_currency_iqd')}`
-                      : fmt(`${availablePoints)} ${t('ll_points_unit')}`}
+                      ? `${fmt(walletBalance)} ${t('ll_currency_iqd')}`
+                      : `${fmt(availablePoints)} ${t('ll_points_unit')}`}
                   </span>
                 </div>
               </div>
@@ -638,7 +638,7 @@ export default function LoyaltyLevelsPanel() {
                       onClick={() => setGiftDialog(prev => ({ ...prev, method: 'wallet' }))}
                     >
                       <Wallet className="h-3 w-3" />
-                      {t('ll_wallet_btn', { amount: giftDialog.level?fmt(.wallet_price ?? 0) })}
+                      {t('ll_wallet_btn', { amount: fmt(giftDialog.level?.wallet_price ?? 0) })}
                     </Button>
                   )}
                 </div>
@@ -666,13 +666,13 @@ export default function LoyaltyLevelsPanel() {
                   <span className="text-muted-foreground">{t('ll_field_cost')}</span>
                   <span className="font-bold">
                     {giftDialog.method === 'wallet'
-                      ? fmt(`${giftDialog.level.wallet_price ?? 0)} ${t('ll_currency_iqd')}`
-                      : fmt(`${(giftDialog.level.purchase_price_points || 0))} ${t('ll_points_unit')}`}
+                      ? `${fmt(giftDialog.level.wallet_price ?? 0)} ${t('ll_currency_iqd')}`
+                      : `${fmt(giftDialog.level.purchase_price_points || 0)} ${t('ll_points_unit')}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('ll_field_balance')}</span>
-                  <span>{giftDialog.method === 'wallet' ? fmt(`${walletBalance)} ${t('ll_currency_iqd')}` : fmt(`${availablePoints)} ${t('ll_points_unit')}`}</span>
+                  <span>{giftDialog.method === 'wallet' ? `${fmt(walletBalance)} ${t('ll_currency_iqd')}` : `${fmt(availablePoints)} ${t('ll_points_unit')}`}</span>
                 </div>
               </div>
 
