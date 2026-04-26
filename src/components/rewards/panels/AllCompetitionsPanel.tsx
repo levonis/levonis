@@ -734,7 +734,7 @@ export default function AllCompetitionsPanel() {
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
           <Trophy className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          لا توجد مسابقات نشطة حالياً
+          {t('ac_no_competitions')}
         </CardContent>
       </Card>
     );
