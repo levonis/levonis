@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Coins, CreditCard, Crown, TrendingUp } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n';
 
 interface CardDiscount {
   level_id: string;
