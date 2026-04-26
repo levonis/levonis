@@ -881,7 +881,7 @@ export default function AllCompetitionsPanel() {
         <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl px-0 pb-0">
           <SheetHeader className="sticky top-0 z-10 bg-background px-4 pb-3 border-b">
             <div className="flex items-center justify-between">
-              <SheetTitle className="text-base">تفاصيل المسابقة</SheetTitle>
+              <SheetTitle className="text-base">{t('ac_details_title')}</SheetTitle>
               <SheetClose asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />
