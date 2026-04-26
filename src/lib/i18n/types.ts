@@ -404,6 +404,9 @@ export type TranslationKeys = {
   cart_change_warning: string;
   cart_change_warning_desc: string;
   cart_change_warning_price: string;
+  cart_admin_adjusted_title: string;
+  cart_admin_adjusted_desc: string;
+  cart_original_total: string;
   cart_change_confirm: string;
   cart_color: string;
   cart_shipping: string;

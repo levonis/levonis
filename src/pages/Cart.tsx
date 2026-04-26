@@ -6,7 +6,7 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Calculator } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Calculator, Sparkles } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
 import OrderSuccessAnimation from '@/components/ui/OrderSuccessAnimation';
@@ -744,10 +744,21 @@ const Cart = () => {
   
   const discount = calculateDiscount();
   
+  // إذا قام الأدمن بتعديل سعر السلة (cart_requests.adjusted_total) نعتمد السعر المعدّل
+  // كأساس لجميع الحسابات اللاحقة (الكوبون، الخصومات، الدفع الجزئي، الإجمالي).
+  const hasAdjustedTotal =
+    !!pendingCartRequest &&
+    pendingCartRequest.status === 'adjusted' &&
+    pendingCartRequest.adjusted_total != null &&
+    Number(pendingCartRequest.adjusted_total) > 0;
+  const effectiveSubtotal = hasAdjustedTotal
+    ? Number(pendingCartRequest!.adjusted_total)
+    : total;
+
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
-  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
+  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
@@ -2398,9 +2409,24 @@ const Cart = () => {
                 </div>
 
                 <div className="space-y-3 mb-6">
+                  {hasAdjustedTotal && (
+                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm space-y-1 animate-fade-in">
+                      <div className="flex items-center gap-2 font-bold text-primary">
+                        <Sparkles className="w-4 h-4" />
+                        <span>{t('cart_admin_adjusted_title')}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('cart_admin_adjusted_desc', { code: pendingCartRequest?.cart_code || '' })}
+                      </p>
+                      <div className="flex justify-between items-center pt-1">
+                        <span className="text-muted-foreground text-xs">{t('cart_original_total')}</span>
+                        <span className="text-muted-foreground line-through text-xs">{formatPrice(total)} {t('cart_iqd_short')}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_subtotal')}</span>
-                    <span className="font-bold"><AnimatedPrice value={total} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
+                    <span className="font-bold"><AnimatedPrice value={effectiveSubtotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                   </div>
                   
                   {appliedCoupon && discount > 0 && (
