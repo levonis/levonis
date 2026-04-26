@@ -649,11 +649,11 @@ export default function ProfileSettings() {
         </SettingsSection>
 
         {/* Telegram Notifications */}
-        <SettingsSection icon={Bell} title="إشعارات التليجرام">
+        <SettingsSection icon={Bell} title={t('settings_telegram_notifs')}>
           {!(profile as any)?.telegram_chat_id ? (
             <div className="text-center py-3 space-y-3">
-              <p className="text-sm text-muted-foreground">لم يتم ربط حسابك بتليجرام بعد</p>
-              <p className="text-xs text-muted-foreground">أرسل <span className="font-mono font-bold">/start</span> للبوت على تليجرام ثم أضف الـ Chat ID من صفحة الإشعارات</p>
+              <p className="text-sm text-muted-foreground">{t('settings_telegram_not_linked')}</p>
+              <p className="text-xs text-muted-foreground">{t('settings_telegram_link_hint')}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -661,19 +661,19 @@ export default function ProfileSettings() {
                 onClick={() => navigate('/notifications')}
               >
                 <Bell className="h-4 w-4" />
-                ربط حساب تليجرام
+                {t('settings_telegram_link_btn')}
               </Button>
             </div>
           ) : (
             <div className="space-y-3">
               {[
-                { key: 'orders' as const, label: 'الطلبات', desc: 'إشعارات حالة الطلبات والشحن' },
-                { key: 'wallet' as const, label: 'المحفظة', desc: 'إشعارات الإيداع والسحب' },
-                { key: 'support' as const, label: 'الدعم', desc: 'رسائل خدمة العملاء' },
-                { key: 'promotions' as const, label: 'العروض', desc: 'العروض والخصومات الجديدة' },
-                { key: 'community_messages' as const, label: 'رسائل المجتمع', desc: 'رسائل محادثات السوق والتجار' },
-                { key: 'print_offers' as const, label: 'عروض الطباعة', desc: 'عروض أسعار جديدة على طلباتك' },
-                { key: 'merchant_updates' as const, label: 'تحديثات التاجر', desc: 'شارات التوثيق وتحديثات الحساب' },
+                { key: 'orders' as const, label: t('settings_notif_orders'), desc: t('settings_notif_orders_desc') },
+                { key: 'wallet' as const, label: t('settings_notif_wallet'), desc: t('settings_notif_wallet_desc') },
+                { key: 'support' as const, label: t('settings_notif_support'), desc: t('settings_notif_support_desc') },
+                { key: 'promotions' as const, label: t('settings_notif_promotions'), desc: t('settings_notif_promotions_desc') },
+                { key: 'community_messages' as const, label: t('settings_notif_community'), desc: t('settings_notif_community_desc') },
+                { key: 'print_offers' as const, label: t('settings_notif_print_offers'), desc: t('settings_notif_print_offers_desc') },
+                { key: 'merchant_updates' as const, label: t('settings_notif_merchant_updates'), desc: t('settings_notif_merchant_updates_desc') },
               ].map(item => (
                 <div key={item.key} className="flex items-center justify-between">
                   <div>
@@ -700,7 +700,7 @@ export default function ProfileSettings() {
           }}
         >
           <LogOut className="h-4 w-4" />
-          تسجيل الخروج
+          {t('settings_logout')}
         </Button>
       </main>
 
