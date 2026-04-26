@@ -2409,9 +2409,24 @@ const Cart = () => {
                 </div>
 
                 <div className="space-y-3 mb-6">
+                  {hasAdjustedTotal && (
+                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm space-y-1 animate-fade-in">
+                      <div className="flex items-center gap-2 font-bold text-primary">
+                        <Sparkles className="w-4 h-4" />
+                        <span>{t('cart_admin_adjusted_title')}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('cart_admin_adjusted_desc', { code: pendingCartRequest?.cart_code || '' })}
+                      </p>
+                      <div className="flex justify-between items-center pt-1">
+                        <span className="text-muted-foreground text-xs">{t('cart_original_total')}</span>
+                        <span className="text-muted-foreground line-through text-xs">{formatPrice(total)} {t('cart_iqd_short')}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_subtotal')}</span>
-                    <span className="font-bold"><AnimatedPrice value={total} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
+                    <span className="font-bold"><AnimatedPrice value={effectiveSubtotal} formatFn={formatPrice} /> {t('pd_currency_iqd')}</span>
                   </div>
                   
                   {appliedCoupon && discount > 0 && (
