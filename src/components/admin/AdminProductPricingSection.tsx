@@ -641,9 +641,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                   ربط العمولة بنسبة الدفع عند الاستلام
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {codDefaults
-                    ? `يتم احتساب العمولة تلقائياً حسب الإعداد العام (${codDefaults.type === 'percentage' ? `${codDefaults.value}%` : `${codDefaults.value.toLocaleString()} د.ع`}).`
-                    : 'سيتم احتساب العمولة تلقائياً حسب إعدادات الدفع عند الاستلام.'}
+                  {codDefaults && Array.isArray((codDefaults as any).tiers) && (codDefaults as any).tiers.length > 0
+                    ? 'يتم احتساب العمولة تلقائياً حسب شرائح الدفع عند الاستلام (بناءً على قيمة الطلب).'
+                    : codDefaults
+                      ? `يتم احتساب العمولة تلقائياً حسب الإعداد العام (${codDefaults.type === 'percentage' ? `${codDefaults.value}%` : `${codDefaults.value.toLocaleString()} د.ع`}).`
+                      : 'سيتم احتساب العمولة تلقائياً حسب إعدادات الدفع عند الاستلام.'}
                 </p>
                 {linkDirectCommissionToCod && priceUsd > 0 && shippingSettings && (
                   <div className="text-xs mt-1 text-primary font-medium">
