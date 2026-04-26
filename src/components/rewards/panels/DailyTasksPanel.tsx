@@ -341,11 +341,11 @@ export default function DailyTasksPanel() {
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
       if (result.pendingApproval) {
-        toast.success('تم إرسال طلبك للمراجعة من قبل الإدارة ⏳');
+        toast.success(t('dt_request_sent_review'));
       } else {
         const msg = result.bonusPoints > 0
-          ? `+${result.totalPoints} نقطة (منها ${result.bonusPoints} مكافأة ستريك 🔥)`
-          : `+${result.totalPoints} نقطة ✅`;
+          ? t('dt_points_with_streak', { total: result.totalPoints, bonus: result.bonusPoints })
+          : t('dt_points_only', { total: result.totalPoints });
         toast.success(msg);
       }
     },
