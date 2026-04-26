@@ -1439,29 +1439,14 @@ const Admin = () => {
         values.price = prices.length > 0 ? Math.min(...prices) : priceIqd;
         values.is_pricing_updated = true;
 
-        // Calculate original_price from original_price_usd if set
+        // Original price = source price × exchange rate ONLY (no shipping, no commission, no extras)
         const origUsd = values.original_price_usd;
         if (origUsd && origUsd > 0) {
-          const origPriceIqd = Math.round(origUsd * settings.usd_to_iqd_rate);
-          // Use lowest-price type's commission/costs for original price too
-          if (hasInStock) {
-            values.original_price = origPriceIqd + otherCostsIqdVal + commissionDirectIqdVal;
-          } else if (hasPreOrder && (shippingType === 'sea' || shippingType === 'both')) {
-            const dims2 = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
-              ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 } : null;
-            const seaCalc2 = calculateShippingCost('china', 'sea', dims2, null, settings);
-            values.original_price = origPriceIqd + seaCalc2.shippingCost + commissionSeaIqdVal;
-          } else if (hasPreOrder && shippingType === 'air') {
-            const dims2 = (values.length_cm > 0 || values.width_cm > 0 || values.height_cm > 0)
-              ? { length: values.length_cm || 0, width: values.width_cm || 0, height: values.height_cm || 0 } : null;
-            const airCalc2 = calculateShippingCost('china', 'air', dims2, values.weight_kg > 0 ? values.weight_kg : null, settings);
-            values.original_price = origPriceIqd + airCalc2.shippingCost + commissionAirIqdVal;
-          } else {
-            values.original_price = origPriceIqd;
-          }
+          let origPriceIqd = Math.round(origUsd * settings.usd_to_iqd_rate);
           if (shouldRoundUp) {
-            values.original_price = roundUpTo250(values.original_price);
+            origPriceIqd = roundUpTo250(origPriceIqd);
           }
+          values.original_price = origPriceIqd;
         } else {
           values.original_price = null;
         }
