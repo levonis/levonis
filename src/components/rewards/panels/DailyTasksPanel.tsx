@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import { useLanguage } from "@/lib/i18n";
 export default function DailyTasksPanel() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [expandedReviews, setExpandedReviews] = useState(false);
   const [proofDialogOpen, setProofDialogOpen] = useState(false);
@@ -354,9 +356,9 @@ export default function DailyTasksPanel() {
 
   const [activeTaskKey, setActiveTaskKey] = useState<string | null>(null);
 
-  const handleTaskClick = (task: any) => {
+  const handleTaskClick = async (task: any) => {
     if (!user) { toast.error(t('tasks_login_required')); return; }
-    
+
     // For admin_approval tasks, open proof dialog instead of direct submit
     if (task.confirmation_type === 'admin_approval') {
       setProofTask(task);
@@ -366,10 +368,42 @@ export default function DailyTasksPanel() {
       setProofDialogOpen(true);
       return;
     }
-    
+
+    // Smart check for "first_review": guide the user based on their order state
+    if (task.task_key === 'first_review' && !autoCheckData?.hasReview) {
+      const pending = reviewableOrders ?? [];
+      if (pending.length === 0) {
+        // No delivered orders awaiting review at all
+        const { count: anyOrders } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .neq('status', 'cancelled');
+
+        if (!anyOrders) {
+          toast.info(t('dt_no_orders_yet') || 'ليس لديك أي طلب للتقييم بعد. اطلب منتجاً أولاً.');
+        } else {
+          toast.info(t('dt_no_delivered_yet') || 'لا توجد طلبات مستلمة جاهزة للتقييم بعد.');
+        }
+        return;
+      }
+
+      // User has delivered, un-reviewed orders → guide to manual rating
+      toast(t('dt_have_unreviewed_orders') || 'لديك طلب لم تقم بتقييمه بعد', {
+        description: t('dt_go_rate_description') || 'اذهب لصفحة طلباتي وقيّم المنتج لإكمال هذه المهمة.',
+        action: {
+          label: t('dt_go_rate_action') || 'اذهب للتقييم',
+          onClick: () => navigate('/my-orders'),
+        },
+        duration: 8000,
+      });
+      return;
+    }
+
     setActiveTaskKey(task.task_key);
     completeTaskMutation.mutate(task, { onSettled: () => setActiveTaskKey(null) });
   };
+
 
   const handleProofImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
