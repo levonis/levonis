@@ -53,43 +53,39 @@ export default function OffersStoragePage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Sticky Navigation Bar - Fixed below main header */}
-      <div 
-        className="sticky top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-sm"
-      >
+    <div className="min-h-screen flex flex-col" dir="rtl">
+      {/* Sticky Navigation Bar — Glass strip */}
+      <div className="sticky top-0 left-0 right-0 z-40 glass-strip border-b">
         {/* Compact Navigation Bar */}
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                <Gift className="h-4 w-4 text-primary-foreground" />
-              </div>
+            <div className="glass-icon-btn w-9 h-9">
+              <Gift className="h-4 w-4 text-primary" />
             </div>
             <div>
               <h1 className="text-sm font-bold text-foreground">العروض والمخزن</h1>
               <p className="text-[10px] text-muted-foreground">منتجات حصرية</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 rounded-xl hover:bg-muted/80"
+          <button
+            type="button"
+            className="glass-icon-btn h-8 w-8"
             onClick={() => navigate(-1)}
+            aria-label="رجوع"
           >
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
 
-        {/* Compact Tab Switcher */}
+        {/* Glass Tab Switcher */}
         <div className="px-3 pb-2.5">
-          <div className="flex gap-2 p-1 bg-muted/40 rounded-xl">
+          <div className="flex gap-2 p-1 glass-panel rounded-xl">
             <button
               onClick={() => setActiveTab('offers')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-semibold text-xs transition-all duration-200 ${
                 activeTab === 'offers'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary/90 text-primary-foreground shadow-md backdrop-blur-md'
+                  : 'glass-trigger text-muted-foreground hover:text-foreground'
               }`}
             >
               <Gift className="h-3.5 w-3.5" />
@@ -99,17 +95,17 @@ export default function OffersStoragePage() {
               onClick={() => setActiveTab('storage')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-semibold text-xs transition-all duration-200 relative ${
                 activeTab === 'storage'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary/90 text-primary-foreground shadow-md backdrop-blur-md'
+                  : 'glass-trigger text-muted-foreground hover:text-foreground'
               }`}
             >
               <Package className="h-3.5 w-3.5" />
               مخزني
               {user && storageCount !== undefined && storageCount > 0 && (
-                <span className={`absolute -top-1 -left-1 min-w-4 h-4 flex items-center justify-center rounded-full text-[9px] font-bold px-1 ${
-                  activeTab === 'storage' 
-                    ? 'bg-primary-foreground text-primary' 
-                    : 'bg-primary text-primary-foreground'
+                <span className={`absolute -top-1 -left-1 min-w-4 h-4 flex items-center justify-center rounded-full text-[9px] font-bold px-1 glass-badge ${
+                  activeTab === 'storage'
+                    ? 'text-primary'
+                    : 'text-primary-foreground bg-primary/80'
                 }`}>
                   {storageCount}
                 </span>
@@ -119,16 +115,16 @@ export default function OffersStoragePage() {
         </div>
       </div>
 
-      {/* Content - with padding for fixed header */}
+      {/* Content — transparent so site background shows through glass */}
       <main className="flex-1 px-4 py-5">
         <Suspense fallback={
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="rounded-lg border bg-card p-3 flex items-center gap-3">
-                <div className="w-16 h-16 rounded-lg bg-muted animate-pulse shrink-0" />
+              <div key={i} className="glass-tile p-3 flex items-center gap-3">
+                <div className="w-16 h-16 rounded-lg bg-muted/40 animate-pulse shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
-                  <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+                  <div className="h-4 w-3/4 rounded bg-muted/40 animate-pulse" />
+                  <div className="h-3 w-1/2 rounded bg-muted/40 animate-pulse" />
                 </div>
               </div>
             ))}
