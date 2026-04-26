@@ -52,12 +52,12 @@ export default function ReelsBar() {
       <div className="w-full py-3">
         <div className="container mx-auto px-4 mb-2 flex items-center gap-2">
           <div className="w-1 h-4 bg-gradient-to-b from-primary to-accent rounded-full" />
-          <h3 className="text-sm font-bold text-foreground">ريلز</h3>
+          <h3 className="text-sm font-bold text-foreground">{t('section_reels_title')}</h3>
           <button
             onClick={() => navigate('/community/reels')}
             className="mr-auto text-[11px] text-primary font-medium hover:underline"
           >
-            عرض الكل
+            {t('section_view_all')}
           </button>
         </div>
         <div
