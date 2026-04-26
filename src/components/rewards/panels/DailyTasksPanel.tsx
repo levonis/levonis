@@ -524,26 +524,26 @@ export default function DailyTasksPanel() {
 
         if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile && !isCompleted) {
           canComplete = false;
-          statusText = 'أكمل ملفك أولاً';
+          statusText = t('dt_status_complete_profile_first');
         }
         if (task.task_key === 'complete_profile' && !autoCheckData?.hasFullProfile && !isCompleted) {
           canComplete = false;
-          statusText = 'أكمل بياناتك وأضف صورة أولاً';
+          statusText = t('dt_status_complete_data_first');
         }
         if (task.task_key === 'first_review' && !autoCheckData?.hasReview && !isCompleted) {
           canComplete = false;
-          statusText = 'أضف تقييم لمنتج أولاً';
+          statusText = t('dt_status_add_review_first');
         }
         if (task.task_key === 'weekly_purchase' && !autoCheckData?.hasWeeklyPurchase && !isCompleted) {
           canComplete = false;
-          statusText = 'اشترِ منتج هذا الأسبوع أولاً';
+          statusText = t('dt_status_buy_weekly_first');
         }
         if (task.task_key === 'register_merchant' && !isCompleted) {
           const isMerch = autoCheckData?.isMerchant || false;
           const prodCount = Math.min(autoCheckData?.merchantProductCount || 0, 3);
           canComplete = isMerch && prodCount >= 3;
-          if (!isMerch) statusText = '❶ سجّل كتاجر أولاً';
-          else if (prodCount < 3) statusText = `❷ انشر ${3 - prodCount} منتجات إضافية (${prodCount}/٣)`;
+          if (!isMerch) statusText = t('dt_status_register_merchant_step');
+          else if (prodCount < 3) statusText = t('dt_status_publish_more_step', { remaining: 3 - prodCount, count: prodCount });
         }
         if (isPending) {
           canComplete = false;
