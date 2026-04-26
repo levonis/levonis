@@ -110,7 +110,7 @@ const Notifications = () => {
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
-    <div className="min-h-screen pt-6 pb-24" dir="rtl">
+    <div className="min-h-screen pt-6 pb-24" dir={dir}>
       {/* Hero Header */}
       <div className="relative overflow-hidden">
 
