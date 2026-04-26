@@ -50,7 +50,7 @@ const isStrongPassword = (password: string) => {
 };
 
 const Auth = () => {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
