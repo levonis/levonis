@@ -865,7 +865,7 @@ export default function AllCompetitionsPanel() {
                     ) : (
                       <>
                         <Calendar className="h-2.5 w-2.5" />
-                        ينتهي: {formatBaghdadTime(comp.end_date)}
+                        {t('ac_ends_at', { date: formatBaghdadTime(comp.end_date) })}
                       </>
                     )}
                   </div>
