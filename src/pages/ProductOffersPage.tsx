@@ -498,7 +498,7 @@ export default function ProductOffersPage() {
                     {/* Options Selection */}
                     {availableOptions.length > 0 && (
                       <div className="space-y-2">
-                        <p className="font-medium text-sm">اختر الخيار:</p>
+                        <p className="font-medium text-sm">{t('offers_pick_option')}</p>
                         <div className="flex flex-wrap gap-2">
                           {availableOptions.map((opt, idx) => (
                             <Button
@@ -517,7 +517,7 @@ export default function ProductOffersPage() {
                               </span>
                               {opt.stock_quantity !== null && (
                                 <span className={`text-[10px] ${opt.stock_quantity === 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                  {opt.stock_quantity === 0 ? 'نفذ' : `متبقي: ${opt.stock_quantity}`}
+                                  {opt.stock_quantity === 0 ? t('offers_color_oos') : `${t('offers_remaining')}: ${opt.stock_quantity}`}
                                 </span>
                               )}
                             </Button>
