@@ -1743,4 +1743,6 @@ export const ku: TranslationKeys = {
   ac_join_free: 'بەشداری بێبەرامبەر',
   ac_join_now: 'بەشداربە ئێستا',
   ac_login_to_join: 'بچۆ ژوورەوە بۆ بەشداری لە پێشبڕکێ',
+  ac_won_prize: '🎁 پیرۆزە! بردتەوە: {prize}',
+  ac_default_prize: 'خەڵات',
 };
