@@ -465,13 +465,13 @@ export default function AllOffersPanel() {
                     <h2 className="text-sm font-bold leading-tight line-clamp-2">{selectedOffer.title_ar}</h2>
                     {selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity > 0 && (
                       <p className={`text-[10px] mt-0.5 ${selectedOffer.stock_quantity <= 5 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        متوفر: {selectedOffer.stock_quantity}
+                        {t('ao_stock_available', { count: selectedOffer.stock_quantity })}
                       </p>
                     )}
                   </div>
                   <div className="bg-primary/10 rounded-lg px-2 py-1.5 shrink-0">
                     <span className="text-base font-black text-primary">{formatPrice(basePrice)}</span>
-                    <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || 'د.ع'}</span>
+                    <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || t('ao_currency_iqd')}</span>
                   </div>
                 </div>
 
