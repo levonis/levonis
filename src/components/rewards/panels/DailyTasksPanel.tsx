@@ -675,7 +675,7 @@ export default function DailyTasksPanel() {
       <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-right">إرسال إثبات المهمة</DialogTitle>
+            <DialogTitle className="text-right">{t('dt_dialog_title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -685,7 +685,7 @@ export default function DailyTasksPanel() {
 
             {/* Instagram Username */}
             <div className="space-y-2">
-              <Label className="text-sm">يوزر الانستغرام</Label>
+              <Label className="text-sm">{t('dt_instagram_label')}</Label>
               <div className="relative">
                 <Instagram className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -700,7 +700,7 @@ export default function DailyTasksPanel() {
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <Label className="text-sm">صورة الإثبات</Label>
+              <Label className="text-sm">{t('dt_proof_image_label')}</Label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -710,7 +710,7 @@ export default function DailyTasksPanel() {
               />
               {proofImagePreview ? (
                 <div className="relative rounded-lg overflow-hidden border">
-                  <img src={proofImagePreview} alt="إثبات" className="w-full max-h-48 object-contain bg-muted/20" />
+                  <img src={proofImagePreview} alt={t('dt_proof_alt')} className="w-full max-h-48 object-contain bg-muted/20" />
                   <Button
                     size="icon"
                     variant="destructive"
@@ -727,16 +727,16 @@ export default function DailyTasksPanel() {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">اضغط لرفع صورة</span>
+                  <span className="text-xs text-muted-foreground">{t('dt_proof_upload_hint')}</span>
                 </Button>
               )}
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setProofDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setProofDialogOpen(false)}>{t('dt_btn_cancel')}</Button>
             <Button onClick={handleSubmitProof} disabled={isSubmittingProof || !proofImage || !instagramUsername.trim()}>
               {isSubmittingProof ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-              إرسال للمراجعة
+              {t('dt_btn_send_for_review')}
             </Button>
           </DialogFooter>
         </DialogContent>
