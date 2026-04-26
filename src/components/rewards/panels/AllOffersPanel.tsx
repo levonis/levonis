@@ -371,7 +371,7 @@ export default function AllOffersPanel() {
           </div>
           
           <DrawerHeader className="sr-only">
-            <DrawerTitle>تفاصيل المنتج</DrawerTitle>
+            <DrawerTitle>{t('ao_drawer_title')}</DrawerTitle>
           </DrawerHeader>
           
           {selectedOffer && (
