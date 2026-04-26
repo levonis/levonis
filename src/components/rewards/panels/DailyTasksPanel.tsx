@@ -18,10 +18,11 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import OptimizedImage from "@/components/OptimizedImage";
 import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function DailyTasksPanel() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [expandedReviews, setExpandedReviews] = useState(false);
@@ -308,9 +309,10 @@ export default function DailyTasksPanel() {
         .insert({ user_id: user.id, task_key: task.task_key, points_earned: totalPoints });
       if (taskError) throw taskError;
 
+      const taskTitle = pickI18n(task as any, 'title', language);
       const desc = bonusPoints > 0
-        ? `${t('dt_task_label')}: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
-        : `${t('dt_task_label')}: ${task.title_ar}`;
+        ? `${t('dt_task_label')}: ${taskTitle} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
+        : `${t('dt_task_label')}: ${taskTitle}`;
 
       const { error: pointsError } = await supabase
         .from('points_transactions')
@@ -604,8 +606,8 @@ export default function DailyTasksPanel() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{task.title_ar}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{task.description_ar}</p>
+                  <p className="font-medium text-sm">{pickI18n(task as any, 'title', language)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{pickI18n(task as any, 'description', language)}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <div className="flex items-center gap-1">
                       <Coins className="h-3.5 w-3.5 text-amber-500" />
@@ -715,8 +717,8 @@ export default function DailyTasksPanel() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium mb-1">{proofTask?.title_ar}</p>
-              <p className="text-xs text-muted-foreground">{proofTask?.description_ar}</p>
+              <p className="text-sm font-medium mb-1">{pickI18n(proofTask as any, 'title', language)}</p>
+              <p className="text-xs text-muted-foreground">{pickI18n(proofTask as any, 'description', language)}</p>
             </div>
 
             {/* Instagram Username */}
