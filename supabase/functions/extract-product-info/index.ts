@@ -1524,7 +1524,7 @@ ${pageContent.substring(0, 100000)}${extraContext}
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ success: false, error: 'تم تجاوز حد الطلبات', requiresManualInput: true }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
@@ -1949,7 +1949,7 @@ Return ONLY JSON:
         error: error instanceof Error ? error.message : 'حدث خطأ',
         requiresManualInput: true
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
