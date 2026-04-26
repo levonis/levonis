@@ -133,7 +133,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                   <div>
                     <p className="text-xs text-muted-foreground">{t('points_current_card')}</p>
                     <p className="font-bold" style={{ color: (userCard.loyalty_levels as any).color }}>
-                      {(userCard.loyalty_levels as any).name_ar}
+                      {pickLocalized(userCard.loyalty_levels as any, 'name', language)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {((userPoints as any)?.total_xp || 0).toLocaleString()} XP
