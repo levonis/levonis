@@ -114,6 +114,8 @@ interface StorageItem {
 }
 
 export default function AllStoragePanel() {
+  const { t } = useLanguage();
+  const statusConfig = useMemo(() => getStatusConfig(t), [t]);
   const { user, loading: authLoading } = useAuth();
   const { addOfferPurchaseToCart } = useCart();
   const queryClient = useQueryClient();
