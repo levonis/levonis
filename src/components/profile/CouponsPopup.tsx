@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/lib/i18n';
 import OriginExpandShell, { type OriginRect } from './OriginExpandShell';
 
 interface CouponsPopupProps {
@@ -60,17 +61,20 @@ const discountIcons: Record<string, typeof Percent> = {
   min_purchase_delivery: Truck,
 };
 
-const discountLabels: Record<string, string> = {
-  percentage: "خصم نسبة",
-  fixed_amount: "خصم مبلغ",
-  free_delivery: "توصيل مجاني",
-  free_gift: "هدية مجانية",
-  min_purchase_percentage: "خصم عند الشراء",
-  min_purchase_delivery: "توصيل مجاني عند الشراء",
+const discountLabelKeys: Record<string, string> = {
+  percentage: "cp_dt_percentage",
+  fixed_amount: "cp_dt_fixed_amount",
+  free_delivery: "cp_dt_free_delivery",
+  free_gift: "cp_dt_free_gift",
+  min_purchase_percentage: "cp_dt_min_purchase_percentage",
+  min_purchase_delivery: "cp_dt_min_purchase_delivery",
 };
 
 export default function CouponsPopup({ open, onOpenChange, originRect }: CouponsPopupProps) {
   const navigate = useNavigate();
+  const { t, language, dir } = useLanguage();
+  const numLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
+  const dateLocale = language === 'en' ? enUS : ar;
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedDiscount, setSelectedDiscount] = useState<StoreDiscount | null>(null);
 
@@ -107,16 +111,16 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
   const copyCode = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
     setCopiedId(id);
-    toast.success("تم نسخ الكود! 📋");
+    toast.success(t('cp_code_copied'));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const getDiscountDisplay = (d: StoreDiscount) => {
     switch (d.discount_type) {
       case 'percentage': case 'min_purchase_percentage': return `${d.discount_value}%`;
-      case 'fixed_amount': return `${d.discount_value?.toLocaleString()} د.ع`;
-      case 'free_delivery': case 'min_purchase_delivery': return 'مجاني';
-      case 'free_gift': return 'هدية';
+      case 'fixed_amount': return `${d.discount_value?.toLocaleString(numLocale)} ${t('ph_currency_iqd')}`;
+      case 'free_delivery': case 'min_purchase_delivery': return t('cp_label_free');
+      case 'free_gift': return t('cp_label_gift');
       default: return '';
     }
   };
@@ -147,8 +151,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <span className="text-sm font-black">العروض والخصومات</span>
-              <p className="text-[9px] text-muted-foreground font-normal mt-0.5">وفّر مع كل طلب</p>
+              <span className="text-sm font-black">{t('cp_title')}</span>
+              <p className="text-[9px] text-muted-foreground font-normal mt-0.5">{t('cp_subtitle')}</p>
             </div>
           </div>
         }
@@ -159,19 +163,19 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
             {discountsByStore.size > 0 && (
               <div className="flex items-center gap-1.5 bg-primary/10 rounded-full px-2.5 py-1 shrink-0">
                 <Store className="h-2.5 w-2.5 text-primary" />
-                <span className="text-[9px] font-bold text-primary">{discountsByStore.size} متجر</span>
+                <span className="text-[9px] font-bold text-primary">{t('cp_stat_stores', { n: discountsByStore.size })}</span>
               </div>
             )}
             {storeDiscounts && storeDiscounts.length > 0 && (
               <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
                 <Zap className="h-2.5 w-2.5 text-foreground" />
-                <span className="text-[9px] font-bold">{storeDiscounts.length} عرض</span>
+                <span className="text-[9px] font-bold">{t('cp_stat_offers', { n: storeDiscounts.length })}</span>
               </div>
             )}
             {coupons && coupons.length > 0 && (
               <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
                 <Ticket className="h-2.5 w-2.5 text-foreground" />
-                <span className="text-[9px] font-bold">{coupons.length} كوبون</span>
+                <span className="text-[9px] font-bold">{t('cp_stat_coupons', { n: coupons.length })}</span>
               </div>
             )}
           </div>
@@ -189,11 +193,11 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[10px] font-black text-foreground truncate">{storeName}</h3>
-                    <p className="text-[8px] text-muted-foreground">{discounts.length} عرض</p>
+                    <p className="text-[8px] text-muted-foreground">{t('cp_count_offers', { n: discounts.length })}</p>
                   </div>
                   <Button variant="ghost" size="sm" className="h-5 text-[8px] gap-0.5 text-primary px-1.5"
                     onClick={() => { navigate(`/community/store/${discounts[0].merchant_id}`); onOpenChange(false); }}>
-                    زيارة<ChevronLeft className="h-2 w-2" />
+                    {t('cp_visit')}<ChevronLeft className="h-2 w-2" />
                   </Button>
                 </div>
 
@@ -216,7 +220,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                             {discount.valid_until && (
                               <div className="flex items-center gap-1 text-[7px] text-muted-foreground">
                                 <Clock className="h-2 w-2" />
-                                {format(new Date(discount.valid_until), "d MMM", { locale: ar })}
+                                {format(new Date(discount.valid_until), "d MMM", { locale: dateLocale })}
                               </div>
                             )}
                           </div>
@@ -235,13 +239,13 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                   <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
                     <Ticket className="h-3 w-3 text-primary" />
                   </div>
-                  <h3 className="text-[10px] font-black text-foreground">كوبونات خاصة</h3>
+                  <h3 className="text-[10px] font-black text-foreground">{t('cp_special_coupons')}</h3>
                 </div>
 
                 <div className="space-y-1.5">
                   {coupons.map((coupon) => {
                     const Icon = discountIcons[coupon.coupon_type] || Percent;
-                    const label = discountLabels[coupon.coupon_type] || "خصم";
+                    const label = t((discountLabelKeys[coupon.coupon_type] as any) || 'cp_dt_default');
                     const isCopied = copiedId === coupon.id;
 
                     return (
@@ -257,13 +261,13 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                               <span className="text-xs font-black text-primary">{coupon.discount_value}%</span>
                             )}
                             {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
-                              <span className="text-[8px] font-black text-primary">{coupon.discount_value?.toLocaleString()}<span className="text-[6px]"> د.ع</span></span>
+                              <span className="text-[8px] font-black text-primary">{coupon.discount_value?.toLocaleString(numLocale)}<span className="text-[6px]"> {t('ph_currency_iqd')}</span></span>
                             )}
                             {coupon.coupon_type === "free_delivery" && (
-                              <span className="text-[7px] font-black text-primary">مجاني</span>
+                              <span className="text-[7px] font-black text-primary">{t('cp_label_free')}</span>
                             )}
                             {coupon.coupon_type === "free_product" && (
-                              <span className="text-[7px] font-black text-primary">هدية</span>
+                              <span className="text-[7px] font-black text-primary">{t('cp_label_gift')}</span>
                             )}
                           </div>
                           <div className="flex-1 p-2 space-y-0.5">
@@ -289,7 +293,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                               {coupon.valid_until && (
                                 <span className="flex items-center gap-0.5 text-[6px] text-muted-foreground">
                                   <Clock className="h-2 w-2" />
-                                  {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
+                                  {format(new Date(coupon.valid_until), "d MMM", { locale: dateLocale })}
                                 </span>
                               )}
                             </div>
@@ -313,8 +317,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-card to-muted border border-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Sparkles className="h-6 w-6 text-primary/30" />
                 </div>
-                <p className="text-foreground font-black text-xs">لا توجد عروض حالياً</p>
-                <p className="text-[9px] text-muted-foreground mt-1">ترقب العروض القادمة</p>
+                <p className="text-foreground font-black text-xs">{t('cp_no_offers_title')}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">{t('cp_no_offers_subtitle')}</p>
               </div>
             )}
           </div>
@@ -328,7 +332,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
               onClick={() => { navigate("/special-coupons"); onOpenChange(false); }}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              عرض الكل
+              {t('cp_view_all')}
               <ChevronLeft className="h-3 w-3" />
             </Button>
           </div>
@@ -338,7 +342,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
 
       {/* Discount Detail Sheet */}
       <Sheet open={!!selectedDiscount} onOpenChange={() => setSelectedDiscount(null)}>
-        <SheetContent side="bottom" className="h-[55vh] rounded-t-3xl p-0" dir="rtl">
+        <SheetContent side="bottom" className="h-[55vh] rounded-t-3xl p-0" dir={dir}>
           {selectedDiscount && (() => {
             const Icon = discountIcons[selectedDiscount.discount_type] || Percent;
             return (
@@ -351,7 +355,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                     </div>
                     <div className="flex-1">
                       <Badge className="bg-primary-foreground/20 text-primary-foreground border-0 text-[8px] mb-0.5">
-                        {discountLabels[selectedDiscount.discount_type]}
+                        {t((discountLabelKeys[selectedDiscount.discount_type] as any) || 'cp_dt_default')}
                       </Badge>
                       <h2 className="text-primary-foreground font-black text-sm">{selectedDiscount.title_ar}</h2>
                     </div>
@@ -375,8 +379,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                         <Package className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold">الحد الأدنى</p>
-                        <p className="text-[9px] text-muted-foreground">{selectedDiscount.min_purchase_amount.toLocaleString()} د.ع</p>
+                        <p className="text-[10px] font-bold">{t('cp_min_purchase')}</p>
+                        <p className="text-[9px] text-muted-foreground">{selectedDiscount.min_purchase_amount.toLocaleString(numLocale)} {t('ph_currency_iqd')}</p>
                       </div>
                     </div>
                   )}
@@ -386,7 +390,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                         <Gift className="h-3.5 w-3.5 text-emerald-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold">الهدية</p>
+                        <p className="text-[10px] font-bold">{t('cp_gift_label')}</p>
                         <p className="text-[9px] text-muted-foreground">{selectedDiscount.gift_description}</p>
                       </div>
                     </div>
@@ -397,8 +401,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                         <Clock className="h-3.5 w-3.5 text-amber-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold">صالح حتى</p>
-                        <p className="text-[9px] text-muted-foreground">{format(new Date(selectedDiscount.valid_until), "d MMMM yyyy", { locale: ar })}</p>
+                        <p className="text-[10px] font-bold">{t('cp_valid_until')}</p>
+                        <p className="text-[9px] text-muted-foreground">{format(new Date(selectedDiscount.valid_until), "d MMMM yyyy", { locale: dateLocale })}</p>
                       </div>
                     </div>
                   )}
@@ -406,7 +410,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                 <div className="p-4 pt-2 border-t border-border/30">
                   <Button className="w-full h-10 gap-2 rounded-2xl text-xs font-black shadow-lg shadow-primary/20"
                     onClick={() => { navigate(`/community/store/${selectedDiscount.merchant_id}`); setSelectedDiscount(null); onOpenChange(false); }}>
-                    <Store className="h-3.5 w-3.5" />تسوّق من المتجر
+                    <Store className="h-3.5 w-3.5" />{t('cp_shop_store')}
                   </Button>
                 </div>
               </div>
