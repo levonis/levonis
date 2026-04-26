@@ -1567,6 +1567,7 @@ export const en: TranslationKeys = {
   island_suggestions: 'Suggestions',
   island_results: 'Products',
   island_view_all: 'View all results',
+  island_in_page: 'On this page',
   island_no_results: 'No results',
   pp_title: 'Price Protection',
   pp_subtitle: 'We refund the difference if the price drops within 7 days',

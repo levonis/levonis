@@ -15,6 +15,8 @@ import AdminRoute from "@/components/AdminRoute";
 const AppNavBar = lazy(() => import("@/components/AppNavBar"));
 const DeferredEffects = lazy(() => import("@/components/DeferredEffects"));
 import { IslandProvider, useIsland } from "@/island/IslandContext";
+import { PageSearchProvider } from "@/island/PageSearchContext";
+import { useGlobalNavSearchItems } from "@/island/useGlobalNavSearchItems";
 import { DynamicIsland } from "@/island/DynamicIsland";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
@@ -156,6 +158,7 @@ import PageFade from "@/components/PageFade";
 function AppContent() {
   const location = useLocation();
   const { visible: islandVisible } = useIsland();
+  useGlobalNavSearchItems();
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const isAuthPage = location.pathname === "/auth";
@@ -397,11 +400,13 @@ export default function App() {
             <AuthProvider>
               <CartProvider>
                 <IslandProvider>
-                  <ProfileTransitionProvider>
-                    <NativeAuthGate>
-                      <AppContent />
-                    </NativeAuthGate>
-                  </ProfileTransitionProvider>
+                  <PageSearchProvider>
+                    <ProfileTransitionProvider>
+                      <NativeAuthGate>
+                        <AppContent />
+                      </NativeAuthGate>
+                    </ProfileTransitionProvider>
+                  </PageSearchProvider>
                 </IslandProvider>
               </CartProvider>
             </AuthProvider>

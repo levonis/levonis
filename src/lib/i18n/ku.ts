@@ -1567,6 +1567,7 @@ export const ku: TranslationKeys = {
   island_suggestions: 'پێشنیارەکان',
   island_results: 'بەرهەمەکان',
   island_view_all: 'بینینی هەموو ئەنجامەکان',
+  island_in_page: 'لەم پەڕە',
   island_no_results: 'هیچ ئەنجامێک نییە',
   pp_title: 'پاراستنی نرخ',
   pp_subtitle: 'نرخی جیاوازی دەگەڕێنینەوە ئەگەر کەم بووەوە لە ٧ ڕۆژدا',

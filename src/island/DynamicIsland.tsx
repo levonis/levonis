@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useIsland, type IslandState } from "./IslandContext";
 import { useIslandSearch, pushRecent, pickName } from "./useIslandSearch";
+import { usePageSearchContext, filterPageItems, type PageSearchItem } from "./PageSearchContext";
 import { useLanguage } from "@/lib/i18n";
 import type { TranslationKeys } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -281,16 +282,27 @@ export const DynamicIsland = () => {
     enabled: focused || searchQuery.length > 0,
   });
 
+  /* ---------- Local in-page search ----------
+   * Pages register searchable items via usePageSearchSection. When the user
+   * types, we filter those items locally and show them at the top of the
+   * results list — without leaving the page.
+   */
+  const pageSearch = usePageSearchContext();
+  const localResults = useMemo<PageSearchItem[]>(() => {
+    if (!pageSearch || debounced.length < 1) return [];
+    return filterPageItems(pageSearch.items, debounced);
+  }, [pageSearch, debounced]);
+
   /* ---------- Derive search sub-stage ---------- */
   const isSearchActive = state === "search" && (focused || searchQuery.length > 0);
   const stage: SearchStage = useMemo(() => {
     if (!isSearchActive) return "idle";
     const q = debounced;
     if (q.length === 0) return recent.length > 0 ? "suggestions" : "typing";
-    if (products.length > 0) return "results";
+    if (localResults.length > 0 || products.length > 0) return "results";
     if (suggestions.length > 0) return "suggestions";
     return "typing";
-  }, [isSearchActive, debounced, recent.length, products.length, suggestions.length]);
+  }, [isSearchActive, debounced, recent.length, products.length, suggestions.length, localResults.length]);
 
   /* ---------- Outside click + Escape collapse ---------- */
   useEffect(() => {
@@ -334,9 +346,9 @@ export const DynamicIsland = () => {
    */
   const shape = useMemo(() => {
     return state === "search"
-      ? searchShape(stage, products.length, viewportWidth)
+      ? searchShape(stage, localResults.length + products.length, viewportWidth)
       : baseShape(state, title, language, viewportWidth);
-  }, [state, stage, products.length, title, language, viewportWidth]);
+  }, [state, stage, products.length, localResults.length, title, language, viewportWidth]);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
@@ -762,58 +774,110 @@ export const DynamicIsland = () => {
                       className="flex flex-1 flex-col overflow-hidden px-2 pb-2"
                       role="listbox"
                     >
-                      <div className="px-3 pb-1 pt-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-foreground/45">
-                        {t("island_results")}
-                      </div>
                       <div className="flex flex-1 flex-col overflow-y-auto">
-                        {products.map((p, i) => {
-                          const name = pickName(p, language);
-                          return (
-                            <motion.button
-                              key={p.id}
-                              type="button"
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ ...contentTransition, delay: i * 0.04 }}
-                              onClick={() => openProduct(p.slug, p.id)}
-                              className="island-search-row flex items-center gap-3 rounded-xl px-2 py-1.5 text-start hover:bg-foreground/8"
-                            >
-                              <div className="island-result-thumb h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-foreground/5">
-                                {p.image_url && (
-                                  <img
-                                    src={p.image_url}
-                                    alt=""
-                                    loading="lazy"
-                                    className="h-full w-full object-cover"
-                                  />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="truncate text-[12.5px] font-semibold text-foreground">
-                                  {name}
+                        {/* In-page (local) results — registered by the current page */}
+                        {localResults.length > 0 && (
+                          <>
+                            <div className="px-3 pb-1 pt-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-primary/80">
+                              {t("island_in_page")}
+                            </div>
+                            {localResults.map((it, i) => (
+                              <motion.button
+                                key={`local-${it.id}`}
+                                type="button"
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ ...contentTransition, delay: i * 0.03 }}
+                                onClick={() => {
+                                  const q = searchQuery.trim();
+                                  if (q) {
+                                    pushRecent(q);
+                                    refreshRecent();
+                                  }
+                                  resetSearch();
+                                  if (it.onSelect) it.onSelect();
+                                  if (it.to) navigate(it.to);
+                                }}
+                                className="island-search-row flex items-center gap-3 rounded-xl px-2 py-1.5 text-start hover:bg-foreground/8"
+                              >
+                                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                                  <Search className="h-4 w-4" strokeWidth={2.25} />
                                 </div>
-                                {p.price != null && (
-                                  <div className="truncate text-[11px] font-medium text-foreground/55">
-                                    {Number(p.price).toLocaleString()} {t("common_iqd")}
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-[12.5px] font-semibold text-foreground">
+                                    {it.label}
                                   </div>
-                                )}
-                              </div>
-                            </motion.button>
-                          );
-                        })}
+                                  {it.hint && (
+                                    <div className="truncate text-[11px] font-medium text-foreground/55">
+                                      {it.hint}
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.button>
+                            ))}
+                          </>
+                        )}
+
+                        {products.length > 0 && (
+                          <>
+                            {localResults.length > 0 && (
+                              <div className="my-1 h-px bg-foreground/10" />
+                            )}
+                            <div className="px-3 pb-1 pt-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-foreground/45">
+                              {t("island_results")}
+                            </div>
+                            {products.map((p, i) => {
+                              const name = pickName(p, language);
+                              return (
+                                <motion.button
+                                  key={p.id}
+                                  type="button"
+                                  initial={{ opacity: 0, y: 6 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ ...contentTransition, delay: i * 0.04 }}
+                                  onClick={() => openProduct(p.slug, p.id)}
+                                  className="island-search-row flex items-center gap-3 rounded-xl px-2 py-1.5 text-start hover:bg-foreground/8"
+                                >
+                                  <div className="island-result-thumb h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-foreground/5">
+                                    {p.image_url && (
+                                      <img
+                                        src={p.image_url}
+                                        alt=""
+                                        loading="lazy"
+                                        className="h-full w-full object-cover"
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-[12.5px] font-semibold text-foreground">
+                                      {name}
+                                    </div>
+                                    {p.price != null && (
+                                      <div className="truncate text-[11px] font-medium text-foreground/55">
+                                        {Number(p.price).toLocaleString()} {t("common_iqd")}
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.button>
+                              );
+                            })}
+                          </>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const q = searchQuery.trim();
-                          if (q) pushRecent(q);
-                          setFocused(false);
-                          goSearchUrl(searchQuery.trim());
-                        }}
-                        className="mt-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-primary hover:bg-foreground/5"
-                      >
-                        {t("island_view_all")}
-                      </button>
+                      {products.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const q = searchQuery.trim();
+                            if (q) pushRecent(q);
+                            setFocused(false);
+                            goSearchUrl(searchQuery.trim());
+                          }}
+                          className="mt-1 rounded-xl px-3 py-2 text-[12px] font-semibold text-primary hover:bg-foreground/5"
+                        >
+                          {t("island_view_all")}
+                        </button>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

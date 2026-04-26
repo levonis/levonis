@@ -1567,6 +1567,7 @@ export const ar: TranslationKeys = {
   island_suggestions: 'اقتراحات',
   island_results: 'منتجات',
   island_view_all: 'عرض كل النتائج',
+  island_in_page: 'في هذه الصفحة',
   island_no_results: 'لا توجد نتائج',
   pp_title: 'حماية السعر',
   pp_subtitle: 'نسترد فرق السعر إذا انخفض خلال 7 أيام',
