@@ -1945,4 +1945,17 @@ export type TranslationKeys = {
   assist_tab_gifts: string;
   assist_tab_coupons: string;
   assist_tab_envelopes: string;
+
+  // Reels
+  reels_empty_title: string;
+  reels_empty_desc: string;
+  reel_sponsored: string;
+  reel_share: string;
+  reel_default_caption: string;
+  reel_official_account: string;
+  reel_official_badge: string;
+  reel_default_merchant: string;
+  reel_from_site: string;
+  reel_currency_iqd: string;
+  reel_merchant_default: string;
 };

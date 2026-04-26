@@ -1934,4 +1934,17 @@ export const en: TranslationKeys = {
   assist_tab_gifts: 'Gifts',
   assist_tab_coupons: 'Coupons',
   assist_tab_envelopes: 'Red Envelopes',
+
+  // Reels
+  reels_empty_title: 'No reels yet',
+  reels_empty_desc: 'New content coming soon',
+  reel_sponsored: 'Sponsored',
+  reel_share: 'Share',
+  reel_default_caption: 'Reel',
+  reel_official_account: 'Official account',
+  reel_official_badge: 'Official',
+  reel_default_merchant: 'Merchant',
+  reel_from_site: 'From site',
+  reel_currency_iqd: 'IQD',
+  reel_merchant_default: 'Merchant',
 };

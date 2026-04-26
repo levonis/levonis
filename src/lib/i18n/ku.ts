@@ -1934,4 +1934,17 @@ export const ku: TranslationKeys = {
   assist_tab_gifts: 'دیاری',
   assist_tab_coupons: 'کۆپۆن',
   assist_tab_envelopes: 'پاکەتە سوورەکان',
+
+  // Reels
+  reels_empty_title: 'هیچ ڕیلێک نییە',
+  reels_empty_desc: 'بە زووترین کات ناوەڕۆکی نوێ زیاد دەکرێت',
+  reel_sponsored: 'ڕیکلامی پاڵپشتی کراو',
+  reel_share: 'هاوبەشکردن',
+  reel_default_caption: 'ڕیل',
+  reel_official_account: 'هەژماری فەرمی',
+  reel_official_badge: 'فەرمی',
+  reel_default_merchant: 'بازرگان',
+  reel_from_site: 'لە ماڵپەڕەوە',
+  reel_currency_iqd: 'د.ع',
+  reel_merchant_default: 'بازرگان',
 };
