@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Shield, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 export default function AllPlansPanel() {
+  const { t } = useLanguage();
   const { data: plans, isLoading } = useQuery({
     queryKey: ['all-protection-plans-panel'],
     queryFn: async () => {
@@ -36,7 +38,7 @@ export default function AllPlansPanel() {
     return (
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
-          لا توجد باقات متاحة حالياً
+          {t('ap_no_plans')}
         </CardContent>
       </Card>
     );
@@ -64,8 +66,8 @@ export default function AllPlansPanel() {
                   )}
                 </div>
                 <p className="text-xl font-bold text-primary mt-1">
-                  {plan.monthly_price?.toLocaleString()} د.ع
-                  <span className="text-sm font-normal text-muted-foreground">/شهر</span>
+                  {plan.monthly_price?.toLocaleString()} {t('common_iqd')}
+                  <span className="text-sm font-normal text-muted-foreground">{t('ap_per_month_short')}</span>
                 </p>
               </div>
             </div>
@@ -90,9 +92,9 @@ export default function AllPlansPanel() {
 
             <Button 
               className="w-full"
-              onClick={() => toast.info('سيتم فتح نموذج الاشتراك قريباً')}
+              onClick={() => toast.info(t('ap_subscribe_form'))}
             >
-              اشترك الآن
+              {t('ap_subscribe_now')}
             </Button>
           </CardContent>
         </Card>

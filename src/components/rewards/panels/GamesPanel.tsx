@@ -5,10 +5,11 @@ import { Gamepad2, Lock, Trophy, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const PREVIEW_GAMES = [
-  { id: 'rps', title: 'حجرة ورقة مقص', icon: '✊', reward: '+10', live: false },
-  { id: 'quiz', title: 'تحدي المعرفة', icon: '🧠', reward: '+15', live: false },
-  { id: 'spin', title: 'عجلة الحظ', icon: '🎰', reward: '+50', live: false },
+type PreviewGame = { id: string; titleKey: 'gp_game_rps' | 'gp_game_quiz' | 'gp_game_spin'; icon: string; reward: string; live: boolean };
+const PREVIEW_GAMES: PreviewGame[] = [
+  { id: 'rps', titleKey: 'gp_game_rps', icon: '✊', reward: '+10', live: false },
+  { id: 'quiz', titleKey: 'gp_game_quiz', icon: '🧠', reward: '+15', live: false },
+  { id: 'spin', titleKey: 'gp_game_spin', icon: '🎰', reward: '+50', live: false },
 ];
 
 export default function GamesPanel() {
@@ -28,7 +29,7 @@ export default function GamesPanel() {
           onClick={() => navigate('/games')}
           className="text-primary text-xs gap-1"
         >
-          عرض الكل
+          {t('gp_view_all')}
           <ArrowLeft className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -53,7 +54,7 @@ export default function GamesPanel() {
             )}>
               {game.live ? game.icon : <Lock className="h-5 w-5 mx-auto text-muted-foreground/50" />}
             </div>
-            <p className="text-[11px] font-bold text-foreground line-clamp-1 mb-1">{game.title}</p>
+            <p className="text-[11px] font-bold text-foreground line-clamp-1 mb-1">{t(game.titleKey)}</p>
             <span className="text-[10px] text-primary font-bold flex items-center justify-center gap-0.5">
               <Trophy className="h-2.5 w-2.5" /> {game.reward}
             </span>
@@ -68,7 +69,7 @@ export default function GamesPanel() {
         variant="ghost"
       >
         <Gamepad2 className="h-4 w-4 ml-2" />
-        فتح صفحة الألعاب
+        {t('gp_open_games_page')}
       </Button>
     </div>
   );

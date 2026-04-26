@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Printer, Settings, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 export default function MyPrintersPanel() {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const { data: printers, isLoading } = useQuery({
     queryKey: ['my-printers-panel', user?.id],
@@ -40,7 +42,7 @@ export default function MyPrintersPanel() {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">سجّل الدخول لعرض طابعاتك</p>
+          <p className="text-muted-foreground">{t('mp_login_required')}</p>
         </CardContent>
       </Card>
     );
@@ -61,12 +63,12 @@ export default function MyPrintersPanel() {
       <Card>
         <CardContent className="p-8 text-center">
           <Printer className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <p className="font-medium text-lg">لا توجد طابعات مسجلة</p>
+          <p className="font-medium text-lg">{t('mp_no_printers')}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            أضف طابعتك للاستفادة من خدمات الحماية والصيانة
+            {t('mp_no_printers_desc')}
           </p>
-          <Button className="mt-4" onClick={() => toast.info('سيتم فتح نموذج إضافة الطابعة')}>
-            إضافة طابعة
+          <Button className="mt-4" onClick={() => toast.info(t('mp_add_printer_form'))}>
+            {t('mp_add_printer')}
           </Button>
         </CardContent>
       </Card>
@@ -88,18 +90,18 @@ export default function MyPrintersPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-medium">{printer.store_printers?.model_name_ar || 'طابعة غير معروفة'}</p>
+                      <p className="font-medium">{printer.store_printers?.model_name_ar || t('mp_unknown_printer')}</p>
                       <p className="text-xs text-muted-foreground">
-                        {printer.store_printers?.serial_number || 'بدون رقم تسلسلي'}
+                        {printer.store_printers?.serial_number || t('mp_no_serial')}
                       </p>
                     </div>
                     {activeSub ? (
                       <Badge className="bg-green-500 shrink-0">
                         <ShieldCheck className="h-3 w-3 ml-1" />
-                        محمية
+                        {t('mp_protected')}
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="shrink-0">غير محمية</Badge>
+                      <Badge variant="outline" className="shrink-0">{t('mp_unprotected')}</Badge>
                     )}
                   </div>
 
@@ -109,7 +111,7 @@ export default function MyPrintersPanel() {
                         {activeSub.protection_plans?.name_ar}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {activeSub.monthly_price?.toLocaleString()} د.ع/شهر
+                        {activeSub.monthly_price?.toLocaleString()} {t('mp_per_month')}
                       </p>
                     </div>
                   )}
@@ -119,20 +121,20 @@ export default function MyPrintersPanel() {
                       size="sm" 
                       variant="outline" 
                       className="flex-1"
-                      onClick={() => toast.info('إعدادات الطابعة')}
+                      onClick={() => toast.info(t('mp_settings_action'))}
                     >
                       <Settings className="h-3.5 w-3.5 ml-1" />
-                      إعدادات
+                      {t('mp_settings')}
                     </Button>
                     {activeSub && (
                       <Button 
                         size="sm" 
                         variant="outline" 
                         className="flex-1"
-                        onClick={() => toast.info('طلب صيانة')}
+                        onClick={() => toast.info(t('mp_maintenance_action'))}
                       >
                         <Wrench className="h-3.5 w-3.5 ml-1" />
-                        صيانة
+                        {t('mp_maintenance')}
                       </Button>
                     )}
                   </div>
