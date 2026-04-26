@@ -307,8 +307,8 @@ export default function AllCompetitionsPanel() {
   // NOW: Single server call for ALL tickets (no client-side loop)
   const participateMultipleBagsMutation = useMutation({
     mutationFn: async ({ comp, count }: { comp: any; count: number }) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
-      if (isProcessing) throw new Error('عملية جارية - يرجى الانتظار');
+      if (!user) throw new Error(t('ac_login_required'));
+      if (isProcessing) throw new Error(t('ac_processing'));
       
       setIsProcessing(true);
       
