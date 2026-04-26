@@ -101,7 +101,7 @@ export default function CartUpsellOffers() {
           onClick={() => navigate('/offers')}
         >
           <ShoppingCart className="h-3 w-3" />
-          عرض التفاصيل
+          {t('section_view_details')}
         </Button>
       </div>
 
