@@ -704,7 +704,7 @@ export default function AllStoragePanel() {
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-bold">{t('as_confirm_shipping_title')}</DialogTitle>
             <DialogDescription className="text-center">
-              {t('as_confirm_shipping_desc')} <strong className="text-foreground">{selectedItem?.title}</strong>؟
+              {t('as_confirm_shipping_desc')} <strong className="text-foreground">{selectedItem?.title}</strong>?
             </DialogDescription>
           </DialogHeader>
           
