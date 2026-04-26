@@ -299,12 +299,12 @@ export default function LoyaltyLevelsPanel() {
         size="lg"
       >
         <Trophy className="h-5 w-5 text-amber-500" />
-        خريطة المستويات والجوائز
+        {t('ll_roadmap_button')}
       </Button>
 
       {/* Purchasable Cards */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة للشراء</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">{t('ll_purchasable_cards')}</h3>
         <div className="grid gap-3">
           {sortedLevels.filter(l => l.is_purchasable).map((level: any) => {
             const isOwned = activeCardLevel?.id === level.id;
