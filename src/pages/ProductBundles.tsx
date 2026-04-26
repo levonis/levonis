@@ -138,7 +138,7 @@ const ProductBundles = () => {
                         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none" aria-hidden="true">
                           <div className="absolute bg-destructive text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap shadow-lg"
                             style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
-                            نفذ من المخزون
+                            {t('bundles_out_of_stock')}
                           </div>
                         </div>
                       )}
