@@ -78,7 +78,7 @@ export default function LoyaltyLevelsPanel() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_points')
-        .select('total_points, available_points, total_xp')
+        .select('total_points, available_points, total_xp, current_level_xp, current_level_number')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
