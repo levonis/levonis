@@ -47,7 +47,7 @@ import {
 import { useLanguage } from "@/lib/i18n";
 
 // Professional status configuration with semantic colors
-const statusConfig: Record<string, { 
+type StatusEntry = { 
   label: string; 
   color: string; 
   bgColor: string; 
@@ -55,9 +55,11 @@ const statusConfig: Record<string, {
   icon: any; 
   step: number;
   gradient: string;
-}> = {
+};
+
+const getStatusConfig = (t: (key: any) => string): Record<string, StatusEntry> => ({
   pending: { 
-    label: 'في المخزن', 
+    label: t('as_status_pending'), 
     color: 'text-blue-600 dark:text-blue-400', 
     bgColor: 'bg-blue-500/10', 
     borderColor: 'border-blue-500/20', 
@@ -66,7 +68,7 @@ const statusConfig: Record<string, {
     gradient: 'from-blue-500 to-blue-600'
   },
   shipping_requested: { 
-    label: 'بانتظار الشحن', 
+    label: t('as_status_shipping_requested'), 
     color: 'text-amber-600 dark:text-amber-400', 
     bgColor: 'bg-amber-500/10', 
     borderColor: 'border-amber-500/20', 
@@ -75,7 +77,7 @@ const statusConfig: Record<string, {
     gradient: 'from-amber-500 to-orange-500'
   },
   shipped: { 
-    label: 'في الطريق', 
+    label: t('as_status_shipped'), 
     color: 'text-orange-600 dark:text-orange-400', 
     bgColor: 'bg-orange-500/10', 
     borderColor: 'border-orange-500/20', 
@@ -84,7 +86,7 @@ const statusConfig: Record<string, {
     gradient: 'from-orange-500 to-red-500'
   },
   delivered: { 
-    label: 'تم التسليم', 
+    label: t('as_status_delivered'), 
     color: 'text-emerald-600 dark:text-emerald-400', 
     bgColor: 'bg-emerald-500/10', 
     borderColor: 'border-emerald-500/20', 
@@ -92,7 +94,7 @@ const statusConfig: Record<string, {
     step: 4,
     gradient: 'from-emerald-500 to-green-600'
   },
-};
+});
 
 interface StorageItem {
   id: string;
