@@ -10,6 +10,7 @@ import DailyTasksPanel from "./panels/DailyTasksPanel";
 import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 import PointsStorePanel from "./panels/PointsStorePanel";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;
