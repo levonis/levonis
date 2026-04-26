@@ -464,7 +464,7 @@ export default function ProductOffersPage() {
                     {/* Colors Selection */}
                     {availableColors.length > 0 && (
                       <div className="space-y-2">
-                        <p className="font-medium text-sm">اختر اللون:</p>
+                        <p className="font-medium text-sm">{t('offers_pick_color')}</p>
                         <div className="flex flex-wrap gap-2">
                           {availableColors.map((color, idx) => (
                             <div key={idx} className="flex flex-col items-center gap-1">
@@ -479,16 +479,16 @@ export default function ProductOffersPage() {
                                 <span className="text-[10px] text-muted-foreground">{color.stock_quantity}</span>
                               )}
                               {color.stock_quantity === 0 && (
-                                <span className="text-[10px] text-destructive">نفذ</span>
+                                <span className="text-[10px] text-destructive">{t('offers_color_oos')}</span>
                               )}
                             </div>
                           ))}
                         </div>
                         {selectedColor && (
                           <p className="text-sm text-muted-foreground">
-                            اللون المختار: {selectedColor.name_ar}
+                            {t('offers_chosen_color')} {selectedColor.name_ar}
                             {selectedColor.stock_quantity !== null && selectedColor.stock_quantity > 0 && (
-                              <span className="text-amber-600 mr-2">(متبقي: {selectedColor.stock_quantity})</span>
+                              <span className="text-amber-600 mr-2">({t('offers_remaining_paren')}: {selectedColor.stock_quantity})</span>
                             )}
                           </p>
                         )}
