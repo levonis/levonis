@@ -551,11 +551,11 @@ export default function AllCompetitionsPanel() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 text-[10px] text-violet-600 font-medium">
                 <Sparkles className="h-3 w-3" />
-                اجمع الأحرف واربح!
+                {t('ac_collect_letters_win')}
               </div>
               {collected.length > 0 && (
                 <Badge variant="secondary" className="text-[9px] bg-violet-500/20 text-violet-700">
-                  {collected.length} حرف
+                  {t('ac_letters_count', { count: collected.length })}
                 </Badge>
               )}
             </div>
