@@ -29,6 +29,7 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
+import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { usePageTitle } from "@/island/usePageTitle";
