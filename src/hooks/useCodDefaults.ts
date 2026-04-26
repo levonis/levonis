@@ -87,9 +87,18 @@ export function useCodDefaults() {
         .eq('setting_key', 'partial_payment_settings')
         .single();
       const v: any = data?.setting_value || {};
+      const tiers = Array.isArray(v.fee_tiers)
+        ? v.fee_tiers.map((t: any) => ({
+            min_amount: Number(t.min_amount) || 0,
+            max_amount: Number(t.max_amount) || 0,
+            cod_fee_type: (t.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed',
+            cod_fee_value: Number(t.cod_fee_value ?? 0) || 0,
+          }))
+        : undefined;
       return {
         type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
         value: Number(v.cod_default_fee_value) || 0,
+        tiers,
       };
     },
   });
