@@ -176,11 +176,11 @@ export default function LoyaltyLevelsPanel() {
       const result = data as any;
       
       if (!result?.success) {
-        toast.error(result?.error || 'حدث خطأ');
+        toast.error(result?.error || t('ll_error_generic'));
         return;
       }
 
-      toast.success(`تم شراء بطاقة ${purchaseDialog.level.name_ar} بنجاح! 🎉`);
+      toast.success(t('ll_success_purchase', { name: purchaseDialog.level.name_ar }));
       setPurchaseDialog({ open: false, level: null, method: 'points' });
       
       // Invalidate related queries
@@ -193,7 +193,7 @@ export default function LoyaltyLevelsPanel() {
       queryClient.invalidateQueries({ queryKey: ['user-wallet-cards'] });
       queryClient.invalidateQueries({ queryKey: ['user-card-frame'] });
     } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ في عملية الشراء');
+      toast.error(err.message || t('ll_error_purchase'));
     } finally {
       setPurchasing(false);
     }
