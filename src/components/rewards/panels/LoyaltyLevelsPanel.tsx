@@ -78,7 +78,7 @@ export default function LoyaltyLevelsPanel() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_points')
-        .select('total_points, available_points, total_xp')
+        .select('total_points, available_points, total_xp, current_level_xp, current_level_number')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
@@ -211,15 +211,26 @@ export default function LoyaltyLevelsPanel() {
   }
 
   const totalXp = (userPointsData as any)?.total_xp || 0;
+  const currentLevelXp = (userPointsData as any)?.current_level_xp || 0;
+  const currentLevelNumber = (userPointsData as any)?.current_level_number || 1;
   const availablePoints = userPointsData?.available_points || 0;
   const walletBalance = userWallet?.balance || 0;
   const userName = userProfile?.full_name || userProfile?.username || '';
   const activeCardLevel = userCard?.loyalty_levels as any;
   const sortedLevels = levels?.slice().sort((a, b) => a.display_order - b.display_order) || [];
 
-  const currentLevelIndex = sortedLevels.reduce((acc, level, i) => {
-    return ((level as any).xp_required || 0) <= totalXp ? i : acc;
-  }, 0);
+  // Find the actual current level entity (matches level_number)
+  const currentLevelEntity = sortedLevels.find(
+    (l: any) => (l.level_number ?? l.display_order) === currentLevelNumber
+  ) as any;
+  const currentLevelXpRequired = Number(currentLevelEntity?.xp_required ?? currentLevelEntity?.min_points ?? 0);
+  const currentLevelProgress = currentLevelXpRequired > 0
+    ? Math.min((currentLevelXp / currentLevelXpRequired) * 100, 100)
+    : 0;
+
+  const currentLevelIndex = sortedLevels.findIndex(
+    (l: any) => (l.level_number ?? l.display_order) === currentLevelNumber
+  );
 
   const getVipPlusBenefits = (level: any) => {
     const benefits: { icon: any; text: string; color: string }[] = [];
@@ -235,19 +246,55 @@ export default function LoyaltyLevelsPanel() {
 
   return (
     <div className="space-y-4">
-      {/* XP & Points Overview */}
+      {/* Level + XP Overview */}
       <Card className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20 overflow-hidden">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <Zap className="h-6 w-6 text-primary" />
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center font-extrabold text-xl shrink-0"
+              style={{
+                backgroundColor: (currentLevelEntity?.color || 'hsl(var(--primary))') + '25',
+                color: currentLevelEntity?.color || 'hsl(var(--primary))',
+                border: `2px solid ${currentLevelEntity?.color || 'hsl(var(--primary))'}55`,
+              }}
+            >
+              {currentLevelNumber}
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t('ll_xp_label')}</p>
-              <p className="text-2xl font-bold">{fmt(totalXp)} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-muted-foreground">المستوى الحالي</p>
+              <p className="text-base font-bold truncate" style={{ color: currentLevelEntity?.color || undefined }}>
+                {currentLevelEntity ? pickLocalized(currentLevelEntity, 'name', language) : `المستوى ${currentLevelNumber}`}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">إجمالي عمري: {fmt(totalXp)} XP</p>
+            </div>
+            <div className="text-left shrink-0">
+              <Zap className="h-5 w-5 text-primary inline-block" />
             </div>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+
+          {/* Progress within current level */}
+          {currentLevelXpRequired > 0 && currentLevelNumber < 100 && (
+            <div>
+              <div className="flex justify-between text-[11px] mb-1">
+                <span className="text-muted-foreground">للمستوى {currentLevelNumber + 1}</span>
+                <span className="font-semibold">{fmt(currentLevelXp)} / {fmt(currentLevelXpRequired)} XP</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${currentLevelProgress}%`,
+                    backgroundColor: currentLevelEntity?.color || 'hsl(var(--primary))',
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                باقي {fmt(Math.max(currentLevelXpRequired - currentLevelXp, 0))} XP — جوائز كل 5 مستويات 🎁
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1 border-t border-border/40">
             <span className="flex items-center gap-1">
               <Coins className="h-3 w-3" />
               {t('ll_available_points')}: <strong className="text-foreground">{fmt(availablePoints)}</strong>
@@ -257,8 +304,8 @@ export default function LoyaltyLevelsPanel() {
               {t('ll_wallet')}: <strong className="text-foreground">{fmt(walletBalance)} {t('ll_currency_iqd')}</strong>
             </span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            {t('ll_xp_hint')}
+          <p className="text-[10px] text-muted-foreground">
+            كل 1 د.ع تنفقه = 1 نقطة XP لرفع المستوى
           </p>
         </CardContent>
       </Card>
@@ -700,6 +747,8 @@ export default function LoyaltyLevelsPanel() {
         levelPrizes={levelPrizes || []}
         currentLevelIndex={currentLevelIndex}
         totalXp={totalXp}
+        currentLevelXp={currentLevelXp}
+        currentLevelNumber={currentLevelNumber}
         activeCardLevelId={activeCardLevel?.id}
       />
     </div>

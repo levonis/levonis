@@ -70,6 +70,7 @@ const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
 
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
+const MyLevelPrizes = lazy(() => import("./pages/MyLevelPrizes"));
 const MyReferral = lazy(() => import("./pages/MyReferral"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const ProductShop = lazy(() => import("./pages/ProductShop"));
@@ -309,6 +310,7 @@ function AppContent() {
             <Route path="/price-protection" element={<RequireAuth><PriceProtection /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/my-referral" element={<RequireAuth><MyReferral /></RequireAuth>} />
+            <Route path="/my-prizes" element={<RequireAuth><MyLevelPrizes /></RequireAuth>} />
             <Route path="/games" element={<MiniGames />} />
             <Route path="/games/winners" element={<GameWinnersPage />} />
             <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
