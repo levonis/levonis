@@ -605,10 +605,10 @@ export default function AllOffersPanel() {
                   disabled={!user || (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)}
                 >
                   <ShoppingCart className="h-3.5 w-3.5 ml-1.5" />
-                  شراء - {formatPrice(totalPrice)} {selectedOffer.currency || 'د.ع'}
+                  {t('ao_buy_button', { price: formatPrice(totalPrice), currency: selectedOffer.currency || t('ao_currency_iqd') })}
                 </Button>
                 {!user && (
-                  <p className="text-[9px] text-center text-muted-foreground mt-1">سجّل الدخول للشراء</p>
+                  <p className="text-[9px] text-center text-muted-foreground mt-1">{t('ao_login_to_buy')}</p>
                 )}
               </div>
             </div>
