@@ -900,7 +900,7 @@ async function parseBambuLabUnified(html: string): Promise<BambuExtractResult> {
   return { colors, options };
 }
 
-// Currency conversion rates to USD
+// Currency conversion rates to USD (fallback defaults; CNY overridden dynamically from DB)
 const CURRENCY_TO_USD: Record<string, number> = {
   'USD': 1,
   'CNY': 0.14,
@@ -913,8 +913,45 @@ const CURRENCY_TO_USD: Record<string, number> = {
   'KWD': 3.26,
 };
 
-const USD_TO_IQD = 1400;
+// Default fallback (overridden at runtime from shipping_settings.usd_to_iqd_rate)
+let USD_TO_IQD = 1540;
 
+// Fetch live exchange rates from shipping_settings (usd_to_iqd_rate, cny_to_usd_rate)
+// Called once before any price extraction so original_price = source_price × exchange_rate only
+// (no shipping, no commission added at this stage).
+async function loadExchangeRatesFromDb(): Promise<void> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    if (!supabaseUrl || !supabaseKey) return;
+
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/shipping_settings?select=setting_key,setting_value&setting_key=in.(usd_to_iqd_rate,cny_to_usd_rate)`,
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+    );
+    if (!res.ok) return;
+    const rows: Array<{ setting_key: string; setting_value: string | number }> = await res.json();
+    for (const r of rows) {
+      const val = parseFloat(String(r.setting_value));
+      if (!Number.isFinite(val) || val <= 0) continue;
+      if (r.setting_key === 'usd_to_iqd_rate') {
+        USD_TO_IQD = val;
+      } else if (r.setting_key === 'cny_to_usd_rate') {
+        // setting stores CNY-per-USD (e.g. 6.7). Convert to USD-per-CNY for our table.
+        const usdPerCny = 1 / val;
+        CURRENCY_TO_USD.CNY = usdPerCny;
+        CURRENCY_TO_USD.RMB = usdPerCny;
+      }
+    }
+    console.log('Live exchange rates loaded → USD_TO_IQD:', USD_TO_IQD, 'CNY→USD:', CURRENCY_TO_USD.CNY);
+  } catch (e) {
+    console.log('Could not load exchange rates from DB, using defaults:', (e as Error).message);
+  }
+}
+
+// Convert any source-currency price to IQD using ONLY the exchange rate.
+// Does not include shipping, commission, taxes, or any markup — that math
+// happens later in the pricing pipeline for the final `price` field.
 function convertToIQD(price: number, currency: string): number {
   const currencyUpper = currency.toUpperCase();
   if (currencyUpper === 'IQD') return price;
@@ -954,6 +991,9 @@ serve(async (req) => {
   }
 
   try {
+    // Load live exchange rates so original_price reflects (source price × current rate) only.
+    await loadExchangeRatesFromDb();
+
     let { url } = await req.json();
     
     if (!url) {
