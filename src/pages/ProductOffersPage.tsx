@@ -403,9 +403,9 @@ export default function ProductOffersPage() {
 
       {/* Product Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] p-0 z-[100]" hideClose dir="rtl">
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 z-[100]" hideClose dir={dir}>
           <DialogHeader className="sr-only">
-            <DialogTitle>{detailOffer?.title_ar || 'تفاصيل المنتج'}</DialogTitle>
+            <DialogTitle>{detailOffer?.title_ar || t('offers_product_details_fallback')}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col max-h-[90vh] overflow-hidden">
             {detailOffer ? (() => {
