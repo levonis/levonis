@@ -593,7 +593,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             </TabsContent>
 
             {/* History Tab */}
-            <TabsContent value="history" className="flex-1 m-0 overflow-hidden">
+            <TabsContent value="history" className="m-0">
               <ScrollArea className="h-full">
                 <div className="p-3 space-y-2">
                   {walletTransactions && walletTransactions.length > 0 ? (
