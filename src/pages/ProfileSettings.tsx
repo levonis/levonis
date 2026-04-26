@@ -593,38 +593,38 @@ export default function ProfileSettings() {
         )}
 
         {/* Appearance Section */}
-        <SettingsSection icon={Palette} title="المظهر">
+        <SettingsSection icon={Palette} title={t('settings_appearance')}>
           <div className="space-y-3">
             <ThemeSwitcherInline />
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-foreground">بطاقة الملف الشخصي</p>
-                <p className="text-xs text-muted-foreground">تغيير إطار وتصميم بطاقتك</p>
+                <p className="text-sm font-bold text-foreground">{t('settings_profile_card')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings_profile_card_desc')}</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  gap-1" onClick={() => navigate("/rewards?tab=cards")}>
                 <CreditCard className="h-3.5 w-3.5" />
-                تغيير
+                {t('settings_change')}
               </Button>
             </div>
           </div>
         </SettingsSection>
 
         {/* Security Section */}
-        <SettingsSection icon={Lock} title="الأمان">
+        <SettingsSection icon={Lock} title={t('settings_security')}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-foreground">رمز PIN للمحفظة</p>
-                <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+                <p className="text-sm font-bold text-foreground">{t('settings_wallet_pin')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings_wallet_pin_desc')}</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => setShowPinDialog(true)}>
-                تعيين / تغيير
+                {t('settings_set_change')}
               </Button>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-bold text-foreground">تغيير كلمة المرور</p>
-                <p className="text-xs text-muted-foreground">تحديث كلمة مرور حسابك</p>
+                <p className="text-sm font-bold text-foreground">{t('settings_change_password')}</p>
+                <p className="text-xs text-muted-foreground">{t('settings_change_password_desc')}</p>
               </div>
               <ChangePasswordButton />
             </div>
