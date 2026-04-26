@@ -2290,13 +2290,13 @@ const Admin = () => {
                           : 'أدخل رابط المنتج وسيقوم الذكاء الاصطناعي باستخراج جميع التفاصيل تلقائياً'
                         }
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Input
                           placeholder="https://example.com/product"
                           value={productUrl}
                           onChange={(e) => setProductUrl(e.target.value)}
                           disabled={extractingInfo}
-                          className="flex-1"
+                          className="flex-1 min-w-[200px]"
                         />
                         <Button
                           type="button"
@@ -2315,6 +2315,21 @@ const Admin = () => {
                               {editingProduct ? 'تحديث' : 'استخراج'}
                             </>
                           )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRerunAIExtraction}
+                          disabled={extractingInfo || !productUrl.trim()}
+                          className="gap-2"
+                          title="إعادة توليد الملخص والكلمات المفتاحية ومحتوى الذكاء الاصطناعي فقط"
+                        >
+                          {extractingInfo ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          إعادة توليد بالذكاء
                         </Button>
                       </div>
                       <ExtractionProgress
