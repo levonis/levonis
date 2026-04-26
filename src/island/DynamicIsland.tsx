@@ -282,16 +282,27 @@ export const DynamicIsland = () => {
     enabled: focused || searchQuery.length > 0,
   });
 
+  /* ---------- Local in-page search ----------
+   * Pages register searchable items via usePageSearchSection. When the user
+   * types, we filter those items locally and show them at the top of the
+   * results list — without leaving the page.
+   */
+  const pageSearch = usePageSearchContext();
+  const localResults = useMemo<PageSearchItem[]>(() => {
+    if (!pageSearch || debounced.length < 1) return [];
+    return filterPageItems(pageSearch.items, debounced);
+  }, [pageSearch, debounced]);
+
   /* ---------- Derive search sub-stage ---------- */
   const isSearchActive = state === "search" && (focused || searchQuery.length > 0);
   const stage: SearchStage = useMemo(() => {
     if (!isSearchActive) return "idle";
     const q = debounced;
     if (q.length === 0) return recent.length > 0 ? "suggestions" : "typing";
-    if (products.length > 0) return "results";
+    if (localResults.length > 0 || products.length > 0) return "results";
     if (suggestions.length > 0) return "suggestions";
     return "typing";
-  }, [isSearchActive, debounced, recent.length, products.length, suggestions.length]);
+  }, [isSearchActive, debounced, recent.length, products.length, suggestions.length, localResults.length]);
 
   /* ---------- Outside click + Escape collapse ---------- */
   useEffect(() => {
