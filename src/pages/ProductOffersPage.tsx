@@ -530,14 +530,14 @@ export default function ProductOffersPage() {
                     <div className="space-y-2">
                       <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                         <p className="text-sm text-green-700 dark:text-green-400 font-medium text-center">
-                          🎁 مع كل شراء تحصل على {detailTotal} تذكرة مجاناً للمشاركة في السحوبات!
+                          🎁 {t('offers_tickets_with_each_purchase').replace('{n}', String(detailTotal))}
                         </p>
                       </div>
                       {hasPromo && (
                         <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center gap-2">
                           <PartyPopper className="h-4 w-4 text-amber-500" />
                           <p className="text-xs text-amber-700 dark:text-amber-400 font-bold">
-                            +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
+                            {t('offers_bonus_tickets_promo').replace('{n}', String(activePromotion!.bonus_tickets)).replace('{title}', activePromotion!.title_ar)}
                           </p>
                         </div>
                       )}
@@ -554,7 +554,7 @@ export default function ProductOffersPage() {
                       disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}
                     >
                       {purchaseMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
-                      {!user ? 'سجّل دخول للشراء' : isOutOfStock ? 'نفذت الكمية' : !canAfford ? 'رصيد غير كافٍ' : 'شراء الآن'}
+                      {!user ? t('offers_login_to_buy') : isOutOfStock ? t('offers_oos_full') : !canAfford ? t('offers_insufficient_full') : t('offers_buy_now')}
                     </Button>
                   </div>
                 </>
