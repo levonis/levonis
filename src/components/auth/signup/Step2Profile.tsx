@@ -2,13 +2,15 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, AtSign, ArrowLeft, ArrowRight, Camera, ImagePlus, Check, Loader2 } from 'lucide-react';
+import { User, AtSign, ArrowLeft, ArrowRight, Camera, Check, Loader2 } from 'lucide-react';
 import { SignupStepProps, DEFAULT_AVATARS } from './types';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n';
 
 export default function Step2Profile({ data, updateData, onNext, onBack, loading }: SignupStepProps) {
+  const { t, isRtl } = useLanguage();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
@@ -46,11 +48,11 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
   const handleUsernameChange = (value: string) => {
     updateData({ username: value });
     setUsernameAvailable(null);
-    
+
     if (usernameTimeoutRef.current) {
       clearTimeout(usernameTimeoutRef.current);
     }
-    
+
     if (value.length >= 3) {
       usernameTimeoutRef.current = setTimeout(() => {
         checkUsernameAvailability(value);
@@ -62,28 +64,24 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('يرجى اختيار صورة صالحة');
+      toast.error(t('signup_avatar_invalid_file'));
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة يجب أن يكون أقل من 5MB');
+      toast.error(t('signup_avatar_too_large'));
       return;
     }
 
     setUploading(true);
     try {
-      // Compress image before converting to base64
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
-      
+
       const loadPromise = new Promise<string>((resolve, reject) => {
         img.onload = () => {
-          // Resize to max 256x256 for avatar
           const maxSize = 256;
           let w = img.width, h = img.height;
           if (w > maxSize || h > maxSize) {
@@ -96,20 +94,19 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
           ctx?.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', 0.8));
         };
-        img.onerror = () => reject(new Error('فشل في تحميل الصورة'));
+        img.onerror = () => reject(new Error('image load failed'));
       });
-      
+
       img.src = URL.createObjectURL(file);
       const base64 = await loadPromise;
       URL.revokeObjectURL(img.src);
-      
+
       updateData({ avatarUrl: base64 });
     } catch (error) {
       console.error('Error processing image:', error);
-      toast.error('فشل في معالجة الصورة. حاول صورة أخرى.');
+      toast.error(t('signup_avatar_process_fail'));
     } finally {
       setUploading(false);
-      // Reset input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -118,17 +115,17 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
     const newErrors: Record<string, string> = {};
 
     if (!data.fullName) {
-      newErrors.fullName = 'الاسم الكامل مطلوب';
+      newErrors.fullName = t('signup_full_name_required');
     } else if (data.fullName.length > 15) {
-      newErrors.fullName = 'الاسم يجب أن لا يتجاوز 15 حرفاً';
+      newErrors.fullName = t('signup_full_name_too_long');
     }
 
     if (!data.username) {
-      newErrors.username = 'المعرف الفريد مطلوب';
+      newErrors.username = t('signup_username_required');
     } else if (!validateUsername(data.username)) {
-      newErrors.username = 'المعرف يجب أن يكون 3-20 حرف (أحرف وأرقام و _ فقط)';
+      newErrors.username = t('signup_username_invalid');
     } else if (usernameAvailable === false) {
-      newErrors.username = 'هذا المعرف مستخدم بالفعل';
+      newErrors.username = t('signup_username_taken');
     }
 
     setErrors(newErrors);
@@ -136,7 +133,6 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
   };
 
   const handleNext = async () => {
-    // Force re-check username if not yet verified
     if (usernameAvailable === null && validateUsername(data.username)) {
       await checkUsernameAvailability(data.username);
     }
@@ -145,29 +141,29 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
     }
   };
 
+  const startSide = isRtl ? 'right-3' : 'left-3';
+  const endSide = isRtl ? 'left-3' : 'right-3';
+  const padStart = isRtl ? 'pr-10' : 'pl-10';
+  const padEnd = isRtl ? 'pl-10' : 'pr-10';
+
   return (
     <div className="space-y-5">
       <div className="text-center mb-6">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
           <User className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-xl font-bold">بيانات الملف الشخصي</h2>
-        <p className="text-sm text-muted-foreground mt-1">أكمل معلوماتك الشخصية</p>
+        <h2 className="text-xl font-bold">{t('signup_s2_title')}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{t('signup_s2_subtitle')}</p>
       </div>
 
       <div className="space-y-4">
-        {/* Avatar Selection */}
+        {/* Avatar */}
         <div className="space-y-3">
-          <Label>الصورة الشخصية</Label>
+          <Label>{t('signup_avatar_label')}</Label>
           <div className="flex flex-col items-center gap-4">
-            {/* Current Avatar */}
             <div className="relative">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 bg-muted">
-                <img
-                  src={data.avatarUrl}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
+                <img src={data.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               </div>
               <button
                 type="button"
@@ -175,24 +171,13 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
                 className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90"
                 disabled={uploading}
               >
-                {uploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Camera className="w-4 h-4" />
-                )}
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </div>
 
-            {/* Default Avatars */}
             <div className="w-full">
-              <p className="text-xs text-muted-foreground text-center mb-2">أو اختر صورة جاهزة</p>
+              <p className="text-xs text-muted-foreground text-center mb-2">{t('signup_avatar_pick_default')}</p>
               <div className="grid grid-cols-4 gap-2">
                 {DEFAULT_AVATARS.map((avatar, index) => (
                   <button
@@ -201,9 +186,7 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
                     onClick={() => updateData({ avatarUrl: avatar })}
                     className={cn(
                       "w-12 h-12 rounded-full overflow-hidden border-2 transition-all",
-                      data.avatarUrl === avatar
-                        ? "border-primary ring-2 ring-primary/20"
-                        : "border-muted hover:border-primary/50"
+                      data.avatarUrl === avatar ? "border-primary ring-2 ring-primary/20" : "border-muted hover:border-primary/50"
                     )}
                   >
                     <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
@@ -216,28 +199,22 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
 
         {/* Full Name */}
         <div className="space-y-2">
-          <Label htmlFor="fullName">الاسم الكامل</Label>
+          <Label htmlFor="fullName">{t('signup_full_name_label')}</Label>
           <div className="relative">
             <Input
-              id="fullName"
-              type="text"
-              placeholder="محمد أحمد"
+              id="fullName" type="text" placeholder={t('signup_full_name_placeholder')}
               value={data.fullName}
               onChange={(e) => updateData({ fullName: e.target.value.slice(0, 15) })}
-              disabled={loading}
-              maxLength={15}
-              className={cn(
-                "pr-10",
-                errors.fullName && "border-destructive"
-              )}
+              disabled={loading} maxLength={15}
+              className={cn(padStart, errors.fullName && "border-destructive")}
             />
-            <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <User className={cn("absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground", startSide)} />
           </div>
           <div className="flex justify-between">
             {errors.fullName ? (
               <p className="text-xs text-destructive">{errors.fullName}</p>
             ) : (
-              <p className="text-xs text-muted-foreground">الاسم الذي سيظهر للآخرين</p>
+              <p className="text-xs text-muted-foreground">{t('signup_full_name_hint')}</p>
             )}
             <span className="text-xs text-muted-foreground">{data.fullName.length}/15</span>
           </div>
@@ -245,63 +222,50 @@ export default function Step2Profile({ data, updateData, onNext, onBack, loading
 
         {/* Username */}
         <div className="space-y-2">
-          <Label htmlFor="username">المعرف الفريد</Label>
+          <Label htmlFor="username">{t('signup_username_label')}</Label>
           <div className="relative">
             <Input
-              id="username"
-              type="text"
-              placeholder="user123"
+              id="username" type="text" placeholder="user123"
               value={data.username}
               onChange={(e) => handleUsernameChange(e.target.value)}
-              disabled={loading}
-              maxLength={20}
-              dir="ltr"
+              disabled={loading} maxLength={20} dir="ltr"
               className={cn(
-                "pr-10 pl-10",
+                padStart, padEnd,
                 errors.username && "border-destructive",
                 usernameAvailable === true && "border-green-500",
                 usernameAvailable === false && "border-destructive"
               )}
             />
-            <AtSign className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2">
+            <AtSign className={cn("absolute top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground", startSide)} />
+            <div className={cn("absolute top-1/2 -translate-y-1/2", endSide)}>
               {checkingUsername ? (
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               ) : usernameAvailable === true ? (
                 <Check className="w-4 h-4 text-green-500" />
               ) : usernameAvailable === false ? (
-                <span className="text-xs text-destructive">مستخدم</span>
+                <span className="text-xs text-destructive">{t('signup_username_taken_short')}</span>
               ) : null}
             </div>
           </div>
           {errors.username ? (
             <p className="text-xs text-destructive">{errors.username}</p>
           ) : usernameAvailable === true ? (
-            <p className="text-xs text-green-500">المعرف متاح ✓</p>
+            <p className="text-xs text-green-500">{t('signup_username_available')}</p>
           ) : (
-            <p className="text-xs text-muted-foreground">أحرف إنجليزية وأرقام و _ فقط</p>
+            <p className="text-xs text-muted-foreground">{t('signup_username_hint')}</p>
           )}
         </div>
       </div>
 
       <div className="flex gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBack}
-          disabled={loading}
-          className="flex-1"
-        >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          السابق
+        <Button type="button" variant="outline" onClick={onBack} disabled={loading} className="flex-1">
+          <ArrowRight className={cn("w-4 h-4", isRtl ? "ml-2" : "mr-2 rotate-180")} />
+          {t('signup_prev')}
         </Button>
-        <Button
-          onClick={handleNext}
-          disabled={loading || checkingUsername || usernameAvailable === false}
-          className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold"
-        >
-          التالي
-          <ArrowLeft className="w-4 h-4 mr-2" />
+        <Button onClick={handleNext} disabled={loading || checkingUsername || usernameAvailable === false}
+          className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold">
+          {t('signup_next')}
+          <ArrowLeft className={cn("w-4 h-4", isRtl ? "mr-2" : "ml-2 rotate-180")} />
         </Button>
       </div>
     </div>

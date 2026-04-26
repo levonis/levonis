@@ -7,6 +7,8 @@ import { Mail, ArrowLeft, ArrowRight, Shield, Loader2, CheckCircle2, Gift } from
 import { SignupStepProps } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n';
 
 interface Step3VerificationProps extends SignupStepProps {
   userEmail: string;
@@ -14,15 +16,16 @@ interface Step3VerificationProps extends SignupStepProps {
   onVerified: () => Promise<void> | void;
 }
 
-export default function Step3Verification({ 
-  data, 
-  updateData, 
-  onNext, 
-  onBack, 
+export default function Step3Verification({
+  data,
+  updateData,
+  onNext,
+  onBack,
   loading,
   userEmail,
   onVerified
 }: Step3VerificationProps) {
+  const { t, isRtl } = useLanguage();
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -37,15 +40,15 @@ export default function Step3Verification({
   }, [resendTimer]);
 
   useEffect(() => {
-    // Auto-verify when code is complete
     if (code.length === 6 && !verifying && !verified) {
       handleVerify(code);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   const handleVerify = async (codeStr: string) => {
     if (codeStr.length !== 6) {
-      toast.error('أدخل الرمز كاملاً');
+      toast.error(t('signup_code_enter_full'));
       return;
     }
 
@@ -59,15 +62,14 @@ export default function Step3Verification({
 
       if (result.success) {
         setVerified(true);
-        // Just mark as verified, don't create account here
         await onVerified();
       } else {
-        toast.error(result.error || 'رمز غير صحيح');
+        toast.error(result.error || t('signup_code_invalid'));
         setCode('');
       }
     } catch (error: any) {
       console.error('Verification error:', error);
-      toast.error('حدث خطأ أثناء التحقق');
+      toast.error(t('signup_verify_error'));
       setCode('');
     } finally {
       setVerifying(false);
@@ -86,15 +88,15 @@ export default function Step3Verification({
       if (error) throw error;
 
       if (result.success) {
-        toast.success('تم إرسال رمز جديد');
+        toast.success(t('signup_resend_sent'));
         setResendTimer(60);
         setCode('');
       } else {
-        toast.error(result.error || 'فشل في إرسال الرمز');
+        toast.error(result.error || t('signup_resend_fail'));
       }
     } catch (error: any) {
       console.error('Resend error:', error);
-      toast.error('حدث خطأ');
+      toast.error(t('signup_unexpected_error'));
     } finally {
       setSending(false);
     }
@@ -104,7 +106,7 @@ export default function Step3Verification({
     if (verified) {
       onNext();
     } else {
-      toast.error('يجب تأكيد البريد الإلكتروني أولاً');
+      toast.error(t('signup_verify_must_first'));
     }
   };
 
@@ -118,9 +120,9 @@ export default function Step3Verification({
             <Mail className="w-8 h-8 text-primary" />
           )}
         </div>
-        <h2 className="text-xl font-bold">تأكيد البريد الإلكتروني</h2>
+        <h2 className="text-xl font-bold">{t('signup_s3_title')}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          أرسلنا رمز تحقق إلى
+          {t('signup_s3_subtitle')}
           <br />
           <span className="font-semibold text-foreground" dir="ltr">{userEmail}</span>
         </p>
@@ -131,11 +133,10 @@ export default function Step3Verification({
           <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center mb-4 border border-green-500/30">
             <CheckCircle2 className="h-10 w-10 text-green-500" />
           </div>
-          <p className="text-lg font-bold text-green-500">تم التحقق بنجاح!</p>
+          <p className="text-lg font-bold text-green-500">{t('signup_verify_success')}</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Code Input */}
           <div className="flex flex-col items-center gap-4">
             <div className="flex justify-center">
               <InputOTP
@@ -160,14 +161,12 @@ export default function Step3Verification({
               </InputOTP>
             </div>
 
-            {/* Security note */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Shield className="h-3.5 w-3.5" />
-              <span>الرمز صالح لمدة 10 دقائق</span>
+              <span>{t('signup_code_validity')}</span>
             </div>
           </div>
 
-          {/* Verify Button */}
           <Button
             onClick={() => handleVerify(code)}
             disabled={verifying || code.length !== 6}
@@ -175,20 +174,19 @@ export default function Step3Verification({
           >
             {verifying ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                جاري التحقق...
+                <Loader2 className={cn("h-5 w-5 animate-spin", isRtl ? "ml-2" : "mr-2")} />
+                {t('signup_verifying')}
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-5 w-5 ml-2" />
-                تأكيد الرمز
+                <CheckCircle2 className={cn("h-5 w-5", isRtl ? "ml-2" : "mr-2")} />
+                {t('signup_verify_button')}
               </>
             )}
           </Button>
 
-          {/* Resend */}
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-2">لم تستلم الرمز؟</p>
+            <p className="text-sm text-muted-foreground mb-2">{t('signup_resend_question')}</p>
             <Button
               variant="ghost"
               onClick={handleResend}
@@ -196,21 +194,20 @@ export default function Step3Verification({
               className="text-primary hover:text-primary/80"
             >
               {sending ? (
-                <Loader2 className="w-4 h-4 animate-spin ml-1" />
+                <Loader2 className={cn("w-4 h-4 animate-spin", isRtl ? "ml-1" : "mr-1")} />
               ) : null}
               {resendTimer > 0
-                ? `إعادة الإرسال بعد ${resendTimer} ثانية`
-                : 'إعادة إرسال الرمز'}
+                ? t('signup_resend_after', { n: resendTimer })
+                : t('signup_resend_button')}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Referral Code (Optional) */}
       <div className="space-y-2 border-t border-border/50 pt-4">
         <Label htmlFor="referralCode" className="flex items-center gap-2">
           <Gift className="w-4 h-4 text-primary" />
-          كود الدعوة (اختياري)
+          {t('signup_referral_label')}
         </Label>
         <Input
           id="referralCode"
@@ -221,28 +218,22 @@ export default function Step3Verification({
           disabled={loading}
         />
         <p className="text-xs text-muted-foreground">
-          إذا كان لديك كود دعوة من صديق، أدخله للحصول على مكافآت
+          {t('signup_referral_hint')}
         </p>
       </div>
 
       <div className="flex gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBack}
-          disabled={loading || verifying}
-          className="flex-1"
-        >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          السابق
+        <Button type="button" variant="outline" onClick={onBack} disabled={loading || verifying} className="flex-1">
+          <ArrowRight className={cn("w-4 h-4", isRtl ? "ml-2" : "mr-2 rotate-180")} />
+          {t('signup_prev')}
         </Button>
         <Button
           onClick={handleNext}
           disabled={!verified || loading}
           className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold"
         >
-          التالي
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t('signup_next')}
+          <ArrowLeft className={cn("w-4 h-4", isRtl ? "mr-2" : "ml-2 rotate-180")} />
         </Button>
       </div>
     </div>
