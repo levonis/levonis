@@ -988,6 +988,78 @@ function extractPrice(html: string): number | null {
   return null;
 }
 
+function extractPriceNumbers(value: unknown): number[] {
+  if (typeof value === 'number' && Number.isFinite(value)) return [value];
+  if (typeof value !== 'string') return [];
+  const matches = value.replace(/,/g, '').match(/\d+(?:\.\d+)?/g) || [];
+  return matches
+    .map((v) => parseFloat(v))
+    .filter((v) => Number.isFinite(v) && v > 0 && v < 1000000);
+}
+
+function detectCurrencyFromContent(html: string, platform: string, url: string): string {
+  if (['taobao', 'tmall', '1688', 'jd'].includes(platform)) return 'CNY';
+  if (url.includes('aliexpress')) return 'USD';
+  if (/"priceCurrency"\s*:\s*"([A-Z]{3})"/i.test(html)) {
+    return html.match(/"priceCurrency"\s*:\s*"([A-Z]{3})"/i)?.[1] || 'USD';
+  }
+  if (/[¥￥]/.test(html)) return 'CNY';
+  if (/\$/.test(html)) return 'USD';
+  if (/€/.test(html)) return 'EUR';
+  return 'CNY';
+}
+
+function extractStructuredPrices(html: string, platform: string, url: string): { price: number | null; originalPrice: number | null; currency: string } {
+  const priceCandidates: number[] = [];
+  const originalCandidates: number[] = [];
+  let currency = detectCurrencyFromContent(html, platform, url);
+
+  const addFromJson = (data: any) => {
+    const visit = (node: any) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach(visit);
+
+      for (const [rawKey, rawValue] of Object.entries(node)) {
+        const key = rawKey.toLowerCase();
+        if (key === 'pricecurrency' && typeof rawValue === 'string') currency = rawValue;
+        if (/original|compare|market|list|was|regular|retail|reserve|strike|strikethrough|highprice|maxprice/.test(key)) {
+          originalCandidates.push(...extractPriceNumbers(rawValue));
+        } else if (/^price$|saleprice|lowprice|finalprice|currentprice|discountprice|promotionprice/.test(key)) {
+          priceCandidates.push(...extractPriceNumbers(rawValue));
+        }
+        visit(rawValue);
+      }
+    };
+    visit(data);
+  };
+
+  for (const match of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { addFromJson(JSON.parse(match[1])); } catch {}
+  }
+
+  const keyPricePattern = /["']?(originalPrice|original_price|marketPrice|listPrice|wasPrice|regularPrice|retailPrice|reservePrice|strikePrice|strikethroughPrice|compareAtPrice|highPrice|maxPrice|salePrice|finalPrice|currentPrice|discountPrice|promotionPrice|price)["']?\s*[:=]\s*["']?([\d,.]+(?:\s*[-~]\s*[\d,.]+)?)/gi;
+  let keyMatch: RegExpExecArray | null;
+  while ((keyMatch = keyPricePattern.exec(html)) !== null) {
+    const key = keyMatch[1].toLowerCase();
+    const values = extractPriceNumbers(keyMatch[2]);
+    if (/original|compare|market|list|was|regular|retail|reserve|strike|high|max/.test(key)) {
+      originalCandidates.push(...values);
+    } else {
+      priceCandidates.push(...values);
+    }
+  }
+
+  const directPrice = extractPrice(html);
+  if (directPrice) priceCandidates.push(directPrice);
+
+  const price = priceCandidates.length > 0 ? Math.min(...priceCandidates) : null;
+  const originalPrice = originalCandidates.length > 0
+    ? Math.max(...originalCandidates, ...(priceCandidates.length ? priceCandidates : [0]))
+    : (priceCandidates.length > 0 ? Math.max(...priceCandidates) : null);
+
+  return { price, originalPrice, currency };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -1002,7 +1074,7 @@ serve(async (req) => {
     if (!url) {
       return new Response(
         JSON.stringify({ success: false, error: 'الرجاء إدخال رابط المنتج' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -1021,7 +1093,7 @@ serve(async (req) => {
         lowerUrl.includes('onclick=')) {
       return new Response(
         JSON.stringify({ success: false, error: 'رابط غير صالح', requiresManualInput: true }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
@@ -1033,7 +1105,7 @@ serve(async (req) => {
       } else {
         return new Response(
           JSON.stringify({ success: false, error: 'الرجاء إدخال رابط صحيح', requiresManualInput: true }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
@@ -1044,7 +1116,7 @@ serve(async (req) => {
     } catch {
       return new Response(
         JSON.stringify({ success: false, error: 'صيغة الرابط غير صحيحة', requiresManualInput: true }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -1162,8 +1234,10 @@ serve(async (req) => {
     // Direct extraction
     const directImages = extractImages(pageContent);
     const directPrice = extractPrice(pageContent);
+    const structuredPrices = extractStructuredPrices(pageContent, platform, url);
     const directSkuData = extractSkuData(pageContent);
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
+    console.log('Structured prices:', structuredPrices);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
     // AI extraction with enhanced prompt
@@ -1318,14 +1392,15 @@ ${pageContent.substring(0, 100000)}${extraContext}
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
           
-          const extractedCurrency = ai.currency || 'CNY';
+          const extractedCurrency = ai.currency || structuredPrices.currency || 'CNY';
           const aiPrice = parseFloat(ai.price) || 0;
           const aiOriginalPrice = parseFloat(ai.original_price) || 0;
-          const directPriceNum = directPrice || 0;
+          const directPriceNum = directPrice || structuredPrices.price || 0;
+          const directOriginalPriceNum = structuredPrices.originalPrice || 0;
           
-          console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Currency:', extractedCurrency);
+          console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Structured original:', directOriginalPriceNum, 'Currency:', extractedCurrency);
           
-          const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum);
+          const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum, directOriginalPriceNum);
           const originalPriceUsd = Math.round(convertToUSD(extractedOriginalPrice, extractedCurrency) * 100) / 100;
           let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
           originalPriceInIqd = roundPrice(originalPriceInIqd);
@@ -1449,9 +1524,20 @@ ${pageContent.substring(0, 100000)}${extraContext}
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ success: false, error: 'تم تجاوز حد الطلبات', requiresManualInput: true }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    }
+
+    if (!productInfo.original_price_usd && structuredPrices.originalPrice && structuredPrices.originalPrice > 0) {
+      const originalPriceUsd = Math.round(convertToUSD(structuredPrices.originalPrice, structuredPrices.currency) * 100) / 100;
+      let originalPriceInIqd = convertToIQD(structuredPrices.originalPrice, structuredPrices.currency);
+      originalPriceInIqd = roundPrice(originalPriceInIqd);
+      productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
+      productInfo.original_price_usd = originalPriceUsd > 0 ? originalPriceUsd : null;
+      productInfo.currency = 'IQD';
+      productInfo.points_reward = originalPriceInIqd > 0 ? Math.floor(originalPriceInIqd / 1000) : 0;
+      console.log('Applied structured original price fallback:', structuredPrices.originalPrice, structuredPrices.currency, productInfo.original_price_usd, productInfo.original_price);
     }
 
     // ===== STEP: Search web for dimensions and weight if not found =====
@@ -1863,7 +1949,7 @@ Return ONLY JSON:
         error: error instanceof Error ? error.message : 'حدث خطأ',
         requiresManualInput: true
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
