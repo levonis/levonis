@@ -309,10 +309,6 @@ const About = () => {
         {/* STORY */}
         <section className="grid md:grid-cols-[auto_1fr] gap-6 items-start">
           <div className="md:sticky md:top-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-bold text-muted-foreground mb-3">
-              <Rocket className="w-3 h-3" />
-              {language === 'en' ? 'CHAPTER 01' : language === 'ku' ? 'بەشی ٠١' : 'الفصل ٠١'}
-            </div>
             <h2 className="text-3xl md:text-4xl font-black text-foreground">{t.story}</h2>
           </div>
           <div className="prose prose-lg max-w-none">
