@@ -206,14 +206,14 @@ export default function AdminLoyaltyLevels() {
       };
 
       if (editingLevel) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("loyalty_levels")
           .update(levelData)
           .eq("id", editingLevel.id);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("loyalty_levels")
           .insert([levelData]);
 
