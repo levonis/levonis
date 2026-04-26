@@ -382,10 +382,10 @@ const OrderDetail = () => {
                           <h4 className="font-bold text-sm text-foreground leading-tight truncate flex items-center gap-1.5">
                             {productName}
                             {isCustomRequest && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">خاص</span>
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">{t('od_badge_custom')}</span>
                             )}
                             {item.is_gift && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">🎁 هدية</span>
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{t('od_badge_gift')}</span>
                             )}
                           </h4>
                           {isAdmin && !isCustomRequest && item.products?.taobao_url && (
@@ -394,7 +394,7 @@ const OrderDetail = () => {
                         </div>
                         <div className="text-left shrink-0">
                           {item.is_gift ? (
-                            <p className="font-black text-base text-primary">مجاناً</p>
+                            <p className="font-black text-base text-primary">{t('od_free')}</p>
                           ) : (
                             <>
                               <p className="font-black text-base text-primary">{formatPrice(Number(item.total_price))}</p>
@@ -408,21 +408,21 @@ const OrderDetail = () => {
                       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                         {item.selected_option && (
                           <span className="text-[11px] text-muted-foreground">
-                            الخيار: <span className="text-foreground font-medium">{item.selected_option}</span>
+                            {t('od_meta_option')}: <span className="text-foreground font-medium">{item.selected_option}</span>
                           </span>
                         )}
                         {item.selected_color && (
                           <span className="text-[11px] text-muted-foreground">
-                            اللون: <span className="text-foreground font-medium">{item.selected_color}</span>
+                            {t('od_meta_color')}: <span className="text-foreground font-medium">{item.selected_color}</span>
                           </span>
                         )}
                         {item.shipping_option_name_ar && (
                           <span className="text-[11px] text-muted-foreground">
-                            الشحن: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span>
+                            {t('od_meta_shipping')}: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span>
                           </span>
                         )}
                         <span className="text-[11px] text-muted-foreground">
-                          الكمية: <span className="text-foreground font-medium">{item.quantity}</span>
+                          {t('od_meta_quantity')}: <span className="text-foreground font-medium">{item.quantity}</span>
                         </span>
                       </div>
                     </div>
