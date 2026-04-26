@@ -508,7 +508,7 @@ export default function AllOffersPanel() {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-medium flex items-center gap-1 text-muted-foreground">
                       <Settings2 className="h-3 w-3" />
-                      اختر الخيار
+                      {t('ao_choose_option')}
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {availableOptions.map((opt, idx) => (
