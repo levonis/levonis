@@ -35,7 +35,7 @@ const Home = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('main_sections')
-        .select('id, name_ar, display_order')
+        .select('id, name_ar, name_en, name_ku, display_order')
         .order('display_order', { ascending: true });
       if (error) throw error;
       return data;
@@ -49,7 +49,7 @@ const Home = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, name_ar, slug, icon, description, description_ar, main_section_id, media_url, media_type, media_transparent')
+        .select('id, name, name_ar, name_en, name_ku, slug, icon, description, description_ar, description_en, description_ku, main_section_id, media_url, media_type, media_transparent')
         .order('created_at', { ascending: true });
       if (error) throw error;
       return data;
@@ -86,17 +86,17 @@ const Home = () => {
     }, {} as Record<string, typeof categories>);
   }, [categories]);
 
-  const getSectionName = (section: any) => {
-    if (language === 'en') return (section as any).name_en || section.name_ar;
-    if (language === 'ku') return (section as any).name_ku || section.name_ar;
-    return section.name_ar;
+  // Unified i18n picker — falls back to ar when requested lang is missing.
+  const pick = (row: any, field: string) => {
+    if (!row) return '';
+    const v = row[`${field}_${language}`];
+    if (typeof v === 'string' && v.trim()) return v;
+    return row[`${field}_ar`] || row[field] || '';
   };
 
-  const getCategoryName = (cat: any) => {
-    if (language === 'en') return cat.name || cat.name_ar;
-    if (language === 'ku') return cat.name_ar; // fallback until DB has ku
-    return cat.name_ar;
-  };
+  const getSectionName = (section: any) => pick(section, 'name');
+  const getCategoryName = (cat: any) => pick(cat, 'name') || cat.name || '';
+  const getCategoryDescription = (cat: any) => pick(cat, 'description') || cat.description || '';
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
