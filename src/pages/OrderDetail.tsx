@@ -136,19 +136,32 @@ const OrderDetail = () => {
   };
 
   const getStatusConfig = (status: string) => {
-    const map: Record<string, { label: string; color: string; bg: string; border: string }> = {
-      pending: { label: 'قيد الانتظار', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-      confirmed: { label: 'تم التأكيد', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-      processing: { label: 'قيد التجهيز', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-      purchased: { label: 'تم الشراء', color: 'text-indigo-500', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
-      arrived_warehouse: { label: 'وصل المخزن', color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
-      shipped: { label: 'تم الشحن', color: 'text-sky-500', bg: 'bg-sky-500/10', border: 'border-sky-500/30' },
-      arrived_iraq: { label: 'وصل العراق', color: 'text-teal-500', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-      on_the_way: { label: 'في الطريق', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' },
-      delivered: { label: 'تم التوصيل', color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-      cancelled: { label: 'ملغي', color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
+    const labels: Record<string, string> = {
+      pending: t('order_status_pending'),
+      confirmed: t('order_status_confirmed'),
+      processing: t('order_status_processing'),
+      purchased: t('order_status_purchased'),
+      arrived_warehouse: t('order_status_arrived_warehouse'),
+      shipped: t('order_status_shipped'),
+      arrived_iraq: t('order_status_arrived_iraq'),
+      on_the_way: t('order_status_on_the_way'),
+      delivered: t('order_status_delivered'),
+      cancelled: t('order_status_cancelled'),
     };
-    return map[status] || { label: status, color: 'text-muted-foreground', bg: 'bg-muted/10', border: 'border-border' };
+    const colorMap: Record<string, { color: string; bg: string; border: string }> = {
+      pending: { color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+      confirmed: { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+      processing: { color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+      purchased: { color: 'text-indigo-500', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
+      arrived_warehouse: { color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+      shipped: { color: 'text-sky-500', bg: 'bg-sky-500/10', border: 'border-sky-500/30' },
+      arrived_iraq: { color: 'text-teal-500', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
+      on_the_way: { color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' },
+      delivered: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+      cancelled: { color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
+    };
+    const c = colorMap[status] || { color: 'text-muted-foreground', bg: 'bg-muted/10', border: 'border-border' };
+    return { label: labels[status] || status, ...c };
   };
 
   if (!canQuery || isLoading) {
