@@ -1529,6 +1529,17 @@ ${pageContent.substring(0, 100000)}${extraContext}
       }
     }
 
+    if (!productInfo.original_price_usd && structuredPrices.originalPrice && structuredPrices.originalPrice > 0) {
+      const originalPriceUsd = Math.round(convertToUSD(structuredPrices.originalPrice, structuredPrices.currency) * 100) / 100;
+      let originalPriceInIqd = convertToIQD(structuredPrices.originalPrice, structuredPrices.currency);
+      originalPriceInIqd = roundPrice(originalPriceInIqd);
+      productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
+      productInfo.original_price_usd = originalPriceUsd > 0 ? originalPriceUsd : null;
+      productInfo.currency = 'IQD';
+      productInfo.points_reward = originalPriceInIqd > 0 ? Math.floor(originalPriceInIqd / 1000) : 0;
+      console.log('Applied structured original price fallback:', structuredPrices.originalPrice, structuredPrices.currency, productInfo.original_price_usd, productInfo.original_price);
+    }
+
     // ===== STEP: Search web for dimensions and weight if not found =====
     const needsDimensionsSearch = !productInfo.dimensions || 
       (!productInfo.dimensions.length_cm && !productInfo.dimensions.width_cm && !productInfo.dimensions.height_cm);
