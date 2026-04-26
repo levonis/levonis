@@ -107,18 +107,18 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
       title={
         <span className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-green-500" />
-          التوفير الخاص بك
+          {t('savings_your_savings')}
         </span>
       }
     >
       <div className="space-y-4">
         {/* Total Savings Summary */}
         <div className="rounded-2xl p-5 text-center" style={{ background: 'linear-gradient(135deg, hsl(142 71% 45% / 0.15), hsl(142 71% 45% / 0.05))' }}>
-          <p className="text-xs text-muted-foreground mb-1">إجمالي التوفير</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('savings_total')}</p>
           <p className="text-3xl font-black text-green-600 tabular-nums">
-            {isLoading ? '...' : (data?.totalSavings ?? 0).toLocaleString('ar-IQ')}
+            {isLoading ? '...' : (data?.totalSavings ?? 0).toLocaleString(numLocale)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">د.ع</p>
+          <p className="text-xs text-muted-foreground mt-1">{t('savings_currency')}</p>
         </div>
 
         {/* Breakdown */}
