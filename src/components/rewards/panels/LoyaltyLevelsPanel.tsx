@@ -608,14 +608,14 @@ export default function LoyaltyLevelsPanel() {
                       <p className="text-sm font-medium truncate">{selectedRecipient.full_name || selectedRecipient.username}</p>
                       {selectedRecipient.username && <p className="text-xs text-muted-foreground">@{selectedRecipient.username}</p>}
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedRecipient(null)}>تغيير</Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedRecipient(null)}>{t('ll_change')}</Button>
                   </div>
                 )}
               </div>
 
               {/* Payment method toggle */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">طريقة الدفع</label>
+                <label className="text-sm font-medium">{t('ll_payment_method_label')}</label>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -624,7 +624,7 @@ export default function LoyaltyLevelsPanel() {
                     onClick={() => setGiftDialog(prev => ({ ...prev, method: 'points' }))}
                   >
                     <Coins className="h-3 w-3" />
-                    نقاط ({(giftDialog.level?.purchase_price_points || 0).toLocaleString()})
+                    {t('ll_points_btn', { amount: (giftDialog.level?.purchase_price_points || 0).toLocaleString() })}
                   </Button>
                   {giftDialog.level?.wallet_price > 0 && (
                     <Button
@@ -634,7 +634,7 @@ export default function LoyaltyLevelsPanel() {
                       onClick={() => setGiftDialog(prev => ({ ...prev, method: 'wallet' }))}
                     >
                       <Wallet className="h-3 w-3" />
-                      محفظة ({giftDialog.level?.wallet_price?.toLocaleString()} د.ع)
+                      {t('ll_wallet_btn', { amount: giftDialog.level?.wallet_price?.toLocaleString() })}
                     </Button>
                   )}
                 </div>
@@ -642,9 +642,9 @@ export default function LoyaltyLevelsPanel() {
 
               {/* Message */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">رسالة (اختياري)</label>
+                <label className="text-sm font-medium">{t('ll_message_label')}</label>
                 <Textarea
-                  placeholder="أكتب رسالة للمستلم..."
+                  placeholder={t('ll_message_placeholder')}
                   value={giftMessage}
                   onChange={(e) => setGiftMessage(e.target.value)}
                   rows={2}
@@ -655,32 +655,32 @@ export default function LoyaltyLevelsPanel() {
               {/* Summary */}
               <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">البطاقة:</span>
+                  <span className="text-muted-foreground">{t('ll_field_card')}</span>
                   <span className="font-bold">{giftDialog.level.name_ar}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">التكلفة:</span>
+                  <span className="text-muted-foreground">{t('ll_field_cost')}</span>
                   <span className="font-bold">
                     {giftDialog.method === 'wallet'
-                      ? `${giftDialog.level.wallet_price?.toLocaleString()} د.ع`
-                      : `${(giftDialog.level.purchase_price_points || 0).toLocaleString()} نقطة`}
+                      ? `${giftDialog.level.wallet_price?.toLocaleString()} ${t('ll_currency_iqd')}`
+                      : `${(giftDialog.level.purchase_price_points || 0).toLocaleString()} ${t('ll_points_unit')}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">رصيدك:</span>
-                  <span>{giftDialog.method === 'wallet' ? `${walletBalance.toLocaleString()} د.ع` : `${availablePoints.toLocaleString()} نقطة`}</span>
+                  <span className="text-muted-foreground">{t('ll_field_balance')}</span>
+                  <span>{giftDialog.method === 'wallet' ? `${walletBalance.toLocaleString()} ${t('ll_currency_iqd')}` : `${availablePoints.toLocaleString()} ${t('ll_points_unit')}`}</span>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setGiftDialog({ open: false, level: null, method: 'points' })} disabled={gifting}>إلغاء</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setGiftDialog({ open: false, level: null, method: 'points' })} disabled={gifting}>{t('ll_btn_cancel')}</Button>
                 <Button
                   className="flex-1 gap-1 bg-pink-600 hover:bg-pink-700"
                   onClick={handleGift}
                   disabled={gifting || !selectedRecipient}
                 >
                   {gifting ? <span className="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full" /> : <Send className="h-4 w-4" />}
-                  إهداء البطاقة
+                  {t('ll_btn_send_gift')}
                 </Button>
               </div>
             </div>
