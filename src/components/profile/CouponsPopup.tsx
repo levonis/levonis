@@ -163,19 +163,19 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
             {discountsByStore.size > 0 && (
               <div className="flex items-center gap-1.5 bg-primary/10 rounded-full px-2.5 py-1 shrink-0">
                 <Store className="h-2.5 w-2.5 text-primary" />
-                <span className="text-[9px] font-bold text-primary">{discountsByStore.size} متجر</span>
+                <span className="text-[9px] font-bold text-primary">{t('cp_stat_stores', { n: discountsByStore.size })}</span>
               </div>
             )}
             {storeDiscounts && storeDiscounts.length > 0 && (
               <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
                 <Zap className="h-2.5 w-2.5 text-foreground" />
-                <span className="text-[9px] font-bold">{storeDiscounts.length} عرض</span>
+                <span className="text-[9px] font-bold">{t('cp_stat_offers', { n: storeDiscounts.length })}</span>
               </div>
             )}
             {coupons && coupons.length > 0 && (
               <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2.5 py-1 shrink-0">
                 <Ticket className="h-2.5 w-2.5 text-foreground" />
-                <span className="text-[9px] font-bold">{coupons.length} كوبون</span>
+                <span className="text-[9px] font-bold">{t('cp_stat_coupons', { n: coupons.length })}</span>
               </div>
             )}
           </div>
