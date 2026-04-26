@@ -397,7 +397,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             </TabsList>
 
             {/* Deposit Tab */}
-            <TabsContent value="deposit" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="deposit" className="m-0">
               <div className="p-3 space-y-3">
                 {/* Bank Transfer Info */}
                 <div className="p-3 rounded-xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
