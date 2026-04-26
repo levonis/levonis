@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, MessageCircle, Crown, Award, Star, Image as ImageIcon, X, Search, Package, Plus } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Crown, Award, Star, Image as ImageIcon, X, Search, Package, Plus, Pin } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -38,6 +38,11 @@ interface SupportConversation {
   unread_count: number;
   last_message_at: string;
   last_message?: string;
+  // VIP card data
+  vip_card_name: string | null;
+  vip_card_color: string | null;
+  vip_priority_rank: number; // -1 if no VIP card
+  is_pinned: boolean; // VIP user awaiting admin reply
 }
 
 const LEVEL_PRIORITY: { [key: string]: number } = {
@@ -204,11 +209,32 @@ export default function AdminChats() {
 
       const pointsMap = new Map(points?.map(p => [p.user_id, p]) || []);
 
+      // Fetch active loyalty cards with vip_support enabled
+      const nowIso = new Date().toISOString();
+      const { data: cards } = await supabase
+        .from('user_cards')
+        .select('user_id, expires_at, is_active, loyalty_levels!inner(name_ar, color, display_order, vip_support)')
+        .in('user_id', userIds)
+        .eq('is_active', true)
+        .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+
+      const vipMap = new Map<string, { rank: number; name: string; color: string | null }>();
+      (cards || []).forEach((c: any) => {
+        const lvl = c.loyalty_levels;
+        if (!lvl?.vip_support) return;
+        const rank = lvl.display_order ?? 0;
+        const existing = vipMap.get(c.user_id);
+        if (!existing || rank > existing.rank) {
+          vipMap.set(c.user_id, { rank, name: lvl.name_ar, color: lvl.color });
+        }
+      });
+
       // Get last messages and unread counts
       const conversationsWithDetails: SupportConversation[] = await Promise.all(
         convs.map(async (conv) => {
           const profile = profileMap.get(conv.buyer_id);
           const userPoints = pointsMap.get(conv.buyer_id);
+          const vip = vipMap.get(conv.buyer_id);
 
           // Get unread count (messages from user, not read by admin)
           const { count: unreadCount } = await supabase
@@ -227,6 +253,7 @@ export default function AdminChats() {
             .limit(1)
             .maybeSingle();
 
+          const unread = unreadCount || 0;
           return {
             id: conv.id,
             user_id: conv.buyer_id,
@@ -234,15 +261,21 @@ export default function AdminChats() {
             user_avatar: profile?.avatar_url || null,
             level: userPoints?.level || 'bronze',
             total_points: userPoints?.total_points || 0,
-            unread_count: unreadCount || 0,
+            unread_count: unread,
             last_message_at: conv.updated_at,
             last_message: lastMsg?.content,
+            vip_card_name: vip?.name ?? null,
+            vip_card_color: vip?.color ?? null,
+            vip_priority_rank: vip?.rank ?? -1,
+            is_pinned: !!vip && unread > 0,
           };
         })
       );
 
-      // Sort by level priority then by last message
+      // Sort: pinned VIPs first (by card rank desc), then non-pinned by VIP rank desc, then by last message
       return conversationsWithDetails.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        if (b.vip_priority_rank !== a.vip_priority_rank) return b.vip_priority_rank - a.vip_priority_rank;
         const levelDiff = (LEVEL_PRIORITY[b.level] || 0) - (LEVEL_PRIORITY[a.level] || 0);
         if (levelDiff !== 0) return levelDiff;
         return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
@@ -492,6 +525,8 @@ export default function AdminChats() {
                   const LevelIcon = LEVEL_ICONS[conv.level] || MessageCircle;
                   const levelColor = LEVEL_COLORS[conv.level] || "";
                   const hasUnread = conv.unread_count > 0;
+                  const isVip = conv.vip_priority_rank >= 0;
+                  const vipColor = conv.vip_card_color || '#facc15';
 
                   return (
                     <button
@@ -502,14 +537,20 @@ export default function AdminChats() {
                       }}
                       className={`w-full p-3 text-right hover:bg-muted/50 transition-colors relative ${
                         selectedConversation === conv.id ? 'bg-primary/10' : ''
-                      } ${hasUnread ? 'bg-destructive/5' : ''}`}
+                      } ${conv.is_pinned ? 'bg-amber-500/5' : hasUnread ? 'bg-destructive/5' : ''}`}
+                      style={conv.is_pinned ? { borderInlineEnd: `3px solid ${vipColor}` } : undefined}
                     >
-                      {hasUnread && (
+                      {hasUnread && !conv.is_pinned && (
                         <div className="absolute right-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
+                      )}
+                      {conv.is_pinned && (
+                        <div className="absolute top-1.5 left-1.5">
+                          <Pin className="h-3 w-3 fill-current" style={{ color: vipColor }} />
+                        </div>
                       )}
                       <div className="flex items-start gap-2">
                         <div className="relative">
-                          <Avatar className={`h-10 w-10 ${hasUnread ? 'ring-2 ring-destructive' : ''}`}>
+                          <Avatar className={`h-10 w-10 ${hasUnread ? 'ring-2 ring-destructive' : ''} ${isVip ? 'ring-2' : ''}`} style={isVip ? { boxShadow: `0 0 0 2px ${vipColor}` } : undefined}>
                             <AvatarImage src={conv.user_avatar || undefined} />
                             <AvatarFallback className="text-xs">
                               {conv.user_name.charAt(0)}
@@ -520,13 +561,28 @@ export default function AdminChats() {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center justify-between gap-1 flex-wrap">
                             <span className="font-medium text-sm truncate">{conv.user_name}</span>
-                            {hasUnread && (
-                              <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                                {conv.unread_count}
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {isVip && (
+                                <Badge
+                                  className="text-[9px] h-4 px-1 gap-0.5 border"
+                                  style={{
+                                    backgroundColor: `${vipColor}20`,
+                                    color: vipColor,
+                                    borderColor: `${vipColor}60`,
+                                  }}
+                                >
+                                  <Crown className="h-2.5 w-2.5" />
+                                  VIP {conv.vip_card_name}
+                                </Badge>
+                              )}
+                              {hasUnread && (
+                                <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                                  {conv.unread_count}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                             {conv.last_message || "لا توجد رسائل"}
