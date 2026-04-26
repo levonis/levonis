@@ -456,9 +456,9 @@ export default function ProductOffersPage() {
                         <p className="text-sm text-muted-foreground">{detailOffer.currency}</p>
                       </div>
                       {detailOffer.stock_quantity !== null && !isOutOfStock && (
-                        <Badge variant="secondary" className="text-amber-600 bg-amber-500/10">📦 متبقي: {detailOffer.stock_quantity}</Badge>
+                        <Badge variant="secondary" className="text-amber-600 bg-amber-500/10">📦 {t('offers_remaining')}: {detailOffer.stock_quantity}</Badge>
                       )}
-                      {isOutOfStock && <Badge variant="destructive">نفذت الكمية</Badge>}
+                      {isOutOfStock && <Badge variant="destructive">{t('offers_out_of_stock')}</Badge>}
                     </div>
 
                     {/* Colors Selection */}
