@@ -34,7 +34,7 @@ export function useCartCardDiscount(
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_cards")
-        .select("id, level_id, loyalty_levels:level_id(id, name_ar, discount_percentage, free_shipping, free_shipping_min_order)")
+        .select("id, level_id, purchased_at, loyalty_levels:level_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
