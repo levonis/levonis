@@ -480,7 +480,7 @@ export default function AllOffersPanel() {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-medium flex items-center gap-1 text-muted-foreground">
                       <Palette className="h-3 w-3" />
-                      اختر اللون
+                      {t('ao_choose_color')}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {availableColors.map((color, idx) => (
