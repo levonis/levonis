@@ -391,7 +391,7 @@ export default function DailyTasksPanel() {
     try {
       // Check if already pending
       const existingPending = pendingApprovals?.find((p: any) => p.task_key === proofTask.task_key && p.status === 'pending');
-      if (existingPending) throw new Error('طلبك قيد المراجعة بالفعل');
+      if (existingPending) throw new Error(t('dt_already_pending'));
 
       // Upload proof image
       const fileExt = proofImage.name.split('.').pop();
