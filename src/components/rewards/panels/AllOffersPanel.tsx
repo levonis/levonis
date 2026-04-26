@@ -670,7 +670,7 @@ export default function AllOffersPanel() {
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
                       <span className="text-muted-foreground flex items-center gap-0.5">
                         <Coins className="h-2.5 w-2.5 text-amber-500" />
-                        نقاط
+                        {t('ao_points_label')}
                       </span>
                       <span className="font-bold text-amber-600">{selectedOffer.points_reward * quantity}</span>
                     </div>
