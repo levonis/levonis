@@ -739,28 +739,21 @@ const Cart = () => {
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
   
-  // حساب رسوم الدفع الجزئي بناءً على الشرائح (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
+  // حساب رسوم الدفع الجزئي بناءً على الشرائح فقط (لا رجوع للإعدادات القديمة)
+  const partialPaymentTier = useMemo(() => {
+    const tiers = partialPaymentSettings?.fee_tiers || [];
+    if (tiers.length === 0) return null;
+    return (
+      tiers.find(t => subtotalWithTax >= t.min_amount && subtotalWithTax <= t.max_amount)
+      || tiers[tiers.length - 1]
+    );
+  }, [partialPaymentSettings, subtotalWithTax]);
+
   const calculatePartialPaymentFee = () => {
     if (!hasPreOrderItems || preOrderPaymentOption !== 'half') return 0;
-    
-    // استخدام الشرائح إذا كانت موجودة
-    if (partialPaymentSettings?.fee_tiers && partialPaymentSettings.fee_tiers.length > 0) {
-      const applicableTier = partialPaymentSettings.fee_tiers.find(
-        tier => subtotalWithTax >= tier.min_amount && subtotalWithTax <= tier.max_amount
-      );
-      if (applicableTier) {
-        return Math.ceil(subtotalWithTax * (applicableTier.fee_percentage / 100));
-      }
-      // إذا لم يجد شريحة مطابقة، استخدم آخر شريحة إذا كان المبلغ أكبر
-      const lastTier = partialPaymentSettings.fee_tiers[partialPaymentSettings.fee_tiers.length - 1];
-      if (subtotalWithTax > lastTier.max_amount) {
-        return Math.ceil(subtotalWithTax * (lastTier.fee_percentage / 100));
-      }
-    }
-    
-    // للتوافق مع الإعدادات القديمة
-    const fallbackPercentage = partialPaymentSettings?.quarter_payment_fee_percentage ?? 10;
-    return Math.ceil(subtotalWithTax * (fallbackPercentage / 100));
+    if (!partialPaymentTier) return 0;
+    const pct = Number(partialPaymentTier.fee_percentage ?? 0);
+    return Math.ceil(subtotalWithTax * (pct / 100));
   };
   
   const partialPaymentFee = calculatePartialPaymentFee();
