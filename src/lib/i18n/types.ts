@@ -1958,4 +1958,28 @@ export type TranslationKeys = {
   reel_from_site: string;
   reel_currency_iqd: string;
   reel_merchant_default: string;
+
+  // Loyalty cards (rewards/membership)
+  loyalty_points_and_above: string; // "{n} points and above"
+  loyalty_current_level: string;
+  loyalty_progress_next: string;
+  loyalty_points_remaining: string; // "{n} points remaining"
+  loyalty_benefits: string;
+  loyalty_discount: string;
+  loyalty_bonus_points: string;
+  loyalty_shipping: string;
+  loyalty_free: string;
+  loyalty_active: string;
+  loyalty_days_remaining: string; // "{n} days remaining"
+  loyalty_points_word: string; // "point" / "points"
+  loyalty_benefit_discount_all: string; // "{n}% discount on all products"
+  loyalty_benefit_bonus_points: string; // "Extra points {n}%"
+  loyalty_benefit_free_ship_min: string; // "Free shipping for orders above {amount}"
+  loyalty_benefit_free_ship_all: string;
+  loyalty_benefit_vip_support: string;
+  loyalty_benefit_priority_shipping: string;
+  loyalty_benefit_early_access: string;
+  loyalty_benefit_exclusive_products: string;
+  product_card_discount_up_to: string; // "Up to {n}% for members"
+  product_card_upgrade_bigger: string; // "Upgrade = bigger discount"
 };

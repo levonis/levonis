@@ -1,6 +1,7 @@
 import { Crown, Gem, Star, Award, Shield, Zap, Sparkles, Percent, Truck, Headphones, Check, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 interface UserLoyaltyCardProps {
   level: {
@@ -92,9 +93,11 @@ export default function UserLoyaltyCard({
   showPurchaseInfo = false,
   className,
 }: UserLoyaltyCardProps) {
+  const { t, language } = useLanguage();
   const gradientStyle = getGradientStyle(level.color);
   const textColor = getTextColor(level.color);
   const secondaryTextColor = textColor === "#ffffff" ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.65)";
+  const levelNamePrimary = language === 'ar' ? level.name_ar : (level.name_en || level.name_ar);
   
   const daysRemaining = expiresAt 
     ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -102,29 +105,29 @@ export default function UserLoyaltyCard({
 
   const benefits = [
     ...(level.discount_percentage && level.discount_percentage > 0 
-      ? [{ icon: Percent, text: `خصم ${level.discount_percentage}% على جميع المنتجات` }] 
+      ? [{ icon: Percent, text: t('loyalty_benefit_discount_all', { n: level.discount_percentage }) }] 
       : []),
     ...(level.bonus_points_percentage && level.bonus_points_percentage > 0 
-      ? [{ icon: Zap, text: `نقاط إضافية ${level.bonus_points_percentage}%` }] 
+      ? [{ icon: Zap, text: t('loyalty_benefit_bonus_points', { n: level.bonus_points_percentage }) }] 
       : []),
     ...(level.free_shipping 
       ? [{ icon: Truck, text: level.free_shipping_min_order && level.free_shipping_min_order > 0 
-          ? `شحن مجاني للطلبات أكثر من ${level.free_shipping_min_order.toLocaleString()} د.ع` 
-          : 'شحن مجاني على جميع الطلبات' }] 
+          ? t('loyalty_benefit_free_ship_min', { amount: level.free_shipping_min_order.toLocaleString() }) 
+          : t('loyalty_benefit_free_ship_all') }] 
       : []),
     ...(level.vip_support 
-      ? [{ icon: Headphones, text: 'دعم عملاء مميز وأولوية الرد' }] 
+      ? [{ icon: Headphones, text: t('loyalty_benefit_vip_support') }] 
       : []),
     ...(level.priority_shipping 
-      ? [{ icon: Truck, text: 'أولوية في الشحن والتوصيل' }] 
+      ? [{ icon: Truck, text: t('loyalty_benefit_priority_shipping') }] 
       : []),
     ...(level.early_access 
-      ? [{ icon: Sparkles, text: 'الوصول المبكر للمنتجات الجديدة' }] 
+      ? [{ icon: Sparkles, text: t('loyalty_benefit_early_access') }] 
       : []),
     ...(level.exclusive_products 
-      ? [{ icon: Crown, text: 'منتجات حصرية لحاملي البطاقة' }] 
+      ? [{ icon: Crown, text: t('loyalty_benefit_exclusive_products') }] 
       : []),
-    ...(level.benefits || []).map((b: { text_ar: string }) => ({ icon: Check, text: b.text_ar })),
+    ...(level.benefits || []).map((b: { text_ar: string; text_en?: string }) => ({ icon: Check, text: language === 'ar' ? b.text_ar : (b.text_en || b.text_ar) })),
   ];
 
   return (
@@ -156,7 +159,7 @@ export default function UserLoyaltyCard({
                 className="text-xl font-bold mb-0.5"
                 style={{ color: textColor }}
               >
-                {level.name_ar}
+                {levelNamePrimary}
               </h3>
               <p 
                 className="text-xs uppercase tracking-wider opacity-75"
@@ -204,7 +207,7 @@ export default function UserLoyaltyCard({
                 className="text-xs opacity-75"
                 style={{ color: secondaryTextColor }}
               >
-                نقطة
+                {t('loyalty_points_word')}
               </p>
             </div>
           )}
@@ -217,7 +220,7 @@ export default function UserLoyaltyCard({
                   className="text-[10px] gap-1 bg-green-500/80 border-0 font-medium text-white"
                 >
                   <Check className="h-3 w-3" />
-                  نشطة
+                  {t('loyalty_active')}
                 </Badge>
               )}
               {level.vip_support && (
@@ -236,7 +239,7 @@ export default function UserLoyaltyCard({
                 style={{ color: textColor }}
               >
                 <Clock className="h-3 w-3" />
-                {daysRemaining} يوم متبقي
+                {t('loyalty_days_remaining', { n: daysRemaining })}
               </Badge>
             )}
           </div>
