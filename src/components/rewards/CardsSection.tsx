@@ -205,7 +205,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                     <div className="flex items-center gap-2">
                       {totalCouponValue > 0 && (
                         <Badge className="bg-amber-500">
-                          {fmt(totalCouponValue)}} {t('common_iqd')}
+                          {fmt(totalCouponValue)} {t('common_iqd')}
                         </Badge>
                       )}
                       {expandedCoupons ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -236,7 +236,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="shrink-0">
-                            {fmt(coupon.prize_value ?? 0)}} {t('common_iqd')}
+                            {fmt(coupon.prize_value ?? 0)} {t('common_iqd')}
                           </Badge>
                           <Button 
                             size="sm" 

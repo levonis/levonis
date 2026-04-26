@@ -311,7 +311,7 @@ export default function RedeemPointsPanel() {
             <Alert className="border-primary/30 bg-primary/5">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {t('rp_will_get')} <strong>{fmt(calculatedValue)}}</strong> {getUnitLabel(selectedOption)}
+                {t('rp_will_get')} <strong>{fmt(calculatedValue)}</strong> {getUnitLabel(selectedOption)}
               </AlertDescription>
             </Alert>
           )}

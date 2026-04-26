@@ -244,17 +244,17 @@ export default function LoyaltyLevelsPanel() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t('ll_xp_label')}</p>
-              <p className="text-2xl font-bold">{fmt(totalXp)}} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
+              <p className="text-2xl font-bold">{fmt(totalXp)} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Coins className="h-3 w-3" />
-              {t('ll_available_points')}: <strong className="text-foreground">{fmt(availablePoints)}}</strong>
+              {t('ll_available_points')}: <strong className="text-foreground">{fmt(availablePoints)}</strong>
             </span>
             <span className="flex items-center gap-1">
               <Wallet className="h-3 w-3" />
-              {t('ll_wallet')}: <strong className="text-foreground">{fmt(walletBalance)}} {t('ll_currency_iqd')}</strong>
+              {t('ll_wallet')}: <strong className="text-foreground">{fmt(walletBalance)} {t('ll_currency_iqd')}</strong>
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
@@ -363,7 +363,7 @@ export default function LoyaltyLevelsPanel() {
                         {hasWalletPrice && (
                           <>
                             <span>•</span>
-                            <span className="text-emerald-600">{fmt(level.wallet_price)}} {t('ll_currency_iqd')}</span>
+                            <span className="text-emerald-600">{fmt(level.wallet_price)} {t('ll_currency_iqd')}</span>
                           </>
                         )}
                         <span>• {level.duration_days} {t('ll_days_unit')}</span>
