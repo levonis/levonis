@@ -598,6 +598,9 @@ export const ar: TranslationKeys = {
   insurance_wallet_deduct: 'سيتم خصم {amount} د.ع من المحفظة',
   insurance_current_balance: 'رصيدك الحالي: {balance} د.ع',
   insurance_insufficient: 'رصيد المحفظة غير كافٍ. يرجى شحن المحفظة أولاً.',
+  insurance_balance_short: 'رصيدك غير كافٍ',
+  insurance_balance_need_more: 'رصيدك غير كافٍ. تحتاج {amount} {currency} إضافية',
+  insurance_insufficient_balance_msg: '{msg} — رصيدك الحالي: {balance} د.ع',
 
   // Merchant Dashboard
   merchant_dashboard: 'لوحة التاجر',
