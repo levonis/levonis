@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Gift, Ticket, Coins, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/lib/i18n';
 
 interface CartUpsellOffer {
   id: string;
