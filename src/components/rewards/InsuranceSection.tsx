@@ -523,7 +523,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                       <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                         <span>{t('insurance_current_balance')}</span>
                         <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.upgradeCost || 0) ? 'text-green-600' : 'text-destructive'}`}>
-                          {fmt((walletBalance || 0))}} {t('common_iqd')}
+                          {fmt(walletBalance || 0)} {t('common_iqd')}
                         </span>
                       </div>
                       {(walletBalance || 0) < (selectedPlan.upgradeCost || 0) && (
@@ -593,7 +593,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                     <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                       <span>{t('insurance_current_balance')}</span>
                       <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.monthly_price || 0) ? 'text-green-600' : 'text-destructive'}`}>
-                        {fmt((walletBalance || 0))}} {t('common_iqd')}
+                        {fmt(walletBalance || 0)} {t('common_iqd')}
                       </span>
                     </div>
                     {(walletBalance || 0) < (selectedPlan.monthly_price || 0) && (

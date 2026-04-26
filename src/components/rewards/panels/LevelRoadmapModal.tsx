@@ -149,7 +149,7 @@ export default function LevelRoadmapModal({
                                 {t('lr_level_n', { n: index + 1 })}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {xpReq > 0 ? fmt(`${xpReq)} XP` : t('lr_base_level')}
+                                {xpReq > 0 ? `${fmt(xpReq)} XP` : t('lr_base_level')}
                               </p>
                             </div>
                           </div>
