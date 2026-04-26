@@ -38,14 +38,14 @@ export default function MerchantGiveaways() {
   const isVerifiedMerchant = merchantApp?.is_verified === true;
 
   const tabs = [
-    { key: "competitions", label: "مسابقات", icon: Trophy },
-    { key: "gifts", label: "هدايا", icon: Gift },
-    { key: "coupons", label: "كوبونات", icon: Ticket },
-    { key: "envelopes", label: "ظروف حمراء", icon: Mail },
+    { key: "competitions", label: t('assist_tab_competitions'), icon: Trophy },
+    { key: "gifts", label: t('assist_tab_gifts'), icon: Gift },
+    { key: "coupons", label: t('assist_tab_coupons'), icon: Ticket },
+    { key: "envelopes", label: t('assist_tab_envelopes'), icon: Mail },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={dir}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
