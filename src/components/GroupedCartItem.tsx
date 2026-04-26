@@ -33,12 +33,13 @@ const GroupedCartItem = ({
   const firstItem = items[0];
   const product = firstItem.products;
   const { data: shippingSettings } = useShippingSettings();
+  const { data: codDefaults } = useCodDefaults();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   
   if (!product) return null;
 
   const calculateItemPrice = (item: CartItem) => {
-    return getGuardedCartItemPrice(item as any, usdToIqd);
+    return getGuardedCartItemPrice(item as any, usdToIqd, codDefaults ?? null);
   };
 
   const groupTotal = items.reduce((sum, item) => sum + calculateItemPrice(item) * item.quantity, 0);
