@@ -949,15 +949,18 @@ async function loadExchangeRatesFromDb(): Promise<void> {
   }
 }
 
+// Convert source-currency price to USD using ONLY the exchange rate.
+function convertToUSD(price: number, currency: string): number {
+  const currencyUpper = currency.toUpperCase();
+  if (currencyUpper === 'IQD') return price / USD_TO_IQD;
+  return price * (CURRENCY_TO_USD[currencyUpper] || 1);
+}
+
 // Convert any source-currency price to IQD using ONLY the exchange rate.
 // Does not include shipping, commission, taxes, or any markup — that math
 // happens later in the pricing pipeline for the final `price` field.
 function convertToIQD(price: number, currency: string): number {
-  const currencyUpper = currency.toUpperCase();
-  if (currencyUpper === 'IQD') return price;
-  const toUsdRate = CURRENCY_TO_USD[currencyUpper] || 1;
-  const priceInUsd = price * toUsdRate;
-  return priceInUsd * USD_TO_IQD;
+  return convertToUSD(price, currency) * USD_TO_IQD;
 }
 
 function roundPrice(price: number): number {
