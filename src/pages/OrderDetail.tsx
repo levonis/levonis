@@ -282,19 +282,19 @@ const OrderDetail = () => {
               {(order.status === 'arrived_warehouse' || order.status === 'shipped' || order.status === 'arrived_iraq' || order.status === 'delivered') && (
                 <Button onClick={() => setShowInvoice(true)} size="sm" className="flex-1 min-w-[120px]">
                   <FileText className="ml-1.5 h-3.5 w-3.5" />
-                  فاتورة الطلب
+                  {t('od_btn_invoice')}
                 </Button>
               )}
               {isAdmin && (
                 <Button onClick={() => setShowAdminChat(true)} variant="outline" size="sm" className="flex-1 min-w-[120px]">
                   <MessageCircle className="ml-1.5 h-3.5 w-3.5" />
-                  التواصل
+                  {t('od_btn_contact')}
                 </Button>
               )}
               {canCancelOrder(order) && (
                 <Button variant="destructive" size="sm" onClick={() => setShowCancelDialog(true)} disabled={isCancelling} className="flex-1 min-w-[120px]">
                   {isCancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin ml-1.5" /> : <XCircle className="h-3.5 w-3.5 ml-1.5" />}
-                  إلغاء الطلب
+                  {t('od_btn_cancel')}
                 </Button>
               )}
             </div>
@@ -308,12 +308,12 @@ const OrderDetail = () => {
               <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-7 w-7 text-emerald-500" />
               </div>
-              <h3 className="text-lg font-black text-foreground">هل استلمت طلبك؟</h3>
-              <p className="text-xs text-muted-foreground">يرجى تأكيد الاستلام وتقييم المنتجات</p>
+              <h3 className="text-lg font-black text-foreground">{t('od_received_question')}</h3>
+              <p className="text-xs text-muted-foreground">{t('od_received_subtitle')}</p>
               <Button onClick={() => navigate(`/my-orders/${order.id}/confirm`)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                تأكيد الاستلام وتقييم المنتج
+                {t('od_confirm_receive_btn')}
               </Button>
-              <p className="text-[10px] text-muted-foreground">سيتم التأكيد تلقائياً بعد 7 أيام</p>
+              <p className="text-[10px] text-muted-foreground">{t('od_auto_confirm_note')}</p>
             </div>
           </GlassCard>
         )}
@@ -322,12 +322,12 @@ const OrderDetail = () => {
           <GlassCard className="p-4" delay={0.15}>
             <div className="flex items-center justify-center gap-2 text-emerald-500">
               <CheckCircle2 className="h-4 w-4" />
-              <span className="font-bold text-sm">تم تأكيد الاستلام</span>
-              {order.auto_confirmed && <span className="text-xs text-muted-foreground">(تلقائياً)</span>}
+              <span className="font-bold text-sm">{t('od_received_confirmed')}</span>
+              {order.auto_confirmed && <span className="text-xs text-muted-foreground">{t('od_received_auto')}</span>}
             </div>
             {order.user_confirmed_at && (
               <p className="text-center text-[11px] text-muted-foreground mt-1">
-                {format(new Date(order.user_confirmed_at), 'PPP - p', { locale: ar })}
+                {format(new Date(order.user_confirmed_at), 'PPP - p', { locale: dateLocale })}
               </p>
             )}
           </GlassCard>
@@ -335,13 +335,13 @@ const OrderDetail = () => {
 
         {/* Order Timeline */}
         <GlassCard className="p-5" delay={0.2}>
-          <SectionHeader icon={Truck} title="مراحل الطلب" />
+          <SectionHeader icon={Truck} title={t('od_section_timeline')} />
           <OrderTimeline order={order} isPreOrder={isPreOrder} />
         </GlassCard>
 
         {/* Products */}
         <GlassCard className="p-5" delay={0.25}>
-          <SectionHeader icon={Package} title={`المنتجات (${order.order_items?.length || 0})`} />
+          <SectionHeader icon={Package} title={`${t('od_section_products')} (${order.order_items?.length || 0})`} />
           <div className="space-y-3">
             {order.order_items?.map((item: any, index: number) => {
               const isCustomRequest = !!item.custom_request_id;
