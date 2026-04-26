@@ -236,7 +236,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="shrink-0">
-                            {coupon.prize_value?.toLocaleString()} {t('common_iqd')}
+                            fmt({coupon.prize_value ?? 0)} {t('common_iqd')}
                           </Badge>
                           <Button 
                             size="sm" 

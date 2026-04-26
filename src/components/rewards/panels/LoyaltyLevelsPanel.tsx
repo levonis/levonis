@@ -494,8 +494,8 @@ export default function LoyaltyLevelsPanel() {
                   <span className="text-muted-foreground">{t('ll_field_payment_method')}</span>
                   <span className="font-bold">
                     {purchaseDialog.method === 'wallet' 
-                      ? t('ll_payment_wallet_label', { amount: purchaseDialog.level.wallet_price?.toLocaleString() })
-                      : t('ll_payment_points_label', { amount: purchaseDialog.level.purchase_price_points?.toLocaleString() })}
+                      ? t('ll_payment_wallet_label', { amount: fmt(purchaseDialog.level.wallet_price ?? 0) })
+                      : t('ll_payment_points_label', { amount: fmt(purchaseDialog.level.purchase_price_points ?? 0) })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -638,7 +638,7 @@ export default function LoyaltyLevelsPanel() {
                       onClick={() => setGiftDialog(prev => ({ ...prev, method: 'wallet' }))}
                     >
                       <Wallet className="h-3 w-3" />
-                      {t('ll_wallet_btn', { amount: giftDialog.level?.wallet_price?.toLocaleString() })}
+                      {t('ll_wallet_btn', { amount: giftDialog.level?fmt(.wallet_price ?? 0) })}
                     </Button>
                   )}
                 </div>
@@ -666,7 +666,7 @@ export default function LoyaltyLevelsPanel() {
                   <span className="text-muted-foreground">{t('ll_field_cost')}</span>
                   <span className="font-bold">
                     {giftDialog.method === 'wallet'
-                      ? `${giftDialog.level.wallet_price?.toLocaleString()} ${t('ll_currency_iqd')}`
+                      ? fmt(`${giftDialog.level.wallet_price ?? 0)} ${t('ll_currency_iqd')}`
                       : fmt(`${(giftDialog.level.purchase_price_points || 0))} ${t('ll_points_unit')}`}
                   </span>
                 </div>

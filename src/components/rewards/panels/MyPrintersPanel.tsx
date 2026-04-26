@@ -113,7 +113,7 @@ export default function MyPrintersPanel() {
                         {activeSub.protection_plans?.name_ar}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {activeSub.monthly_price?.toLocaleString()} {t('mp_per_month')}
+                        fmt({activeSub.monthly_price ?? 0)} {t('mp_per_month')}
                       </p>
                     </div>
                   )}
