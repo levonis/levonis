@@ -6,7 +6,7 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Calculator } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
 import OrderSuccessAnimation from '@/components/ui/OrderSuccessAnimation';
