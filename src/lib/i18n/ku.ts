@@ -1850,4 +1850,34 @@ export const ku: TranslationKeys = {
   pwa_notif_denied: 'ئاگادارکردنەوەکان ڕەتکرانەوە. دەتوانیت لە ڕێکخستنەکانی وێبگەڕ چالاکیان بکەیت',
   pwa_notif_default_hint: 'تکایە کاتێک پەنجەرەی ڕێگەپێدان دەردەکەوێت ڕێگە بدە',
   pwa_notif_error: 'هەڵە لە چالاککردنی ئاگادارکردنەوەکان',
+
+  // Sections / View all
+  section_bundles_title: 'پاکێج و پێشکەشکراوەکان',
+  section_reels_title: 'ڕیلز',
+  section_view_all: 'بینینی هەموو',
+  section_view_details: 'بینینی وردەکارییەکان',
+
+  // Bundles page
+  bundles_back_home: 'گەڕانەوە بۆ ماڵپەڕی سەرەکی',
+  bundles_empty: 'هیچ پاکێجێک ئێستا بەردەست نییە',
+  bundles_out_of_stock: 'لە کۆگا نییە',
+
+  // Sale type badges
+  sale_type_direct: 'فرۆشتنی ڕاستەوخۆ',
+  sale_type_preorder_air: 'پێش-داواکاری (ئاسمانی)',
+  sale_type_preorder_sea: 'پێش-داواکاری (دەریایی)',
+
+  // Cart shipping option labels
+  shipping_opt_air: 'بارهەڵگرتنی ئاسمانی',
+  shipping_opt_sea: 'بارهەڵگرتنی دەریایی',
+  shipping_opt_direct: 'فرۆشتنی ڕاستەوخۆ',
+  shipping_opt_preorder: 'پێش-داواکاری',
+
+  // Delivery methods (cart)
+  delivery_method_standard_name: 'گەیاندنی ئاسایی',
+  delivery_method_standard_desc: 'گەیاندن لە ڕێگەی کۆمپانیا ناوخۆییەکانی بارهەڵگرتنەوە',
+  delivery_method_pickup_name: 'وەرگرتن لە کۆگا',
+  delivery_method_pickup_desc: 'داواکاریەکەت ڕاستەوخۆ لە کۆگاکەمانەوە وەربگرە - بێبەرامبەر',
+  delivery_method_personal_name: 'گەیاندنی کەسی',
+  delivery_method_personal_desc: 'گەیاندنی کەسی ڕاستەوخۆ بۆ بەردەرگای ماڵەکەت',
 };
