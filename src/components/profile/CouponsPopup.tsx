@@ -390,7 +390,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                         <Gift className="h-3.5 w-3.5 text-emerald-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold">الهدية</p>
+                        <p className="text-[10px] font-bold">{t('cp_gift_label')}</p>
                         <p className="text-[9px] text-muted-foreground">{selectedDiscount.gift_description}</p>
                       </div>
                     </div>
