@@ -305,14 +305,14 @@ export default function ProductOffersPage() {
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="flex items-center justify-center gap-3 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1"><ShoppingCart className="h-4 w-4" />مشترياتي</Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1"><Trophy className="h-4 w-4" />المسابقات</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1"><ShoppingCart className="h-4 w-4" />{t('offers_my_purchases')}</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1"><Trophy className="h-4 w-4" />{t('offers_competitions')}</Button>
         </div>
 
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[1,2,3,4,5,6].map(i=><div key={i} className="rounded-lg border bg-card p-2"><div className="aspect-square rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-3/4 rounded bg-muted animate-pulse mb-1" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div>)}</div>
         ) : offers?.length === 0 ? (
-          <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">لا توجد عروض متاحة حالياً</p></CardContent></Card>
+          <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">{t('offers_empty')}</p></CardContent></Card>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {offers?.map((offer) => {
