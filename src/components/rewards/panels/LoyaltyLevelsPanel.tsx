@@ -220,13 +220,13 @@ export default function LoyaltyLevelsPanel() {
 
   const getVipPlusBenefits = (level: any) => {
     const benefits: { icon: any; text: string; color: string }[] = [];
-    if (level.wholesale_discount_enabled) benefits.push({ icon: TrendingUp, text: 'أسعار الجملة على المنتجات', color: 'text-emerald-600' });
-    if (level.free_shipping) benefits.push({ icon: Truck, text: 'توصيل مجاني + أولوية التوصيل', color: 'text-blue-600' });
-    if (level.priority_packaging) benefits.push({ icon: Package, text: 'أولوية التغليف', color: 'text-orange-600' });
-    if (level.priority_support) benefits.push({ icon: Headphones, text: 'أولوية الدعم الفني', color: 'text-purple-600' });
-    if (level.free_daily_games > 0) benefits.push({ icon: Gamepad2, text: `لعب مجاني ${level.free_daily_games} مرة يومياً`, color: 'text-pink-600' });
+    if (level.wholesale_discount_enabled) benefits.push({ icon: TrendingUp, text: t('ll_benefit_wholesale'), color: 'text-emerald-600' });
+    if (level.free_shipping) benefits.push({ icon: Truck, text: t('ll_benefit_free_shipping'), color: 'text-blue-600' });
+    if (level.priority_packaging) benefits.push({ icon: Package, text: t('ll_benefit_priority_packaging'), color: 'text-orange-600' });
+    if (level.priority_support) benefits.push({ icon: Headphones, text: t('ll_benefit_priority_support'), color: 'text-purple-600' });
+    if (level.free_daily_games > 0) benefits.push({ icon: Gamepad2, text: t('ll_benefit_free_games', { count: level.free_daily_games }), color: 'text-pink-600' });
     // استبدال الاستثمار بكود الإحالة الخاص
-    benefits.push({ icon: TrendingUp, text: 'كود دعوة شخصي + عمولة من كل عملية بيع لأصدقائك', color: 'text-amber-600' });
+    benefits.push({ icon: TrendingUp, text: t('ll_benefit_referral_code'), color: 'text-amber-600' });
     return benefits;
   };
 
