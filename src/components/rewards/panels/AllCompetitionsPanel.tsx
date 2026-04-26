@@ -480,17 +480,17 @@ export default function AllCompetitionsPanel() {
           }
         });
       } else if (type === 'everyone_wins' && data.prize) {
-        toast.success(`🎁 مبروك! ربحت: ${data.prize.name_ar || 'جائزة'}`);
+        toast.success(t('ac_won_prize', { prize: data.prize.name_ar || t('ac_default_prize') }));
       } else if (type === 'team_battle' && data.team) {
-        toast.success(`⚔️ انضممت للفريق ${data.team === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}!`);
+        toast.success(data.team === 'A' ? t('ac_team_joined_blue') : t('ac_team_joined_red'));
       } else {
-        toast.success(`✅ تم تسجيلك بنجاح!`);
+        toast.success(t('ac_registered_success'));
       }
       
       setSelectedCompetition(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('ac_error_generic'));
       setIsProcessing(false);
     },
   });
