@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, Tag, Ticket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/lib/i18n';
 import OriginExpandShell, { type OriginRect } from './OriginExpandShell';
 
 interface SavingsPopupProps {
