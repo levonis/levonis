@@ -184,7 +184,7 @@ const Home = () => {
               </DialogHeader>
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button variant="outline" onClick={() => setWishDialogOpen(false)}>
-                  {t('cancel') || 'إلغاء'}
+                  {language === 'en' ? 'Cancel' : language === 'ku' ? 'پاشگەزبوونەوە' : 'إلغاء'}
                 </Button>
                 <Button
                   onClick={() => {
