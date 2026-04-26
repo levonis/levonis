@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles, User, Headphones, CalendarIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles, User, Headphones, CalendarIcon, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
@@ -991,53 +991,73 @@ export default function AdminLoyaltyLevels() {
                       </AdminCardContent>
                     </AdminCard>
 
-                    {/* Custom Benefits */}
+                    {/* Auto-derived Benefits Preview (read-only) */}
                     <AdminCard>
                       <AdminCardHeader 
-                        title="مزايا إضافية مخصصة" 
+                        title="المزايا الظاهرة للعميل" 
                         icon={<Sparkles className="h-4 w-4" />}
-                        actions={
-                          <Button size="sm" variant="outline" onClick={handleAddBenefit}>
-                            <Plus className="ml-2 h-3 w-3" />
-                            إضافة ميزة
-                          </Button>
-                        }
                       />
                       <AdminCardContent>
-                        {benefits.length === 0 ? (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>لا توجد مزايا إضافية</p>
-                            <p className="text-xs">اضغط على "إضافة ميزة" لإضافة مزايا مخصصة</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {benefits.map((benefit, index) => (
-                              <div key={index} className="flex gap-2 items-start p-3 border rounded-lg bg-muted/30">
-                                <div className="flex-1 grid grid-cols-2 gap-2">
-                                  <Input
-                                    placeholder="النص بالعربي"
-                                    value={benefit.text_ar}
-                                    onChange={(e) => handleBenefitChange(index, "text_ar", e.target.value)}
-                                  />
-                                  <Input
-                                    placeholder="Text in English"
-                                    value={benefit.text_en}
-                                    onChange={(e) => handleBenefitChange(index, "text_en", e.target.value)}
-                                  />
-                                </div>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleRemoveBenefit(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          تُشتق هذه القائمة تلقائياً من المميزات الأساسية أعلاه ولا يمكن تعديلها يدوياً.
+                        </p>
+                        {(() => {
+                          const derived: string[] = [];
+                          if (formData.discount_percentage > 0) {
+                            derived.push(
+                              formData.discount_percentage_max_amount && formData.discount_percentage_max_amount > 0
+                                ? `خصم ${formData.discount_percentage}% على جميع المنتجات (حتى ${formData.discount_percentage_max_amount.toLocaleString()} د.ع)`
+                                : `خصم ${formData.discount_percentage}% على جميع المنتجات`
+                            );
+                          }
+                          if (formData.bonus_points_percentage > 0) {
+                            derived.push(`نقاط إضافية ${formData.bonus_points_percentage}%`);
+                          }
+                          if (formData.free_shipping) {
+                            const methodsLabel = formData.free_shipping_methods.length === 0
+                              ? '—'
+                              : formData.free_shipping_methods.map((k) => k === 'standard' ? 'الاعتيادي' : k === 'personal' ? 'الشخصي' : k).join(' و');
+                            const minPart = formData.free_shipping_min_order > 0
+                              ? ` للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
+                              : '';
+                            const usesPart = formData.free_shipping_max_uses && formData.free_shipping_max_uses > 0
+                              ? ` (حتى ${formData.free_shipping_max_uses} مرات خلال صلاحية البطاقة)`
+                              : '';
+                            derived.push(`شحن مجاني (${methodsLabel})${minPart}${usesPart}`);
+                          }
+                          if (formData.vip_support) derived.push('دعم عملاء مميز وأولوية الرد');
+                          if (formData.priority_shipping) derived.push('أولوية في الشحن والتوصيل');
+                          if (formData.priority_packaging) derived.push('أولوية في التغليف');
+                          if (formData.priority_support) derived.push('دعم فني ذو أولوية');
+                          if (formData.early_access) derived.push('الوصول المبكر للمنتجات الجديدة');
+                          if (formData.exclusive_products) derived.push('منتجات حصرية لحاملي البطاقة');
+                          if (formData.card_discounts_enabled) derived.push('خصومات إضافية على منتجات مختارة');
+                          if (formData.wholesale_discount_enabled) derived.push('أسعار الجملة على المنتجات المؤهلة');
+                          if (formData.investment_enabled) derived.push('الوصول لميزة الاستثمار');
+                          if (formData.is_vip_plus) derived.push('عضوية VIP+ كاملة المزايا');
+                          if (formData.monthly_free_shipping > 0) derived.push(`${formData.monthly_free_shipping} شحنات مجانية شهرياً`);
+                          if (formData.free_daily_games > 0) derived.push(`${formData.free_daily_games} ألعاب مجانية يومياً`);
+
+                          if (derived.length === 0) {
+                            return (
+                              <div className="text-center py-8 text-muted-foreground">
+                                <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p>لا توجد مزايا مفعّلة بعد</p>
+                                <p className="text-xs">فعّل المميزات الأساسية أعلاه لتظهر هنا تلقائياً</p>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            );
+                          }
+                          return (
+                            <ul className="space-y-2">
+                              {derived.map((text, i) => (
+                                <li key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/30 border border-border/50 text-sm">
+                                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                  <span>{text}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          );
+                        })()}
                       </AdminCardContent>
                     </AdminCard>
                   </div>
