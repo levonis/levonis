@@ -26,30 +26,31 @@ import { supabase as supabaseClient } from "@/integrations/supabase/client";
 // Inline theme switcher for settings
 function ThemeSwitcherInline() {
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const themes: { key: ThemeMode; label: string; colors: string[] }[] = [
-    { key: "default", label: "الأساسي", colors: ["hsl(160,46%,15%)", "hsl(44,39%,60%)"] },
-    { key: "light", label: "فاتح", colors: ["hsl(45,30%,92%)", "hsl(44,50%,55%)"] },
-    { key: "dark", label: "ليلي", colors: ["hsl(220,20%,8%)", "hsl(44,50%,55%)"] },
+    { key: "default", label: t('settings_theme_default'), colors: ["hsl(160,46%,15%)", "hsl(44,39%,60%)"] },
+    { key: "light", label: t('settings_theme_light'), colors: ["hsl(45,30%,92%)", "hsl(44,50%,55%)"] },
+    { key: "dark", label: t('settings_theme_dark'), colors: ["hsl(220,20%,8%)", "hsl(44,50%,55%)"] },
   ];
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-bold text-foreground">المظهر</p>
-        <p className="text-xs text-muted-foreground">اختر ثيم الواجهة</p>
+        <p className="text-sm font-bold text-foreground">{t('settings_theme_label')}</p>
+        <p className="text-xs text-muted-foreground">{t('settings_theme_desc')}</p>
       </div>
       <div className="flex gap-1.5">
-        {themes.map((t) => (
+        {themes.map((th) => (
           <button
-            key={t.key}
-            onClick={() => setTheme(t.key)}
+            key={th.key}
+            onClick={() => setTheme(th.key)}
             className={`relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${
-              theme === t.key
+              theme === th.key
                 ? "border-primary ring-2 ring-primary/30 scale-110"
                 : "border-border/50 hover:border-primary/40"
             }`}
-            title={t.label}
+            title={th.label}
           >
-            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(135deg, ${t.colors[0]} 50%, ${t.colors[1]} 50%)` }} />
+            <div className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(135deg, ${th.colors[0]} 50%, ${th.colors[1]} 50%)` }} />
           </button>
         ))}
       </div>
