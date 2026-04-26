@@ -471,6 +471,8 @@ const Cart = () => {
     min_amount: number;
     max_amount: number;
     fee_percentage: number;
+    cod_fee_type?: 'percentage' | 'fixed';
+    cod_fee_value?: number;
   }
   
   interface PartialPaymentSettingsData {
@@ -780,16 +782,22 @@ const Cart = () => {
   // حساب رسوم الدفع عند الاستلام: تُطبَّق إعدادات COD الافتراضية الموحدة على كل منتج
   const codFee = useMemo(() => {
     if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
-    const defaultType = partialPaymentSettings?.cod_default_fee_type || 'percentage';
-    const defaultVal = Number(partialPaymentSettings?.cod_default_fee_value ?? 0);
-    if (!defaultVal || defaultVal <= 0) return 0;
+    const tiers = partialPaymentSettings?.fee_tiers || [];
+    const legacyType = partialPaymentSettings?.cod_default_fee_type || 'percentage';
+    const legacyVal = Number(partialPaymentSettings?.cod_default_fee_value ?? 0);
     return items.reduce((sum: number, item: any) => {
-      const unitPrice = getCartItemPrice(item); // السعر النهائي شامل تعديلات الخيارات/الألوان
+      const unitPrice = getCartItemPrice(item);
       const qty = item.quantity || 1;
       const lineTotal = unitPrice * qty;
-      const fee = defaultType === 'percentage'
-        ? Math.ceil(lineTotal * defaultVal / 100)
-        : Math.ceil(defaultVal * qty);
+      // Pick tier by line total; fallback to last tier; finally legacy defaults
+      const tier = tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount)
+        || tiers[tiers.length - 1];
+      const codType = (tier?.cod_fee_type ?? legacyType) as 'percentage' | 'fixed';
+      const codVal = Number(tier?.cod_fee_value ?? legacyVal);
+      if (!codVal || codVal <= 0) return sum;
+      const fee = codType === 'percentage'
+        ? Math.ceil(lineTotal * codVal / 100)
+        : Math.ceil(codVal * qty);
       return sum + fee;
     }, 0);
   }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings]);

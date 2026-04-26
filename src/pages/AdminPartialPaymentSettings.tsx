@@ -14,6 +14,9 @@ interface FeeTier {
   min_amount: number;
   max_amount: number;
   fee_percentage: number;
+  // COD fields per tier
+  cod_fee_type?: 'percentage' | 'fixed';
+  cod_fee_value?: number;
 }
 
 interface PartialPaymentSettings {
@@ -21,6 +24,7 @@ interface PartialPaymentSettings {
   fee_label_en: string;
   fee_tiers: FeeTier[];
   cod_label_ar?: string;
+  // Kept for backward compatibility (fallback when a tier has no COD value)
   cod_default_fee_type?: 'percentage' | 'fixed';
   cod_default_fee_value?: number;
 }
@@ -29,10 +33,10 @@ const defaultSettings: PartialPaymentSettings = {
   fee_label_ar: 'رسوم الدفع الجزئي',
   fee_label_en: 'Partial Payment Fee',
   fee_tiers: [
-    { min_amount: 1, max_amount: 250000, fee_percentage: 10 },
-    { min_amount: 250001, max_amount: 500000, fee_percentage: 7 },
-    { min_amount: 500001, max_amount: 1000000, fee_percentage: 5 },
-    { min_amount: 1000001, max_amount: 999999999, fee_percentage: 3 },
+    { min_amount: 1, max_amount: 250000, fee_percentage: 10, cod_fee_type: 'percentage', cod_fee_value: 5 },
+    { min_amount: 250001, max_amount: 500000, fee_percentage: 7, cod_fee_type: 'percentage', cod_fee_value: 4 },
+    { min_amount: 500001, max_amount: 1000000, fee_percentage: 5, cod_fee_type: 'percentage', cod_fee_value: 3 },
+    { min_amount: 1000001, max_amount: 999999999, fee_percentage: 3, cod_fee_type: 'percentage', cod_fee_value: 2 },
   ],
   cod_label_ar: 'رسوم الدفع عند الاستلام',
   cod_default_fee_type: 'percentage',
@@ -62,10 +66,18 @@ export default function AdminPartialPaymentSettings() {
   useEffect(() => {
     if (settings?.setting_value && !formData) {
       const value = settings.setting_value as unknown as PartialPaymentSettings;
+      // Hydrate per-tier COD using legacy defaults if missing
+      const legacyType = value.cod_default_fee_type || 'percentage';
+      const legacyVal = Number(value.cod_default_fee_value ?? 0);
+      const hydratedTiers = (value.fee_tiers || defaultSettings.fee_tiers).map((t) => ({
+        ...t,
+        cod_fee_type: t.cod_fee_type ?? legacyType,
+        cod_fee_value: t.cod_fee_value ?? legacyVal,
+      }));
       setFormData({
         ...defaultSettings,
         ...value,
-        fee_tiers: value.fee_tiers || defaultSettings.fee_tiers
+        fee_tiers: hydratedTiers,
       });
     }
   }, [settings, formData]);
@@ -90,7 +102,7 @@ export default function AdminPartialPaymentSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partial-payment-settings'] });
-      toast.success('تم حفظ إعدادات الدفع الجزئي بنجاح');
+      toast.success('تم حفظ إعدادات الدفع بنجاح');
     },
     onError: (error: any) => {
       toast.error('فشل حفظ الإعدادات: ' + error.message);
@@ -100,7 +112,14 @@ export default function AdminPartialPaymentSettings() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData) {
-      updateMutation.mutate(formData);
+      // Mirror first tier's COD into legacy defaults for backward compatibility
+      const firstTier = formData.fee_tiers[0];
+      const payload: PartialPaymentSettings = {
+        ...formData,
+        cod_default_fee_type: firstTier?.cod_fee_type ?? formData.cod_default_fee_type ?? 'percentage',
+        cod_default_fee_value: firstTier?.cod_fee_value ?? formData.cod_default_fee_value ?? 0,
+      };
+      updateMutation.mutate(payload);
     }
   };
 
@@ -110,7 +129,9 @@ export default function AdminPartialPaymentSettings() {
     const newTier: FeeTier = {
       min_amount: lastTier ? lastTier.max_amount + 1 : 0,
       max_amount: lastTier ? lastTier.max_amount + 500000 : 500000,
-      fee_percentage: 5
+      fee_percentage: 5,
+      cod_fee_type: lastTier?.cod_fee_type ?? 'percentage',
+      cod_fee_value: lastTier?.cod_fee_value ?? 5,
     };
     setFormData({
       ...formData,
@@ -126,10 +147,10 @@ export default function AdminPartialPaymentSettings() {
     });
   };
 
-  const updateTier = (index: number, field: keyof FeeTier, value: number) => {
+  const updateTier = (index: number, field: keyof FeeTier, value: number | string) => {
     if (!formData) return;
     const newTiers = [...formData.fee_tiers];
-    newTiers[index] = { ...newTiers[index], [field]: value };
+    newTiers[index] = { ...newTiers[index], [field]: value as never };
     setFormData({ ...formData, fee_tiers: newTiers });
   };
 
@@ -153,14 +174,19 @@ export default function AdminPartialPaymentSettings() {
   const applicableTier = formData.fee_tiers.find(
     tier => exampleAmount >= tier.min_amount && exampleAmount <= tier.max_amount
   );
-  const exampleFee = applicableTier 
+  const exampleHalfFee = applicableTier 
     ? Math.ceil(exampleAmount * (applicableTier.fee_percentage / 100))
+    : 0;
+  const exampleCodFee = applicableTier
+    ? ((applicableTier.cod_fee_type ?? 'percentage') === 'percentage'
+        ? Math.ceil(exampleAmount * ((applicableTier.cod_fee_value ?? 0) / 100))
+        : Math.ceil(applicableTier.cod_fee_value ?? 0))
     : 0;
 
   return (
     <AdminLayout
-      title="إعدادات الدفع الجزئي"
-      description="تحديد شرائح رسوم الدفع الجزئي حسب قيمة الطلب"
+      title="إعدادات الدفع الجزئي والدفع عند الاستلام"
+      description="تحديد شرائح الرسوم حسب قيمة الطلب لكلٍّ من دفع نصف المبلغ والدفع عند الاستلام"
       icon={<Percent className="h-5 w-5" />}
       maxWidth="4xl"
       actions={
@@ -183,7 +209,7 @@ export default function AdminPartialPaymentSettings() {
         <AdminCard>
           <AdminCardHeader 
             title="شرائح الرسوم حسب قيمة الطلب"
-            description="حدد نسبة الرسوم لكل شريحة من قيمة الطلب"
+            description="حدد لكل شريحة من قيمة الطلب: نسبة دفع نصف المبلغ ورسوم الدفع عند الاستلام (نسبة أو مبلغ ثابت)"
             icon={<Percent className="h-5 w-5" />}
             actions={
               <Button
@@ -200,8 +226,9 @@ export default function AdminPartialPaymentSettings() {
           <AdminCardContent>
             <div className="space-y-3">
               {formData.fee_tiers.map((tier, index) => (
-                <div key={index} className="flex items-center gap-3 p-4 border border-border/40 rounded-lg bg-muted/30">
-                  <div className="flex-1 grid grid-cols-3 gap-3">
+                <div key={index} className="p-4 border border-border/40 rounded-lg bg-muted/30 space-y-3">
+                  {/* Range */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">من (د.ع)</Label>
                       <Input
@@ -220,8 +247,13 @@ export default function AdminPartialPaymentSettings() {
                         onChange={(e) => updateTier(index, 'max_amount', parseInt(e.target.value) || 0)}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">النسبة %</Label>
+                  </div>
+
+                  {/* Fees: half payment + COD side by side */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Half payment fee */}
+                    <div className="rounded-md border border-border/40 p-3 bg-background/40 space-y-1">
+                      <Label className="text-xs font-semibold">رسوم دفع نصف المبلغ %</Label>
                       <Input
                         type="number"
                         min="0"
@@ -231,17 +263,43 @@ export default function AdminPartialPaymentSettings() {
                         onChange={(e) => updateTier(index, 'fee_percentage', parseFloat(e.target.value) || 0)}
                       />
                     </div>
+
+                    {/* COD fee */}
+                    <div className="rounded-md border border-border/40 p-3 bg-background/40 space-y-2">
+                      <Label className="text-xs font-semibold">رسوم الدفع عند الاستلام</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          className="h-9 px-2 rounded-md border border-input bg-background text-sm"
+                          value={tier.cod_fee_type ?? 'percentage'}
+                          onChange={(e) => updateTier(index, 'cod_fee_type', e.target.value)}
+                        >
+                          <option value="percentage">نسبة %</option>
+                          <option value="fixed">مبلغ ثابت (د.ع)</option>
+                        </select>
+                        <Input
+                          type="number"
+                          min="0"
+                          step={(tier.cod_fee_type ?? 'percentage') === 'percentage' ? '0.5' : '500'}
+                          value={tier.cod_fee_value ?? 0}
+                          onChange={(e) => updateTier(index, 'cod_fee_value', parseFloat(e.target.value) || 0)}
+                          placeholder={(tier.cod_fee_type ?? 'percentage') === 'percentage' ? 'النسبة %' : 'القيمة د.ع'}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeTier(index)}
-                    className="text-destructive hover:text-destructive/80"
-                    disabled={formData.fee_tiers.length <= 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeTier(index)}
+                      className="text-destructive hover:text-destructive/80"
+                      disabled={formData.fee_tiers.length <= 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -250,11 +308,11 @@ export default function AdminPartialPaymentSettings() {
 
         {/* تسميات الرسوم */}
         <AdminCard>
-          <AdminCardHeader title="تسمية الرسوم" description="النص الذي يظهر للعميل عند عرض الرسوم الإضافية" />
+          <AdminCardHeader title="تسميات الرسوم" description="النصوص التي تظهر للعميل عند عرض الرسوم" />
           <AdminCardContent>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="fee_label_ar">اسم الرسوم (عربي)</Label>
+                <Label htmlFor="fee_label_ar">رسوم الدفع الجزئي (عربي)</Label>
                 <Input
                   id="fee_label_ar"
                   value={formData.fee_label_ar}
@@ -263,48 +321,12 @@ export default function AdminPartialPaymentSettings() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fee_label_en">اسم الرسوم (إنجليزي)</Label>
+                <Label htmlFor="fee_label_en">رسوم الدفع الجزئي (إنجليزي)</Label>
                 <Input
                   id="fee_label_en"
                   value={formData.fee_label_en}
                   onChange={(e) => setFormData({ ...formData, fee_label_en: e.target.value })}
                   placeholder="Partial Payment Fee"
-                />
-              </div>
-            </div>
-          </AdminCardContent>
-        </AdminCard>
-
-        {/* إعدادات الدفع عند الاستلام */}
-        <AdminCard>
-          <AdminCardHeader
-            title="إعدادات الدفع عند الاستلام (افتراضية للطلب المسبق)"
-            description="تُستخدم كقيم احتياطية للمنتجات التي تُفعّل ميزة الدفع عند الاستلام دون تحديد قيمة عمولة. يمكن تخصيص العمولة لكل منتج من صفحة تعديل المنتج."
-            icon={<Percent className="h-5 w-5" />}
-          />
-          <AdminCardContent>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>نوع العمولة الافتراضي</Label>
-                <select
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                  value={formData.cod_default_fee_type || 'percentage'}
-                  onChange={(e) => setFormData({ ...formData, cod_default_fee_type: e.target.value as 'percentage' | 'fixed' })}
-                >
-                  <option value="percentage">نسبة %</option>
-                  <option value="fixed">مبلغ ثابت (د.ع)</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  {(formData.cod_default_fee_type || 'percentage') === 'percentage' ? 'النسبة الافتراضية %' : 'القيمة الافتراضية (د.ع)'}
-                </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step={(formData.cod_default_fee_type || 'percentage') === 'percentage' ? '0.5' : '500'}
-                  value={formData.cod_default_fee_value ?? 0}
-                  onChange={(e) => setFormData({ ...formData, cod_default_fee_value: parseFloat(e.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
@@ -326,14 +348,9 @@ export default function AdminPartialPaymentSettings() {
             <div className="bg-muted/50 p-4 rounded-lg">
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>• قيمة الطلب: {formatAmount(exampleAmount)} د.ع</p>
-                <p>• الشريحة المطبقة: {applicableTier ? `${formatAmount(applicableTier.min_amount)} - ${formatAmount(applicableTier.max_amount)} د.ع (${applicableTier.fee_percentage}%)` : 'لا توجد شريحة'}</p>
-                <p>• نصف المبلغ (50%): {formatAmount(Math.ceil(exampleAmount * 0.5))} د.ع</p>
-                <p>• رسوم الدفع الجزئي: {formatAmount(exampleFee)} د.ع</p>
-                <div className="pt-2 mt-2 border-t border-border/40">
-                  <p className="font-semibold text-foreground">ما يراه العميل في صفحة الطلب:</p>
-                  <p>• المبلغ المتبقي: {formatAmount(exampleAmount - Math.ceil(exampleAmount * 0.5) + exampleFee)} د.ع</p>
-                  <p className="text-xs text-muted-foreground italic">(النسبة مخفية - يظهر المبلغ الإضافي فقط)</p>
-                </div>
+                <p>• الشريحة المطبقة: {applicableTier ? `${formatAmount(applicableTier.min_amount)} - ${formatAmount(applicableTier.max_amount)} د.ع` : 'لا توجد شريحة'}</p>
+                <p>• رسوم دفع نصف المبلغ: {formatAmount(exampleHalfFee)} د.ع ({applicableTier?.fee_percentage ?? 0}%)</p>
+                <p>• رسوم الدفع عند الاستلام: {formatAmount(exampleCodFee)} د.ع {applicableTier ? `(${(applicableTier.cod_fee_type ?? 'percentage') === 'percentage' ? `${applicableTier.cod_fee_value ?? 0}%` : `${formatAmount(applicableTier.cod_fee_value ?? 0)} د.ع`})` : ''}</p>
               </div>
             </div>
           </AdminCardContent>
