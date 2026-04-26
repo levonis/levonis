@@ -221,12 +221,25 @@ export default function AdminPendingOrdersSheet() {
                       className="w-full p-3 flex items-center gap-2 text-right hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-xs font-bold text-foreground">{order.order_number}</span>
                           <Badge className={`text-[10px] px-1.5 border ${STATUS_COLORS[order.status] || 'bg-muted'}`}>
                             {STATUS_LABELS[order.status] || order.status}
                           </Badge>
                           {order.priority === 'urgent' && <Badge variant="destructive" className="text-[10px] px-1.5">عاجل</Badge>}
+                          {order.priority_card_name && (
+                            <Badge
+                              className="text-[10px] px-1.5 gap-0.5 border"
+                              style={{
+                                backgroundColor: `${order.priority_card_color || '#facc15'}20`,
+                                color: order.priority_card_color || '#a16207',
+                                borderColor: `${order.priority_card_color || '#facc15'}60`,
+                              }}
+                            >
+                              <Crown className="h-2.5 w-2.5" />
+                              أولوية {order.priority_card_name}
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {order.governorate} • {order.order_items.length} منتج • {format(new Date(order.created_at), 'dd MMM HH:mm', { locale: ar })}
