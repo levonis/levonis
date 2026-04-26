@@ -380,7 +380,7 @@ export default function AllCompetitionsPanel() {
       setSelectedCompetition(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('ac_error_generic'));
       setIsProcessing(false);
     },
   });
