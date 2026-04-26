@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useLanguage } from '@/lib/i18n';
+import { translateNotificationTitle, translateNotificationMessage } from '@/lib/notificationTranslator';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const GlassCard = ({ children, className = '', glow = false, ...props }: any) => (
