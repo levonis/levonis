@@ -14,8 +14,10 @@ import { Coins, Star, Lock, Zap, CreditCard, Gift, Trophy, ShoppingCart, Wallet,
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 export default function LoyaltyLevelsPanel() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -55,15 +57,15 @@ export default function LoyaltyLevelsPanel() {
       });
       if (error) throw error;
       const result = data as any;
-      if (!result?.success) { toast.error(result?.error || 'حدث خطأ'); return; }
-      toast.success(`تم إهداء بطاقة ${giftDialog.level.name_ar} بنجاح! 🎁`);
+      if (!result?.success) { toast.error(result?.error || t('ll_error_generic')); return; }
+      toast.success(t('ll_success_gift', { name: giftDialog.level.name_ar }));
       setGiftDialog({ open: false, level: null, method: 'points' });
       setSelectedRecipient(null); setGiftSearch(''); setGiftMessage(''); setSearchResults([]);
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['user-points-loyalty'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet-cards'] });
-    } catch (err: any) { toast.error(err.message || 'حدث خطأ في عملية الإهداء'); }
+    } catch (err: any) { toast.error(err.message || t('ll_error_gift')); }
     finally { setGifting(false); }
   };
 
@@ -174,11 +176,11 @@ export default function LoyaltyLevelsPanel() {
       const result = data as any;
       
       if (!result?.success) {
-        toast.error(result?.error || 'حدث خطأ');
+        toast.error(result?.error || t('ll_error_generic'));
         return;
       }
 
-      toast.success(`تم شراء بطاقة ${purchaseDialog.level.name_ar} بنجاح! 🎉`);
+      toast.success(t('ll_success_purchase', { name: purchaseDialog.level.name_ar }));
       setPurchaseDialog({ open: false, level: null, method: 'points' });
       
       // Invalidate related queries
@@ -191,7 +193,7 @@ export default function LoyaltyLevelsPanel() {
       queryClient.invalidateQueries({ queryKey: ['user-wallet-cards'] });
       queryClient.invalidateQueries({ queryKey: ['user-card-frame'] });
     } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ في عملية الشراء');
+      toast.error(err.message || t('ll_error_purchase'));
     } finally {
       setPurchasing(false);
     }
@@ -218,13 +220,13 @@ export default function LoyaltyLevelsPanel() {
 
   const getVipPlusBenefits = (level: any) => {
     const benefits: { icon: any; text: string; color: string }[] = [];
-    if (level.wholesale_discount_enabled) benefits.push({ icon: TrendingUp, text: 'أسعار الجملة على المنتجات', color: 'text-emerald-600' });
-    if (level.free_shipping) benefits.push({ icon: Truck, text: 'توصيل مجاني + أولوية التوصيل', color: 'text-blue-600' });
-    if (level.priority_packaging) benefits.push({ icon: Package, text: 'أولوية التغليف', color: 'text-orange-600' });
-    if (level.priority_support) benefits.push({ icon: Headphones, text: 'أولوية الدعم الفني', color: 'text-purple-600' });
-    if (level.free_daily_games > 0) benefits.push({ icon: Gamepad2, text: `لعب مجاني ${level.free_daily_games} مرة يومياً`, color: 'text-pink-600' });
+    if (level.wholesale_discount_enabled) benefits.push({ icon: TrendingUp, text: t('ll_benefit_wholesale'), color: 'text-emerald-600' });
+    if (level.free_shipping) benefits.push({ icon: Truck, text: t('ll_benefit_free_shipping'), color: 'text-blue-600' });
+    if (level.priority_packaging) benefits.push({ icon: Package, text: t('ll_benefit_priority_packaging'), color: 'text-orange-600' });
+    if (level.priority_support) benefits.push({ icon: Headphones, text: t('ll_benefit_priority_support'), color: 'text-purple-600' });
+    if (level.free_daily_games > 0) benefits.push({ icon: Gamepad2, text: t('ll_benefit_free_games', { count: level.free_daily_games }), color: 'text-pink-600' });
     // استبدال الاستثمار بكود الإحالة الخاص
-    benefits.push({ icon: TrendingUp, text: 'كود دعوة شخصي + عمولة من كل عملية بيع لأصدقائك', color: 'text-amber-600' });
+    benefits.push({ icon: TrendingUp, text: t('ll_benefit_referral_code'), color: 'text-amber-600' });
     return benefits;
   };
 
@@ -238,22 +240,22 @@ export default function LoyaltyLevelsPanel() {
               <Zap className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">نقاط الخبرة (XP)</p>
+              <p className="text-xs text-muted-foreground">{t('ll_xp_label')}</p>
               <p className="text-2xl font-bold">{totalXp.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Coins className="h-3 w-3" />
-              النقاط المتاحة: <strong className="text-foreground">{availablePoints.toLocaleString()}</strong>
+              {t('ll_available_points')}: <strong className="text-foreground">{availablePoints.toLocaleString()}</strong>
             </span>
             <span className="flex items-center gap-1">
               <Wallet className="h-3 w-3" />
-              المحفظة: <strong className="text-foreground">{walletBalance.toLocaleString()} د.ع</strong>
+              {t('ll_wallet')}: <strong className="text-foreground">{walletBalance.toLocaleString()} {t('ll_currency_iqd')}</strong>
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            كل نقطة تكسبها = 2 XP • البطاقات تُشترى بالنقاط أو المحفظة
+            {t('ll_xp_hint')}
           </p>
         </CardContent>
       </Card>
@@ -261,7 +263,7 @@ export default function LoyaltyLevelsPanel() {
       {/* Active Card */}
       {activeCardLevel && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">بطاقتك الحالية</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground">{t('ll_your_current_card')}</h3>
           <UserLoyaltyCard
             level={{
               id: activeCardLevel.id,
@@ -297,12 +299,12 @@ export default function LoyaltyLevelsPanel() {
         size="lg"
       >
         <Trophy className="h-5 w-5 text-amber-500" />
-        خريطة المستويات والجوائز
+        {t('ll_roadmap_button')}
       </Button>
 
       {/* Purchasable Cards */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة للشراء</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">{t('ll_purchasable_cards')}</h3>
         <div className="grid gap-3">
           {sortedLevels.filter(l => l.is_purchasable).map((level: any) => {
             const isOwned = activeCardLevel?.id === level.id;
@@ -343,24 +345,24 @@ export default function LoyaltyLevelsPanel() {
                           {level.name_ar}
                         </p>
                         {isOwned && (
-                          <Badge className="text-[10px] bg-primary/15 text-primary border-0">مملوكة</Badge>
+                          <Badge className="text-[10px] bg-primary/15 text-primary border-0">{t('ll_owned_badge')}</Badge>
                         )}
                         {isVipPlus && !isOwned && (
                           <Badge className="text-[10px] bg-amber-500/15 text-amber-600 border-0">
                             <Crown className="h-3 w-3 ml-0.5" />
-                            مميزة
+                            {t('ll_premium_badge')}
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{(level.purchase_price_points || 0).toLocaleString()} نقطة</span>
+                        <span>{(level.purchase_price_points || 0).toLocaleString()} {t('ll_points_unit')}</span>
                         {hasWalletPrice && (
                           <>
                             <span>•</span>
-                            <span className="text-emerald-600">{level.wallet_price.toLocaleString()} د.ع</span>
+                            <span className="text-emerald-600">{level.wallet_price.toLocaleString()} {t('ll_currency_iqd')}</span>
                           </>
                         )}
-                        <span>• {level.duration_days} يوم</span>
+                        <span>• {level.duration_days} {t('ll_days_unit')}</span>
                       </div>
                     </div>
                   </div>
@@ -369,32 +371,32 @@ export default function LoyaltyLevelsPanel() {
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {level.bonus_points_percentage > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600">
-                        +{level.bonus_points_percentage}% نقاط
+                        +{level.bonus_points_percentage}% {t('ll_points_unit')}
                       </span>
                     )}
                     {level.free_shipping && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-600">
-                        شحن مجاني
+                        {t('ll_free_shipping_chip')}
                       </span>
                     )}
                     {level.priority_packaging && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600">
-                        أولوية تغليف
+                        {t('ll_priority_packaging_chip')}
                       </span>
                     )}
                     {level.free_daily_games > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-600">
-                        لعب مجاني
+                        {t('ll_free_games_chip')}
                       </span>
                     )}
                     {level.wholesale_discount_enabled && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                        أسعار جملة
+                        {t('ll_wholesale_chip')}
                       </span>
                     )}
                     {prizesForLevel.length > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600">
-                        <Gift className="h-3 w-3 inline ml-0.5" />{prizesForLevel.length} جائزة
+                        <Gift className="h-3 w-3 inline ml-0.5" />{t('ll_prize_count_chip', { count: prizesForLevel.length })}
                       </span>
                     )}
                   </div>
@@ -423,7 +425,7 @@ export default function LoyaltyLevelsPanel() {
                           onClick={() => setPurchaseDialog({ open: true, level, method: 'points' })}
                         >
                           <Coins className="h-3 w-3" />
-                          شراء بالنقاط
+                          {t('ll_buy_with_points')}
                         </Button>
                         {hasWalletPrice && (
                           <Button
@@ -434,7 +436,7 @@ export default function LoyaltyLevelsPanel() {
                             onClick={() => setPurchaseDialog({ open: true, level, method: 'wallet' })}
                           >
                             <Wallet className="h-3 w-3" />
-                            شراء بالمحفظة
+                            {t('ll_buy_with_wallet')}
                           </Button>
                         )}
                       </div>
@@ -451,7 +453,7 @@ export default function LoyaltyLevelsPanel() {
                           }}
                         >
                           <Gift className="h-3 w-3" />
-                          إهداء لشخص آخر
+                          {t('ll_gift_to_other')}
                         </Button>
                       </div>
                     </>
@@ -467,9 +469,9 @@ export default function LoyaltyLevelsPanel() {
       <Dialog open={purchaseDialog.open} onOpenChange={(open) => !purchasing && setPurchaseDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>تأكيد شراء البطاقة</DialogTitle>
+            <DialogTitle>{t('ll_purchase_dialog_title')}</DialogTitle>
             <DialogDescription>
-              هل تريد شراء بطاقة <strong>{purchaseDialog.level?.name_ar}</strong>؟
+              {t('ll_purchase_dialog_desc', { name: purchaseDialog.level?.name_ar || '' })}
             </DialogDescription>
           </DialogHeader>
           
@@ -477,27 +479,27 @@ export default function LoyaltyLevelsPanel() {
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">البطاقة:</span>
+                  <span className="text-muted-foreground">{t('ll_field_card')}</span>
                   <span className="font-bold">{purchaseDialog.level.name_ar}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">المدة:</span>
-                  <span>{purchaseDialog.level.duration_days} يوم</span>
+                  <span className="text-muted-foreground">{t('ll_field_duration')}</span>
+                  <span>{purchaseDialog.level.duration_days} {t('ll_days_unit')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">طريقة الدفع:</span>
+                  <span className="text-muted-foreground">{t('ll_field_payment_method')}</span>
                   <span className="font-bold">
                     {purchaseDialog.method === 'wallet' 
-                      ? `${purchaseDialog.level.wallet_price?.toLocaleString()} د.ع (محفظة)` 
-                      : `${purchaseDialog.level.purchase_price_points?.toLocaleString()} نقطة`}
+                      ? t('ll_payment_wallet_label', { amount: purchaseDialog.level.wallet_price?.toLocaleString() })
+                      : t('ll_payment_points_label', { amount: purchaseDialog.level.purchase_price_points?.toLocaleString() })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">رصيدك:</span>
+                  <span className="text-muted-foreground">{t('ll_field_balance')}</span>
                   <span>
                     {purchaseDialog.method === 'wallet'
-                      ? `${walletBalance.toLocaleString()} د.ع`
-                      : `${availablePoints.toLocaleString()} نقطة`}
+                      ? `${walletBalance.toLocaleString()} ${t('ll_currency_iqd')}`
+                      : `${availablePoints.toLocaleString()} ${t('ll_points_unit')}`}
                   </span>
                 </div>
               </div>
@@ -506,10 +508,10 @@ export default function LoyaltyLevelsPanel() {
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
-                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">مزايا VIP Plus</span>
+                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{t('ll_vip_plus_title')}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    ستحصل على شارة مميزة، أسعار الجملة، توصيل مجاني، أولوية الدعم والتغليف، لعب مجاني في الألعاب، وخيار الاستثمار.
+                    {t('ll_vip_plus_desc')}
                   </p>
                 </div>
               )}
@@ -521,7 +523,7 @@ export default function LoyaltyLevelsPanel() {
                   onClick={() => setPurchaseDialog({ open: false, level: null, method: 'points' })}
                   disabled={purchasing}
                 >
-                  إلغاء
+                  {t('ll_btn_cancel')}
                 </Button>
                 <Button
                   className="flex-1 gap-1"
@@ -533,7 +535,7 @@ export default function LoyaltyLevelsPanel() {
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
-                  تأكيد الشراء
+                  {t('ll_btn_confirm_purchase')}
                 </Button>
               </div>
             </div>
@@ -547,10 +549,10 @@ export default function LoyaltyLevelsPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gift className="h-5 w-5 text-pink-500" />
-              إهداء بطاقة
+              {t('ll_gift_dialog_title')}
             </DialogTitle>
             <DialogDescription>
-              إهداء بطاقة <strong>{giftDialog.level?.name_ar}</strong> لمستخدم آخر
+              {t('ll_gift_dialog_desc', { name: giftDialog.level?.name_ar || '' })}
             </DialogDescription>
           </DialogHeader>
 
@@ -558,11 +560,11 @@ export default function LoyaltyLevelsPanel() {
             <div className="space-y-4">
               {/* User search */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">البحث عن المستخدم</label>
+                <label className="text-sm font-medium">{t('ll_search_user_label')}</label>
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="اسم المستخدم أو الاسم الكامل..."
+                    placeholder={t('ll_search_user_placeholder')}
                     value={giftSearch}
                     onChange={(e) => {
                       setGiftSearch(e.target.value);
@@ -573,7 +575,7 @@ export default function LoyaltyLevelsPanel() {
                 </div>
 
                 {/* Search results */}
-                {searching && <p className="text-xs text-muted-foreground text-center">جاري البحث...</p>}
+                {searching && <p className="text-xs text-muted-foreground text-center">{t('ll_searching')}</p>}
                 {searchResults.length > 0 && !selectedRecipient && (
                   <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
                     {searchResults.map((u) => (
@@ -587,7 +589,7 @@ export default function LoyaltyLevelsPanel() {
                           <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{u.full_name || u.username || 'مستخدم'}</p>
+                          <p className="text-sm font-medium truncate">{u.full_name || u.username || t('ll_default_user')}</p>
                           {u.username && <p className="text-xs text-muted-foreground">@{u.username}</p>}
                         </div>
                       </button>
@@ -606,14 +608,14 @@ export default function LoyaltyLevelsPanel() {
                       <p className="text-sm font-medium truncate">{selectedRecipient.full_name || selectedRecipient.username}</p>
                       {selectedRecipient.username && <p className="text-xs text-muted-foreground">@{selectedRecipient.username}</p>}
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedRecipient(null)}>تغيير</Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedRecipient(null)}>{t('ll_change')}</Button>
                   </div>
                 )}
               </div>
 
               {/* Payment method toggle */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">طريقة الدفع</label>
+                <label className="text-sm font-medium">{t('ll_payment_method_label')}</label>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -622,7 +624,7 @@ export default function LoyaltyLevelsPanel() {
                     onClick={() => setGiftDialog(prev => ({ ...prev, method: 'points' }))}
                   >
                     <Coins className="h-3 w-3" />
-                    نقاط ({(giftDialog.level?.purchase_price_points || 0).toLocaleString()})
+                    {t('ll_points_btn', { amount: (giftDialog.level?.purchase_price_points || 0).toLocaleString() })}
                   </Button>
                   {giftDialog.level?.wallet_price > 0 && (
                     <Button
@@ -632,7 +634,7 @@ export default function LoyaltyLevelsPanel() {
                       onClick={() => setGiftDialog(prev => ({ ...prev, method: 'wallet' }))}
                     >
                       <Wallet className="h-3 w-3" />
-                      محفظة ({giftDialog.level?.wallet_price?.toLocaleString()} د.ع)
+                      {t('ll_wallet_btn', { amount: giftDialog.level?.wallet_price?.toLocaleString() })}
                     </Button>
                   )}
                 </div>
@@ -640,9 +642,9 @@ export default function LoyaltyLevelsPanel() {
 
               {/* Message */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">رسالة (اختياري)</label>
+                <label className="text-sm font-medium">{t('ll_message_label')}</label>
                 <Textarea
-                  placeholder="أكتب رسالة للمستلم..."
+                  placeholder={t('ll_message_placeholder')}
                   value={giftMessage}
                   onChange={(e) => setGiftMessage(e.target.value)}
                   rows={2}
@@ -653,32 +655,32 @@ export default function LoyaltyLevelsPanel() {
               {/* Summary */}
               <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">البطاقة:</span>
+                  <span className="text-muted-foreground">{t('ll_field_card')}</span>
                   <span className="font-bold">{giftDialog.level.name_ar}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">التكلفة:</span>
+                  <span className="text-muted-foreground">{t('ll_field_cost')}</span>
                   <span className="font-bold">
                     {giftDialog.method === 'wallet'
-                      ? `${giftDialog.level.wallet_price?.toLocaleString()} د.ع`
-                      : `${(giftDialog.level.purchase_price_points || 0).toLocaleString()} نقطة`}
+                      ? `${giftDialog.level.wallet_price?.toLocaleString()} ${t('ll_currency_iqd')}`
+                      : `${(giftDialog.level.purchase_price_points || 0).toLocaleString()} ${t('ll_points_unit')}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">رصيدك:</span>
-                  <span>{giftDialog.method === 'wallet' ? `${walletBalance.toLocaleString()} د.ع` : `${availablePoints.toLocaleString()} نقطة`}</span>
+                  <span className="text-muted-foreground">{t('ll_field_balance')}</span>
+                  <span>{giftDialog.method === 'wallet' ? `${walletBalance.toLocaleString()} ${t('ll_currency_iqd')}` : `${availablePoints.toLocaleString()} ${t('ll_points_unit')}`}</span>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setGiftDialog({ open: false, level: null, method: 'points' })} disabled={gifting}>إلغاء</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setGiftDialog({ open: false, level: null, method: 'points' })} disabled={gifting}>{t('ll_btn_cancel')}</Button>
                 <Button
                   className="flex-1 gap-1 bg-pink-600 hover:bg-pink-700"
                   onClick={handleGift}
                   disabled={gifting || !selectedRecipient}
                 >
                   {gifting ? <span className="animate-spin h-4 w-4 border-2 border-white/40 border-t-white rounded-full" /> : <Send className="h-4 w-4" />}
-                  إهداء البطاقة
+                  {t('ll_btn_send_gift')}
                 </Button>
               </div>
             </div>
