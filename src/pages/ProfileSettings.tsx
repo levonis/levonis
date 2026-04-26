@@ -420,7 +420,7 @@ export default function ProfileSettings() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10 rounded-2xl bg-white/5 hover:bg-white/15 backdrop-blur-xl border border-white/10">
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-black text-foreground">الإعدادات</h1>
+          <h1 className="text-lg font-black text-foreground">{t('settings_title')}</h1>
         </div>
       </div>
 
