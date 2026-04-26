@@ -295,9 +295,14 @@ export default function AllOffersPanel() {
           >
             {/* Glass Square Card */}
             <div className="glass-tile glass-tile-interactive relative aspect-square !rounded-lg overflow-hidden">
+              <OptimizedImage
+                src={offer.image_url || '/placeholder.svg'}
+                alt={offer.title_ar}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
 
               {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
               
               {/* Top Badges Row */}
               <div className="absolute top-1 left-1 right-1 flex justify-between items-start">
