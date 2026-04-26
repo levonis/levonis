@@ -443,6 +443,15 @@ const CategoryDetail = () => {
                         currency={product.currency || undefined}
                         slug={product.slug}
                         hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
+                        directSalePriceLive={
+                          (product as any).link_direct_commission_to_cod
+                            ? computeLinkedDirectSalePrice(
+                                product as any,
+                                { usd_to_iqd_rate: usdToIqd } as any,
+                                codDefaults as any,
+                              )
+                            : null
+                        }
                       />
                     ))}
                   </div>
