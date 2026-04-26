@@ -1369,6 +1369,14 @@ export type TranslationKeys = {
   cs_view_all: string;
   cs_days_remaining: string;
   cs_use_now: string;
+  savings_your_savings: string;
+  savings_total: string;
+  savings_currency: string;
+  savings_from_discounts: string;
+  savings_from_coupons: string;
+  savings_details: string;
+  savings_empty: string;
+  savings_coupon_for_order: string;
   np_dont_show_again: string;
   np_title: string;
   np_subtitle: string;

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, Tag, Ticket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/lib/i18n';
 import OriginExpandShell, { type OriginRect } from './OriginExpandShell';
 
 interface SavingsPopupProps {
@@ -24,6 +25,8 @@ interface SavingsItem {
 }
 
 export default function SavingsPopup({ open, onOpenChange, userId, originRect }: SavingsPopupProps) {
+  const { t, language } = useLanguage();
+  const numLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
   const { data, isLoading } = useQuery({
     queryKey: ['user-savings-popup', userId],
     enabled: open && !!userId,
@@ -77,7 +80,7 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
           items.push({
             orderId: order.id,
             orderNumber: order.order_number,
-            productName: `كوبون خصم - طلب #${order.order_number}`,
+            productName: t('savings_coupon_for_order', { n: order.order_number }),
             originalPrice: 0,
             paidPrice: 0,
             quantity: 1,
@@ -104,18 +107,18 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
       title={
         <span className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-green-500" />
-          التوفير الخاص بك
+          {t('savings_your_savings')}
         </span>
       }
     >
       <div className="space-y-4">
         {/* Total Savings Summary */}
         <div className="rounded-2xl p-5 text-center" style={{ background: 'linear-gradient(135deg, hsl(142 71% 45% / 0.15), hsl(142 71% 45% / 0.05))' }}>
-          <p className="text-xs text-muted-foreground mb-1">إجمالي التوفير</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('savings_total')}</p>
           <p className="text-3xl font-black text-green-600 tabular-nums">
-            {isLoading ? '...' : (data?.totalSavings ?? 0).toLocaleString('ar-IQ')}
+            {isLoading ? '...' : (data?.totalSavings ?? 0).toLocaleString(numLocale)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">د.ع</p>
+          <p className="text-xs text-muted-foreground mt-1">{t('savings_currency')}</p>
         </div>
 
         {/* Breakdown */}
@@ -123,27 +126,27 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-border/30 bg-card/50 p-3 text-center">
               <Tag className="h-4 w-4 text-primary mx-auto mb-1" />
-              <p className="text-sm font-bold tabular-nums">{data.totalProductSavings.toLocaleString('ar-IQ')}</p>
-              <p className="text-[10px] text-muted-foreground">وفر من الخصومات</p>
+              <p className="text-sm font-bold tabular-nums">{data.totalProductSavings.toLocaleString(numLocale)}</p>
+              <p className="text-[10px] text-muted-foreground">{t('savings_from_discounts')}</p>
             </div>
             <div className="rounded-xl border border-border/30 bg-card/50 p-3 text-center">
               <Ticket className="h-4 w-4 text-amber-500 mx-auto mb-1" />
-              <p className="text-sm font-bold tabular-nums">{data.totalCouponSavings.toLocaleString('ar-IQ')}</p>
-              <p className="text-[10px] text-muted-foreground">وفر من الكوبونات</p>
+              <p className="text-sm font-bold tabular-nums">{data.totalCouponSavings.toLocaleString(numLocale)}</p>
+              <p className="text-[10px] text-muted-foreground">{t('savings_from_coupons')}</p>
             </div>
           </div>
         )}
 
         {/* Savings Items */}
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-foreground">تفاصيل التوفير</h3>
+          <h3 className="text-sm font-bold text-foreground">{t('savings_details')}</h3>
           <div className="space-y-2 pr-1">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 rounded-xl" />
               ))
             ) : !data?.items.length ? (
-              <p className="text-center text-sm text-muted-foreground py-6">لم تقم بأي توفير بعد! تسوق واستفد من الخصومات</p>
+              <p className="text-center text-sm text-muted-foreground py-6">{t('savings_empty')}</p>
             ) : (
               data.items.map((item, i) => (
                 <div key={`${item.orderId}-${i}`} className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-card/50">
@@ -158,15 +161,15 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
                     <p className="text-xs font-medium truncate">{item.productName}</p>
                     {item.type === 'discount' && (
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground line-through">{item.originalPrice.toLocaleString('ar-IQ')}</span>
-                        <span className="text-[10px] text-green-600 font-medium">{item.paidPrice.toLocaleString('ar-IQ')}</span>
+                        <span className="text-[10px] text-muted-foreground line-through">{item.originalPrice.toLocaleString(numLocale)}</span>
+                        <span className="text-[10px] text-green-600 font-medium">{item.paidPrice.toLocaleString(numLocale)}</span>
                         {item.quantity > 1 && <span className="text-[10px] text-muted-foreground">×{item.quantity}</span>}
                       </div>
                     )}
                     <p className="text-[10px] text-muted-foreground">#{item.orderNumber}</p>
                   </div>
                   <span className="text-sm font-bold text-green-600 tabular-nums shrink-0">
-                    -{item.savedAmount.toLocaleString('ar-IQ')}
+                    -{item.savedAmount.toLocaleString(numLocale)}
                   </span>
                 </div>
               ))
