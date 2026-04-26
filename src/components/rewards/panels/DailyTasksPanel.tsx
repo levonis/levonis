@@ -488,9 +488,9 @@ export default function DailyTasksPanel() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-2">
             <Flame className="h-5 w-5 text-orange-500" />
-            <span className="font-medium text-sm">الستريك اليومي</span>
+            <span className="font-medium text-sm">{t('dt_streak_title')}</span>
             <span className="text-xs bg-orange-500/20 text-orange-600 px-2 py-0.5 rounded-full font-bold mr-auto">
-              {streak} يوم 🔥
+              {streak} {t('dt_streak_days')} 🔥
             </span>
           </div>
           <div className="flex gap-1">
@@ -504,7 +504,7 @@ export default function DailyTasksPanel() {
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5">
-            سجّل دخولك يومياً لزيادة الستريك والحصول على نقاط إضافية
+            {t('dt_streak_hint')}
           </p>
         </CardContent>
       </Card>
