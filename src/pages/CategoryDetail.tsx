@@ -23,6 +23,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { usePageTitle } from '@/island/usePageTitle';
+import { useShippingSettings } from '@/hooks/useShippingCalculator';
+import { useCodDefaults } from '@/hooks/useCodDefaults';
+import { computeLinkedDirectSalePrice } from '@/lib/priceGuard';
 
 type SortKey =
   | 'default'
@@ -49,6 +52,10 @@ const CategoryDetail = () => {
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
 
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+  const { data: codDefaults } = useCodDefaults();
+
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ['category', slug],
     queryFn: async () => {
@@ -70,7 +77,7 @@ const CategoryDetail = () => {
       if (!category?.id) return [];
       let query = supabase
         .from('products')
-        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, product_options(stock_quantity, available_for_direct_sale)')
+        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, commission_sea_iqd, commission_air_iqd, sea_price, air_price, shipping_cost_iqd, round_up_price, product_options(stock_quantity, available_for_direct_sale)')
         .eq('category_id', category.id)
         .eq('in_stock', true)
         .order('price', { ascending: false });
@@ -436,6 +443,15 @@ const CategoryDetail = () => {
                         currency={product.currency || undefined}
                         slug={product.slug}
                         hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
+                        directSalePriceLive={
+                          (product as any).link_direct_commission_to_cod
+                            ? computeLinkedDirectSalePrice(
+                                product as any,
+                                { usd_to_iqd_rate: usdToIqd } as any,
+                                codDefaults as any,
+                              )
+                            : null
+                        }
                       />
                     ))}
                   </div>

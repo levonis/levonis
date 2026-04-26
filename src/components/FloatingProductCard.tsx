@@ -17,6 +17,12 @@ interface FloatingProductCardProps {
   nameEn?: string | null;
   nameKu?: string | null;
   hasDirectSale?: boolean;
+  /**
+   * Live-computed direct sale price (in IQD) for products linked to global COD %.
+   * When provided (>0), overrides `price` so the card always shows the up-to-date
+   * value reflecting the current COD setting / exchange rate — no reload needed.
+   */
+  directSalePriceLive?: number | null;
 }
 
 const FloatingProductCard = memo(({
@@ -30,12 +36,17 @@ const FloatingProductCard = memo(({
   nameEn = null,
   nameKu = null,
   hasDirectSale = false,
+  directSalePriceLive = null,
 }: FloatingProductCardProps) => {
   const { language } = useLanguage();
   const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu };
   const displayName = getLocalizedField(localProduct, 'name', language);
-  const discount = originalPrice && originalPrice > price
-    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+  // Prefer live direct sale price when product is linked to global COD %
+  const displayPrice = directSalePriceLive != null && directSalePriceLive > 0
+    ? directSalePriceLive
+    : price;
+  const discount = originalPrice && originalPrice > displayPrice
+    ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
   if (featured) {
@@ -75,7 +86,7 @@ const FloatingProductCard = memo(({
                   color: 'hsl(155 50% 35% / 0.55)',
                   textShadow: '0 1px 2px hsl(160 20% 5% / 0.9), 0 -1px 1px hsl(155 40% 30% / 0.25)',
                 }}>
-                {price.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
+                {displayPrice.toLocaleString()} {currency === 'IQD' ? 'د.ع' : currency}
               </span>
               {discount > 0 && (
                 <div className="flex items-center gap-1.5">
@@ -139,7 +150,7 @@ const FloatingProductCard = memo(({
           </h3>
           <div className="flex items-center justify-center gap-1">
             <span className="text-sm md:text-base font-black text-primary">
-              {price.toLocaleString()}
+              {displayPrice.toLocaleString()}
             </span>
             <span className="text-[8px] text-primary/60">
               {currency === 'IQD' ? 'د.ع' : currency}
