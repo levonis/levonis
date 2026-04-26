@@ -549,10 +549,10 @@ export default function LoyaltyLevelsPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gift className="h-5 w-5 text-pink-500" />
-              إهداء بطاقة
+              {t('ll_gift_dialog_title')}
             </DialogTitle>
             <DialogDescription>
-              إهداء بطاقة <strong>{giftDialog.level?.name_ar}</strong> لمستخدم آخر
+              {t('ll_gift_dialog_desc', { name: giftDialog.level?.name_ar || '' })}
             </DialogDescription>
           </DialogHeader>
 
@@ -560,11 +560,11 @@ export default function LoyaltyLevelsPanel() {
             <div className="space-y-4">
               {/* User search */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">البحث عن المستخدم</label>
+                <label className="text-sm font-medium">{t('ll_search_user_label')}</label>
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="اسم المستخدم أو الاسم الكامل..."
+                    placeholder={t('ll_search_user_placeholder')}
                     value={giftSearch}
                     onChange={(e) => {
                       setGiftSearch(e.target.value);
@@ -575,7 +575,7 @@ export default function LoyaltyLevelsPanel() {
                 </div>
 
                 {/* Search results */}
-                {searching && <p className="text-xs text-muted-foreground text-center">جاري البحث...</p>}
+                {searching && <p className="text-xs text-muted-foreground text-center">{t('ll_searching')}</p>}
                 {searchResults.length > 0 && !selectedRecipient && (
                   <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
                     {searchResults.map((u) => (
@@ -589,7 +589,7 @@ export default function LoyaltyLevelsPanel() {
                           <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{u.full_name || u.username || 'مستخدم'}</p>
+                          <p className="text-sm font-medium truncate">{u.full_name || u.username || t('ll_default_user')}</p>
                           {u.username && <p className="text-xs text-muted-foreground">@{u.username}</p>}
                         </div>
                       </button>
