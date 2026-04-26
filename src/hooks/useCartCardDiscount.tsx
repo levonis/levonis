@@ -80,7 +80,20 @@ export function useCartCardDiscount(
     staleTime: 30 * 1000,
   });
 
-  const isLoading = loadingCard || loadingLimits || loadingUsage;
+  // Get cumulative percentage discount used during current card validity
+  const { data: percentageUsedData, isLoading: loadingPercentageUsed } = useQuery({
+    queryKey: ["card-percentage-discount-used", cardId],
+    queryFn: async () => {
+      if (!cardId) return 0;
+      const { data, error } = await (supabase as any).rpc("get_card_percentage_discount_used", { p_card_id: cardId });
+      if (error) throw error;
+      return Number(data) || 0;
+    },
+    enabled: !!cardId,
+    staleTime: 30 * 1000,
+  });
+
+  const isLoading = loadingCard || loadingLimits || loadingUsage || loadingPercentageUsed;
 
   if (!userCard || !levelId || isLoading) {
     return { cardDiscount: null, isLoading };
@@ -134,19 +147,44 @@ export function useCartCardDiscount(
     }
   }
 
+  // Percentage-based discount on the cart subtotal AFTER per-item discount
+  const percentageRate = Number(level.discount_percentage) || 0;
+  const percentageMaxAmount = level.discount_percentage_max_amount != null
+    ? Number(level.discount_percentage_max_amount)
+    : null;
+  const percentageUsedSoFar = Number(percentageUsedData) || 0;
+  const percentageRemaining = percentageMaxAmount != null
+    ? Math.max(0, percentageMaxAmount - percentageUsedSoFar)
+    : null;
+
+  let percentageDiscount = 0;
+  if (percentageRate > 0) {
+    const baseAmount = Math.max(0, cartSubtotal - totalDiscount);
+    const raw = Math.floor((baseAmount * percentageRate) / 100);
+    percentageDiscount = percentageRemaining != null
+      ? Math.min(raw, percentageRemaining)
+      : raw;
+  }
+
   // Free shipping check
   const freeShipping = level.free_shipping || false;
   const freeShippingMinOrder = level.free_shipping_min_order || 0;
 
   return {
     cardDiscount: {
-      totalDiscount,
+      totalDiscount: totalDiscount + percentageDiscount,
       discountsByCategory,
       levelName: level.name_ar,
       levelId,
-      hasDiscount: totalDiscount > 0,
+      cardId: cardId || null,
+      hasDiscount: (totalDiscount + percentageDiscount) > 0,
       freeShipping,
       freeShippingMinOrder,
+      percentageDiscount,
+      percentageRate,
+      percentageMaxAmount,
+      percentageUsedSoFar,
+      percentageRemaining,
     },
     isLoading: false,
   };
