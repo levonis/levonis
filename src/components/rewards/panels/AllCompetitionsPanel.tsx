@@ -653,7 +653,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
             <Trophy className="h-2.5 w-2.5" />
-            الجائزة الحالية: {currentPrize.toLocaleString()}
+            {t('ac_current_prize', { value: currentPrize.toLocaleString() })}
           </div>
         );
       }
