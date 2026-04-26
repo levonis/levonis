@@ -101,7 +101,7 @@ export function translateNotificationMessage(message: string | null | undefined,
   // Fallback: replace just status keyword if pattern didn't match
   let out = text;
   for (const [ar, tr] of Object.entries(STATUS_MAP)) {
-    if (out.includes(ar)) out = out.replaceAll(ar, tr[lang]);
+    if (out.includes(ar)) out = out.split(ar).join(tr[lang]);
   }
   return out;
 }
