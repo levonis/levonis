@@ -11,6 +11,7 @@ import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 import PointsStorePanel from "./panels/PointsStorePanel";
 import { useLanguage } from "@/lib/i18n";
 import { pickLocalized } from "@/lib/i18n/localizedField";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;

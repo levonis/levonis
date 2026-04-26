@@ -8,10 +8,12 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 export default function PointsHistoryPanel() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
   const dateLocale = language === 'ar' || language === 'ku' ? ar : enUS;
 
   const { data: transactions, isLoading } = useQuery({
@@ -84,7 +86,7 @@ export default function PointsHistoryPanel() {
                 </p>
               </div>
               <Badge variant={isEarned ? 'default' : 'destructive'} className={isEarned ? 'bg-green-500' : ''}>
-                {isEarned ? '+' : '-'}{displayPoints.toLocaleString(language === 'en' ? 'en-US' : 'ar-IQ')}
+                {isEarned ? '+' : '-'}{fmt(displayPoints)}
               </Badge>
             </CardContent>
           </Card>
