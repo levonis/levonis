@@ -1891,4 +1891,58 @@ export type TranslationKeys = {
   delivery_method_pickup_desc: string;
   delivery_method_personal_name: string;
   delivery_method_personal_desc: string;
+
+  // Product Offers page
+  offers_page_title: string;
+  offers_page_subtitle: string;
+  offers_my_purchases: string;
+  offers_competitions: string;
+  offers_empty: string;
+  offers_out_of_stock: string;
+  offers_remaining: string;
+  offers_login_short: string;
+  offers_oos_short: string;
+  offers_insufficient_short: string;
+  offers_buy_short: string;
+  offers_login_to_buy: string;
+  offers_buy_now: string;
+  offers_oos_full: string;
+  offers_insufficient_full: string;
+  offers_pick_color: string;
+  offers_pick_option: string;
+  offers_chosen_color: string;
+  offers_color_oos: string;
+  offers_remaining_paren: string;
+  offers_ticket_word: string;
+  offers_tickets_with_each_purchase: string;
+  offers_tickets_count_each_purchase: string;
+  offers_bonus_tickets_promo: string;
+  offers_promo_ends_in: string;
+  offers_promo_days_short: string;
+  offers_extra_tickets_with_each: string;
+  offers_confirm_title: string;
+  offers_confirm_question: string;
+  offers_confirm_price: string;
+  offers_confirm_gift_tickets: string;
+  offers_confirm_bonus_label: string;
+  offers_confirm_wallet_low: string;
+  offers_confirm_button: string;
+  offers_cancel: string;
+  offers_product_details_fallback: string;
+  offers_purchase_success: string;
+  offers_purchase_bonus_part: string;
+  offers_purchase_promo_default: string;
+  offers_generic_error: string;
+  offers_error_prefix: string;
+
+  // Merchant Giveaways / Assistance hub
+  assist_title: string;
+  assist_subtitle: string;
+  assist_hero_badge: string;
+  assist_hero_title: string;
+  assist_hero_desc: string;
+  assist_tab_competitions: string;
+  assist_tab_gifts: string;
+  assist_tab_coupons: string;
+  assist_tab_envelopes: string;
 };

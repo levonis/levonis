@@ -11,10 +11,13 @@ import AssistanceCompetitions from "@/components/assistance/AssistanceCompetitio
 import AssistanceGifts from "@/components/assistance/AssistanceGifts";
 import AssistanceCoupons from "@/components/assistance/AssistanceCoupons";
 import AssistanceEnvelopes from "@/components/assistance/AssistanceEnvelopes";
+import { useLanguage } from "@/lib/i18n";
 
 export default function MerchantGiveaways() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const dir = language === 'en' ? 'ltr' : 'rtl';
   const [activeTab, setActiveTab] = useState("competitions");
 
   const { data: merchantApp } = useQuery({
@@ -35,14 +38,14 @@ export default function MerchantGiveaways() {
   const isVerifiedMerchant = merchantApp?.is_verified === true;
 
   const tabs = [
-    { key: "competitions", label: "مسابقات", icon: Trophy },
-    { key: "gifts", label: "هدايا", icon: Gift },
-    { key: "coupons", label: "كوبونات", icon: Ticket },
-    { key: "envelopes", label: "ظروف حمراء", icon: Mail },
+    { key: "competitions", label: t('assist_tab_competitions'), icon: Trophy },
+    { key: "gifts", label: t('assist_tab_gifts'), icon: Gift },
+    { key: "coupons", label: t('assist_tab_coupons'), icon: Ticket },
+    { key: "envelopes", label: t('assist_tab_envelopes'), icon: Mail },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir={dir}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
@@ -53,8 +56,8 @@ export default function MerchantGiveaways() {
               </div>
             </div>
             <div>
-              <h1 className="text-sm font-black text-foreground tracking-tight">المساعدات</h1>
-              <p className="text-[10px] text-muted-foreground">مقدمة من مجتمع ليفو</p>
+              <h1 className="text-sm font-black text-foreground tracking-tight">{t('assist_title')}</h1>
+              <p className="text-[10px] text-muted-foreground">{t('assist_subtitle')}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-accent" onClick={() => navigate(-1)}>
@@ -71,10 +74,10 @@ export default function MerchantGiveaways() {
             <div className="flex-1 space-y-2">
               <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
                 <Sparkles className="h-3 w-3" />
-                حصرياً للتجار الموثقين
+                {t('assist_hero_badge')}
               </div>
-              <h2 className="text-lg font-black text-foreground leading-tight">مسابقات وهدايا وكوبونات</h2>
-              <p className="text-xs text-muted-foreground leading-relaxed">استكشف المساعدات المتاحة واحصل على مزايا حصرية</p>
+              <h2 className="text-lg font-black text-foreground leading-tight">{t('assist_hero_title')}</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t('assist_hero_desc')}</p>
             </div>
             <div className="relative w-16 h-16 shrink-0">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 blur-xl" />

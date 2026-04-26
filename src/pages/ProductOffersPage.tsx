@@ -13,6 +13,7 @@ import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { useLanguage } from "@/lib/i18n";
 
 interface ProductOption {
   name_ar: string;
@@ -76,6 +77,8 @@ function useCountdown(endDate: string | undefined) {
 export default function ProductOffersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+  const dir = language === 'en' ? 'ltr' : 'rtl';
   const queryClient = useQueryClient();
   const [selectedOffer, setSelectedOffer] = useState<ProductOffer | null>(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
@@ -154,8 +157,15 @@ export default function ProductOffersPage() {
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['product-offers-active'] });
-        const bonusMsg = data.bonus_tickets > 0 ? ` (منها ${data.bonus_tickets} إضافية بمناسبة ${data.promo_title || 'العرض'})` : '';
-        toast.success(`🎁 تم شراء ${data.product_name} وحصلت على ${data.gift_tickets} تذكرة!${bonusMsg}`);
+        const promoTitle = data.promo_title || t('offers_purchase_promo_default');
+        const bonusMsg = data.bonus_tickets > 0
+          ? t('offers_purchase_bonus_part').replace('{n}', String(data.bonus_tickets)).replace('{title}', promoTitle)
+          : '';
+        toast.success(
+          t('offers_purchase_success')
+            .replace('{name}', data.product_name)
+            .replace('{n}', String(data.gift_tickets)) + bonusMsg
+        );
         try {
           await supabase.functions.invoke('send-telegram-notification', {
             body: { message: `🛍️ <b>شراء منتج</b>\n📦 ${data.product_name}\n💰 ${data.total_cost?.toLocaleString() || 0} دينار\n🎁 ${data.gift_tickets} تذكرة${data.bonus_tickets > 0 ? ` (${data.bonus_tickets} إضافية)` : ''}` },
@@ -164,10 +174,10 @@ export default function ProductOffersPage() {
         setShowPurchaseDialog(false);
         setSelectedOffer(null);
       } else {
-        toast.error(data.error || 'حدث خطأ');
+        toast.error(data.error || t('offers_generic_error'));
       }
     },
-    onError: (error) => toast.error('خطأ: ' + error.message),
+    onError: (error) => toast.error(t('offers_error_prefix') + error.message),
   });
 
   const handlePurchaseClick = (offer: ProductOffer) => {
@@ -195,17 +205,17 @@ export default function ProductOffersPage() {
     if (!hasPromo) {
       return (
         <Badge className="absolute top-2 right-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
-          <Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة
+          <Gift className="h-3 w-3" />{offer.gift_tickets} {t('offers_ticket_word')}
         </Badge>
       );
     }
     return (
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
         <Badge className="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
-          <Gift className="h-3 w-3" />{total} تذكرة
+          <Gift className="h-3 w-3" />{total} {t('offers_ticket_word')}
         </Badge>
         <Badge className="bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-50 gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse">
-          <Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية
+          <Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} {t('offers_ticket_word')}
         </Badge>
       </div>
     );
@@ -216,19 +226,19 @@ export default function ProductOffersPage() {
     if (!hasPromo) {
       return (
         <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p>
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 {t('offers_tickets_with_each_purchase').replace('{n}', String(offer.gift_tickets))}</p>
         </div>
       );
     }
     return (
       <div className="space-y-1.5">
         <div className="text-center py-2 bg-emerald-500/10 backdrop-blur-md rounded-lg border border-emerald-400/25">
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 تحصل على {total} تذكرة مع كل شراء!</p>
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">🎁 {t('offers_tickets_count_each_purchase').replace('{n}', String(total))}</p>
         </div>
         <div className="text-center py-1.5 bg-amber-500/10 backdrop-blur-md rounded-lg border border-amber-400/25 flex items-center justify-center gap-1">
           <PartyPopper className="h-3 w-3 text-amber-500" />
           <p className="text-[10px] text-amber-700 dark:text-amber-300 font-bold">
-            +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
+            {t('offers_bonus_tickets_promo').replace('{n}', String(activePromotion!.bonus_tickets)).replace('{title}', activePromotion!.title_ar)}
           </p>
         </div>
       </div>
@@ -236,15 +246,15 @@ export default function ProductOffersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-background flex flex-col" dir={dir}>
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowRight className="h-5 w-5" /></Button>
               <div>
-                <h1 className="text-lg font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" />عروض المنتجات</h1>
-                <p className="text-xs text-muted-foreground">اشترِ منتجات واحصل على تذاكر هدية!</p>
+                <h1 className="text-lg font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" />{t('offers_page_title')}</h1>
+                <p className="text-xs text-muted-foreground">{t('offers_page_subtitle')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -274,13 +284,13 @@ export default function ProductOffersPage() {
               )}
               <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-bold text-primary">+{activePromotion!.bonus_tickets} تذكرة إضافية مع كل شراء!</span>
+                <span className="text-xs font-bold text-primary">{t('offers_extra_tickets_with_each').replace('{n}', String(activePromotion!.bonus_tickets))}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>ينتهي خلال:</span>
+                <span>{t('offers_promo_ends_in')}</span>
                 <div className="flex items-center gap-1 font-mono font-bold text-foreground">
-                  {countdown.days > 0 && <span className="bg-card border rounded px-1.5 py-0.5">{countdown.days}ي</span>}
+                  {countdown.days > 0 && <span className="bg-card border rounded px-1.5 py-0.5">{countdown.days}{t('offers_promo_days_short')}</span>}
                   <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.hours).padStart(2, '0')}</span>
                   <span>:</span>
                   <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.minutes).padStart(2, '0')}</span>
@@ -295,14 +305,14 @@ export default function ProductOffersPage() {
 
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="flex items-center justify-center gap-3 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1"><ShoppingCart className="h-4 w-4" />مشترياتي</Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1"><Trophy className="h-4 w-4" />المسابقات</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1"><ShoppingCart className="h-4 w-4" />{t('offers_my_purchases')}</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1"><Trophy className="h-4 w-4" />{t('offers_competitions')}</Button>
         </div>
 
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{[1,2,3,4,5,6].map(i=><div key={i} className="rounded-lg border bg-card p-2"><div className="aspect-square rounded bg-muted animate-pulse mb-2" /><div className="h-3 w-3/4 rounded bg-muted animate-pulse mb-1" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div>)}</div>
         ) : offers?.length === 0 ? (
-          <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">لا توجد عروض متاحة حالياً</p></CardContent></Card>
+          <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">{t('offers_empty')}</p></CardContent></Card>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {offers?.map((offer) => {
@@ -325,7 +335,7 @@ export default function ProductOffersPage() {
                       <div className="w-full h-full bg-secondary flex items-center justify-center"><Package className="h-12 w-12 text-muted-foreground" /></div>
                     )}
                     <TicketBadge offer={offer} />
-                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive/30 backdrop-blur-md border border-destructive/40 text-destructive-foreground">نفذت الكمية</Badge>}
+                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive/30 backdrop-blur-md border border-destructive/40 text-destructive-foreground">{t('offers_out_of_stock')}</Badge>}
                     {hasMultipleImages && (
                       <>
                         <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-background/30 backdrop-blur-md border border-border/40 hover:bg-background/50 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
@@ -372,13 +382,13 @@ export default function ProductOffersPage() {
                       <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
                       <Button size="sm" className="gap-1 bg-primary/80 backdrop-blur-md border border-primary/40 hover:bg-primary/90 shadow-lg" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
                         {purchaseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
-                        {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
+                        {!user ? t('offers_login_short') : isOutOfStock ? t('offers_oos_short') : !canAfford ? t('offers_insufficient_short') : t('offers_buy_short')}
                       </Button>
                     </div>
                     <TicketInfoBar offer={offer} />
                     {offer.stock_quantity !== null && !isOutOfStock && (
                       <p className="text-xs text-center text-amber-700 dark:text-amber-300 font-medium bg-amber-500/10 backdrop-blur-md border border-amber-400/25 py-1 rounded">
-                        📦 متبقي: {offer.stock_quantity} فقط
+                        📦 {t('offers_remaining')}: {offer.stock_quantity}
                       </p>
                     )}
                   </CardContent>
@@ -393,9 +403,9 @@ export default function ProductOffersPage() {
 
       {/* Product Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] p-0 z-[100]" hideClose dir="rtl">
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 z-[100]" hideClose dir={dir}>
           <DialogHeader className="sr-only">
-            <DialogTitle>{detailOffer?.title_ar || 'تفاصيل المنتج'}</DialogTitle>
+            <DialogTitle>{detailOffer?.title_ar || t('offers_product_details_fallback')}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col max-h-[90vh] overflow-hidden">
             {detailOffer ? (() => {
@@ -446,15 +456,15 @@ export default function ProductOffersPage() {
                         <p className="text-sm text-muted-foreground">{detailOffer.currency}</p>
                       </div>
                       {detailOffer.stock_quantity !== null && !isOutOfStock && (
-                        <Badge variant="secondary" className="text-amber-600 bg-amber-500/10">📦 متبقي: {detailOffer.stock_quantity}</Badge>
+                        <Badge variant="secondary" className="text-amber-600 bg-amber-500/10">📦 {t('offers_remaining')}: {detailOffer.stock_quantity}</Badge>
                       )}
-                      {isOutOfStock && <Badge variant="destructive">نفذت الكمية</Badge>}
+                      {isOutOfStock && <Badge variant="destructive">{t('offers_out_of_stock')}</Badge>}
                     </div>
 
                     {/* Colors Selection */}
                     {availableColors.length > 0 && (
                       <div className="space-y-2">
-                        <p className="font-medium text-sm">اختر اللون:</p>
+                        <p className="font-medium text-sm">{t('offers_pick_color')}</p>
                         <div className="flex flex-wrap gap-2">
                           {availableColors.map((color, idx) => (
                             <div key={idx} className="flex flex-col items-center gap-1">
@@ -469,16 +479,16 @@ export default function ProductOffersPage() {
                                 <span className="text-[10px] text-muted-foreground">{color.stock_quantity}</span>
                               )}
                               {color.stock_quantity === 0 && (
-                                <span className="text-[10px] text-destructive">نفذ</span>
+                                <span className="text-[10px] text-destructive">{t('offers_color_oos')}</span>
                               )}
                             </div>
                           ))}
                         </div>
                         {selectedColor && (
                           <p className="text-sm text-muted-foreground">
-                            اللون المختار: {selectedColor.name_ar}
+                            {t('offers_chosen_color')} {selectedColor.name_ar}
                             {selectedColor.stock_quantity !== null && selectedColor.stock_quantity > 0 && (
-                              <span className="text-amber-600 mr-2">(متبقي: {selectedColor.stock_quantity})</span>
+                              <span className="text-amber-600 mr-2">({t('offers_remaining_paren')}: {selectedColor.stock_quantity})</span>
                             )}
                           </p>
                         )}
@@ -488,7 +498,7 @@ export default function ProductOffersPage() {
                     {/* Options Selection */}
                     {availableOptions.length > 0 && (
                       <div className="space-y-2">
-                        <p className="font-medium text-sm">اختر الخيار:</p>
+                        <p className="font-medium text-sm">{t('offers_pick_option')}</p>
                         <div className="flex flex-wrap gap-2">
                           {availableOptions.map((opt, idx) => (
                             <Button
@@ -507,7 +517,7 @@ export default function ProductOffersPage() {
                               </span>
                               {opt.stock_quantity !== null && (
                                 <span className={`text-[10px] ${opt.stock_quantity === 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                  {opt.stock_quantity === 0 ? 'نفذ' : `متبقي: ${opt.stock_quantity}`}
+                                  {opt.stock_quantity === 0 ? t('offers_color_oos') : `${t('offers_remaining')}: ${opt.stock_quantity}`}
                                 </span>
                               )}
                             </Button>
@@ -520,14 +530,14 @@ export default function ProductOffersPage() {
                     <div className="space-y-2">
                       <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
                         <p className="text-sm text-green-700 dark:text-green-400 font-medium text-center">
-                          🎁 مع كل شراء تحصل على {detailTotal} تذكرة مجاناً للمشاركة في السحوبات!
+                          🎁 {t('offers_tickets_with_each_purchase').replace('{n}', String(detailTotal))}
                         </p>
                       </div>
                       {hasPromo && (
                         <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-center gap-2">
                           <PartyPopper className="h-4 w-4 text-amber-500" />
                           <p className="text-xs text-amber-700 dark:text-amber-400 font-bold">
-                            +{activePromotion!.bonus_tickets} تذكرة إضافية بمناسبة {activePromotion!.title_ar}
+                            {t('offers_bonus_tickets_promo').replace('{n}', String(activePromotion!.bonus_tickets)).replace('{title}', activePromotion!.title_ar)}
                           </p>
                         </div>
                       )}
@@ -544,7 +554,7 @@ export default function ProductOffersPage() {
                       disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}
                     >
                       {purchaseMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
-                      {!user ? 'سجّل دخول للشراء' : isOutOfStock ? 'نفذت الكمية' : !canAfford ? 'رصيد غير كافٍ' : 'شراء الآن'}
+                      {!user ? t('offers_login_to_buy') : isOutOfStock ? t('offers_oos_full') : !canAfford ? t('offers_insufficient_full') : t('offers_buy_now')}
                     </Button>
                   </div>
                 </>
@@ -555,33 +565,33 @@ export default function ProductOffersPage() {
       </Dialog>
 
       <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-primary" />تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-primary" />{t('offers_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription className="text-right space-y-3">
               {selectedOffer && (
                 <>
-                  <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOffer.title_ar}</span>؟</p>
+                  <p>{t('offers_confirm_question').replace('{title}', '')} <span className="font-bold text-foreground">{selectedOffer.title_ar}</span></p>
                   <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
-                    <div className="flex justify-between"><span>السعر:</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
-                    <div className="flex justify-between text-green-600"><span>تذاكر هدية:</span><span className="font-bold">🎁 {getTotalTickets(selectedOffer)} تذكرة</span></div>
+                    <div className="flex justify-between"><span>{t('offers_confirm_price')}</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
+                    <div className="flex justify-between text-green-600"><span>{t('offers_confirm_gift_tickets')}</span><span className="font-bold">🎁 {getTotalTickets(selectedOffer)} {t('offers_ticket_word')}</span></div>
                     {hasPromo && (
                       <div className="flex justify-between text-amber-600 text-xs">
-                        <span>منها إضافية ({activePromotion!.title_ar}):</span>
-                        <span className="font-bold">+{activePromotion!.bonus_tickets} تذكرة</span>
+                        <span>{t('offers_confirm_bonus_label').replace('{title}', activePromotion!.title_ar)}</span>
+                        <span className="font-bold">+{activePromotion!.bonus_tickets} {t('offers_ticket_word')}</span>
                       </div>
                     )}
                   </div>
-                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ (رصيدك: {wallet.balance.toLocaleString()} دينار)</p>}
+                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">{t('offers_confirm_wallet_low').replace('{balance}', wallet.balance.toLocaleString())}</p>}
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogAction onClick={() => selectedOffer && purchaseMutation.mutate(selectedOffer.id)} disabled={purchaseMutation.isPending || (wallet && selectedOffer && wallet.balance < selectedOffer.price)}>
-              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}تأكيد الشراء
+              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}{t('offers_confirm_button')}
             </AlertDialogAction>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('offers_cancel')}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
