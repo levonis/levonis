@@ -79,7 +79,7 @@ export default function CartRequestDialog({
         const isDirect = (item as any).sale_type === 'direct';
         
         // Calculate correct item price using centralized guard
-        const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
+        const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
 
         return {
           product_id: item.product_id,

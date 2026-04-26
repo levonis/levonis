@@ -1185,7 +1185,7 @@ const Cart = () => {
 
           const isDirect = (item as any).sale_type === 'direct';
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd));
+          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
 
           const productName = isCustomRequest 
             ? (item.custom_product_requests?.product_name || 'طلب مخصص')
@@ -1565,7 +1565,7 @@ const Cart = () => {
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd));
+          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
 
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
@@ -1651,7 +1651,7 @@ const Cart = () => {
           : (item.products?.name_ar || 'منتج');
         
         const isDirect = (item as any).sale_type === 'direct';
-        const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
+        const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
         
         // Use product_options data directly from the cart item
         const itemOption = (item as any).product_options;
@@ -2027,7 +2027,7 @@ const Cart = () => {
                     const isDirect = (item as any).sale_type === 'direct';
                     const isGift = !!(item as any).is_gift;
                     const isLocked = !!(item as any).is_locked;
-                    const itemPrice = isGift ? 0 : getGuardedCartItemPrice(item as any, usdToIqd);
+                    const itemPrice = isGift ? 0 : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     
