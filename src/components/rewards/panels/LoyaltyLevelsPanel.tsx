@@ -508,10 +508,10 @@ export default function LoyaltyLevelsPanel() {
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="h-4 w-4 text-amber-500" />
-                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">مزايا VIP Plus</span>
+                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{t('ll_vip_plus_title')}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    ستحصل على شارة مميزة، أسعار الجملة، توصيل مجاني، أولوية الدعم والتغليف، لعب مجاني في الألعاب، وخيار الاستثمار.
+                    {t('ll_vip_plus_desc')}
                   </p>
                 </div>
               )}
@@ -523,7 +523,7 @@ export default function LoyaltyLevelsPanel() {
                   onClick={() => setPurchaseDialog({ open: false, level: null, method: 'points' })}
                   disabled={purchasing}
                 >
-                  إلغاء
+                  {t('ll_btn_cancel')}
                 </Button>
                 <Button
                   className="flex-1 gap-1"
@@ -535,7 +535,7 @@ export default function LoyaltyLevelsPanel() {
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
-                  تأكيد الشراء
+                  {t('ll_btn_confirm_purchase')}
                 </Button>
               </div>
             </div>
