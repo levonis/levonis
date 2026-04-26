@@ -1816,4 +1816,11 @@ export const ku: TranslationKeys = {
   pa_pending_activation: 'چاوەڕێی چالاککردن',
   pa_expires_on: 'کۆتایی دێت لە',
   pa_confirm_activate: 'پشتڕاستکردنەوە و چالاککردنی پرینتەر',
+
+  // Level Roadmap Modal
+  lr_title: 'نەخشەی ئاستەکان',
+  lr_you_are_here: 'تۆ لێرەی',
+  lr_level_n: 'ئاستی {n}',
+  lr_base_level: 'ئاستی بنەڕەتی',
+  lr_owned: 'هەیە',
 };

@@ -1827,4 +1827,11 @@ export type TranslationKeys = {
   pa_pending_activation: string;
   pa_expires_on: string;
   pa_confirm_activate: string;
+
+  // Level Roadmap Modal
+  lr_title: string;
+  lr_you_are_here: string;
+  lr_level_n: string;
+  lr_base_level: string;
+  lr_owned: string;
 };
