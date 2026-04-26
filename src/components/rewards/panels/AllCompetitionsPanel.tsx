@@ -29,20 +29,23 @@ import { useLanguage } from "@/lib/i18n";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
-const competitionTypeLabels: Record<CompetitionType, string> = {
-  ticket_count: 'سحب عادي',
-  all_tickets_sold: 'حتى نفاذ التذاكر',
-  timed: 'محدد بوقت',
-  free: 'مجاني',
-  instant_winner: 'نتيجة فورية',
-  everyone_wins: 'الكل رابح',
-  escalating_price: 'سعر متصاعد',
-  mystery_box: 'صندوق غامض',
-  hidden_winner: 'رابح مخفي',
-  team_battle: 'فريق ضد فريق',
-  flash_sale: 'عرض سريع',
-  growing_prize: 'جائزة متنامية',
-  collect_letters: 'جمع الأحرف'
+const getCompetitionTypeLabel = (type: CompetitionType, t: (key: any) => string): string => {
+  const map: Record<CompetitionType, string> = {
+    ticket_count: t('ac_type_ticket_count'),
+    all_tickets_sold: t('ac_type_all_tickets_sold'),
+    timed: t('ac_type_timed'),
+    free: t('ac_type_free'),
+    instant_winner: t('ac_type_instant_winner'),
+    everyone_wins: t('ac_type_everyone_wins'),
+    escalating_price: t('ac_type_escalating_price'),
+    mystery_box: t('ac_type_mystery_box'),
+    hidden_winner: t('ac_type_hidden_winner'),
+    team_battle: t('ac_type_team_battle'),
+    flash_sale: t('ac_type_flash_sale'),
+    growing_prize: t('ac_type_growing_prize'),
+    collect_letters: t('ac_type_collect_letters'),
+  };
+  return map[type] || t('ac_default_competition');
 };
 
 const competitionTypeIcons: Record<CompetitionType, React.ReactNode> = {
