@@ -97,7 +97,20 @@ export function useCartCardDiscount(
     staleTime: 30 * 1000,
   });
 
-  const isLoading = loadingCard || loadingLimits || loadingUsage || loadingPercentageUsed;
+  // Get cumulative free shipping uses during current card validity
+  const { data: freeShippingUsedData, isLoading: loadingFreeShipUsed } = useQuery({
+    queryKey: ["card-free-shipping-used", cardId],
+    queryFn: async () => {
+      if (!cardId) return 0;
+      const { data, error } = await (supabase as any).rpc("get_card_free_shipping_used", { p_card_id: cardId });
+      if (error) throw error;
+      return Number(data) || 0;
+    },
+    enabled: !!cardId,
+    staleTime: 30 * 1000,
+  });
+
+  const isLoading = loadingCard || loadingLimits || loadingUsage || loadingPercentageUsed || loadingFreeShipUsed;
 
   if (!userCard || !levelId || isLoading) {
     return { cardDiscount: null, isLoading };
