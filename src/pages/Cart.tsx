@@ -772,28 +772,39 @@ const Cart = () => {
     }
   }, [showCodOption, preOrderPaymentOption]);
 
-  // حساب رسوم الدفع عند الاستلام: تُطبَّق إعدادات COD الافتراضية الموحدة على كل منتج
-  const codFee = useMemo(() => {
-    if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
+  // حساب رسوم الدفع عند الاستلام لكل منتج بناءً على شرائحه (لا رجوع للإعدادات القديمة)
+  const codBreakdown = useMemo(() => {
     const tiers = partialPaymentSettings?.fee_tiers || [];
-    const legacyType = partialPaymentSettings?.cod_default_fee_type || 'percentage';
-    const legacyVal = Number(partialPaymentSettings?.cod_default_fee_value ?? 0);
-    return items.reduce((sum: number, item: any) => {
+    return items.map((item: any) => {
       const unitPrice = getCartItemPrice(item);
       const qty = item.quantity || 1;
       const lineTotal = unitPrice * qty;
-      // Pick tier by line total; fallback to last tier; finally legacy defaults
-      const tier = tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount)
-        || tiers[tiers.length - 1];
-      const codType = (tier?.cod_fee_type ?? legacyType) as 'percentage' | 'fixed';
-      const codVal = Number(tier?.cod_fee_value ?? legacyVal);
-      if (!codVal || codVal <= 0) return sum;
-      const fee = codType === 'percentage'
-        ? Math.ceil(lineTotal * codVal / 100)
-        : Math.ceil(codVal * qty);
-      return sum + fee;
-    }, 0);
-  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings]);
+      const tier = tiers.length > 0
+        ? (tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount) || tiers[tiers.length - 1])
+        : null;
+      const codType = (tier?.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
+      const codVal = Number(tier?.cod_fee_value ?? 0);
+      const fee = !codVal || codVal <= 0
+        ? 0
+        : (codType === 'percentage' ? Math.ceil(lineTotal * codVal / 100) : Math.ceil(codVal * qty));
+      return {
+        id: item.id,
+        title: item.products?.title_ar || item.products?.title || item.bundle?.title_ar || '—',
+        unitPrice,
+        qty,
+        lineTotal,
+        tier,
+        codType,
+        codVal,
+        fee,
+      };
+    });
+  }, [items, partialPaymentSettings]);
+
+  const codFee = useMemo(() => {
+    if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
+    return codBreakdown.reduce((sum, b) => sum + b.fee, 0);
+  }, [showCodOption, preOrderPaymentOption, codBreakdown]);
 
   const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
 
