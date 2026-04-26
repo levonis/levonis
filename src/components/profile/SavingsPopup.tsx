@@ -161,15 +161,15 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
                     <p className="text-xs font-medium truncate">{item.productName}</p>
                     {item.type === 'discount' && (
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground line-through">{item.originalPrice.toLocaleString('ar-IQ')}</span>
-                        <span className="text-[10px] text-green-600 font-medium">{item.paidPrice.toLocaleString('ar-IQ')}</span>
+                        <span className="text-[10px] text-muted-foreground line-through">{item.originalPrice.toLocaleString(numLocale)}</span>
+                        <span className="text-[10px] text-green-600 font-medium">{item.paidPrice.toLocaleString(numLocale)}</span>
                         {item.quantity > 1 && <span className="text-[10px] text-muted-foreground">×{item.quantity}</span>}
                       </div>
                     )}
                     <p className="text-[10px] text-muted-foreground">#{item.orderNumber}</p>
                   </div>
                   <span className="text-sm font-bold text-green-600 tabular-nums shrink-0">
-                    -{item.savedAmount.toLocaleString('ar-IQ')}
+                    -{item.savedAmount.toLocaleString(numLocale)}
                   </span>
                 </div>
               ))
