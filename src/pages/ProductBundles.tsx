@@ -150,7 +150,7 @@ const ProductBundles = () => {
                         </div>
                       )}
                       <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-background/70 backdrop-blur-xl border border-white/30 dark:border-white/15 text-foreground text-[8px] font-semibold leading-none shadow-sm" aria-hidden="true">
-                        {SALE_TYPE_LABELS[saleType] || saleType}
+                        {SALE_TYPE_KEYS[saleType] ? t(SALE_TYPE_KEYS[saleType]) : saleType}
                       </div>
                     </div>
 
