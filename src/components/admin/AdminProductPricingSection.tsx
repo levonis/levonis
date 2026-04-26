@@ -42,9 +42,18 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         .eq('setting_key', 'partial_payment_settings')
         .single();
       const v: any = data?.setting_value || {};
+      const tiers = Array.isArray(v.fee_tiers)
+        ? v.fee_tiers.map((t: any) => ({
+            min_amount: Number(t.min_amount) || 0,
+            max_amount: Number(t.max_amount) || 0,
+            cod_fee_type: (t.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed',
+            cod_fee_value: Number(t.cod_fee_value ?? 0) || 0,
+          }))
+        : undefined;
       return {
         type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
         value: Number(v.cod_default_fee_value) || 0,
+        tiers,
       };
     },
   });
@@ -182,9 +191,6 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Direct portion only (the user-entered or COD-derived part — without sea commission)
   const directCommissionPortion = useMemo(() => {
     if (linkDirectCommissionToCod && codDefaults && shippingSettings && priceUsd) {
-      if (codDefaults.type === 'fixed') {
-        return Math.ceil(codDefaults.value);
-      }
       const priceIqd = Math.round(priceUsd * shippingSettings.usd_to_iqd_rate);
       const pdc = effectivePersonalDeliveryCost;
       let preorderFinal = priceIqd + pdc + referralEarningsIqd;
@@ -200,7 +206,25 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
         const calc = calculateShippingCost('china', 'air', dims, weightNum > 0 ? weightNum : null, shippingSettings);
         preorderFinal = priceIqd + calc.shippingCost + commissionAirIqd + pdc + referralEarningsIqd;
       }
-      return Math.ceil(preorderFinal * codDefaults.value / 100);
+
+      // Pick matching tier; fall back to legacy default
+      let codType: 'percentage' | 'fixed' = codDefaults.type;
+      let codValue = codDefaults.value;
+      const tiers = (codDefaults as any).tiers;
+      if (Array.isArray(tiers) && tiers.length > 0) {
+        const tier = tiers.find(
+          (t: any) =>
+            preorderFinal >= Number(t.min_amount || 0) &&
+            preorderFinal <= Number(t.max_amount || 0)
+        );
+        if (tier && tier.cod_fee_value != null) {
+          codType = (tier.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
+          codValue = Number(tier.cod_fee_value) || 0;
+        }
+      }
+
+      if (codType === 'fixed') return Math.ceil(codValue);
+      return Math.ceil(preorderFinal * codValue / 100);
     }
     return commissionDirectIqd;
   }, [linkDirectCommissionToCod, codDefaults, commissionDirectIqd, shippingSettings, priceUsd, hasPreOrder, hasSea, hasAir, lengthCm, widthCm, heightCm, weightKg, commissionSeaIqd, commissionAirIqd, effectivePersonalDeliveryCost, referralEarningsIqd]);
@@ -617,9 +641,11 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                   ربط العمولة بنسبة الدفع عند الاستلام
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {codDefaults
-                    ? `يتم احتساب العمولة تلقائياً حسب الإعداد العام (${codDefaults.type === 'percentage' ? `${codDefaults.value}%` : `${codDefaults.value.toLocaleString()} د.ع`}).`
-                    : 'سيتم احتساب العمولة تلقائياً حسب إعدادات الدفع عند الاستلام.'}
+                  {codDefaults && Array.isArray((codDefaults as any).tiers) && (codDefaults as any).tiers.length > 0
+                    ? 'يتم احتساب العمولة تلقائياً حسب شرائح الدفع عند الاستلام (بناءً على قيمة الطلب).'
+                    : codDefaults
+                      ? `يتم احتساب العمولة تلقائياً حسب الإعداد العام (${codDefaults.type === 'percentage' ? `${codDefaults.value}%` : `${codDefaults.value.toLocaleString()} د.ع`}).`
+                      : 'سيتم احتساب العمولة تلقائياً حسب إعدادات الدفع عند الاستلام.'}
                 </p>
                 {linkDirectCommissionToCod && priceUsd > 0 && shippingSettings && (
                   <div className="text-xs mt-1 text-primary font-medium">

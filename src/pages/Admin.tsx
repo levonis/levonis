@@ -1587,10 +1587,24 @@ const Admin = () => {
               .eq('setting_key', 'partial_payment_settings')
               .single();
             const cv: any = codSetting?.setting_value || {};
-            const codType = (cv.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed';
-            const codValue = Number(cv.cod_default_fee_value) || 0;
+            const preorderBase = priceIqd + directShipping + preOrderCommissionAddon + personalDeliveryCostVal + referralEarningsIqdVal;
+
+            // Prefer per-amount tiers; fall back to legacy default
+            let codType: 'percentage' | 'fixed' = (cv.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed';
+            let codValue = Number(cv.cod_default_fee_value) || 0;
+            if (Array.isArray(cv.fee_tiers) && cv.fee_tiers.length > 0) {
+              const tier = cv.fee_tiers.find(
+                (t: any) =>
+                  preorderBase >= Number(t.min_amount || 0) &&
+                  preorderBase <= Number(t.max_amount || 0)
+              );
+              if (tier && tier.cod_fee_value != null) {
+                codType = (tier.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
+                codValue = Number(tier.cod_fee_value) || 0;
+              }
+            }
+
             if (codValue > 0) {
-              const preorderBase = priceIqd + directShipping + preOrderCommissionAddon + personalDeliveryCostVal + referralEarningsIqdVal;
               directCommission = codType === 'fixed'
                 ? Math.ceil(codValue)
                 : Math.ceil((preorderBase * codValue) / 100);
