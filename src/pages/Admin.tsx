@@ -918,6 +918,9 @@ const Admin = () => {
         originalPriceUsdInput.dispatchEvent(new Event('input', { bubbles: true }));
         originalPriceUsdInput.dispatchEvent(new Event('change', { bubbles: true }));
       }
+      window.dispatchEvent(new CustomEvent('admin-product-pricing-autofill', {
+        detail: { originalPriceUsd: productInfo.original_price_usd }
+      }));
     } else if (productInfo.original_price && productInfo.original_price > 0) {
       const originalPriceInput = form.querySelector('input[name="original_price"]') as HTMLInputElement;
       if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
