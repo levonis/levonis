@@ -777,7 +777,7 @@ export default function AllCompetitionsPanel() {
               {comp.is_featured && (
                 <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[9px] font-bold px-2 py-0.5 flex items-center gap-0.5 justify-center">
                   <Sparkles className="h-2.5 w-2.5" />
-                  مميزة
+                  {t('ac_featured')}
                 </div>
               )}
               
