@@ -9,20 +9,20 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
 
-const SALE_TYPE_LABELS: Record<string, string> = {
-  'direct': 'بيع مباشر',
-  'preorder-air': 'طلب مسبق (جوي)',
-  'preorder-sea': 'طلب مسبق (بحري)',
+const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_air' | 'sale_type_preorder_sea'> = {
+  'direct': 'sale_type_direct',
+  'preorder-air': 'sale_type_preorder_air',
+  'preorder-sea': 'sale_type_preorder_sea',
 };
 
 const ProductBundles = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, description_ar, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
+        .select('id, title_ar, title_en, title_ku, description_ar, description_en, description_ku, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
         .eq('is_active', true)
         .order('display_order');
       if (error) throw error;
