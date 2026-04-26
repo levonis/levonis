@@ -345,24 +345,24 @@ export default function LoyaltyLevelsPanel() {
                           {level.name_ar}
                         </p>
                         {isOwned && (
-                          <Badge className="text-[10px] bg-primary/15 text-primary border-0">مملوكة</Badge>
+                          <Badge className="text-[10px] bg-primary/15 text-primary border-0">{t('ll_owned_badge')}</Badge>
                         )}
                         {isVipPlus && !isOwned && (
                           <Badge className="text-[10px] bg-amber-500/15 text-amber-600 border-0">
                             <Crown className="h-3 w-3 ml-0.5" />
-                            مميزة
+                            {t('ll_premium_badge')}
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{(level.purchase_price_points || 0).toLocaleString()} نقطة</span>
+                        <span>{(level.purchase_price_points || 0).toLocaleString()} {t('ll_points_unit')}</span>
                         {hasWalletPrice && (
                           <>
                             <span>•</span>
-                            <span className="text-emerald-600">{level.wallet_price.toLocaleString()} د.ع</span>
+                            <span className="text-emerald-600">{level.wallet_price.toLocaleString()} {t('ll_currency_iqd')}</span>
                           </>
                         )}
-                        <span>• {level.duration_days} يوم</span>
+                        <span>• {level.duration_days} {t('ll_days_unit')}</span>
                       </div>
                     </div>
                   </div>
