@@ -598,6 +598,9 @@ export const en: TranslationKeys = {
   insurance_wallet_deduct: '{amount} IQD will be deducted from your wallet',
   insurance_current_balance: 'Your current balance: {balance} IQD',
   insurance_insufficient: 'Insufficient wallet balance. Please top up your wallet first.',
+  insurance_balance_short: 'Your balance is insufficient',
+  insurance_balance_need_more: 'Insufficient balance. You need {amount} {currency} more',
+  insurance_insufficient_balance_msg: '{msg} — Current balance: {balance} IQD',
 
   // Merchant Dashboard
   merchant_dashboard: 'Merchant Dashboard',

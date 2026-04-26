@@ -598,6 +598,9 @@ export const ku: TranslationKeys = {
   insurance_wallet_deduct: '{amount} د.ع لە جزدان دەبڕدرێتەوە',
   insurance_current_balance: 'باڵانسی ئێستات: {balance} د.ع',
   insurance_insufficient: 'باڵانسی جزدان بەس نییە. تکایە سەرەتا جزدان پڕبکەوە.',
+  insurance_balance_short: 'باڵانسەکەت بەس نییە',
+  insurance_balance_need_more: 'باڵانسەکەت بەس نییە. پێویستت بە {amount} {currency} زیاترە',
+  insurance_insufficient_balance_msg: '{msg} — باڵانسی ئێستات: {balance} د.ع',
 
   // Merchant Dashboard
   merchant_dashboard: 'پانێڵی بازرگان',
