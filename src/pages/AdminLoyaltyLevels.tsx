@@ -361,6 +361,8 @@ export default function AdminLoyaltyLevels() {
       bonus_points_percentage: level.bonus_points_percentage || 0,
       free_shipping: level.free_shipping || false,
       free_shipping_min_order: level.free_shipping_min_order || 0,
+      free_shipping_methods: Array.isArray(level.free_shipping_methods) ? level.free_shipping_methods : ["standard"],
+      free_shipping_max_uses: level.free_shipping_max_uses ?? null,
       is_purchasable: level.is_purchasable ?? true,
       purchase_price_points: level.purchase_price_points || 0,
       duration_days: level.duration_days || 30,
