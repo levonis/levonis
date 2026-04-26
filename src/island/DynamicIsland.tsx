@@ -779,7 +779,7 @@ export const DynamicIsland = () => {
                         {localResults.length > 0 && (
                           <>
                             <div className="px-3 pb-1 pt-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-primary/80">
-                              {t("island_in_page") || "في هذه الصفحة"}
+                              {t("island_in_page")}
                             </div>
                             {localResults.map((it, i) => (
                               <motion.button
