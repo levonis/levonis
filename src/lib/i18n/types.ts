@@ -600,6 +600,9 @@ export type TranslationKeys = {
   insurance_wallet_deduct: string;
   insurance_current_balance: string;
   insurance_insufficient: string;
+  insurance_balance_short: string;
+  insurance_balance_need_more: string;
+  insurance_insufficient_balance_msg: string;
 
   // Merchant Dashboard
   merchant_dashboard: string;
