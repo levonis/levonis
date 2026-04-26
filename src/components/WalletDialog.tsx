@@ -39,6 +39,7 @@ import {
   Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 interface WalletDialogProps {
   open: boolean;
@@ -64,6 +65,10 @@ interface WalletSettings {
 export default function WalletDialog({ open, onOpenChange, originRect }: WalletDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t, language, dir } = useLanguage();
+  const numLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
+  const dateLocaleCode = language === 'en' ? 'en-US' : 'ar-IQ';
+  const fmt = (n: number | undefined | null) => Number(n ?? 0).toLocaleString(numLocale);
   
   // Form states
   const [depositAmount, setDepositAmount] = useState("");
@@ -154,10 +159,10 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
         .getPublicUrl(fileName);
 
       setPaymentProofUrl(publicUrl);
-      toast.success('تم رفع الصورة بنجاح');
+      toast.success(t('wallet_toast_image_uploaded'));
     } catch (error) {
       console.error('Error uploading proof:', error);
-      toast.error('حدث خطأ في رفع الصورة');
+      toast.error(t('wallet_toast_image_upload_error'));
     } finally {
       setUploadingProof(false);
     }
@@ -167,7 +172,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const copyAccountNumber = (number: string) => {
     navigator.clipboard.writeText(number);
     setCopiedNumber(number);
-    toast.success('تم نسخ الرقم');
+    toast.success(t('wallet_toast_number_copied'));
     setTimeout(() => setCopiedNumber(null), 2000);
   };
 
@@ -191,12 +196,12 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success('تم إرسال طلب التعبئة بنجاح');
+      toast.success(t('wallet_toast_deposit_sent'));
       resetDepositForm();
     },
     onError: (error) => {
       console.error('Error:', error);
-      toast.error('حدث خطأ في إرسال الطلب');
+      toast.error(t('wallet_toast_deposit_error'));
     },
   });
 
@@ -204,11 +209,11 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const withdrawWallet = useMutation({
     mutationFn: async (amount: number) => {
       if (!wallet || wallet.balance < amount) {
-        throw new Error('رصيد غير كافٍ');
+        throw new Error(t('wallet_toast_insufficient_balance'));
       }
 
       if (amount < minWithdrawal) {
-        throw new Error(`الحد الأدنى للسحب هو ${minWithdrawal.toLocaleString()} د.ع`);
+        throw new Error(t('wallet_toast_min_withdrawal', { amount: fmt(minWithdrawal) }));
       }
 
       const { error } = await supabase
@@ -226,11 +231,11 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success('تم إرسال طلب السحب بنجاح');
+      toast.success(t('wallet_toast_withdraw_sent'));
       setWithdrawAmount("");
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('wallet_toast_generic_error'));
     },
   });
 
@@ -243,15 +248,15 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const handleDepositClick = () => {
     const amount = Number(depositAmount);
     if (!amount || amount <= 0) {
-      toast.error('الرجاء إدخال مبلغ صحيح');
+      toast.error(t('wallet_toast_invalid_amount'));
       return;
     }
     if (!selectedPaymentMethod) {
-      toast.error('الرجاء اختيار طريقة الدفع');
+      toast.error(t('wallet_toast_choose_method'));
       return;
     }
     if (!paymentProofUrl) {
-      toast.error('الرجاء رفع صورة إثبات الدفع');
+      toast.error(t('wallet_toast_upload_proof'));
       return;
     }
     setShowDepositConfirm(true);
@@ -260,11 +265,11 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const handleWithdrawClick = () => {
     const amount = Number(withdrawAmount);
     if (!amount || amount <= 0 || amount < minWithdrawal) {
-      toast.error(`الحد الأدنى للسحب هو ${minWithdrawal.toLocaleString()} د.ع`);
+      toast.error(t('wallet_toast_min_withdrawal', { amount: fmt(minWithdrawal) }));
       return;
     }
     if (wallet && amount > wallet.balance) {
-      toast.error('رصيد غير كافٍ');
+      toast.error(t('wallet_toast_insufficient_balance'));
       return;
     }
     setShowWithdrawConfirm(true);
@@ -309,25 +314,25 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
 
   const getTransactionLabel = (type: string) => {
     const labels: Record<string, string> = {
-      deposit: 'تعبئة',
-      withdrawal: 'سحب',
-      points_conversion: 'تحويل نقاط',
-      order_payment: 'دفع طلب',
-      admin_deduction: 'خصم إداري',
-      admin_addition: 'إضافة إدارية',
-      purchase: 'شراء',
-      product_purchase: 'شراء منتج',
-      competition_ticket: 'تذكرة مسابقة',
+      deposit: t('wallet_type_deposit'),
+      withdrawal: t('wallet_type_withdrawal'),
+      points_conversion: t('wallet_type_points_conversion'),
+      order_payment: t('wallet_type_order_payment'),
+      admin_deduction: t('wallet_type_admin_deduction'),
+      admin_addition: t('wallet_type_admin_addition'),
+      purchase: t('wallet_type_purchase'),
+      product_purchase: t('wallet_type_product_purchase'),
+      competition_ticket: t('wallet_type_competition_ticket'),
     };
     return labels[type] || type;
   };
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      pending: 'قيد المراجعة',
-      completed: 'مكتمل',
-      approved: 'تمت الموافقة',
-      rejected: 'مرفوض',
+      pending: t('wallet_status_pending'),
+      completed: t('wallet_status_completed'),
+      approved: t('wallet_status_approved'),
+      rejected: t('wallet_status_rejected'),
     };
     return labels[status] || status;
   };
@@ -350,7 +355,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
         title={
           <span className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-primary" />
-            المحفظة
+            {t('wallet_title')}
           </span>
         }
       >
@@ -363,12 +368,12 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                 <Wallet className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-muted-foreground">رصيد المحفظة</p>
+                <p className="text-xs text-muted-foreground">{t('wallet_balance_label')}</p>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-2xl font-bold text-foreground">
-                    {wallet?.balance?.toLocaleString() || "0"}
+                    {fmt(wallet?.balance) || "0"}
                   </span>
-                  <span className="text-xs text-muted-foreground">د.ع</span>
+                  <span className="text-xs text-muted-foreground">{t('wallet_currency_iqd')}</span>
                 </div>
               </div>
             </div>
@@ -379,15 +384,15 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             <TabsList className="grid grid-cols-3 m-3 mb-0 bg-muted/50 p-1 h-10">
               <TabsTrigger value="deposit" className="text-xs gap-1.5 data-[state=active]:bg-background">
                 <Plus className="h-3.5 w-3.5" />
-                إيداع
+                {t('wallet_tab_deposit')}
               </TabsTrigger>
               <TabsTrigger value="withdraw" className="text-xs gap-1.5 data-[state=active]:bg-background">
                 <Minus className="h-3.5 w-3.5" />
-                سحب
+                {t('wallet_tab_withdraw')}
               </TabsTrigger>
               <TabsTrigger value="history" className="text-xs gap-1.5 data-[state=active]:bg-background">
                 <History className="h-3.5 w-3.5" />
-                السجل
+                {t('wallet_tab_history')}
               </TabsTrigger>
             </TabsList>
 
@@ -399,7 +404,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                   <div className="flex items-start gap-2">
                     <Banknote className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      قم بالتحويل إلى إحدى الحسابات أدناه ثم أرسل صورة إثبات التحويل
+                      {t('wallet_deposit_instruction')}
                     </p>
                   </div>
                 </div>
@@ -407,7 +412,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                 {/* Payment Methods */}
                 {activePaymentMethods.length > 0 && (
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium">اختر طريقة الدفع</Label>
+                    <Label className="text-xs font-medium">{t('wallet_choose_payment_method')}</Label>
                     <RadioGroup
                       value={selectedPaymentMethod}
                       onValueChange={setSelectedPaymentMethod}
@@ -455,10 +460,10 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
 
                 {/* Amount Input */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">المبلغ المحول</Label>
+                  <Label className="text-xs font-medium">{t('wallet_amount_transferred')}</Label>
                   <Input
                     type="number"
-                    placeholder="أدخل المبلغ بالدينار"
+                    placeholder={t('wallet_amount_placeholder')}
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
                     className="h-11 text-base"
@@ -467,7 +472,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
 
                 {/* Proof Upload */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">صورة إثبات التحويل</Label>
+                  <Label className="text-xs font-medium">{t('wallet_proof_image')}</Label>
                   <input
                     type="file"
                     accept="image/*"
@@ -479,7 +484,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                     <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/30">
                       <img
                         src={paymentProofUrl}
-                        alt="إثبات الدفع"
+                        alt={t('wallet_proof_alt')}
                         className="w-full h-32 object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -490,7 +495,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                           onClick={() => fileInputRef.current?.click()}
                           className="h-7 text-xs"
                         >
-                          تغيير
+                          {t('wallet_change')}
                         </Button>
                       </div>
                       <div className="absolute top-2 left-2">
@@ -512,7 +517,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                           <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                             <ImageIcon className="h-5 w-5 text-muted-foreground" />
                           </div>
-                          <span className="text-xs text-muted-foreground">اضغط لرفع الصورة</span>
+                          <span className="text-xs text-muted-foreground">{t('wallet_upload_image')}</span>
                         </>
                       )}
                     </button>
@@ -529,7 +534,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  إرسال طلب التعبئة
+                  {t('wallet_send_deposit_request')}
                 </Button>
               </div>
             </TabsContent>
@@ -542,10 +547,10 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                     <Download className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        يمكنك سحب رصيدك إلى حسابك البنكي. سيتم مراجعة طلبك خلال ٢٤ ساعة.
+                        {t('wallet_withdraw_instruction')}
                       </p>
                       <p className="text-xs text-orange-600">
-                        الحد الأدنى للسحب: {minWithdrawal.toLocaleString()} د.ع
+                        {t('wallet_min_withdrawal', { amount: fmt(minWithdrawal) })}
                       </p>
                     </div>
                   </div>
@@ -553,17 +558,17 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
 
                 <div className="p-4 rounded-xl bg-card/50 border border-border/50">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-muted-foreground">الرصيد المتاح</span>
+                    <span className="text-sm text-muted-foreground">{t('wallet_available_balance')}</span>
                     <span className="text-lg font-bold text-foreground">
-                      {wallet?.balance?.toLocaleString() || 0} <span className="text-xs text-muted-foreground">د.ع</span>
+                      {fmt(wallet?.balance) || 0} <span className="text-xs text-muted-foreground">{t('wallet_currency_iqd')}</span>
                     </span>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs font-medium">مبلغ السحب</Label>
+                    <Label className="text-xs font-medium">{t('wallet_withdraw_amount')}</Label>
                     <Input
                       type="number"
-                      placeholder={`الحد الأدنى ${minWithdrawal.toLocaleString()}`}
+                      placeholder={t('wallet_min_placeholder', { amount: fmt(minWithdrawal) })}
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
                       className="h-11 text-base"
@@ -582,7 +587,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  طلب السحب
+                  {t('wallet_request_withdraw')}
                 </Button>
               </div>
             </TabsContent>
@@ -613,7 +618,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {new Date(tx.created_at).toLocaleDateString('ar-IQ', {
+                            {new Date(tx.created_at).toLocaleDateString(dateLocaleCode, {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
@@ -626,13 +631,13 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
                           "text-sm font-bold",
                           isIncome(tx.type) && tx.status !== 'rejected' ? "text-green-500" : "text-foreground"
                         )}>
-                          {isIncome(tx.type) && tx.status !== 'rejected' ? '+' : ''}{Math.abs(tx.amount).toLocaleString()}
+                          {isIncome(tx.type) && tx.status !== 'rejected' ? '+' : ''}{Math.abs(tx.amount).toLocaleString(numLocale)}
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                      لا توجد معاملات سابقة
+                      {t('wallet_no_history')}
                     </div>
                   )}
                 </div>
@@ -643,17 +648,17 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
 
       {/* Deposit Confirmation */}
       <AlertDialog open={showDepositConfirm} onOpenChange={setShowDepositConfirm}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد طلب التعبئة</AlertDialogTitle>
+            <AlertDialogTitle>{t('wallet_confirm_deposit_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من إرسال طلب تعبئة بمبلغ {Number(depositAmount).toLocaleString()} دينار عراقي؟
+              {t('wallet_confirm_deposit_desc', { amount: fmt(Number(depositAmount)) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('wallet_cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeposit}>
-              تأكيد
+              {t('wallet_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -661,17 +666,17 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
 
       {/* Withdraw Confirmation */}
       <AlertDialog open={showWithdrawConfirm} onOpenChange={setShowWithdrawConfirm}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد طلب السحب</AlertDialogTitle>
+            <AlertDialogTitle>{t('wallet_confirm_withdraw_title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من إرسال طلب سحب بمبلغ {Number(withdrawAmount).toLocaleString()} دينار عراقي؟
+              {t('wallet_confirm_withdraw_desc', { amount: fmt(Number(withdrawAmount)) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('wallet_cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmWithdraw}>
-              تأكيد
+              {t('wallet_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
