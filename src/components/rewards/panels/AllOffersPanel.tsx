@@ -556,7 +556,7 @@ export default function AllOffersPanel() {
                           <Coins className="h-3 w-3 text-amber-600" />
                           <span className="text-sm font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</span>
                         </div>
-                        <p className="text-[8px] text-muted-foreground">نقطة</p>
+                        <p className="text-[8px] text-muted-foreground">{t('ao_point_label')}</p>
                       </div>
                     )}
                   </div>
