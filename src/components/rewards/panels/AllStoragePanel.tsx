@@ -44,6 +44,7 @@ import {
   PURCHASED_PRODUCT_STATUSES,
   normalizeStorageStatus,
 } from "@/lib/storageStatusConstants";
+import { useLanguage } from "@/lib/i18n";
 
 // Professional status configuration with semantic colors
 const statusConfig: Record<string, { 
