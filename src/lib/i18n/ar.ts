@@ -1743,4 +1743,6 @@ export const ar: TranslationKeys = {
   ac_join_free: 'شارك مجاناً',
   ac_join_now: 'شارك الآن',
   ac_login_to_join: 'سجّل الدخول للمشاركة في المسابقة',
+  ac_won_prize: '🎁 مبروك! ربحت: {prize}',
+  ac_default_prize: 'جائزة',
 };
