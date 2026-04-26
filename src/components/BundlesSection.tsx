@@ -3,8 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n';
+import { pickI18n } from '@/lib/i18nField';
 
 const BundlesSection = () => {
+  const { t, language } = useLanguage();
   const { data: bundles } = useQuery({
     queryKey: ['home-bundles-preview'],
     queryFn: async () => {
