@@ -9,10 +9,11 @@ import { Coins, Ticket, Trophy, Loader2, AlertCircle, Wallet } from "lucide-reac
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function RedeemPointsPanel() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [pointsToRedeem, setPointsToRedeem] = useState('');
