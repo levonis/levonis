@@ -425,7 +425,7 @@ export default function LoyaltyLevelsPanel() {
                           onClick={() => setPurchaseDialog({ open: true, level, method: 'points' })}
                         >
                           <Coins className="h-3 w-3" />
-                          شراء بالنقاط
+                          {t('ll_buy_with_points')}
                         </Button>
                         {hasWalletPrice && (
                           <Button
@@ -436,7 +436,7 @@ export default function LoyaltyLevelsPanel() {
                             onClick={() => setPurchaseDialog({ open: true, level, method: 'wallet' })}
                           >
                             <Wallet className="h-3 w-3" />
-                            شراء بالمحفظة
+                            {t('ll_buy_with_wallet')}
                           </Button>
                         )}
                       </div>
@@ -453,7 +453,7 @@ export default function LoyaltyLevelsPanel() {
                           }}
                         >
                           <Gift className="h-3 w-3" />
-                          إهداء لشخص آخر
+                          {t('ll_gift_to_other')}
                         </Button>
                       </div>
                     </>
