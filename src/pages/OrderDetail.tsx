@@ -111,17 +111,17 @@ const OrderDetail = () => {
       const { data: result, error } = await supabase.rpc('cancel_order', { p_order_id: orderId, p_cancelled_by: cancelledBy });
       if (error) throw error;
       const res = result as any;
-      if (!res?.success) { toast.error(res?.error || 'حدث خطأ أثناء إلغاء الطلب'); return; }
+      if (!res?.success) { toast.error(res?.error || t('od_toast_cancel_error')); return; }
       try {
         await supabase.functions.invoke('send-telegram-notification', {
-          body: { message: `❌ <b>تم إلغاء طلب</b>\\n\\n📋 رقم الطلب: ${res.order_number}\\n📦 نوع الطلب: ${res.order_type === 'direct' ? 'بيع مباشر' : 'حجز مسبق'}\\n🔄 تم الإلغاء بواسطة: ${cancelledBy === 'admin' ? 'الإدارة' : 'الزبون'}\\n${res.refunded_amount > 0 ? `💰 المبلغ المسترد: ${Number(res.refunded_amount).toLocaleString()} د.ع\\n` : ''}${res.order_type === 'direct' ? '📦 تم إرجاع المنتجات إلى المخزون' : ''}` }
+          body: { message: `❌ <b>تم إلغاء طلب</b>\n\n📋 رقم الطلب: ${res.order_number}\n📦 نوع الطلب: ${res.order_type === 'direct' ? 'بيع مباشر' : 'حجز مسبق'}\n🔄 تم الإلغاء بواسطة: ${cancelledBy === 'admin' ? 'الإدارة' : 'الزبون'}\n${res.refunded_amount > 0 ? `💰 المبلغ المسترد: ${Number(res.refunded_amount).toLocaleString()} د.ع\n` : ''}${res.order_type === 'direct' ? '📦 تم إرجاع المنتجات إلى المخزون' : ''}` }
         });
       } catch (e) { console.error('Telegram error:', e); }
-      toast.success('تم إلغاء الطلب بنجاح' + (res.refunded_amount > 0 ? ` وتم استرداد ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
+      toast.success(t('od_toast_cancel_success') + (res.refunded_amount > 0 ? ` ${t('od_toast_refunded_suffix')} ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
     } catch (error) {
       console.error('Cancel order error:', error);
-      toast.error('حدث خطأ أثناء إلغاء الطلب');
+      toast.error(t('od_toast_cancel_error'));
     } finally { setIsCancelling(false); setShowCancelDialog(false); }
   };
 
