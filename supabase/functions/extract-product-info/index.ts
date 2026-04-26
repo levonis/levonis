@@ -991,6 +991,9 @@ serve(async (req) => {
   }
 
   try {
+    // Load live exchange rates so original_price reflects (source price × current rate) only.
+    await loadExchangeRatesFromDb();
+
     let { url } = await req.json();
     
     if (!url) {
