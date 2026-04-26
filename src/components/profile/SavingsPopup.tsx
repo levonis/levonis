@@ -139,7 +139,7 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
 
         {/* Savings Items */}
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-foreground">تفاصيل التوفير</h3>
+          <h3 className="text-sm font-bold text-foreground">{t('savings_details')}</h3>
           <div className="space-y-2 pr-1">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
