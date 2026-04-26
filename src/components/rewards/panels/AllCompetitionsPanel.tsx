@@ -662,7 +662,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-slate-600 bg-slate-500/10 px-2 py-0.5 rounded">
             <Target className="h-2.5 w-2.5" />
-            الفائز مخفي حتى الإعلان
+            {t('ac_winner_hidden')}
           </div>
         );
       
