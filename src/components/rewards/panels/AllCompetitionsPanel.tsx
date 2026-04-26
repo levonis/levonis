@@ -530,7 +530,7 @@ export default function AllCompetitionsPanel() {
         return comp.win_probability ? (
           <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded">
             <Zap className="h-2.5 w-2.5" />
-            نسبة الفوز: {comp.win_probability}%
+            {t('ac_win_probability', { value: comp.win_probability })}
           </div>
         ) : null;
       
