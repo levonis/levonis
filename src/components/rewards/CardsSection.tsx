@@ -144,6 +144,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
               id: displayLevel.id,
               name_ar: displayLevel.name_ar,
               name_en: displayLevel.name_en,
+              name_ku: displayLevel.name_ku,
               color: displayLevel.color,
               discount_percentage: displayLevel.discount_percentage,
               bonus_points_percentage: displayLevel.bonus_points_percentage,
