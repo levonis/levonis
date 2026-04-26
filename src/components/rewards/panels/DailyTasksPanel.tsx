@@ -22,6 +22,7 @@ import { useLanguage } from "@/lib/i18n";
 export default function DailyTasksPanel() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [expandedReviews, setExpandedReviews] = useState(false);
   const [proofDialogOpen, setProofDialogOpen] = useState(false);
