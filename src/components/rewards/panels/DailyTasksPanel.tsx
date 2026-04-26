@@ -18,10 +18,11 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import OptimizedImage from "@/components/OptimizedImage";
 import { useLanguage } from "@/lib/i18n";
+import { pickI18n } from "@/lib/i18nField";
 
 export default function DailyTasksPanel() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [expandedReviews, setExpandedReviews] = useState(false);
