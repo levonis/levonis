@@ -117,8 +117,8 @@ export default function RewardsHub() {
         </div>
       </div>
 
-      {/* Main Content Area - Scrollable independently */}
-      <main className="flex-1 overflow-y-auto px-3 py-3">
+      {/* Main Content Area - scrolls with the page */}
+      <main className="flex-1 px-3 py-3">
         {/* Quick Actions Row - Horizontal Scroll */}
         <div className="mb-3">
           <QuickActionsBar onNavigate={handleQuickAction} />
