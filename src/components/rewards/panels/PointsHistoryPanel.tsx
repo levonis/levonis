@@ -51,11 +51,19 @@ export default function PointsHistoryPanel() {
     );
   }
 
+  const sourceLabel = (src: string | null | undefined) => {
+    const key = `points_src_${src || 'default'}` as any;
+    const translated = t(key);
+    // if key didn't exist (translator returns the key string), fall back to default
+    return translated.startsWith('points_src_') ? t('points_src_default') : translated;
+  };
+
   return (
     <div className="space-y-3">
       {transactions.map((tx) => {
         const isEarned = tx.type === 'earned' || tx.type === 'earn';
         const displayPoints = Math.abs(tx.points);
+        const label = tx.description || sourceLabel(tx.source);
         
         return (
           <Card key={tx.id}>
@@ -70,13 +78,13 @@ export default function PointsHistoryPanel() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium line-clamp-1">{tx.description || tx.source}</p>
+                <p className="text-sm font-medium line-clamp-1">{label}</p>
                 <p className="text-xs text-muted-foreground">
                   {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: dateLocale })}
                 </p>
               </div>
               <Badge variant={isEarned ? 'default' : 'destructive'} className={isEarned ? 'bg-green-500' : ''}>
-                {isEarned ? '+' : '-'}{displayPoints}
+                {isEarned ? '+' : '-'}{displayPoints.toLocaleString(language === 'en' ? 'en-US' : 'ar-IQ')}
               </Badge>
             </CardContent>
           </Card>
