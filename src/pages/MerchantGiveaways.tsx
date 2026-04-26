@@ -11,6 +11,7 @@ import AssistanceCompetitions from "@/components/assistance/AssistanceCompetitio
 import AssistanceGifts from "@/components/assistance/AssistanceGifts";
 import AssistanceCoupons from "@/components/assistance/AssistanceCoupons";
 import AssistanceEnvelopes from "@/components/assistance/AssistanceEnvelopes";
+import { useLanguage } from "@/lib/i18n";
 
 export default function MerchantGiveaways() {
   const { user } = useAuth();
