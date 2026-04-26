@@ -278,7 +278,7 @@ export default function AllOffersPanel() {
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
           <Gift className="h-7 w-7 text-primary/50" />
         </div>
-        <p className="text-muted-foreground text-sm font-medium">لا توجد عروض</p>
+        <p className="text-muted-foreground text-sm font-medium">{t('ao_no_offers')}</p>
       </div>
     );
   }
