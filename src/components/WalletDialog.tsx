@@ -380,7 +380,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
           </div>
 
           {/* Main Tabs */}
-          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
             <TabsList className="grid grid-cols-3 m-3 mb-0 bg-muted/50 p-1 h-10">
               <TabsTrigger value="deposit" className="text-xs gap-1.5 data-[state=active]:bg-background">
                 <Plus className="h-3.5 w-3.5" />
