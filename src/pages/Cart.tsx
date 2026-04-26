@@ -30,6 +30,7 @@ import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 import CartUpsellOffers from '@/components/cart/CartUpsellOffers';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { ensurePriceIqd, getGuardedCartItemPrice } from '@/lib/priceGuard';
+import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
