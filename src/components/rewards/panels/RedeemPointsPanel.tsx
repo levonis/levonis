@@ -9,6 +9,7 @@ import { Coins, Ticket, Trophy, Loader2, AlertCircle, Wallet } from "lucide-reac
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function RedeemPointsPanel() {

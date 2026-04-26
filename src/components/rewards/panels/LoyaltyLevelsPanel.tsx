@@ -15,6 +15,7 @@ import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function LoyaltyLevelsPanel() {

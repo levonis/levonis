@@ -20,6 +20,7 @@ import { Coins, ShoppingCart, Loader2, Gift, Package, Ticket } from "lucide-reac
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface RedeemableProduct {
   id: string;

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Lock, Gift, Star, Crown, Trophy, CreditCard, Zap } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface LevelPrize {
   id: string;

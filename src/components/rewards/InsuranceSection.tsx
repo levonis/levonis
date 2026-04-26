@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface InsuranceSectionProps {
   activeSubTab: SubTabId;

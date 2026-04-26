@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Printer, Settings, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 export default function MyPrintersPanel() {
   const { user } = useAuth();

@@ -13,6 +13,7 @@ import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 import { pickLocalized } from "@/lib/i18n/localizedField";
 
 interface CardsSectionProps {
