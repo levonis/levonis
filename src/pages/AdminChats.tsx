@@ -38,6 +38,11 @@ interface SupportConversation {
   unread_count: number;
   last_message_at: string;
   last_message?: string;
+  // VIP card data
+  vip_card_name: string | null;
+  vip_card_color: string | null;
+  vip_priority_rank: number; // -1 if no VIP card
+  is_pinned: boolean; // VIP user awaiting admin reply
 }
 
 const LEVEL_PRIORITY: { [key: string]: number } = {
