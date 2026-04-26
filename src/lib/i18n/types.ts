@@ -1377,7 +1377,6 @@ export type TranslationKeys = {
   savings_details: string;
   savings_empty: string;
   savings_coupon_for_order: string;
-  wallet_title: string;
   wallet_current_balance: string;
   wallet_recent_transactions: string;
   wallet_no_transactions: string;
