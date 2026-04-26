@@ -56,8 +56,8 @@ export default function MerchantGiveaways() {
               </div>
             </div>
             <div>
-              <h1 className="text-sm font-black text-foreground tracking-tight">المساعدات</h1>
-              <p className="text-[10px] text-muted-foreground">مقدمة من مجتمع ليفو</p>
+              <h1 className="text-sm font-black text-foreground tracking-tight">{t('assist_title')}</h1>
+              <p className="text-[10px] text-muted-foreground">{t('assist_subtitle')}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-accent" onClick={() => navigate(-1)}>
