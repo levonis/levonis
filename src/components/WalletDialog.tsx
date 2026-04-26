@@ -540,7 +540,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             </TabsContent>
 
             {/* Withdraw Tab */}
-            <TabsContent value="withdraw" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="withdraw" className="m-0">
               <div className="p-3 space-y-3">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/5 to-transparent border border-orange-500/10">
                   <div className="flex items-start gap-2">
