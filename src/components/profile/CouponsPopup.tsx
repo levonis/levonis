@@ -61,17 +61,20 @@ const discountIcons: Record<string, typeof Percent> = {
   min_purchase_delivery: Truck,
 };
 
-const discountLabels: Record<string, string> = {
-  percentage: "خصم نسبة",
-  fixed_amount: "خصم مبلغ",
-  free_delivery: "توصيل مجاني",
-  free_gift: "هدية مجانية",
-  min_purchase_percentage: "خصم عند الشراء",
-  min_purchase_delivery: "توصيل مجاني عند الشراء",
+const discountLabelKeys: Record<string, string> = {
+  percentage: "cp_dt_percentage",
+  fixed_amount: "cp_dt_fixed_amount",
+  free_delivery: "cp_dt_free_delivery",
+  free_gift: "cp_dt_free_gift",
+  min_purchase_percentage: "cp_dt_min_purchase_percentage",
+  min_purchase_delivery: "cp_dt_min_purchase_delivery",
 };
 
 export default function CouponsPopup({ open, onOpenChange, originRect }: CouponsPopupProps) {
   const navigate = useNavigate();
+  const { t, language, dir } = useLanguage();
+  const numLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
+  const dateLocale = language === 'en' ? enUS : ar;
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedDiscount, setSelectedDiscount] = useState<StoreDiscount | null>(null);
 
