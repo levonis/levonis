@@ -27,6 +27,8 @@ const MemoizedCategoryCard = memo(CategoryCard);
 
 const Home = () => {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
+  const [wishDialogOpen, setWishDialogOpen] = useState(false);
 
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
     queryKey: ['main-sections'],
