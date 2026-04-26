@@ -239,13 +239,13 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                   <div className="w-6 h-6 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
                     <Ticket className="h-3 w-3 text-primary" />
                   </div>
-                  <h3 className="text-[10px] font-black text-foreground">كوبونات خاصة</h3>
+                  <h3 className="text-[10px] font-black text-foreground">{t('cp_special_coupons')}</h3>
                 </div>
 
                 <div className="space-y-1.5">
                   {coupons.map((coupon) => {
                     const Icon = discountIcons[coupon.coupon_type] || Percent;
-                    const label = discountLabels[coupon.coupon_type] || "خصم";
+                    const label = t((discountLabelKeys[coupon.coupon_type] as any) || 'cp_dt_default');
                     const isCopied = copiedId === coupon.id;
 
                     return (
@@ -261,13 +261,13 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                               <span className="text-xs font-black text-primary">{coupon.discount_value}%</span>
                             )}
                             {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
-                              <span className="text-[8px] font-black text-primary">{coupon.discount_value?.toLocaleString()}<span className="text-[6px]"> د.ع</span></span>
+                              <span className="text-[8px] font-black text-primary">{coupon.discount_value?.toLocaleString(numLocale)}<span className="text-[6px]"> {t('ph_currency_iqd')}</span></span>
                             )}
                             {coupon.coupon_type === "free_delivery" && (
-                              <span className="text-[7px] font-black text-primary">مجاني</span>
+                              <span className="text-[7px] font-black text-primary">{t('cp_label_free')}</span>
                             )}
                             {coupon.coupon_type === "free_product" && (
-                              <span className="text-[7px] font-black text-primary">هدية</span>
+                              <span className="text-[7px] font-black text-primary">{t('cp_label_gift')}</span>
                             )}
                           </div>
                           <div className="flex-1 p-2 space-y-0.5">
