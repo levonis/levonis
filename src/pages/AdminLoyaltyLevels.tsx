@@ -41,6 +41,8 @@ export default function AdminLoyaltyLevels() {
     bonus_points_percentage: 0,
     free_shipping: false,
     free_shipping_min_order: 0,
+    free_shipping_methods: ["standard"] as string[],
+    free_shipping_max_uses: null as number | null,
     is_purchasable: true,
     purchase_price_points: 0,
     duration_days: 30,
