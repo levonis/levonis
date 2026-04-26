@@ -193,11 +193,11 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[10px] font-black text-foreground truncate">{storeName}</h3>
-                    <p className="text-[8px] text-muted-foreground">{discounts.length} عرض</p>
+                    <p className="text-[8px] text-muted-foreground">{t('cp_count_offers', { n: discounts.length })}</p>
                   </div>
                   <Button variant="ghost" size="sm" className="h-5 text-[8px] gap-0.5 text-primary px-1.5"
                     onClick={() => { navigate(`/community/store/${discounts[0].merchant_id}`); onOpenChange(false); }}>
-                    زيارة<ChevronLeft className="h-2 w-2" />
+                    {t('cp_visit')}<ChevronLeft className="h-2 w-2" />
                   </Button>
                 </div>
 
