@@ -284,13 +284,13 @@ export default function ProductOffersPage() {
               )}
               <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-bold text-primary">+{activePromotion!.bonus_tickets} تذكرة إضافية مع كل شراء!</span>
+                <span className="text-xs font-bold text-primary">{t('offers_extra_tickets_with_each').replace('{n}', String(activePromotion!.bonus_tickets))}</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>ينتهي خلال:</span>
+                <span>{t('offers_promo_ends_in')}</span>
                 <div className="flex items-center gap-1 font-mono font-bold text-foreground">
-                  {countdown.days > 0 && <span className="bg-card border rounded px-1.5 py-0.5">{countdown.days}ي</span>}
+                  {countdown.days > 0 && <span className="bg-card border rounded px-1.5 py-0.5">{countdown.days}{t('offers_promo_days_short')}</span>}
                   <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.hours).padStart(2, '0')}</span>
                   <span>:</span>
                   <span className="bg-card border rounded px-1.5 py-0.5">{String(countdown.minutes).padStart(2, '0')}</span>
