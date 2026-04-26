@@ -157,8 +157,15 @@ export default function ProductOffersPage() {
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['product-offers-active'] });
-        const bonusMsg = data.bonus_tickets > 0 ? ` (منها ${data.bonus_tickets} إضافية بمناسبة ${data.promo_title || 'العرض'})` : '';
-        toast.success(`🎁 تم شراء ${data.product_name} وحصلت على ${data.gift_tickets} تذكرة!${bonusMsg}`);
+        const promoTitle = data.promo_title || t('offers_purchase_promo_default');
+        const bonusMsg = data.bonus_tickets > 0
+          ? t('offers_purchase_bonus_part').replace('{n}', String(data.bonus_tickets)).replace('{title}', promoTitle)
+          : '';
+        toast.success(
+          t('offers_purchase_success')
+            .replace('{name}', data.product_name)
+            .replace('{n}', String(data.gift_tickets)) + bonusMsg
+        );
         try {
           await supabase.functions.invoke('send-telegram-notification', {
             body: { message: `🛍️ <b>شراء منتج</b>\n📦 ${data.product_name}\n💰 ${data.total_cost?.toLocaleString() || 0} دينار\n🎁 ${data.gift_tickets} تذكرة${data.bonus_tickets > 0 ? ` (${data.bonus_tickets} إضافية)` : ''}` },
@@ -167,10 +174,10 @@ export default function ProductOffersPage() {
         setShowPurchaseDialog(false);
         setSelectedOffer(null);
       } else {
-        toast.error(data.error || 'حدث خطأ');
+        toast.error(data.error || t('offers_generic_error'));
       }
     },
-    onError: (error) => toast.error('خطأ: ' + error.message),
+    onError: (error) => toast.error(t('offers_error_prefix') + error.message),
   });
 
   const handlePurchaseClick = (offer: ProductOffer) => {
