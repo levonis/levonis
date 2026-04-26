@@ -144,12 +144,22 @@ export function computeLinkedDirectSalePrice(
     round_up_price?: boolean | null;
   },
   shippingSettings: { usd_to_iqd_rate: number } | null | undefined,
-  codDefaults: { type: 'percentage' | 'fixed'; value: number } | null | undefined
+  codDefaults:
+    | {
+        type: 'percentage' | 'fixed';
+        value: number;
+        tiers?: Array<{
+          min_amount: number;
+          max_amount: number;
+          cod_fee_type?: 'percentage' | 'fixed';
+          cod_fee_value?: number;
+        }>;
+      }
+    | null
+    | undefined
 ): number | null {
   if (!product?.link_direct_commission_to_cod) return null;
   if (!shippingSettings || !codDefaults) return null;
-  // If COD value is 0 (e.g. anon user can't read settings due to RLS), don't override stored price
-  if (!codDefaults.value || codDefaults.value <= 0) return null;
 
   const priceUsd = Number(product.price_usd || 0);
   if (priceUsd <= 0) return null;
@@ -178,11 +188,29 @@ export function computeLinkedDirectSalePrice(
   // Pre-order base for the COD percentage (raw, unrounded — matches admin form logic)
   const preorderFinal = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + pdc + referral;
 
+  // Pick the COD tier matching the pre-order amount; fall back to legacy default.
+  let codType: 'percentage' | 'fixed' = codDefaults.type;
+  let codValue: number = codDefaults.value;
+  if (Array.isArray(codDefaults.tiers) && codDefaults.tiers.length > 0) {
+    const tier = codDefaults.tiers.find(
+      (t) =>
+        preorderFinal >= Number(t.min_amount || 0) &&
+        preorderFinal <= Number(t.max_amount || 0)
+    );
+    if (tier && tier.cod_fee_value != null) {
+      codType = (tier.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
+      codValue = Number(tier.cod_fee_value) || 0;
+    }
+  }
+
+  // If COD value is 0 (e.g. anon user can't read settings due to RLS), don't override stored price
+  if (!codValue || codValue <= 0) return null;
+
   let directPortion: number;
-  if (codDefaults.type === 'fixed') {
-    directPortion = Math.ceil(codDefaults.value);
+  if (codType === 'fixed') {
+    directPortion = Math.ceil(codValue);
   } else {
-    directPortion = Math.ceil((preorderFinal * codDefaults.value) / 100);
+    directPortion = Math.ceil((preorderFinal * codValue) / 100);
   }
 
   let total = priceIqd + shippingCost + seaCommissionAddon + airCommissionAddon + directPortion + pdc + referral;
