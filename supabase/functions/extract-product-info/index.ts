@@ -1074,7 +1074,7 @@ serve(async (req) => {
     if (!url) {
       return new Response(
         JSON.stringify({ success: false, error: 'الرجاء إدخال رابط المنتج' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -1093,7 +1093,7 @@ serve(async (req) => {
         lowerUrl.includes('onclick=')) {
       return new Response(
         JSON.stringify({ success: false, error: 'رابط غير صالح', requiresManualInput: true }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
@@ -1105,7 +1105,7 @@ serve(async (req) => {
       } else {
         return new Response(
           JSON.stringify({ success: false, error: 'الرجاء إدخال رابط صحيح', requiresManualInput: true }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
@@ -1116,7 +1116,7 @@ serve(async (req) => {
     } catch {
       return new Response(
         JSON.stringify({ success: false, error: 'صيغة الرابط غير صحيحة', requiresManualInput: true }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
