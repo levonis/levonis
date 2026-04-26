@@ -1754,4 +1754,6 @@ export type TranslationKeys = {
   ac_join_free: string;
   ac_join_now: string;
   ac_login_to_join: string;
+  ac_won_prize: string;
+  ac_default_prize: string;
 };
