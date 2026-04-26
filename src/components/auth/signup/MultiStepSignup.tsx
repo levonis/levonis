@@ -10,14 +10,21 @@ import Step4OptionalInfo from './Step4OptionalInfo';
 import Step5Review from './Step5Review';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import { SignupFormData, initialFormData } from './types';
-
-const STEP_LABELS = ['الحساب', 'الملف', 'التحقق', 'إضافية', 'مراجعة'];
+import { useLanguage } from '@/lib/i18n';
 
 interface MultiStepSignupProps {
   onSwitchToLogin: () => void;
 }
 
 export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
+  const { t } = useLanguage();
+  const STEP_LABELS = [
+    t('signup_step_account'),
+    t('signup_step_profile'),
+    t('signup_step_verify'),
+    t('signup_step_optional'),
+    t('signup_step_review'),
+  ];
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<SignupFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
