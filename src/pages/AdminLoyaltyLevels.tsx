@@ -37,6 +37,7 @@ export default function AdminLoyaltyLevels() {
     min_points: 0,
     color: "#FFD700",
     discount_percentage: 0,
+    discount_percentage_max_amount: null as number | null,
     bonus_points_percentage: 0,
     free_shipping: false,
     free_shipping_min_order: 0,
