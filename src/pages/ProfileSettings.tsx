@@ -549,25 +549,25 @@ export default function ProfileSettings() {
 
         {/* Community Profile Section */}
         {communityProfile && (
-          <SettingsSection icon={Users} title="ملف المجتمع">
+          <SettingsSection icon={Users} title={t('settings_community_profile')}>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">الاسم المعروض في المجتمع</Label>
+                <Label className="text-xs text-muted-foreground">{t('settings_community_display_name')}</Label>
                 <Input
                   value={communityDisplayName}
                   onChange={(e) => setCommunityDisplayName(e.target.value)}
-                  placeholder="اسمك في مجتمع ليفو"
+                  placeholder={t('settings_community_display_name_placeholder')}
                   maxLength={120}
                   className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">النبذة التعريفية</Label>
+                <Label className="text-xs text-muted-foreground">{t('settings_community_bio')}</Label>
                 <Textarea
                   value={communityBio}
                   onChange={(e) => setCommunityBio(e.target.value)}
-                  placeholder="اكتب نبذة قصيرة عنك..."
+                  placeholder={t('settings_community_bio_placeholder')}
                   maxLength={500}
                   rows={3}
                   className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all resize-none"
@@ -578,13 +578,13 @@ export default function ProfileSettings() {
               {communityProfile.is_verified && (
                 <div className="flex items-center gap-2 p-3 rounded-2xl bg-primary/10 backdrop-blur-xl border border-primary/30 shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.2)]">
                   <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-bold text-primary">حساب موثّق</span>
+                  <span className="text-xs font-bold text-primary">{t('settings_verified_account')}</span>
                 </div>
               )}
 
               {(communityProfile.reputation_score != null && communityProfile.reputation_score > 0) && (
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/15">
-                  <span className="text-xs text-muted-foreground">نقاط السمعة</span>
+                  <span className="text-xs text-muted-foreground">{t('settings_reputation_score')}</span>
                   <span className="text-sm font-black text-foreground">{communityProfile.reputation_score}</span>
                 </div>
               )}
