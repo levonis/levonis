@@ -335,7 +335,7 @@ export default function ProductOffersPage() {
                       <div className="w-full h-full bg-secondary flex items-center justify-center"><Package className="h-12 w-12 text-muted-foreground" /></div>
                     )}
                     <TicketBadge offer={offer} />
-                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive/30 backdrop-blur-md border border-destructive/40 text-destructive-foreground">نفذت الكمية</Badge>}
+                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-destructive/30 backdrop-blur-md border border-destructive/40 text-destructive-foreground">{t('offers_out_of_stock')}</Badge>}
                     {hasMultipleImages && (
                       <>
                         <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-background/30 backdrop-blur-md border border-border/40 hover:bg-background/50 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
