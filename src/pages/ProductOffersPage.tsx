@@ -565,33 +565,33 @@ export default function ProductOffersPage() {
       </Dialog>
 
       <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir={dir}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-primary" />تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-primary" />{t('offers_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription className="text-right space-y-3">
               {selectedOffer && (
                 <>
-                  <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOffer.title_ar}</span>؟</p>
+                  <p>{t('offers_confirm_question').replace('{title}', '')} <span className="font-bold text-foreground">{selectedOffer.title_ar}</span></p>
                   <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
-                    <div className="flex justify-between"><span>السعر:</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
-                    <div className="flex justify-between text-green-600"><span>تذاكر هدية:</span><span className="font-bold">🎁 {getTotalTickets(selectedOffer)} تذكرة</span></div>
+                    <div className="flex justify-between"><span>{t('offers_confirm_price')}</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
+                    <div className="flex justify-between text-green-600"><span>{t('offers_confirm_gift_tickets')}</span><span className="font-bold">🎁 {getTotalTickets(selectedOffer)} {t('offers_ticket_word')}</span></div>
                     {hasPromo && (
                       <div className="flex justify-between text-amber-600 text-xs">
-                        <span>منها إضافية ({activePromotion!.title_ar}):</span>
-                        <span className="font-bold">+{activePromotion!.bonus_tickets} تذكرة</span>
+                        <span>{t('offers_confirm_bonus_label').replace('{title}', activePromotion!.title_ar)}</span>
+                        <span className="font-bold">+{activePromotion!.bonus_tickets} {t('offers_ticket_word')}</span>
                       </div>
                     )}
                   </div>
-                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ (رصيدك: {wallet.balance.toLocaleString()} دينار)</p>}
+                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">{t('offers_confirm_wallet_low').replace('{balance}', wallet.balance.toLocaleString())}</p>}
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogAction onClick={() => selectedOffer && purchaseMutation.mutate(selectedOffer.id)} disabled={purchaseMutation.isPending || (wallet && selectedOffer && wallet.balance < selectedOffer.price)}>
-              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}تأكيد الشراء
+              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}{t('offers_confirm_button')}
             </AlertDialogAction>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('offers_cancel')}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
