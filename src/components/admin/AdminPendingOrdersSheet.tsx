@@ -68,7 +68,7 @@ export default function AdminPendingOrdersSheet() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          id, order_number, status, total_amount, shipping_address, phone_number, governorate, created_at, priority,
+          id, order_number, status, total_amount, shipping_address, phone_number, governorate, created_at, priority, user_id,
           order_items (id, product_name_ar, selected_option, selected_color, quantity, unit_price, color_image_url, shipping_option_name_ar)
         `)
         .in('status', ['pending', 'processing', 'confirmed'])
@@ -76,7 +76,50 @@ export default function AdminPendingOrdersSheet() {
         .limit(50);
 
       if (error) throw error;
-      return (data || []) as Order[];
+      const baseOrders = (data || []) as Order[];
+
+      // Fetch active loyalty cards with priority_shipping for the involved users
+      const userIds = Array.from(new Set(baseOrders.map(o => o.user_id).filter(Boolean))) as string[];
+      const cardByUser: Record<string, { rank: number; name: string | null; color: string | null }> = {};
+      if (userIds.length > 0) {
+        const nowIso = new Date().toISOString();
+        const { data: cards } = await supabase
+          .from('user_cards')
+          .select('user_id, expires_at, is_active, loyalty_levels!inner(name_ar, color, display_order, priority_shipping)')
+          .in('user_id', userIds)
+          .eq('is_active', true)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+
+        (cards || []).forEach((c: any) => {
+          const lvl = c.loyalty_levels;
+          if (!lvl?.priority_shipping) return;
+          const rank = lvl.display_order ?? 0;
+          const existing = cardByUser[c.user_id];
+          if (!existing || rank > existing.rank) {
+            cardByUser[c.user_id] = { rank, name: lvl.name_ar, color: lvl.color };
+          }
+        });
+      }
+
+      // Inject priority info and sort: priority cards first (higher display_order = higher tier), then by created_at desc
+      const enriched = baseOrders.map(o => {
+        const info = o.user_id ? cardByUser[o.user_id] : undefined;
+        return {
+          ...o,
+          priority_rank: info?.rank ?? -1,
+          priority_card_name: info?.name ?? null,
+          priority_card_color: info?.color ?? null,
+        };
+      });
+
+      enriched.sort((a, b) => {
+        const ra = a.priority_rank ?? -1;
+        const rb = b.priority_rank ?? -1;
+        if (rb !== ra) return rb - ra;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      return enriched;
     },
     enabled: open,
     staleTime: 30000,
