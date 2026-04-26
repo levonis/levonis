@@ -95,7 +95,7 @@ const BundlesSection = () => {
               {/* Info */}
               <div className="relative z-20 px-2.5 pt-1.5 pb-2.5 space-y-1">
                 <p className="text-[11px] font-bold leading-tight line-clamp-1 text-foreground">
-                  {bundle.title_ar}
+                  {pickI18n(bundle, 'title', language)}
                 </p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm font-black text-primary">{formatPrice(bundle.bundle_price)}</span>
