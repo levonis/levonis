@@ -382,13 +382,13 @@ export default function ProductOffersPage() {
                       <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
                       <Button size="sm" className="gap-1 bg-primary/80 backdrop-blur-md border border-primary/40 hover:bg-primary/90 shadow-lg" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
                         {purchaseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
-                        {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
+                        {!user ? t('offers_login_short') : isOutOfStock ? t('offers_oos_short') : !canAfford ? t('offers_insufficient_short') : t('offers_buy_short')}
                       </Button>
                     </div>
                     <TicketInfoBar offer={offer} />
                     {offer.stock_quantity !== null && !isOutOfStock && (
                       <p className="text-xs text-center text-amber-700 dark:text-amber-300 font-medium bg-amber-500/10 backdrop-blur-md border border-amber-400/25 py-1 rounded">
-                        📦 متبقي: {offer.stock_quantity} فقط
+                        📦 {t('offers_remaining')}: {offer.stock_quantity}
                       </p>
                     )}
                   </CardContent>
