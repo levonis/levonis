@@ -717,8 +717,8 @@ export default function DailyTasksPanel() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium mb-1">{proofTask?.title_ar}</p>
-              <p className="text-xs text-muted-foreground">{proofTask?.description_ar}</p>
+              <p className="text-sm font-medium mb-1">{pickI18n(proofTask as any, 'title', language)}</p>
+              <p className="text-xs text-muted-foreground">{pickI18n(proofTask as any, 'description', language)}</p>
             </div>
 
             {/* Instagram Username */}
