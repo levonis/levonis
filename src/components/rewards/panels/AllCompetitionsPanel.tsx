@@ -927,7 +927,7 @@ export default function AllCompetitionsPanel() {
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-green-700">مشاركاتك ({userParticipations[selectedCompetition.id].length})</span>
+                      <span className="font-medium text-green-700">{t('ac_your_participations', { count: userParticipations[selectedCompetition.id].length })}</span>
                     </div>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {userParticipations[selectedCompetition.id].map((p: any) => (
