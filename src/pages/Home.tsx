@@ -1,6 +1,10 @@
-import { useMemo, lazy, Suspense, memo } from 'react';
+import { useMemo, lazy, Suspense, memo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
@@ -23,6 +27,8 @@ const MemoizedCategoryCard = memo(CategoryCard);
 
 const Home = () => {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
+  const [wishDialogOpen, setWishDialogOpen] = useState(false);
 
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
     queryKey: ['main-sections'],
@@ -150,12 +156,48 @@ const Home = () => {
           
           <div className="text-center mb-6 md:mb-8 relative z-10">
             <div className="inline-block mb-2">
-              <h2 className="text-lg md:text-2xl font-black px-16 md:px-32 py-2 md:py-3 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg relative overflow-hidden">
-                <span className="relative z-10">{t('home_sections')}</span>
-              </h2>
+              <button
+                type="button"
+                onClick={() => setWishDialogOpen(true)}
+                aria-label={t('home_wishes_title')}
+                className="group text-lg md:text-2xl font-black px-16 md:px-32 py-2 md:py-3 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.55)] hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <span className="relative z-10 inline-flex items-center gap-2">
+                  {t('home_sections')}
+                  <Sparkles className="w-4 h-4 md:w-5 md:h-5 opacity-90 group-hover:rotate-12 transition-transform" />
+                </span>
+              </button>
             </div>
             <p className="text-muted-foreground text-xs md:text-sm">{t('home_sections_desc')}</p>
           </div>
+
+          <Dialog open={wishDialogOpen} onOpenChange={setWishDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  {t('home_wishes_title')}
+                </DialogTitle>
+                <DialogDescription>
+                  {t('home_wishes_desc')}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2 sm:gap-2">
+                <Button variant="outline" onClick={() => setWishDialogOpen(false)}>
+                  {language === 'en' ? 'Cancel' : language === 'ku' ? 'پاشگەزبوونەوە' : 'إلغاء'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setWishDialogOpen(false);
+                    navigate('/wishes');
+                  }}
+                >
+                  {t('home_wishes_title')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           
           {categoriesLoading || mainSectionsLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
