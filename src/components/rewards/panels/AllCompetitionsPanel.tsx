@@ -25,6 +25,7 @@ import LetterReveal from "@/components/LetterReveal";
 import InstantWinReveal from "@/components/InstantWinReveal";
 import MysteryBoxReveal from "@/components/MysteryBoxReveal";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
+import { useLanguage } from "@/lib/i18n";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
