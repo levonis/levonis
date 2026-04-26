@@ -29,6 +29,7 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
 import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
+import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { usePageTitle } from "@/island/usePageTitle";
@@ -907,6 +908,26 @@ const ProductDetail = () => {
 
               {/* Price section */}
               <div className="glass-tile rounded-xl p-3">
+                {/* Live direct-sale price diagnostic — visible only when the
+                    product is linked to global COD% but inputs are missing. */}
+                {(product as any).link_direct_commission_to_cod && (
+                  <LiveDirectPriceWarning
+                    hasIssue={liveDirectSalePrice == null}
+                    diagnostics={{
+                      price_usd: (product as any).price_usd,
+                      usd_to_iqd_rate: shippingSettings?.usd_to_iqd_rate,
+                      cod_value: codDefaults?.value,
+                      cod_type: codDefaults?.type,
+                    }}
+                    onRetry={async () => {
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ['product', slug] }),
+                        queryClient.invalidateQueries({ queryKey: ['cod-default-settings-global'] }),
+                        queryClient.invalidateQueries({ queryKey: ['shipping-settings'] }),
+                      ]);
+                    }}
+                  />
+                )}
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-black text-primary">{formatPrice(finalPrice)}</span>
                   <span className="text-sm text-muted-foreground">{currency}</span>
