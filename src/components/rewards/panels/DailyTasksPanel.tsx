@@ -417,13 +417,19 @@ export default function DailyTasksPanel() {
 
       // Get user profile for notification
       const { data: userProfile } = await supabase.from('profiles').select('full_name, username').eq('id', user.id).single();
-      const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+      const userName = userProfile?.full_name || userProfile?.username || t('dt_default_user');
 
       // Send Telegram notification with approve/reject buttons
       try {
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `📋 <b>طلب تحقق مهمة جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المهمة: ${proofTask.title_ar}\n📷 انستغرام: @${instagramUsername.trim().replace('@', '')}\n💰 النقاط: ${proofTask.points_reward}\n\n🔗 <a href="${urlData.publicUrl}">عرض صورة الإثبات</a>`,
+            message: t('dt_telegram_notification', {
+              userName,
+              task: proofTask.title_ar,
+              instagram: instagramUsername.trim().replace('@', ''),
+              points: proofTask.points_reward,
+              url: urlData.publicUrl,
+            }),
             reply_markup: {
               inline_keyboard: [
                 [
@@ -437,10 +443,10 @@ export default function DailyTasksPanel() {
       } catch (e) { console.error('Telegram notification error:', e); }
 
       queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
-      toast.success('تم إرسال طلبك للمراجعة ✅');
+      toast.success(t('dt_proof_sent'));
       setProofDialogOpen(false);
     } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ');
+      toast.error(err.message || t('common_error'));
     } finally {
       setIsSubmittingProof(false);
     }
