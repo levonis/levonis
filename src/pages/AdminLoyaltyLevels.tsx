@@ -78,6 +78,53 @@ export default function AdminLoyaltyLevels() {
     is_active: true,
   });
 
+  // Admin gift dialog state
+  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
+  const [giftLevel, setGiftLevel] = useState<any>(null);
+  const [giftSearch, setGiftSearch] = useState("");
+  const [giftRecipientId, setGiftRecipientId] = useState<string | null>(null);
+  const [giftMessage, setGiftMessage] = useState("");
+
+  // Search users for gifting
+  const { data: giftSearchResults = [] } = useQuery({
+    queryKey: ['admin-gift-card-search', giftSearch],
+    queryFn: async () => {
+      if (giftSearch.trim().length < 2) return [];
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .or(`full_name.ilike.%${giftSearch}%,username.ilike.%${giftSearch}%`)
+        .limit(20);
+      return data || [];
+    },
+    enabled: giftDialogOpen && giftSearch.trim().length >= 2,
+  });
+
+  const adminGiftMutation = useMutation({
+    mutationFn: async ({ levelId, recipientId, message }: { levelId: string; recipientId: string; message: string }) => {
+      const { data, error } = await supabase.rpc('admin_gift_loyalty_card' as any, {
+        p_recipient_id: recipientId,
+        p_level_id: levelId,
+        p_message: message || null,
+      });
+      if (error) throw error;
+      const result = data as { success?: boolean; error?: string };
+      if (!result?.success) throw new Error(result?.error || 'فشل الإهداء');
+      return result;
+    },
+    onSuccess: () => {
+      toast.success('تم إهداء البطاقة بنجاح');
+      setGiftDialogOpen(false);
+      setGiftLevel(null);
+      setGiftSearch("");
+      setGiftRecipientId(null);
+      setGiftMessage("");
+      queryClient.invalidateQueries({ queryKey: ['admin-card-holders'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'فشل الإهداء'),
+  });
+
+
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user) {
