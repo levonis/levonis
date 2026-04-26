@@ -317,8 +317,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-card to-muted border border-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Sparkles className="h-6 w-6 text-primary/30" />
                 </div>
-                <p className="text-foreground font-black text-xs">لا توجد عروض حالياً</p>
-                <p className="text-[9px] text-muted-foreground mt-1">ترقب العروض القادمة</p>
+                <p className="text-foreground font-black text-xs">{t('cp_no_offers_title')}</p>
+                <p className="text-[9px] text-muted-foreground mt-1">{t('cp_no_offers_subtitle')}</p>
               </div>
             )}
           </div>
@@ -332,7 +332,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
               onClick={() => { navigate("/special-coupons"); onOpenChange(false); }}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              عرض الكل
+              {t('cp_view_all')}
               <ChevronLeft className="h-3 w-3" />
             </Button>
           </div>
