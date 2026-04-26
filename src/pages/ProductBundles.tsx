@@ -73,7 +73,7 @@ const ProductBundles = () => {
         <div className="flex items-center gap-2 mb-4">
           <Link
             to="/"
-            aria-label="العودة إلى الصفحة الرئيسية"
+            aria-label={t('bundles_back_home')}
             className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] flex items-center justify-center hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ArrowRight className="h-4 w-4 text-foreground" aria-hidden="true" />
@@ -81,7 +81,7 @@ const ProductBundles = () => {
           <div className="w-8 h-8 rounded-xl bg-primary/15 backdrop-blur-xl border border-primary/30 flex items-center justify-center" aria-hidden="true">
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
-          <h1 className="text-lg font-black text-foreground tracking-tight">باقات وعروض</h1>
+          <h1 className="text-lg font-black text-foreground tracking-tight">{t('section_bundles_title')}</h1>
         </div>
 
         {isLoading ? (
@@ -91,7 +91,7 @@ const ProductBundles = () => {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 flex items-center justify-center">
               <Package className="h-8 w-8 text-muted-foreground/40" />
             </div>
-            <p className="text-sm text-muted-foreground">لا توجد باقات متاحة حالياً</p>
+            <p className="text-sm text-muted-foreground">{t('bundles_empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
