@@ -347,7 +347,7 @@ export default function AllOffersPanel() {
                   <span className="font-black text-primary-foreground text-[10px] tracking-tight">
                     {formatPrice(offer.price)}
                   </span>
-                  <span className="text-[6px] text-primary-foreground/80 font-medium">{offer.currency || 'د.ع'}</span>
+                  <span className="text-[6px] text-primary-foreground/80 font-medium">{offer.currency || t('ao_currency_iqd')}</span>
                 </div>
               </div>
             </div>
