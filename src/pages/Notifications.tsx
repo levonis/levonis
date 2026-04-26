@@ -203,7 +203,7 @@ const Notifications = () => {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="text-sm font-black text-foreground truncate">{notification.title}</h3>
+                        <h3 className="text-sm font-black text-foreground truncate">{translateNotificationTitle(notification.title, lang)}</h3>
                         {!notification.read && (
                           <Badge className="text-[10px] px-2 py-0 h-5 rounded-full bg-primary/15 text-primary border-primary/20 font-bold">
                             {t('common_new')}
@@ -224,7 +224,7 @@ const Notifications = () => {
                           backgroundColor: notification.background_color || undefined,
                         }}
                       >
-                        <p className="text-sm leading-relaxed">{notification.message}</p>
+                        <p className="text-sm leading-relaxed">{translateNotificationMessage(notification.message, lang)}</p>
                       </div>
 
                       <div className="flex items-center justify-between mt-2.5">
