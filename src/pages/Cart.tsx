@@ -1321,6 +1321,18 @@ const Cart = () => {
         });
       }
 
+      // Record free shipping usage (direct sale)
+      if (cardFreeShippingApplied && cardDiscount?.cardId && cardDiscount?.levelId) {
+        await (supabase as any).from('loyalty_free_shipping_usage').insert({
+          user_id: user.id,
+          card_id: cardDiscount.cardId,
+          level_id: cardDiscount.levelId,
+          order_id: orderResult.id,
+          delivery_method_key: selectedDeliveryMethod,
+          saved_amount: rawDeliveryFee,
+        });
+      }
+
       await clearCart();
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
