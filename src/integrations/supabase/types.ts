@@ -5045,6 +5045,8 @@ export type Database = {
       }
       level_prizes: {
         Row: {
+          auto_grant: boolean
+          coupon_code: string | null
           created_at: string
           description_ar: string | null
           description_en: string | null
@@ -5053,15 +5055,22 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_random_product: boolean
           level_id: string
+          level_number: number | null
+          loyalty_card_level_id: string | null
           prize_type: string
           prize_value: number | null
+          product_id: string | null
+          tickets_count: number | null
           title_ar: string
           title_en: string | null
           title_ku: string | null
           updated_at: string
         }
         Insert: {
+          auto_grant?: boolean
+          coupon_code?: string | null
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
@@ -5070,15 +5079,22 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_random_product?: boolean
           level_id: string
+          level_number?: number | null
+          loyalty_card_level_id?: string | null
           prize_type?: string
           prize_value?: number | null
+          product_id?: string | null
+          tickets_count?: number | null
           title_ar: string
           title_en?: string | null
           title_ku?: string | null
           updated_at?: string
         }
         Update: {
+          auto_grant?: boolean
+          coupon_code?: string | null
           created_at?: string
           description_ar?: string | null
           description_en?: string | null
@@ -5087,9 +5103,14 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_random_product?: boolean
           level_id?: string
+          level_number?: number | null
+          loyalty_card_level_id?: string | null
           prize_type?: string
           prize_value?: number | null
+          product_id?: string | null
+          tickets_count?: number | null
           title_ar?: string
           title_en?: string | null
           title_ku?: string | null
@@ -5376,6 +5397,7 @@ export type Database = {
           is_purchasable: boolean | null
           is_vip_plus: boolean | null
           level_key: string
+          level_number: number | null
           min_points: number
           monthly_free_shipping: number | null
           name_ar: string
@@ -5418,6 +5440,7 @@ export type Database = {
           is_purchasable?: boolean | null
           is_vip_plus?: boolean | null
           level_key: string
+          level_number?: number | null
           min_points?: number
           monthly_free_shipping?: number | null
           name_ar: string
@@ -5460,6 +5483,7 @@ export type Database = {
           is_purchasable?: boolean | null
           is_vip_plus?: boolean | null
           level_key?: string
+          level_number?: number | null
           min_points?: number
           monthly_free_shipping?: number | null
           name_ar?: string
@@ -11011,10 +11035,56 @@ export type Database = {
         }
         Relationships: []
       }
+      user_level_prize_claims: {
+        Row: {
+          created_at: string
+          granted_at: string | null
+          id: string
+          level_number: number
+          notes: string | null
+          prize_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_at?: string | null
+          id?: string
+          level_number: number
+          notes?: string | null
+          prize_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_at?: string | null
+          id?: string
+          level_number?: number
+          notes?: string | null
+          prize_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_level_prize_claims_prize_id_fkey"
+            columns: ["prize_id"]
+            isOneToOne: false
+            referencedRelation: "level_prizes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_points: {
         Row: {
           available_points: number
           created_at: string
+          current_level_number: number
+          current_level_xp: number
           id: string
           level: string | null
           redeemed_points: number
@@ -11027,6 +11097,8 @@ export type Database = {
         Insert: {
           available_points?: number
           created_at?: string
+          current_level_number?: number
+          current_level_xp?: number
           id?: string
           level?: string | null
           redeemed_points?: number
@@ -11039,6 +11111,8 @@ export type Database = {
         Update: {
           available_points?: number
           created_at?: string
+          current_level_number?: number
+          current_level_xp?: number
           id?: string
           level?: string | null
           redeemed_points?: number
@@ -11847,6 +11921,10 @@ export type Database = {
         }
         Returns: Json
       }
+      add_user_level_xp: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: Json
+      }
       add_user_tickets: {
         Args: { p_amount: number; p_source?: string; p_user_id: string }
         Returns: boolean
@@ -12314,6 +12392,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalculate_user_level: { Args: { p_user_id: string }; Returns: Json }
       record_ad_watch_and_award: {
         Args: {
           p_session_id: string
