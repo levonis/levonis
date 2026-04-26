@@ -639,8 +639,8 @@ export default function AllOffersPanel() {
                 
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1.5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">المبلغ</span>
-                    <span className="font-bold text-primary">{formatPrice(totalPrice)} د.ع</span>
+                    <span className="text-muted-foreground">{t('ao_amount_label')}</span>
+                    <span className="font-bold text-primary">{formatPrice(totalPrice)} {t('ao_currency_iqd')}</span>
                   </div>
                   {selectedColor && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
