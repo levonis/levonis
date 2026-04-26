@@ -74,10 +74,10 @@ export default function MerchantGiveaways() {
             <div className="flex-1 space-y-2">
               <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
                 <Sparkles className="h-3 w-3" />
-                حصرياً للتجار الموثقين
+                {t('assist_hero_badge')}
               </div>
-              <h2 className="text-lg font-black text-foreground leading-tight">مسابقات وهدايا وكوبونات</h2>
-              <p className="text-xs text-muted-foreground leading-relaxed">استكشف المساعدات المتاحة واحصل على مزايا حصرية</p>
+              <h2 className="text-lg font-black text-foreground leading-tight">{t('assist_hero_title')}</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t('assist_hero_desc')}</p>
             </div>
             <div className="relative w-16 h-16 shrink-0">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 blur-xl" />
