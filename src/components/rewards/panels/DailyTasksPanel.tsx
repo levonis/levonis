@@ -771,7 +771,7 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
 
       const { error: pointsError } = await supabase.from('points_transactions').insert({
         user_id: user.id, points: reviewPoints, type: 'earned', source: 'review',
-        description: `تقييم: ${item.product_name_ar || item.product_name}`,
+        description: t('dt_review_description', { product: item.product_name_ar || item.product_name }),
         related_id: item.product_id,
       });
       if (pointsError) throw pointsError;
