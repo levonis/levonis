@@ -641,7 +641,7 @@ export default function AllCompetitionsPanel() {
         return currentTier ? (
           <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded">
             <TrendingUp className="h-2.5 w-2.5" />
-            السعر الحالي: {currentTier.price?.toLocaleString()} تذكرة
+            {t('ac_current_price', { price: currentTier.price?.toLocaleString() })}
           </div>
         ) : null;
       }
