@@ -712,7 +712,7 @@ export default function AllCompetitionsPanel() {
         ) : (
           <>
             <Play className="h-3 w-3 ml-1" />
-            شارك
+            {t('ac_join_btn')}
           </>
         )}
       </Button>
