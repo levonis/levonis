@@ -1372,10 +1372,10 @@ ${pageContent.substring(0, 100000)}${extraContext}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير. مهمتك الأساسية: استخراج كل الألوان والخيارات المتاحة في المنتج بدون استثناء - حتى لو كانت 50 أو 100 عنصر. لكل لون/خيار استخرج صورته. أرجع JSON صحيح فقط.' },
+          { role: 'system', content: 'أنت مستخرج بيانات منتجات وكاتب SEO خبير. مهمتك المزدوجة: (1) استخراج كل الألوان والخيارات والأبعاد بدون استثناء. (2) توليد محتوى تسويقي/SEO إلزامي يشمل: short_summary بـ3 لغات، searchable_tags، و ai_content كاملاً (problem_solved, target_audience, benefits, usage, specifications) - كلها إلزامية ولا يجوز تركها فارغة أبداً، استنتجها من اسم المنتج وفئته إن لم تجد بيانات صريحة. أرجع JSON صحيح فقط.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.05,
+        temperature: 0.2,
         max_tokens: 32000,
       }),
     });
