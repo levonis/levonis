@@ -744,10 +744,21 @@ const Cart = () => {
   
   const discount = calculateDiscount();
   
+  // إذا قام الأدمن بتعديل سعر السلة (cart_requests.adjusted_total) نعتمد السعر المعدّل
+  // كأساس لجميع الحسابات اللاحقة (الكوبون، الخصومات، الدفع الجزئي، الإجمالي).
+  const hasAdjustedTotal =
+    !!pendingCartRequest &&
+    pendingCartRequest.status === 'adjusted' &&
+    pendingCartRequest.adjusted_total != null &&
+    Number(pendingCartRequest.adjusted_total) > 0;
+  const effectiveSubtotal = hasAdjustedTotal
+    ? Number(pendingCartRequest!.adjusted_total)
+    : total;
+
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
-  const subtotalAfterDiscount = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
+  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
