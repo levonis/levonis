@@ -620,7 +620,7 @@ export default function AllOffersPanel() {
       <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
         <AlertDialogContent className="rounded-xl max-w-[280px] mx-4 p-4">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-sm font-bold">تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogTitle className="text-center text-sm font-bold">{t('ao_confirm_purchase')}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
