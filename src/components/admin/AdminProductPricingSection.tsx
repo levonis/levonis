@@ -147,6 +147,21 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
     }
   }, [editingProduct]);
 
+  useEffect(() => {
+    const handleAutofill = (event: Event) => {
+      const detail = (event as CustomEvent<{ originalPriceUsd?: number; priceUsd?: number }>).detail;
+      if (detail?.originalPriceUsd && detail.originalPriceUsd > 0) {
+        setOriginalPriceUsd(detail.originalPriceUsd);
+      }
+      if (detail?.priceUsd && detail.priceUsd > 0) {
+        setPriceUsd(detail.priceUsd);
+      }
+    };
+
+    window.addEventListener('admin-product-pricing-autofill', handleAutofill);
+    return () => window.removeEventListener('admin-product-pricing-autofill', handleAutofill);
+  }, []);
+
   // Derive shipping_type value for hidden input
   const shippingTypeValue = useMemo(() => {
     if (hasSea && hasAir) return 'both';

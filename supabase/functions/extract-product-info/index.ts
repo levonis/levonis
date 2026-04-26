@@ -949,15 +949,18 @@ async function loadExchangeRatesFromDb(): Promise<void> {
   }
 }
 
+// Convert source-currency price to USD using ONLY the exchange rate.
+function convertToUSD(price: number, currency: string): number {
+  const currencyUpper = currency.toUpperCase();
+  if (currencyUpper === 'IQD') return price / USD_TO_IQD;
+  return price * (CURRENCY_TO_USD[currencyUpper] || 1);
+}
+
 // Convert any source-currency price to IQD using ONLY the exchange rate.
 // Does not include shipping, commission, taxes, or any markup — that math
 // happens later in the pricing pipeline for the final `price` field.
 function convertToIQD(price: number, currency: string): number {
-  const currencyUpper = currency.toUpperCase();
-  if (currencyUpper === 'IQD') return price;
-  const toUsdRate = CURRENCY_TO_USD[currencyUpper] || 1;
-  const priceInUsd = price * toUsdRate;
-  return priceInUsd * USD_TO_IQD;
+  return convertToUSD(price, currency) * USD_TO_IQD;
 }
 
 function roundPrice(price: number): number {
@@ -1323,11 +1326,13 @@ ${pageContent.substring(0, 100000)}${extraContext}
           console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Currency:', extractedCurrency);
           
           const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum);
+          const originalPriceUsd = Math.round(convertToUSD(extractedOriginalPrice, extractedCurrency) * 100) / 100;
           let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
           originalPriceInIqd = roundPrice(originalPriceInIqd);
           
           productInfo.price = null;
           productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
+          productInfo.original_price_usd = originalPriceUsd > 0 ? originalPriceUsd : null;
           productInfo.currency = 'IQD';
           
           // Calculate points reward: 1 point per 1000 IQD (based on original price before discount)
