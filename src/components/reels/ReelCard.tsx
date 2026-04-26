@@ -1,5 +1,6 @@
 import { memo, useRef, useEffect, useState, useCallback } from 'react';
 import { Heart, Bookmark, Share2, ShoppingBag, Eye, Volume2, VolumeX, Play } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 import type { Reel } from '@/hooks/useReelsFeed';
 
 interface ReelCardProps {
@@ -14,6 +15,7 @@ interface ReelCardProps {
 }
 
 const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteraction, onRecordView, onProductClick, onMerchantClick }: ReelCardProps) => {
+  const { t, dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPlayIcon, setShowPlayIcon] = useState(false);
@@ -168,7 +170,7 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
       {reel.is_sponsored && (
         <div className="absolute top-4 left-4 z-20">
           <span className="px-2 py-1 rounded-full bg-primary/90 text-primary-foreground text-[10px] font-bold">
-            إعلان مُموّل
+            {t('reel_sponsored')}
           </span>
         </div>
       )}
@@ -189,11 +191,11 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
           <span className="text-white text-[10px] font-medium">{formatCount(reel.saves_count)}</span>
         </button>
 
-        <button onClick={() => { if (navigator.share) navigator.share({ title: reel.caption || 'ريل', url: window.location.href }); }} className="flex flex-col items-center gap-1">
+        <button onClick={() => { if (navigator.share) navigator.share({ title: reel.caption || t('reel_default_caption'), url: window.location.href }); }} className="flex flex-col items-center gap-1">
           <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
             <Share2 className="w-5 h-5 text-white" />
           </div>
-          <span className="text-white text-[10px] font-medium">مشاركة</span>
+          <span className="text-white text-[10px] font-medium">{t('reel_share')}</span>
         </button>
 
         <div className="flex flex-col items-center gap-1">
@@ -205,15 +207,15 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
       </div>
 
       {/* Bottom content */}
-      <div className="absolute bottom-0 right-0 left-14 p-4 z-20" dir="rtl">
+      <div className="absolute bottom-0 right-0 left-14 p-4 z-20" dir={dir}>
         {/* Merchant / Site info */}
         {isSiteReel ? (
           <div className="flex items-center gap-2 mb-3">
             <div className="w-9 h-9 rounded-full border-2 border-primary overflow-hidden bg-primary/20 flex items-center justify-center">
               <ShoppingBag className="w-4 h-4 text-primary" />
             </div>
-            <span className="text-white font-bold text-sm">الموقع الرسمي</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-primary/80 text-primary-foreground text-[9px] font-bold">رسمي</span>
+            <span className="text-white font-bold text-sm">{t('reel_official_account')}</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-primary/80 text-primary-foreground text-[9px] font-bold">{t('reel_official_badge')}</span>
           </div>
         ) : (
           <div
@@ -229,13 +231,13 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
                 </div>
               )}
             </div>
-            <span className="text-white font-bold text-sm truncate">{reel.merchant?.display_name || 'تاجر'}</span>
+            <span className="text-white font-bold text-sm truncate">{reel.merchant?.display_name || t('reel_default_merchant')}</span>
           </div>
         )}
 
         {/* Caption */}
         {reel.caption && (
-          <p className="text-white/90 text-sm mb-3 line-clamp-2" dir="rtl">{reel.caption}</p>
+          <p className="text-white/90 text-sm mb-3 line-clamp-2" dir={dir}>{reel.caption}</p>
         )}
 
         {/* Product card */}
@@ -247,14 +249,14 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
             {activeProduct.image_urls?.[0] && (
               <img src={activeProduct.image_urls[0]} alt={activeProduct.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
             )}
-            <div className="flex-1 min-w-0 text-right">
+            <div className={`flex-1 min-w-0 ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
               <div className="flex items-center gap-1.5">
                 <p className="text-white font-bold text-xs truncate">{activeProduct.title}</p>
-                {isSiteReel && <span className="px-1 py-0.5 rounded bg-primary/70 text-primary-foreground text-[8px] font-bold flex-shrink-0">من الموقع</span>}
+                {isSiteReel && <span className="px-1 py-0.5 rounded bg-primary/70 text-primary-foreground text-[8px] font-bold flex-shrink-0">{t('reel_from_site')}</span>}
               </div>
               <div className="flex items-center gap-2 mt-1">
                 {activeProduct.price_iqd && (
-                  <span className="text-primary font-black text-sm">{activeProduct.price_iqd.toLocaleString()} د.ع</span>
+                  <span className="text-primary font-black text-sm">{activeProduct.price_iqd.toLocaleString()} {t('reel_currency_iqd')}</span>
                 )}
                 {discount > 0 && (
                   <span className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">-{discount}%</span>

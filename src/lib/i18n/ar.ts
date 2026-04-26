@@ -1934,4 +1934,17 @@ export const ar: TranslationKeys = {
   assist_tab_gifts: 'هدايا',
   assist_tab_coupons: 'كوبونات',
   assist_tab_envelopes: 'ظروف حمراء',
+
+  // Reels
+  reels_empty_title: 'لا توجد ريلز حالياً',
+  reels_empty_desc: 'سيتم إضافة محتوى قريباً',
+  reel_sponsored: 'إعلان مُموّل',
+  reel_share: 'مشاركة',
+  reel_default_caption: 'ريل',
+  reel_official_account: 'الموقع الرسمي',
+  reel_official_badge: 'رسمي',
+  reel_default_merchant: 'تاجر',
+  reel_from_site: 'من الموقع',
+  reel_currency_iqd: 'د.ع',
+  reel_merchant_default: 'تاجر',
 };

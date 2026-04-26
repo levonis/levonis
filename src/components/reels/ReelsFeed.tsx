@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Loader2 } from 'lucide-react';
 import { useReelsFeed } from '@/hooks/useReelsFeed';
+import { useLanguage } from '@/lib/i18n';
 import ReelCard from './ReelCard';
 
 interface ReelsFeedProps {
@@ -10,6 +11,7 @@ interface ReelsFeedProps {
 
 export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { reels, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, toggleInteraction, recordView } = useReelsFeed();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -78,8 +80,8 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
         <button onClick={onClose} className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
           <X className="w-5 h-5 text-white" />
         </button>
-        <p className="text-white/70 text-lg font-medium">لا توجد ريلز حالياً</p>
-        <p className="text-white/50 text-sm">سيتم إضافة محتوى قريباً</p>
+        <p className="text-white/70 text-lg font-medium">{t('reels_empty_title')}</p>
+        <p className="text-white/50 text-sm">{t('reels_empty_desc')}</p>
       </div>
     );
   }
