@@ -169,8 +169,8 @@ export default function LevelRoadmapModal({
                         {!isUnlocked && xpReq > 0 && (
                           <div className="mt-2">
                             <div className="flex justify-between text-[9px] text-muted-foreground mb-1">
-                              <span>fmt({totalXp)} XP</span>
-                              <span>fmt({xpReq)} XP</span>
+                              <span>{fmt(totalXp)}} XP</span>
+                              <span>{fmt(xpReq)}} XP</span>
                             </div>
                             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                               <div

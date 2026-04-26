@@ -250,7 +250,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                 {activeSub.protection_plans?.name_ar}
                               </span>
                               <Badge variant="outline" className="text-green-600 border-green-300">
-                                fmt({activeSub.monthly_price ?? 0)} {t('insurance_per_month')}
+                                {fmt(activeSub.monthly_price ?? 0)}} {t('insurance_per_month')}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -287,12 +287,12 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                               <span className="text-xs line-through text-muted-foreground">
-                                                fmt({plan.monthly_price ?? 0)}
+                                                {fmt(plan.monthly_price ?? 0)}}
                                               </span>
                                               <span className="text-sm font-bold text-primary">
-                                                fmt({upgradeCost)} {t('common_iqd')}
+                                                {fmt(upgradeCost)}} {t('common_iqd')}
                                               </span>
-                                              <Badge className="bg-amber-500 text-[9px]">{t('insurance_discount')} fmt({discount)}</Badge>
+                                              <Badge className="bg-amber-500 text-[9px]">{t('insurance_discount')} {fmt(discount)}}</Badge>
                                             </div>
                                           </div>
                                           <Button 
@@ -345,7 +345,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                       )}
                                     </div>
                                     <p className="text-sm font-bold text-primary mt-0.5">
-                                      fmt({plan.monthly_price ?? 0)} {t('insurance_per_month')}
+                                      {fmt(plan.monthly_price ?? 0)}} {t('insurance_per_month')}
                                     </p>
                                   </div>
                                   <Button 
@@ -423,7 +423,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                         )}
                       </div>
                       <p className="text-2xl font-bold text-primary mt-1">
-                        fmt({plan.monthly_price ?? 0)} <span className="text-sm font-normal text-muted-foreground">{t('insurance_per_month')}</span>
+                        {fmt(plan.monthly_price ?? 0)}} <span className="text-sm font-normal text-muted-foreground">{t('insurance_per_month')}</span>
                       </p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -517,13 +517,13 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                       <div className="flex items-center justify-between text-sm">
                         <span>{t('insurance_cost_after_discount')}</span>
                         <span className="font-bold text-primary text-lg">
-                          fmt({selectedPlan.upgradeCost ?? 0)} {t('common_iqd')}
+                          {fmt(selectedPlan.upgradeCost ?? 0)}} {t('common_iqd')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                         <span>{t('insurance_current_balance')}</span>
                         <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.upgradeCost || 0) ? 'text-green-600' : 'text-destructive'}`}>
-                          fmt({(walletBalance || 0))} {t('common_iqd')}
+                          {fmt((walletBalance || 0))}} {t('common_iqd')}
                         </span>
                       </div>
                       {(walletBalance || 0) < (selectedPlan.upgradeCost || 0) && (
@@ -587,13 +587,13 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                     <div className="flex items-center justify-between text-sm">
                       <span>{t('insurance_monthly_cost')}</span>
                       <span className="font-bold text-primary text-lg">
-                        fmt({selectedPlan.monthly_price ?? 0)} {t('common_iqd')}
+                        {fmt(selectedPlan.monthly_price ?? 0)}} {t('common_iqd')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                       <span>{t('insurance_current_balance')}</span>
                       <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.monthly_price || 0) ? 'text-green-600' : 'text-destructive'}`}>
-                        fmt({(walletBalance || 0))} {t('common_iqd')}
+                        {fmt((walletBalance || 0))}} {t('common_iqd')}
                       </span>
                     </div>
                     {(walletBalance || 0) < (selectedPlan.monthly_price || 0) && (

@@ -224,7 +224,7 @@ export default function RedeemPointsPanel() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('rp_available_balance_label')}</p>
-            <p className="text-2xl font-bold">fmt({(userPoints?.available_points || 0))} {t('rp_points_unit')}</p>
+            <p className="text-2xl font-bold">{fmt((userPoints?.available_points || 0))}} {t('rp_points_unit')}</p>
           </div>
         </CardContent>
       </Card>
@@ -311,7 +311,7 @@ export default function RedeemPointsPanel() {
             <Alert className="border-primary/30 bg-primary/5">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {t('rp_will_get')} <strong>fmt({calculatedValue)}</strong> {getUnitLabel(selectedOption)}
+                {t('rp_will_get')} <strong>{fmt(calculatedValue)}}</strong> {getUnitLabel(selectedOption)}
               </AlertDescription>
             </Alert>
           )}

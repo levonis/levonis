@@ -68,7 +68,7 @@ export default function AllPlansPanel() {
                   )}
                 </div>
                 <p className="text-xl font-bold text-primary mt-1">
-                  fmt({plan.monthly_price ?? 0)} {t('common_iqd')}
+                  {fmt(plan.monthly_price ?? 0)}} {t('common_iqd')}
                   <span className="text-sm font-normal text-muted-foreground">{t('ap_per_month_short')}</span>
                 </p>
               </div>

@@ -229,7 +229,7 @@ export default function PointsStorePanel() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('points_available_for_redeem')}</p>
-            <p className="text-2xl font-bold">fmt({availablePoints)} {t('points_unit')}</p>
+            <p className="text-2xl font-bold">{fmt(availablePoints)}} {t('points_unit')}</p>
           </div>
         </CardContent>
       </Card>
@@ -288,7 +288,7 @@ export default function PointsStorePanel() {
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant="secondary" className="text-xs gap-1">
                       <Coins className="h-3 w-3" />
-                      fmt({product.points_cost)}
+                      {fmt(product.points_cost)}}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
                       {t('points_remaining_stock')} {product.stock_quantity}

@@ -981,7 +981,7 @@ export default function AllCompetitionsPanel() {
                   <p className="text-sm">{selectedCompetition.prize_description_ar}</p>
                   {selectedCompetition.prize_value && (
                     <p className="text-xl font-bold text-primary mt-2">
-                      fmt({selectedCompetition.prize_value)} {selectedCompetition.currency}
+                      {fmt(selectedCompetition.prize_value)}} {selectedCompetition.currency}
                     </p>
                   )}
                 </CardContent>
