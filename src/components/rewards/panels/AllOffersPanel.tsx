@@ -547,7 +547,7 @@ export default function AllOffersPanel() {
                           <Ticket className="h-3 w-3 text-primary" />
                           <span className="text-sm font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</span>
                         </div>
-                        <p className="text-[8px] text-muted-foreground">تذكرة</p>
+                        <p className="text-[8px] text-muted-foreground">{t('ao_ticket_label')}</p>
                       </div>
                     )}
                     {selectedOffer.points_reward > 0 && (
