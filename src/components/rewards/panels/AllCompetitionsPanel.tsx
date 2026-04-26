@@ -751,7 +751,7 @@ export default function AllCompetitionsPanel() {
           onClick={() => window.location.href = '/competitions/history'}
         >
           <Trophy className="h-3.5 w-3.5" />
-          سجل المسابقات السابقة والفائزين
+          {t('ac_history_title')}
         </Button>
       </div>
       
