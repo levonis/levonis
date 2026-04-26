@@ -230,17 +230,21 @@ export function getGuardedCartItemPrice(
 
   // 2. Override with sale-type-specific price
   if (isDirect) {
-    // If product is linked to global COD %, recompute live so price tracks
-    // any change to the COD setting / exchange rate without needing a DB update.
-    let liveDirect: number | null = null;
-    if (product.link_direct_commission_to_cod && codDefaults) {
-      liveDirect = computeLinkedDirectSalePrice(
-        product as any,
-        { usd_to_iqd_rate: usdToIqd } as any,
-        codDefaults,
-      );
-    }
-    if (liveDirect != null) {
+    // If product is linked to global COD %, ALWAYS use the live computation
+    // and never fall back to the stored direct_sale_price (it may be stale).
+    // If required inputs are missing, return 0 as a safe guard so the UI can
+    // surface the issue rather than display an incorrect price.
+    if (product.link_direct_commission_to_cod) {
+      const liveDirect = codDefaults
+        ? computeLinkedDirectSalePrice(
+            product as any,
+            { usd_to_iqd_rate: usdToIqd } as any,
+            codDefaults,
+          )
+        : null;
+      if (liveDirect == null) {
+        return 0;
+      }
       price = liveDirect;
     } else if (product.direct_sale_price != null) {
       price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
