@@ -661,7 +661,7 @@ export default function AllOffersPanel() {
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
                       <span className="text-muted-foreground flex items-center gap-0.5">
                         <Ticket className="h-2.5 w-2.5 text-primary" />
-                        تذاكر
+                        {t('ao_tickets_label')}
                       </span>
                       <span className="font-bold text-primary">{selectedOffer.gift_tickets * quantity}</span>
                     </div>
