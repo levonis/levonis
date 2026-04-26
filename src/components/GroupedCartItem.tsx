@@ -7,6 +7,7 @@ import AnimatedPrice from '@/components/ui/AnimatedPrice';
 import AnimatedQuantity from '@/components/ui/AnimatedQuantity';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
+import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 
 interface GroupedCartItemProps {
