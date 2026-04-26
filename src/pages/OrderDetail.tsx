@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/lib/i18n';
 
 import OrderInvoiceDialog from '@/components/OrderInvoiceDialog';
 import UnifiedChatButton from '@/components/UnifiedChatButton';
@@ -71,12 +72,14 @@ const OrderDetail = () => {
   const { orderId } = useParams();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t, language, dir } = useLanguage();
   const [showAdminChat, setShowAdminChat] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const queryClient = useQueryClient();
-  
+  const dateLocale = language === 'ar' || language === 'ku' ? ar : enUS;
+
   useOrderRealtimeNotifications();
 
   const canQuery = !!orderId && !authLoading && (!!user || isAdmin);
@@ -108,17 +111,17 @@ const OrderDetail = () => {
       const { data: result, error } = await supabase.rpc('cancel_order', { p_order_id: orderId, p_cancelled_by: cancelledBy });
       if (error) throw error;
       const res = result as any;
-      if (!res?.success) { toast.error(res?.error || 'حدث خطأ أثناء إلغاء الطلب'); return; }
+      if (!res?.success) { toast.error(res?.error || t('od_toast_cancel_error')); return; }
       try {
         await supabase.functions.invoke('send-telegram-notification', {
-          body: { message: `❌ <b>تم إلغاء طلب</b>\\n\\n📋 رقم الطلب: ${res.order_number}\\n📦 نوع الطلب: ${res.order_type === 'direct' ? 'بيع مباشر' : 'حجز مسبق'}\\n🔄 تم الإلغاء بواسطة: ${cancelledBy === 'admin' ? 'الإدارة' : 'الزبون'}\\n${res.refunded_amount > 0 ? `💰 المبلغ المسترد: ${Number(res.refunded_amount).toLocaleString()} د.ع\\n` : ''}${res.order_type === 'direct' ? '📦 تم إرجاع المنتجات إلى المخزون' : ''}` }
+          body: { message: `❌ <b>تم إلغاء طلب</b>\n\n📋 رقم الطلب: ${res.order_number}\n📦 نوع الطلب: ${res.order_type === 'direct' ? 'بيع مباشر' : 'حجز مسبق'}\n🔄 تم الإلغاء بواسطة: ${cancelledBy === 'admin' ? 'الإدارة' : 'الزبون'}\n${res.refunded_amount > 0 ? `💰 المبلغ المسترد: ${Number(res.refunded_amount).toLocaleString()} د.ع\n` : ''}${res.order_type === 'direct' ? '📦 تم إرجاع المنتجات إلى المخزون' : ''}` }
         });
       } catch (e) { console.error('Telegram error:', e); }
-      toast.success('تم إلغاء الطلب بنجاح' + (res.refunded_amount > 0 ? ` وتم استرداد ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
+      toast.success(t('od_toast_cancel_success') + (res.refunded_amount > 0 ? ` ${t('od_toast_refunded_suffix')} ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
     } catch (error) {
       console.error('Cancel order error:', error);
-      toast.error('حدث خطأ أثناء إلغاء الطلب');
+      toast.error(t('od_toast_cancel_error'));
     } finally { setIsCancelling(false); setShowCancelDialog(false); }
   };
 
@@ -133,19 +136,32 @@ const OrderDetail = () => {
   };
 
   const getStatusConfig = (status: string) => {
-    const map: Record<string, { label: string; color: string; bg: string; border: string }> = {
-      pending: { label: 'قيد الانتظار', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-      confirmed: { label: 'تم التأكيد', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-      processing: { label: 'قيد التجهيز', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-      purchased: { label: 'تم الشراء', color: 'text-indigo-500', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
-      arrived_warehouse: { label: 'وصل المخزن', color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
-      shipped: { label: 'تم الشحن', color: 'text-sky-500', bg: 'bg-sky-500/10', border: 'border-sky-500/30' },
-      arrived_iraq: { label: 'وصل العراق', color: 'text-teal-500', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-      on_the_way: { label: 'في الطريق', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' },
-      delivered: { label: 'تم التوصيل', color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-      cancelled: { label: 'ملغي', color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
+    const labels: Record<string, string> = {
+      pending: t('order_status_pending'),
+      confirmed: t('order_status_confirmed'),
+      processing: t('order_status_processing'),
+      purchased: t('order_status_purchased'),
+      arrived_warehouse: t('order_status_arrived_warehouse'),
+      shipped: t('order_status_shipped'),
+      arrived_iraq: t('order_status_arrived_iraq'),
+      on_the_way: t('order_status_on_the_way'),
+      delivered: t('order_status_delivered'),
+      cancelled: t('order_status_cancelled'),
     };
-    return map[status] || { label: status, color: 'text-muted-foreground', bg: 'bg-muted/10', border: 'border-border' };
+    const colorMap: Record<string, { color: string; bg: string; border: string }> = {
+      pending: { color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+      confirmed: { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+      processing: { color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+      purchased: { color: 'text-indigo-500', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
+      arrived_warehouse: { color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+      shipped: { color: 'text-sky-500', bg: 'bg-sky-500/10', border: 'border-sky-500/30' },
+      arrived_iraq: { color: 'text-teal-500', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
+      on_the_way: { color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' },
+      delivered: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+      cancelled: { color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
+    };
+    const c = colorMap[status] || { color: 'text-muted-foreground', bg: 'bg-muted/10', border: 'border-border' };
+    return { label: labels[status] || status, ...c };
   };
 
   if (!canQuery || isLoading) {
@@ -176,11 +192,11 @@ const OrderDetail = () => {
           <div className="w-16 h-16 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-4">
             <Package className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-black text-foreground mb-2">الطلب غير موجود</h3>
-          <p className="text-sm text-muted-foreground mb-6">لم نتمكن من العثور على هذا الطلب</p>
+          <h3 className="text-xl font-black text-foreground mb-2">{t('od_not_found_title')}</h3>
+          <p className="text-sm text-muted-foreground mb-6">{t('od_not_found_desc')}</p>
           <Button onClick={() => navigate(isAdmin ? ADMIN_ROUTES.orders : '/my-orders')} className="w-full">
             <ArrowRight className="ml-2 h-4 w-4" />
-            {isAdmin ? 'العودة إلى لوحة الطلبات' : 'العودة إلى طلباتي'}
+            {isAdmin ? t('od_back_to_orders_admin') : t('od_back_to_orders_user')}
           </Button>
         </GlassCard>
       </div>
@@ -194,7 +210,7 @@ const OrderDetail = () => {
   const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');
 
   return (
-    <div className="min-h-screen bg-background relative" dir="rtl">
+    <div className="min-h-screen bg-background relative" dir={dir}>
       <main className="container mx-auto px-4 py-6 pb-32 max-w-2xl space-y-4">
         
         {/* Back Button */}
@@ -206,7 +222,7 @@ const OrderDetail = () => {
             className="hover:bg-primary/10 -mr-2"
           >
             <ArrowRight className="ml-1 h-4 w-4" />
-            {isAdmin ? 'لوحة الطلبات' : 'طلباتي'}
+            {isAdmin ? t('od_back_to_panel') : t('od_back_to_my_orders')}
           </Button>
         </motion.div>
 
@@ -220,7 +236,7 @@ const OrderDetail = () => {
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
                 <p className="text-[11px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
-                  <Hash className="h-3 w-3" /> رقم الطلب
+                  <Hash className="h-3 w-3" /> {t('od_order_number_label')}
                 </p>
                 <h1 className="text-2xl font-black text-foreground tracking-tight">
                   {order.order_number}
@@ -239,7 +255,7 @@ const OrderDetail = () => {
                   : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400'
               }`}>
                 <ShoppingBag className="h-3 w-3" />
-                {isPreOrder ? 'طلب مسبق' : 'بيع مباشر'}
+                {isPreOrder ? t('od_type_preorder') : t('od_type_direct')}
               </div>
               {isPreOrder && shippingOptionName && (
                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
@@ -254,7 +270,7 @@ const OrderDetail = () => {
             {/* Date */}
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {format(new Date(order.created_at), 'PPP - p', { locale: ar })}
+              {format(new Date(order.created_at), 'PPP - p', { locale: dateLocale })}
             </p>
           </div>
         </GlassCard>
@@ -266,19 +282,19 @@ const OrderDetail = () => {
               {(order.status === 'arrived_warehouse' || order.status === 'shipped' || order.status === 'arrived_iraq' || order.status === 'delivered') && (
                 <Button onClick={() => setShowInvoice(true)} size="sm" className="flex-1 min-w-[120px]">
                   <FileText className="ml-1.5 h-3.5 w-3.5" />
-                  فاتورة الطلب
+                  {t('od_btn_invoice')}
                 </Button>
               )}
               {isAdmin && (
                 <Button onClick={() => setShowAdminChat(true)} variant="outline" size="sm" className="flex-1 min-w-[120px]">
                   <MessageCircle className="ml-1.5 h-3.5 w-3.5" />
-                  التواصل
+                  {t('od_btn_contact')}
                 </Button>
               )}
               {canCancelOrder(order) && (
                 <Button variant="destructive" size="sm" onClick={() => setShowCancelDialog(true)} disabled={isCancelling} className="flex-1 min-w-[120px]">
                   {isCancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin ml-1.5" /> : <XCircle className="h-3.5 w-3.5 ml-1.5" />}
-                  إلغاء الطلب
+                  {t('od_btn_cancel')}
                 </Button>
               )}
             </div>
@@ -292,12 +308,12 @@ const OrderDetail = () => {
               <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-7 w-7 text-emerald-500" />
               </div>
-              <h3 className="text-lg font-black text-foreground">هل استلمت طلبك؟</h3>
-              <p className="text-xs text-muted-foreground">يرجى تأكيد الاستلام وتقييم المنتجات</p>
+              <h3 className="text-lg font-black text-foreground">{t('od_received_question')}</h3>
+              <p className="text-xs text-muted-foreground">{t('od_received_subtitle')}</p>
               <Button onClick={() => navigate(`/my-orders/${order.id}/confirm`)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                تأكيد الاستلام وتقييم المنتج
+                {t('od_confirm_receive_btn')}
               </Button>
-              <p className="text-[10px] text-muted-foreground">سيتم التأكيد تلقائياً بعد 7 أيام</p>
+              <p className="text-[10px] text-muted-foreground">{t('od_auto_confirm_note')}</p>
             </div>
           </GlassCard>
         )}
@@ -306,12 +322,12 @@ const OrderDetail = () => {
           <GlassCard className="p-4" delay={0.15}>
             <div className="flex items-center justify-center gap-2 text-emerald-500">
               <CheckCircle2 className="h-4 w-4" />
-              <span className="font-bold text-sm">تم تأكيد الاستلام</span>
-              {order.auto_confirmed && <span className="text-xs text-muted-foreground">(تلقائياً)</span>}
+              <span className="font-bold text-sm">{t('od_received_confirmed')}</span>
+              {order.auto_confirmed && <span className="text-xs text-muted-foreground">{t('od_received_auto')}</span>}
             </div>
             {order.user_confirmed_at && (
               <p className="text-center text-[11px] text-muted-foreground mt-1">
-                {format(new Date(order.user_confirmed_at), 'PPP - p', { locale: ar })}
+                {format(new Date(order.user_confirmed_at), 'PPP - p', { locale: dateLocale })}
               </p>
             )}
           </GlassCard>
@@ -319,13 +335,13 @@ const OrderDetail = () => {
 
         {/* Order Timeline */}
         <GlassCard className="p-5" delay={0.2}>
-          <SectionHeader icon={Truck} title="مراحل الطلب" />
+          <SectionHeader icon={Truck} title={t('od_section_timeline')} />
           <OrderTimeline order={order} isPreOrder={isPreOrder} />
         </GlassCard>
 
         {/* Products */}
         <GlassCard className="p-5" delay={0.25}>
-          <SectionHeader icon={Package} title={`المنتجات (${order.order_items?.length || 0})`} />
+          <SectionHeader icon={Package} title={`${t('od_section_products')} (${order.order_items?.length || 0})`} />
           <div className="space-y-3">
             {order.order_items?.map((item: any, index: number) => {
               const isCustomRequest = !!item.custom_request_id;
@@ -366,10 +382,10 @@ const OrderDetail = () => {
                           <h4 className="font-bold text-sm text-foreground leading-tight truncate flex items-center gap-1.5">
                             {productName}
                             {isCustomRequest && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">خاص</span>
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">{t('od_badge_custom')}</span>
                             )}
                             {item.is_gift && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">🎁 هدية</span>
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{t('od_badge_gift')}</span>
                             )}
                           </h4>
                           {isAdmin && !isCustomRequest && item.products?.taobao_url && (
@@ -378,7 +394,7 @@ const OrderDetail = () => {
                         </div>
                         <div className="text-left shrink-0">
                           {item.is_gift ? (
-                            <p className="font-black text-base text-primary">مجاناً</p>
+                            <p className="font-black text-base text-primary">{t('od_free')}</p>
                           ) : (
                             <>
                               <p className="font-black text-base text-primary">{formatPrice(Number(item.total_price))}</p>
@@ -392,21 +408,21 @@ const OrderDetail = () => {
                       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                         {item.selected_option && (
                           <span className="text-[11px] text-muted-foreground">
-                            الخيار: <span className="text-foreground font-medium">{item.selected_option}</span>
+                            {t('od_meta_option')}: <span className="text-foreground font-medium">{item.selected_option}</span>
                           </span>
                         )}
                         {item.selected_color && (
                           <span className="text-[11px] text-muted-foreground">
-                            اللون: <span className="text-foreground font-medium">{item.selected_color}</span>
+                            {t('od_meta_color')}: <span className="text-foreground font-medium">{item.selected_color}</span>
                           </span>
                         )}
                         {item.shipping_option_name_ar && (
                           <span className="text-[11px] text-muted-foreground">
-                            الشحن: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span>
+                            {t('od_meta_shipping')}: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span>
                           </span>
                         )}
                         <span className="text-[11px] text-muted-foreground">
-                          الكمية: <span className="text-foreground font-medium">{item.quantity}</span>
+                          {t('od_meta_quantity')}: <span className="text-foreground font-medium">{item.quantity}</span>
                         </span>
                       </div>
                     </div>
@@ -421,38 +437,38 @@ const OrderDetail = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Shipping */}
           <GlassCard className="p-5" delay={0.3}>
-            <SectionHeader icon={MapPin} title="معلومات الشحن" />
+            <SectionHeader icon={MapPin} title={t('od_section_shipping')} />
             <div className="space-y-0">
-              <InfoRow icon={MapPin} label="العنوان" value={order.shipping_address} />
-              <InfoRow icon={MapPin} label="المحافظة" value={order.governorate} />
-              <InfoRow icon={Phone} label="رقم الهاتف" value={order.phone_number} />
+              <InfoRow icon={MapPin} label={t('od_label_address')} value={order.shipping_address} />
+              <InfoRow icon={MapPin} label={t('od_label_governorate')} value={order.governorate} />
+              <InfoRow icon={Phone} label={t('od_label_phone')} value={order.phone_number} />
             </div>
           </GlassCard>
 
           {/* Payment */}
           <GlassCard className="p-5" delay={0.35}>
-            <SectionHeader icon={Wallet} title="معلومات الدفع" />
+            <SectionHeader icon={Wallet} title={t('od_section_payment')} />
             <div className="space-y-0">
               {order.payment_status && (
-                <InfoRow icon={Info} label="حالة الدفع" value={
-                  order.payment_status === 'paid' ? 'مدفوع' : 
-                  order.payment_status === 'partial' ? 'مدفوع جزئياً' :
-                  order.payment_status === 'refunded' ? 'مسترجع' : 'قيد الانتظار'
+                <InfoRow icon={Info} label={t('od_label_payment_status')} value={
+                  order.payment_status === 'paid' ? t('od_payment_paid') :
+                  order.payment_status === 'partial' ? t('od_payment_partial') :
+                  order.payment_status === 'refunded' ? t('od_payment_refunded') : t('od_payment_pending')
                 } />
               )}
               {order.payment_method && (
-                <InfoRow icon={CreditCard} label="طريقة الدفع" value={
-                  order.payment_method === 'cash' ? 'نقدي' :
-                  order.payment_method === 'wallet' ? 'المحفظة' :
-                  order.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
-                  order.payment_method === 'card' ? 'بطاقة' : order.payment_method
+                <InfoRow icon={CreditCard} label={t('od_label_payment_method')} value={
+                  order.payment_method === 'cash' ? t('od_method_cash') :
+                  order.payment_method === 'wallet' ? t('od_method_wallet') :
+                  order.payment_method === 'bank_transfer' ? t('od_method_bank') :
+                  order.payment_method === 'card' ? t('od_method_card') : order.payment_method
                 } />
               )}
               {Number(order.paid_amount) > 0 && (
-                <InfoRow icon={CheckCircle2} label="المبلغ المدفوع" value={`${formatPrice(Number(order.paid_amount))} ${order.currency}`} valueClass="text-primary" />
+                <InfoRow icon={CheckCircle2} label={t('od_label_paid_amount')} value={`${formatPrice(Number(order.paid_amount))} ${order.currency}`} valueClass="text-primary" />
               )}
               {Number(order.remaining_amount) > 0 && (
-                <InfoRow icon={Clock} label="المبلغ المتبقي" value={`${formatPrice(Number(order.remaining_amount))} ${order.currency}`} valueClass="text-destructive" />
+                <InfoRow icon={Clock} label={t('od_label_remaining_amount')} value={`${formatPrice(Number(order.remaining_amount))} ${order.currency}`} valueClass="text-destructive" />
               )}
             </div>
           </GlassCard>
@@ -461,36 +477,36 @@ const OrderDetail = () => {
         {/* Notes */}
         {order.shipping_notes && (
           <GlassCard className="p-5" delay={0.38}>
-            <SectionHeader icon={Info} title="ملاحظات" />
+            <SectionHeader icon={Info} title={t('od_section_notes')} />
             <p className="text-sm text-foreground bg-muted/20 rounded-xl p-3 border border-border/20">{order.shipping_notes}</p>
           </GlassCard>
         )}
 
         {/* Order Summary */}
         <GlassCard className="p-5" delay={0.4}>
-          <SectionHeader icon={Receipt} title="ملخص الطلب" />
+          <SectionHeader icon={Receipt} title={t('od_section_summary')} />
           <div className="space-y-2.5">
             {Number(order.subtotal) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">المبلغ الفرعي</span>
+                <span className="text-muted-foreground">{t('od_summary_subtotal')}</span>
                 <span className="font-medium">{formatPrice(Number(order.subtotal))} {order.currency}</span>
               </div>
             )}
             {Number(order.tax_amount) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">الضريبة ({order.tax_percentage || 0}%)</span>
+                <span className="text-muted-foreground">{t('od_summary_tax')} ({order.tax_percentage || 0}%)</span>
                 <span className="font-medium">{formatPrice(Number(order.tax_amount))} {order.currency}</span>
               </div>
             )}
             {Number(order.discount_amount) > 0 && (
               <div className="flex justify-between text-sm text-emerald-500">
-                <span>الخصم</span>
+                <span>{t('od_summary_discount')}</span>
                 <span className="font-medium">-{formatPrice(Number(order.discount_amount))} {order.currency}</span>
               </div>
             )}
             <div className="h-px bg-border/30 my-1" />
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-bold">الإجمالي</span>
+              <span className="text-sm text-muted-foreground font-bold">{t('od_summary_total')}</span>
               <span className="font-black text-2xl text-primary">
                 {formatPrice(Number(order.total_amount))} <span className="text-sm font-bold">{order.currency}</span>
               </span>
@@ -501,14 +517,14 @@ const OrderDetail = () => {
         {/* Additional Images and Files */}
         {((order.admin_images && order.admin_images.length > 0) || (order.admin_files && order.admin_files.length > 0)) && (
           <GlassCard className="p-5" delay={0.45}>
-            <SectionHeader icon={Image} title="صور وملفات إضافية" />
+            <SectionHeader icon={Image} title={t('od_section_extra')} />
             {order.admin_images && order.admin_images.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-bold text-muted-foreground mb-2">الصور</p>
+                <p className="text-xs font-bold text-muted-foreground mb-2">{t('od_extra_images')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {order.admin_images.map((imageUrl: string, index: number) => (
                     <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-xl overflow-hidden border border-border/30 hover:border-primary/40 transition-colors shadow-sm">
-                      <img src={imageUrl} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={imageUrl} alt={`#${index + 1}`} className="w-full h-full object-cover" />
                     </a>
                   ))}
                 </div>
@@ -516,10 +532,10 @@ const OrderDetail = () => {
             )}
             {order.admin_files && order.admin_files.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-muted-foreground mb-2">الملفات</p>
+                <p className="text-xs font-bold text-muted-foreground mb-2">{t('od_extra_files')}</p>
                 <div className="space-y-2">
                   {order.admin_files.map((fileUrl: string, index: number) => {
-                    const fileName = fileUrl.split('/').pop() || `ملف ${index + 1}`;
+                    const fileName = fileUrl.split('/').pop() || `#${index + 1}`;
                     return (
                       <a key={index} href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/20 hover:border-primary/30 transition-colors">
                         <File className="h-4 w-4 text-primary shrink-0" />
@@ -541,29 +557,29 @@ const OrderDetail = () => {
       {!isAdmin && <UnifiedChatButton />}
       
       {isAdmin && order && (
-        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={order.profiles?.full_name || 'العميل'} />
+        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={order.profiles?.full_name || t('od_admin_default_customer')} />
       )}
 
       {/* Cancel Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent dir="rtl" className="rounded-2xl">
+        <AlertDialogContent dir={dir} className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive flex items-center gap-2">
               <XCircle className="h-5 w-5" />
-              إلغاء الطلب
+              {t('od_cancel_dialog_title')}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>هل أنت متأكد من إلغاء الطلب رقم <strong>#{order?.order_number}</strong>؟</p>
-              {order?.order_type === 'direct' && <p className="text-muted-foreground text-xs">📦 سيتم إرجاع المنتجات إلى المخزون</p>}
-              {order?.paid_amount > 0 && order?.payment_status !== 'cod' && <p className="text-muted-foreground text-xs">💰 سيتم استرداد {formatPrice(order.paid_amount)} د.ع إلى محفظتك</p>}
-              <p className="text-destructive text-xs font-bold">⚠️ لا يمكن التراجع عن هذا الإجراء</p>
+              <p>{t('od_cancel_dialog_confirm_q')} <strong>#{order?.order_number}</strong>؟</p>
+              {order?.order_type === 'direct' && <p className="text-muted-foreground text-xs">{t('od_cancel_dialog_stock_note')}</p>}
+              {order?.paid_amount > 0 && order?.payment_status !== 'cod' && <p className="text-muted-foreground text-xs">{t('od_cancel_dialog_refund_note')} ({formatPrice(order.paid_amount)} د.ع)</p>}
+              <p className="text-destructive text-xs font-bold">{t('od_cancel_dialog_irreversible')}</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogCancel>{t('od_cancel_dialog_back')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleCancelOrder} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isCancelling}>
               {isCancelling ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-              تأكيد الإلغاء
+              {t('od_cancel_dialog_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
