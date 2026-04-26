@@ -380,7 +380,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
           </div>
 
           {/* Main Tabs */}
-          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
             <TabsList className="grid grid-cols-3 m-3 mb-0 bg-muted/50 p-1 h-10">
               <TabsTrigger value="deposit" className="text-xs gap-1.5 data-[state=active]:bg-background">
                 <Plus className="h-3.5 w-3.5" />
@@ -397,7 +397,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             </TabsList>
 
             {/* Deposit Tab */}
-            <TabsContent value="deposit" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="deposit" className="m-0">
               <div className="p-3 space-y-3">
                 {/* Bank Transfer Info */}
                 <div className="p-3 rounded-xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
@@ -540,7 +540,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             </TabsContent>
 
             {/* Withdraw Tab */}
-            <TabsContent value="withdraw" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="withdraw" className="m-0">
               <div className="p-3 space-y-3">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/5 to-transparent border border-orange-500/10">
                   <div className="flex items-start gap-2">
@@ -593,55 +593,53 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
             </TabsContent>
 
             {/* History Tab */}
-            <TabsContent value="history" className="flex-1 m-0 overflow-hidden">
-              <ScrollArea className="h-full">
-                <div className="p-3 space-y-2">
-                  {walletTransactions && walletTransactions.length > 0 ? (
-                    walletTransactions.map((tx) => (
-                      <div 
-                        key={tx.id}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-card/30 border border-border/30"
-                      >
-                        <div className={cn(
-                          "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                          getTransactionColor(tx.type, tx.status)
-                        )}>
-                          {getTransactionIcon(tx.type, tx.status)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{getTransactionLabel(tx.type)}</span>
-                            {tx.status === 'pending' && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600">
-                                {getStatusLabel(tx.status)}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {new Date(tx.created_at).toLocaleDateString(dateLocaleCode, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div className={cn(
-                          "text-sm font-bold",
-                          isIncome(tx.type) && tx.status !== 'rejected' ? "text-green-500" : "text-foreground"
-                        )}>
-                          {isIncome(tx.type) && tx.status !== 'rejected' ? '+' : ''}{Math.abs(tx.amount).toLocaleString(numLocale)}
-                        </div>
+            <TabsContent value="history" className="m-0">
+              <div className="p-3 space-y-2">
+                {walletTransactions && walletTransactions.length > 0 ? (
+                  walletTransactions.map((tx) => (
+                    <div 
+                      key={tx.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-card/30 border border-border/30"
+                    >
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                        getTransactionColor(tx.type, tx.status)
+                      )}>
+                        {getTransactionIcon(tx.type, tx.status)}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      {t('wallet_no_history')}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{getTransactionLabel(tx.type)}</span>
+                          {tx.status === 'pending' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600">
+                              {getStatusLabel(tx.status)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {new Date(tx.created_at).toLocaleDateString(dateLocaleCode, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className={cn(
+                        "text-sm font-bold",
+                        isIncome(tx.type) && tx.status !== 'rejected' ? "text-green-500" : "text-foreground"
+                      )}>
+                        {isIncome(tx.type) && tx.status !== 'rejected' ? '+' : ''}{Math.abs(tx.amount).toLocaleString(numLocale)}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </ScrollArea>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    {t('wallet_no_history')}
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
       </OriginExpandShell>
