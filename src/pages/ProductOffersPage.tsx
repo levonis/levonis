@@ -205,17 +205,17 @@ export default function ProductOffersPage() {
     if (!hasPromo) {
       return (
         <Badge className="absolute top-2 right-2 bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
-          <Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة
+          <Gift className="h-3 w-3" />{offer.gift_tickets} {t('offers_ticket_word')}
         </Badge>
       );
     }
     return (
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
         <Badge className="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-50 gap-1 shadow-lg">
-          <Gift className="h-3 w-3" />{total} تذكرة
+          <Gift className="h-3 w-3" />{total} {t('offers_ticket_word')}
         </Badge>
         <Badge className="bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-50 gap-0.5 shadow-lg text-[9px] px-1.5 py-0.5 animate-pulse">
-          <Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} إضافية
+          <Sparkles className="h-2.5 w-2.5" />+{activePromotion!.bonus_tickets} {t('offers_ticket_word')}
         </Badge>
       </div>
     );
