@@ -270,6 +270,7 @@ export default function LoyaltyLevelsPanel() {
               id: activeCardLevel.id,
               name_ar: activeCardLevel.name_ar,
               name_en: activeCardLevel.name_en,
+              name_ku: (activeCardLevel as any).name_ku,
               color: activeCardLevel.color,
               discount_percentage: activeCardLevel.discount_percentage,
               bonus_points_percentage: activeCardLevel.bonus_points_percentage,

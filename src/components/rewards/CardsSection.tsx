@@ -13,6 +13,7 @@ import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { pickLocalized } from "@/lib/i18n/localizedField";
 
 interface CardsSectionProps {
   activeSubTab: SubTabId;
@@ -20,7 +21,7 @@ interface CardsSectionProps {
 
 export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [expandedCoupons, setExpandedCoupons] = useState(false);
 
   const shouldFetchUserData = activeSubTab === 'benefits' || activeSubTab === 'upgrade';
@@ -144,7 +145,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
               id: displayLevel.id,
               name_ar: displayLevel.name_ar,
               name_en: displayLevel.name_en,
-              name_ku: displayLevel.name_ku,
+              name_ku: (displayLevel as any).name_ku,
               color: displayLevel.color,
               discount_percentage: displayLevel.discount_percentage,
               bonus_points_percentage: displayLevel.bonus_points_percentage,
@@ -228,7 +229,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{coupon.prize_name_ar}</p>
+                          <p className="text-sm font-medium truncate">{pickLocalized(coupon as any, 'prize_name', language)}</p>
                           <p className="text-xs text-muted-foreground font-mono">{coupon.coupon_code}</p>
                         </div>
                         <div className="flex items-center gap-2">
