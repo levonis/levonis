@@ -604,7 +604,7 @@ export default function AllCompetitionsPanel() {
             {userTeam && (
               <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
                 <Check className="h-2.5 w-2.5" />
-                أنت في الفريق {userTeam === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}
+                {userTeam === 'A' ? t('ac_in_team_blue') : t('ac_in_team_red')}
               </div>
             )}
           </div>
