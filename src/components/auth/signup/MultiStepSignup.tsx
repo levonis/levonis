@@ -283,9 +283,9 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         return (
           <div className="space-y-6 text-center py-8">
             <div className="space-y-2">
-              <h3 className="text-lg font-bold">التحقق من البريد الإلكتروني</h3>
+              <h3 className="text-lg font-bold">{t('signup_email_verify_title')}</h3>
               <p className="text-sm text-muted-foreground">
-                يرجى التحقق من بريدك الإلكتروني لتأكيد حسابك
+                {t('signup_email_verify_desc')}
               </p>
               <p className="text-sm font-medium" dir="ltr">{formData.email}</p>
             </div>
@@ -294,7 +294,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
                 <div className="h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
                   <span className="text-emerald-500 text-2xl">✓</span>
                 </div>
-                <p className="text-emerald-500 font-bold">تم التحقق بنجاح!</p>
+                <p className="text-emerald-500 font-bold">{t('signup_verify_success')}</p>
                 <button
                   onClick={() => setCurrentStep(4)}
                   className="mt-4 px-6 py-2 rounded-xl bg-primary text-primary-foreground font-bold"
@@ -359,7 +359,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       
       {currentStep === 1 && (
         <p className="text-center text-sm text-muted-foreground">
-          لديك حساب بالفعل؟{' '}
+          {t('signup_have_account')}{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
