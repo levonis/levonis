@@ -8,9 +8,16 @@ export interface CardDiscountResult {
   discountsByCategory: Record<string, { discount: number; limited: boolean; remaining: number; maxUses: number }>;
   levelName: string | null;
   levelId: string | null;
+  cardId: string | null;
   hasDiscount: boolean;
   freeShipping: boolean;
   freeShippingMinOrder: number;
+  // Percentage discount on subtotal (with optional cap during card validity)
+  percentageDiscount: number;
+  percentageRate: number;
+  percentageMaxAmount: number | null;
+  percentageUsedSoFar: number;
+  percentageRemaining: number | null;
 }
 
 export function useCartCardDiscount(
