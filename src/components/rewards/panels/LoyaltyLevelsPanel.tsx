@@ -211,15 +211,26 @@ export default function LoyaltyLevelsPanel() {
   }
 
   const totalXp = (userPointsData as any)?.total_xp || 0;
+  const currentLevelXp = (userPointsData as any)?.current_level_xp || 0;
+  const currentLevelNumber = (userPointsData as any)?.current_level_number || 1;
   const availablePoints = userPointsData?.available_points || 0;
   const walletBalance = userWallet?.balance || 0;
   const userName = userProfile?.full_name || userProfile?.username || '';
   const activeCardLevel = userCard?.loyalty_levels as any;
   const sortedLevels = levels?.slice().sort((a, b) => a.display_order - b.display_order) || [];
 
-  const currentLevelIndex = sortedLevels.reduce((acc, level, i) => {
-    return ((level as any).xp_required || 0) <= totalXp ? i : acc;
-  }, 0);
+  // Find the actual current level entity (matches level_number)
+  const currentLevelEntity = sortedLevels.find(
+    (l: any) => (l.level_number ?? l.display_order) === currentLevelNumber
+  ) as any;
+  const currentLevelXpRequired = Number(currentLevelEntity?.xp_required ?? currentLevelEntity?.min_points ?? 0);
+  const currentLevelProgress = currentLevelXpRequired > 0
+    ? Math.min((currentLevelXp / currentLevelXpRequired) * 100, 100)
+    : 0;
+
+  const currentLevelIndex = sortedLevels.findIndex(
+    (l: any) => (l.level_number ?? l.display_order) === currentLevelNumber
+  );
 
   const getVipPlusBenefits = (level: any) => {
     const benefits: { icon: any; text: string; color: string }[] = [];
