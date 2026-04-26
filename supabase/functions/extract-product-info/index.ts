@@ -988,6 +988,78 @@ function extractPrice(html: string): number | null {
   return null;
 }
 
+function extractPriceNumbers(value: unknown): number[] {
+  if (typeof value === 'number' && Number.isFinite(value)) return [value];
+  if (typeof value !== 'string') return [];
+  const matches = value.replace(/,/g, '').match(/\d+(?:\.\d+)?/g) || [];
+  return matches
+    .map((v) => parseFloat(v))
+    .filter((v) => Number.isFinite(v) && v > 0 && v < 1000000);
+}
+
+function detectCurrencyFromContent(html: string, platform: string, url: string): string {
+  if (['taobao', 'tmall', '1688', 'jd'].includes(platform)) return 'CNY';
+  if (url.includes('aliexpress')) return 'USD';
+  if (/"priceCurrency"\s*:\s*"([A-Z]{3})"/i.test(html)) {
+    return html.match(/"priceCurrency"\s*:\s*"([A-Z]{3})"/i)?.[1] || 'USD';
+  }
+  if (/[¥￥]/.test(html)) return 'CNY';
+  if (/\$/.test(html)) return 'USD';
+  if (/€/.test(html)) return 'EUR';
+  return 'CNY';
+}
+
+function extractStructuredPrices(html: string, platform: string, url: string): { price: number | null; originalPrice: number | null; currency: string } {
+  const priceCandidates: number[] = [];
+  const originalCandidates: number[] = [];
+  let currency = detectCurrencyFromContent(html, platform, url);
+
+  const addFromJson = (data: any) => {
+    const visit = (node: any) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach(visit);
+
+      for (const [rawKey, rawValue] of Object.entries(node)) {
+        const key = rawKey.toLowerCase();
+        if (key === 'pricecurrency' && typeof rawValue === 'string') currency = rawValue;
+        if (/original|compare|market|list|was|regular|retail|reserve|strike|strikethrough|highprice|maxprice/.test(key)) {
+          originalCandidates.push(...extractPriceNumbers(rawValue));
+        } else if (/^price$|saleprice|lowprice|finalprice|currentprice|discountprice|promotionprice/.test(key)) {
+          priceCandidates.push(...extractPriceNumbers(rawValue));
+        }
+        visit(rawValue);
+      }
+    };
+    visit(data);
+  };
+
+  for (const match of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { addFromJson(JSON.parse(match[1])); } catch {}
+  }
+
+  const keyPricePattern = /["']?(originalPrice|original_price|marketPrice|listPrice|wasPrice|regularPrice|retailPrice|reservePrice|strikePrice|strikethroughPrice|compareAtPrice|highPrice|maxPrice|salePrice|finalPrice|currentPrice|discountPrice|promotionPrice|price)["']?\s*[:=]\s*["']?([\d,.]+(?:\s*[-~]\s*[\d,.]+)?)/gi;
+  let keyMatch: RegExpExecArray | null;
+  while ((keyMatch = keyPricePattern.exec(html)) !== null) {
+    const key = keyMatch[1].toLowerCase();
+    const values = extractPriceNumbers(keyMatch[2]);
+    if (/original|compare|market|list|was|regular|retail|reserve|strike|high|max/.test(key)) {
+      originalCandidates.push(...values);
+    } else {
+      priceCandidates.push(...values);
+    }
+  }
+
+  const directPrice = extractPrice(html);
+  if (directPrice) priceCandidates.push(directPrice);
+
+  const price = priceCandidates.length > 0 ? Math.min(...priceCandidates) : null;
+  const originalPrice = originalCandidates.length > 0
+    ? Math.max(...originalCandidates, ...(priceCandidates.length ? priceCandidates : [0]))
+    : (priceCandidates.length > 0 ? Math.max(...priceCandidates) : null);
+
+  return { price, originalPrice, currency };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
