@@ -2152,7 +2152,7 @@ const Cart = () => {
                                       </span>
                                     )}
                                     {(item as any).shipping_option_name_ar && (
-                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{(item as any).shipping_option_name_ar}</span>
+                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{translateShippingOption((item as any).shipping_option_name_ar, t)}</span>
                                     )}
                                   </div>
                                 )}
