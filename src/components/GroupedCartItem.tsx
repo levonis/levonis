@@ -34,7 +34,7 @@ const GroupedCartItem = ({
   const product = firstItem.products;
   const { data: shippingSettings } = useShippingSettings();
   const { data: codDefaults } = useCodDefaults();
-  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
   
   if (!product) return null;
 

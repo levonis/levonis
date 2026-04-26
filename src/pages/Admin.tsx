@@ -1574,7 +1574,32 @@ const Admin = () => {
               preOrderCommissionAddon = commissionAirIqdVal;
             }
           }
-          const directFinalPrice = priceIqd + otherCostsIqdVal + directShipping + preOrderCommissionAddon + commissionDirectIqdVal + personalDeliveryCostVal + referralEarningsIqdVal;
+
+          // When the product is linked to the global COD %, derive the direct
+          // commission live from the pre-order base. This keeps DB and the UI
+          // (cart/product detail) in lock-step using the same formula as
+          // `computeLinkedDirectSalePrice` in `priceGuard.ts`.
+          let directCommission = commissionDirectIqdVal;
+          if (values.link_direct_commission_to_cod) {
+            const { data: codSetting } = await supabase
+              .from('default_settings')
+              .select('setting_value')
+              .eq('setting_key', 'partial_payment_settings')
+              .single();
+            const cv: any = codSetting?.setting_value || {};
+            const codType = (cv.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed';
+            const codValue = Number(cv.cod_default_fee_value) || 0;
+            if (codValue > 0) {
+              const preorderBase = priceIqd + directShipping + preOrderCommissionAddon + personalDeliveryCostVal + referralEarningsIqdVal;
+              directCommission = codType === 'fixed'
+                ? Math.ceil(codValue)
+                : Math.ceil((preorderBase * codValue) / 100);
+              // Mirror back to the stored field so admin UI stays consistent.
+              values.commission_direct_iqd = directCommission;
+            }
+          }
+
+          const directFinalPrice = priceIqd + otherCostsIqdVal + directShipping + preOrderCommissionAddon + directCommission + personalDeliveryCostVal + referralEarningsIqdVal;
           prices.push(directFinalPrice);
           values.direct_sale_price = directFinalPrice;
         }

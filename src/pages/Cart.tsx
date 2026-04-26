@@ -43,7 +43,7 @@ const Cart = () => {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
-  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
+  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
 
   // Global COD defaults — shared hook with realtime sync.
   const { data: codDefaults } = useCodDefaults();

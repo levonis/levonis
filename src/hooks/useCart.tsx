@@ -7,6 +7,11 @@ import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 
+// Default IQD rate fallback used across the cart when shipping settings haven't
+// loaded yet. Kept in sync with the production exchange rate so prices computed
+// before the live settings arrive remain stable.
+const DEFAULT_USD_TO_IQD = 1540;
+
 export const MAX_QUANTITY_PER_ITEM = 50;
 
 export interface CartItem {
@@ -115,6 +120,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
+  // Optimistic-update lock — bumped on local mutations so concurrent fetchCart()
+  // calls don't overwrite an in-flight optimistic state with stale server data.
+  const optimisticLockRef = useRef(0);
+  // Live shipping settings — drive USD→IQD conversion for guarded prices.
+  const { data: shippingSettings } = useShippingSettings();
+  const usdToIqd = (shippingSettings as any)?.usd_to_iqd_rate || DEFAULT_USD_TO_IQD;
   // Global COD defaults — shared hook with realtime sync. Cart prices for
   // products linked to `link_direct_commission_to_cod` recompute live whenever
   // the admin changes the COD %.
