@@ -938,7 +938,7 @@ export default function AllCompetitionsPanel() {
                           <div className="flex items-center gap-1">
                             {p.team && (
                               <Badge variant="outline" className="text-[9px]">
-                                فريق {p.team === 'A' ? '🔵' : '🔴'}
+                                {p.team === 'A' ? t('ac_team_blue_emoji') : t('ac_team_red_emoji')}
                               </Badge>
                             )}
                           </div>
