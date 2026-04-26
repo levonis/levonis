@@ -57,15 +57,15 @@ export default function LoyaltyLevelsPanel() {
       });
       if (error) throw error;
       const result = data as any;
-      if (!result?.success) { toast.error(result?.error || 'حدث خطأ'); return; }
-      toast.success(`تم إهداء بطاقة ${giftDialog.level.name_ar} بنجاح! 🎁`);
+      if (!result?.success) { toast.error(result?.error || t('ll_error_generic')); return; }
+      toast.success(t('ll_success_gift', { name: giftDialog.level.name_ar }));
       setGiftDialog({ open: false, level: null, method: 'points' });
       setSelectedRecipient(null); setGiftSearch(''); setGiftMessage(''); setSearchResults([]);
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['user-points-loyalty'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet-cards'] });
-    } catch (err: any) { toast.error(err.message || 'حدث خطأ في عملية الإهداء'); }
+    } catch (err: any) { toast.error(err.message || t('ll_error_gift')); }
     finally { setGifting(false); }
   };
 
