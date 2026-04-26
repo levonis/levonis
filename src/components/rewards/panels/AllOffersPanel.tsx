@@ -233,7 +233,7 @@ export default function AllOffersPanel() {
 
   const handlePurchase = () => {
     if (!user) {
-      toast.error('سجّل الدخول للشراء');
+      toast.error(t('ao_login_to_buy'));
       return;
     }
     setPurchaseDialogOpen(true);
