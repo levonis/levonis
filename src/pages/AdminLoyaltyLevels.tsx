@@ -41,6 +41,8 @@ export default function AdminLoyaltyLevels() {
     bonus_points_percentage: 0,
     free_shipping: false,
     free_shipping_min_order: 0,
+    free_shipping_methods: ["standard"] as string[],
+    free_shipping_max_uses: null as number | null,
     is_purchasable: true,
     purchase_price_points: 0,
     duration_days: 30,
@@ -308,6 +310,8 @@ export default function AdminLoyaltyLevels() {
       bonus_points_percentage: 0,
       free_shipping: false,
       free_shipping_min_order: 0,
+      free_shipping_methods: ["standard"],
+      free_shipping_max_uses: null,
       is_purchasable: true,
       purchase_price_points: 0,
       duration_days: 30,
@@ -357,6 +361,8 @@ export default function AdminLoyaltyLevels() {
       bonus_points_percentage: level.bonus_points_percentage || 0,
       free_shipping: level.free_shipping || false,
       free_shipping_min_order: level.free_shipping_min_order || 0,
+      free_shipping_methods: Array.isArray(level.free_shipping_methods) ? level.free_shipping_methods : ["standard"],
+      free_shipping_max_uses: level.free_shipping_max_uses ?? null,
       is_purchasable: level.is_purchasable ?? true,
       purchase_price_points: level.purchase_price_points || 0,
       duration_days: level.duration_days || 30,
@@ -743,6 +749,58 @@ export default function AdminLoyaltyLevels() {
                               {formData.free_shipping && formData.free_shipping_min_order > 0 
                                 ? `شحن مجاني للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
                                 : 'شحن مجاني على كل الطلبات'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Free shipping limits */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 rounded-lg border border-dashed border-border bg-muted/20">
+                          <div className="admin-form-group md:col-span-2">
+                            <Label className="text-sm font-semibold">طرق التوصيل المشمولة بالشحن المجاني</Label>
+                            <p className="text-xs text-muted-foreground mb-2">حدد طرق التوصيل التي يُطبَّق عليها الشحن المجاني (الاستلام من المخزن مجاني افتراضياً)</p>
+                            <div className="flex flex-wrap gap-3">
+                              {[
+                                { key: "standard", label: "التوصيل الاعتيادي" },
+                                { key: "personal", label: "التوصيل الشخصي" },
+                              ].map((m) => {
+                                const checked = formData.free_shipping_methods.includes(m.key);
+                                return (
+                                  <label key={m.key} className="flex items-center gap-2 cursor-pointer text-sm select-none">
+                                    <Switch
+                                      checked={checked}
+                                      onCheckedChange={(v) => {
+                                        const next = v
+                                          ? Array.from(new Set([...formData.free_shipping_methods, m.key]))
+                                          : formData.free_shipping_methods.filter((k) => k !== m.key);
+                                        setFormData({ ...formData, free_shipping_methods: next });
+                                      }}
+                                      disabled={!formData.free_shipping}
+                                    />
+                                    {m.label}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="admin-form-group">
+                            <Label>الحد الأقصى لعدد مرات الشحن المجاني</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={formData.free_shipping_max_uses ?? ""}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  free_shipping_max_uses: e.target.value === "" ? null : parseInt(e.target.value),
+                                })
+                              }
+                              placeholder="اتركه فارغاً = غير محدود"
+                              disabled={!formData.free_shipping}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formData.free_shipping_max_uses != null && formData.free_shipping_max_uses > 0
+                                ? `يحق للعميل ${formData.free_shipping_max_uses} مرات شحن مجاني خلال صلاحية البطاقة`
+                                : "غير محدود طوال صلاحية البطاقة"}
                             </p>
                           </div>
                         </div>

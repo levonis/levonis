@@ -12,6 +12,10 @@ export interface CardDiscountResult {
   hasDiscount: boolean;
   freeShipping: boolean;
   freeShippingMinOrder: number;
+  freeShippingMethods: string[];
+  freeShippingMaxUses: number | null;
+  freeShippingUsedSoFar: number;
+  freeShippingRemainingUses: number | null;
   // Percentage discount on subtotal (with optional cap during card validity)
   percentageDiscount: number;
   percentageRate: number;
@@ -34,7 +38,7 @@ export function useCartCardDiscount(
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_cards")
-        .select("id, level_id, purchased_at, loyalty_levels:level_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order)")
+        .select("id, level_id, purchased_at, loyalty_levels:level_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
@@ -93,7 +97,20 @@ export function useCartCardDiscount(
     staleTime: 30 * 1000,
   });
 
-  const isLoading = loadingCard || loadingLimits || loadingUsage || loadingPercentageUsed;
+  // Get cumulative free shipping uses during current card validity
+  const { data: freeShippingUsedData, isLoading: loadingFreeShipUsed } = useQuery({
+    queryKey: ["card-free-shipping-used", cardId],
+    queryFn: async () => {
+      if (!cardId) return 0;
+      const { data, error } = await (supabase as any).rpc("get_card_free_shipping_used", { p_card_id: cardId });
+      if (error) throw error;
+      return Number(data) || 0;
+    },
+    enabled: !!cardId,
+    staleTime: 30 * 1000,
+  });
+
+  const isLoading = loadingCard || loadingLimits || loadingUsage || loadingPercentageUsed || loadingFreeShipUsed;
 
   if (!userCard || !levelId || isLoading) {
     return { cardDiscount: null, isLoading };
@@ -169,6 +186,17 @@ export function useCartCardDiscount(
   // Free shipping check
   const freeShipping = level.free_shipping || false;
   const freeShippingMinOrder = level.free_shipping_min_order || 0;
+  const rawMethods = level.free_shipping_methods;
+  const freeShippingMethods: string[] = Array.isArray(rawMethods)
+    ? rawMethods.filter((m: any) => typeof m === "string")
+    : ["standard"];
+  const freeShippingMaxUses = level.free_shipping_max_uses != null
+    ? Number(level.free_shipping_max_uses)
+    : null;
+  const freeShippingUsedSoFar = Number(freeShippingUsedData) || 0;
+  const freeShippingRemainingUses = freeShippingMaxUses != null
+    ? Math.max(0, freeShippingMaxUses - freeShippingUsedSoFar)
+    : null;
 
   return {
     cardDiscount: {
@@ -180,6 +208,10 @@ export function useCartCardDiscount(
       hasDiscount: (totalDiscount + percentageDiscount) > 0,
       freeShipping,
       freeShippingMinOrder,
+      freeShippingMethods,
+      freeShippingMaxUses,
+      freeShippingUsedSoFar,
+      freeShippingRemainingUses,
       percentageDiscount,
       percentageRate,
       percentageMaxAmount,
