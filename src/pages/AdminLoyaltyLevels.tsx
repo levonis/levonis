@@ -1648,6 +1648,74 @@ export default function AdminLoyaltyLevels() {
           </div>
         </TabsContent>
       </Tabs>
+      {/* Admin Gift Card Dialog */}
+      <Dialog open={giftDialogOpen} onOpenChange={(o) => { if (!o) { setGiftLevel(null); setGiftSearch(""); setGiftRecipientId(null); setGiftMessage(""); } setGiftDialogOpen(o); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-primary" />
+              إهداء بطاقة {giftLevel?.name_ar}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {!giftLevel?.is_purchasable && (
+              <div className="text-xs p-2 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                هذه البطاقة حصرية وغير متاحة للشراء العام، يمكنك إهداؤها للمستخدمين فقط.
+              </div>
+            )}
+            <div>
+              <Label className="text-xs">ابحث عن المستلم (الاسم أو اسم المستخدم)</Label>
+              <Input
+                value={giftSearch}
+                onChange={(e) => { setGiftSearch(e.target.value); setGiftRecipientId(null); }}
+                placeholder="اكتب على الأقل حرفين..."
+                className="mt-1"
+              />
+            </div>
+            {giftSearch.trim().length >= 2 && (
+              <div className="max-h-48 overflow-y-auto border border-border rounded-md divide-y divide-border">
+                {giftSearchResults.length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-3 text-center">لا توجد نتائج</p>
+                ) : (
+                  giftSearchResults.map((u: any) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setGiftRecipientId(u.id)}
+                      className={cn(
+                        "w-full p-2 text-right text-sm hover:bg-muted transition-colors flex items-center gap-2",
+                        giftRecipientId === u.id && "bg-primary/10"
+                      )}
+                    >
+                      {giftRecipientId === u.id && <Check className="h-4 w-4 text-primary" />}
+                      <span className="flex-1 truncate">{u.full_name || u.username}</span>
+                      {u.username && <span className="text-xs text-muted-foreground">@{u.username}</span>}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            <div>
+              <Label className="text-xs">رسالة (اختياري)</Label>
+              <Textarea
+                value={giftMessage}
+                onChange={(e) => setGiftMessage(e.target.value)}
+                placeholder="رسالة شخصية للمستلم..."
+                className="mt-1 min-h-[60px]"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setGiftDialogOpen(false)}>إلغاء</Button>
+              <Button
+                disabled={!giftRecipientId || adminGiftMutation.isPending}
+                onClick={() => giftRecipientId && giftLevel && adminGiftMutation.mutate({ levelId: giftLevel.id, recipientId: giftRecipientId, message: giftMessage })}
+              >
+                {adminGiftMutation.isPending ? "جارٍ الإهداء..." : "إهداء البطاقة"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
