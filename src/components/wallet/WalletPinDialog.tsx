@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Lock, Loader2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/i18n';
 
 interface WalletPinDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface WalletPinDialogProps {
 }
 
 export default function WalletPinDialog({ open, onOpenChange, onVerified, mode = 'verify' }: WalletPinDialogProps) {
+  const { t, dir } = useLanguage();
   const [pin, setPin] = useState(['', '', '', '']);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
@@ -75,12 +77,12 @@ export default function WalletPinDialog({ open, onOpenChange, onVerified, mode =
         onVerified();
         onOpenChange(false);
       } else {
-        toast.error('رمز PIN غير صحيح');
+        toast.error(t('wallet_pin_invalid'));
         setPin(['', '', '', '']);
         inputRefs.current[0]?.focus();
       }
     } catch (error: any) {
-      toast.error('حدث خطأ في التحقق');
+      toast.error(t('wallet_pin_verify_error'));
     } finally {
       setLoading(false);
     }
@@ -100,7 +102,7 @@ export default function WalletPinDialog({ open, onOpenChange, onVerified, mode =
     if (confirmCode.length !== 4) return;
     
     if (pinCode !== confirmCode) {
-      toast.error('رمز PIN غير متطابق');
+      toast.error(t('wallet_pin_mismatch'));
       setConfirmPin(['', '', '', '']);
       confirmRefs.current[0]?.focus();
       return;
@@ -111,11 +113,11 @@ export default function WalletPinDialog({ open, onOpenChange, onVerified, mode =
       const { error } = await supabase.rpc('set_wallet_pin', { pin_code: pinCode });
       if (error) throw error;
       
-      toast.success('تم تعيين رمز PIN بنجاح');
+      toast.success(t('wallet_pin_set_success'));
       onVerified();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('حدث خطأ في تعيين رمز PIN');
+      toast.error(t('wallet_pin_set_error'));
     } finally {
       setLoading(false);
     }
@@ -142,7 +144,7 @@ export default function WalletPinDialog({ open, onOpenChange, onVerified, mode =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm" dir="rtl">
+      <DialogContent className="sm:max-w-sm" dir={dir}>
         <DialogHeader className="text-center">
           <div className="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
             {mode === 'set' ? (
@@ -152,14 +154,14 @@ export default function WalletPinDialog({ open, onOpenChange, onVerified, mode =
             )}
           </div>
           <DialogTitle>
-            {mode === 'set' 
-              ? (step === 'confirm' ? 'تأكيد رمز PIN' : 'تعيين رمز PIN') 
-              : 'أدخل رمز PIN'}
+            {mode === 'set'
+              ? (step === 'confirm' ? t('wallet_pin_title_confirm') : t('wallet_pin_title_set'))
+              : t('wallet_pin_title_enter')}
           </DialogTitle>
           <DialogDescription>
             {mode === 'set'
-              ? (step === 'confirm' ? 'أعد إدخال الرمز للتأكيد' : 'اختر رمز PIN مكون من 4 أرقام لحماية محفظتك')
-              : 'أدخل رمز PIN الخاص بك للمتابعة'}
+              ? (step === 'confirm' ? t('wallet_pin_desc_confirm') : t('wallet_pin_desc_set'))
+              : t('wallet_pin_desc_enter')}
           </DialogDescription>
         </DialogHeader>
 
@@ -178,9 +180,9 @@ export default function WalletPinDialog({ open, onOpenChange, onVerified, mode =
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin ml-2" />
           ) : null}
-          {mode === 'set' 
-            ? (step === 'confirm' ? 'تأكيد وحفظ' : 'التالي')
-            : 'تحقق'}
+          {mode === 'set'
+            ? (step === 'confirm' ? t('wallet_pin_btn_save') : t('wallet_pin_btn_next'))
+            : t('wallet_pin_btn_verify')}
         </Button>
       </DialogContent>
     </Dialog>
