@@ -162,7 +162,7 @@ export default function AllOffersPanel() {
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ offer, qty }: { offer: any; qty: number }) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
+      if (!user) throw new Error(t('ao_login_required'));
       
       // استخدام RPC الآمن الذي يتحقق من الرصيد ويخصم المبلغ ذرياً
       const { data: result, error } = await supabase.rpc('purchase_product_offer', {
@@ -173,7 +173,7 @@ export default function AllOffersPanel() {
       if (error) throw new Error(error.message);
       
       const resultData = result as { success: boolean; error?: string; total_cost?: number; gift_tickets?: number };
-      if (!resultData?.success) throw new Error(resultData?.error || 'فشل الشراء');
+      if (!resultData?.success) throw new Error(resultData?.error || t('ao_purchase_failed'));
       
       // منح النقاط إذا كان العرض يتضمن مكافأة نقاط
       if (offer.points_reward && offer.points_reward > 0) {
@@ -183,7 +183,7 @@ export default function AllOffersPanel() {
           points: totalPoints,
           type: 'earn',
           source: 'offer_purchase',
-          description: `نقاط من شراء ${offer.title_ar}`,
+          description: t('ao_points_desc', { title: offer.title_ar }),
         });
       }
       
@@ -201,13 +201,13 @@ export default function AllOffersPanel() {
       queryClient.invalidateQueries({ queryKey: ['storage-offer-purchases'] });
       queryClient.invalidateQueries({ queryKey: ['all-product-offers-panel-infinite'] });
       
-      let message = 'تم الشراء بنجاح!';
+      let message = t('ao_purchase_success');
       if (data.tickets > 0 && data.points > 0) {
-        message = `تم الشراء! حصلت على ${data.tickets} تذكرة و ${data.points} نقطة`;
+        message = t('ao_purchase_success_both', { tickets: data.tickets, points: data.points });
       } else if (data.tickets > 0) {
-        message = `تم الشراء! حصلت على ${data.tickets} تذكرة`;
+        message = t('ao_purchase_success_tickets', { tickets: data.tickets });
       } else if (data.points > 0) {
-        message = `تم الشراء! حصلت على ${data.points} نقطة`;
+        message = t('ao_purchase_success_points', { points: data.points });
       }
       
       toast.success(message);
@@ -216,7 +216,7 @@ export default function AllOffersPanel() {
       setQuantity(1);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('ao_error_generic'));
     },
   });
 
