@@ -375,7 +375,7 @@ export default function DailyTasksPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً (الحد الأقصى 5MB)');
+      toast.error(t('dt_image_too_large'));
       return;
     }
     setProofImage(file);
@@ -384,8 +384,8 @@ export default function DailyTasksPanel() {
 
   const handleSubmitProof = async () => {
     if (!user || !proofTask) return;
-    if (!proofImage) { toast.error('يرجى رفع صورة إثبات'); return; }
-    if (!instagramUsername.trim()) { toast.error('يرجى كتابة يوزر الانستغرام'); return; }
+    if (!proofImage) { toast.error(t('dt_upload_proof_required')); return; }
+    if (!instagramUsername.trim()) { toast.error(t('dt_instagram_required')); return; }
     
     setIsSubmittingProof(true);
     try {
