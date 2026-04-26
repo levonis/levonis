@@ -620,7 +620,7 @@ export default function AllStoragePanel() {
         {/* Section Header */}
         <button
           onClick={() => setExpandedSection(isExpanded ? null : id)}
-          className="w-full flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center justify-between p-3 glass-tile glass-tile-interactive !rounded-xl"
         >
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md`}>
