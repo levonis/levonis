@@ -437,38 +437,38 @@ const OrderDetail = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Shipping */}
           <GlassCard className="p-5" delay={0.3}>
-            <SectionHeader icon={MapPin} title="معلومات الشحن" />
+            <SectionHeader icon={MapPin} title={t('od_section_shipping')} />
             <div className="space-y-0">
-              <InfoRow icon={MapPin} label="العنوان" value={order.shipping_address} />
-              <InfoRow icon={MapPin} label="المحافظة" value={order.governorate} />
-              <InfoRow icon={Phone} label="رقم الهاتف" value={order.phone_number} />
+              <InfoRow icon={MapPin} label={t('od_label_address')} value={order.shipping_address} />
+              <InfoRow icon={MapPin} label={t('od_label_governorate')} value={order.governorate} />
+              <InfoRow icon={Phone} label={t('od_label_phone')} value={order.phone_number} />
             </div>
           </GlassCard>
 
           {/* Payment */}
           <GlassCard className="p-5" delay={0.35}>
-            <SectionHeader icon={Wallet} title="معلومات الدفع" />
+            <SectionHeader icon={Wallet} title={t('od_section_payment')} />
             <div className="space-y-0">
               {order.payment_status && (
-                <InfoRow icon={Info} label="حالة الدفع" value={
-                  order.payment_status === 'paid' ? 'مدفوع' : 
-                  order.payment_status === 'partial' ? 'مدفوع جزئياً' :
-                  order.payment_status === 'refunded' ? 'مسترجع' : 'قيد الانتظار'
+                <InfoRow icon={Info} label={t('od_label_payment_status')} value={
+                  order.payment_status === 'paid' ? t('od_payment_paid') :
+                  order.payment_status === 'partial' ? t('od_payment_partial') :
+                  order.payment_status === 'refunded' ? t('od_payment_refunded') : t('od_payment_pending')
                 } />
               )}
               {order.payment_method && (
-                <InfoRow icon={CreditCard} label="طريقة الدفع" value={
-                  order.payment_method === 'cash' ? 'نقدي' :
-                  order.payment_method === 'wallet' ? 'المحفظة' :
-                  order.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
-                  order.payment_method === 'card' ? 'بطاقة' : order.payment_method
+                <InfoRow icon={CreditCard} label={t('od_label_payment_method')} value={
+                  order.payment_method === 'cash' ? t('od_method_cash') :
+                  order.payment_method === 'wallet' ? t('od_method_wallet') :
+                  order.payment_method === 'bank_transfer' ? t('od_method_bank') :
+                  order.payment_method === 'card' ? t('od_method_card') : order.payment_method
                 } />
               )}
               {Number(order.paid_amount) > 0 && (
-                <InfoRow icon={CheckCircle2} label="المبلغ المدفوع" value={`${formatPrice(Number(order.paid_amount))} ${order.currency}`} valueClass="text-primary" />
+                <InfoRow icon={CheckCircle2} label={t('od_label_paid_amount')} value={`${formatPrice(Number(order.paid_amount))} ${order.currency}`} valueClass="text-primary" />
               )}
               {Number(order.remaining_amount) > 0 && (
-                <InfoRow icon={Clock} label="المبلغ المتبقي" value={`${formatPrice(Number(order.remaining_amount))} ${order.currency}`} valueClass="text-destructive" />
+                <InfoRow icon={Clock} label={t('od_label_remaining_amount')} value={`${formatPrice(Number(order.remaining_amount))} ${order.currency}`} valueClass="text-destructive" />
               )}
             </div>
           </GlassCard>
@@ -477,36 +477,36 @@ const OrderDetail = () => {
         {/* Notes */}
         {order.shipping_notes && (
           <GlassCard className="p-5" delay={0.38}>
-            <SectionHeader icon={Info} title="ملاحظات" />
+            <SectionHeader icon={Info} title={t('od_section_notes')} />
             <p className="text-sm text-foreground bg-muted/20 rounded-xl p-3 border border-border/20">{order.shipping_notes}</p>
           </GlassCard>
         )}
 
         {/* Order Summary */}
         <GlassCard className="p-5" delay={0.4}>
-          <SectionHeader icon={Receipt} title="ملخص الطلب" />
+          <SectionHeader icon={Receipt} title={t('od_section_summary')} />
           <div className="space-y-2.5">
             {Number(order.subtotal) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">المبلغ الفرعي</span>
+                <span className="text-muted-foreground">{t('od_summary_subtotal')}</span>
                 <span className="font-medium">{formatPrice(Number(order.subtotal))} {order.currency}</span>
               </div>
             )}
             {Number(order.tax_amount) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">الضريبة ({order.tax_percentage || 0}%)</span>
+                <span className="text-muted-foreground">{t('od_summary_tax')} ({order.tax_percentage || 0}%)</span>
                 <span className="font-medium">{formatPrice(Number(order.tax_amount))} {order.currency}</span>
               </div>
             )}
             {Number(order.discount_amount) > 0 && (
               <div className="flex justify-between text-sm text-emerald-500">
-                <span>الخصم</span>
+                <span>{t('od_summary_discount')}</span>
                 <span className="font-medium">-{formatPrice(Number(order.discount_amount))} {order.currency}</span>
               </div>
             )}
             <div className="h-px bg-border/30 my-1" />
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-bold">الإجمالي</span>
+              <span className="text-sm text-muted-foreground font-bold">{t('od_summary_total')}</span>
               <span className="font-black text-2xl text-primary">
                 {formatPrice(Number(order.total_amount))} <span className="text-sm font-bold">{order.currency}</span>
               </span>
@@ -517,14 +517,14 @@ const OrderDetail = () => {
         {/* Additional Images and Files */}
         {((order.admin_images && order.admin_images.length > 0) || (order.admin_files && order.admin_files.length > 0)) && (
           <GlassCard className="p-5" delay={0.45}>
-            <SectionHeader icon={Image} title="صور وملفات إضافية" />
+            <SectionHeader icon={Image} title={t('od_section_extra')} />
             {order.admin_images && order.admin_images.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-bold text-muted-foreground mb-2">الصور</p>
+                <p className="text-xs font-bold text-muted-foreground mb-2">{t('od_extra_images')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {order.admin_images.map((imageUrl: string, index: number) => (
                     <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-xl overflow-hidden border border-border/30 hover:border-primary/40 transition-colors shadow-sm">
-                      <img src={imageUrl} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={imageUrl} alt={`#${index + 1}`} className="w-full h-full object-cover" />
                     </a>
                   ))}
                 </div>
@@ -532,10 +532,10 @@ const OrderDetail = () => {
             )}
             {order.admin_files && order.admin_files.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-muted-foreground mb-2">الملفات</p>
+                <p className="text-xs font-bold text-muted-foreground mb-2">{t('od_extra_files')}</p>
                 <div className="space-y-2">
                   {order.admin_files.map((fileUrl: string, index: number) => {
-                    const fileName = fileUrl.split('/').pop() || `ملف ${index + 1}`;
+                    const fileName = fileUrl.split('/').pop() || `#${index + 1}`;
                     return (
                       <a key={index} href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/20 hover:border-primary/30 transition-colors">
                         <File className="h-4 w-4 text-primary shrink-0" />
@@ -557,29 +557,29 @@ const OrderDetail = () => {
       {!isAdmin && <UnifiedChatButton />}
       
       {isAdmin && order && (
-        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={order.profiles?.full_name || 'العميل'} />
+        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={order.profiles?.full_name || t('od_admin_default_customer')} />
       )}
 
       {/* Cancel Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent dir="rtl" className="rounded-2xl">
+        <AlertDialogContent dir={dir} className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive flex items-center gap-2">
               <XCircle className="h-5 w-5" />
-              إلغاء الطلب
+              {t('od_cancel_dialog_title')}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>هل أنت متأكد من إلغاء الطلب رقم <strong>#{order?.order_number}</strong>؟</p>
-              {order?.order_type === 'direct' && <p className="text-muted-foreground text-xs">📦 سيتم إرجاع المنتجات إلى المخزون</p>}
-              {order?.paid_amount > 0 && order?.payment_status !== 'cod' && <p className="text-muted-foreground text-xs">💰 سيتم استرداد {formatPrice(order.paid_amount)} د.ع إلى محفظتك</p>}
-              <p className="text-destructive text-xs font-bold">⚠️ لا يمكن التراجع عن هذا الإجراء</p>
+              <p>{t('od_cancel_dialog_confirm_q')} <strong>#{order?.order_number}</strong>؟</p>
+              {order?.order_type === 'direct' && <p className="text-muted-foreground text-xs">{t('od_cancel_dialog_stock_note')}</p>}
+              {order?.paid_amount > 0 && order?.payment_status !== 'cod' && <p className="text-muted-foreground text-xs">{t('od_cancel_dialog_refund_note')} ({formatPrice(order.paid_amount)} د.ع)</p>}
+              <p className="text-destructive text-xs font-bold">{t('od_cancel_dialog_irreversible')}</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>تراجع</AlertDialogCancel>
+            <AlertDialogCancel>{t('od_cancel_dialog_back')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleCancelOrder} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isCancelling}>
               {isCancelling ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-              تأكيد الإلغاء
+              {t('od_cancel_dialog_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
