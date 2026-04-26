@@ -577,18 +577,18 @@ export default function DailyTasksPanel() {
                     </div>
                     {streakBonus > 0 && !isCompleted && (
                       <span className="text-[10px] bg-orange-500/15 text-orange-600 px-1.5 py-0.5 rounded-full">
-                        +{streakBonus} ستريك 🔥
+                        +{streakBonus} {t('dt_streak_label')} 🔥
                       </span>
                     )}
                     {isOnceTask && !isCompleted && (
-                      <span className="text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full">مرة واحدة</span>
+                      <span className="text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full">{t('dt_label_one_time')}</span>
                     )}
                     {isAdminTask && !isCompleted && !isPending && (
-                      <span className="text-[10px] bg-purple-500/15 text-purple-600 px-1.5 py-0.5 rounded-full">تحقق يدوي</span>
+                      <span className="text-[10px] bg-purple-500/15 text-purple-600 px-1.5 py-0.5 rounded-full">{t('dt_label_manual_verify')}</span>
                     )}
                   </div>
                   {isPending && (
-                    <p className="text-[10px] text-amber-600 mt-1 font-medium">⏳ قيد مراجعة الإدارة</p>
+                    <p className="text-[10px] text-amber-600 mt-1 font-medium">{t('dt_label_pending_admin')}</p>
                   )}
                   {statusText && !isPending && (
                     <p className="text-[10px] text-orange-500 mt-1">{statusText}</p>
@@ -597,12 +597,12 @@ export default function DailyTasksPanel() {
                     <div className="mt-2 space-y-1.5">
                       <div className="flex items-center gap-2 text-[10px]">
                         <span className={autoCheckData?.isMerchant ? 'text-green-600' : 'text-muted-foreground'}>
-                          {autoCheckData?.isMerchant ? '✅' : '⬜'} التسجيل كتاجر
+                          {autoCheckData?.isMerchant ? '✅' : '⬜'} {t('dt_register_as_merchant_check')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px]">
                         <span className={(autoCheckData?.merchantProductCount || 0) >= 3 ? 'text-green-600' : 'text-muted-foreground'}>
-                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} نشر ٣ منتجات ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/٣)
+                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} {t('dt_publish_3_products_check')} ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/٣)
                         </span>
                       </div>
                       <Progress 
@@ -618,7 +618,7 @@ export default function DailyTasksPanel() {
                     disabled={isTaskLoading || !canComplete}
                   >
                     {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 
-                      canComplete ? (isAdminTask ? 'إرسال' : t('tasks_start')) : '⏳'}
+                      canComplete ? (isAdminTask ? t('dt_btn_send') : t('tasks_start')) : '⏳'}
                   </Button>
                 )}
               </div>
