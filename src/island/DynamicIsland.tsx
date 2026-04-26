@@ -346,9 +346,9 @@ export const DynamicIsland = () => {
    */
   const shape = useMemo(() => {
     return state === "search"
-      ? searchShape(stage, products.length, viewportWidth)
+      ? searchShape(stage, localResults.length + products.length, viewportWidth)
       : baseShape(state, title, language, viewportWidth);
-  }, [state, stage, products.length, title, language, viewportWidth]);
+  }, [state, stage, products.length, localResults.length, title, language, viewportWidth]);
 
   /* ---------- Actions ---------- */
   const goSearchUrl = (q: string) => {
