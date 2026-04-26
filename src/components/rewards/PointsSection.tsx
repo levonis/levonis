@@ -18,7 +18,7 @@ interface PointsSectionProps {
 
 export default function PointsSection({ activeSubTab }: PointsSectionProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Only fetch when summary tab is active
   const { data: userPoints, isLoading: loadingPoints } = useQuery({
