@@ -36,6 +36,7 @@ const ProductRewardsSection = ({
   productPrice,
   currency
 }: ProductRewardsSectionProps) => {
+  const { t } = useLanguage();
   const levelMap = new Map(loyaltyLevels.map(l => [l.id, l]));
   
   const validDiscounts = cardDiscounts
@@ -100,7 +101,7 @@ const ProductRewardsSection = ({
           className="gap-1 px-2 py-0.5 text-[11px] font-normal text-muted-foreground border-dashed"
         >
           <Crown className="h-3 w-3" />
-          حتى {Math.max(...validDiscounts.map(d => d.displayPercentage))}% للأعضاء
+          {t('product_card_discount_up_to', { n: Math.max(...validDiscounts.map(d => d.displayPercentage)) })}
         </Badge>
       )}
 
@@ -113,7 +114,7 @@ const ProductRewardsSection = ({
           className="gap-1 px-2 py-0.5 text-[11px] font-normal text-muted-foreground"
         >
           <TrendingUp className="h-3 w-3" />
-          ترقية = خصم أكبر
+          {t('product_card_upgrade_bigger')}
         </Badge>
       )}
     </div>
