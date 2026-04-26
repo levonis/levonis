@@ -188,7 +188,7 @@ export default function AdminPartialPaymentSettings() {
       title="إعدادات الدفع الجزئي والدفع عند الاستلام"
       description="تحديد شرائح الرسوم حسب قيمة الطلب لكلٍّ من دفع نصف المبلغ والدفع عند الاستلام"
       icon={<Percent className="h-5 w-5" />}
-      maxWidth="5xl"
+      maxWidth="4xl"
       actions={
         <Button
           size="sm"
