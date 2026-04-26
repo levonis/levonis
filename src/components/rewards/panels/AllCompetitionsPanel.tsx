@@ -25,23 +25,27 @@ import LetterReveal from "@/components/LetterReveal";
 import InstantWinReveal from "@/components/InstantWinReveal";
 import MysteryBoxReveal from "@/components/MysteryBoxReveal";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
+import { useLanguage } from "@/lib/i18n";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
-const competitionTypeLabels: Record<CompetitionType, string> = {
-  ticket_count: 'سحب عادي',
-  all_tickets_sold: 'حتى نفاذ التذاكر',
-  timed: 'محدد بوقت',
-  free: 'مجاني',
-  instant_winner: 'نتيجة فورية',
-  everyone_wins: 'الكل رابح',
-  escalating_price: 'سعر متصاعد',
-  mystery_box: 'صندوق غامض',
-  hidden_winner: 'رابح مخفي',
-  team_battle: 'فريق ضد فريق',
-  flash_sale: 'عرض سريع',
-  growing_prize: 'جائزة متنامية',
-  collect_letters: 'جمع الأحرف'
+const getCompetitionTypeLabel = (type: CompetitionType, t: (key: any) => string): string => {
+  const map: Record<CompetitionType, string> = {
+    ticket_count: t('ac_type_ticket_count'),
+    all_tickets_sold: t('ac_type_all_tickets_sold'),
+    timed: t('ac_type_timed'),
+    free: t('ac_type_free'),
+    instant_winner: t('ac_type_instant_winner'),
+    everyone_wins: t('ac_type_everyone_wins'),
+    escalating_price: t('ac_type_escalating_price'),
+    mystery_box: t('ac_type_mystery_box'),
+    hidden_winner: t('ac_type_hidden_winner'),
+    team_battle: t('ac_type_team_battle'),
+    flash_sale: t('ac_type_flash_sale'),
+    growing_prize: t('ac_type_growing_prize'),
+    collect_letters: t('ac_type_collect_letters'),
+  };
+  return map[type] || t('ac_default_competition');
 };
 
 const competitionTypeIcons: Record<CompetitionType, React.ReactNode> = {
@@ -88,6 +92,7 @@ interface LetterBagParticipation {
 }
 
 export default function AllCompetitionsPanel() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCompetition, setSelectedCompetition] = useState<any>(null);
@@ -302,8 +307,8 @@ export default function AllCompetitionsPanel() {
   // NOW: Single server call for ALL tickets (no client-side loop)
   const participateMultipleBagsMutation = useMutation({
     mutationFn: async ({ comp, count }: { comp: any; count: number }) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
-      if (isProcessing) throw new Error('عملية جارية - يرجى الانتظار');
+      if (!user) throw new Error(t('ac_login_required'));
+      if (isProcessing) throw new Error(t('ac_processing'));
       
       setIsProcessing(true);
       
@@ -322,11 +327,11 @@ export default function AllCompetitionsPanel() {
           p_prize_won: null
         });
         
-        if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+        if (error) throw new Error(error.message || t('ac_join_failed'));
         
         const row = entryResult?.[0];
         if (!row?.success) {
-          throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
+          throw new Error(row?.error_message || t('ac_join_failed'));
         }
         
         // Generate results for UI display
@@ -375,15 +380,15 @@ export default function AllCompetitionsPanel() {
       setSelectedCompetition(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('ac_error_generic'));
       setIsProcessing(false);
     },
   });
 
   const participateMutation = useMutation({
     mutationFn: async (comp: any) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
-      if (isProcessing) throw new Error('عملية جارية - يرجى الانتظار');
+      if (!user) throw new Error(t('ac_login_required'));
+      if (isProcessing) throw new Error(t('ac_processing'));
       
       setIsProcessing(true);
       
@@ -401,11 +406,11 @@ export default function AllCompetitionsPanel() {
           p_prize_won: result.prize || null
         });
 
-        if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+        if (error) throw new Error(error.message || t('ac_join_failed'));
         
         const row = entryResult?.[0];
         if (!row?.success) {
-          throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
+          throw new Error(row?.error_message || t('ac_join_failed'));
         }
 
         // Update team counts if needed
@@ -475,17 +480,17 @@ export default function AllCompetitionsPanel() {
           }
         });
       } else if (type === 'everyone_wins' && data.prize) {
-        toast.success(`🎁 مبروك! ربحت: ${data.prize.name_ar || 'جائزة'}`);
+        toast.success(t('ac_won_prize', { prize: data.prize.name_ar || t('ac_default_prize') }));
       } else if (type === 'team_battle' && data.team) {
-        toast.success(`⚔️ انضممت للفريق ${data.team === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}!`);
+        toast.success(data.team === 'A' ? t('ac_team_joined_blue') : t('ac_team_joined_red'));
       } else {
-        toast.success(`✅ تم تسجيلك بنجاح!`);
+        toast.success(t('ac_registered_success'));
       }
       
       setSelectedCompetition(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('ac_error_generic'));
       setIsProcessing(false);
     },
   });
@@ -499,7 +504,7 @@ export default function AllCompetitionsPanel() {
   const getTypeBadge = (comp: any) => {
     const type = comp.competition_type as CompetitionType;
     const icon = competitionTypeIcons[type] || <Ticket className="h-3 w-3" />;
-    const label = competitionTypeLabels[type] || 'مسابقة';
+    const label = getCompetitionTypeLabel(type, t);
     
     if (comp.is_flash || type === 'flash_sale') {
       return (
@@ -525,7 +530,7 @@ export default function AllCompetitionsPanel() {
         return comp.win_probability ? (
           <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded">
             <Zap className="h-2.5 w-2.5" />
-            نسبة الفوز: {comp.win_probability}%
+            {t('ac_win_probability', { value: comp.win_probability })}
           </div>
         ) : null;
       
@@ -546,11 +551,11 @@ export default function AllCompetitionsPanel() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 text-[10px] text-violet-600 font-medium">
                 <Sparkles className="h-3 w-3" />
-                اجمع الأحرف واربح!
+                {t('ac_collect_letters_win')}
               </div>
               {collected.length > 0 && (
                 <Badge variant="secondary" className="text-[9px] bg-violet-500/20 text-violet-700">
-                  {collected.length} حرف
+                  {t('ac_letters_count', { count: collected.length })}
                 </Badge>
               )}
             </div>
@@ -578,9 +583,9 @@ export default function AllCompetitionsPanel() {
             {prizeWords.length > 0 && (
               <div className="text-[10px] text-center text-muted-foreground">
                 <Gift className="h-3 w-3 inline-block ml-1" />
-                {prizeWords[0]?.prize_name_ar || prizeWords[0]?.prize_name || 'جائزة'}
+                {prizeWords[0]?.prize_name_ar || prizeWords[0]?.prize_name || t('ac_default_prize')}
                 {prizeWords[0]?.stock !== undefined && (
-                  <span className="text-violet-600"> (متبقي: {prizeWords[0].stock})</span>
+                  <span className="text-violet-600"> {t('ac_remaining', { count: prizeWords[0].stock })}</span>
                 )}
               </div>
             )}
@@ -599,7 +604,7 @@ export default function AllCompetitionsPanel() {
             {userTeam && (
               <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
                 <Check className="h-2.5 w-2.5" />
-                أنت في الفريق {userTeam === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}
+                {userTeam === 'A' ? t('ac_in_team_blue') : t('ac_in_team_red')}
               </div>
             )}
           </div>
@@ -611,7 +616,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded">
             <Package className="h-2.5 w-2.5" />
-            {boxes.length} صناديق مختلفة
+            {t('ac_different_boxes', { count: boxes.length })}
           </div>
         );
       }
@@ -622,7 +627,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
             <Gift className="h-2.5 w-2.5" />
-            {available} جوائز متاحة - الكل رابح!
+            {t('ac_prizes_available', { count: available })}
           </div>
         );
       }
@@ -636,7 +641,7 @@ export default function AllCompetitionsPanel() {
         return currentTier ? (
           <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded">
             <TrendingUp className="h-2.5 w-2.5" />
-            السعر الحالي: {currentTier.price?.toLocaleString()} تذكرة
+            {t('ac_current_price', { price: currentTier.price?.toLocaleString() })}
           </div>
         ) : null;
       }
@@ -648,7 +653,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
             <Trophy className="h-2.5 w-2.5" />
-            الجائزة الحالية: {currentPrize.toLocaleString()}
+            {t('ac_current_prize', { value: currentPrize.toLocaleString() })}
           </div>
         );
       }
@@ -657,7 +662,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-slate-600 bg-slate-500/10 px-2 py-0.5 rounded">
             <Target className="h-2.5 w-2.5" />
-            الفائز مخفي حتى الإعلان
+            {t('ac_winner_hidden')}
           </div>
         );
       
@@ -666,12 +671,12 @@ export default function AllCompetitionsPanel() {
         return participated ? (
           <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
             <Check className="h-2.5 w-2.5" />
-            شاركت بالفعل
+            {t('ac_already_joined')}
           </div>
         ) : (
           <div className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded">
             <Gift className="h-2.5 w-2.5" />
-            مشاركة واحدة مجانية
+            {t('ac_one_free_entry')}
           </div>
         );
       }
@@ -707,7 +712,7 @@ export default function AllCompetitionsPanel() {
         ) : (
           <>
             <Play className="h-3 w-3 ml-1" />
-            شارك
+            {t('ac_join_btn')}
           </>
         )}
       </Button>
@@ -729,7 +734,7 @@ export default function AllCompetitionsPanel() {
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
           <Trophy className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          لا توجد مسابقات نشطة حالياً
+          {t('ac_no_competitions')}
         </CardContent>
       </Card>
     );
@@ -746,7 +751,7 @@ export default function AllCompetitionsPanel() {
           onClick={() => window.location.href = '/competitions/history'}
         >
           <Trophy className="h-3.5 w-3.5" />
-          سجل المسابقات السابقة والفائزين
+          {t('ac_history_title')}
         </Button>
       </div>
       
@@ -772,7 +777,7 @@ export default function AllCompetitionsPanel() {
               {comp.is_featured && (
                 <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[9px] font-bold px-2 py-0.5 flex items-center gap-0.5 justify-center">
                   <Sparkles className="h-2.5 w-2.5" />
-                  مميزة
+                  {t('ac_featured')}
                 </div>
               )}
               
@@ -797,12 +802,12 @@ export default function AllCompetitionsPanel() {
                   {isFree ? (
                     <>
                       <Gift className="h-2.5 w-2.5 ml-0.5" />
-                      مجاني
+                      {t('ac_free')}
                     </>
                   ) : (
                     <>
                       <Ticket className="h-2.5 w-2.5 ml-0.5" />
-                      {requiredTickets} تذكرة
+                      {t('ac_ticket_unit', { count: requiredTickets })}
                     </>
                   )}
                 </Badge>
@@ -812,7 +817,7 @@ export default function AllCompetitionsPanel() {
                   <div className="absolute bottom-2 right-2">
                     <Badge className="bg-green-500/90 text-[9px]">
                       <Check className="h-2 w-2 ml-0.5" />
-                      {userParticipation.length} مشاركة
+                      {t('ac_participations', { count: userParticipation.length })}
                     </Badge>
                   </div>
                 )}
@@ -860,7 +865,7 @@ export default function AllCompetitionsPanel() {
                     ) : (
                       <>
                         <Calendar className="h-2.5 w-2.5" />
-                        ينتهي: {formatBaghdadTime(comp.end_date)}
+                        {t('ac_ends_at', { date: formatBaghdadTime(comp.end_date) })}
                       </>
                     )}
                   </div>
@@ -876,7 +881,7 @@ export default function AllCompetitionsPanel() {
         <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl px-0 pb-0">
           <SheetHeader className="sticky top-0 z-10 bg-background px-4 pb-3 border-b">
             <div className="flex items-center justify-between">
-              <SheetTitle className="text-base">تفاصيل المسابقة</SheetTitle>
+              <SheetTitle className="text-base">{t('ac_details_title')}</SheetTitle>
               <SheetClose asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />
@@ -905,7 +910,7 @@ export default function AllCompetitionsPanel() {
               {selectedCompetition.is_featured && (
                 <Badge className="mb-3 bg-gradient-to-r from-primary to-primary/80">
                   <Sparkles className="h-3 w-3 ml-1" />
-                  مميزة
+                  {t('ac_featured')}
                 </Badge>
               )}
               
@@ -922,7 +927,7 @@ export default function AllCompetitionsPanel() {
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-green-700">مشاركاتك ({userParticipations[selectedCompetition.id].length})</span>
+                      <span className="font-medium text-green-700">{t('ac_your_participations', { count: userParticipations[selectedCompetition.id].length })}</span>
                     </div>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {userParticipations[selectedCompetition.id].map((p: any) => (
@@ -933,7 +938,7 @@ export default function AllCompetitionsPanel() {
                           <div className="flex items-center gap-1">
                             {p.team && (
                               <Badge variant="outline" className="text-[9px]">
-                                فريق {p.team === 'A' ? '🔵' : '🔴'}
+                                {p.team === 'A' ? t('ac_team_blue_emoji') : t('ac_team_red_emoji')}
                               </Badge>
                             )}
                           </div>
@@ -969,7 +974,7 @@ export default function AllCompetitionsPanel() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Trophy className="h-5 w-5 text-purple-500" />
-                    <span className="font-medium">الجائزة</span>
+                    <span className="font-medium">{t('ac_prize_label')}</span>
                   </div>
                   <p className="text-sm">{selectedCompetition.prize_description_ar}</p>
                   {selectedCompetition.prize_value && (
@@ -993,7 +998,7 @@ export default function AllCompetitionsPanel() {
                       className="p-0 h-auto text-xs"
                       onClick={() => setExpandedDesc(!expandedDesc)}
                     >
-                      {expandedDesc ? 'عرض أقل' : 'المزيد'}
+                      {expandedDesc ? t('ac_show_less') : t('ac_show_more')}
                       {expandedDesc ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
                     </Button>
                   )}
@@ -1007,7 +1012,7 @@ export default function AllCompetitionsPanel() {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>المشاركون</span>
+                        <span>{t('ac_participants')}</span>
                       </div>
                       <span className="font-bold">
                         {ticketCounts?.[selectedCompetition.id] || 0}
@@ -1036,7 +1041,7 @@ export default function AllCompetitionsPanel() {
                       <div>
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <Timer className="h-3 w-3" />
-                          الوقت المتبقي
+                          {t('ac_time_remaining')}
                         </p>
                         <CountdownTimer endDate={selectedCompetition.end_date} />
                       </div>
@@ -1044,7 +1049,7 @@ export default function AllCompetitionsPanel() {
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>تاريخ الانتهاء</span>
+                          <span>{t('ac_end_date')}</span>
                         </div>
                         <span className="font-medium">
                           {formatBaghdadTime(selectedCompetition.end_date, 'dd MMM yyyy - HH:mm')}
@@ -1061,11 +1066,11 @@ export default function AllCompetitionsPanel() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Ticket className="h-5 w-5 text-primary" />
-                      <span>رصيدك:</span>
-                      <span className="font-bold text-lg">{userTickets || 0} تذكرة</span>
+                      <span>{t('ac_your_balance')}</span>
+                      <span className="font-bold text-lg">{t('ac_balance_tickets', { count: userTickets || 0 })}</span>
                     </div>
                     <Badge variant="outline" className="text-sm px-3 py-1">
-                      المطلوب: {selectedCompetition.competition_type === 'free' ? 'مجاني' : `${selectedCompetition.required_tickets || 1} تذكرة`}
+                      {t('ac_required_label')} {selectedCompetition.competition_type === 'free' ? t('ac_free') : t('ac_required_tickets', { count: selectedCompetition.required_tickets || 1 })}
                     </Badge>
                   </div>
                 </CardContent>
@@ -1085,7 +1090,7 @@ export default function AllCompetitionsPanel() {
                   return (
                     <Button className="w-full" size="lg" disabled>
                       <Check className="h-4 w-4 ml-2" />
-                      شاركت بالفعل
+                      {t('ac_already_participated')}
                     </Button>
                   );
                 }
@@ -1095,7 +1100,7 @@ export default function AllCompetitionsPanel() {
                   return (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
-                        <span className="text-sm font-medium">عدد الأكياس:</span>
+                        <span className="text-sm font-medium">{t('ac_bags_count')}</span>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -1129,7 +1134,7 @@ export default function AllCompetitionsPanel() {
                         </div>
                       </div>
                       <p className="text-xs text-center text-muted-foreground">
-                        التكلفة: {(letterBagDialog.quantity * requiredPerBag).toLocaleString()} تذكرة
+                        {t('ac_total_cost', { cost: (letterBagDialog.quantity * requiredPerBag).toLocaleString() })}
                       </p>
                       <Button 
                         className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
@@ -1143,12 +1148,12 @@ export default function AllCompetitionsPanel() {
                         {participateMultipleBagsMutation.isPending ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                            جاري فتح الأكياس...
+                            {t('ac_opening_bags')}
                           </>
                         ) : (
                           <>
                             <Package className="h-4 w-4 ml-2" />
-                            افتح {letterBagDialog.quantity} كيس
+                            {t('ac_open_bags_btn', { count: letterBagDialog.quantity })}
                           </>
                         )}
                       </Button>
@@ -1166,12 +1171,12 @@ export default function AllCompetitionsPanel() {
                     {participateMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        جاري التسجيل...
+                        {t('ac_registering')}
                       </>
                     ) : isFree ? (
-                      'شارك مجاناً'
+                      t('ac_join_free')
                     ) : (
-                      'شارك الآن'
+                      t('ac_join_now')
                     )}
                   </Button>
                 );
@@ -1179,7 +1184,7 @@ export default function AllCompetitionsPanel() {
 
               {!user && (
                 <p className="text-xs text-center text-muted-foreground mt-2">
-                  سجّل الدخول للمشاركة في المسابقة
+                  {t('ac_login_to_join')}
                 </p>
               )}
             </div>
