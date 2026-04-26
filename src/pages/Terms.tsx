@@ -5,7 +5,10 @@ import Footer from '@/components/Footer';
 import { breadcrumbLd } from '@/lib/seo/structured';
 import {
   FileText, UserCog, ShoppingCart, Tag, Truck, RotateCcw, ShieldCheck,
-  Store, Gamepad2, Wallet, Copyright, AlertTriangle, Scale, RefreshCw, Mail
+  Store, Gamepad2, Wallet, Copyright, AlertTriangle, Scale, RefreshCw, Mail,
+  Crown, Trophy, Printer, Wrench, Bell, Cookie, Lock, MessageSquare,
+  Users, Gift, Ticket, Image as ImageIcon, Globe, BadgeCheck, Ban,
+  CreditCard, Eye, Megaphone, ScrollText, Building2, FileWarning,
 } from 'lucide-react';
 
 const Terms = () => {
