@@ -974,7 +974,7 @@ export default function AllCompetitionsPanel() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Trophy className="h-5 w-5 text-purple-500" />
-                    <span className="font-medium">الجائزة</span>
+                    <span className="font-medium">{t('ac_prize_label')}</span>
                   </div>
                   <p className="text-sm">{selectedCompetition.prize_description_ar}</p>
                   {selectedCompetition.prize_value && (
