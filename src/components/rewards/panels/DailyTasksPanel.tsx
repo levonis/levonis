@@ -605,8 +605,8 @@ export default function DailyTasksPanel() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{task.title_ar}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{task.description_ar}</p>
+                  <p className="font-medium text-sm">{pickI18n(task as any, 'title', language)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{pickI18n(task as any, 'description', language)}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <div className="flex items-center gap-1">
                       <Coins className="h-3.5 w-3.5 text-amber-500" />
