@@ -715,12 +715,12 @@ export default function ProfileSettings() {
             {saveMutation.isPending ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                جارٍ الحفظ…
+                {t('settings_saving')}
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Save className="h-4 w-4" />
-                حفظ الإعدادات
+                {t('settings_save_btn')}
               </span>
             )}
           </Button>
