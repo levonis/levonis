@@ -469,9 +469,9 @@ export default function LoyaltyLevelsPanel() {
       <Dialog open={purchaseDialog.open} onOpenChange={(open) => !purchasing && setPurchaseDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>تأكيد شراء البطاقة</DialogTitle>
+            <DialogTitle>{t('ll_purchase_dialog_title')}</DialogTitle>
             <DialogDescription>
-              هل تريد شراء بطاقة <strong>{purchaseDialog.level?.name_ar}</strong>؟
+              {t('ll_purchase_dialog_desc', { name: purchaseDialog.level?.name_ar || '' })}
             </DialogDescription>
           </DialogHeader>
           
@@ -479,27 +479,27 @@ export default function LoyaltyLevelsPanel() {
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">البطاقة:</span>
+                  <span className="text-muted-foreground">{t('ll_field_card')}</span>
                   <span className="font-bold">{purchaseDialog.level.name_ar}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">المدة:</span>
-                  <span>{purchaseDialog.level.duration_days} يوم</span>
+                  <span className="text-muted-foreground">{t('ll_field_duration')}</span>
+                  <span>{purchaseDialog.level.duration_days} {t('ll_days_unit')}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">طريقة الدفع:</span>
+                  <span className="text-muted-foreground">{t('ll_field_payment_method')}</span>
                   <span className="font-bold">
                     {purchaseDialog.method === 'wallet' 
-                      ? `${purchaseDialog.level.wallet_price?.toLocaleString()} د.ع (محفظة)` 
-                      : `${purchaseDialog.level.purchase_price_points?.toLocaleString()} نقطة`}
+                      ? t('ll_payment_wallet_label', { amount: purchaseDialog.level.wallet_price?.toLocaleString() })
+                      : t('ll_payment_points_label', { amount: purchaseDialog.level.purchase_price_points?.toLocaleString() })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">رصيدك:</span>
+                  <span className="text-muted-foreground">{t('ll_field_balance')}</span>
                   <span>
                     {purchaseDialog.method === 'wallet'
-                      ? `${walletBalance.toLocaleString()} د.ع`
-                      : `${availablePoints.toLocaleString()} نقطة`}
+                      ? `${walletBalance.toLocaleString()} ${t('ll_currency_iqd')}`
+                      : `${availablePoints.toLocaleString()} ${t('ll_points_unit')}`}
                   </span>
                 </div>
               </div>
