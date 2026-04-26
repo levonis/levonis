@@ -37,6 +37,7 @@ export default function AdminLoyaltyLevels() {
     min_points: 0,
     color: "#FFD700",
     discount_percentage: 0,
+    discount_percentage_max_amount: null as number | null,
     bonus_points_percentage: 0,
     free_shipping: false,
     free_shipping_min_order: 0,
@@ -205,14 +206,14 @@ export default function AdminLoyaltyLevels() {
       };
 
       if (editingLevel) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("loyalty_levels")
           .update(levelData)
           .eq("id", editingLevel.id);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("loyalty_levels")
           .insert([levelData]);
 
@@ -303,6 +304,7 @@ export default function AdminLoyaltyLevels() {
       min_points: 0,
       color: "#FFD700",
       discount_percentage: 0,
+      discount_percentage_max_amount: null,
       bonus_points_percentage: 0,
       free_shipping: false,
       free_shipping_min_order: 0,
@@ -351,6 +353,7 @@ export default function AdminLoyaltyLevels() {
       min_points: level.min_points,
       color: level.color,
       discount_percentage: level.discount_percentage || 0,
+      discount_percentage_max_amount: level.discount_percentage_max_amount ?? null,
       bonus_points_percentage: level.bonus_points_percentage || 0,
       free_shipping: level.free_shipping || false,
       free_shipping_min_order: level.free_shipping_min_order || 0,
@@ -690,8 +693,26 @@ export default function AdminLoyaltyLevels() {
                               value={formData.discount_percentage}
                               onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
                             />
+                            <div className="mt-2">
+                              <Label className="text-xs text-muted-foreground">
+                                الحد الأقصى للخصم بالدينار خلال صلاحية الباقة (اتركه فارغاً = بدون سقف)
+                              </Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1000"
+                                placeholder="مثال: 50000"
+                                value={(formData as any).discount_percentage_max_amount ?? ''}
+                                onChange={(e) => setFormData({
+                                  ...formData,
+                                  discount_percentage_max_amount: e.target.value === '' ? null : parseFloat(e.target.value),
+                                } as any)}
+                                disabled={!formData.discount_percentage || formData.discount_percentage <= 0}
+                              />
+                            </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              يظهر للمستخدمين غير الحاملين: "خصم X% مع بطاقة {formData.name_ar}"
+                              يظهر للمستخدمين غير الحاملين: "خصم {formData.discount_percentage || 0}% مع بطاقة {formData.name_ar}"
+                              {(formData as any).discount_percentage_max_amount > 0 && ` بحد أقصى ${Number((formData as any).discount_percentage_max_amount).toLocaleString()} د.ع`}
                             </p>
                           </div>
                           <div className="admin-form-group">
