@@ -589,9 +589,9 @@ export default function AllOffersPanel() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/30">
-                    <span className="text-[11px] text-muted-foreground">المجموع</span>
+                    <span className="text-[11px] text-muted-foreground">{t('ao_total')}</span>
                     <span className="font-black text-primary text-sm">
-                      {formatPrice(totalPrice)} {selectedOffer.currency || 'د.ع'}
+                      {formatPrice(totalPrice)} {selectedOffer.currency || t('ao_currency_iqd')}
                     </span>
                   </div>
                 </div>
