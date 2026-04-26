@@ -991,7 +991,7 @@ export default function AdminLoyaltyLevels() {
                       </AdminCardContent>
                     </AdminCard>
 
-                    {/* Auto-derived Benefits Preview (read-only) */}
+                    {/* Auto-derived Benefits — toggle each to enable/disable */}
                     <AdminCard>
                       <AdminCardHeader 
                         title="المزايا الظاهرة للعميل" 
@@ -999,60 +999,104 @@ export default function AdminLoyaltyLevels() {
                       />
                       <AdminCardContent>
                         <p className="text-xs text-muted-foreground mb-3">
-                          تُشتق هذه القائمة تلقائياً من المميزات الأساسية أعلاه ولا يمكن تعديلها يدوياً.
+                          فعّل أو أوقف كل ميزة. الميزة المُوقَفة لن تظهر للعميل ولن تُطبَّق في السلة.
                         </p>
                         {(() => {
-                          const derived: string[] = [];
-                          if (formData.discount_percentage > 0) {
-                            derived.push(
-                              formData.discount_percentage_max_amount && formData.discount_percentage_max_amount > 0
-                                ? `خصم ${formData.discount_percentage}% على جميع المنتجات (حتى ${formData.discount_percentage_max_amount.toLocaleString()} د.ع)`
-                                : `خصم ${formData.discount_percentage}% على جميع المنتجات`
-                            );
-                          }
-                          if (formData.bonus_points_percentage > 0) {
-                            derived.push(`نقاط إضافية ${formData.bonus_points_percentage}%`);
-                          }
-                          if (formData.free_shipping) {
-                            const methodsLabel = formData.free_shipping_methods.length === 0
-                              ? '—'
-                              : formData.free_shipping_methods.map((k) => k === 'standard' ? 'الاعتيادي' : k === 'personal' ? 'الشخصي' : k).join(' و');
-                            const minPart = formData.free_shipping_min_order > 0
-                              ? ` للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
-                              : '';
-                            const usesPart = formData.free_shipping_max_uses && formData.free_shipping_max_uses > 0
-                              ? ` (حتى ${formData.free_shipping_max_uses} مرات خلال صلاحية البطاقة)`
-                              : '';
-                            derived.push(`شحن مجاني (${methodsLabel})${minPart}${usesPart}`);
-                          }
-                          if (formData.vip_support) derived.push('دعم عملاء مميز وأولوية الرد');
-                          if (formData.priority_shipping) derived.push('أولوية في الشحن والتوصيل');
-                          if (formData.priority_packaging) derived.push('أولوية في التغليف');
-                          if (formData.priority_support) derived.push('دعم فني ذو أولوية');
-                          if (formData.early_access) derived.push('الوصول المبكر للمنتجات الجديدة');
-                          if (formData.exclusive_products) derived.push('منتجات حصرية لحاملي البطاقة');
-                          if (formData.card_discounts_enabled) derived.push('خصومات إضافية على منتجات مختارة');
-                          if (formData.wholesale_discount_enabled) derived.push('أسعار الجملة على المنتجات المؤهلة');
-                          if (formData.investment_enabled) derived.push('الوصول لميزة الاستثمار');
-                          if (formData.is_vip_plus) derived.push('عضوية VIP+ كاملة المزايا');
-                          if (formData.monthly_free_shipping > 0) derived.push(`${formData.monthly_free_shipping} شحنات مجانية شهرياً`);
-                          if (formData.free_daily_games > 0) derived.push(`${formData.free_daily_games} ألعاب مجانية يومياً`);
+                          const items: Array<{
+                            key: string;
+                            text: string;
+                            enabled: boolean;
+                            toggle: (v: boolean) => void;
+                            visible: boolean;
+                          }> = [
+                            {
+                              key: 'discount_percentage',
+                              visible: formData.discount_percentage > 0 || !!editingLevel,
+                              enabled: formData.discount_percentage > 0,
+                              toggle: (v) => setFormData({ ...formData, discount_percentage: v ? (formData.discount_percentage || 5) : 0 }),
+                              text: formData.discount_percentage > 0
+                                ? (formData.discount_percentage_max_amount && formData.discount_percentage_max_amount > 0
+                                    ? `خصم ${formData.discount_percentage}% على جميع المنتجات (حتى ${formData.discount_percentage_max_amount.toLocaleString()} د.ع)`
+                                    : `خصم ${formData.discount_percentage}% على جميع المنتجات`)
+                                : 'خصم نسبي على المنتجات',
+                            },
+                            {
+                              key: 'bonus_points_percentage',
+                              visible: formData.bonus_points_percentage > 0 || !!editingLevel,
+                              enabled: formData.bonus_points_percentage > 0,
+                              toggle: (v) => setFormData({ ...formData, bonus_points_percentage: v ? (formData.bonus_points_percentage || 10) : 0 }),
+                              text: formData.bonus_points_percentage > 0
+                                ? `نقاط إضافية ${formData.bonus_points_percentage}%`
+                                : 'نقاط إضافية على الطلبات',
+                            },
+                            {
+                              key: 'free_shipping',
+                              visible: true,
+                              enabled: formData.free_shipping,
+                              toggle: (v) => setFormData({ ...formData, free_shipping: v }),
+                              text: (() => {
+                                if (!formData.free_shipping) return 'شحن مجاني';
+                                const methodsLabel = formData.free_shipping_methods.length === 0
+                                  ? '—'
+                                  : formData.free_shipping_methods.map((k) => k === 'standard' ? 'الاعتيادي' : k === 'personal' ? 'الشخصي' : k).join(' و');
+                                const minPart = formData.free_shipping_min_order > 0
+                                  ? ` للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
+                                  : '';
+                                const usesPart = formData.free_shipping_max_uses && formData.free_shipping_max_uses > 0
+                                  ? ` (حتى ${formData.free_shipping_max_uses} مرات خلال صلاحية البطاقة)`
+                                  : '';
+                                return `شحن مجاني (${methodsLabel})${minPart}${usesPart}`;
+                              })(),
+                            },
+                            { key: 'vip_support', visible: true, enabled: formData.vip_support, toggle: (v) => setFormData({ ...formData, vip_support: v }), text: 'دعم عملاء مميز وأولوية الرد' },
+                            { key: 'priority_shipping', visible: true, enabled: formData.priority_shipping, toggle: (v) => setFormData({ ...formData, priority_shipping: v }), text: 'أولوية في الشحن والتوصيل' },
+                            { key: 'priority_packaging', visible: true, enabled: formData.priority_packaging, toggle: (v) => setFormData({ ...formData, priority_packaging: v }), text: 'أولوية في التغليف' },
+                            { key: 'priority_support', visible: true, enabled: formData.priority_support, toggle: (v) => setFormData({ ...formData, priority_support: v }), text: 'دعم فني ذو أولوية' },
+                            { key: 'early_access', visible: true, enabled: formData.early_access, toggle: (v) => setFormData({ ...formData, early_access: v }), text: 'الوصول المبكر للمنتجات الجديدة' },
+                            { key: 'exclusive_products', visible: true, enabled: formData.exclusive_products, toggle: (v) => setFormData({ ...formData, exclusive_products: v }), text: 'منتجات حصرية لحاملي البطاقة' },
+                            { key: 'card_discounts_enabled', visible: true, enabled: formData.card_discounts_enabled, toggle: (v) => setFormData({ ...formData, card_discounts_enabled: v }), text: 'خصومات إضافية على منتجات مختارة' },
+                            { key: 'wholesale_discount_enabled', visible: true, enabled: formData.wholesale_discount_enabled, toggle: (v) => setFormData({ ...formData, wholesale_discount_enabled: v }), text: 'أسعار الجملة على المنتجات المؤهلة' },
+                            { key: 'investment_enabled', visible: true, enabled: formData.investment_enabled, toggle: (v) => setFormData({ ...formData, investment_enabled: v }), text: 'الوصول لميزة الاستثمار' },
+                            { key: 'is_vip_plus', visible: true, enabled: formData.is_vip_plus, toggle: (v) => setFormData({ ...formData, is_vip_plus: v }), text: 'عضوية VIP+ كاملة المزايا' },
+                            {
+                              key: 'monthly_free_shipping',
+                              visible: formData.monthly_free_shipping > 0 || !!editingLevel,
+                              enabled: formData.monthly_free_shipping > 0,
+                              toggle: (v) => setFormData({ ...formData, monthly_free_shipping: v ? (formData.monthly_free_shipping || 1) : 0 }),
+                              text: formData.monthly_free_shipping > 0 ? `${formData.monthly_free_shipping} شحنات مجانية شهرياً` : 'شحنات مجانية شهرياً',
+                            },
+                            {
+                              key: 'free_daily_games',
+                              visible: formData.free_daily_games > 0 || !!editingLevel,
+                              enabled: formData.free_daily_games > 0,
+                              toggle: (v) => setFormData({ ...formData, free_daily_games: v ? (formData.free_daily_games || 1) : 0 }),
+                              text: formData.free_daily_games > 0 ? `${formData.free_daily_games} ألعاب مجانية يومياً` : 'ألعاب مجانية يومياً',
+                            },
+                          ].filter((it) => it.visible);
 
-                          if (derived.length === 0) {
+                          if (items.length === 0) {
                             return (
                               <div className="text-center py-8 text-muted-foreground">
                                 <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p>لا توجد مزايا مفعّلة بعد</p>
-                                <p className="text-xs">فعّل المميزات الأساسية أعلاه لتظهر هنا تلقائياً</p>
+                                <p>لا توجد مزايا متاحة</p>
                               </div>
                             );
                           }
                           return (
                             <ul className="space-y-2">
-                              {derived.map((text, i) => (
-                                <li key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/30 border border-border/50 text-sm">
-                                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                                  <span>{text}</span>
+                              {items.map((it) => (
+                                <li
+                                  key={it.key}
+                                  className={cn(
+                                    "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
+                                    it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                                  )}
+                                >
+                                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                                    <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
+                                    <span className={cn(!it.enabled && "line-through")}>{it.text}</span>
+                                  </div>
+                                  <Switch checked={it.enabled} onCheckedChange={it.toggle} />
                                 </li>
                               ))}
                             </ul>
