@@ -293,10 +293,10 @@ export default function ProfileSettings() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Not authenticated");
-      if (!fullName.trim()) throw new Error("الاسم مطلوب");
+      if (!fullName.trim()) throw new Error(t('settings_name_required'));
 
       if (phoneNumber && !isValidPhone(phoneNumber)) {
-        throw new Error("رقم الهاتف غير صحيح.");
+        throw new Error(t('settings_phone_invalid_save'));
       }
 
       let nextAvatarUrl: string | null = (profile as any)?.avatar_url ?? null;
