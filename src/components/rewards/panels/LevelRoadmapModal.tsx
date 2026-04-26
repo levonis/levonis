@@ -41,6 +41,7 @@ export default function LevelRoadmapModal({
   activeCardLevelId,
 }: LevelRoadmapModalProps) {
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] p-0 overflow-hidden">
