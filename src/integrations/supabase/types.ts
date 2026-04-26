@@ -5288,6 +5288,61 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_free_shipping_usage: {
+        Row: {
+          card_id: string
+          delivery_method_key: string
+          id: string
+          level_id: string
+          order_id: string | null
+          saved_amount: number
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          delivery_method_key: string
+          id?: string
+          level_id: string
+          order_id?: string | null
+          saved_amount?: number
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          delivery_method_key?: string
+          id?: string
+          level_id?: string
+          order_id?: string | null
+          saved_amount?: number
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_free_shipping_usage_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "user_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_free_shipping_usage_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_free_shipping_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_levels: {
         Row: {
           benefits: Json
@@ -5305,6 +5360,8 @@ export type Database = {
           frame_url: string | null
           free_daily_games: number | null
           free_shipping: boolean | null
+          free_shipping_max_uses: number | null
+          free_shipping_methods: Json
           free_shipping_min_order: number | null
           free_tickets_monthly: number | null
           icon: string | null
@@ -5345,6 +5402,8 @@ export type Database = {
           frame_url?: string | null
           free_daily_games?: number | null
           free_shipping?: boolean | null
+          free_shipping_max_uses?: number | null
+          free_shipping_methods?: Json
           free_shipping_min_order?: number | null
           free_tickets_monthly?: number | null
           icon?: string | null
@@ -5385,6 +5444,8 @@ export type Database = {
           frame_url?: string | null
           free_daily_games?: number | null
           free_shipping?: boolean | null
+          free_shipping_max_uses?: number | null
+          free_shipping_methods?: Json
           free_shipping_min_order?: number | null
           free_tickets_monthly?: number | null
           icon?: string | null
@@ -12067,6 +12128,10 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_card_free_shipping_used: {
+        Args: { p_card_id: string }
+        Returns: number
+      }
       get_card_percentage_discount_used: {
         Args: { p_card_id: string }
         Returns: number
