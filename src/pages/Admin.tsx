@@ -934,29 +934,35 @@ const Admin = () => {
     if (productInfo.name_ar) {
       const input = form.querySelector('#name_ar') as HTMLInputElement;
       if (input) input.value = productInfo.name_ar;
+      markFieldFilled('name_ar');
     }
     if (productInfo.name) {
       const input = form.querySelector('#name') as HTMLInputElement;
       if (input) input.value = productInfo.name;
+      markFieldFilled('name');
     }
     if (productInfo.name_ar && productInfo.name) {
       const slug = productInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const input = form.querySelector('#slug') as HTMLInputElement;
       if (input) input.value = slug;
+      markFieldFilled('slug');
     }
     if (productInfo.description_ar) {
       const textarea = form.querySelector('#description_ar') as HTMLTextAreaElement;
       if (textarea) textarea.value = productInfo.description_ar;
+      markFieldFilled('description_ar');
     }
     if (productInfo.description) {
       const textarea = form.querySelector('#description') as HTMLTextAreaElement;
       if (textarea) textarea.value = productInfo.description;
+      markFieldFilled('description');
     }
 
     // Set price (current price after discount)
     if (productInfo.price && productInfo.price > 0) {
       const priceInput = form.querySelector('#price') as HTMLInputElement;
       if (priceInput) priceInput.value = String(productInfo.price);
+      markFieldFilled('price');
     }
 
     // Set original source price ($) used by the pricing section.
@@ -971,9 +977,11 @@ const Admin = () => {
       window.dispatchEvent(new CustomEvent('admin-product-pricing-autofill', {
         detail: { originalPriceUsd: productInfo.original_price_usd }
       }));
+      markFieldFilled('original_price');
     } else if (productInfo.original_price && productInfo.original_price > 0) {
       const originalPriceInput = form.querySelector('input[name="original_price"]') as HTMLInputElement;
       if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
+      markFieldFilled('original_price');
     }
 
     // Auto-fill SEO short summary (tri-lang)
@@ -983,6 +991,7 @@ const Admin = () => {
         en: productInfo.short_summary.en || '',
         ku: productInfo.short_summary.ku || '',
       });
+      markFieldFilled('short_summary');
     }
 
     // Auto-fill searchable tags (keywords)
@@ -991,12 +1000,20 @@ const Admin = () => {
         .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
         .filter((t: string) => t.length > 0);
       setProductSearchableAttrs(Array.from(new Set(cleaned)));
+      markFieldFilled('searchable_tags');
     }
 
     // Auto-fill "Why this product" AI content
     if (productInfo.ai_content && typeof productInfo.ai_content === 'object') {
       setProductAIContent(productInfo.ai_content);
+      markFieldFilled('ai_content');
     }
+
+    if (productInfo.dimensions) markFieldFilled('dimensions');
+    if (productInfo.weight_kg) markFieldFilled('weight_kg');
+    if (Array.isArray(productInfo.images) && productInfo.images.length > 0) markFieldFilled('images');
+    if (Array.isArray(productInfo.options) && productInfo.options.length > 0) markFieldFilled('options');
+    if (Array.isArray(productInfo.colors) && productInfo.colors.length > 0) markFieldFilled('colors');
 
     // Collect option/color image URLs to exclude from main product images
     const optionColorImageUrls = new Set<string>();
