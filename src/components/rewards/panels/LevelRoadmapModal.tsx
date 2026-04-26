@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Lock, Gift, Star, Crown, Trophy, CreditCard, Zap } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface LevelPrize {
   id: string;
@@ -40,6 +41,7 @@ export default function LevelRoadmapModal({
   activeCardLevelId,
 }: LevelRoadmapModalProps) {
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] p-0 overflow-hidden">
@@ -147,7 +149,7 @@ export default function LevelRoadmapModal({
                                 {t('lr_level_n', { n: index + 1 })}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {xpReq > 0 ? `${xpReq.toLocaleString()} XP` : t('lr_base_level')}
+                                {xpReq > 0 ? `${fmt(xpReq)} XP` : t('lr_base_level')}
                               </p>
                             </div>
                           </div>
@@ -167,8 +169,8 @@ export default function LevelRoadmapModal({
                         {!isUnlocked && xpReq > 0 && (
                           <div className="mt-2">
                             <div className="flex justify-between text-[9px] text-muted-foreground mb-1">
-                              <span>{totalXp.toLocaleString()} XP</span>
-                              <span>{xpReq.toLocaleString()} XP</span>
+                              <span>{fmt(totalXp)} XP</span>
+                              <span>{fmt(xpReq)} XP</span>
                             </div>
                             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                               <div

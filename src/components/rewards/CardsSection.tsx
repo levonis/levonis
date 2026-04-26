@@ -13,6 +13,7 @@ import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 import { pickLocalized } from "@/lib/i18n/localizedField";
 
 interface CardsSectionProps {
@@ -22,6 +23,7 @@ interface CardsSectionProps {
 export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
   const [expandedCoupons, setExpandedCoupons] = useState(false);
 
   const shouldFetchUserData = activeSubTab === 'benefits' || activeSubTab === 'upgrade';
@@ -203,7 +205,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                     <div className="flex items-center gap-2">
                       {totalCouponValue > 0 && (
                         <Badge className="bg-amber-500">
-                          {totalCouponValue.toLocaleString()} {t('common_iqd')}
+                          {fmt(totalCouponValue)} {t('common_iqd')}
                         </Badge>
                       )}
                       {expandedCoupons ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -234,7 +236,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="shrink-0">
-                            {coupon.prize_value?.toLocaleString()} {t('common_iqd')}
+                            {fmt(coupon.prize_value ?? 0)} {t('common_iqd')}
                           </Badge>
                           <Button 
                             size="sm" 

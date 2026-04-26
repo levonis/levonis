@@ -26,6 +26,7 @@ import InstantWinReveal from "@/components/InstantWinReveal";
 import MysteryBoxReveal from "@/components/MysteryBoxReveal";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
@@ -93,6 +94,7 @@ interface LetterBagParticipation {
 
 export default function AllCompetitionsPanel() {
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCompetition, setSelectedCompetition] = useState<any>(null);
@@ -641,7 +643,7 @@ export default function AllCompetitionsPanel() {
         return currentTier ? (
           <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded">
             <TrendingUp className="h-2.5 w-2.5" />
-            {t('ac_current_price', { price: currentTier.price?.toLocaleString() })}
+            {t('ac_current_price', { price: fmt(currentTier.price ?? 0) })}
           </div>
         ) : null;
       }
@@ -653,7 +655,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
             <Trophy className="h-2.5 w-2.5" />
-            {t('ac_current_prize', { value: currentPrize.toLocaleString() })}
+            {t('ac_current_prize', { value: fmt(currentPrize) })}
           </div>
         );
       }
@@ -979,7 +981,7 @@ export default function AllCompetitionsPanel() {
                   <p className="text-sm">{selectedCompetition.prize_description_ar}</p>
                   {selectedCompetition.prize_value && (
                     <p className="text-xl font-bold text-primary mt-2">
-                      {selectedCompetition.prize_value.toLocaleString()} {selectedCompetition.currency}
+                      {fmt(selectedCompetition.prize_value)} {selectedCompetition.currency}
                     </p>
                   )}
                 </CardContent>
@@ -1134,7 +1136,7 @@ export default function AllCompetitionsPanel() {
                         </div>
                       </div>
                       <p className="text-xs text-center text-muted-foreground">
-                        {t('ac_total_cost', { cost: (letterBagDialog.quantity * requiredPerBag).toLocaleString() })}
+                        {t('ac_total_cost', { cost: fmt((letterBagDialog.quantity * requiredPerBag)) })}
                       </p>
                       <Button 
                         className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"

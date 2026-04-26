@@ -7,9 +7,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Shield, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 export default function AllPlansPanel() {
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const { data: plans, isLoading } = useQuery({
     queryKey: ['all-protection-plans-panel'],
     queryFn: async () => {
@@ -66,7 +68,7 @@ export default function AllPlansPanel() {
                   )}
                 </div>
                 <p className="text-xl font-bold text-primary mt-1">
-                  {plan.monthly_price?.toLocaleString()} {t('common_iqd')}
+                  {fmt(plan.monthly_price ?? 0)} {t('common_iqd')}
                   <span className="text-sm font-normal text-muted-foreground">{t('ap_per_month_short')}</span>
                 </p>
               </div>

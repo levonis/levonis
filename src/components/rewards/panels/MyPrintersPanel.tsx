@@ -8,10 +8,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Printer, Settings, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 export default function MyPrintersPanel() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
 
   const { data: printers, isLoading } = useQuery({
     queryKey: ['my-printers-panel', user?.id],
@@ -111,7 +113,7 @@ export default function MyPrintersPanel() {
                         {activeSub.protection_plans?.name_ar}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {activeSub.monthly_price?.toLocaleString()} {t('mp_per_month')}
+                        {fmt(activeSub.monthly_price ?? 0)} {t('mp_per_month')}
                       </p>
                     </div>
                   )}

@@ -11,6 +11,7 @@ import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 import PointsStorePanel from "./panels/PointsStorePanel";
 import { useLanguage } from "@/lib/i18n";
 import { pickLocalized } from "@/lib/i18n/localizedField";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;
@@ -19,6 +20,7 @@ interface PointsSectionProps {
 export default function PointsSection({ activeSubTab }: PointsSectionProps) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
 
   // Only fetch when summary tab is active
   const { data: userPoints, isLoading: loadingPoints } = useQuery({
@@ -103,7 +105,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                   <Coins className="h-4 w-4 text-amber-500" />
                   <span className="text-xs text-muted-foreground">{t('points_available')}</span>
                 </div>
-                <p className="text-2xl font-bold">{(userPoints?.available_points || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold">{fmt(userPoints?.available_points || 0)}</p>
               </CardContent>
             </Card>
             
@@ -113,7 +115,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                   <Wallet className="h-4 w-4 text-green-500" />
                   <span className="text-xs text-muted-foreground">{t('points_wallet_balance')}</span>
                 </div>
-                <p className="text-2xl font-bold">{(userWallet?.balance || 0).toLocaleString()} <span className="text-sm font-normal">{t('common_iqd')}</span></p>
+                <p className="text-2xl font-bold">{fmt(userWallet?.balance || 0)} <span className="text-sm font-normal">{t('common_iqd')}</span></p>
               </CardContent>
             </Card>
           </div>
@@ -136,7 +138,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                       {pickLocalized(userCard.loyalty_levels as any, 'name', language)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {((userPoints as any)?.total_xp || 0).toLocaleString()} XP
+                      {fmt((userPoints as any)?.total_xp || 0)} XP
                     </p>
                   </div>
                 </div>
@@ -156,7 +158,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                 {userCoupons.slice(0, 3).map((coupon: any) => (
                   <div key={coupon.id} className="flex items-center justify-between text-sm bg-background/50 rounded-lg p-2">
                     <code className="text-xs font-mono">{coupon.coupon_code}</code>
-                    <span className="text-primary font-bold">{coupon.discount_value.toLocaleString()} {t('common_iqd')}</span>
+                    <span className="text-primary font-bold">{fmt(coupon.discount_value)} {t('common_iqd')}</span>
                   </div>
                 ))}
               </div>

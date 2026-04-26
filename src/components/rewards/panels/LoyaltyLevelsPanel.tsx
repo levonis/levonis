@@ -15,10 +15,12 @@ import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function LoyaltyLevelsPanel() {
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showRoadmap, setShowRoadmap] = useState(false);
@@ -242,17 +244,17 @@ export default function LoyaltyLevelsPanel() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t('ll_xp_label')}</p>
-              <p className="text-2xl font-bold">{totalXp.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
+              <p className="text-2xl font-bold">{fmt(totalXp)} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Coins className="h-3 w-3" />
-              {t('ll_available_points')}: <strong className="text-foreground">{availablePoints.toLocaleString()}</strong>
+              {t('ll_available_points')}: <strong className="text-foreground">{fmt(availablePoints)}</strong>
             </span>
             <span className="flex items-center gap-1">
               <Wallet className="h-3 w-3" />
-              {t('ll_wallet')}: <strong className="text-foreground">{walletBalance.toLocaleString()} {t('ll_currency_iqd')}</strong>
+              {t('ll_wallet')}: <strong className="text-foreground">{fmt(walletBalance)} {t('ll_currency_iqd')}</strong>
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
@@ -357,11 +359,11 @@ export default function LoyaltyLevelsPanel() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{(level.purchase_price_points || 0).toLocaleString()} {t('ll_points_unit')}</span>
+                        <span>{fmt(level.purchase_price_points || 0)} {t('ll_points_unit')}</span>
                         {hasWalletPrice && (
                           <>
                             <span>•</span>
-                            <span className="text-emerald-600">{level.wallet_price.toLocaleString()} {t('ll_currency_iqd')}</span>
+                            <span className="text-emerald-600">{fmt(level.wallet_price)} {t('ll_currency_iqd')}</span>
                           </>
                         )}
                         <span>• {level.duration_days} {t('ll_days_unit')}</span>
@@ -492,16 +494,16 @@ export default function LoyaltyLevelsPanel() {
                   <span className="text-muted-foreground">{t('ll_field_payment_method')}</span>
                   <span className="font-bold">
                     {purchaseDialog.method === 'wallet' 
-                      ? t('ll_payment_wallet_label', { amount: purchaseDialog.level.wallet_price?.toLocaleString() })
-                      : t('ll_payment_points_label', { amount: purchaseDialog.level.purchase_price_points?.toLocaleString() })}
+                      ? t('ll_payment_wallet_label', { amount: fmt(purchaseDialog.level.wallet_price ?? 0) })
+                      : t('ll_payment_points_label', { amount: fmt(purchaseDialog.level.purchase_price_points ?? 0) })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('ll_field_balance')}</span>
                   <span>
                     {purchaseDialog.method === 'wallet'
-                      ? `${walletBalance.toLocaleString()} ${t('ll_currency_iqd')}`
-                      : `${availablePoints.toLocaleString()} ${t('ll_points_unit')}`}
+                      ? `${fmt(walletBalance)} ${t('ll_currency_iqd')}`
+                      : `${fmt(availablePoints)} ${t('ll_points_unit')}`}
                   </span>
                 </div>
               </div>
@@ -626,7 +628,7 @@ export default function LoyaltyLevelsPanel() {
                     onClick={() => setGiftDialog(prev => ({ ...prev, method: 'points' }))}
                   >
                     <Coins className="h-3 w-3" />
-                    {t('ll_points_btn', { amount: (giftDialog.level?.purchase_price_points || 0).toLocaleString() })}
+                    {t('ll_points_btn', { amount: fmt((giftDialog.level?.purchase_price_points || 0)) })}
                   </Button>
                   {giftDialog.level?.wallet_price > 0 && (
                     <Button
@@ -636,7 +638,7 @@ export default function LoyaltyLevelsPanel() {
                       onClick={() => setGiftDialog(prev => ({ ...prev, method: 'wallet' }))}
                     >
                       <Wallet className="h-3 w-3" />
-                      {t('ll_wallet_btn', { amount: giftDialog.level?.wallet_price?.toLocaleString() })}
+                      {t('ll_wallet_btn', { amount: fmt(giftDialog.level?.wallet_price ?? 0) })}
                     </Button>
                   )}
                 </div>
@@ -664,13 +666,13 @@ export default function LoyaltyLevelsPanel() {
                   <span className="text-muted-foreground">{t('ll_field_cost')}</span>
                   <span className="font-bold">
                     {giftDialog.method === 'wallet'
-                      ? `${giftDialog.level.wallet_price?.toLocaleString()} ${t('ll_currency_iqd')}`
-                      : `${(giftDialog.level.purchase_price_points || 0).toLocaleString()} ${t('ll_points_unit')}`}
+                      ? `${fmt(giftDialog.level.wallet_price ?? 0)} ${t('ll_currency_iqd')}`
+                      : `${fmt(giftDialog.level.purchase_price_points || 0)} ${t('ll_points_unit')}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('ll_field_balance')}</span>
-                  <span>{giftDialog.method === 'wallet' ? `${walletBalance.toLocaleString()} ${t('ll_currency_iqd')}` : `${availablePoints.toLocaleString()} ${t('ll_points_unit')}`}</span>
+                  <span>{giftDialog.method === 'wallet' ? `${fmt(walletBalance)} ${t('ll_currency_iqd')}` : `${fmt(availablePoints)} ${t('ll_points_unit')}`}</span>
                 </div>
               </div>
 

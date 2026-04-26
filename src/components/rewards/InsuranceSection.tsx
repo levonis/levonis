@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useLanguage } from "@/lib/i18n";
+import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 interface InsuranceSectionProps {
   activeSubTab: SubTabId;
@@ -40,6 +41,7 @@ interface InsuranceSectionProps {
 export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const queryClient = useQueryClient();
   const [expandedPrinter, setExpandedPrinter] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -134,7 +136,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
         toast.error(
           t('insurance_insufficient_balance_msg')
             .replace('{msg}', msg)
-            .replace('{balance}', (walletBalance || 0).toLocaleString())
+            .replace('{balance}', fmt((walletBalance || 0)))
         );
       } else {
         toast.error(msg);
@@ -248,7 +250,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                 {activeSub.protection_plans?.name_ar}
                               </span>
                               <Badge variant="outline" className="text-green-600 border-green-300">
-                                {activeSub.monthly_price?.toLocaleString()} {t('insurance_per_month')}
+                                {fmt(activeSub.monthly_price ?? 0)} {t('insurance_per_month')}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -285,12 +287,12 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                               <span className="text-xs line-through text-muted-foreground">
-                                                {plan.monthly_price?.toLocaleString()}
+                                                {fmt(plan.monthly_price ?? 0)}
                                               </span>
                                               <span className="text-sm font-bold text-primary">
-                                                {upgradeCost.toLocaleString()} {t('common_iqd')}
+                                                {fmt(upgradeCost)} {t('common_iqd')}
                                               </span>
-                                              <Badge className="bg-amber-500 text-[9px]">{t('insurance_discount')} {discount.toLocaleString()}</Badge>
+                                              <Badge className="bg-amber-500 text-[9px]">{t('insurance_discount')} {fmt(discount)}</Badge>
                                             </div>
                                           </div>
                                           <Button 
@@ -343,7 +345,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                       )}
                                     </div>
                                     <p className="text-sm font-bold text-primary mt-0.5">
-                                      {plan.monthly_price?.toLocaleString()} {t('insurance_per_month')}
+                                      {fmt(plan.monthly_price ?? 0)} {t('insurance_per_month')}
                                     </p>
                                   </div>
                                   <Button 
@@ -421,7 +423,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                         )}
                       </div>
                       <p className="text-2xl font-bold text-primary mt-1">
-                        {plan.monthly_price?.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">{t('insurance_per_month')}</span>
+                        {fmt(plan.monthly_price ?? 0)} <span className="text-sm font-normal text-muted-foreground">{t('insurance_per_month')}</span>
                       </p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -515,13 +517,13 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                       <div className="flex items-center justify-between text-sm">
                         <span>{t('insurance_cost_after_discount')}</span>
                         <span className="font-bold text-primary text-lg">
-                          {selectedPlan.upgradeCost?.toLocaleString()} {t('common_iqd')}
+                          {fmt(selectedPlan.upgradeCost ?? 0)} {t('common_iqd')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                         <span>{t('insurance_current_balance')}</span>
                         <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.upgradeCost || 0) ? 'text-green-600' : 'text-destructive'}`}>
-                          {(walletBalance || 0).toLocaleString()} {t('common_iqd')}
+                          {fmt(walletBalance || 0)} {t('common_iqd')}
                         </span>
                       </div>
                       {(walletBalance || 0) < (selectedPlan.upgradeCost || 0) && (
@@ -585,20 +587,20 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                     <div className="flex items-center justify-between text-sm">
                       <span>{t('insurance_monthly_cost')}</span>
                       <span className="font-bold text-primary text-lg">
-                        {selectedPlan.monthly_price?.toLocaleString()} {t('common_iqd')}
+                        {fmt(selectedPlan.monthly_price ?? 0)} {t('common_iqd')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t">
                       <span>{t('insurance_current_balance')}</span>
                       <span className={`font-bold ${(walletBalance || 0) >= (selectedPlan.monthly_price || 0) ? 'text-green-600' : 'text-destructive'}`}>
-                        {(walletBalance || 0).toLocaleString()} {t('common_iqd')}
+                        {fmt(walletBalance || 0)} {t('common_iqd')}
                       </span>
                     </div>
                     {(walletBalance || 0) < (selectedPlan.monthly_price || 0) && (
                       <p className="text-xs text-destructive mt-2 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" />
                         {t('insurance_balance_need_more')
-                          .replace('{amount}', ((selectedPlan.monthly_price || 0) - (walletBalance || 0)).toLocaleString())
+                          .replace('{amount}', fmt(((selectedPlan.monthly_price || 0) - (walletBalance || 0))))
                           .replace('{currency}', t('common_iqd'))}
                       </p>
                     )}
