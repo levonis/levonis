@@ -31,7 +31,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   orderId: string;
   orderItems: OrderItem[];
-  onSaved: () => void;
+  onSaved: (updated?: { subtotal: number; total_amount: number; items: OrderItem[] }) => void;
 }
 
 export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orderItems, onSaved }: Props) {
