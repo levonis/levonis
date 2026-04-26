@@ -644,7 +644,7 @@ export default function AllOffersPanel() {
                   </div>
                   {selectedColor && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
-                      <span className="text-muted-foreground">اللون</span>
+                      <span className="text-muted-foreground">{t('ao_color_label')}</span>
                       <span className="flex items-center gap-1">
                         <span className="w-3 h-3 rounded-full border" style={getColorSwatchStyle(selectedColor.hex_code)} />
                         <span className="font-medium">{selectedColor.name_ar}</span>
