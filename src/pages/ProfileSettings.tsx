@@ -485,10 +485,10 @@ export default function ProfileSettings() {
                   <div className="flex gap-2">
                     <Button size="sm" className="rounded-2xl backdrop-blur-xl bg-gradient-to-br from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 text-primary-foreground border border-white/20 shadow-[0_8px_32px_-4px_hsl(var(--primary)/0.4),inset_0_1px_0_0_hsl(0_0%_100%/0.2)] transition-all hover:scale-[1.02] active:scale-[0.98] flex-1" onClick={handleSavePhone} disabled={savingPhone}>
                       {savingPhone && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
-                      حفظ الرقم
+                      {t('settings_save_phone')}
                     </Button>
                     <Button size="sm" variant="outline" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => { setEditingPhone(false); setNewPhoneNumber(""); }}>
-                      إلغاء
+                      {t('settings_cancel')}
                     </Button>
                   </div>
                 </div>
@@ -497,16 +497,16 @@ export default function ProfileSettings() {
                   <Input value={phoneNumber || "—"} disabled placeholder="—" inputMode="tel" className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all flex-1" />
                   {canEditPhone ? (
                     <Button size="sm" variant="outline" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all  text-xs" onClick={() => { setEditingPhone(true); setNewPhoneNumber(phoneNumber); }}>
-                      تغيير
+                      {t('settings_change')}
                     </Button>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground whitespace-nowrap">بعد {phoneCooldownDaysLeft} يوم</p>
+                    <p className="text-[10px] text-muted-foreground whitespace-nowrap">{t('settings_after_days', { days: phoneCooldownDaysLeft })}</p>
                   )}
                 </div>
               )}
               <Badge variant={phoneVerified ? "secondary" : "outline"} className="gap-1.5 text-[11px]">
                 {phoneVerified ? <ShieldCheck className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
-                {phoneVerified ? "تم تأكيد الرقم" : "غير مؤكد"}
+                {phoneVerified ? t('settings_phone_verified') : t('settings_phone_unverified')}
               </Badge>
             </div>
           </div>
