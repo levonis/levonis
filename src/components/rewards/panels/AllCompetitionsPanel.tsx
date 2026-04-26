@@ -910,7 +910,7 @@ export default function AllCompetitionsPanel() {
               {selectedCompetition.is_featured && (
                 <Badge className="mb-3 bg-gradient-to-r from-primary to-primary/80">
                   <Sparkles className="h-3 w-3 ml-1" />
-                  مميزة
+                  {t('ac_featured')}
                 </Badge>
               )}
               
