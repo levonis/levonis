@@ -257,7 +257,7 @@ export default function DailyTasksPanel() {
           .eq('user_id', user.id)
           .eq('task_key', task.task_key)
           .maybeSingle();
-        if (existing) throw new Error('تم إكمال هذه المهمة مسبقاً');
+        if (existing) throw new Error(t('dt_already_completed'));
       } else {
         const today = new Date().toISOString().split('T')[0];
         const { data: existing } = await supabase
@@ -272,25 +272,25 @@ export default function DailyTasksPanel() {
 
       // Validate auto-check tasks
       if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile) {
-        throw new Error('يرجى إكمال ملفك في مجتمع ليفو أولاً (الاسم والصورة)');
+        throw new Error(t('dt_complete_community_profile_first'));
       }
       if (task.task_key === 'register_merchant') {
-        if (!autoCheckData?.isMerchant) throw new Error('يرجى التسجيل كتاجر في مجتمع ليفو أولاً');
-        if ((autoCheckData?.merchantProductCount || 0) < 3) throw new Error(`يرجى نشر ٣ منتجات على الأقل (لديك ${autoCheckData?.merchantProductCount || 0} حالياً)`);
+        if (!autoCheckData?.isMerchant) throw new Error(t('dt_register_merchant_first'));
+        if ((autoCheckData?.merchantProductCount || 0) < 3) throw new Error(t('dt_publish_min_products', { count: autoCheckData?.merchantProductCount || 0 }));
       }
       if (task.task_key === 'complete_profile' && !autoCheckData?.hasFullProfile) {
-        throw new Error('يرجى إكمال ملفك الشخصي أولاً (الاسم والصورة)');
+        throw new Error(t('dt_complete_profile_first'));
       }
       if (task.task_key === 'first_review' && !autoCheckData?.hasReview) {
-        throw new Error('يرجى إضافة تقييم لأحد المنتجات أولاً');
+        throw new Error(t('dt_add_review_first'));
       }
       if (task.task_key === 'weekly_purchase' && !autoCheckData?.hasWeeklyPurchase) {
-        throw new Error('يرجى شراء منتج هذا الأسبوع أولاً');
+        throw new Error(t('dt_buy_weekly_first'));
       }
 
       // Admin-approval tasks are now handled via proof dialog (handleSubmitProof)
       if (task.confirmation_type === 'admin_approval') {
-        throw new Error('يرجى استخدام نموذج الإرسال');
+        throw new Error(t('dt_use_proof_form'));
       }
 
 
