@@ -66,6 +66,7 @@ const Cart = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
   const [showDirectSaleDialog, setShowDirectSaleDialog] = useState(false);
+  const [showTierBreakdown, setShowTierBreakdown] = useState(false);
   const [isDirectSaleProcessing, setIsDirectSaleProcessing] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
