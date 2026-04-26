@@ -39,7 +39,7 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
-      toast.error('التثبيت غير متاح حالياً، جرب إعادة تحميل الصفحة');
+      toast.error(t('pwa_install_unavailable'));
       return;
     }
     try {
@@ -47,12 +47,12 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         setIsInstalled(true);
-        toast.success('تم تثبيت التطبيق بنجاح!');
+        toast.success(t('pwa_install_success'));
       }
       setDeferredPrompt(null);
     } catch (err) {
       console.error('Install prompt error:', err);
-      toast.error('حدث خطأ أثناء التثبيت، حاول مرة أخرى');
+      toast.error(t('pwa_install_error'));
     }
   };
 
@@ -105,14 +105,14 @@ function NotificationCard({ onDismiss }: { onDismiss: () => void }) {
         toast.success(t('pwa_notif_success'));
         onDismiss();
       } else if (result === 'denied') {
-        toast.error('تم رفض الإشعارات. يمكنك تفعيلها من إعدادات المتصفح');
+        toast.error(t('pwa_notif_denied'));
         onDismiss();
       } else {
-        toast.info('يرجى السماح بالإشعارات عند ظهور نافذة الإذن');
+        toast.info(t('pwa_notif_default_hint'));
       }
     } catch (err) {
       console.error('Notification permission error:', err);
-      toast.error('حدث خطأ في تفعيل الإشعارات');
+      toast.error(t('pwa_notif_error'));
     }
   };
 
