@@ -3,14 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n';
+import { pickI18n } from '@/lib/i18nField';
 
 const BundlesSection = () => {
+  const { t, language } = useLanguage();
   const { data: bundles } = useQuery({
     queryKey: ['home-bundles-preview'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, image_url, bundle_price, original_price, sale_type')
+        .select('id, title_ar, title_en, title_ku, image_url, bundle_price, original_price, sale_type')
         .eq('is_active', true)
         .order('display_order')
         .limit(6);
@@ -30,13 +33,13 @@ const BundlesSection = () => {
           <div className="w-7 h-7 rounded-lg bg-primary/10 backdrop-blur-md border border-primary/20 flex items-center justify-center">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
           </div>
-          <h2 className="text-sm font-black text-foreground tracking-tight">باقات وعروض</h2>
+          <h2 className="text-sm font-black text-foreground tracking-tight">{t('section_bundles_title')}</h2>
         </div>
         <Link
           to="/bundles"
           className="flex items-center gap-1 text-[11px] font-medium text-primary px-2.5 py-1 rounded-full bg-primary/5 backdrop-blur-md border border-primary/15 hover:bg-primary/10 transition-colors"
         >
-          الكل
+          {t('section_view_all')}
           <ArrowLeft className="h-2.5 w-2.5" />
         </Link>
       </div>
@@ -71,7 +74,7 @@ const BundlesSection = () => {
                 <div className="relative h-[88px] overflow-hidden">
                   <img
                     src={bundle.image_url}
-                    alt={bundle.title_ar}
+                    alt={pickI18n(bundle, 'title', language)}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none"
                     draggable={false}
                   />
@@ -92,7 +95,7 @@ const BundlesSection = () => {
               {/* Info */}
               <div className="relative z-20 px-2.5 pt-1.5 pb-2.5 space-y-1">
                 <p className="text-[11px] font-bold leading-tight line-clamp-1 text-foreground">
-                  {bundle.title_ar}
+                  {pickI18n(bundle, 'title', language)}
                 </p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm font-black text-primary">{formatPrice(bundle.bundle_price)}</span>

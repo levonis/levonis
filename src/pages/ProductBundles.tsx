@@ -9,20 +9,20 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
 
-const SALE_TYPE_LABELS: Record<string, string> = {
-  'direct': 'بيع مباشر',
-  'preorder-air': 'طلب مسبق (جوي)',
-  'preorder-sea': 'طلب مسبق (بحري)',
+const SALE_TYPE_KEYS: Record<string, 'sale_type_direct' | 'sale_type_preorder_air' | 'sale_type_preorder_sea'> = {
+  'direct': 'sale_type_direct',
+  'preorder-air': 'sale_type_preorder_air',
+  'preorder-sea': 'sale_type_preorder_sea',
 };
 
 const ProductBundles = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: bundles, isLoading } = useQuery({
     queryKey: ['product-bundles'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_bundles')
-        .select('id, title_ar, description_ar, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
+        .select('id, title_ar, title_en, title_ku, description_ar, description_en, description_ku, image_url, bundle_price, original_price, sale_type, display_order, bundle_items(product_id, quantity, selected_color, selected_option_id)')
         .eq('is_active', true)
         .order('display_order');
       if (error) throw error;
@@ -73,7 +73,7 @@ const ProductBundles = () => {
         <div className="flex items-center gap-2 mb-4">
           <Link
             to="/"
-            aria-label="العودة إلى الصفحة الرئيسية"
+            aria-label={t('bundles_back_home')}
             className="w-9 h-9 rounded-xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] flex items-center justify-center hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ArrowRight className="h-4 w-4 text-foreground" aria-hidden="true" />
@@ -81,7 +81,7 @@ const ProductBundles = () => {
           <div className="w-8 h-8 rounded-xl bg-primary/15 backdrop-blur-xl border border-primary/30 flex items-center justify-center" aria-hidden="true">
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
-          <h1 className="text-lg font-black text-foreground tracking-tight">باقات وعروض</h1>
+          <h1 className="text-lg font-black text-foreground tracking-tight">{t('section_bundles_title')}</h1>
         </div>
 
         {isLoading ? (
@@ -91,7 +91,7 @@ const ProductBundles = () => {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-white/10 dark:bg-white/[0.04] backdrop-blur-xl border border-white/15 dark:border-white/10 flex items-center justify-center">
               <Package className="h-8 w-8 text-muted-foreground/40" />
             </div>
-            <p className="text-sm text-muted-foreground">لا توجد باقات متاحة حالياً</p>
+            <p className="text-sm text-muted-foreground">{t('bundles_empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
@@ -138,7 +138,7 @@ const ProductBundles = () => {
                         <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none" aria-hidden="true">
                           <div className="absolute bg-destructive text-destructive-foreground text-[8px] font-bold px-6 py-0.5 rotate-[-35deg] origin-center whitespace-nowrap shadow-lg"
                             style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-35deg)', minWidth: '150%', textAlign: 'center' }}>
-                            نفذ من المخزون
+                            {t('bundles_out_of_stock')}
                           </div>
                         </div>
                       )}
@@ -150,7 +150,7 @@ const ProductBundles = () => {
                         </div>
                       )}
                       <div className="absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-md bg-background/70 backdrop-blur-xl border border-white/30 dark:border-white/15 text-foreground text-[8px] font-semibold leading-none shadow-sm" aria-hidden="true">
-                        {SALE_TYPE_LABELS[saleType] || saleType}
+                        {SALE_TYPE_KEYS[saleType] ? t(SALE_TYPE_KEYS[saleType]) : saleType}
                       </div>
                     </div>
 

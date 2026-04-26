@@ -1850,4 +1850,34 @@ export const en: TranslationKeys = {
   pwa_notif_denied: 'Notifications denied. You can enable them from your browser settings',
   pwa_notif_default_hint: 'Please allow notifications when the permission prompt appears',
   pwa_notif_error: 'Error enabling notifications',
+
+  // Sections / View all
+  section_bundles_title: 'Bundles & Offers',
+  section_reels_title: 'Reels',
+  section_view_all: 'View All',
+  section_view_details: 'View Details',
+
+  // Bundles page
+  bundles_back_home: 'Back to Home',
+  bundles_empty: 'No bundles available right now',
+  bundles_out_of_stock: 'Out of Stock',
+
+  // Sale type badges
+  sale_type_direct: 'Direct Sale',
+  sale_type_preorder_air: 'Pre-order (Air)',
+  sale_type_preorder_sea: 'Pre-order (Sea)',
+
+  // Cart shipping option labels
+  shipping_opt_air: 'Air shipping',
+  shipping_opt_sea: 'Sea shipping',
+  shipping_opt_direct: 'Direct sale',
+  shipping_opt_preorder: 'Pre-order',
+
+  // Delivery methods (cart)
+  delivery_method_standard_name: 'Standard Delivery',
+  delivery_method_standard_desc: 'Delivery via local shipping companies',
+  delivery_method_pickup_name: 'Pickup from Warehouse',
+  delivery_method_pickup_desc: 'Pick up your order directly from our warehouse — free',
+  delivery_method_personal_name: 'Personal Delivery',
+  delivery_method_personal_desc: 'Direct personal delivery to your doorstep',
 };

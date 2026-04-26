@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Gift, Ticket, Coins, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/lib/i18n';
 
 interface CartUpsellOffer {
   id: string;
@@ -21,6 +22,7 @@ interface CartUpsellOffer {
 
 export default function CartUpsellOffers() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: offers } = useQuery({
@@ -99,7 +101,7 @@ export default function CartUpsellOffers() {
           onClick={() => navigate('/offers')}
         >
           <ShoppingCart className="h-3 w-3" />
-          عرض التفاصيل
+          {t('section_view_details')}
         </Button>
       </div>
 

@@ -23,6 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
+import { translateShippingOption } from '@/lib/shippingLabel';
 
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
@@ -2151,7 +2152,7 @@ const Cart = () => {
                                       </span>
                                     )}
                                     {(item as any).shipping_option_name_ar && (
-                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{(item as any).shipping_option_name_ar}</span>
+                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{translateShippingOption((item as any).shipping_option_name_ar, t)}</span>
                                     )}
                                   </div>
                                 )}
@@ -2650,8 +2651,19 @@ const Cart = () => {
                               <RadioGroupItem value={method.method_key} id={`dm-${method.method_key}`} />
                               <div className="text-primary/70">{iconMap[method.icon] || <Package className="h-4 w-4" />}</div>
                               <Label htmlFor={`dm-${method.method_key}`} className="flex-1 cursor-pointer">
-                                <div className="font-bold text-sm text-foreground">{method.name_ar}</div>
-                                {method.description_ar && <div className="text-[11px] text-muted-foreground">{method.description_ar}</div>}
+                                <div className="font-bold text-sm text-foreground">{
+                                  method.method_key === 'standard' ? t('delivery_method_standard_name')
+                                  : method.method_key === 'pickup' ? t('delivery_method_pickup_name')
+                                  : method.method_key === 'personal' ? t('delivery_method_personal_name')
+                                  : method.name_ar
+                                }</div>
+                                {(() => {
+                                  const desc = method.method_key === 'standard' ? t('delivery_method_standard_desc')
+                                    : method.method_key === 'pickup' ? t('delivery_method_pickup_desc')
+                                    : method.method_key === 'personal' ? t('delivery_method_personal_desc')
+                                    : method.description_ar;
+                                  return desc ? <div className="text-[11px] text-muted-foreground">{desc}</div> : null;
+                                })()}
                               </Label>
                               <span className={`text-sm font-bold ${(method.method_key === 'pickup' || methodFreeApplied) ? 'text-green-500' : 'text-primary'}`}>
                                 {method.method_key === 'pickup' || methodFreeApplied ? t('cart_free_label') : `${formatPrice(previewFee)} ${t('cart_iqd_short')}`}
