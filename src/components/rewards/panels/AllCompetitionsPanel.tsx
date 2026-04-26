@@ -504,7 +504,7 @@ export default function AllCompetitionsPanel() {
   const getTypeBadge = (comp: any) => {
     const type = comp.competition_type as CompetitionType;
     const icon = competitionTypeIcons[type] || <Ticket className="h-3 w-3" />;
-    const label = competitionTypeLabels[type] || 'مسابقة';
+    const label = getCompetitionTypeLabel(type, t);
     
     if (comp.is_flash || type === 'flash_sale') {
       return (
