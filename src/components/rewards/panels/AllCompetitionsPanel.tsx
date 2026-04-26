@@ -817,7 +817,7 @@ export default function AllCompetitionsPanel() {
                   <div className="absolute bottom-2 right-2">
                     <Badge className="bg-green-500/90 text-[9px]">
                       <Check className="h-2 w-2 ml-0.5" />
-                      {userParticipation.length} مشاركة
+                      {t('ac_participations', { count: userParticipation.length })}
                     </Badge>
                   </div>
                 )}
