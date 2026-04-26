@@ -583,9 +583,9 @@ export default function AllCompetitionsPanel() {
             {prizeWords.length > 0 && (
               <div className="text-[10px] text-center text-muted-foreground">
                 <Gift className="h-3 w-3 inline-block ml-1" />
-                {prizeWords[0]?.prize_name_ar || prizeWords[0]?.prize_name || 'جائزة'}
+                {prizeWords[0]?.prize_name_ar || prizeWords[0]?.prize_name || t('ac_default_prize')}
                 {prizeWords[0]?.stock !== undefined && (
-                  <span className="text-violet-600"> (متبقي: {prizeWords[0].stock})</span>
+                  <span className="text-violet-600"> {t('ac_remaining', { count: prizeWords[0].stock })}</span>
                 )}
               </div>
             )}
