@@ -401,8 +401,8 @@ export default function ProfileSettings() {
   };
 
   const usernameHint = canEditUsername
-    ? "يمكنك تغيير اليوزرنيم مرة كل 14 يوم."
-    : `يمكن تغيير اسم المستخدم بعد ${cooldownDaysLeft} يوم`;
+    ? t('settings_username_hint')
+    : t('settings_username_cooldown', { days: cooldownDaysLeft });
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden" dir="rtl">
