@@ -72,12 +72,14 @@ const OrderDetail = () => {
   const { orderId } = useParams();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t, language, dir } = useLanguage();
   const [showAdminChat, setShowAdminChat] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const queryClient = useQueryClient();
-  
+  const dateLocale = language === 'ar' || language === 'ku' ? ar : enUS;
+
   useOrderRealtimeNotifications();
 
   const canQuery = !!orderId && !authLoading && (!!user || isAdmin);
