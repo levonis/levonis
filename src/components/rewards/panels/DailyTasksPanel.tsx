@@ -257,7 +257,7 @@ export default function DailyTasksPanel() {
           .eq('user_id', user.id)
           .eq('task_key', task.task_key)
           .maybeSingle();
-        if (existing) throw new Error('تم إكمال هذه المهمة مسبقاً');
+        if (existing) throw new Error(t('dt_already_completed'));
       } else {
         const today = new Date().toISOString().split('T')[0];
         const { data: existing } = await supabase
@@ -272,25 +272,25 @@ export default function DailyTasksPanel() {
 
       // Validate auto-check tasks
       if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile) {
-        throw new Error('يرجى إكمال ملفك في مجتمع ليفو أولاً (الاسم والصورة)');
+        throw new Error(t('dt_complete_community_profile_first'));
       }
       if (task.task_key === 'register_merchant') {
-        if (!autoCheckData?.isMerchant) throw new Error('يرجى التسجيل كتاجر في مجتمع ليفو أولاً');
-        if ((autoCheckData?.merchantProductCount || 0) < 3) throw new Error(`يرجى نشر ٣ منتجات على الأقل (لديك ${autoCheckData?.merchantProductCount || 0} حالياً)`);
+        if (!autoCheckData?.isMerchant) throw new Error(t('dt_register_merchant_first'));
+        if ((autoCheckData?.merchantProductCount || 0) < 3) throw new Error(t('dt_publish_min_products', { count: autoCheckData?.merchantProductCount || 0 }));
       }
       if (task.task_key === 'complete_profile' && !autoCheckData?.hasFullProfile) {
-        throw new Error('يرجى إكمال ملفك الشخصي أولاً (الاسم والصورة)');
+        throw new Error(t('dt_complete_profile_first'));
       }
       if (task.task_key === 'first_review' && !autoCheckData?.hasReview) {
-        throw new Error('يرجى إضافة تقييم لأحد المنتجات أولاً');
+        throw new Error(t('dt_add_review_first'));
       }
       if (task.task_key === 'weekly_purchase' && !autoCheckData?.hasWeeklyPurchase) {
-        throw new Error('يرجى شراء منتج هذا الأسبوع أولاً');
+        throw new Error(t('dt_buy_weekly_first'));
       }
 
       // Admin-approval tasks are now handled via proof dialog (handleSubmitProof)
       if (task.confirmation_type === 'admin_approval') {
-        throw new Error('يرجى استخدام نموذج الإرسال');
+        throw new Error(t('dt_use_proof_form'));
       }
 
 
@@ -307,8 +307,8 @@ export default function DailyTasksPanel() {
       if (taskError) throw taskError;
 
       const desc = bonusPoints > 0
-        ? `مهمة: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ستريك)`
-        : `مهمة: ${task.title_ar}`;
+        ? `${t('dt_task_label')}: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
+        : `${t('dt_task_label')}: ${task.title_ar}`;
 
       const { error: pointsError } = await supabase
         .from('points_transactions')
@@ -341,11 +341,11 @@ export default function DailyTasksPanel() {
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
       if (result.pendingApproval) {
-        toast.success('تم إرسال طلبك للمراجعة من قبل الإدارة ⏳');
+        toast.success(t('dt_request_sent_review'));
       } else {
         const msg = result.bonusPoints > 0
-          ? `+${result.totalPoints} نقطة (منها ${result.bonusPoints} مكافأة ستريك 🔥)`
-          : `+${result.totalPoints} نقطة ✅`;
+          ? t('dt_points_with_streak', { total: result.totalPoints, bonus: result.bonusPoints })
+          : t('dt_points_only', { total: result.totalPoints });
         toast.success(msg);
       }
     },
@@ -375,7 +375,7 @@ export default function DailyTasksPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('حجم الصورة كبير جداً (الحد الأقصى 5MB)');
+      toast.error(t('dt_image_too_large'));
       return;
     }
     setProofImage(file);
@@ -384,14 +384,14 @@ export default function DailyTasksPanel() {
 
   const handleSubmitProof = async () => {
     if (!user || !proofTask) return;
-    if (!proofImage) { toast.error('يرجى رفع صورة إثبات'); return; }
-    if (!instagramUsername.trim()) { toast.error('يرجى كتابة يوزر الانستغرام'); return; }
+    if (!proofImage) { toast.error(t('dt_upload_proof_required')); return; }
+    if (!instagramUsername.trim()) { toast.error(t('dt_instagram_required')); return; }
     
     setIsSubmittingProof(true);
     try {
       // Check if already pending
       const existingPending = pendingApprovals?.find((p: any) => p.task_key === proofTask.task_key && p.status === 'pending');
-      if (existingPending) throw new Error('طلبك قيد المراجعة بالفعل');
+      if (existingPending) throw new Error(t('dt_already_pending'));
 
       // Upload proof image
       const fileExt = proofImage.name.split('.').pop();
@@ -417,13 +417,19 @@ export default function DailyTasksPanel() {
 
       // Get user profile for notification
       const { data: userProfile } = await supabase.from('profiles').select('full_name, username').eq('id', user.id).single();
-      const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+      const userName = userProfile?.full_name || userProfile?.username || t('dt_default_user');
 
       // Send Telegram notification with approve/reject buttons
       try {
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `📋 <b>طلب تحقق مهمة جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المهمة: ${proofTask.title_ar}\n📷 انستغرام: @${instagramUsername.trim().replace('@', '')}\n💰 النقاط: ${proofTask.points_reward}\n\n🔗 <a href="${urlData.publicUrl}">عرض صورة الإثبات</a>`,
+            message: t('dt_telegram_notification', {
+              userName,
+              task: proofTask.title_ar,
+              instagram: instagramUsername.trim().replace('@', ''),
+              points: proofTask.points_reward,
+              url: urlData.publicUrl,
+            }),
             reply_markup: {
               inline_keyboard: [
                 [
@@ -437,10 +443,10 @@ export default function DailyTasksPanel() {
       } catch (e) { console.error('Telegram notification error:', e); }
 
       queryClient.invalidateQueries({ queryKey: ['pending-task-approvals'] });
-      toast.success('تم إرسال طلبك للمراجعة ✅');
+      toast.success(t('dt_proof_sent'));
       setProofDialogOpen(false);
     } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ');
+      toast.error(err.message || t('common_error'));
     } finally {
       setIsSubmittingProof(false);
     }
@@ -482,9 +488,9 @@ export default function DailyTasksPanel() {
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-2">
             <Flame className="h-5 w-5 text-orange-500" />
-            <span className="font-medium text-sm">الستريك اليومي</span>
+            <span className="font-medium text-sm">{t('dt_streak_title')}</span>
             <span className="text-xs bg-orange-500/20 text-orange-600 px-2 py-0.5 rounded-full font-bold mr-auto">
-              {streak} يوم 🔥
+              {streak} {t('dt_streak_days')} 🔥
             </span>
           </div>
           <div className="flex gap-1">
@@ -498,7 +504,7 @@ export default function DailyTasksPanel() {
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5">
-            سجّل دخولك يومياً لزيادة الستريك والحصول على نقاط إضافية
+            {t('dt_streak_hint')}
           </p>
         </CardContent>
       </Card>
@@ -518,26 +524,26 @@ export default function DailyTasksPanel() {
 
         if (task.task_key === 'complete_community_profile' && !autoCheckData?.hasProfile && !isCompleted) {
           canComplete = false;
-          statusText = 'أكمل ملفك أولاً';
+          statusText = t('dt_status_complete_profile_first');
         }
         if (task.task_key === 'complete_profile' && !autoCheckData?.hasFullProfile && !isCompleted) {
           canComplete = false;
-          statusText = 'أكمل بياناتك وأضف صورة أولاً';
+          statusText = t('dt_status_complete_data_first');
         }
         if (task.task_key === 'first_review' && !autoCheckData?.hasReview && !isCompleted) {
           canComplete = false;
-          statusText = 'أضف تقييم لمنتج أولاً';
+          statusText = t('dt_status_add_review_first');
         }
         if (task.task_key === 'weekly_purchase' && !autoCheckData?.hasWeeklyPurchase && !isCompleted) {
           canComplete = false;
-          statusText = 'اشترِ منتج هذا الأسبوع أولاً';
+          statusText = t('dt_status_buy_weekly_first');
         }
         if (task.task_key === 'register_merchant' && !isCompleted) {
           const isMerch = autoCheckData?.isMerchant || false;
           const prodCount = Math.min(autoCheckData?.merchantProductCount || 0, 3);
           canComplete = isMerch && prodCount >= 3;
-          if (!isMerch) statusText = '❶ سجّل كتاجر أولاً';
-          else if (prodCount < 3) statusText = `❷ انشر ${3 - prodCount} منتجات إضافية (${prodCount}/٣)`;
+          if (!isMerch) statusText = t('dt_status_register_merchant_step');
+          else if (prodCount < 3) statusText = t('dt_status_publish_more_step', { remaining: 3 - prodCount, count: prodCount });
         }
         if (isPending) {
           canComplete = false;
@@ -571,18 +577,18 @@ export default function DailyTasksPanel() {
                     </div>
                     {streakBonus > 0 && !isCompleted && (
                       <span className="text-[10px] bg-orange-500/15 text-orange-600 px-1.5 py-0.5 rounded-full">
-                        +{streakBonus} ستريك 🔥
+                        +{streakBonus} {t('dt_streak_label')} 🔥
                       </span>
                     )}
                     {isOnceTask && !isCompleted && (
-                      <span className="text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full">مرة واحدة</span>
+                      <span className="text-[10px] bg-blue-500/15 text-blue-600 px-1.5 py-0.5 rounded-full">{t('dt_label_one_time')}</span>
                     )}
                     {isAdminTask && !isCompleted && !isPending && (
-                      <span className="text-[10px] bg-purple-500/15 text-purple-600 px-1.5 py-0.5 rounded-full">تحقق يدوي</span>
+                      <span className="text-[10px] bg-purple-500/15 text-purple-600 px-1.5 py-0.5 rounded-full">{t('dt_label_manual_verify')}</span>
                     )}
                   </div>
                   {isPending && (
-                    <p className="text-[10px] text-amber-600 mt-1 font-medium">⏳ قيد مراجعة الإدارة</p>
+                    <p className="text-[10px] text-amber-600 mt-1 font-medium">{t('dt_label_pending_admin')}</p>
                   )}
                   {statusText && !isPending && (
                     <p className="text-[10px] text-orange-500 mt-1">{statusText}</p>
@@ -591,12 +597,12 @@ export default function DailyTasksPanel() {
                     <div className="mt-2 space-y-1.5">
                       <div className="flex items-center gap-2 text-[10px]">
                         <span className={autoCheckData?.isMerchant ? 'text-green-600' : 'text-muted-foreground'}>
-                          {autoCheckData?.isMerchant ? '✅' : '⬜'} التسجيل كتاجر
+                          {autoCheckData?.isMerchant ? '✅' : '⬜'} {t('dt_register_as_merchant_check')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px]">
                         <span className={(autoCheckData?.merchantProductCount || 0) >= 3 ? 'text-green-600' : 'text-muted-foreground'}>
-                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} نشر ٣ منتجات ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/٣)
+                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} {t('dt_publish_3_products_check')} ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/٣)
                         </span>
                       </div>
                       <Progress 
@@ -612,7 +618,7 @@ export default function DailyTasksPanel() {
                     disabled={isTaskLoading || !canComplete}
                   >
                     {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 
-                      canComplete ? (isAdminTask ? 'إرسال' : t('tasks_start')) : '⏳'}
+                      canComplete ? (isAdminTask ? t('dt_btn_send') : t('tasks_start')) : '⏳'}
                   </Button>
                 )}
               </div>
@@ -669,7 +675,7 @@ export default function DailyTasksPanel() {
       <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-right">إرسال إثبات المهمة</DialogTitle>
+            <DialogTitle className="text-right">{t('dt_dialog_title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -679,7 +685,7 @@ export default function DailyTasksPanel() {
 
             {/* Instagram Username */}
             <div className="space-y-2">
-              <Label className="text-sm">يوزر الانستغرام</Label>
+              <Label className="text-sm">{t('dt_instagram_label')}</Label>
               <div className="relative">
                 <Instagram className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -694,7 +700,7 @@ export default function DailyTasksPanel() {
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <Label className="text-sm">صورة الإثبات</Label>
+              <Label className="text-sm">{t('dt_proof_image_label')}</Label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -704,7 +710,7 @@ export default function DailyTasksPanel() {
               />
               {proofImagePreview ? (
                 <div className="relative rounded-lg overflow-hidden border">
-                  <img src={proofImagePreview} alt="إثبات" className="w-full max-h-48 object-contain bg-muted/20" />
+                  <img src={proofImagePreview} alt={t('dt_proof_alt')} className="w-full max-h-48 object-contain bg-muted/20" />
                   <Button
                     size="icon"
                     variant="destructive"
@@ -721,16 +727,16 @@ export default function DailyTasksPanel() {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">اضغط لرفع صورة</span>
+                  <span className="text-xs text-muted-foreground">{t('dt_proof_upload_hint')}</span>
                 </Button>
               )}
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setProofDialogOpen(false)}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setProofDialogOpen(false)}>{t('dt_btn_cancel')}</Button>
             <Button onClick={handleSubmitProof} disabled={isSubmittingProof || !proofImage || !instagramUsername.trim()}>
               {isSubmittingProof ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-              إرسال للمراجعة
+              {t('dt_btn_send_for_review')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -765,7 +771,7 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
 
       const { error: pointsError } = await supabase.from('points_transactions').insert({
         user_id: user.id, points: reviewPoints, type: 'earned', source: 'review',
-        description: `تقييم: ${item.product_name_ar || item.product_name}`,
+        description: t('dt_review_description', { product: item.product_name_ar || item.product_name }),
         related_id: item.product_id,
       });
       if (pointsError) throw pointsError;
