@@ -25,6 +25,8 @@ interface SavingsItem {
 }
 
 export default function SavingsPopup({ open, onOpenChange, userId, originRect }: SavingsPopupProps) {
+  const { t, language } = useLanguage();
+  const numLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
   const { data, isLoading } = useQuery({
     queryKey: ['user-savings-popup', userId],
     enabled: open && !!userId,
