@@ -1669,6 +1669,115 @@ Return JSON ONLY:
       }
     }
 
+    // ===== STEP: Fallback AI call for SEO + AI Content if missing =====
+    const ssEmpty = !productInfo.short_summary || (!productInfo.short_summary.ar && !productInfo.short_summary.en && !productInfo.short_summary.ku);
+    const tagsEmpty = !Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0;
+    const aiC = productInfo.ai_content || {};
+    const aiEmpty = !aiC || (
+      (!aiC.problem_solved || (!aiC.problem_solved.ar && !aiC.problem_solved.en && !aiC.problem_solved.ku)) &&
+      (!aiC.target_audience || (!aiC.target_audience.ar && !aiC.target_audience.en && !aiC.target_audience.ku)) &&
+      (!Array.isArray(aiC.benefits) || aiC.benefits.length === 0) &&
+      (!Array.isArray(aiC.usage) || aiC.usage.length === 0) &&
+      (!Array.isArray(aiC.specifications) || aiC.specifications.length === 0)
+    );
+
+    if (ssEmpty || tagsEmpty || aiEmpty) {
+      console.log('SEO/AI content missing, generating via dedicated fallback call:', { ssEmpty, tagsEmpty, aiEmpty });
+      try {
+        const seoPrompt = `أنت كاتب SEO ومسوق منتجات محترف. لديك المنتج التالي:
+
+الاسم (EN): ${productInfo.name || ''}
+الاسم (AR): ${productInfo.name_ar || ''}
+الوصف (EN): ${(productInfo.description || '').slice(0, 500)}
+الوصف (AR): ${(productInfo.description_ar || '').slice(0, 500)}
+المواصفات المعروفة: ${productInfo.dimensions ? `أبعاد ${productInfo.dimensions.length_cm}×${productInfo.dimensions.width_cm}×${productInfo.dimensions.height_cm} سم` : ''} ${productInfo.weight_kg ? `وزن ${productInfo.weight_kg} كغ` : ''}
+
+مهمتك: أنتج JSON كامل بالحقول التالية. كل الحقول إلزامية - لا تترك أياً منها فارغاً. استخدم معرفتك العامة بالمنتج لاستنتاج كل شيء.
+
+أرجع JSON فقط بهذا الشكل:
+{
+  "short_summary": {
+    "ar": "ملخص جذاب ≤ 160 حرف بالعربية",
+    "en": "Catchy summary ≤ 160 chars in English",
+    "ku": "پوختەی سەرنجڕاکێش ≤ ١٦٠ پیت بە کوردی"
+  },
+  "searchable_tags": ["كلمة 1", "keyword 2", "كلمة 3", "tag 4", "كلمة 5"],
+  "ai_content": {
+    "problem_solved": {"ar": "...", "en": "...", "ku": "..."},
+    "target_audience": {"ar": "...", "en": "...", "ku": "..."},
+    "benefits": [
+      {"ar": "فائدة ١", "en": "Benefit 1", "ku": "سوود ١"},
+      {"ar": "فائدة ٢", "en": "Benefit 2", "ku": "سوود ٢"},
+      {"ar": "فائدة ٣", "en": "Benefit 3", "ku": "سوود ٣"}
+    ],
+    "usage": [
+      {"ar": "خطوة ١", "en": "Step 1", "ku": "هەنگاو ١"},
+      {"ar": "خطوة ٢", "en": "Step 2", "ku": "هەنگاو ٢"}
+    ],
+    "specifications": [
+      {"key": {"ar": "المادة", "en": "Material", "ku": "ماددە"}, "value": {"ar": "...", "en": "...", "ku": "..."}},
+      {"key": {"ar": "...", "en": "...", "ku": "..."}, "value": {"ar": "...", "en": "...", "ku": "..."}}
+    ]
+  }
+}
+
+قواعد صارمة:
+- 3-5 فوائد، 2-4 خطوات استخدام، 3-6 مواصفات
+- كل حقل بـ 3 لغات (ar, en, ku) بدون استثناء
+- لا تستخدم placeholder مثل "..." في الإخراج النهائي - املأ بقيم حقيقية
+- لا تكتب أي نص خارج JSON`;
+
+        const seoResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              { role: 'system', content: 'أنت كاتب SEO ومسوق منتجات محترف. أنتج محتوى تسويقي عالي الجودة بـ 3 لغات. أرجع JSON صحيح فقط.' },
+              { role: 'user', content: seoPrompt }
+            ],
+            temperature: 0.4,
+            max_tokens: 4000,
+          }),
+        });
+
+        if (seoResponse.ok) {
+          const seoData = await seoResponse.json();
+          const seoText = seoData.choices[0]?.message?.content || '';
+          const seoMatch = seoText.match(/\{[\s\S]*\}/);
+          if (seoMatch) {
+            const seo = JSON.parse(seoMatch[0]);
+            if (ssEmpty && seo.short_summary && typeof seo.short_summary === 'object') {
+              productInfo.short_summary = {
+                ar: typeof seo.short_summary.ar === 'string' ? seo.short_summary.ar.slice(0, 200) : '',
+                en: typeof seo.short_summary.en === 'string' ? seo.short_summary.en.slice(0, 200) : '',
+                ku: typeof seo.short_summary.ku === 'string' ? seo.short_summary.ku.slice(0, 200) : '',
+              };
+              console.log('Filled short_summary via fallback');
+            }
+            if (tagsEmpty && Array.isArray(seo.searchable_tags)) {
+              productInfo.searchable_tags = seo.searchable_tags
+                .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
+                .filter((t: string) => t.length > 0)
+                .slice(0, 20);
+              console.log('Filled searchable_tags via fallback:', productInfo.searchable_tags.length);
+            }
+            if (aiEmpty && seo.ai_content && typeof seo.ai_content === 'object') {
+              productInfo.ai_content = seo.ai_content;
+              console.log('Filled ai_content via fallback');
+            }
+          }
+        } else {
+          console.error('SEO fallback AI call failed:', seoResponse.status);
+        }
+      } catch (seoErr) {
+        console.error('SEO fallback error:', seoErr);
+      }
+    }
+
     // ===== STEP: Calculate air shipping cost =====
     let estimatedAirShippingCost: number | null = null;
     
