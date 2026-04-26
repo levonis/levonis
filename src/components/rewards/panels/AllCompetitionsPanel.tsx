@@ -327,11 +327,11 @@ export default function AllCompetitionsPanel() {
           p_prize_won: null
         });
         
-        if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+        if (error) throw new Error(error.message || t('ac_join_failed'));
         
         const row = entryResult?.[0];
         if (!row?.success) {
-          throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
+          throw new Error(row?.error_message || t('ac_join_failed'));
         }
         
         // Generate results for UI display
