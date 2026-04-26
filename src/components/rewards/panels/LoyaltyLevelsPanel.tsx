@@ -240,22 +240,22 @@ export default function LoyaltyLevelsPanel() {
               <Zap className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">نقاط الخبرة (XP)</p>
+              <p className="text-xs text-muted-foreground">{t('ll_xp_label')}</p>
               <p className="text-2xl font-bold">{totalXp.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">XP</span></p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Coins className="h-3 w-3" />
-              النقاط المتاحة: <strong className="text-foreground">{availablePoints.toLocaleString()}</strong>
+              {t('ll_available_points')}: <strong className="text-foreground">{availablePoints.toLocaleString()}</strong>
             </span>
             <span className="flex items-center gap-1">
               <Wallet className="h-3 w-3" />
-              المحفظة: <strong className="text-foreground">{walletBalance.toLocaleString()} د.ع</strong>
+              {t('ll_wallet')}: <strong className="text-foreground">{walletBalance.toLocaleString()} {t('ll_currency_iqd')}</strong>
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            كل نقطة تكسبها = 2 XP • البطاقات تُشترى بالنقاط أو المحفظة
+            {t('ll_xp_hint')}
           </p>
         </CardContent>
       </Card>
