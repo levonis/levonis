@@ -307,8 +307,8 @@ export default function DailyTasksPanel() {
       if (taskError) throw taskError;
 
       const desc = bonusPoints > 0
-        ? `مهمة: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ستريك)`
-        : `مهمة: ${task.title_ar}`;
+        ? `${t('dt_task_label')}: ${task.title_ar} (${task.points_reward} + ${bonusPoints} ${t('dt_streak_label')})`
+        : `${t('dt_task_label')}: ${task.title_ar}`;
 
       const { error: pointsError } = await supabase
         .from('points_transactions')
