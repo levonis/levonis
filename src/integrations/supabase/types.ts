@@ -11038,33 +11038,42 @@ export type Database = {
       user_level_prize_claims: {
         Row: {
           created_at: string
+          delivered_at: string | null
           granted_at: string | null
           id: string
           level_number: number
           notes: string | null
           prize_id: string
+          shipped_at: string | null
+          shipping_address_id: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          delivered_at?: string | null
           granted_at?: string | null
           id?: string
           level_number: number
           notes?: string | null
           prize_id: string
+          shipped_at?: string | null
+          shipping_address_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          delivered_at?: string | null
           granted_at?: string | null
           id?: string
           level_number?: number
           notes?: string | null
           prize_id?: string
+          shipped_at?: string | null
+          shipping_address_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -11974,6 +11983,10 @@ export type Database = {
         Args: { p_level_id: string; p_message?: string; p_recipient_id: string }
         Returns: Json
       }
+      admin_update_level_prize_claim: {
+        Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
+        Returns: Json
+      }
       apply_referral_coupon: {
         Args: { p_buyer_user_id: string; p_code: string }
         Returns: Json
@@ -12430,6 +12443,10 @@ export type Database = {
       }
       reject_price_protection_claim: {
         Args: { p_claim_id: string; p_reason: string }
+        Returns: Json
+      }
+      request_level_prize_shipping: {
+        Args: { p_address_id?: string; p_claim_id: string }
         Returns: Json
       }
       request_offer_shipment: {
