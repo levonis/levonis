@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, Package, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { ClipboardList, Package, ChevronDown, ChevronUp, Copy, Check, Crown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
@@ -31,7 +31,12 @@ interface Order {
   governorate: string | null;
   created_at: string;
   priority: string | null;
+  user_id: string | null;
   order_items: OrderItem[];
+  // injected client-side
+  priority_rank?: number;
+  priority_card_name?: string | null;
+  priority_card_color?: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -63,7 +68,7 @@ export default function AdminPendingOrdersSheet() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          id, order_number, status, total_amount, shipping_address, phone_number, governorate, created_at, priority,
+          id, order_number, status, total_amount, shipping_address, phone_number, governorate, created_at, priority, user_id,
           order_items (id, product_name_ar, selected_option, selected_color, quantity, unit_price, color_image_url, shipping_option_name_ar)
         `)
         .in('status', ['pending', 'processing', 'confirmed'])
@@ -71,7 +76,50 @@ export default function AdminPendingOrdersSheet() {
         .limit(50);
 
       if (error) throw error;
-      return (data || []) as Order[];
+      const baseOrders = (data || []) as Order[];
+
+      // Fetch active loyalty cards with priority_shipping for the involved users
+      const userIds = Array.from(new Set(baseOrders.map(o => o.user_id).filter(Boolean))) as string[];
+      const cardByUser: Record<string, { rank: number; name: string | null; color: string | null }> = {};
+      if (userIds.length > 0) {
+        const nowIso = new Date().toISOString();
+        const { data: cards } = await supabase
+          .from('user_cards')
+          .select('user_id, expires_at, is_active, loyalty_levels!inner(name_ar, color, display_order, priority_shipping)')
+          .in('user_id', userIds)
+          .eq('is_active', true)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+
+        (cards || []).forEach((c: any) => {
+          const lvl = c.loyalty_levels;
+          if (!lvl?.priority_shipping) return;
+          const rank = lvl.display_order ?? 0;
+          const existing = cardByUser[c.user_id];
+          if (!existing || rank > existing.rank) {
+            cardByUser[c.user_id] = { rank, name: lvl.name_ar, color: lvl.color };
+          }
+        });
+      }
+
+      // Inject priority info and sort: priority cards first (higher display_order = higher tier), then by created_at desc
+      const enriched = baseOrders.map(o => {
+        const info = o.user_id ? cardByUser[o.user_id] : undefined;
+        return {
+          ...o,
+          priority_rank: info?.rank ?? -1,
+          priority_card_name: info?.name ?? null,
+          priority_card_color: info?.color ?? null,
+        };
+      });
+
+      enriched.sort((a, b) => {
+        const ra = a.priority_rank ?? -1;
+        const rb = b.priority_rank ?? -1;
+        if (rb !== ra) return rb - ra;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      return enriched;
     },
     enabled: open,
     staleTime: 30000,
@@ -173,12 +221,25 @@ export default function AdminPendingOrdersSheet() {
                       className="w-full p-3 flex items-center gap-2 text-right hover:bg-muted/30 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className="text-xs font-bold text-foreground">{order.order_number}</span>
                           <Badge className={`text-[10px] px-1.5 border ${STATUS_COLORS[order.status] || 'bg-muted'}`}>
                             {STATUS_LABELS[order.status] || order.status}
                           </Badge>
                           {order.priority === 'urgent' && <Badge variant="destructive" className="text-[10px] px-1.5">عاجل</Badge>}
+                          {order.priority_card_name && (
+                            <Badge
+                              className="text-[10px] px-1.5 gap-0.5 border"
+                              style={{
+                                backgroundColor: `${order.priority_card_color || '#facc15'}20`,
+                                color: order.priority_card_color || '#a16207',
+                                borderColor: `${order.priority_card_color || '#facc15'}60`,
+                              }}
+                            >
+                              <Crown className="h-2.5 w-2.5" />
+                              أولوية {order.priority_card_name}
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {order.governorate} • {order.order_items.length} منتج • {format(new Date(order.created_at), 'dd MMM HH:mm', { locale: ar })}
