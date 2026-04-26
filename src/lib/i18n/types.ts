@@ -884,8 +884,12 @@ export type TranslationKeys = {
   orders_order_number: string;
   order_status_pending: string;
   order_status_confirmed: string;
+  order_status_processing: string;
+  order_status_purchased: string;
+  order_status_arrived_warehouse: string;
   order_status_shipped: string;
   order_status_arrived_iraq: string;
+  order_status_on_the_way: string;
   order_status_delivered: string;
   order_status_cancelled: string;
 
