@@ -13,6 +13,7 @@ import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { useLanguage } from "@/lib/i18n";
 
 interface ProductOption {
   name_ar: string;
