@@ -78,6 +78,53 @@ export default function AdminLoyaltyLevels() {
     is_active: true,
   });
 
+  // Admin gift dialog state
+  const [giftDialogOpen, setGiftDialogOpen] = useState(false);
+  const [giftLevel, setGiftLevel] = useState<any>(null);
+  const [giftSearch, setGiftSearch] = useState("");
+  const [giftRecipientId, setGiftRecipientId] = useState<string | null>(null);
+  const [giftMessage, setGiftMessage] = useState("");
+
+  // Search users for gifting
+  const { data: giftSearchResults = [] } = useQuery({
+    queryKey: ['admin-gift-card-search', giftSearch],
+    queryFn: async () => {
+      if (giftSearch.trim().length < 2) return [];
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .or(`full_name.ilike.%${giftSearch}%,username.ilike.%${giftSearch}%`)
+        .limit(20);
+      return data || [];
+    },
+    enabled: giftDialogOpen && giftSearch.trim().length >= 2,
+  });
+
+  const adminGiftMutation = useMutation({
+    mutationFn: async ({ levelId, recipientId, message }: { levelId: string; recipientId: string; message: string }) => {
+      const { data, error } = await supabase.rpc('admin_gift_loyalty_card' as any, {
+        p_recipient_id: recipientId,
+        p_level_id: levelId,
+        p_message: message || null,
+      });
+      if (error) throw error;
+      const result = data as { success?: boolean; error?: string };
+      if (!result?.success) throw new Error(result?.error || 'فشل الإهداء');
+      return result;
+    },
+    onSuccess: () => {
+      toast.success('تم إهداء البطاقة بنجاح');
+      setGiftDialogOpen(false);
+      setGiftLevel(null);
+      setGiftSearch("");
+      setGiftRecipientId(null);
+      setGiftMessage("");
+      queryClient.invalidateQueries({ queryKey: ['admin-card-holders'] });
+    },
+    onError: (e: any) => toast.error(e?.message || 'فشل الإهداء'),
+  });
+
+
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user) {
@@ -1149,7 +1196,7 @@ export default function AdminLoyaltyLevels() {
                     vip_support={level.vip_support}
                     size="md"
                   />
-                  <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2 flex-wrap p-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -1157,6 +1204,18 @@ export default function AdminLoyaltyLevels() {
                     >
                       <Pencil className="h-4 w-4 ml-1" />
                       تعديل
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => {
+                        setGiftLevel(level);
+                        setGiftDialogOpen(true);
+                      }}
+                      title={!level.is_purchasable ? "بطاقة حصرية للإهداء الإداري" : "إهداء البطاقة"}
+                    >
+                      <Gift className="h-4 w-4 ml-1" />
+                      إهداء
                     </Button>
                     <Button
                       size="sm"
@@ -1171,6 +1230,12 @@ export default function AdminLoyaltyLevels() {
                       حذف
                     </Button>
                   </div>
+                  {!level.is_purchasable && (
+                    <Badge className="absolute top-2 right-2 bg-amber-500/90 text-white text-[10px] gap-1 z-10">
+                      <Crown className="h-3 w-3" />
+                      حصرية - إهداء فقط
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
@@ -1583,6 +1648,74 @@ export default function AdminLoyaltyLevels() {
           </div>
         </TabsContent>
       </Tabs>
+      {/* Admin Gift Card Dialog */}
+      <Dialog open={giftDialogOpen} onOpenChange={(o) => { if (!o) { setGiftLevel(null); setGiftSearch(""); setGiftRecipientId(null); setGiftMessage(""); } setGiftDialogOpen(o); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-primary" />
+              إهداء بطاقة {giftLevel?.name_ar}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {!giftLevel?.is_purchasable && (
+              <div className="text-xs p-2 rounded bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                هذه البطاقة حصرية وغير متاحة للشراء العام، يمكنك إهداؤها للمستخدمين فقط.
+              </div>
+            )}
+            <div>
+              <Label className="text-xs">ابحث عن المستلم (الاسم أو اسم المستخدم)</Label>
+              <Input
+                value={giftSearch}
+                onChange={(e) => { setGiftSearch(e.target.value); setGiftRecipientId(null); }}
+                placeholder="اكتب على الأقل حرفين..."
+                className="mt-1"
+              />
+            </div>
+            {giftSearch.trim().length >= 2 && (
+              <div className="max-h-48 overflow-y-auto border border-border rounded-md divide-y divide-border">
+                {giftSearchResults.length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-3 text-center">لا توجد نتائج</p>
+                ) : (
+                  giftSearchResults.map((u: any) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setGiftRecipientId(u.id)}
+                      className={cn(
+                        "w-full p-2 text-right text-sm hover:bg-muted transition-colors flex items-center gap-2",
+                        giftRecipientId === u.id && "bg-primary/10"
+                      )}
+                    >
+                      {giftRecipientId === u.id && <Check className="h-4 w-4 text-primary" />}
+                      <span className="flex-1 truncate">{u.full_name || u.username}</span>
+                      {u.username && <span className="text-xs text-muted-foreground">@{u.username}</span>}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            <div>
+              <Label className="text-xs">رسالة (اختياري)</Label>
+              <Textarea
+                value={giftMessage}
+                onChange={(e) => setGiftMessage(e.target.value)}
+                placeholder="رسالة شخصية للمستلم..."
+                className="mt-1 min-h-[60px]"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setGiftDialogOpen(false)}>إلغاء</Button>
+              <Button
+                disabled={!giftRecipientId || adminGiftMutation.isPending}
+                onClick={() => giftRecipientId && giftLevel && adminGiftMutation.mutate({ levelId: giftLevel.id, recipientId: giftRecipientId, message: giftMessage })}
+              >
+                {adminGiftMutation.isPending ? "جارٍ الإهداء..." : "إهداء البطاقة"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
