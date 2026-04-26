@@ -1497,4 +1497,58 @@ export type TranslationKeys = {
   od_toast_cancel_success: string;
   od_toast_refunded_suffix: string;
   od_admin_default_customer: string;
+
+  // My Printers Panel
+  mp_login_required: string;
+  mp_no_printers: string;
+  mp_no_printers_desc: string;
+  mp_add_printer: string;
+  mp_add_printer_form: string;
+  mp_unknown_printer: string;
+  mp_no_serial: string;
+  mp_protected: string;
+  mp_unprotected: string;
+  mp_per_month: string;
+  mp_settings: string;
+  mp_settings_action: string;
+  mp_maintenance: string;
+  mp_maintenance_action: string;
+
+  // All Plans Panel
+  ap_no_plans: string;
+  ap_per_month_short: string;
+  ap_subscribe_now: string;
+  ap_subscribe_form: string;
+
+  // Games Panel
+  gp_view_all: string;
+  gp_open_games_page: string;
+  gp_game_rps: string;
+  gp_game_quiz: string;
+  gp_game_spin: string;
+
+  // Redeem Points Panel
+  rp_select_method_required: string;
+  rp_invalid_option: string;
+  rp_must_be_multiple: string;
+  rp_insufficient_points: string;
+  rp_daily_limit_exceeded: string;
+  rp_redeem_description: string;
+  rp_redeem_success: string;
+  rp_generic_error: string;
+  rp_unit_wallet: string;
+  rp_unit_coupon: string;
+  rp_unit_ticket: string;
+  rp_login_to_redeem: string;
+  rp_available_balance_label: string;
+  rp_points_unit: string;
+  rp_choose_method: string;
+  rp_points_eq_unit: string;
+  rp_unit_ticket_short: string;
+  rp_unit_iqd_short: string;
+  rp_daily_remaining: string;
+  rp_points_to_redeem: string;
+  rp_min_and_multiples: string;
+  rp_will_get: string;
+  rp_confirm_redeem: string;
 };
