@@ -13,10 +13,12 @@ import {
   PRIZE_STATUSES,
   PURCHASED_PRODUCT_STATUSES,
 } from "@/lib/storageStatusConstants";
+import { useLanguage } from "@/lib/i18n";
 
 export default function OffersStorageSection() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // Fetch latest offers (max 6)
   const { data: offers, isLoading: offersLoading } = useQuery({
@@ -77,7 +79,7 @@ export default function OffersStorageSection() {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-sm md:text-base font-bold text-foreground">عروض حصرية</h2>
+            <h2 className="text-sm md:text-base font-bold text-foreground">{t('oss_exclusive_offers')}</h2>
           </div>
         </div>
         
@@ -100,7 +102,7 @@ export default function OffersStorageSection() {
             className="h-8 gap-0.5 text-xs text-primary hover:text-primary/80 hover:bg-primary/10 px-2"
             onClick={() => navigate('/offers')}
           >
-            الكل
+            {t('oss_view_all')}
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -121,7 +123,7 @@ export default function OffersStorageSection() {
         <Card className="bg-muted/30 border-dashed border-muted-foreground/20">
           <CardContent className="p-6 text-center">
             <Gift className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-            <p className="text-xs text-muted-foreground">لا توجد عروض حالياً</p>
+            <p className="text-xs text-muted-foreground">{t('oss_no_offers')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -162,7 +164,7 @@ export default function OffersStorageSection() {
                     {offer.stock_quantity !== null && offer.stock_quantity <= 3 && offer.stock_quantity > 0 && (
                       <div className="absolute top-1.5 left-1.5">
                         <div className="bg-destructive/90 text-destructive-foreground text-[7px] px-1.5 py-0.5 rounded-full font-medium">
-                          آخر {offer.stock_quantity}
+                          {t('oss_last_n', { n: offer.stock_quantity })}
                         </div>
                       </div>
                     )}
@@ -174,7 +176,7 @@ export default function OffersStorageSection() {
                       <span className="font-black text-primary text-[11px]">
                         {offer.price?.toLocaleString()}
                       </span>
-                      <span className="text-[8px] text-muted-foreground font-normal mr-0.5">{offer.currency || 'د.ع'}</span>
+                      <span className="text-[8px] text-muted-foreground font-normal mr-0.5">{offer.currency || t('common_iqd')}</span>
                     </div>
                   </div>
                 </div>
@@ -192,7 +194,7 @@ export default function OffersStorageSection() {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <ChevronLeft className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-[10px] font-bold text-primary">عرض الكل</p>
+                <p className="text-[10px] font-bold text-primary">{t('oss_show_all')}</p>
               </div>
             </div>
           </div>

@@ -1823,4 +1823,26 @@ export const ku: TranslationKeys = {
   lr_level_n: 'ئاستی {n}',
   lr_base_level: 'ئاستی بنەڕەتی',
   lr_owned: 'هەیە',
+
+  // Offers Storage Section
+  oss_exclusive_offers: 'پێشکەشە تایبەتەکان',
+  oss_view_all: 'هەمووی',
+  oss_no_offers: 'هیچ پێشکەشێک ئێستا بەردەست نییە',
+  oss_last_n: 'دوایین {n}',
+  oss_show_all: 'پیشاندانی هەمووی',
+
+  // Daily Task Card
+  dtc_pts: 'خاڵ',
+  dtc_loading: 'بارکردن…',
+  dtc_complete: 'تەواوکردن',
+  dtc_done: 'تەواو بوو',
+  dtc_daily_hint: '* ئەم ئەرکە ڕۆژانە دەتوانرێت تەواو بکرێت',
+
+  // PWA Install Prompt
+  pwa_install_unavailable: 'دامەزراندن ئێستا بەردەست نییە، تکایە پەڕەکە دووبارە بارکەرەوە',
+  pwa_install_success: 'ئەپەکە بە سەرکەوتوویی دامەزرا!',
+  pwa_install_error: 'هەڵە لە کاتی دامەزراندن، دووبارە هەوڵ بدەرەوە',
+  pwa_notif_denied: 'ئاگادارکردنەوەکان ڕەتکرانەوە. دەتوانیت لە ڕێکخستنەکانی وێبگەڕ چالاکیان بکەیت',
+  pwa_notif_default_hint: 'تکایە کاتێک پەنجەرەی ڕێگەپێدان دەردەکەوێت ڕێگە بدە',
+  pwa_notif_error: 'هەڵە لە چالاککردنی ئاگادارکردنەوەکان',
 };

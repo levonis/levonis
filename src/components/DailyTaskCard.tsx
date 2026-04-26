@@ -37,20 +37,16 @@ const getIcon = (iconName: string) => {
 };
 
 export default function DailyTaskCard({ task, isCompleted, onComplete, isLoading }: DailyTaskCardProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const title = pickI18n(task as any, 'title', language);
   const description = pickI18n(task as any, 'description', language);
 
   const tx = {
-    points: language === 'en' ? 'pts' : language === 'ku' ? 'خاڵ' : 'نقطة',
-    loading: language === 'en' ? 'Loading…' : language === 'ku' ? 'بارکردن…' : 'جاري...',
-    complete: language === 'en' ? 'Complete' : language === 'ku' ? 'تەواوکردن' : 'إكمال',
-    done: language === 'en' ? 'Completed' : language === 'ku' ? 'تەواو بوو' : 'تم الإكمال',
-    daily: language === 'en'
-      ? '* This task can be completed daily'
-      : language === 'ku'
-        ? '* ئەم ئەرکە ڕۆژانە دەتوانرێت تەواو بکرێت'
-        : '* يمكن إكمال هذه المهمة يومياً',
+    points: t('dtc_pts'),
+    loading: t('dtc_loading'),
+    complete: t('dtc_complete'),
+    done: t('dtc_done'),
+    daily: t('dtc_daily_hint'),
   };
 
   return (

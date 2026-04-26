@@ -1823,4 +1823,26 @@ export const ar: TranslationKeys = {
   lr_level_n: 'مستوى {n}',
   lr_base_level: 'المستوى الأساسي',
   lr_owned: 'مملوكة',
+
+  // Offers Storage Section
+  oss_exclusive_offers: 'عروض حصرية',
+  oss_view_all: 'الكل',
+  oss_no_offers: 'لا توجد عروض حالياً',
+  oss_last_n: 'آخر {n}',
+  oss_show_all: 'عرض الكل',
+
+  // Daily Task Card
+  dtc_pts: 'نقطة',
+  dtc_loading: 'جاري...',
+  dtc_complete: 'إكمال',
+  dtc_done: 'تم الإكمال',
+  dtc_daily_hint: '* يمكن إكمال هذه المهمة يومياً',
+
+  // PWA Install Prompt
+  pwa_install_unavailable: 'التثبيت غير متاح حالياً، جرب إعادة تحميل الصفحة',
+  pwa_install_success: 'تم تثبيت التطبيق بنجاح!',
+  pwa_install_error: 'حدث خطأ أثناء التثبيت، حاول مرة أخرى',
+  pwa_notif_denied: 'تم رفض الإشعارات. يمكنك تفعيلها من إعدادات المتصفح',
+  pwa_notif_default_hint: 'يرجى السماح بالإشعارات عند ظهور نافذة الإذن',
+  pwa_notif_error: 'حدث خطأ في تفعيل الإشعارات',
 };
