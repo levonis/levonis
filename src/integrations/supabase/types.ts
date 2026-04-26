@@ -5296,6 +5296,7 @@ export type Database = {
           color: string
           created_at: string
           discount_percentage: number | null
+          discount_percentage_max_amount: number | null
           display_order: number
           duration_days: number | null
           early_access: boolean | null
@@ -5335,6 +5336,7 @@ export type Database = {
           color: string
           created_at?: string
           discount_percentage?: number | null
+          discount_percentage_max_amount?: number | null
           display_order: number
           duration_days?: number | null
           early_access?: boolean | null
@@ -5374,6 +5376,7 @@ export type Database = {
           color?: string
           created_at?: string
           discount_percentage?: number | null
+          discount_percentage_max_amount?: number | null
           display_order?: number
           duration_days?: number | null
           early_access?: boolean | null
@@ -5405,6 +5408,36 @@ export type Database = {
           wallet_price?: number | null
           wholesale_discount_enabled?: boolean | null
           xp_required?: number
+        }
+        Relationships: []
+      }
+      loyalty_percentage_discount_usage: {
+        Row: {
+          card_id: string
+          discount_amount: number
+          id: string
+          level_id: string
+          order_id: string | null
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          discount_amount?: number
+          id?: string
+          level_id: string
+          order_id?: string | null
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          discount_amount?: number
+          id?: string
+          level_id?: string
+          order_id?: string | null
+          used_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -12034,6 +12067,10 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_card_percentage_discount_used: {
+        Args: { p_card_id: string }
+        Returns: number
+      }
       get_direct_sale_category_ids: {
         Args: never
         Returns: {
