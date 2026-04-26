@@ -565,7 +565,7 @@ export default function AllOffersPanel() {
                 {/* Quantity & Total */}
                 <div className="bg-muted/20 rounded-lg p-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">الكمية</span>
+                    <span className="text-[11px] font-medium">{t('ao_quantity')}</span>
                     <div className="flex items-center gap-0.5 bg-background rounded p-0.5">
                       <Button
                         variant="ghost"
