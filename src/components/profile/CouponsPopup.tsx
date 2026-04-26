@@ -151,8 +151,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
             <div>
-              <span className="text-sm font-black">العروض والخصومات</span>
-              <p className="text-[9px] text-muted-foreground font-normal mt-0.5">وفّر مع كل طلب</p>
+              <span className="text-sm font-black">{t('cp_title')}</span>
+              <p className="text-[9px] text-muted-foreground font-normal mt-0.5">{t('cp_subtitle')}</p>
             </div>
           </div>
         }
