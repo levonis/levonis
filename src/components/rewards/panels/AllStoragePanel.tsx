@@ -44,9 +44,10 @@ import {
   PURCHASED_PRODUCT_STATUSES,
   normalizeStorageStatus,
 } from "@/lib/storageStatusConstants";
+import { useLanguage } from "@/lib/i18n";
 
 // Professional status configuration with semantic colors
-const statusConfig: Record<string, { 
+type StatusEntry = { 
   label: string; 
   color: string; 
   bgColor: string; 
@@ -54,9 +55,11 @@ const statusConfig: Record<string, {
   icon: any; 
   step: number;
   gradient: string;
-}> = {
+};
+
+const getStatusConfig = (t: (key: any) => string): Record<string, StatusEntry> => ({
   pending: { 
-    label: 'في المخزن', 
+    label: t('as_status_pending'), 
     color: 'text-blue-600 dark:text-blue-400', 
     bgColor: 'bg-blue-500/10', 
     borderColor: 'border-blue-500/20', 
@@ -65,7 +68,7 @@ const statusConfig: Record<string, {
     gradient: 'from-blue-500 to-blue-600'
   },
   shipping_requested: { 
-    label: 'بانتظار الشحن', 
+    label: t('as_status_shipping_requested'), 
     color: 'text-amber-600 dark:text-amber-400', 
     bgColor: 'bg-amber-500/10', 
     borderColor: 'border-amber-500/20', 
@@ -74,7 +77,7 @@ const statusConfig: Record<string, {
     gradient: 'from-amber-500 to-orange-500'
   },
   shipped: { 
-    label: 'في الطريق', 
+    label: t('as_status_shipped'), 
     color: 'text-orange-600 dark:text-orange-400', 
     bgColor: 'bg-orange-500/10', 
     borderColor: 'border-orange-500/20', 
@@ -83,7 +86,7 @@ const statusConfig: Record<string, {
     gradient: 'from-orange-500 to-red-500'
   },
   delivered: { 
-    label: 'تم التسليم', 
+    label: t('as_status_delivered'), 
     color: 'text-emerald-600 dark:text-emerald-400', 
     bgColor: 'bg-emerald-500/10', 
     borderColor: 'border-emerald-500/20', 
@@ -91,7 +94,7 @@ const statusConfig: Record<string, {
     step: 4,
     gradient: 'from-emerald-500 to-green-600'
   },
-};
+});
 
 interface StorageItem {
   id: string;
@@ -111,6 +114,8 @@ interface StorageItem {
 }
 
 export default function AllStoragePanel() {
+  const { t } = useLanguage();
+  const statusConfig = useMemo(() => getStatusConfig(t), [t]);
   const { user, loading: authLoading } = useAuth();
   const { addOfferPurchaseToCart } = useCart();
   const queryClient = useQueryClient();
@@ -197,7 +202,7 @@ export default function AllStoragePanel() {
   const requestOfferShippingMutation = useMutation({
     mutationFn: async (purchaseIds: string[]) => {
       const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
-      if (!defaultAddress) throw new Error('يرجى إضافة عنوان للشحن أولاً');
+      if (!defaultAddress) throw new Error(t('as_no_address'));
 
       const { data, error } = await supabase
         .from('product_offer_purchases')
@@ -210,7 +215,7 @@ export default function AllStoragePanel() {
       
       if (error) {
         console.error('Shipping request error:', error);
-        throw new Error('فشل في تقديم طلب الشحن: ' + error.message);
+        throw new Error(t('as_shipping_failed', { message: error.message }));
       }
       
       return data;
@@ -218,8 +223,8 @@ export default function AllStoragePanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage-offer-purchases'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
-      toast.success('تم تقديم طلب الشحن بنجاح!', {
-        description: 'سيتم التواصل معك قريباً لتأكيد الشحن'
+      toast.success(t('as_shipping_success'), {
+        description: t('as_shipping_success_desc')
       });
       setShippingDialogOpen(false);
       setBulkShippingDialogOpen(false);
@@ -228,14 +233,14 @@ export default function AllStoragePanel() {
     },
     onError: (error: any) => {
       console.error('Mutation error:', error);
-      toast.error(error.message || 'حدث خطأ في طلب الشحن');
+      toast.error(error.message || t('as_shipping_error'));
     },
   });
 
   const requestPrizeShippingMutation = useMutation({
     mutationFn: async (prizeIds: string[]) => {
       const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
-      if (!defaultAddress) throw new Error('يرجى إضافة عنوان للشحن أولاً');
+      if (!defaultAddress) throw new Error(t('as_no_address'));
 
       const { data, error } = await supabase
         .from('competition_prizes')
@@ -248,7 +253,7 @@ export default function AllStoragePanel() {
       
       if (error) {
         console.error('Prize shipping error:', error);
-        throw new Error('فشل في تقديم طلب الشحن: ' + error.message);
+        throw new Error(t('as_shipping_failed', { message: error.message }));
       }
       
       return data;
@@ -257,8 +262,8 @@ export default function AllStoragePanel() {
       queryClient.invalidateQueries({ queryKey: ['storage-competition-prizes'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count'] });
-      toast.success('تم تقديم طلب الشحن بنجاح!', {
-        description: 'سيتم التواصل معك قريباً لتأكيد الشحن'
+      toast.success(t('as_shipping_success'), {
+        description: t('as_shipping_success_desc')
       });
       setShippingDialogOpen(false);
       setBulkShippingDialogOpen(false);
@@ -267,14 +272,14 @@ export default function AllStoragePanel() {
     },
     onError: (error: any) => {
       console.error('Prize mutation error:', error);
-      toast.error(error.message || 'حدث خطأ في طلب الشحن');
+      toast.error(error.message || t('as_shipping_error'));
     },
   });
 
   const requestPurchasedShippingMutation = useMutation({
     mutationFn: async (purchasedIds: string[]) => {
       const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
-      if (!defaultAddress) throw new Error('يرجى إضافة عنوان للشحن أولاً');
+      if (!defaultAddress) throw new Error(t('as_no_address'));
 
       const { data, error } = await supabase
         .from('user_purchased_products')
@@ -282,21 +287,21 @@ export default function AllStoragePanel() {
         .in('id', purchasedIds)
         .select();
       
-      if (error) throw new Error('فشل في تقديم طلب الشحن: ' + error.message);
+      if (error) throw new Error(t('as_shipping_failed', { message: error.message }));
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage-purchased-products'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count'] });
-      toast.success('تم تقديم طلب الشحن بنجاح!');
+      toast.success(t('as_shipping_success'));
       setShippingDialogOpen(false);
       setBulkShippingDialogOpen(false);
       setSelectedItem(null);
       setSelectedIds(new Set());
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ في طلب الشحن');
+      toast.error(error.message || t('as_shipping_error'));
     },
   });
 
@@ -307,7 +312,7 @@ export default function AllStoragePanel() {
     offerPurchases?.forEach((purchase: any) => {
       items.push({
         id: purchase.id,
-        title: purchase.product_offers?.title_ar || 'منتج',
+        title: purchase.product_offers?.title_ar || t('as_default_product'),
         image_url: purchase.product_offers?.image_url,
         quantity: purchase.quantity,
         status: normalizeStorageStatus(purchase.purchase_status),
@@ -341,7 +346,7 @@ export default function AllStoragePanel() {
     purchasedProducts?.forEach((pp: any) => {
       items.push({
         id: pp.id,
-        title: pp.product_name_ar || pp.product_name || 'منتج',
+        title: pp.product_name_ar || pp.product_name || t('as_default_product'),
         image_url: pp.product_image,
         quantity: 1,
         status: normalizeStorageStatus(pp.order_status),
@@ -427,7 +432,7 @@ export default function AllStoragePanel() {
             <div className="w-24 h-24 rounded-3xl bg-muted/50 flex items-center justify-center mb-5">
               <Package className="h-12 w-12 text-muted-foreground/40" />
             </div>
-            <p className="text-muted-foreground font-semibold text-lg">سجّل الدخول لعرض مخزنك</p>
+            <p className="text-muted-foreground font-semibold text-lg">{t('as_login_to_view')}</p>
           </>
         )}
       </div>
@@ -451,9 +456,9 @@ export default function AllStoragePanel() {
           <Box className="h-14 w-14 text-primary/40" />
           <Sparkles className="h-6 w-6 text-amber-500 absolute -top-1 -right-1" />
         </div>
-        <p className="font-bold text-xl mb-2">مخزنك فارغ</p>
+        <p className="font-bold text-xl mb-2">{t('as_storage_empty')}</p>
         <p className="text-sm text-muted-foreground text-center max-w-xs">
-          جوائز المسابقات والمنتجات المشتراة ستظهر هنا
+          {t('as_storage_empty_desc')}
         </p>
       </div>
     );
@@ -519,12 +524,12 @@ export default function AllStoragePanel() {
                 {item.source === 'competition' ? (
                   <Badge className="text-[10px] gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 px-2 py-0.5">
                     <Trophy className="h-2.5 w-2.5" />
-                    جائزة
+                    {t('as_badge_prize')}
                   </Badge>
                 ) : (
                   <Badge className="text-[10px] gap-1 bg-gradient-to-r from-primary to-accent text-primary-foreground border-0 px-2 py-0.5">
                     <Gift className="h-2.5 w-2.5" />
-                    عرض
+                    {t('as_badge_offer')}
                   </Badge>
                 )}
               </div>
@@ -547,7 +552,7 @@ export default function AllStoragePanel() {
                     onClick={() => addOfferPurchaseToCart(item.id)}
                   >
                     <ShoppingCart className="h-3 w-3 ml-1" />
-                    أضف للسلة
+                    {t('as_add_to_cart')}
                   </Button>
                 ) : (
                   <Button
@@ -560,7 +565,7 @@ export default function AllStoragePanel() {
                     }}
                   >
                     <Truck className="h-3 w-3 ml-1" />
-                    شحن
+                    {t('as_ship_btn')}
                   </Button>
                 )}
               </div>
@@ -582,10 +587,10 @@ export default function AllStoragePanel() {
                   ))}
                 </div>
                 <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span className={config.step >= 1 ? 'text-primary font-semibold' : ''}>طلب</span>
-                  <span className={config.step >= 2 ? 'text-primary font-semibold' : ''}>تجهيز</span>
-                  <span className={config.step >= 3 ? 'text-primary font-semibold' : ''}>شحن</span>
-                  <span className={config.step >= 4 ? 'text-primary font-semibold' : ''}>تسليم</span>
+                  <span className={config.step >= 1 ? 'text-primary font-semibold' : ''}>{t('as_step_request')}</span>
+                  <span className={config.step >= 2 ? 'text-primary font-semibold' : ''}>{t('as_step_prepare')}</span>
+                  <span className={config.step >= 3 ? 'text-primary font-semibold' : ''}>{t('as_step_ship')}</span>
+                  <span className={config.step >= 4 ? 'text-primary font-semibold' : ''}>{t('as_step_deliver')}</span>
                 </div>
               </div>
             </div>
@@ -623,7 +628,7 @@ export default function AllStoragePanel() {
             </div>
             <div className="text-right">
               <h3 className="font-bold text-sm">{title}</h3>
-              <p className="text-xs text-muted-foreground">{items.length} عنصر</p>
+              <p className="text-xs text-muted-foreground">{t('as_items_count', { count: items.length })}</p>
             </div>
           </div>
           <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -640,7 +645,7 @@ export default function AllStoragePanel() {
                 className="w-full text-xs h-9 rounded-lg mb-2"
                 onClick={selectAllPending}
               >
-                {allSelected ? 'إلغاء تحديد الكل' : `تحديد الكل (${pendingIds.length})`}
+                {allSelected ? t('as_deselect_all') : t('as_select_all_count', { count: pendingIds.length })}
               </Button>
             )}
             
@@ -663,8 +668,8 @@ export default function AllStoragePanel() {
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <span className="font-bold text-sm">{selectedIds.size} عنصر</span>
-                  <p className="text-xs text-primary-foreground/70">محدد للشحن</p>
+                  <span className="font-bold text-sm">{t('as_selected_items', { count: selectedIds.size })}</span>
+                  <p className="text-xs text-primary-foreground/70">{t('as_selected_for_shipping')}</p>
                 </div>
               </div>
               <Button 
@@ -679,7 +684,7 @@ export default function AllStoragePanel() {
                 ) : (
                   <Truck className="h-4 w-4 ml-1" />
                 )}
-                طلب الشحن
+                {t('as_request_shipping')}
               </Button>
             </CardContent>
           </Card>
@@ -688,18 +693,18 @@ export default function AllStoragePanel() {
 
       {/* Main Content */}
       <div className="space-y-4 pb-28">
-        {renderSection('pending', 'في المخزن', groupedByStatus.pending, Package, 'from-blue-500 to-blue-600', true)}
-        {renderSection('processing', 'قيد المعالجة', groupedByStatus.processing, Truck, 'from-amber-500 to-orange-500')}
-        {renderSection('delivered', 'تم التسليم', groupedByStatus.delivered, CheckCircle, 'from-emerald-500 to-green-600')}
+        {renderSection('pending', t('as_section_pending'), groupedByStatus.pending, Package, 'from-blue-500 to-blue-600', true)}
+        {renderSection('processing', t('as_section_processing'), groupedByStatus.processing, Truck, 'from-amber-500 to-orange-500')}
+        {renderSection('delivered', t('as_section_delivered'), groupedByStatus.delivered, CheckCircle, 'from-emerald-500 to-green-600')}
       </div>
 
       {/* Single Item Shipping Dialog */}
       <Dialog open={shippingDialogOpen} onOpenChange={setShippingDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-center text-lg font-bold">تأكيد طلب الشحن</DialogTitle>
+            <DialogTitle className="text-center text-lg font-bold">{t('as_confirm_shipping_title')}</DialogTitle>
             <DialogDescription className="text-center">
-              هل تريد طلب شحن <strong className="text-foreground">{selectedItem?.title}</strong>؟
+              {t('as_confirm_shipping_desc')} <strong className="text-foreground">{selectedItem?.title}</strong>?
             </DialogDescription>
           </DialogHeader>
           
@@ -711,7 +716,7 @@ export default function AllStoragePanel() {
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">عنوان الشحن</p>
+                    <p className="font-semibold text-sm">{t('as_shipping_address')}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {userAddresses[0].area}, {userAddresses[0].neighborhood}, {userAddresses[0].governorate}
                     </p>
@@ -723,7 +728,7 @@ export default function AllStoragePanel() {
                 <CardContent className="p-4 flex items-center gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
                   <p className="text-sm text-amber-700 font-medium">
-                    يرجى إضافة عنوان للشحن من إعدادات الحساب
+                    {t('as_add_address_warning')}
                   </p>
                 </CardContent>
               </Card>
@@ -736,7 +741,7 @@ export default function AllStoragePanel() {
               onClick={() => setShippingDialogOpen(false)}
               className="flex-1 rounded-xl"
             >
-              إلغاء
+              {t('as_cancel')}
             </Button>
             <Button 
               onClick={() => selectedItem && handleRequestShipping(selectedItem)}
@@ -744,7 +749,7 @@ export default function AllStoragePanel() {
               className="flex-1 rounded-xl"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تأكيد الشحن
+              {t('as_confirm_shipping')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -754,13 +759,13 @@ export default function AllStoragePanel() {
       <Dialog open={bulkShippingDialogOpen} onOpenChange={setBulkShippingDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-center text-lg font-bold">طلب شحن مجمع</DialogTitle>
+            <DialogTitle className="text-center text-lg font-bold">{t('as_bulk_shipping_title')}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl">
               <p className="text-4xl font-black text-primary">{selectedIds.size}</p>
-              <p className="text-sm text-muted-foreground mt-1">عنصر محدد للشحن</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('as_items_selected_for_shipping')}</p>
             </div>
             
             {userAddresses && userAddresses.length > 0 ? (
@@ -770,7 +775,7 @@ export default function AllStoragePanel() {
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">عنوان الشحن</p>
+                    <p className="font-semibold text-sm">{t('as_shipping_address')}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {userAddresses[0].area}, {userAddresses[0].neighborhood}, {userAddresses[0].governorate}
                     </p>
@@ -782,7 +787,7 @@ export default function AllStoragePanel() {
                 <CardContent className="p-4 flex items-center gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
                   <p className="text-sm text-amber-700 font-medium">
-                    يرجى إضافة عنوان للشحن من إعدادات الحساب
+                    {t('as_add_address_warning')}
                   </p>
                 </CardContent>
               </Card>
@@ -795,7 +800,7 @@ export default function AllStoragePanel() {
               onClick={() => setBulkShippingDialogOpen(false)}
               className="flex-1 rounded-xl"
             >
-              إلغاء
+              {t('as_cancel')}
             </Button>
             <Button 
               onClick={handleBulkShipping}
@@ -803,7 +808,7 @@ export default function AllStoragePanel() {
               className="flex-1 rounded-xl"
             >
               {isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تأكيد الشحن
+              {t('as_confirm_shipping')}
             </Button>
           </DialogFooter>
         </DialogContent>
