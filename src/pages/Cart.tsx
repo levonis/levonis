@@ -2755,8 +2755,15 @@ const Cart = () => {
                           <span className="font-bold">{formatPrice(subtotalWithTax)} {t('cart_iqd_short')}</span>
                         </div>
                         {codFee > 0 && (
-                          <div className="flex justify-between text-sm text-amber-600 mb-2">
-                            <span>{partialPaymentSettings?.cod_label_ar || t('cart_cod_fees_label')}</span>
+                          <div className="flex justify-between items-center text-sm text-amber-600 mb-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowTierBreakdown(true)}
+                              className="flex items-center gap-1 underline-offset-2 hover:underline"
+                            >
+                              <Calculator className="w-3.5 h-3.5" />
+                              <span>{partialPaymentSettings?.cod_label_ar || t('cart_cod_fees_label')}</span>
+                            </button>
                             <span className="font-bold">+{formatPrice(codFee)} {t('cart_iqd_short')}</span>
                           </div>
                         )}
