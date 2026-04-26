@@ -1656,4 +1656,35 @@ export type TranslationKeys = {
   ll_error_gift: string;
   ll_success_purchase: string;
   ll_success_gift: string;
+
+  // All Offers Panel
+  ao_no_offers: string;
+  ao_stock_out: string;
+  ao_currency_iqd: string;
+  ao_drawer_title: string;
+  ao_stock_available: string;
+  ao_choose_color: string;
+  ao_choose_option: string;
+  ao_ticket_label: string;
+  ao_point_label: string;
+  ao_quantity: string;
+  ao_total: string;
+  ao_buy_button: string;
+  ao_login_to_buy: string;
+  ao_confirm_purchase: string;
+  ao_amount_label: string;
+  ao_color_label: string;
+  ao_option_label: string;
+  ao_tickets_label: string;
+  ao_points_label: string;
+  ao_btn_cancel: string;
+  ao_btn_confirm: string;
+  ao_login_required: string;
+  ao_purchase_failed: string;
+  ao_points_desc: string;
+  ao_purchase_success: string;
+  ao_purchase_success_tickets: string;
+  ao_purchase_success_points: string;
+  ao_purchase_success_both: string;
+  ao_error_generic: string;
 };
