@@ -513,14 +513,14 @@ export default function ProfileSettings() {
         </SettingsSection>
 
         {/* Default Address Section */}
-        <SettingsSection icon={MapPin} title="العنوان الافتراضي">
+        <SettingsSection icon={MapPin} title={t('settings_default_address')}>
           {loadingAddresses ? (
-            <p className="text-sm text-muted-foreground">جارٍ تحميل العناوين…</p>
+            <p className="text-sm text-muted-foreground">{t('settings_loading_addresses')}</p>
           ) : !addresses || addresses.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-3">لا توجد عناوين بعد</p>
+              <p className="text-sm text-muted-foreground mb-3">{t('settings_no_addresses_short')}</p>
               <Button variant="outline" size="sm" className="rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-primary/40 text-foreground transition-all" onClick={() => navigate('/addresses')}>
-                إضافة عنوان
+                {t('settings_add_address')}
               </Button>
             </div>
           ) : (
@@ -528,7 +528,7 @@ export default function ProfileSettings() {
               <div className="space-y-2">
                 {addresses.map((a: any) => {
                   const title = `${a.governorate} • ${a.area}${a.neighborhood ? ` • ${a.neighborhood}` : ""}`;
-                  const sub = a.nearest_landmark ? `أقرب نقطة: ${a.nearest_landmark}` : "";
+                  const sub = a.nearest_landmark ? `${a.nearest_landmark}` : "";
                   return (
                     <label
                       key={a.id}
