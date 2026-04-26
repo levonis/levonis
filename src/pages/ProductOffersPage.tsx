@@ -77,6 +77,8 @@ function useCountdown(endDate: string | undefined) {
 export default function ProductOffersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+  const dir = language === 'en' ? 'ltr' : 'rtl';
   const queryClient = useQueryClient();
   const [selectedOffer, setSelectedOffer] = useState<ProductOffer | null>(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
