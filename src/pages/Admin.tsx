@@ -2317,6 +2317,11 @@ const Admin = () => {
                           )}
                         </Button>
                       </div>
+                      <ExtractionProgress
+                        active={extractingInfo}
+                        steps={extractionSteps}
+                        filledFields={extractionFilledFields}
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
