@@ -58,6 +58,7 @@ interface ProductOption {
 }
 
 export default function AllOffersPanel() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
