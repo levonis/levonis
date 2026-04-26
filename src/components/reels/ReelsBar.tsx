@@ -15,6 +15,7 @@ interface ReelThumb {
 
 export default function ReelsBar() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { data: reels = [] } = useQuery({
     queryKey: ['home-reels-bar'],
