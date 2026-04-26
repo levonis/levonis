@@ -209,7 +209,8 @@ export function getGuardedCartItemPrice(
     shipping_option_index?: number | null;
     shipping_type?: string;
   },
-  usdToIqd: number
+  usdToIqd: number,
+  codDefaults?: { type: 'percentage' | 'fixed'; value: number } | null
 ): number {
   const product = item.products;
   if (!product) {
@@ -228,8 +229,22 @@ export function getGuardedCartItemPrice(
   let price = ensurePriceIqd(Number(product.price || 0), priceUsd, usdToIqd);
 
   // 2. Override with sale-type-specific price
-  if (isDirect && product.direct_sale_price != null) {
-    price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
+  if (isDirect) {
+    // If product is linked to global COD %, recompute live so price tracks
+    // any change to the COD setting / exchange rate without needing a DB update.
+    let liveDirect: number | null = null;
+    if (product.link_direct_commission_to_cod && codDefaults) {
+      liveDirect = computeLinkedDirectSalePrice(
+        product as any,
+        { usd_to_iqd_rate: usdToIqd } as any,
+        codDefaults,
+      );
+    }
+    if (liveDirect != null) {
+      price = liveDirect;
+    } else if (product.direct_sale_price != null) {
+      price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
+    }
   } else if (!isDirect) {
     const shippingType = product.shipping_type || item.shipping_type;
     const seaPrice = product.sea_price;

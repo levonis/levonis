@@ -113,10 +113,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
+  const [codDefaults, setCodDefaults] = useState<{ type: 'percentage' | 'fixed'; value: number } | null>(null);
   const { user } = useAuth();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
   const optimisticLockRef = useRef(0); // Guard against fetch overwriting optimistic updates
+
+  // Fetch global COD defaults once so cart prices for products linked to
+  // `link_direct_commission_to_cod` recompute live whenever the admin changes %.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'partial_payment_settings')
+        .single();
+      const v: any = data?.setting_value || {};
+      if (!cancelled) {
+        setCodDefaults({
+          type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
+          value: Number(v.cod_default_fee_value) || 0,
+        });
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   // Fetch pending cart request
   const fetchPendingCartRequest = async () => {
@@ -242,6 +265,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             name,
             name_ar,
             price,
+            price_usd,
             direct_sale_price,
             sea_price,
             air_price,
@@ -257,6 +281,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             card_discounts,
             referral_earnings_iqd,
             cod_enabled,
+            link_direct_commission_to_cod,
+            has_pre_order,
+            personal_delivery_cost,
+            commission_sea_iqd,
+            commission_air_iqd,
+            shipping_cost_iqd,
             categories!products_category_id_fkey (
               id,
               tax_rate,
@@ -810,7 +840,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd);
+      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
