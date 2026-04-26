@@ -88,7 +88,7 @@ export const isIslandHidden = (path: string): boolean =>
 
 export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  useLanguage();
+  const { language } = useLanguage();
   const [override, setOverride] = useState<{ state: IslandState; title?: string } | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
@@ -105,7 +105,7 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("announcements")
-        .select("message, message_ar")
+        .select("message, message_ar, message_en, message_ku")
         .eq("active", true)
         .order("created_at", { ascending: false })
         .limit(8);
@@ -135,9 +135,15 @@ export const IslandProvider = ({ children }: { children: ReactNode }) => {
   const promoMessages = useMemo<string[]>(() => {
     if (!announcements?.length) return [];
     return announcements
-      .map((a: any) => (a.message_ar || a.message || "").trim())
+      .map((a: any) => {
+        const localized =
+          language === 'en' ? (a.message_en || a.message || a.message_ar) :
+          language === 'ku' ? (a.message_ku || a.message_ar) :
+          (a.message_ar || a.message);
+        return (localized || "").trim();
+      })
       .filter(Boolean);
-  }, [announcements]);
+  }, [announcements, language]);
 
   const promoSettings = useMemo<PromoSettings>(() => {
     if (!settingsRow) return DEFAULT_SETTINGS;
