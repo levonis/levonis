@@ -16,6 +16,8 @@ import { useLanguage } from "@/lib/i18n";
 export default function MerchantGiveaways() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const dir = language === 'en' ? 'ltr' : 'rtl';
   const [activeTab, setActiveTab] = useState("competitions");
 
   const { data: merchantApp } = useQuery({
