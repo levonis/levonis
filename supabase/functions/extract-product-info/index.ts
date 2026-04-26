@@ -1234,8 +1234,10 @@ serve(async (req) => {
     // Direct extraction
     const directImages = extractImages(pageContent);
     const directPrice = extractPrice(pageContent);
+    const structuredPrices = extractStructuredPrices(pageContent, platform, url);
     const directSkuData = extractSkuData(pageContent);
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
+    console.log('Structured prices:', structuredPrices);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
     // AI extraction with enhanced prompt
@@ -1390,14 +1392,15 @@ ${pageContent.substring(0, 100000)}${extraContext}
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
           
-          const extractedCurrency = ai.currency || 'CNY';
+          const extractedCurrency = ai.currency || structuredPrices.currency || 'CNY';
           const aiPrice = parseFloat(ai.price) || 0;
           const aiOriginalPrice = parseFloat(ai.original_price) || 0;
-          const directPriceNum = directPrice || 0;
+          const directPriceNum = directPrice || structuredPrices.price || 0;
+          const directOriginalPriceNum = structuredPrices.originalPrice || 0;
           
-          console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Currency:', extractedCurrency);
+          console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Structured original:', directOriginalPriceNum, 'Currency:', extractedCurrency);
           
-          const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum);
+          const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum, directOriginalPriceNum);
           const originalPriceUsd = Math.round(convertToUSD(extractedOriginalPrice, extractedCurrency) * 100) / 100;
           let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
           originalPriceInIqd = roundPrice(originalPriceInIqd);
