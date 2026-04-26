@@ -823,12 +823,24 @@ const Admin = () => {
     }
 
     setExtractingInfo(true);
+    initExtractionSteps();
+    advanceExtractionStep('fetch', 'active');
     toast.info('جاري فحص إمكانية الاستخراج...');
     
+    // Simulate progressive backend phases (since edge function is a single call)
+    const phaseTimers: ReturnType<typeof setTimeout>[] = [];
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('parse', 'active'), 800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('price', 'active'), 1800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('images', 'active'), 2800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('options', 'active'), 3800));
+    phaseTimers.push(setTimeout(() => advanceExtractionStep('ai', 'active'), 4800));
+
     try {
       const response = await supabase.functions.invoke('extract-product-info', {
         body: { url: productUrl }
       });
+
+      phaseTimers.forEach(clearTimeout);
 
       if (response.error) {
         // Try to read data even on error - edge function may return useful info
@@ -872,6 +884,10 @@ const Admin = () => {
         return;
       }
 
+      // Mark backend phases as done
+      ['fetch','parse','price','images','options','ai'].forEach((k) => advanceExtractionStep(k, 'done'));
+      advanceExtractionStep('apply', 'active');
+
       // Fill form with extracted data
       console.log('[AI Extract] Product info received:', {
         dimensions: productInfo.dimensions,
@@ -879,8 +895,11 @@ const Admin = () => {
         name: productInfo.name
       });
       applyProductInfo(productInfo);
+      advanceExtractionStep('apply', 'done');
+      toast.success('تم الاستخراج والتعبئة بنجاح');
       
     } catch (error) {
+      phaseTimers.forEach(clearTimeout);
       console.error('Error extracting product info:', error);
       setShowManualInput(true);
       toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء الاستخراج - استخدم الإدخال اليدوي');
