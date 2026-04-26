@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/lib/i18n';
 import OriginExpandShell, { type OriginRect } from './OriginExpandShell';
 
 interface CouponsPopupProps {
