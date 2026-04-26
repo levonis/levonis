@@ -1196,7 +1196,7 @@ export default function AdminLoyaltyLevels() {
                     vip_support={level.vip_support}
                     size="md"
                   />
-                  <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2 flex-wrap p-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -1204,6 +1204,18 @@ export default function AdminLoyaltyLevels() {
                     >
                       <Pencil className="h-4 w-4 ml-1" />
                       تعديل
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => {
+                        setGiftLevel(level);
+                        setGiftDialogOpen(true);
+                      }}
+                      title={!level.is_purchasable ? "بطاقة حصرية للإهداء الإداري" : "إهداء البطاقة"}
+                    >
+                      <Gift className="h-4 w-4 ml-1" />
+                      إهداء
                     </Button>
                     <Button
                       size="sm"
@@ -1218,6 +1230,12 @@ export default function AdminLoyaltyLevels() {
                       حذف
                     </Button>
                   </div>
+                  {!level.is_purchasable && (
+                    <Badge className="absolute top-2 right-2 bg-amber-500/90 text-white text-[10px] gap-1 z-10">
+                      <Crown className="h-3 w-3" />
+                      حصرية - إهداء فقط
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
