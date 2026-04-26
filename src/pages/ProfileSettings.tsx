@@ -355,19 +355,19 @@ export default function ProfileSettings() {
         qc.invalidateQueries({ queryKey: ["community-profile-settings", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-status", user?.id] }),
       ]);
-      toast({ title: "تم حفظ الإعدادات" });
+      toast({ title: t('settings_saved') });
       setAvatarFile(null);
     },
     onError: (err: any) => {
       if (err?.code === "23505") {
-        toast({ title: "تعذر الحفظ", description: "اسم المستخدم مستخدم بالفعل", variant: "destructive" });
+        toast({ title: t('settings_save_error'), description: t('settings_username_taken'), variant: "destructive" });
         return;
       }
       if (err?.code === "P0001" && String(err?.message || "").includes("USERNAME_CHANGE_COOLDOWN")) {
-        toast({ title: "تعذر الحفظ", description: "لا يمكن تغيير اسم المستخدم حالياً.", variant: "destructive" });
+        toast({ title: t('settings_save_error'), description: t('settings_username_cooldown_error'), variant: "destructive" });
         return;
       }
-      toast({ title: "تعذر الحفظ", description: err?.message ?? "حدث خطأ غير متوقع", variant: "destructive" });
+      toast({ title: t('settings_save_error'), description: err?.message ?? t('settings_unexpected_error'), variant: "destructive" });
     },
   });
 
