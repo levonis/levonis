@@ -158,6 +158,7 @@ import PageFade from "@/components/PageFade";
 function AppContent() {
   const location = useLocation();
   const { visible: islandVisible } = useIsland();
+  useGlobalNavSearchItems();
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const isAuthPage = location.pathname === "/auth";
