@@ -1282,8 +1282,27 @@ ${pageContent.substring(0, 100000)}${extraContext}
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
   "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://صورة-خاصة-بهذا-اللون.jpg"}],
   "options": [{"name": "0.4mm Nozzle", "name_ar": "فوهة 0.4 ملم", "image_url": "https://صورة-خاصة-بهذا-الخيار.jpg"}],
-  "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
+  "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}],
+  "short_summary": {"ar": "ملخص قصير بالعربية ≤ 160 حرف", "en": "Short summary in English ≤ 160 chars", "ku": "پوختەی کورت بە کوردی"},
+  "searchable_tags": ["كلمة مفتاحية 1", "keyword 2", "tag 3"],
+  "ai_content": {
+    "problem_solved": {"ar": "المشكلة التي يحلها بالعربية", "en": "Problem solved in English", "ku": "کێشەی چارەسەرکراو بە کوردی"},
+    "target_audience": {"ar": "الجمهور المستهدف بالعربية", "en": "Target audience in English", "ku": "جەماوەری ئامانج بە کوردی"},
+    "benefits": [{"ar": "فائدة 1 بالعربية", "en": "Benefit 1 in English", "ku": "سوود ١ بە کوردی"}],
+    "usage": [{"ar": "خطوة 1 بالعربية", "en": "Step 1 in English", "ku": "هەنگاو ١ بە کوردی"}],
+    "specifications": [{"key": {"ar": "مفتاح", "en": "Key", "ku": "کلیل"}, "value": {"ar": "قيمة", "en": "Value", "ku": "نرخ"}}]
+  }
 }
+
+===== قواعد الملخص القصير و المحتوى الذكي (مهم جداً للـ SEO) =====
+- short_summary: سطر واحد ≤ 160 حرف لكل لغة، يلخص المنتج بشكل جذاب لمحركات البحث.
+- searchable_tags: 5-10 كلمات مفتاحية ذات صلة بالمنتج (بالعربية والإنجليزية).
+- ai_content.problem_solved: المشكلة الفعلية التي يحلها هذا المنتج للمستخدم.
+- ai_content.target_audience: من هم المستخدمون المثاليون لهذا المنتج.
+- ai_content.benefits: 3-5 فوائد رئيسية للمنتج (كل واحدة بـ 3 لغات).
+- ai_content.usage: 2-4 خطوات لاستخدام المنتج (كل خطوة بـ 3 لغات).
+- ai_content.specifications: 3-6 مواصفات تقنية على شكل مفتاح/قيمة (بـ 3 لغات).
+- املأ كل هذه الحقول بناءً على فهمك للمنتج من اسمه ووصفه وصورته.
 
 ===== قواعد استخراج الأبعاد والوزن (مهم جداً) =====
 
