@@ -2727,8 +2727,15 @@ const Cart = () => {
                           <span>{t('cart_half_label')}</span>
                           <span className="font-bold">{formatPrice(preOrderPaymentAmount)} {t('cart_iqd_short')}</span>
                         </div>
-                        <div className="flex justify-between text-sm text-amber-600 mb-2">
-                          <span>{partialPaymentSettings?.fee_label_ar || t('cart_extra_fees')}</span>
+                        <div className="flex justify-between items-center text-sm text-amber-600 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowTierBreakdown(true)}
+                            className="flex items-center gap-1 underline-offset-2 hover:underline"
+                          >
+                            <Calculator className="w-3.5 h-3.5" />
+                            <span>{partialPaymentSettings?.fee_label_ar || t('cart_extra_fees')}</span>
+                          </button>
                           <span className="font-bold">+{formatPrice(partialPaymentFee)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
