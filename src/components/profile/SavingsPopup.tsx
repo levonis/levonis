@@ -80,7 +80,7 @@ export default function SavingsPopup({ open, onOpenChange, userId, originRect }:
           items.push({
             orderId: order.id,
             orderNumber: order.order_number,
-            productName: `كوبون خصم - طلب #${order.order_number}`,
+            productName: t('savings_coupon_for_order', { n: order.order_number }),
             originalPrice: 0,
             paidPrice: 0,
             quantity: 1,
