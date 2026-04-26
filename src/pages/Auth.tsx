@@ -11,8 +11,8 @@ import { Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft, Sparkles } from 'lucide-re
 import { z } from 'zod';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
-import { useLanguage } from '@/lib/i18n';
-import { Check, X } from 'lucide-react';
+import { useLanguage, LANGUAGE_LABELS, type Language } from '@/lib/i18n';
+import { Check, X, Globe } from 'lucide-react';
 import { getFriendlyFunctionErrorMessage } from '@/lib/functionErrors';
 
 const PasswordRequirements = ({ password }: { password: string }) => {
