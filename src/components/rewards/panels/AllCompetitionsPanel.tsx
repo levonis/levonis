@@ -387,8 +387,8 @@ export default function AllCompetitionsPanel() {
 
   const participateMutation = useMutation({
     mutationFn: async (comp: any) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
-      if (isProcessing) throw new Error('عملية جارية - يرجى الانتظار');
+      if (!user) throw new Error(t('ac_login_required'));
+      if (isProcessing) throw new Error(t('ac_processing'));
       
       setIsProcessing(true);
       
