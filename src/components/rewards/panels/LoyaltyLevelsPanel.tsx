@@ -371,32 +371,32 @@ export default function LoyaltyLevelsPanel() {
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {level.bonus_points_percentage > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600">
-                        +{level.bonus_points_percentage}% نقاط
+                        +{level.bonus_points_percentage}% {t('ll_points_unit')}
                       </span>
                     )}
                     {level.free_shipping && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-600">
-                        شحن مجاني
+                        {t('ll_free_shipping_chip')}
                       </span>
                     )}
                     {level.priority_packaging && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600">
-                        أولوية تغليف
+                        {t('ll_priority_packaging_chip')}
                       </span>
                     )}
                     {level.free_daily_games > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-600">
-                        لعب مجاني
+                        {t('ll_free_games_chip')}
                       </span>
                     )}
                     {level.wholesale_discount_enabled && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                        أسعار جملة
+                        {t('ll_wholesale_chip')}
                       </span>
                     )}
                     {prizesForLevel.length > 0 && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600">
-                        <Gift className="h-3 w-3 inline ml-0.5" />{prizesForLevel.length} جائزة
+                        <Gift className="h-3 w-3 inline ml-0.5" />{t('ll_prize_count_chip', { count: prizesForLevel.length })}
                       </span>
                     )}
                   </div>
