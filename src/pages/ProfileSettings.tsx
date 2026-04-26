@@ -157,7 +157,7 @@ export default function ProfileSettings() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language, setLanguage, dir } = useLanguage();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [fullName, setFullName] = useState("");
