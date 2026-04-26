@@ -39,6 +39,7 @@ import {
   Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 interface WalletDialogProps {
   open: boolean;
@@ -64,6 +65,10 @@ interface WalletSettings {
 export default function WalletDialog({ open, onOpenChange, originRect }: WalletDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { t, language, dir } = useLanguage();
+  const numLocale = language === 'en' ? 'en-US' : language === 'ku' ? 'ckb-IQ' : 'ar-IQ';
+  const dateLocaleCode = language === 'en' ? 'en-US' : 'ar-IQ';
+  const fmt = (n: number | undefined | null) => Number(n ?? 0).toLocaleString(numLocale);
   
   // Form states
   const [depositAmount, setDepositAmount] = useState("");
