@@ -1577,6 +1577,7 @@ export type TranslationKeys = {
   island_results: string;
   island_view_all: string;
   island_no_results: string;
+  island_in_page: string;
   // Price Protection
   pp_title: string;
   pp_subtitle: string;
