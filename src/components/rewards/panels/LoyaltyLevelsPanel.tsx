@@ -14,8 +14,10 @@ import { Coins, Star, Lock, Zap, CreditCard, Gift, Trophy, ShoppingCart, Wallet,
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import LevelRoadmapModal from "./LevelRoadmapModal";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 export default function LoyaltyLevelsPanel() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showRoadmap, setShowRoadmap] = useState(false);
