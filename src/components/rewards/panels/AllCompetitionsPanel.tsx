@@ -655,7 +655,7 @@ export default function AllCompetitionsPanel() {
         return (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
             <Trophy className="h-2.5 w-2.5" />
-            {t('ac_current_prize', { value: currentPrize.toLocaleString() })}
+            {t('ac_current_prize', { value: fmt(currentPrize) })}
           </div>
         );
       }
@@ -981,7 +981,7 @@ export default function AllCompetitionsPanel() {
                   <p className="text-sm">{selectedCompetition.prize_description_ar}</p>
                   {selectedCompetition.prize_value && (
                     <p className="text-xl font-bold text-primary mt-2">
-                      {selectedCompetition.prize_value.toLocaleString()} {selectedCompetition.currency}
+                      fmt({selectedCompetition.prize_value)} {selectedCompetition.currency}
                     </p>
                   )}
                 </CardContent>
@@ -1136,7 +1136,7 @@ export default function AllCompetitionsPanel() {
                         </div>
                       </div>
                       <p className="text-xs text-center text-muted-foreground">
-                        {t('ac_total_cost', { cost: (letterBagDialog.quantity * requiredPerBag).toLocaleString() })}
+                        {t('ac_total_cost', { cost: fmt((letterBagDialog.quantity * requiredPerBag)) })}
                       </p>
                       <Button 
                         className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"

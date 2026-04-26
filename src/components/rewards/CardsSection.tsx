@@ -205,7 +205,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                     <div className="flex items-center gap-2">
                       {totalCouponValue > 0 && (
                         <Badge className="bg-amber-500">
-                          {totalCouponValue.toLocaleString()} {t('common_iqd')}
+                          fmt({totalCouponValue)} {t('common_iqd')}
                         </Badge>
                       )}
                       {expandedCoupons ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}

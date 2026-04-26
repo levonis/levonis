@@ -229,7 +229,7 @@ export default function PointsStorePanel() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('points_available_for_redeem')}</p>
-            <p className="text-2xl font-bold">{availablePoints.toLocaleString()} {t('points_unit')}</p>
+            <p className="text-2xl font-bold">fmt({availablePoints)} {t('points_unit')}</p>
           </div>
         </CardContent>
       </Card>
@@ -288,7 +288,7 @@ export default function PointsStorePanel() {
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant="secondary" className="text-xs gap-1">
                       <Coins className="h-3 w-3" />
-                      {product.points_cost.toLocaleString()}
+                      fmt({product.points_cost)}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
                       {t('points_remaining_stock')} {product.stock_quantity}
@@ -312,7 +312,7 @@ export default function PointsStorePanel() {
                         {t('points_redeem_action')}
                       </>
                     ) : (
-                      t('points_need_more', { count: (product.points_cost - availablePoints).toLocaleString() })
+                      t('points_need_more', { count: fmt((product.points_cost - availablePoints)) })
                     )}
                   </Button>
                 </CardContent>
@@ -332,7 +332,7 @@ export default function PointsStorePanel() {
                 <>
                   <p>
                     {t('points_confirm_redeem_desc', { 
-                      points: selectedProduct.points_cost.toLocaleString(), 
+                      points: fmt(selectedProduct.points_cost), 
                       product: selectedProduct.title_ar 
                     })}
                   </p>

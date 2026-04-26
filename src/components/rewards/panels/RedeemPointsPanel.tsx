@@ -160,7 +160,7 @@ export default function RedeemPointsPanel() {
         p_source: 'redemption',
         p_description: t('rp_redeem_description')
           .replace('{points}', String(points))
-          .replace('{value}', value.toLocaleString())
+          .replace('{value}', fmt(value))
           .replace('{unit}', getUnitLabel(selectedOption))
       });
       if (pointsError) throw pointsError;
@@ -224,7 +224,7 @@ export default function RedeemPointsPanel() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t('rp_available_balance_label')}</p>
-            <p className="text-2xl font-bold">{(userPoints?.available_points || 0).toLocaleString()} {t('rp_points_unit')}</p>
+            <p className="text-2xl font-bold">fmt({(userPoints?.available_points || 0))} {t('rp_points_unit')}</p>
           </div>
         </CardContent>
       </Card>
@@ -269,13 +269,13 @@ export default function RedeemPointsPanel() {
                         <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
                           {t('rp_points_eq_unit')
                             .replace('{points}', String(option.points_per_unit))
-                            .replace('{value}', option.unit_value.toLocaleString())
+                            .replace('{value}', fmt(option.unit_value))
                             .replace('{unit}', option.redemption_type === 'tickets' ? t('rp_unit_ticket_short') : t('rp_unit_iqd_short'))}
                         </span>
                       </div>
                       {remaining !== null && (
                         <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {t('rp_daily_remaining').replace('{remaining}', remaining.toLocaleString())}
+                          {t('rp_daily_remaining').replace('{remaining}', fmt(remaining))}
                         </p>
                       )}
                     </div>
@@ -302,7 +302,7 @@ export default function RedeemPointsPanel() {
             />
             <p className="text-xs text-muted-foreground mt-1">
               {t('rp_min_and_multiples')
-                .replace('{min}', selectedOptionData.min_points.toLocaleString())
+                .replace('{min}', fmt(selectedOptionData.min_points))
                 .replace('{step}', String(selectedOptionData.points_per_unit))}
             </p>
           </div>
@@ -311,7 +311,7 @@ export default function RedeemPointsPanel() {
             <Alert className="border-primary/30 bg-primary/5">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {t('rp_will_get')} <strong>{calculatedValue.toLocaleString()}</strong> {getUnitLabel(selectedOption)}
+                {t('rp_will_get')} <strong>fmt({calculatedValue)}</strong> {getUnitLabel(selectedOption)}
               </AlertDescription>
             </Alert>
           )}
