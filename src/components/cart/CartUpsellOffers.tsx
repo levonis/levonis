@@ -22,6 +22,7 @@ interface CartUpsellOffer {
 
 export default function CartUpsellOffers() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { data: offers } = useQuery({
