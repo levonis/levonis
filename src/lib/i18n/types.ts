@@ -1578,6 +1578,11 @@ export type TranslationKeys = {
   dt_status_complete_data_first: string;
   dt_status_add_review_first: string;
   dt_status_buy_weekly_first: string;
+  dt_no_orders_yet: string;
+  dt_no_delivered_yet: string;
+  dt_have_unreviewed_orders: string;
+  dt_go_rate_description: string;
+  dt_go_rate_action: string;
   dt_status_register_merchant_step: string;
   dt_status_publish_more_step: string;
   dt_register_as_merchant_check: string;
