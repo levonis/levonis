@@ -32,6 +32,7 @@ import OptimizedImage from "@/components/OptimizedImage";
 import { toast } from "sonner";
 import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, Palette, Settings2 } from "lucide-react";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { useLanguage } from "@/lib/i18n";
 
 const PAGE_SIZE = 10;
 
