@@ -8,6 +8,7 @@ interface UserLoyaltyCardProps {
     id: string;
     name_ar: string;
     name_en: string;
+    name_ku?: string;
     color: string;
     discount_percentage?: number;
     bonus_points_percentage?: number;
@@ -97,7 +98,7 @@ export default function UserLoyaltyCard({
   const gradientStyle = getGradientStyle(level.color);
   const textColor = getTextColor(level.color);
   const secondaryTextColor = textColor === "#ffffff" ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.65)";
-  const levelNamePrimary = language === 'ar' ? level.name_ar : (level.name_en || level.name_ar);
+  const levelNamePrimary = language === 'en' ? (level.name_en || level.name_ar) : language === 'ku' ? (level.name_ku || level.name_ar) : level.name_ar;
   
   const daysRemaining = expiresAt 
     ? Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
