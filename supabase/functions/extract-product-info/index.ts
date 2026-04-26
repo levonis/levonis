@@ -1294,15 +1294,18 @@ ${pageContent.substring(0, 100000)}${extraContext}
   }
 }
 
-===== قواعد الملخص القصير و المحتوى الذكي (مهم جداً للـ SEO) =====
-- short_summary: سطر واحد ≤ 160 حرف لكل لغة، يلخص المنتج بشكل جذاب لمحركات البحث.
-- searchable_tags: 5-10 كلمات مفتاحية ذات صلة بالمنتج (بالعربية والإنجليزية).
-- ai_content.problem_solved: المشكلة الفعلية التي يحلها هذا المنتج للمستخدم.
-- ai_content.target_audience: من هم المستخدمون المثاليون لهذا المنتج.
-- ai_content.benefits: 3-5 فوائد رئيسية للمنتج (كل واحدة بـ 3 لغات).
-- ai_content.usage: 2-4 خطوات لاستخدام المنتج (كل خطوة بـ 3 لغات).
-- ai_content.specifications: 3-6 مواصفات تقنية على شكل مفتاح/قيمة (بـ 3 لغات).
-- املأ كل هذه الحقول بناءً على فهمك للمنتج من اسمه ووصفه وصورته.
+===== ⚠️ إلزامي: الملخص القصير والمحتوى الذكي (لا تتركها فارغة أبداً) =====
+هذه الحقول إجبارية ويجب ملؤها دائماً حتى لو لم تجد معلومات صريحة في الصفحة - استنتجها من اسم المنتج وفئته وصورته ومعرفتك العامة:
+
+- short_summary (إلزامي - 3 لغات): سطر واحد ≤ 160 حرف لكل لغة، يلخص المنتج بشكل جذاب لمحركات البحث (SEO Meta Description).
+- searchable_tags (إلزامي): 5-10 كلمات مفتاحية ذات صلة بالمنتج (مزيج عربي/إنجليزي).
+- ai_content.problem_solved (إلزامي - 3 لغات): المشكلة الفعلية التي يحلها هذا المنتج للمستخدم - جملة واحدة واضحة.
+- ai_content.target_audience (إلزامي - 3 لغات): من هم المستخدمون المثاليون لهذا المنتج (مثل: المصممون، الطلاب، عشاق الطباعة ثلاثية الأبعاد).
+- ai_content.benefits (إلزامي - 3-5 عناصر بـ 3 لغات): الفوائد الرئيسية للمنتج، كل فائدة جملة قصيرة جذابة.
+- ai_content.usage (إلزامي - 2-4 خطوات بـ 3 لغات): خطوات استخدام المنتج بترتيب منطقي.
+- ai_content.specifications (إلزامي - 3-6 عناصر بـ 3 لغات): مواصفات تقنية مفتاح/قيمة (مثل: المادة/PLA، الأبعاد/30×20سم، الوزن/1.5كغ).
+
+⚠️ ممنوع منعاً باتاً إرجاع هذه الحقول فارغة أو null أو بقيم placeholder. استخدم منطقك واستنتج من السياق دائماً.
 
 ===== قواعد استخراج الأبعاد والوزن (مهم جداً) =====
 
@@ -1369,10 +1372,10 @@ ${pageContent.substring(0, 100000)}${extraContext}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير. مهمتك الأساسية: استخراج كل الألوان والخيارات المتاحة في المنتج بدون استثناء - حتى لو كانت 50 أو 100 عنصر. لكل لون/خيار استخرج صورته. أرجع JSON صحيح فقط.' },
+          { role: 'system', content: 'أنت مستخرج بيانات منتجات وكاتب SEO خبير. مهمتك المزدوجة: (1) استخراج كل الألوان والخيارات والأبعاد بدون استثناء. (2) توليد محتوى تسويقي/SEO إلزامي يشمل: short_summary بـ3 لغات، searchable_tags، و ai_content كاملاً (problem_solved, target_audience, benefits, usage, specifications) - كلها إلزامية ولا يجوز تركها فارغة أبداً، استنتجها من اسم المنتج وفئته إن لم تجد بيانات صريحة. أرجع JSON صحيح فقط.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.05,
+        temperature: 0.2,
         max_tokens: 32000,
       }),
     });
@@ -1663,6 +1666,115 @@ Return JSON ONLY:
         }
       } catch (searchError) {
         console.error('Web search error:', searchError);
+      }
+    }
+
+    // ===== STEP: Fallback AI call for SEO + AI Content if missing =====
+    const ssEmpty = !productInfo.short_summary || (!productInfo.short_summary.ar && !productInfo.short_summary.en && !productInfo.short_summary.ku);
+    const tagsEmpty = !Array.isArray(productInfo.searchable_tags) || productInfo.searchable_tags.length === 0;
+    const aiC = productInfo.ai_content || {};
+    const aiEmpty = !aiC || (
+      (!aiC.problem_solved || (!aiC.problem_solved.ar && !aiC.problem_solved.en && !aiC.problem_solved.ku)) &&
+      (!aiC.target_audience || (!aiC.target_audience.ar && !aiC.target_audience.en && !aiC.target_audience.ku)) &&
+      (!Array.isArray(aiC.benefits) || aiC.benefits.length === 0) &&
+      (!Array.isArray(aiC.usage) || aiC.usage.length === 0) &&
+      (!Array.isArray(aiC.specifications) || aiC.specifications.length === 0)
+    );
+
+    if (ssEmpty || tagsEmpty || aiEmpty) {
+      console.log('SEO/AI content missing, generating via dedicated fallback call:', { ssEmpty, tagsEmpty, aiEmpty });
+      try {
+        const seoPrompt = `أنت كاتب SEO ومسوق منتجات محترف. لديك المنتج التالي:
+
+الاسم (EN): ${productInfo.name || ''}
+الاسم (AR): ${productInfo.name_ar || ''}
+الوصف (EN): ${(productInfo.description || '').slice(0, 500)}
+الوصف (AR): ${(productInfo.description_ar || '').slice(0, 500)}
+المواصفات المعروفة: ${productInfo.dimensions ? `أبعاد ${productInfo.dimensions.length_cm}×${productInfo.dimensions.width_cm}×${productInfo.dimensions.height_cm} سم` : ''} ${productInfo.weight_kg ? `وزن ${productInfo.weight_kg} كغ` : ''}
+
+مهمتك: أنتج JSON كامل بالحقول التالية. كل الحقول إلزامية - لا تترك أياً منها فارغاً. استخدم معرفتك العامة بالمنتج لاستنتاج كل شيء.
+
+أرجع JSON فقط بهذا الشكل:
+{
+  "short_summary": {
+    "ar": "ملخص جذاب ≤ 160 حرف بالعربية",
+    "en": "Catchy summary ≤ 160 chars in English",
+    "ku": "پوختەی سەرنجڕاکێش ≤ ١٦٠ پیت بە کوردی"
+  },
+  "searchable_tags": ["كلمة 1", "keyword 2", "كلمة 3", "tag 4", "كلمة 5"],
+  "ai_content": {
+    "problem_solved": {"ar": "...", "en": "...", "ku": "..."},
+    "target_audience": {"ar": "...", "en": "...", "ku": "..."},
+    "benefits": [
+      {"ar": "فائدة ١", "en": "Benefit 1", "ku": "سوود ١"},
+      {"ar": "فائدة ٢", "en": "Benefit 2", "ku": "سوود ٢"},
+      {"ar": "فائدة ٣", "en": "Benefit 3", "ku": "سوود ٣"}
+    ],
+    "usage": [
+      {"ar": "خطوة ١", "en": "Step 1", "ku": "هەنگاو ١"},
+      {"ar": "خطوة ٢", "en": "Step 2", "ku": "هەنگاو ٢"}
+    ],
+    "specifications": [
+      {"key": {"ar": "المادة", "en": "Material", "ku": "ماددە"}, "value": {"ar": "...", "en": "...", "ku": "..."}},
+      {"key": {"ar": "...", "en": "...", "ku": "..."}, "value": {"ar": "...", "en": "...", "ku": "..."}}
+    ]
+  }
+}
+
+قواعد صارمة:
+- 3-5 فوائد، 2-4 خطوات استخدام، 3-6 مواصفات
+- كل حقل بـ 3 لغات (ar, en, ku) بدون استثناء
+- لا تستخدم placeholder مثل "..." في الإخراج النهائي - املأ بقيم حقيقية
+- لا تكتب أي نص خارج JSON`;
+
+        const seoResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              { role: 'system', content: 'أنت كاتب SEO ومسوق منتجات محترف. أنتج محتوى تسويقي عالي الجودة بـ 3 لغات. أرجع JSON صحيح فقط.' },
+              { role: 'user', content: seoPrompt }
+            ],
+            temperature: 0.4,
+            max_tokens: 4000,
+          }),
+        });
+
+        if (seoResponse.ok) {
+          const seoData = await seoResponse.json();
+          const seoText = seoData.choices[0]?.message?.content || '';
+          const seoMatch = seoText.match(/\{[\s\S]*\}/);
+          if (seoMatch) {
+            const seo = JSON.parse(seoMatch[0]);
+            if (ssEmpty && seo.short_summary && typeof seo.short_summary === 'object') {
+              productInfo.short_summary = {
+                ar: typeof seo.short_summary.ar === 'string' ? seo.short_summary.ar.slice(0, 200) : '',
+                en: typeof seo.short_summary.en === 'string' ? seo.short_summary.en.slice(0, 200) : '',
+                ku: typeof seo.short_summary.ku === 'string' ? seo.short_summary.ku.slice(0, 200) : '',
+              };
+              console.log('Filled short_summary via fallback');
+            }
+            if (tagsEmpty && Array.isArray(seo.searchable_tags)) {
+              productInfo.searchable_tags = seo.searchable_tags
+                .map((t: any) => (typeof t === 'string' ? t.trim() : ''))
+                .filter((t: string) => t.length > 0)
+                .slice(0, 20);
+              console.log('Filled searchable_tags via fallback:', productInfo.searchable_tags.length);
+            }
+            if (aiEmpty && seo.ai_content && typeof seo.ai_content === 'object') {
+              productInfo.ai_content = seo.ai_content;
+              console.log('Filled ai_content via fallback');
+            }
+          }
+        } else {
+          console.error('SEO fallback AI call failed:', seoResponse.status);
+        }
+      } catch (seoErr) {
+        console.error('SEO fallback error:', seoErr);
       }
     }
 
