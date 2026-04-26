@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useLanguage } from '@/lib/i18n';
+import { translateNotificationTitle, translateNotificationMessage } from '@/lib/notificationTranslator';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const GlassCard = ({ children, className = '', glow = false, ...props }: any) => (
@@ -41,7 +42,8 @@ const NotificationIcon3D = ({ type }: { type: string }) => {
 };
 
 const Notifications = () => {
-  const { t } = useLanguage();
+  const { t, language, dir } = useLanguage();
+  const lang = (language || 'ar') as 'ar' | 'en' | 'ku';
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -108,7 +110,7 @@ const Notifications = () => {
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
-    <div className="min-h-screen pt-6 pb-24" dir="rtl">
+    <div className="min-h-screen pt-6 pb-24" dir={dir}>
       {/* Hero Header */}
       <div className="relative overflow-hidden">
 
@@ -201,7 +203,7 @@ const Notifications = () => {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="text-sm font-black text-foreground truncate">{notification.title}</h3>
+                        <h3 className="text-sm font-black text-foreground truncate">{translateNotificationTitle(notification.title, lang)}</h3>
                         {!notification.read && (
                           <Badge className="text-[10px] px-2 py-0 h-5 rounded-full bg-primary/15 text-primary border-primary/20 font-bold">
                             {t('common_new')}
@@ -222,7 +224,7 @@ const Notifications = () => {
                           backgroundColor: notification.background_color || undefined,
                         }}
                       >
-                        <p className="text-sm leading-relaxed">{notification.message}</p>
+                        <p className="text-sm leading-relaxed">{translateNotificationMessage(notification.message, lang)}</p>
                       </div>
 
                       <div className="flex items-center justify-between mt-2.5">
