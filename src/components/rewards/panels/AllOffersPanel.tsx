@@ -334,7 +334,7 @@ export default function AllOffersPanel() {
               {/* Out of Stock Overlay */}
               {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
                 <div className="absolute inset-0 bg-background/85 flex items-center justify-center">
-                  <span className="text-foreground font-bold text-[9px] bg-muted px-2 py-0.5 rounded">نفذت</span>
+                  <span className="text-foreground font-bold text-[9px] bg-muted px-2 py-0.5 rounded">{t('ao_stock_out')}</span>
                 </div>
               )}
               
