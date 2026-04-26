@@ -23,6 +23,7 @@ interface CardsSectionProps {
 export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
   const [expandedCoupons, setExpandedCoupons] = useState(false);
 
   const shouldFetchUserData = activeSubTab === 'benefits' || activeSubTab === 'upgrade';

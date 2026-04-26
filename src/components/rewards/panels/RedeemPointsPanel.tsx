@@ -15,6 +15,7 @@ import { pickLocalized } from "@/lib/i18n/localizedField";
 export default function RedeemPointsPanel() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
   const queryClient = useQueryClient();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [pointsToRedeem, setPointsToRedeem] = useState('');

@@ -20,6 +20,7 @@ import { pickLocalized } from "@/lib/i18n/localizedField";
 
 export default function LoyaltyLevelsPanel() {
   const { t, language } = useLanguage();
+  const { fmt } = useNumberFormat();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showRoadmap, setShowRoadmap] = useState(false);

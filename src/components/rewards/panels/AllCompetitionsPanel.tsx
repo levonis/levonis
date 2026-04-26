@@ -94,6 +94,7 @@ interface LetterBagParticipation {
 
 export default function AllCompetitionsPanel() {
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCompetition, setSelectedCompetition] = useState<any>(null);

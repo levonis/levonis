@@ -11,6 +11,7 @@ import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
 export default function AllPlansPanel() {
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const { data: plans, isLoading } = useQuery({
     queryKey: ['all-protection-plans-panel'],
     queryFn: async () => {

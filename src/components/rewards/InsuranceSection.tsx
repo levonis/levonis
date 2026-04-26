@@ -41,6 +41,7 @@ interface InsuranceSectionProps {
 export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const queryClient = useQueryClient();
   const [expandedPrinter, setExpandedPrinter] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);

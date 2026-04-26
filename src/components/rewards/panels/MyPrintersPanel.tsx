@@ -13,6 +13,7 @@ import { useNumberFormat } from "@/lib/i18n/numberFormat";
 export default function MyPrintersPanel() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
 
   const { data: printers, isLoading } = useQuery({
     queryKey: ['my-printers-panel', user?.id],

@@ -39,6 +39,7 @@ interface RedeemableProduct {
 export default function PointsStorePanel() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { fmt } = useNumberFormat();
   const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState<RedeemableProduct | null>(null);
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
