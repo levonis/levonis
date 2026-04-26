@@ -159,10 +159,10 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
         .getPublicUrl(fileName);
 
       setPaymentProofUrl(publicUrl);
-      toast.success('تم رفع الصورة بنجاح');
+      toast.success(t('wallet_toast_image_uploaded'));
     } catch (error) {
       console.error('Error uploading proof:', error);
-      toast.error('حدث خطأ في رفع الصورة');
+      toast.error(t('wallet_toast_image_upload_error'));
     } finally {
       setUploadingProof(false);
     }
@@ -172,7 +172,7 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const copyAccountNumber = (number: string) => {
     navigator.clipboard.writeText(number);
     setCopiedNumber(number);
-    toast.success('تم نسخ الرقم');
+    toast.success(t('wallet_toast_number_copied'));
     setTimeout(() => setCopiedNumber(null), 2000);
   };
 
@@ -196,12 +196,12 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success('تم إرسال طلب التعبئة بنجاح');
+      toast.success(t('wallet_toast_deposit_sent'));
       resetDepositForm();
     },
     onError: (error) => {
       console.error('Error:', error);
-      toast.error('حدث خطأ في إرسال الطلب');
+      toast.error(t('wallet_toast_deposit_error'));
     },
   });
 
@@ -209,11 +209,11 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const withdrawWallet = useMutation({
     mutationFn: async (amount: number) => {
       if (!wallet || wallet.balance < amount) {
-        throw new Error('رصيد غير كافٍ');
+        throw new Error(t('wallet_toast_insufficient_balance'));
       }
 
       if (amount < minWithdrawal) {
-        throw new Error(`الحد الأدنى للسحب هو ${minWithdrawal.toLocaleString()} د.ع`);
+        throw new Error(t('wallet_toast_min_withdrawal', { amount: fmt(minWithdrawal) }));
       }
 
       const { error } = await supabase
@@ -231,11 +231,11 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
-      toast.success('تم إرسال طلب السحب بنجاح');
+      toast.success(t('wallet_toast_withdraw_sent'));
       setWithdrawAmount("");
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('wallet_toast_generic_error'));
     },
   });
 
@@ -248,15 +248,15 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const handleDepositClick = () => {
     const amount = Number(depositAmount);
     if (!amount || amount <= 0) {
-      toast.error('الرجاء إدخال مبلغ صحيح');
+      toast.error(t('wallet_toast_invalid_amount'));
       return;
     }
     if (!selectedPaymentMethod) {
-      toast.error('الرجاء اختيار طريقة الدفع');
+      toast.error(t('wallet_toast_choose_method'));
       return;
     }
     if (!paymentProofUrl) {
-      toast.error('الرجاء رفع صورة إثبات الدفع');
+      toast.error(t('wallet_toast_upload_proof'));
       return;
     }
     setShowDepositConfirm(true);
@@ -265,11 +265,11 @@ export default function WalletDialog({ open, onOpenChange, originRect }: WalletD
   const handleWithdrawClick = () => {
     const amount = Number(withdrawAmount);
     if (!amount || amount <= 0 || amount < minWithdrawal) {
-      toast.error(`الحد الأدنى للسحب هو ${minWithdrawal.toLocaleString()} د.ع`);
+      toast.error(t('wallet_toast_min_withdrawal', { amount: fmt(minWithdrawal) }));
       return;
     }
     if (wallet && amount > wallet.balance) {
-      toast.error('رصيد غير كافٍ');
+      toast.error(t('wallet_toast_insufficient_balance'));
       return;
     }
     setShowWithdrawConfirm(true);
