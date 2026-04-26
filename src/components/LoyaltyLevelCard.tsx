@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Check, Lock, Star, Crown, Award, Trophy } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 interface LoyaltyLevel {
   level_key: string;
@@ -44,9 +45,11 @@ export default function LoyaltyLevelCard({
   currentLevel,
   nextLevel,
 }: LoyaltyLevelCardProps) {
+  const { t, language } = useLanguage();
   const isCurrentLevel = level.level_key === currentLevel;
   const isUnlocked = userPoints >= level.min_points;
   const Icon = getLevelIcon(level.level_key);
+  const levelName = language === 'ar' ? level.name_ar : (level.name_en || level.name_ar);
   
   const pointsToNextLevel = nextLevel
     ? nextLevel.min_points - userPoints
@@ -94,9 +97,9 @@ export default function LoyaltyLevelCard({
               <Icon className="h-6 w-6" />
             </div>
             <div>
-              <CardTitle className="text-xl">{level.name_ar}</CardTitle>
+              <CardTitle className="text-xl">{levelName}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {level.min_points} نقطة وأكثر
+                {t('loyalty_points_and_above', { n: level.min_points })}
               </p>
             </div>
           </div>
@@ -107,7 +110,7 @@ export default function LoyaltyLevelCard({
                 color: "white",
               }}
             >
-              مستواك الحالي
+              {t('loyalty_current_level')}
             </Badge>
           )}
           {!isUnlocked && (
@@ -121,9 +124,9 @@ export default function LoyaltyLevelCard({
         {isCurrentLevel && nextLevel && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>التقدم للمستوى التالي</span>
+              <span>{t('loyalty_progress_next')}</span>
               <span className="font-medium">
-                {pointsToNextLevel} نقطة متبقية
+                {t('loyalty_points_remaining', { n: pointsToNextLevel })}
               </span>
             </div>
             <Progress
@@ -138,7 +141,7 @@ export default function LoyaltyLevelCard({
 
         {/* Benefits */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-sm">المزايا:</h4>
+          <h4 className="font-semibold text-sm">{t('loyalty_benefits')}</h4>
           <div className="space-y-2">
             {level.benefits.map((benefit, index) => (
               <div
@@ -150,7 +153,7 @@ export default function LoyaltyLevelCard({
                   style={{ color: level.color }}
                 />
                 <span className={isUnlocked ? "" : "text-muted-foreground"}>
-                  {benefit.text_ar}
+                  {language === 'ar' ? benefit.text_ar : (benefit.text_en || benefit.text_ar)}
                 </span>
               </div>
             ))}
@@ -164,7 +167,7 @@ export default function LoyaltyLevelCard({
           <div className="pt-3 border-t space-y-1">
             {level.discount_percentage > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">الخصم:</span>
+                <span className="text-muted-foreground">{t('loyalty_discount')}</span>
                 <span className="font-medium">
                   {level.discount_percentage}%
                 </span>
@@ -172,7 +175,7 @@ export default function LoyaltyLevelCard({
             )}
             {level.bonus_points_percentage > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">نقاط إضافية:</span>
+                <span className="text-muted-foreground">{t('loyalty_bonus_points')}</span>
                 <span className="font-medium">
                   {level.bonus_points_percentage}%
                 </span>
@@ -180,8 +183,8 @@ export default function LoyaltyLevelCard({
             )}
             {level.free_shipping && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">الشحن:</span>
-                <span className="font-medium text-green-600">مجاني</span>
+                <span className="text-muted-foreground">{t('loyalty_shipping')}</span>
+                <span className="font-medium text-green-600">{t('loyalty_free')}</span>
               </div>
             )}
           </div>
