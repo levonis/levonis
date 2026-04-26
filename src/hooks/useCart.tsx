@@ -113,33 +113,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
-  const [codDefaults, setCodDefaults] = useState<{ type: 'percentage' | 'fixed'; value: number } | null>(null);
-  const { user } = useAuth();
-  const { data: shippingSettings } = useShippingSettings();
-  const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
-  const optimisticLockRef = useRef(0); // Guard against fetch overwriting optimistic updates
-
-  // Fetch global COD defaults once so cart prices for products linked to
-  // `link_direct_commission_to_cod` recompute live whenever the admin changes %.
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const { data } = await supabase
-        .from('default_settings')
-        .select('setting_value')
-        .eq('setting_key', 'partial_payment_settings')
-        .single();
-      const v: any = data?.setting_value || {};
-      if (!cancelled) {
-        setCodDefaults({
-          type: (v.cod_default_fee_type || 'percentage') as 'percentage' | 'fixed',
-          value: Number(v.cod_default_fee_value) || 0,
-        });
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, []);
+  // Global COD defaults — shared hook with realtime sync. Cart prices for
+  // products linked to `link_direct_commission_to_cod` recompute live whenever
+  // the admin changes the COD %.
+  const { data: codDefaults = null } = useCodDefaults();
 
   // Fetch pending cart request
   const fetchPendingCartRequest = async () => {
