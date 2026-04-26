@@ -710,7 +710,14 @@ const Cart = () => {
   const rawDeliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
   
   // Apply card free shipping if eligible
-  const cardFreeShippingApplied = cardDiscount?.freeShipping && total >= (cardDiscount?.freeShippingMinOrder || 0);
+  // Apply card free shipping if eligible: must include selected method + have remaining uses
+  const cardFreeShippingEligibleMethod = !!cardDiscount?.freeShipping
+    && (cardDiscount?.freeShippingMethods?.length ? cardDiscount.freeShippingMethods.includes(selectedDeliveryMethod) : true);
+  const cardFreeShippingHasUses = cardDiscount?.freeShippingRemainingUses == null
+    || (cardDiscount?.freeShippingRemainingUses ?? 0) > 0;
+  const cardFreeShippingApplied = cardFreeShippingEligibleMethod
+    && cardFreeShippingHasUses
+    && total >= (cardDiscount?.freeShippingMinOrder || 0);
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
   const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
   const referralFreeShippingApplied = !!appliedReferral && total >= referralMinOrder;
