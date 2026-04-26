@@ -450,20 +450,20 @@ export default function ProfileSettings() {
         </div>
 
         {/* Personal Info Section */}
-        <SettingsSection icon={User} title="المعلومات الشخصية">
+        <SettingsSection icon={User} title={t('settings_personal_info')}>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">الاسم</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="اسمك" className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all" />
+              <Label className="text-xs text-muted-foreground">{t('settings_name')}</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('settings_name_placeholder')} className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all" />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">اليوزرنيم</Label>
+              <Label className="text-xs text-muted-foreground">{t('settings_username')}</Label>
               <Input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={!canEditUsername}
-                placeholder="مثال: levo_user"
+                placeholder={t('settings_username_placeholder')}
                 maxLength={30}
                 className="bg-white/5 dark:bg-white/5 border border-white/15 dark:border-white/10 backdrop-blur-xl rounded-2xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)] focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all"
               />
@@ -471,7 +471,7 @@ export default function ProfileSettings() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">رقم الهاتف</Label>
+              <Label className="text-xs text-muted-foreground">{t('settings_phone')}</Label>
               {editingPhone ? (
                 <div className="space-y-2">
                   <Input
