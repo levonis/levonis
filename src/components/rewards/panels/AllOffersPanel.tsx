@@ -680,14 +680,14 @@ export default function AllOffersPanel() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 mt-3">
-            <AlertDialogCancel className="rounded-lg flex-1 h-9 text-xs">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-lg flex-1 h-9 text-xs">{t('ao_btn_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="rounded-lg flex-1 h-9 text-xs font-bold"
               onClick={() => selectedOffer && purchaseMutation.mutate({ offer: selectedOffer, qty: quantity })}
               disabled={purchaseMutation.isPending}
             >
               {purchaseMutation.isPending && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
-              تأكيد
+              {t('ao_btn_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
