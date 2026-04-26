@@ -42,7 +42,8 @@ const NotificationIcon3D = ({ type }: { type: string }) => {
 };
 
 const Notifications = () => {
-  const { t } = useLanguage();
+  const { t, language, dir } = useLanguage();
+  const lang = (language || 'ar') as 'ar' | 'en' | 'ku';
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
