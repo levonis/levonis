@@ -545,9 +545,11 @@ export default function DailyTasksPanel() {
 
       {tasks?.map((task) => {
         const isOnceTask = task.task_type === 'once';
-        const isCompleted = isOnceTask 
+        const isCompleted = isOnceTask
           ? completedOnceTasks?.includes(task.task_key)
           : completedTasks?.includes(task.task_key);
+        // Hide completed tasks entirely — they reappear next day (daily) or next week (weekly).
+        if (isCompleted) return null;
         const isTaskLoading = activeTaskKey === task.task_key && completeTaskMutation.isPending;
         const isPending = pendingApprovals?.some((p: any) => p.task_key === task.task_key && p.status === 'pending');
         const isAdminTask = task.confirmation_type === 'admin_approval';
