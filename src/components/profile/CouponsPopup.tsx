@@ -401,8 +401,8 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                         <Clock className="h-3.5 w-3.5 text-amber-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold">صالح حتى</p>
-                        <p className="text-[9px] text-muted-foreground">{format(new Date(selectedDiscount.valid_until), "d MMMM yyyy", { locale: ar })}</p>
+                        <p className="text-[10px] font-bold">{t('cp_valid_until')}</p>
+                        <p className="text-[9px] text-muted-foreground">{format(new Date(selectedDiscount.valid_until), "d MMMM yyyy", { locale: dateLocale })}</p>
                       </div>
                     </div>
                   )}
