@@ -1735,6 +1735,17 @@ const Cart = () => {
         }
       }
 
+      // Record percentage discount usage during card validity
+      if ((cardDiscount?.percentageDiscount || 0) > 0 && cardDiscount?.cardId && cardDiscount?.levelId) {
+        await (supabase as any).from('loyalty_percentage_discount_usage').insert({
+          user_id: user!.id,
+          card_id: cardDiscount.cardId,
+          level_id: cardDiscount.levelId,
+          order_id: order.id,
+          discount_amount: cardDiscount.percentageDiscount,
+        });
+      }
+
       // Update order with card discount info
       if (cardDiscountAmount > 0) {
         await supabase.from('orders').update({
