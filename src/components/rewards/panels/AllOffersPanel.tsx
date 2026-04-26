@@ -293,16 +293,16 @@ export default function AllOffersPanel() {
             className="group cursor-pointer"
             onClick={() => handleOfferClick(offer)}
           >
-            {/* Minimal Square Card */}
-            <div className="relative aspect-square rounded-lg overflow-hidden bg-card border border-border/40 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+            {/* Glass Square Card */}
+            <div className="glass-tile glass-tile-interactive relative aspect-square !rounded-lg overflow-hidden">
               <OptimizedImage
                 src={offer.image_url || '/placeholder.svg'}
                 alt={offer.title_ar}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
-              
+
               {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
               
               {/* Top Badges Row */}
               <div className="absolute top-1 left-1 right-1 flex justify-between items-start">
@@ -469,7 +469,7 @@ export default function AllOffersPanel() {
                       </p>
                     )}
                   </div>
-                  <div className="bg-primary/10 rounded-lg px-2 py-1.5 shrink-0">
+                  <div className="glass-badge !rounded-lg px-2 py-1.5 shrink-0">
                     <span className="text-base font-black text-primary">{formatPrice(basePrice)}</span>
                     <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || t('ao_currency_iqd')}</span>
                   </div>
@@ -533,7 +533,7 @@ export default function AllOffersPanel() {
 
                 {/* Description */}
                 {selectedOffer.description_ar && (
-                  <p className="text-[11px] text-muted-foreground leading-relaxed bg-muted/20 p-2 rounded-lg">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed glass-tile p-2 !rounded-lg">
                     {selectedOffer.description_ar}
                   </p>
                 )}
@@ -542,7 +542,7 @@ export default function AllOffersPanel() {
                 {(selectedOffer.gift_tickets > 0 || selectedOffer.points_reward > 0) && (
                   <div className="flex gap-2">
                     {selectedOffer.gift_tickets > 0 && (
-                      <div className="flex-1 bg-primary/10 rounded-lg p-2 text-center">
+                      <div className="flex-1 glass-tile !rounded-lg p-2 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <Ticket className="h-3 w-3 text-primary" />
                           <span className="text-sm font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</span>
@@ -551,7 +551,7 @@ export default function AllOffersPanel() {
                       </div>
                     )}
                     {selectedOffer.points_reward > 0 && (
-                      <div className="flex-1 bg-amber-500/10 rounded-lg p-2 text-center">
+                      <div className="flex-1 glass-tile !rounded-lg p-2 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <Coins className="h-3 w-3 text-amber-600" />
                           <span className="text-sm font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</span>
@@ -563,10 +563,10 @@ export default function AllOffersPanel() {
                 )}
 
                 {/* Quantity & Total */}
-                <div className="bg-muted/20 rounded-lg p-2">
+                <div className="glass-tile !rounded-lg p-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium">{t('ao_quantity')}</span>
-                    <div className="flex items-center gap-0.5 bg-background rounded p-0.5">
+                    <div className="flex items-center gap-0.5 glass-badge !rounded p-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -597,8 +597,8 @@ export default function AllOffersPanel() {
                 </div>
               </div>
 
-              {/* Fixed CTA */}
-              <div className="fixed bottom-0 left-0 right-0 p-3 bg-background/95 backdrop-blur-lg border-t shadow-lg z-20">
+              {/* Fixed CTA — Glass strip */}
+              <div className="fixed bottom-0 left-0 right-0 p-3 glass-strip border-t shadow-lg z-20">
                 <Button 
                   className="w-full h-10 rounded-lg text-xs font-bold"
                   onClick={handlePurchase}
