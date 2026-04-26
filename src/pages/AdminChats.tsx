@@ -209,11 +209,32 @@ export default function AdminChats() {
 
       const pointsMap = new Map(points?.map(p => [p.user_id, p]) || []);
 
+      // Fetch active loyalty cards with vip_support enabled
+      const nowIso = new Date().toISOString();
+      const { data: cards } = await supabase
+        .from('user_cards')
+        .select('user_id, expires_at, is_active, loyalty_levels!inner(name_ar, color, display_order, vip_support)')
+        .in('user_id', userIds)
+        .eq('is_active', true)
+        .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+
+      const vipMap = new Map<string, { rank: number; name: string; color: string | null }>();
+      (cards || []).forEach((c: any) => {
+        const lvl = c.loyalty_levels;
+        if (!lvl?.vip_support) return;
+        const rank = lvl.display_order ?? 0;
+        const existing = vipMap.get(c.user_id);
+        if (!existing || rank > existing.rank) {
+          vipMap.set(c.user_id, { rank, name: lvl.name_ar, color: lvl.color });
+        }
+      });
+
       // Get last messages and unread counts
       const conversationsWithDetails: SupportConversation[] = await Promise.all(
         convs.map(async (conv) => {
           const profile = profileMap.get(conv.buyer_id);
           const userPoints = pointsMap.get(conv.buyer_id);
+          const vip = vipMap.get(conv.buyer_id);
 
           // Get unread count (messages from user, not read by admin)
           const { count: unreadCount } = await supabase
@@ -232,6 +253,7 @@ export default function AdminChats() {
             .limit(1)
             .maybeSingle();
 
+          const unread = unreadCount || 0;
           return {
             id: conv.id,
             user_id: conv.buyer_id,
@@ -239,15 +261,21 @@ export default function AdminChats() {
             user_avatar: profile?.avatar_url || null,
             level: userPoints?.level || 'bronze',
             total_points: userPoints?.total_points || 0,
-            unread_count: unreadCount || 0,
+            unread_count: unread,
             last_message_at: conv.updated_at,
             last_message: lastMsg?.content,
+            vip_card_name: vip?.name ?? null,
+            vip_card_color: vip?.color ?? null,
+            vip_priority_rank: vip?.rank ?? -1,
+            is_pinned: !!vip && unread > 0,
           };
         })
       );
 
-      // Sort by level priority then by last message
+      // Sort: pinned VIPs first (by card rank desc), then non-pinned by VIP rank desc, then by last message
       return conversationsWithDetails.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        if (b.vip_priority_rank !== a.vip_priority_rank) return b.vip_priority_rank - a.vip_priority_rank;
         const levelDiff = (LEVEL_PRIORITY[b.level] || 0) - (LEVEL_PRIORITY[a.level] || 0);
         if (levelDiff !== 0) return levelDiff;
         return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
