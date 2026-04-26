@@ -32,6 +32,7 @@ import OptimizedImage from "@/components/OptimizedImage";
 import { toast } from "sonner";
 import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, Palette, Settings2 } from "lucide-react";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { useLanguage } from "@/lib/i18n";
 
 const PAGE_SIZE = 10;
 
@@ -57,6 +58,7 @@ interface ProductOption {
 }
 
 export default function AllOffersPanel() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
@@ -160,7 +162,7 @@ export default function AllOffersPanel() {
 
   const purchaseMutation = useMutation({
     mutationFn: async ({ offer, qty }: { offer: any; qty: number }) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
+      if (!user) throw new Error(t('ao_login_required'));
       
       // استخدام RPC الآمن الذي يتحقق من الرصيد ويخصم المبلغ ذرياً
       const { data: result, error } = await supabase.rpc('purchase_product_offer', {
@@ -171,7 +173,7 @@ export default function AllOffersPanel() {
       if (error) throw new Error(error.message);
       
       const resultData = result as { success: boolean; error?: string; total_cost?: number; gift_tickets?: number };
-      if (!resultData?.success) throw new Error(resultData?.error || 'فشل الشراء');
+      if (!resultData?.success) throw new Error(resultData?.error || t('ao_purchase_failed'));
       
       // منح النقاط إذا كان العرض يتضمن مكافأة نقاط
       if (offer.points_reward && offer.points_reward > 0) {
@@ -181,7 +183,7 @@ export default function AllOffersPanel() {
           points: totalPoints,
           type: 'earn',
           source: 'offer_purchase',
-          description: `نقاط من شراء ${offer.title_ar}`,
+          description: t('ao_points_desc', { title: offer.title_ar }),
         });
       }
       
@@ -199,13 +201,13 @@ export default function AllOffersPanel() {
       queryClient.invalidateQueries({ queryKey: ['storage-offer-purchases'] });
       queryClient.invalidateQueries({ queryKey: ['all-product-offers-panel-infinite'] });
       
-      let message = 'تم الشراء بنجاح!';
+      let message = t('ao_purchase_success');
       if (data.tickets > 0 && data.points > 0) {
-        message = `تم الشراء! حصلت على ${data.tickets} تذكرة و ${data.points} نقطة`;
+        message = t('ao_purchase_success_both', { tickets: data.tickets, points: data.points });
       } else if (data.tickets > 0) {
-        message = `تم الشراء! حصلت على ${data.tickets} تذكرة`;
+        message = t('ao_purchase_success_tickets', { tickets: data.tickets });
       } else if (data.points > 0) {
-        message = `تم الشراء! حصلت على ${data.points} نقطة`;
+        message = t('ao_purchase_success_points', { points: data.points });
       }
       
       toast.success(message);
@@ -214,7 +216,7 @@ export default function AllOffersPanel() {
       setQuantity(1);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('ao_error_generic'));
     },
   });
 
@@ -231,7 +233,7 @@ export default function AllOffersPanel() {
 
   const handlePurchase = () => {
     if (!user) {
-      toast.error('سجّل الدخول للشراء');
+      toast.error(t('ao_login_to_buy'));
       return;
     }
     setPurchaseDialogOpen(true);
@@ -276,7 +278,7 @@ export default function AllOffersPanel() {
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
           <Gift className="h-7 w-7 text-primary/50" />
         </div>
-        <p className="text-muted-foreground text-sm font-medium">لا توجد عروض</p>
+        <p className="text-muted-foreground text-sm font-medium">{t('ao_no_offers')}</p>
       </div>
     );
   }
@@ -332,7 +334,7 @@ export default function AllOffersPanel() {
               {/* Out of Stock Overlay */}
               {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
                 <div className="absolute inset-0 bg-background/85 flex items-center justify-center">
-                  <span className="text-foreground font-bold text-[9px] bg-muted px-2 py-0.5 rounded">نفذت</span>
+                  <span className="text-foreground font-bold text-[9px] bg-muted px-2 py-0.5 rounded">{t('ao_stock_out')}</span>
                 </div>
               )}
               
@@ -345,7 +347,7 @@ export default function AllOffersPanel() {
                   <span className="font-black text-primary-foreground text-[10px] tracking-tight">
                     {formatPrice(offer.price)}
                   </span>
-                  <span className="text-[6px] text-primary-foreground/80 font-medium">{offer.currency || 'د.ع'}</span>
+                  <span className="text-[6px] text-primary-foreground/80 font-medium">{offer.currency || t('ao_currency_iqd')}</span>
                 </div>
               </div>
             </div>
@@ -369,7 +371,7 @@ export default function AllOffersPanel() {
           </div>
           
           <DrawerHeader className="sr-only">
-            <DrawerTitle>تفاصيل المنتج</DrawerTitle>
+            <DrawerTitle>{t('ao_drawer_title')}</DrawerTitle>
           </DrawerHeader>
           
           {selectedOffer && (
@@ -463,13 +465,13 @@ export default function AllOffersPanel() {
                     <h2 className="text-sm font-bold leading-tight line-clamp-2">{selectedOffer.title_ar}</h2>
                     {selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity > 0 && (
                       <p className={`text-[10px] mt-0.5 ${selectedOffer.stock_quantity <= 5 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        متوفر: {selectedOffer.stock_quantity}
+                        {t('ao_stock_available', { count: selectedOffer.stock_quantity })}
                       </p>
                     )}
                   </div>
                   <div className="bg-primary/10 rounded-lg px-2 py-1.5 shrink-0">
                     <span className="text-base font-black text-primary">{formatPrice(basePrice)}</span>
-                    <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || 'د.ع'}</span>
+                    <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || t('ao_currency_iqd')}</span>
                   </div>
                 </div>
 
@@ -478,7 +480,7 @@ export default function AllOffersPanel() {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-medium flex items-center gap-1 text-muted-foreground">
                       <Palette className="h-3 w-3" />
-                      اختر اللون
+                      {t('ao_choose_color')}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {availableColors.map((color, idx) => (
@@ -506,7 +508,7 @@ export default function AllOffersPanel() {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-medium flex items-center gap-1 text-muted-foreground">
                       <Settings2 className="h-3 w-3" />
-                      اختر الخيار
+                      {t('ao_choose_option')}
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {availableOptions.map((opt, idx) => (
@@ -545,7 +547,7 @@ export default function AllOffersPanel() {
                           <Ticket className="h-3 w-3 text-primary" />
                           <span className="text-sm font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</span>
                         </div>
-                        <p className="text-[8px] text-muted-foreground">تذكرة</p>
+                        <p className="text-[8px] text-muted-foreground">{t('ao_ticket_label')}</p>
                       </div>
                     )}
                     {selectedOffer.points_reward > 0 && (
@@ -554,7 +556,7 @@ export default function AllOffersPanel() {
                           <Coins className="h-3 w-3 text-amber-600" />
                           <span className="text-sm font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</span>
                         </div>
-                        <p className="text-[8px] text-muted-foreground">نقطة</p>
+                        <p className="text-[8px] text-muted-foreground">{t('ao_point_label')}</p>
                       </div>
                     )}
                   </div>
@@ -563,7 +565,7 @@ export default function AllOffersPanel() {
                 {/* Quantity & Total */}
                 <div className="bg-muted/20 rounded-lg p-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">الكمية</span>
+                    <span className="text-[11px] font-medium">{t('ao_quantity')}</span>
                     <div className="flex items-center gap-0.5 bg-background rounded p-0.5">
                       <Button
                         variant="ghost"
@@ -587,9 +589,9 @@ export default function AllOffersPanel() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/30">
-                    <span className="text-[11px] text-muted-foreground">المجموع</span>
+                    <span className="text-[11px] text-muted-foreground">{t('ao_total')}</span>
                     <span className="font-black text-primary text-sm">
-                      {formatPrice(totalPrice)} {selectedOffer.currency || 'د.ع'}
+                      {formatPrice(totalPrice)} {selectedOffer.currency || t('ao_currency_iqd')}
                     </span>
                   </div>
                 </div>
@@ -603,10 +605,10 @@ export default function AllOffersPanel() {
                   disabled={!user || (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)}
                 >
                   <ShoppingCart className="h-3.5 w-3.5 ml-1.5" />
-                  شراء - {formatPrice(totalPrice)} {selectedOffer.currency || 'د.ع'}
+                  {t('ao_buy_button', { price: formatPrice(totalPrice), currency: selectedOffer.currency || t('ao_currency_iqd') })}
                 </Button>
                 {!user && (
-                  <p className="text-[9px] text-center text-muted-foreground mt-1">سجّل الدخول للشراء</p>
+                  <p className="text-[9px] text-center text-muted-foreground mt-1">{t('ao_login_to_buy')}</p>
                 )}
               </div>
             </div>
@@ -618,7 +620,7 @@ export default function AllOffersPanel() {
       <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
         <AlertDialogContent className="rounded-xl max-w-[280px] mx-4 p-4">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-sm font-bold">تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogTitle className="text-center text-sm font-bold">{t('ao_confirm_purchase')}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
@@ -637,12 +639,12 @@ export default function AllOffersPanel() {
                 
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1.5">
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">المبلغ</span>
-                    <span className="font-bold text-primary">{formatPrice(totalPrice)} د.ع</span>
+                    <span className="text-muted-foreground">{t('ao_amount_label')}</span>
+                    <span className="font-bold text-primary">{formatPrice(totalPrice)} {t('ao_currency_iqd')}</span>
                   </div>
                   {selectedColor && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
-                      <span className="text-muted-foreground">اللون</span>
+                      <span className="text-muted-foreground">{t('ao_color_label')}</span>
                       <span className="flex items-center gap-1">
                         <span className="w-3 h-3 rounded-full border" style={getColorSwatchStyle(selectedColor.hex_code)} />
                         <span className="font-medium">{selectedColor.name_ar}</span>
@@ -651,7 +653,7 @@ export default function AllOffersPanel() {
                   )}
                   {selectedOption && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
-                      <span className="text-muted-foreground">الخيار</span>
+                      <span className="text-muted-foreground">{t('ao_option_label')}</span>
                       <span className="font-medium">{selectedOption.name_ar}</span>
                     </div>
                   )}
@@ -659,7 +661,7 @@ export default function AllOffersPanel() {
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
                       <span className="text-muted-foreground flex items-center gap-0.5">
                         <Ticket className="h-2.5 w-2.5 text-primary" />
-                        تذاكر
+                        {t('ao_tickets_label')}
                       </span>
                       <span className="font-bold text-primary">{selectedOffer.gift_tickets * quantity}</span>
                     </div>
@@ -668,7 +670,7 @@ export default function AllOffersPanel() {
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
                       <span className="text-muted-foreground flex items-center gap-0.5">
                         <Coins className="h-2.5 w-2.5 text-amber-500" />
-                        نقاط
+                        {t('ao_points_label')}
                       </span>
                       <span className="font-bold text-amber-600">{selectedOffer.points_reward * quantity}</span>
                     </div>
@@ -678,14 +680,14 @@ export default function AllOffersPanel() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 mt-3">
-            <AlertDialogCancel className="rounded-lg flex-1 h-9 text-xs">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-lg flex-1 h-9 text-xs">{t('ao_btn_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               className="rounded-lg flex-1 h-9 text-xs font-bold"
               onClick={() => selectedOffer && purchaseMutation.mutate({ offer: selectedOffer, qty: quantity })}
               disabled={purchaseMutation.isPending}
             >
               {purchaseMutation.isPending && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
-              تأكيد
+              {t('ao_btn_confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
