@@ -220,7 +220,7 @@ export default function CouponsPopup({ open, onOpenChange, originRect }: Coupons
                             {discount.valid_until && (
                               <div className="flex items-center gap-1 text-[7px] text-muted-foreground">
                                 <Clock className="h-2 w-2" />
-                                {format(new Date(discount.valid_until), "d MMM", { locale: ar })}
+                                {format(new Date(discount.valid_until), "d MMM", { locale: dateLocale })}
                               </div>
                             )}
                           </div>
