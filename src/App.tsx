@@ -70,6 +70,7 @@ const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const AdminAppVersions = lazy(() => import("./pages/admin/AdminAppVersions"));
 
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
+const MyLevelPrizes = lazy(() => import("./pages/MyLevelPrizes"));
 const MyReferral = lazy(() => import("./pages/MyReferral"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const ProductShop = lazy(() => import("./pages/ProductShop"));
