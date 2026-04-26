@@ -398,11 +398,13 @@ export default function App() {
             <AuthProvider>
               <CartProvider>
                 <IslandProvider>
-                  <ProfileTransitionProvider>
-                    <NativeAuthGate>
-                      <AppContent />
-                    </NativeAuthGate>
-                  </ProfileTransitionProvider>
+                  <PageSearchProvider>
+                    <ProfileTransitionProvider>
+                      <NativeAuthGate>
+                        <AppContent />
+                      </NativeAuthGate>
+                    </ProfileTransitionProvider>
+                  </PageSearchProvider>
                 </IslandProvider>
               </CartProvider>
             </AuthProvider>
