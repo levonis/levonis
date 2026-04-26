@@ -653,7 +653,7 @@ export default function AllOffersPanel() {
                   )}
                   {selectedOption && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
-                      <span className="text-muted-foreground">الخيار</span>
+                      <span className="text-muted-foreground">{t('ao_option_label')}</span>
                       <span className="font-medium">{selectedOption.name_ar}</span>
                     </div>
                   )}
