@@ -473,8 +473,8 @@ export default function AllStoragePanel() {
     return (
       <Card 
         key={item.id}
-        className={`group overflow-hidden transition-all duration-200 border hover:shadow-lg ${
-          isSelected ? 'ring-2 ring-primary border-primary/50' : config.borderColor
+        className={`group overflow-hidden transition-all duration-200 glass-tile ${
+          isSelected ? 'ring-2 ring-primary' : ''
         }`}
       >
         <CardContent className="p-0">
