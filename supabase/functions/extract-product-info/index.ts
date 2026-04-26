@@ -1326,11 +1326,13 @@ ${pageContent.substring(0, 100000)}${extraContext}
           console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Currency:', extractedCurrency);
           
           const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum);
+          const originalPriceUsd = Math.round(convertToUSD(extractedOriginalPrice, extractedCurrency) * 100) / 100;
           let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
           originalPriceInIqd = roundPrice(originalPriceInIqd);
           
           productInfo.price = null;
           productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
+          productInfo.original_price_usd = originalPriceUsd > 0 ? originalPriceUsd : null;
           productInfo.currency = 'IQD';
           
           // Calculate points reward: 1 point per 1000 IQD (based on original price before discount)
