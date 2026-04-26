@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Lock, Gift, Star, Crown, Trophy, CreditCard, Zap } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 interface LevelPrize {
   id: string;
@@ -38,13 +39,14 @@ export default function LevelRoadmapModal({
   totalXp,
   activeCardLevelId,
 }: LevelRoadmapModalProps) {
+  const { t } = useLanguage();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[85vh] p-0 overflow-hidden">
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="text-center flex items-center justify-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            خريطة المستويات
+            {t('lr_title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -109,7 +111,7 @@ export default function LevelRoadmapModal({
                             className="mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full text-white"
                             style={{ backgroundColor: level.color }}
                           >
-                            أنت هنا
+                            {t('lr_you_are_here')}
                           </div>
                         )}
                       </div>
@@ -142,10 +144,10 @@ export default function LevelRoadmapModal({
                             </div>
                             <div>
                               <p className="font-bold text-sm" style={{ color: level.color }}>
-                                مستوى {index + 1}
+                                {t('lr_level_n', { n: index + 1 })}
                               </p>
                               <p className="text-[10px] text-muted-foreground">
-                                {xpReq > 0 ? `${xpReq.toLocaleString()} XP` : 'المستوى الأساسي'}
+                                {xpReq > 0 ? `${xpReq.toLocaleString()} XP` : t('lr_base_level')}
                               </p>
                             </div>
                           </div>
@@ -153,7 +155,7 @@ export default function LevelRoadmapModal({
                             {hasCard && (
                               <Badge className="text-[9px] bg-green-500/15 text-green-600 border-0 px-1.5">
                                 <CheckCircle2 className="h-3 w-3 ml-0.5" />
-                                مملوكة
+                                {t('lr_owned')}
                               </Badge>
                             )}
                           </div>

@@ -1816,4 +1816,11 @@ export const ar: TranslationKeys = {
   pa_pending_activation: 'في انتظار التفعيل',
   pa_expires_on: 'ينتهي في',
   pa_confirm_activate: 'تأكيد وتفعيل الطابعة',
+
+  // Level Roadmap Modal
+  lr_title: 'خريطة المستويات',
+  lr_you_are_here: 'أنت هنا',
+  lr_level_n: 'مستوى {n}',
+  lr_base_level: 'المستوى الأساسي',
+  lr_owned: 'مملوكة',
 };

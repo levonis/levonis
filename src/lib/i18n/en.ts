@@ -1816,4 +1816,11 @@ export const en: TranslationKeys = {
   pa_pending_activation: 'Awaiting activation',
   pa_expires_on: 'Expires on',
   pa_confirm_activate: 'Confirm and activate printer',
+
+  // Level Roadmap Modal
+  lr_title: 'Level roadmap',
+  lr_you_are_here: 'You are here',
+  lr_level_n: 'Level {n}',
+  lr_base_level: 'Base level',
+  lr_owned: 'Owned',
 };

@@ -602,7 +602,7 @@ export default function DailyTasksPanel() {
                       </div>
                       <div className="flex items-center gap-2 text-[10px]">
                         <span className={(autoCheckData?.merchantProductCount || 0) >= 3 ? 'text-green-600' : 'text-muted-foreground'}>
-                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} {t('dt_publish_3_products_check')} ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/٣)
+                          {(autoCheckData?.merchantProductCount || 0) >= 3 ? '✅' : '⬜'} {t('dt_publish_3_products_check')} ({Math.min(autoCheckData?.merchantProductCount || 0, 3)}/3)
                         </span>
                       </div>
                       <Progress 
