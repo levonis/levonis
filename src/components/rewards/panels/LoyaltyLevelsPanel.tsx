@@ -263,7 +263,7 @@ export default function LoyaltyLevelsPanel() {
       {/* Active Card */}
       {activeCardLevel && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground">بطاقتك الحالية</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground">{t('ll_your_current_card')}</h3>
           <UserLoyaltyCard
             level={{
               id: activeCardLevel.id,
