@@ -1834,4 +1834,26 @@ export type TranslationKeys = {
   lr_level_n: string;
   lr_base_level: string;
   lr_owned: string;
+
+  // Offers Storage Section
+  oss_exclusive_offers: string;
+  oss_view_all: string;
+  oss_no_offers: string;
+  oss_last_n: string;
+  oss_show_all: string;
+
+  // Daily Task Card
+  dtc_pts: string;
+  dtc_loading: string;
+  dtc_complete: string;
+  dtc_done: string;
+  dtc_daily_hint: string;
+
+  // PWA Install Prompt
+  pwa_install_unavailable: string;
+  pwa_install_success: string;
+  pwa_install_error: string;
+  pwa_notif_denied: string;
+  pwa_notif_default_hint: string;
+  pwa_notif_error: string;
 };

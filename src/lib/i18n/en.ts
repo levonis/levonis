@@ -1823,4 +1823,26 @@ export const en: TranslationKeys = {
   lr_level_n: 'Level {n}',
   lr_base_level: 'Base level',
   lr_owned: 'Owned',
+
+  // Offers Storage Section
+  oss_exclusive_offers: 'Exclusive offers',
+  oss_view_all: 'All',
+  oss_no_offers: 'No offers available right now',
+  oss_last_n: 'Last {n}',
+  oss_show_all: 'Show all',
+
+  // Daily Task Card
+  dtc_pts: 'pts',
+  dtc_loading: 'Loading…',
+  dtc_complete: 'Complete',
+  dtc_done: 'Completed',
+  dtc_daily_hint: '* This task can be completed daily',
+
+  // PWA Install Prompt
+  pwa_install_unavailable: 'Install not available right now, try reloading the page',
+  pwa_install_success: 'App installed successfully!',
+  pwa_install_error: 'Install failed, please try again',
+  pwa_notif_denied: 'Notifications denied. You can enable them from your browser settings',
+  pwa_notif_default_hint: 'Please allow notifications when the permission prompt appears',
+  pwa_notif_error: 'Error enabling notifications',
 };
