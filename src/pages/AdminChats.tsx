@@ -525,6 +525,8 @@ export default function AdminChats() {
                   const LevelIcon = LEVEL_ICONS[conv.level] || MessageCircle;
                   const levelColor = LEVEL_COLORS[conv.level] || "";
                   const hasUnread = conv.unread_count > 0;
+                  const isVip = conv.vip_priority_rank >= 0;
+                  const vipColor = conv.vip_card_color || '#facc15';
 
                   return (
                     <button
@@ -535,14 +537,20 @@ export default function AdminChats() {
                       }}
                       className={`w-full p-3 text-right hover:bg-muted/50 transition-colors relative ${
                         selectedConversation === conv.id ? 'bg-primary/10' : ''
-                      } ${hasUnread ? 'bg-destructive/5' : ''}`}
+                      } ${conv.is_pinned ? 'bg-amber-500/5' : hasUnread ? 'bg-destructive/5' : ''}`}
+                      style={conv.is_pinned ? { borderInlineEnd: `3px solid ${vipColor}` } : undefined}
                     >
-                      {hasUnread && (
+                      {hasUnread && !conv.is_pinned && (
                         <div className="absolute right-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
+                      )}
+                      {conv.is_pinned && (
+                        <div className="absolute top-1.5 left-1.5">
+                          <Pin className="h-3 w-3 fill-current" style={{ color: vipColor }} />
+                        </div>
                       )}
                       <div className="flex items-start gap-2">
                         <div className="relative">
-                          <Avatar className={`h-10 w-10 ${hasUnread ? 'ring-2 ring-destructive' : ''}`}>
+                          <Avatar className={`h-10 w-10 ${hasUnread ? 'ring-2 ring-destructive' : ''} ${isVip ? 'ring-2' : ''}`} style={isVip ? { boxShadow: `0 0 0 2px ${vipColor}` } : undefined}>
                             <AvatarImage src={conv.user_avatar || undefined} />
                             <AvatarFallback className="text-xs">
                               {conv.user_name.charAt(0)}
@@ -553,13 +561,28 @@ export default function AdminChats() {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center justify-between gap-1 flex-wrap">
                             <span className="font-medium text-sm truncate">{conv.user_name}</span>
-                            {hasUnread && (
-                              <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                                {conv.unread_count}
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {isVip && (
+                                <Badge
+                                  className="text-[9px] h-4 px-1 gap-0.5 border"
+                                  style={{
+                                    backgroundColor: `${vipColor}20`,
+                                    color: vipColor,
+                                    borderColor: `${vipColor}60`,
+                                  }}
+                                >
+                                  <Crown className="h-2.5 w-2.5" />
+                                  VIP {conv.vip_card_name}
+                                </Badge>
+                              )}
+                              {hasUnread && (
+                                <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                                  {conv.unread_count}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                             {conv.last_message || "لا توجد رسائل"}
