@@ -1743,4 +1743,6 @@ export const en: TranslationKeys = {
   ac_join_free: 'Join free',
   ac_join_now: 'Join now',
   ac_login_to_join: 'Sign in to join the competition',
+  ac_won_prize: '🎁 Congrats! You won: {prize}',
+  ac_default_prize: 'Prize',
 };
