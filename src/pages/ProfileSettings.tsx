@@ -267,7 +267,7 @@ export default function ProfileSettings() {
     if (!user?.id) return;
     const normalized = normalizePhone(newPhoneNumber);
     if (!isValidPhone(normalized)) {
-      toast({ title: "رقم الهاتف غير صحيح", description: "أدخل رقم عراقي صحيح (07xxxxxxxxx)", variant: "destructive" });
+      toast({ title: t('settings_phone_invalid_title'), description: t('settings_phone_invalid_desc'), variant: "destructive" });
       return;
     }
     setSavingPhone(true);
@@ -279,12 +279,12 @@ export default function ProfileSettings() {
         last_phone_change_at: new Date().toISOString(),
       }).eq("id", user.id);
       if (error) throw error;
-      toast({ title: "تم تغيير رقم الهاتف" });
+      toast({ title: t('settings_phone_changed') });
       setEditingPhone(false);
       setNewPhoneNumber("");
       qc.invalidateQueries({ queryKey: ["profile-settings-profile", user.id] });
     } catch (err: any) {
-      toast({ title: "فشل في تغيير الرقم", description: err?.message, variant: "destructive" });
+      toast({ title: t('settings_phone_change_failed'), description: err?.message, variant: "destructive" });
     } finally {
       setSavingPhone(false);
     }
