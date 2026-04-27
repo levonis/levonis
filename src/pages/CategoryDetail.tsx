@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { usePageTitle } from '@/island/usePageTitle';
-import { usePageSearchSection, type PageSearchItem } from '@/island/PageSearchContext';
+import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { computeLinkedDirectSalePrice } from '@/lib/priceGuard';
@@ -44,7 +44,9 @@ const CategoryDetail = () => {
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
-  const searchQ = (searchParams.get('q') || '').trim().toLowerCase();
+  const liveQuery = usePageLiveQuery();
+  // Live (typing) query wins; otherwise fall back to ?q= URL param (deep-link / submit).
+  const searchQ = (liveQuery || searchParams.get('q') || '').trim().toLowerCase();
 
   // Sort & filter state
   const [sortBy, setSortBy] = useState<SortKey>('default');

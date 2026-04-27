@@ -18,6 +18,9 @@ interface PageSearchContextValue {
   items: PageSearchItem[];
   registerSection: (key: string, items: PageSearchItem[]) => void;
   unregisterSection: (key: string) => void;
+  /** Live (un-debounced) search query the user is typing in the island. */
+  liveQuery: string;
+  setLiveQuery: (q: string) => void;
 }
 
 const Ctx = createContext<PageSearchContextValue | null>(null);
@@ -25,6 +28,11 @@ const Ctx = createContext<PageSearchContextValue | null>(null);
 export const PageSearchProvider = ({ children }: { children: ReactNode }) => {
   const sectionsRef = useRef<Map<string, PageSearchItem[]>>(new Map());
   const [version, setVersion] = useState(0);
+  const [liveQuery, setLiveQueryState] = useState("");
+
+  const setLiveQuery = useCallback((q: string) => {
+    setLiveQueryState(q);
+  }, []);
 
   const registerSection = useCallback((key: string, items: PageSearchItem[]) => {
     sectionsRef.current.set(key, items);
@@ -51,7 +59,10 @@ export const PageSearchProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version]);
 
-  const value = useMemo(() => ({ items, registerSection, unregisterSection }), [items, registerSection, unregisterSection]);
+  const value = useMemo(
+    () => ({ items, registerSection, unregisterSection, liveQuery, setLiveQuery }),
+    [items, registerSection, unregisterSection, liveQuery, setLiveQuery],
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };
@@ -72,6 +83,12 @@ export const usePageSearchSection = (key: string, items: PageSearchItem[]) => {
     ctx.registerSection(key, items);
     return () => ctx.unregisterSection(key);
   }, [ctx, key, items]);
+};
+
+/** Read the current live (un-debounced) island search query. Empty string when none. */
+export const usePageLiveQuery = (): string => {
+  const ctx = useContext(Ctx);
+  return ctx?.liveQuery ?? "";
 };
 
 /** Match items against the user's query (case-insensitive, multi-token AND). */
