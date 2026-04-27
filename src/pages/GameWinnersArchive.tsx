@@ -34,12 +34,6 @@ const GAME_LABEL: Record<GameKey, string> = {
   knife_rain: "Knife Rain",
 };
 
-const TABLE_BY_GAME: Record<GameKey, "crossy_road_winners" | "stack_game_winners" | "knife_rain_winners"> = {
-  crossy_road: "crossy_road_winners",
-  stack: "stack_game_winners",
-  knife_rain: "knife_rain_winners",
-};
-
 const positionIcon = (pos: number) => {
   if (pos === 1) return <Crown className="h-4 w-4 text-yellow-500" />;
   if (pos === 2) return <Medal className="h-4 w-4 text-slate-400" />;
