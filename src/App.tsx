@@ -317,6 +317,7 @@ function AppContent() {
             <Route path="/my-prizes" element={<RequireAuth><MyLevelPrizes /></RequireAuth>} />
             <Route path="/games" element={<MiniGames />} />
             <Route path="/games/winners" element={<GameWinnersPage />} />
+            <Route path="/games/winners/archive" element={<GameWinnersArchive />} />
             <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
