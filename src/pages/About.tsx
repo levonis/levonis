@@ -56,7 +56,7 @@ const About = () => {
       ],
       what: 'تخصصنا الأساسي',
       services: [
-        { icon: Printer, title: 'طابعات Bambu Lab 3D', text: 'وكلاء معتمدون لكل موديلات Bambu Lab مع ضمان رسمي وصيانة محلية واستشارات فنية.' },
+        { icon: Printer, title: 'طابعات Bambu Lab و Creality 3D', text: 'وكلاء معتمدون لموديلات Bambu Lab و Creality مع ضمان رسمي وصيانة محلية واستشارات فنية.' },
         { icon: Sparkles, title: 'طابعات Resin ومواد الطباعة', text: 'طابعات Resin عالية الدقة مع راتنجات أصلية بألوان وخصائص متعددة لكل المشاريع.' },
         { icon: Layers, title: 'مواد Filaments والإكسسوارات', text: 'تشكيلة واسعة من خيوط الطباعة (PLA, PETG, ABS, TPU, Silk, Wood) مع نوزل وقطع غيار.' },
         { icon: Truck, title: 'شحن إلكترونيات بأرخص الأسعار', text: 'خدمة شحن الأجهزة الإلكترونية من الخارج (هواتف، لابتوبات، ملحقات) بأسرع وقت.' },
