@@ -271,11 +271,7 @@ export default function CommunityMerchantStorePage() {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-6 max-w-5xl">
         {/* Professional Hero Section */}
-        <div className="relative mb-6 rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-[hsl(160_52%_18%)] via-[hsl(160_50%_14%)] to-[hsl(160_48%_10%)]">
-          {/* Decorative elements */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(160_60%_25%/0.15),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(160_60%_20%/0.1),transparent_50%)]" />
-          
+        <div className="relative mb-6 rounded-2xl overflow-hidden border border-border/40 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)]">
           <div className="relative p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
               {/* Avatar Section */}
