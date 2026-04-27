@@ -60,7 +60,7 @@ export default function AssistanceEnvelopes() {
 
   const getClaim = (envelopeId: string) => myClaims?.find(c => c.envelope_id === envelopeId);
 
-  const glassCard = "rounded-xl border border-destructive/25 bg-destructive/5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+  const glassCard = "rounded-xl border border-destructive/25 bg-background ";
 
   if (isLoading) {
     return <div className="space-y-3">{[1, 2].map(i => <div key={i} className={`h-28 ${glassCard} animate-pulse`} />)}</div>;
@@ -69,7 +69,7 @@ export default function AssistanceEnvelopes() {
   if (!envelopes?.length) {
     return (
       <div className={`text-center py-12 ${glassCard}`}>
-        <div className="w-14 h-14 mx-auto mb-3 rounded-lg border border-destructive/30 bg-destructive/10 backdrop-blur-xl flex items-center justify-center">
+        <div className="w-14 h-14 mx-auto mb-3 rounded-lg border border-destructive/30 bg-destructive/10 flex items-center justify-center">
           <Mail className="h-7 w-7 text-destructive/60" />
         </div>
         <p className="text-sm text-muted-foreground">لا توجد ظروف حمراء متاحة حالياً</p>
@@ -87,14 +87,14 @@ export default function AssistanceEnvelopes() {
           <div key={env.id} className={`${glassCard} overflow-hidden`}>
             <div className="p-4">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-lg border border-destructive/30 bg-destructive/10 backdrop-blur-xl flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-lg border border-destructive/30 bg-destructive/10 flex items-center justify-center shrink-0">
                   <Mail className="h-6 w-6 text-destructive" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-bold text-sm text-foreground">{pickI18n(env, "title", language)}</h4>
                     {env.is_limited && remaining !== null && (
-                      <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive bg-destructive/5 backdrop-blur-xl">
+                      <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive bg-background">
                         متبقي {remaining}
                       </Badge>
                     )}
@@ -106,7 +106,7 @@ export default function AssistanceEnvelopes() {
               </div>
 
               {/* How it works */}
-              <div className="mt-3 p-3 rounded-lg border border-border/30 bg-card/30 backdrop-blur-xl space-y-2">
+              <div className="mt-3 p-3 rounded-lg border border-border/30 bg-background space-y-2">
                 <p className="text-[10px] font-bold text-muted-foreground">آلية العمل:</p>
                 <div className="flex items-center gap-3 text-xs">
                   <div className="flex items-center gap-1.5">
@@ -126,7 +126,7 @@ export default function AssistanceEnvelopes() {
 
               <div className="mt-3">
                 {claim ? (
-                  <div className="flex items-center gap-2 rounded-lg p-2.5 border border-destructive/25 bg-destructive/10 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 rounded-lg p-2.5 border border-destructive/25 bg-destructive/10">
                     <CheckCircle className="h-4 w-4 text-destructive shrink-0" />
                     <div className="flex-1">
                       <p className="text-xs font-bold text-foreground">تم التحصيل</p>
@@ -137,7 +137,7 @@ export default function AssistanceEnvelopes() {
                   </div>
                 ) : (remaining === null || remaining > 0) ? (
                   <Button
-                    className="w-full h-9 text-xs rounded-lg gap-1.5 border border-destructive/30 bg-destructive/15 text-destructive backdrop-blur-xl hover:bg-destructive/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                    className="w-full h-9 text-xs rounded-lg gap-1.5 border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/25 "
                     onClick={() => claimMutation.mutate(env.id)}
                     disabled={claimMutation.isPending}
                   >

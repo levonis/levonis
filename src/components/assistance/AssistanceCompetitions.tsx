@@ -26,8 +26,8 @@ export default function AssistanceCompetitions() {
   const active = giveaways?.filter(c => c.status === "active") || [];
   const completed = giveaways?.filter(c => c.status === "completed") || [];
 
-  const glassCard = "rounded-xl border border-border/30 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
-  const glassIcon = "rounded-lg border border-primary/25 bg-primary/10 backdrop-blur-xl flex items-center justify-center shrink-0";
+  const glassCard = "rounded-xl border border-border/30 bg-background ";
+  const glassIcon = "rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0";
 
   if (isLoading) {
     return (
@@ -59,10 +59,10 @@ export default function AssistanceCompetitions() {
             <h3 className="text-sm font-black text-foreground">المسابقات النشطة</h3>
           </div>
           {active.map(c => (
-            <div key={c.id} className={`${glassCard} p-4 hover:border-primary/40 hover:bg-card/40 transition-all`}>
+            <div key={c.id} className={`${glassCard} p-4 hover:border-primary/40 hover:bg-background transition-all`}>
               <div className="flex items-start gap-3">
                 {c.prize_image_url ? (
-                  <div className="w-16 h-16 rounded-lg border border-border/30 bg-card/40 backdrop-blur-xl overflow-hidden shrink-0">
+                  <div className="w-16 h-16 rounded-lg border border-border/30 bg-background overflow-hidden shrink-0">
                     <img src={c.prize_image_url} alt="" className="w-full h-full object-cover" />
                   </div>
                 ) : (
@@ -72,7 +72,7 @@ export default function AssistanceCompetitions() {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge className="bg-primary/15 text-primary text-[10px] border border-primary/25 backdrop-blur-xl">نشطة</Badge>
+                    <Badge className="bg-primary/15 text-primary text-[10px] border border-primary/25">نشطة</Badge>
                   </div>
                   <h4 className="font-bold text-sm text-foreground truncate">{pickI18n(c, "title", language)}</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">{pickI18n(c, "prize_name", language)}</p>
@@ -103,7 +103,7 @@ export default function AssistanceCompetitions() {
           {completed.map(c => (
             <div key={c.id} className={`${glassCard} p-3 opacity-80`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg border border-border/30 bg-muted/20 backdrop-blur-xl flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-lg border border-border/30 bg-muted/20 flex items-center justify-center shrink-0">
                   <CheckCircle className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
