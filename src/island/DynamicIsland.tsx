@@ -293,6 +293,16 @@ export const DynamicIsland = () => {
     return filterPageItems(pageSearch.items, debounced);
   }, [pageSearch, debounced]);
 
+  /* Broadcast the live (un-debounced) query so the underlying page can
+   * filter its content instantly as the user types. */
+  useEffect(() => {
+    pageSearch?.setLiveQuery(searchQuery);
+  }, [pageSearch, searchQuery]);
+  useEffect(() => {
+    return () => pageSearch?.setLiveQuery("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ---------- Derive search sub-stage ---------- */
   const isSearchActive = state === "search" && (focused || searchQuery.length > 0);
   const stage: SearchStage = useMemo(() => {
