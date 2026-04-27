@@ -39,7 +39,7 @@ import('@capacitor/core').then(({ Capacitor }) => {
 
   import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-    StatusBar.setBackgroundColor({ color: '#103d33' }).catch(() => {});
+    StatusBar.setBackgroundColor({ color: '#09090b' }).catch(() => {});
     StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
   }).catch(() => {});
 
