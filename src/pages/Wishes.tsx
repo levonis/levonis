@@ -16,9 +16,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Wishes() {
   const { user } = useAuth();
+  const { t, dir, language } = useLanguage();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -27,6 +29,8 @@ export default function Wishes() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [existingImageUrl, setExistingImageUrl] = useState("");
+
+  const dateLocale = language === 'ar' ? 'ar-IQ' : language === 'ku' ? 'ckb-IQ' : 'en-US';
 
   const { data: wishes, isLoading } = useQuery({
     queryKey: ["wishes-approved"],
@@ -38,7 +42,6 @@ export default function Wishes() {
         .order("likes_count", { ascending: false });
       if (error) throw error;
       
-      // Fetch profiles for all wish owners
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map((w: any) => w.user_id))];
         const { data: profiles } = await supabase
@@ -94,7 +97,6 @@ export default function Wishes() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      // Check for duplicate wish title (each product = one wish = one user only)
       const { data: existing } = await supabase
         .from("wishes")
         .select("id, title, user_id")
@@ -102,12 +104,10 @@ export default function Wishes() {
         .ilike("title", title.trim());
       
       if (existing && existing.length > 0) {
-        // If another user already wished for this product
         const otherUserWish = existing.find((w: any) => w.user_id !== user!.id);
         if (otherUserWish) {
           throw new Error("TAKEN_BY_OTHER");
         }
-        // If current user already has this wish
         const myExisting = existing.find((w: any) => w.user_id === user!.id);
         if (myExisting) {
           throw new Error("DUPLICATE");
@@ -133,11 +133,9 @@ export default function Wishes() {
       queryClient.invalidateQueries({ queryKey: ["wishes-approved"] });
       setDialogOpen(false);
       resetForm();
-      toast.success("تم إرسال أمنيتك بنجاح! سيتم مراجعتها قريباً ✨");
+      toast.success(t('wishes_toast_sent'));
 
-      // Send Telegram notification with approve/reject buttons
       try {
-        // Get the newly created wish ID
         const { data: newWish } = await supabase
           .from("wishes")
           .select("id")
@@ -168,11 +166,11 @@ export default function Wishes() {
     },
     onError: (err: any) => {
       if (err.message === "TAKEN_BY_OTHER") {
-        toast.error("هذه الأمنية تمناها شخص آخر! تمنّى غيرها 🎯");
+        toast.error(t('wishes_toast_taken_other'));
       } else if (err.message === "DUPLICATE") {
-        toast.error("لديك هذه الأمنية بالفعل!");
+        toast.error(t('wishes_toast_duplicate'));
       } else {
-        toast.error("حدث خطأ، حاول مرة أخرى");
+        toast.error(t('wishes_toast_generic_error'));
       }
     },
   });
@@ -195,9 +193,9 @@ export default function Wishes() {
       setDialogOpen(false);
       setEditMode(false);
       resetForm();
-      toast.success("تم تحديث أمنيتك ✨");
+      toast.success(t('wishes_toast_updated'));
     },
-    onError: () => toast.error("حدث خطأ، حاول مرة أخرى"),
+    onError: () => toast.error(t('wishes_toast_generic_error')),
   });
 
   const likeMutation = useMutation({
@@ -244,13 +242,13 @@ export default function Wishes() {
   };
 
   const handleSubmit = () => {
-    if (!title.trim()) return toast.error("يرجى كتابة عنوان الأمنية");
+    if (!title.trim()) return toast.error(t('wishes_toast_title_required'));
     if (editMode) updateMutation.mutate();
     else createMutation.mutate();
   };
 
   const handleImageSelect = (file: File) => {
-    if (file.size > 5 * 1024 * 1024) return toast.error("حجم الصورة يجب ألا يتجاوز 5 ميجابايت");
+    if (file.size > 5 * 1024 * 1024) return toast.error(t('wishes_toast_image_too_big'));
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
     setExistingImageUrl("");
@@ -263,15 +261,12 @@ export default function Wishes() {
   };
 
   const totalWishes = wishes?.length || 0;
-  const isFulfilled = (w: any) => w.status === 'fulfilled' || w.fulfilled_at;
 
   return (
     <div className="min-h-screen">
       {/* ═══ HERO SECTION ═══ */}
       <div className="relative pt-6 pb-8 overflow-hidden">
-
-
-        <div className="container mx-auto px-4 max-w-3xl relative z-10" dir="rtl">
+        <div className="container mx-auto px-4 max-w-3xl relative z-10" dir={dir}>
           <div className="absolute top-4 right-8 text-primary/30 animate-bounce" style={{ animationDuration: '3s' }}>✦</div>
           <div className="absolute top-12 left-12 text-accent/20 animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>✧</div>
           <div className="absolute bottom-4 right-1/3 text-primary/20 animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>✦</div>
@@ -282,31 +277,30 @@ export default function Wishes() {
             </div>
 
             <h1 className="text-4xl md:text-5xl font-black text-gradient-gold mb-3 tracking-tight">
-              الأمنيات
+              {t('wishes_title')}
             </h1>
             <p className="text-muted-foreground text-sm md:text-base max-w-sm mx-auto leading-relaxed mb-4">
-              تمنّى منتجاً ترغب بتوفره وسنعمل على تحقيقه
+              {t('wishes_subtitle')}
             </p>
 
-            {/* Rewards info banner */}
             <div className="max-w-md mx-auto mb-4 p-3 rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
-              <p className="text-[11px] font-bold text-primary mb-2">🎉 صاحب الأمنية التي يتم توفيرها سيحصل على:</p>
+              <p className="text-[11px] font-bold text-primary mb-2">{t('wishes_rewards_header')}</p>
               <div className="grid grid-cols-2 gap-1.5">
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <Gift className="w-3 h-3 text-pink-400 shrink-0" />
-                  <span>هدية عشوائية مجانية 🎁</span>
+                  <span>{t('wishes_reward_gift')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <Award className="w-3 h-3 text-yellow-400 shrink-0" />
-                  <span>خصم كبير ومميز 💸</span>
+                  <span>{t('wishes_reward_discount')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <Truck className="w-3 h-3 text-emerald-400 shrink-0" />
-                  <span>توصيل مجاني 🚚</span>
+                  <span>{t('wishes_reward_free_shipping')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                   <Coins className="w-3 h-3 text-orange-400 shrink-0" />
-                  <span>نقاط إضافية ⭐</span>
+                  <span>{t('wishes_reward_points')}</span>
                 </div>
               </div>
             </div>
@@ -314,19 +308,19 @@ export default function Wishes() {
             <div className="flex items-center justify-center gap-3">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-xs">
                 <Flame className="w-3.5 h-3.5 text-primary" />
-                <span className="text-muted-foreground"><strong className="text-foreground">{totalWishes}</strong> أمنية</span>
+                <span className="text-muted-foreground">{t('wishes_count_label', { n: totalWishes })}</span>
               </div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 text-xs">
                 <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                <span className="text-muted-foreground">الأكثر شعبية</span>
+                <span className="text-muted-foreground">{t('wishes_most_popular')}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 pb-6 max-w-3xl" dir="rtl">
-        {/* ═══ MY WISH - PREMIUM CARD ═══ */}
+      <main className="container mx-auto px-4 pb-6 max-w-3xl" dir={dir}>
+        {/* ═══ MY WISH ═══ */}
         {user && myWish && (
           <div className="mb-6 wish-card-animate" style={{ '--delay': '0.15s' } as any}>
             <div className="relative rounded-2xl overflow-hidden">
@@ -337,10 +331,10 @@ export default function Wishes() {
                     <div className="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center">
                       <Star className="w-3.5 h-3.5 text-primary fill-primary" />
                     </div>
-                    <span className="text-xs font-black text-primary">أمنيتك</span>
+                    <span className="text-xs font-black text-primary">{t('wishes_my_wish')}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={myWish.status} fulfilled={!!myWish.fulfilled_at} />
+                    <StatusBadge status={myWish.status} fulfilled={!!myWish.fulfilled_at} t={t} />
                     {myWish.status === "pending" && (
                       <button onClick={openEdit} className="w-7 h-7 rounded-lg bg-muted/30 hover:bg-primary/15 flex items-center justify-center text-muted-foreground hover:text-primary transition-all">
                         <Pencil className="w-3 h-3" />
@@ -360,17 +354,16 @@ export default function Wishes() {
                     {myWish.description && <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2">{myWish.description}</p>}
                     {myWish.price && (
                       <span className="inline-flex items-center gap-1 text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/15">
-                        {Number(myWish.price).toLocaleString()} د.ع
+                        {Number(myWish.price).toLocaleString()} {t('wishes_currency_iqd')}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Show rewards if fulfilled */}
                 {myWish.fulfilled_at && (
                   <div className="mt-3 p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-primary/10 border border-emerald-500/20">
                     <p className="text-[11px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> تم تحقيق أمنيتك! مكافآتك:
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {t('wishes_fulfilled_rewards_title')}
                     </p>
                     <div className="grid grid-cols-2 gap-1">
                       {myWish.reward_gift_description && (
@@ -380,17 +373,17 @@ export default function Wishes() {
                       )}
                       {myWish.reward_discount_percent > 0 && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Award className="w-3 h-3 text-yellow-400" /> خصم {myWish.reward_discount_percent}%
+                          <Award className="w-3 h-3 text-yellow-400" /> {t('wishes_reward_discount_percent', { n: myWish.reward_discount_percent })}
                         </span>
                       )}
                       {myWish.reward_free_shipping && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Truck className="w-3 h-3 text-emerald-400" /> توصيل مجاني
+                          <Truck className="w-3 h-3 text-emerald-400" /> {t('wishes_reward_free_shipping')}
                         </span>
                       )}
                       {myWish.reward_bonus_points > 0 && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-orange-400" /> +{myWish.reward_bonus_points} نقطة
+                          <Coins className="w-3 h-3 text-orange-400" /> {t('wishes_reward_bonus_points', { n: myWish.reward_bonus_points })}
                         </span>
                       )}
                     </div>
@@ -412,16 +405,18 @@ export default function Wishes() {
                     <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Star className="w-5 h-5 text-primary" />
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-black text-foreground block">تمنّى أمنية جديدة</span>
-                      <span className="text-[10px] text-muted-foreground">سنعمل على توفيرها لك</span>
+                    <div className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+                      <span className="text-sm font-black text-foreground block">{t('wishes_make_new_cta')}</span>
+                      <span className="text-[10px] text-muted-foreground">{t('wishes_make_new_subtitle')}</span>
                     </div>
-                    <Sparkles className="w-5 h-5 text-primary/50 mr-auto animate-pulse" />
+                    <Sparkles className={`w-5 h-5 text-primary/50 ${dir === 'rtl' ? 'mr-auto' : 'ml-auto'} animate-pulse`} />
                   </div>
                 </div>
               </button>
             </DialogTrigger>
             <WishFormDialog
+              dir={dir}
+              t={t}
               title={title} setTitle={setTitle}
               description={description} setDescription={setDescription}
               imagePreview={imagePreview}
@@ -437,6 +432,8 @@ export default function Wishes() {
         {user && myWish && (
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditMode(false); }}>
             <WishFormDialog
+              dir={dir}
+              t={t}
               title={title} setTitle={setTitle}
               description={description} setDescription={setDescription}
               imagePreview={imagePreview}
@@ -454,21 +451,19 @@ export default function Wishes() {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
               <Heart className="w-6 h-6 text-primary/50" />
             </div>
-            <p className="text-sm font-bold text-foreground mb-1">سجل دخولك</p>
-            <p className="text-xs text-muted-foreground">لتتمنى أمنية وتصوّت على أمنيات الآخرين ❤️</p>
+            <p className="text-sm font-bold text-foreground mb-1">{t('wishes_login_prompt_title')}</p>
+            <p className="text-xs text-muted-foreground">{t('wishes_login_prompt_desc')}</p>
           </div>
         )}
 
-        {/* ═══ SECTION TITLE ═══ */}
         {!isLoading && wishes && wishes.length > 0 && (
           <div className="flex items-center gap-2 mb-4 wish-card-animate" style={{ '--delay': '0.25s' } as any}>
             <div className="w-1 h-5 rounded-full bg-gradient-to-b from-primary to-accent" />
-            <h2 className="text-sm font-black">أمنيات المجتمع</h2>
+            <h2 className="text-sm font-black">{t('wishes_section_community')}</h2>
             <div className="flex-1 h-px bg-border/30" />
           </div>
         )}
 
-        {/* ═══ WISHES GRID ═══ */}
         {isLoading ? (
           <div className="grid grid-cols-2 gap-2.5">
             {[...Array(6)].map((_, i) => (
@@ -486,6 +481,8 @@ export default function Wishes() {
                 canLike={!!user && !likeMutation.isPending}
                 index={i}
                 isTop={i === 0}
+                t={t}
+                dateLocale={dateLocale}
               />
             ))}
           </div>
@@ -494,8 +491,8 @@ export default function Wishes() {
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/10 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-9 h-9 text-primary/30" />
             </div>
-            <p className="font-bold text-sm mb-1">لا توجد أمنيات بعد</p>
-            <p className="text-xs text-muted-foreground">كن أول من يتمنّى! ✨</p>
+            <p className="font-bold text-sm mb-1">{t('wishes_empty_title')}</p>
+            <p className="text-xs text-muted-foreground">{t('wishes_empty_desc')}</p>
           </div>
         )}
 
@@ -557,30 +554,30 @@ export default function Wishes() {
 }
 
 /* ═══════════════ Status Badge ═══════════════ */
-function StatusBadge({ status, fulfilled }: { status: string; fulfilled?: boolean }) {
+function StatusBadge({ status, fulfilled, t }: { status: string; fulfilled?: boolean; t: any }) {
   if (fulfilled) return (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-gradient-to-r from-emerald-500/15 to-primary/15 text-emerald-400 font-bold border border-emerald-500/20">
-      <CheckCircle2 className="w-3 h-3" /> تم تحقيقها 🎉
+      <CheckCircle2 className="w-3 h-3" /> {t('wishes_status_fulfilled')}
     </span>
   );
   if (status === "approved") return (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/20">
-      <BadgeCheck className="w-3 h-3" /> معتمدة
+      <BadgeCheck className="w-3 h-3" /> {t('wishes_status_approved')}
     </span>
   );
   if (status === "rejected") return (
-    <span className="text-[10px] px-2 py-0.5 rounded-md bg-destructive/15 text-destructive font-bold border border-destructive/20">مرفوضة</span>
+    <span className="text-[10px] px-2 py-0.5 rounded-md bg-destructive/15 text-destructive font-bold border border-destructive/20">{t('wishes_status_rejected')}</span>
   );
   return (
     <span className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold border border-primary/15 animate-pulse">
-      ⏳ قيد المراجعة
+      {t('wishes_status_pending')}
     </span>
   );
 }
 
 /* ═══════════════ Wish Card ═══════════════ */
-function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
-  wish: any; isLiked: boolean; onLike: () => void; canLike: boolean; index: number; isTop: boolean;
+function WishCard({ wish, isLiked, onLike, canLike, index, isTop, t, dateLocale }: {
+  wish: any; isLiked: boolean; onLike: () => void; canLike: boolean; index: number; isTop: boolean; t: any; dateLocale: string;
 }) {
   const [animateLike, setAnimateLike] = useState(false);
   const [pressed, setPressed] = useState(false);
@@ -627,7 +624,6 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
         }`} />
 
         <div className="relative z-10">
-          {/* Image */}
           <div className="relative aspect-[4/3] overflow-hidden m-1.5 rounded-xl">
             {wish.image_url ? (
               <img
@@ -644,18 +640,16 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
               </div>
             )}
 
-            {/* Top badge */}
             {isFulfilled ? (
               <div className="absolute top-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/90 backdrop-blur-sm text-white text-[9px] font-black flex items-center gap-1 shadow-lg">
-                <CheckCircle2 className="w-3 h-3" /> تم التوفير ✨
+                <CheckCircle2 className="w-3 h-3" /> {t('wishes_card_fulfilled')}
               </div>
             ) : isTop ? (
               <div className="absolute top-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-primary/90 backdrop-blur-sm text-primary-foreground text-[9px] font-black flex items-center gap-1 shadow-lg shadow-primary/30">
-                <Flame className="w-3 h-3" /> الأكثر طلباً
+                <Flame className="w-3 h-3" /> {t('wishes_card_top')}
               </div>
             ) : null}
 
-            {/* Like button */}
             <button
               onClick={handleLike}
               disabled={!canLike}
@@ -668,21 +662,18 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
               <Heart className={`w-3.5 h-3.5 transition-all ${isLiked ? "fill-current scale-110" : ""}`} />
             </button>
 
-            {/* Price */}
             {wish.price && (
               <div className="absolute bottom-1.5 right-1.5 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-xl border border-white/10">
                 <span className="text-[11px] font-black text-white">
-                  {Number(wish.price).toLocaleString()} <span className="text-[9px] opacity-70">د.ع</span>
+                  {Number(wish.price).toLocaleString()} <span className="text-[9px] opacity-70">{t('wishes_currency_iqd')}</span>
                 </span>
               </div>
             )}
           </div>
 
-          {/* Text content */}
           <div className="px-3 pt-1 pb-3">
             <h3 className="font-bold text-[12px] leading-snug line-clamp-2 mb-1.5 text-foreground">{wish.title}</h3>
             
-            {/* Owner identity */}
             {profile && (
               <div className="flex items-center gap-1.5 mb-2">
                 {profile.avatar_url ? (
@@ -693,22 +684,20 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
                   </div>
                 )}
                 <span className="text-[10px] text-muted-foreground font-medium truncate">
-                  {profile.full_name || profile.username || 'مستخدم'}
+                  {profile.full_name || profile.username || t('wishes_card_user_fallback')}
                 </span>
               </div>
             )}
 
-            {/* Fulfilled rewards preview */}
             {isFulfilled && (
               <div className="flex flex-wrap gap-1 mb-2">
-                <span className="text-[8px] px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400 font-bold">🎁 هدية</span>
-                <span className="text-[8px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 font-bold">💸 خصم</span>
-                <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">🚚 مجاني</span>
-                <span className="text-[8px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 font-bold">⭐ نقاط</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400 font-bold">{t('wishes_chip_gift')}</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 font-bold">{t('wishes_chip_discount')}</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">{t('wishes_chip_free_shipping')}</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 font-bold">{t('wishes_chip_points')}</span>
               </div>
             )}
             
-            {/* Bottom row */}
             <div className="flex items-center justify-between">
               <button
                 onClick={handleLike}
@@ -723,7 +712,7 @@ function WishCard({ wish, isLiked, onLike, canLike, index, isTop }: {
                 <span className="text-[10px] font-bold">{wish.likes_count || 0}</span>
               </button>
               <span className="text-[9px] text-muted-foreground/40 font-medium">
-                {new Date(wish.created_at).toLocaleDateString("ar-IQ")}
+                {new Date(wish.created_at).toLocaleDateString(dateLocale)}
               </span>
             </div>
           </div>
@@ -768,7 +757,9 @@ function WishSkeleton({ index }: { index: number }) {
 }
 
 /* ═══════════════ Form Dialog ═══════════════ */
-function WishFormDialog({ title, setTitle, description, setDescription, imagePreview, onImageSelect, onClearImage, onSubmit, loading, editMode }: {
+function WishFormDialog({ dir, t, title, setTitle, description, setDescription, imagePreview, onImageSelect, onClearImage, onSubmit, loading, editMode }: {
+  dir: 'rtl' | 'ltr';
+  t: any;
   title: string; setTitle: (v: string) => void;
   description: string; setDescription: (v: string) => void;
   imagePreview: string;
@@ -785,27 +776,25 @@ function WishFormDialog({ title, setTitle, description, setDescription, imagePre
   }, [onImageSelect]);
 
   return (
-    <DialogContent className="max-w-md" dir="rtl">
+    <DialogContent className="max-w-md" dir={dir}>
       <DialogHeader>
-        <DialogTitle className="text-right flex items-center gap-2">
+        <DialogTitle className={`${dir === 'rtl' ? 'text-right' : 'text-left'} flex items-center gap-2`}>
           <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-primary" />
           </div>
-          {editMode ? "تعديل أمنيتك" : "تمنّى أمنية جديدة"}
+          {editMode ? t('wishes_dialog_edit_title') : t('wishes_dialog_new_title')}
         </DialogTitle>
       </DialogHeader>
       <div className="space-y-4 mt-2">
-        {/* Unique wish notice */}
         {!editMode && (
           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 font-medium flex items-start gap-2">
             <Star className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
-            <span>كل أمنية فريدة! إذا كان شخص آخر قد تمنّى نفس المنتج فلن تتمكن من إضافته. الأمنية من نصيب أول شخص فقط 🎯</span>
+            <span>{t('wishes_unique_notice')}</span>
           </div>
         )}
 
-        {/* Image Upload */}
         <div>
-          <Label className="text-xs mb-1.5 block">صورة المنتج (اختياري)</Label>
+          <Label className="text-xs mb-1.5 block">{t('wishes_image_label')}</Label>
           <input
             ref={fileRef}
             type="file"
@@ -835,26 +824,26 @@ function WishFormDialog({ title, setTitle, description, setDescription, imagePre
               <div className="w-12 h-12 rounded-xl bg-primary/10 group-hover:bg-primary/15 flex items-center justify-center transition-colors group-hover:scale-105">
                 <ImagePlus className="w-6 h-6 text-primary/50 group-hover:text-primary transition-colors" />
               </div>
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors font-bold">اضغط أو اسحب صورة هنا</span>
-              <span className="text-[10px] text-muted-foreground/40">PNG, JPG حتى 5MB</span>
+              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors font-bold">{t('wishes_image_drop_hint')}</span>
+              <span className="text-[10px] text-muted-foreground/40">{t('wishes_image_format_hint')}</span>
             </button>
           )}
         </div>
 
         <div>
-          <Label>عنوان الأمنية *</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثال: سماعة ايربودز برو" maxLength={100} className="mt-1" />
+          <Label>{t('wishes_title_label')}</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('wishes_title_placeholder')} maxLength={100} className="mt-1" />
         </div>
         <div>
-          <Label>الوصف (اختياري)</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وصف إضافي عن المنتج الذي تريده..." maxLength={500} className="mt-1" rows={3} />
+          <Label>{t('wishes_desc_label')}</Label>
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('wishes_desc_placeholder')} maxLength={500} className="mt-1" rows={3} />
         </div>
 
         <Button onClick={onSubmit} disabled={loading} className="w-full h-11 text-sm font-black gap-2 rounded-xl">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
             <>
               <Sparkles className="w-4 h-4" />
-              {editMode ? "حفظ التعديلات" : "إرسال الأمنية"}
+              {editMode ? t('wishes_save_edits') : t('wishes_send_wish')}
             </>
           )}
         </Button>
