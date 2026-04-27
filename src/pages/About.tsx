@@ -40,9 +40,9 @@ const About = () => {
   const t = {
     ar: {
       title: 'من نحن — LEVONIS',
-      desc: 'LEVONIS — متخصصون في طابعات Bambu Lab و Resin والـ Filaments، مع شحن إلكترونيات بأرخص الأسعار في العراق.',
+      desc: 'LEVONIS — متخصصون في طابعات Bambu Lab و Creality و Resin والـ Filaments، مع شحن إلكترونيات بأرخص الأسعار في العراق.',
       hero: 'نحن نطبع المستقبل',
-      sub: 'متخصصون في طابعات 3D — Bambu Lab، Resin، Filaments وكل ما يحتاجه صنّاع المحتوى',
+      sub: 'متخصصون في طابعات 3D — Bambu Lab، Creality, Resin، Filaments وكل ما يحتاجه صنّاع المحتوى',
       ctaShop: 'تسوّق المنتجات',
       ctaContact: 'تواصل معنا',
       story: 'قصتنا',
