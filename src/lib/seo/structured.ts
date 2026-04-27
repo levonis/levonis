@@ -8,7 +8,7 @@ export const organizationLd = () => ({
   name: 'LEVONIS',
   alternateName: 'ليفونيس',
   url: SITE,
-  logo: `${SITE}/og-logo.png`,
+  logo: `${SITE}/logo-medium.png`,
   description:
     'متجر LEVONIS الإلكتروني — متخصص في طابعات 3D، الأجهزة الذكية، الإلكترونيات، الألعاب، ومجتمع التجار في العراق.',
   sameAs: [
@@ -76,7 +76,7 @@ export const productLd = (p: ProductLdInput) => {
     '@type': 'Product',
     name: p.name,
     description: p.description || p.name,
-    image: images.length ? images : [`${SITE}/og-logo.png`],
+    image: images.length ? images : [`${SITE}/og-image.jpg`],
     sku: p.sku || undefined,
     brand: { '@type': 'Brand', name: p.brand || 'LEVONIS' },
     category: p.category || undefined,

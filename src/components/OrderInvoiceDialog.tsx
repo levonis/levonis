@@ -6,7 +6,7 @@ import { Printer as PrinterIcon, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-const logoImg = '/og-logo.png';
+const logoImg = '/logo-medium.png';
 
 interface OrderInvoiceDialogProps {
   order: any;

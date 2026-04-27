@@ -14,7 +14,7 @@ interface SEOProps {
 }
 
 const SITE = 'https://levonisiq.com';
-const DEFAULT_IMAGE = `${SITE}/og-logo.png`;
+const DEFAULT_IMAGE = `${SITE}/og-image.jpg`;
 
 const SEO = ({
   title,
@@ -47,6 +47,8 @@ const SEO = ({
       <meta property="og:type" content={type} />
       <meta property="og:url" content={finalUrl} />
       <meta property="og:image" content={image} />
+      {image === DEFAULT_IMAGE && <meta property="og:image:width" content="1200" />}
+      {image === DEFAULT_IMAGE && <meta property="og:image:height" content="630" />}
       <meta property="og:site_name" content="LEVONIS" />
       <meta property="og:locale" content={locale} />
 
