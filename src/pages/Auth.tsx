@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft, Sparkles } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
 import { useLanguage, LANGUAGE_LABELS, type Language } from '@/lib/i18n';
 import { Check, X, Globe } from 'lucide-react';
 import { getFriendlyFunctionErrorMessage } from '@/lib/functionErrors';
+import levonisLogo from '@/assets/levonis-logo.png';
 
 const PasswordRequirements = ({ password }: { password: string }) => {
   const { t } = useLanguage();
@@ -276,7 +277,7 @@ const Auth = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4 px-6 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.1)]">
-            <Sparkles className="w-8 h-8 text-primary mr-2 drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
+            <img src={levonisLogo} alt="Levonis" className="w-10 h-10 object-contain mr-2 drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)]" />
             <h1 className="text-4xl font-black tracking-tight">
               <span className="text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]">LEV</span>
               <span className="text-foreground">ONIS</span>
