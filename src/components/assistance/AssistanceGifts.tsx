@@ -60,7 +60,7 @@ export default function AssistanceGifts() {
 
   const hasClaimed = (giftId: string) => myClaims?.some(c => c.gift_id === giftId);
 
-  const glassCard = "rounded-xl border border-border/30 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+  const glassCard = "rounded-xl border border-border/30 bg-background ";
 
   if (isLoading) {
     return <div className="space-y-3">{[1, 2].map(i => <div key={i} className={`h-28 ${glassCard} animate-pulse`} />)}</div>;
@@ -69,7 +69,7 @@ export default function AssistanceGifts() {
   if (!gifts?.length) {
     return (
       <div className={`text-center py-12 ${glassCard}`}>
-        <div className="w-14 h-14 mx-auto mb-3 rounded-lg border border-accent/30 bg-accent/10 backdrop-blur-xl flex items-center justify-center">
+        <div className="w-14 h-14 mx-auto mb-3 rounded-lg border border-accent/30 bg-accent/10 flex items-center justify-center">
           <Gift className="h-7 w-7 text-accent-foreground/60" />
         </div>
         <p className="text-sm text-muted-foreground">لا توجد هدايا متاحة حالياً</p>
@@ -88,11 +88,11 @@ export default function AssistanceGifts() {
           <div key={gift.id} className={`${glassCard} overflow-hidden`}>
             <div className="flex items-start gap-3 p-4">
               {gift.image_url ? (
-                <div className="w-16 h-16 rounded-lg border border-border/30 bg-card/40 backdrop-blur-xl overflow-hidden shrink-0">
+                <div className="w-16 h-16 rounded-lg border border-border/30 bg-background overflow-hidden shrink-0">
                   <img src={gift.image_url} alt="" className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-lg border border-accent/30 bg-accent/10 backdrop-blur-xl flex items-center justify-center shrink-0">
+                <div className="w-16 h-16 rounded-lg border border-accent/30 bg-accent/10 flex items-center justify-center shrink-0">
                   <Package className="h-7 w-7 text-accent-foreground" />
                 </div>
               )}
@@ -112,13 +112,13 @@ export default function AssistanceGifts() {
             </div>
             <div className="px-4 pb-3">
               {claimed ? (
-                <div className="flex items-center gap-1.5 text-xs text-primary font-bold rounded-lg px-3 py-2 justify-center border border-primary/25 bg-primary/10 backdrop-blur-xl">
+                <div className="flex items-center gap-1.5 text-xs text-primary font-bold rounded-lg px-3 py-2 justify-center border border-primary/25 bg-primary/10">
                   <CheckCircle className="h-3.5 w-3.5" />
                   تم التحصيل - ستُضاف للطلب القادم
                 </div>
               ) : remaining > 0 ? (
                 <Button
-                  className="w-full h-9 text-xs rounded-lg gap-1.5 border border-primary/30 bg-primary/15 text-primary backdrop-blur-xl hover:bg-primary/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                  className="w-full h-9 text-xs rounded-lg gap-1.5 border border-primary/30 bg-primary/15 text-primary hover:bg-primary/25 "
                   onClick={() => claimMutation.mutate(gift.id)}
                   disabled={claimMutation.isPending}
                 >

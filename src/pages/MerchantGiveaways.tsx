@@ -44,11 +44,11 @@ export default function MerchantGiveaways() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir={dir}>
-      {/* Header — glass */}
-      <div className="sticky top-0 z-50 border-b border-border/30 bg-background/60 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/40">
+      {/* Header */}
+      <div className="sticky top-0 z-50 border-b border-border/30 bg-background">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl border border-primary/30 bg-primary/10 backdrop-blur-xl flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="w-10 h-10 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center">
               <Crown className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -59,7 +59,7 @@ export default function MerchantGiveaways() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-9 w-9 p-0 rounded-xl border border-border/30 bg-card/40 backdrop-blur-xl hover:bg-card/60"
+            className="h-9 w-9 p-0 rounded-xl border border-border/30"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -70,7 +70,7 @@ export default function MerchantGiveaways() {
       <main className="flex-1 px-4 py-5 space-y-5">
         {/* Tabs — glass */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 grid grid-cols-4 rounded-xl border border-border/30 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <TabsList className="w-full h-auto p-1 grid grid-cols-4 rounded-xl border border-border/30 bg-background">
             {tabs.map(tab => {
               const Icon = tab.icon;
               return (
