@@ -52,6 +52,26 @@ import('@capacitor/core').then(({ Capacitor }) => {
       if (canGoBack) window.history.back();
       else App.exitApp();
     });
+
+    // Deep link handler — receives Android App Links such as
+    // https://levonisiq.com/~oauth?code=... after Google sign-in. We close the
+    // in-app system browser and route the WebView to /~oauth so the lovable
+    // OAuth broker can complete the token exchange.
+    App.addListener('appUrlOpen', async (event: { url: string }) => {
+      try {
+        const url = new URL(event.url);
+        // Try to dismiss the OAuth browser tab (no-op if not opened).
+        try {
+          const { Browser } = await import('@capacitor/browser');
+          await Browser.close();
+        } catch {}
+        // Navigate the in-app WebView to the path+query+hash. SPA router will
+        // pick it up; /~oauth specifically is excluded from SW caching.
+        const target = `${url.pathname}${url.search}${url.hash}` || '/';
+        window.history.replaceState({}, '', target);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch {}
+    });
   }).catch(() => {});
 
   // Push the layout up when keyboard opens, restore on close

@@ -22,6 +22,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Android App Link for OAuth callback (Google sign-in returns here) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="levonisiq.com"
+                      android:pathPrefix="/~oauth" />
+                <data android:scheme="https"
+                      android:host="www.levonisiq.com"
+                      android:pathPrefix="/~oauth" />
+            </intent-filter>
+
         </activity>
 
         <provider
