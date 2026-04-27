@@ -26,7 +26,7 @@ export const en: TranslationKeys = {
   nav_games: 'Games',
   
   // Home page
-  home_subtitle: 'We bring you the latest electronics from around the world at competitive prices… with official warranty and unmatched fast service',
+  home_subtitle: '3D Printing specialists — Bambu Lab, Creality, Resin, Filaments and everything makers need',
   home_sections: 'Categories',
   home_sections_desc: 'Choose a subcategory to browse',
   home_call_us: 'Call Us',
