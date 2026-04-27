@@ -44,7 +44,9 @@ const CategoryDetail = () => {
   const { isAdmin } = useAuth();
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
-  const searchQ = (searchParams.get('q') || '').trim().toLowerCase();
+  const liveQuery = usePageLiveQuery();
+  // Live (typing) query wins; otherwise fall back to ?q= URL param (deep-link / submit).
+  const searchQ = (liveQuery || searchParams.get('q') || '').trim().toLowerCase();
 
   // Sort & filter state
   const [sortBy, setSortBy] = useState<SortKey>('default');
