@@ -86,27 +86,50 @@ export default function DailyTasksPanel() {
     queryKey: ['user-streak', user?.id],
     queryFn: async () => {
       if (!user) return { current: 0, max: 7 };
-      // Count consecutive days with at least one task completion
       const { data, error } = await supabase
         .from('user_task_completions')
         .select('completed_at')
         .eq('user_id', user.id)
         .eq('task_key', 'daily_login')
         .order('completed_at', { ascending: false })
-        .limit(30);
+        .limit(60);
       if (error || !data || data.length === 0) return { current: 0, max: 7 };
 
-      let streak = 0;
+      // Helper: format a Date as a local YYYY-MM-DD (avoids UTC vs local off-by-one bugs).
+      const toLocalDateKey = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      const uniqueDays = [...new Set(data.map(d => toLocalDateKey(new Date(d.completed_at))))]
+        .sort()
+        .reverse();
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
-      const uniqueDays = [...new Set(data.map(d => new Date(d.completed_at).toISOString().split('T')[0]))].sort().reverse();
-      
+      const todayKey = toLocalDateKey(today);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayKey = toLocalDateKey(yesterday);
+
+      // Anchor the streak to today if logged in today, otherwise yesterday
+      // (streak stays alive throughout today even before the daily check-in).
+      let anchorDate: Date;
+      if (uniqueDays[0] === todayKey) {
+        anchorDate = today;
+      } else if (uniqueDays[0] === yesterdayKey) {
+        anchorDate = yesterday;
+      } else {
+        return { current: 0, max: 7 };
+      }
+
+      let streak = 0;
       for (let i = 0; i < uniqueDays.length; i++) {
-        const expectedDate = new Date(today);
+        const expectedDate = new Date(anchorDate);
         expectedDate.setDate(expectedDate.getDate() - i);
-        const expected = expectedDate.toISOString().split('T')[0];
-        if (uniqueDays[i] === expected) {
+        if (uniqueDays[i] === toLocalDateKey(expectedDate)) {
           streak++;
         } else {
           break;
