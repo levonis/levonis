@@ -102,7 +102,7 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <SEO
         title="LEVONIS — متجرك الموثوق للتقنية"
-        description="LEVONIS — متجر إلكتروني عراقي متخصص في طابعات 3D، الإلكترونيات، الأجهزة الذكية، الألعاب ومجتمع التجار. ضمان رسمي وتوصيل سريع لكل العراق."
+        description="LEVONIS — متجر إلكتروني عراقي متخصص في طابعات 3D (Bambu Lab, Creality, Resin)، والـ Filaments، والإلكترونيات، ومجتمع التجار. ضمان رسمي وتوصيل سريع لكل العراق."
         url="https://levonisiq.com/"
         jsonLd={[organizationLd(), websiteLd()]}
       />
