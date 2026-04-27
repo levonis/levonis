@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Gift, Ticket, ChevronLeft, ChevronRight, Package, Minus, Plus, Loader2, Info } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
+import { resizeSupabaseImage } from "@/lib/imageUtils";
 
 interface ProductCompetition {
   id: string;
