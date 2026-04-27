@@ -70,7 +70,7 @@ export default function MerchantGiveaways() {
       <main className="flex-1 px-4 py-5 space-y-5">
         {/* Tabs — glass */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 grid grid-cols-4 rounded-xl border border-border/30 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <TabsList className="w-full h-auto p-1 grid grid-cols-4 rounded-xl border border-border/30 bg-background">
             {tabs.map(tab => {
               const Icon = tab.icon;
               return (
