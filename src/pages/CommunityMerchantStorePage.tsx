@@ -294,7 +294,7 @@ export default function CommunityMerchantStorePage() {
               <div className="flex-1 text-center sm:text-right min-w-0 space-y-3">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <h1 className="text-2xl sm:text-3xl font-black text-white">
+                    <h1 className="text-2xl sm:text-3xl font-black text-foreground">
                       {merchantApp.display_name}
                     </h1>
                     {merchantApp.is_verified && (
@@ -304,7 +304,7 @@ export default function CommunityMerchantStorePage() {
                       </span>
                     )}
                     {merchantApp.badge_tier && merchantApp.badge_tier !== "none" && (
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/10 border border-white/20 text-white/90 text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-foreground/5 border border-border/50 text-foreground text-[10px] font-bold">
                         <Shield className="h-3 w-3" />
                         {merchantApp.badge_tier === "gold" ? "ذهبي" : merchantApp.badge_tier === "silver" ? "فضي" : merchantApp.badge_tier === "emerald" ? "زمردي" : "ماسي"}
                       </span>
@@ -312,7 +312,7 @@ export default function CommunityMerchantStorePage() {
                   </div>
                   
                   {merchantApp.bio && (
-                    <p className="text-sm text-white/70 line-clamp-2 max-w-lg">
+                    <p className="text-sm text-muted-foreground line-clamp-2 max-w-lg">
                       {merchantApp.bio}
                     </p>
                   )}
@@ -321,7 +321,7 @@ export default function CommunityMerchantStorePage() {
                 {/* Stats Pills */}
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                   {specialtyInfo && (
-                    <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-white/10 text-white/90 border-white/20">
+                    <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-foreground/5 text-foreground border-border/50">
                       {"icons" in specialtyInfo ? (
                         <>
                           <Droplets className="h-3.5 w-3.5 text-blue-400" />
@@ -334,12 +334,12 @@ export default function CommunityMerchantStorePage() {
                     </Badge>
                   )}
                   
-                  <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-white/10 text-white/90 border-white/20">
+                  <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-foreground/5 text-foreground border-border/50">
                     <Package className="h-3.5 w-3.5 text-primary" />
                     {products.length} منتج
                   </Badge>
                   
-                  <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-white/10 text-white/90 border-white/20">
+                  <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-foreground/5 text-foreground border-border/50">
                     <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                     {storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})
                   </Badge>
@@ -355,7 +355,7 @@ export default function CommunityMerchantStorePage() {
                     <Button 
                       size="sm" 
                       onClick={handleContactMerchant}
-                      className="h-8 text-xs gap-1.5 bg-white/10 hover:bg-white/20 text-white border-0"
+                      className="h-8 text-xs gap-1.5 bg-foreground/5 hover:bg-foreground/10 text-foreground border-0"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
                       تواصل
@@ -367,7 +367,7 @@ export default function CommunityMerchantStorePage() {
                       size="sm"
                       variant="outline"
                       onClick={() => setProfileEditorOpen(true)}
-                      className="h-8 text-xs gap-1.5 bg-white/10 hover:bg-white/20 text-white border-white/20"
+                      className="h-8 text-xs gap-1.5 bg-foreground/5 hover:bg-foreground/10 text-foreground border-border/50"
                     >
                       <Settings className="h-3.5 w-3.5" />
                       إعدادات المتجر
@@ -377,7 +377,7 @@ export default function CommunityMerchantStorePage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 text-xs gap-1 text-white/70 hover:text-white hover:bg-white/10"
+                    className="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                     onClick={() => navigate(-1)}
                   >
                     رجوع
