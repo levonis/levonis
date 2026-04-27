@@ -15,14 +15,29 @@ export function resizeSupabaseImage(
   quality: number = 75
 ): string | undefined {
   if (!url) return url;
-  
-  // For Supabase storage URLs, we can add transform parameters
-  if (url.includes('supabase.co/storage')) {
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}width=${width}&quality=${quality}`;
+
+  // Only Supabase storage URLs support transforms
+  if (!url.includes('supabase.co/storage')) return url;
+
+  // If already pointed at the render endpoint, just (re)apply params
+  // Otherwise rewrite /object/public/ → /render/image/public/ which is the
+  // image transformation endpoint that actually honors width/quality.
+  let base = url;
+  if (url.includes('/storage/v1/object/public/')) {
+    base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+  } else if (!url.includes('/storage/v1/render/image/public/')) {
+    // Unknown storage URL shape (e.g. signed); leave untouched
+    return url;
   }
-  
-  return url;
+
+  // Strip any pre-existing width/quality so callers can re-resize safely
+  const [path, query = ''] = base.split('?');
+  const params = new URLSearchParams(query);
+  params.delete('width');
+  params.delete('quality');
+  params.set('width', String(width));
+  params.set('quality', String(Math.max(1, Math.min(100, Math.round(quality)))));
+  return `${path}?${params.toString()}`;
 }
 
 /**

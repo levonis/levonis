@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Gift, Ticket, ChevronLeft, ChevronRight, Package, Minus, Plus, Loader2, Info } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
+import { resizeSupabaseImage } from "@/lib/imageUtils";
 
 interface ProductCompetition {
   id: string;
@@ -169,8 +170,12 @@ const ProductShopCard = memo(({
             <div className="flex gap-3">
               {images[0] && (
                 <img 
-                  src={images[0]} 
+                  src={resizeSupabaseImage(images[0], 200, 75) || images[0]} 
                   alt={product.title_ar}
+                  loading="lazy"
+                  decoding="async"
+                  width={80}
+                  height={80}
                   className="w-20 h-20 rounded-lg object-cover"
                 />
               )}

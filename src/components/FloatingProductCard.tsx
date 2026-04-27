@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getLocalizedField } from '@/hooks/useLocalizedProduct';
 import { useLanguage } from '@/lib/i18n';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
 
 interface FloatingProductCardProps {
@@ -79,6 +80,15 @@ const FloatingProductCard = memo(({
     ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
+  const featuredSrc = useMemo(
+    () => (imageUrl ? resizeSupabaseImage(imageUrl, 600, 80) || imageUrl : '/placeholder.svg'),
+    [imageUrl]
+  );
+  const standardSrc = useMemo(
+    () => (imageUrl ? resizeSupabaseImage(imageUrl, 400, 75) || imageUrl : '/placeholder.svg'),
+    [imageUrl]
+  );
+
   if (featured) {
     return (
       <Link to={`/product/${slug}`} className="block">
@@ -86,9 +96,10 @@ const FloatingProductCard = memo(({
           {/* Product image */}
           <div className="relative h-28 w-28 sm:h-48 sm:w-48 md:h-80 md:w-80 z-20 mb-[-1rem] sm:mb-[-2.5rem]">
             <img
-              src={imageUrl || '/placeholder.svg'}
+              src={featuredSrc}
                alt={displayName}
               loading="eager"
+              decoding="async"
               className="w-full h-full object-contain relative z-10"
             />
             {/* Contact shadow — tight at product base */}
@@ -160,9 +171,10 @@ const FloatingProductCard = memo(({
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
           <img
-            src={imageUrl || '/placeholder.svg'}
+            src={standardSrc}
             alt={displayName}
             loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           {/* Discount badge */}
