@@ -6,7 +6,7 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Calculator, Sparkles } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Sparkles } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import DirectSaleCheckoutDialog from '@/components/DirectSaleCheckoutDialog';
 import OrderSuccessAnimation from '@/components/ui/OrderSuccessAnimation';
@@ -71,7 +71,7 @@ const Cart = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
   const [showDirectSaleDialog, setShowDirectSaleDialog] = useState(false);
-  const [showTierBreakdown, setShowTierBreakdown] = useState(false);
+  
   const [isDirectSaleProcessing, setIsDirectSaleProcessing] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [successOrderNumber, setSuccessOrderNumber] = useState<string>('');
@@ -796,10 +796,11 @@ const Cart = () => {
     }
   }, [showCodOption, preOrderPaymentOption]);
 
-  // حساب رسوم الدفع عند الاستلام لكل منتج بناءً على شرائحه (لا رجوع للإعدادات القديمة)
-  const codBreakdown = useMemo(() => {
+  // حساب رسوم الدفع عند الاستلام لكل منتج بناءً على شرائحه
+  const codFee = useMemo(() => {
+    if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
     const tiers = partialPaymentSettings?.fee_tiers || [];
-    return items.map((item: any) => {
+    return items.reduce((sum: number, item: any) => {
       const unitPrice = getCartItemPrice(item);
       const qty = item.quantity || 1;
       const lineTotal = unitPrice * qty;
@@ -808,27 +809,11 @@ const Cart = () => {
         : null;
       const codType = (tier?.cod_fee_type ?? 'percentage') as 'percentage' | 'fixed';
       const codVal = Number(tier?.cod_fee_value ?? 0);
-      const fee = !codVal || codVal <= 0
-        ? 0
-        : (codType === 'percentage' ? Math.ceil(lineTotal * codVal / 100) : Math.ceil(codVal * qty));
-      return {
-        id: item.id,
-        title: item.products?.title_ar || item.products?.title || item.bundle?.title_ar || '—',
-        unitPrice,
-        qty,
-        lineTotal,
-        tier,
-        codType,
-        codVal,
-        fee,
-      };
-    });
-  }, [items, partialPaymentSettings]);
-
-  const codFee = useMemo(() => {
-    if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
-    return codBreakdown.reduce((sum, b) => sum + b.fee, 0);
-  }, [showCodOption, preOrderPaymentOption, codBreakdown]);
+      if (!codVal || codVal <= 0) return sum;
+      const fee = codType === 'percentage' ? Math.ceil(lineTotal * codVal / 100) : Math.ceil(codVal * qty);
+      return sum + fee;
+    }, 0);
+  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings]);
 
   const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
 
@@ -2823,14 +2808,7 @@ const Cart = () => {
                           <span className="font-bold">{formatPrice(preOrderPaymentAmount)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm text-amber-600 mb-2">
-                          <button
-                            type="button"
-                            onClick={() => setShowTierBreakdown(true)}
-                            className="flex items-center gap-1 underline-offset-2 hover:underline"
-                          >
-                            <Calculator className="w-3.5 h-3.5" />
-                            <span>{partialPaymentSettings?.fee_label_ar || t('cart_extra_fees')}</span>
-                          </button>
+                          <span>{partialPaymentSettings?.fee_label_ar || t('cart_extra_fees')}</span>
                           <span className="font-bold">+{formatPrice(partialPaymentFee)} {t('cart_iqd_short')}</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
@@ -2851,14 +2829,7 @@ const Cart = () => {
                         </div>
                         {codFee > 0 && (
                           <div className="flex justify-between items-center text-sm text-amber-600 mb-2">
-                            <button
-                              type="button"
-                              onClick={() => setShowTierBreakdown(true)}
-                              className="flex items-center gap-1 underline-offset-2 hover:underline"
-                            >
-                              <Calculator className="w-3.5 h-3.5" />
-                              <span>{partialPaymentSettings?.cod_label_ar || t('cart_cod_fees_label')}</span>
-                            </button>
+                            <span>{partialPaymentSettings?.cod_label_ar || t('cart_cod_fees_label')}</span>
                             <span className="font-bold">+{formatPrice(codFee)} {t('cart_iqd_short')}</span>
                           </div>
                         )}
@@ -3124,106 +3095,6 @@ const Cart = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Tier breakdown dialog */}
-      <Dialog open={showTierBreakdown} onOpenChange={setShowTierBreakdown}>
-        <DialogContent dir="rtl" className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calculator className="w-5 h-5" />
-              عرض حساب الشريحة
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 text-sm">
-            {/* Half payment block */}
-            <div className="rounded-xl border border-border/40 p-3 bg-card/40">
-              <div className="font-bold mb-2">رسوم نصف الدفع</div>
-              {!partialPaymentSettings?.fee_tiers?.length ? (
-                <div className="text-muted-foreground">لا توجد شرائح مُعرَّفة في الإعدادات.</div>
-              ) : !partialPaymentTier ? (
-                <div className="text-muted-foreground">لم تُحدَّد شريحة مطابقة.</div>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span>إجمالي السلة</span>
-                    <span className="font-mono">{formatPrice(subtotalWithTax)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>الشريحة المطابقة</span>
-                    <span className="font-mono">
-                      {formatPrice(partialPaymentTier.min_amount)} – {formatPrice(partialPaymentTier.max_amount)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>نسبة رسوم نصف الدفع</span>
-                    <span className="font-mono">{partialPaymentTier.fee_percentage}%</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground text-xs">
-                    <span>المعادلة</span>
-                    <span className="font-mono">⌈{formatPrice(subtotalWithTax)} × {partialPaymentTier.fee_percentage}%⌉</span>
-                  </div>
-                  <div className="flex justify-between pt-1 border-t border-border/40 text-amber-600 font-bold">
-                    <span>الرسوم</span>
-                    <span className="font-mono">+{formatPrice(Math.ceil(subtotalWithTax * (Number(partialPaymentTier.fee_percentage ?? 0) / 100)))}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* COD per item */}
-            <div className="rounded-xl border border-border/40 p-3 bg-card/40">
-              <div className="font-bold mb-2">رسوم الدفع عند الاستلام (لكل منتج)</div>
-              {!partialPaymentSettings?.fee_tiers?.length ? (
-                <div className="text-muted-foreground">لا توجد شرائح مُعرَّفة في الإعدادات.</div>
-              ) : codBreakdown.length === 0 ? (
-                <div className="text-muted-foreground">لا توجد منتجات.</div>
-              ) : (
-                <div className="space-y-3">
-                  {codBreakdown.map((b) => (
-                    <div key={b.id} className="rounded-lg border border-border/30 p-2">
-                      <div className="font-semibold mb-1 truncate">{b.title}</div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between col-span-2">
-                          <span>سعر الوحدة × الكمية</span>
-                          <span className="font-mono">{formatPrice(b.unitPrice)} × {b.qty} = {formatPrice(b.lineTotal)}</span>
-                        </div>
-                        <div className="flex justify-between col-span-2">
-                          <span>الشريحة</span>
-                          <span className="font-mono">
-                            {b.tier ? `${formatPrice(b.tier.min_amount)} – ${formatPrice(b.tier.max_amount)}` : 'لا توجد'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between col-span-2">
-                          <span>قيمة الرسوم</span>
-                          <span className="font-mono">
-                            {b.codType === 'percentage' ? `${b.codVal}%` : `${formatPrice(b.codVal)} ثابت`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between col-span-2">
-                          <span>المعادلة</span>
-                          <span className="font-mono">
-                            {b.codType === 'percentage'
-                              ? `⌈${formatPrice(b.lineTotal)} × ${b.codVal}%⌉`
-                              : `⌈${formatPrice(b.codVal)} × ${b.qty}⌉`}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between pt-1 mt-1 border-t border-border/30 text-amber-600 font-bold">
-                        <span>الرسوم</span>
-                        <span className="font-mono">+{formatPrice(b.fee)}</span>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="flex justify-between pt-2 border-t border-border/40 font-bold">
-                    <span>إجمالي رسوم COD</span>
-                    <span className="font-mono text-amber-600">+{formatPrice(codBreakdown.reduce((s, b) => s + b.fee, 0))}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
