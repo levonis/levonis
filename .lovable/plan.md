@@ -1,32 +1,54 @@
-# إصلاح فشل البناء المحلي – العودة إلى lightningcss
+سأصلح المشاكل الأربع التي ذكرتها مع سبب عدم ظهورها في النسخة المثبتة.
 
-## المشكلة
-عند تشغيل `npm run build` محلياً يظهر:
+## الخطة
+
+1. **تحديث شاشة أول دخول داخل التطبيق**
+   - تعديل `NativeAuthGate` حتى تظهر الخلفية الجديدة فعلياً في أول تشغيل داخل APK.
+   - إزالة/استبدال الخلفية القديمة بعناصر خلفية ثابتة وخفيفة مناسبة للموبايل بنفس أسلوب Glassmorphism.
+   - إبقاء أزرار: تسجيل الدخول، إنشاء حساب، متابعة كضيف.
+   - إضافة اختيار اللغات العربية / English / کوردی بشكل واضح أعلى الشاشة.
+
+2. **إضافة اختيار اللغات إلى صفحة `/auth` بشكل كامل**
+   - التأكد أن مبدّل اللغة ظاهر دائماً في صفحة تسجيل الدخول والتسجيل واستعادة كلمة المرور.
+   - تحويل نص زر Google من نص ثابت إلى مفاتيح ترجمة للغات الثلاث.
+   - إضافة مفاتيح الترجمة الناقصة في ملفات `ar/en/ku` و `types.ts` بدون نصوص hardcoded.
+
+3. **إصلاح تسجيل الدخول بواسطة Google داخل التطبيق المثبت APK**
+   - تعديل منطق Google OAuth في `Auth.tsx` ليستخدم رابط الموقع الحقيقي كـ `redirect_uri` داخل Capacitor بدلاً من أصل WebView الداخلي.
+   - استخدام `Browser.open` من Capacitor عند التشغيل داخل APK حتى يفتح Google بشكل صحيح خارج WebView ثم يرجع للتطبيق/الموقع حسب آلية OAuth.
+   - تحسين رسالة الخطأ لتعرض السبب بدلاً من “فشل تسجيل الدخول” فقط.
+   - ملاحظة: Google داخل APK يعتمد أيضاً على أن النسخة الجديدة تم بناؤها بعد `npm run build` ثم `npx cap sync android`.
+
+4. **تحديث أيقونة التطبيق فعلياً للويب وAndroid**
+   - إعادة توليد أيقونات Android من شعار LEVONIS الحالي لكل المقاسات: mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi.
+   - تحديث `levo_launcher` و `ic_launcher` والـ round/foreground حتى لا يبقى Android يستخدم الأيقونة القديمة من أي resource.
+   - تحديث/تأكيد `public/favicon.png` و `public/icons/icon-192.png` و `public/icons/icon-512.png` للـ PWA.
+   - رفع رقم كاش الأيقونة في `manifest.json` و `index.html` حتى الأجهزة لا تستمر بعرض الأيقونة القديمة من الكاش.
+
+5. **إصلاح تحذير الحلقة المتكررة الظاهر في السجلات**
+   - تعديل `PageSearchContext` بحيث لا يعيد التسجيل/الحذف بلا نهاية عندما تتغير مراجع السياق، لأن السجل يظهر `Maximum update depth exceeded` من `unregisterSection`.
+   - هذا سيحسن ثبات التطبيق ويمنع مشاكل واجهة غير متوقعة.
+
+6. **التحقق بعد التعديل**
+   - تشغيل فحص build للتأكد أن TypeScript/Vite لا يحتوي أخطاء.
+   - بعد ذلك سأعطيك أوامر إعادة بناء APK الجديدة على جهازك.
+
+## بعد التطبيق ستحتاج محلياً إلى تشغيل هذه الأوامر
+
+```powershell
+npm install
+npm run build
+npx cap sync android
+cd android
+.\gradlew.bat assembleDebug
 ```
-[plugin vite:css-post]
-Cannot find package 'esbuild' imported from .../node_modules/vite/dist/node/chunks/node.js
+
+ثم ثبت الملف الجديد:
+
+```text
+android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-## السبب الجذري
-- المشروع المحلي يستخدم **Rolldown-Vite** (واضح من المسار `node_modules/rolldown/...` في الـ stack trace).
-- Rolldown-Vite **لا يتضمن حزمة `esbuild`** كاعتماد افتراضي.
-- في رسالة سابقة أضفنا `cssMinify: 'esbuild'` لتفادي خطأ `Invalid empty selector` في lightningcss، فأصبح Vite يحاول استيراد حزمة غير موجودة.
-- أما خطأ lightningcss الأصلي فكان سببه كتلة `@media (prefers-reduced-transparency: reduce)` وقد **تم حذفها بالفعل** من `src/index.css` في رسائل سابقة، فلم يعد هناك سبب لتجنب lightningcss.
+## ملاحظة مهمة
 
-## التغيير المطلوب
-ملف واحد فقط:
-
-### `vite.config.ts`
-حذف السطر:
-```ts
-cssMinify: 'esbuild',
-```
-وترك بقية إعدادات `build` كما هي. النتيجة: Vite يستخدم lightningcss الافتراضي المضمَّن مع Rolldown-Vite، بدون أي اعتمادات إضافية، وبدون تغيير `package.json`.
-
-## التحقق بعد الموافقة
-1. سيتم تطبيق التعديل على `vite.config.ts` فقط.
-2. شغّل محلياً: `npm run build`
-3. المتوقع: نجاح البناء بدون أخطاء.
-
-## ملاحظة
-لا حاجة لأي تعديلات أخرى — `src/index.css` نظيف فعلاً من الكتلة المسببة لخطأ lightningcss السابق.
+إذا كان الهاتف ما زال يعرض الأيقونة القديمة بعد تثبيت APK جديد، غالباً السبب كاش لانشر أندرويد. الحل الأفضل: حذف التطبيق القديم بالكامل من الهاتف ثم تثبيت APK الجديد، أو تغيير `versionCode` لاحقاً عند إصدار نسخة رسمية.
