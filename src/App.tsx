@@ -211,6 +211,7 @@ function AppContent() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/faq" element={<Faq />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route path="/diagnostics/island-transitions" element={<IslandTransitionsLab />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/products" element={<Navigate to="/" replace />} />
             <Route path="/products/*" element={<Navigate to="/" replace />} />
