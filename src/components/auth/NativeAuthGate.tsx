@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { LogIn, UserPlus, User as UserIcon, Sparkles } from "lucide-react";
+import { LogIn, UserPlus, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage, LANGUAGE_LABELS, type Language } from "@/lib/i18n";
+import levonisLogo from "@/assets/levonis-logo.png";
 
 const GUEST_SESSION_KEY = "__levo_native_guest_session";
 
@@ -125,8 +126,8 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
       </div>
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center gap-6">
-        <div className="w-20 h-20 rounded-3xl border border-border/50 flex items-center justify-center shadow-xl">
-          <Sparkles className="w-10 h-10 text-primary" />
+        <div className="w-24 h-24 rounded-3xl border border-border/50 bg-[#103D33] flex items-center justify-center shadow-xl p-3">
+          <img src={levonisLogo} alt="Levonis" className="h-full w-full object-contain" />
         </div>
 
         <div className="space-y-2">
