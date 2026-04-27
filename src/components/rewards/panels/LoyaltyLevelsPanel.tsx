@@ -106,6 +106,23 @@ export default function LoyaltyLevelsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const { data: prizeStats } = useQuery({
+    queryKey: ['my-level-prize-stats', user?.id],
+    queryFn: async () => {
+      if (!user) return { total: 0, pending: 0 };
+      const { data, error } = await supabase
+        .from('user_level_prize_claims')
+        .select('id,status')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      const total = data?.length || 0;
+      const pending = (data || []).filter((c: any) => c.status === 'pending').length;
+      return { total, pending };
+    },
+    enabled: !!user,
+    staleTime: 60 * 1000,
+  });
+
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile-name-panel', user?.id],
     queryFn: async () => {
