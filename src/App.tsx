@@ -38,6 +38,7 @@ const SpriteDebugPage = lazy(() => import("@/components/games/SpriteDebug"));
 // Lazy load all routes (including Home) to keep initial bundle small
 const Home = lazy(() => import("./pages/Home"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
+const IslandTransitionsLab = lazy(() => import("./pages/IslandTransitionsLab"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 // Categories landing page removed — /categories now redirects to /
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
@@ -211,6 +212,7 @@ function AppContent() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/faq" element={<Faq />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route path="/diagnostics/island-transitions" element={<IslandTransitionsLab />} />
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="/products" element={<Navigate to="/" replace />} />
             <Route path="/products/*" element={<Navigate to="/" replace />} />
