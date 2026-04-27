@@ -242,6 +242,15 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-weight: 900;
+  }
+
+  /* Letter-spacing for Latin scripts only — breaks Arabic/Kurdish letter joining */
+  html[lang="en"] h1,
+  html[lang="en"] h2,
+  html[lang="en"] h3,
+  html[lang="en"] h4,
+  html[lang="en"] h5,
+  html[lang="en"] h6 {
     letter-spacing: 0.5px;
   }
 }
