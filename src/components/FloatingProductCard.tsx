@@ -96,9 +96,10 @@ const FloatingProductCard = memo(({
           {/* Product image */}
           <div className="relative h-28 w-28 sm:h-48 sm:w-48 md:h-80 md:w-80 z-20 mb-[-1rem] sm:mb-[-2.5rem]">
             <img
-              src={imageUrl || '/placeholder.svg'}
+              src={featuredSrc}
                alt={displayName}
               loading="eager"
+              decoding="async"
               className="w-full h-full object-contain relative z-10"
             />
             {/* Contact shadow — tight at product base */}
