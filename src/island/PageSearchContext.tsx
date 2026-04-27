@@ -59,7 +59,10 @@ export const PageSearchProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version]);
 
-  const value = useMemo(() => ({ items, registerSection, unregisterSection }), [items, registerSection, unregisterSection]);
+  const value = useMemo(
+    () => ({ items, registerSection, unregisterSection, liveQuery, setLiveQuery }),
+    [items, registerSection, unregisterSection, liveQuery, setLiveQuery],
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };
