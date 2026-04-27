@@ -35,33 +35,35 @@ const shellEnterExit: Transition = {
   mass: 1.2,
 };
 
+// Apple-style easing — a soft, premium curve used across all swaps so every
+// transition between island "functions" (promo ↔ category ↔ product ↔ search)
+// feels like one continuous motion instead of separate animations stacked
+// on top of each other.
+const APPLE_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
+
 const contentTransition: Transition = {
-  duration: 0.32,
-  ease: [0.22, 1, 0.36, 1],
+  duration: 0.28,
+  ease: APPLE_EASE,
 };
 
-// IMPORTANT: no `y` translation on enter/exit — otherwise children appear to
-// "drop in" from above/below when AnimatePresence (mode="popLayout")
-// absolutely-positions the exiting child during a state swap. We morph in
-// place via opacity + a hairline scale so the transition follows the shell's
-// own width/height spring smoothly.
+// Pure opacity cross-fade — no scale, no blur, no Y offset. Scale was making
+// the inner row "breathe" against the shell's width spring, and blur + popLayout
+// re-positioning was producing the perceived jitter on every state swap.
+// A clean opacity fade lets the shell's width/height/radius do all the morphing
+// while the content just gracefully exchanges underneath.
 const contentMotion = {
-  initial: { opacity: 0, scale: 0.985 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.99 },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
-// Cross-fade used specifically for promo↔search swaps so the surface morphs
-// continuously without a vertical jump.
-const morphMotion = {
-  initial: { opacity: 0, filter: "blur(4px)" },
-  animate: { opacity: 1, filter: "blur(0px)" },
-  exit: { opacity: 0, filter: "blur(4px)" },
-};
+// Same clean cross-fade for promo↔search swaps. Keeping a single motion
+// vocabulary for every state swap is what makes the island feel coherent.
+const morphMotion = contentMotion;
 
 const morphTransition: Transition = {
-  duration: 0.4,
-  ease: [0.22, 1, 0.36, 1],
+  duration: 0.26,
+  ease: APPLE_EASE,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -536,53 +538,36 @@ export const DynamicIsland = () => {
                 touchAction: "pan-y",
               }}
               transition={{
+                // Single, gently-tuned spring shared by width / height /
+                // borderRadius so the shell morphs as ONE coherent shape
+                // instead of each axis racing on its own clock. This is the
+                // key to the "Dynamic Island" feel — every dimension lands
+                // at the same instant.
                 default: {
                   type: "spring",
-                  stiffness: 380,
-                  damping: 34,
-                  mass: 0.7,
-                  restDelta: 0.5,
-                  restSpeed: 0.5,
+                  stiffness: 260,
+                  damping: 30,
+                  mass: 0.9,
+                  restDelta: 0.4,
+                  restSpeed: 0.4,
                 },
-                width: {
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 32,
-                  mass: 0.8,
-                  restDelta: 0.5,
-                  restSpeed: 0.5,
-                },
-                height: {
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 36,
-                  mass: 0.7,
-                  restDelta: 0.5,
-                  restSpeed: 0.5,
-                },
-                borderRadius: {
-                  type: "spring",
-                  stiffness: 380,
-                  damping: 34,
-                  mass: 0.7,
-                },
-                opacity: { duration: 0.14, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.18, ease: APPLE_EASE },
                 scaleX: {
                   type: "spring",
-                  stiffness: 420,
-                  damping: 34,
-                  mass: 0.65,
+                  stiffness: 320,
+                  damping: 32,
+                  mass: 0.8,
                 },
                 scaleY: {
                   type: "spring",
-                  stiffness: 460,
-                  damping: 36,
-                  mass: 0.65,
+                  stiffness: 320,
+                  damping: 32,
+                  mass: 0.8,
                 },
               }}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
             >
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence mode="wait" initial={false}>
             {/* PROMO ----------------------------------------------------- */}
             {state === "promo" && (
               <motion.div
