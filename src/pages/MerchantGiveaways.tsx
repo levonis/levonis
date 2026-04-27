@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Crown, Trophy, Gift, Ticket, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, Crown, Trophy, Gift, Ticket, Mail } from "lucide-react";
 import Footer from "@/components/Footer";
 import AssistanceCompetitions from "@/components/assistance/AssistanceCompetitions";
 import AssistanceGifts from "@/components/assistance/AssistanceGifts";
@@ -35,8 +35,6 @@ export default function MerchantGiveaways() {
     enabled: !!user,
   });
 
-  const isVerifiedMerchant = merchantApp?.is_verified === true;
-
   const tabs = [
     { key: "competitions", label: t('assist_tab_competitions'), icon: Trophy },
     { key: "gifts", label: t('assist_tab_gifts'), icon: Gift },
@@ -46,58 +44,40 @@ export default function MerchantGiveaways() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir={dir}>
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border/50">
+      {/* Header — glass */}
+      <div className="sticky top-0 z-50 border-b border-border/30 bg-background/60 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/40">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/20">
-              <div className="w-full h-full rounded-[10px] bg-card flex items-center justify-center">
-                <Crown className="h-5 w-5 text-primary" />
-              </div>
+            <div className="w-10 h-10 rounded-xl border border-primary/30 bg-primary/10 backdrop-blur-xl flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <Crown className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-sm font-black text-foreground tracking-tight">{t('assist_title')}</h1>
               <p className="text-[10px] text-muted-foreground">{t('assist_subtitle')}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-accent" onClick={() => navigate(-1)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 rounded-xl border border-border/30 bg-card/40 backdrop-blur-xl hover:bg-card/60"
+            onClick={() => navigate(-1)}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       <main className="flex-1 px-4 py-5 space-y-5">
-        {/* Hero */}
-        <div className="relative rounded-2xl overflow-hidden border border-primary/20 bg-card">
-          <div className="absolute inset-0 bg-gradient-to-bl from-primary/10 via-transparent to-accent/5" />
-          <div className="relative px-5 py-6 flex items-center gap-4">
-            <div className="flex-1 space-y-2">
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 rounded-full px-3 py-1">
-                <Sparkles className="h-3 w-3" />
-                {t('assist_hero_badge')}
-              </div>
-              <h2 className="text-lg font-black text-foreground leading-tight">{t('assist_hero_title')}</h2>
-              <p className="text-xs text-muted-foreground leading-relaxed">{t('assist_hero_desc')}</p>
-            </div>
-            <div className="relative w-16 h-16 shrink-0">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 blur-xl" />
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-xl">
-                <Gift className="h-8 w-8 text-primary-foreground" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
+        {/* Tabs — glass */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-xl grid grid-cols-4">
+          <TabsList className="w-full h-auto p-1 grid grid-cols-4 rounded-xl border border-border/30 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
             {tabs.map(tab => {
               const Icon = tab.icon;
               return (
                 <TabsTrigger
                   key={tab.key}
                   value={tab.key}
-                  className="flex flex-col items-center gap-1 py-2 px-1 text-[10px] font-bold rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                  className="flex flex-col items-center gap-1 py-2 px-1 text-[10px] font-bold rounded-lg text-muted-foreground data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/25 data-[state=active]:backdrop-blur-xl data-[state=active]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all"
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
