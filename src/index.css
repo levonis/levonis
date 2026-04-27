@@ -2945,3 +2945,62 @@ body.chat-fullscreen .community-messages-main {
     }
   }
 }
+
+/* =========================================================================
+   Performance: tame heavy backdrop-filter usage so the site stays smooth.
+   Strategy:
+     1. Cap absolute blur radius (anything > 20px is throttled to 20px).
+     2. On mobile (<= 768px) further reduce blur — phones suffer most.
+     3. Disable backdrop-filter entirely while the user is scrolling
+        (toggled via the .is-scrolling class on <html>).
+     4. Respect prefers-reduced-motion: reduce decorative blur.
+   These rules use Tailwind utility selectors + custom .glass-* classes,
+   so 130+ components inherit the gain with no per-file edits.
+   ========================================================================= */
+
+/* 1. Cap blur on the largest Tailwind utilities (3xl/2xl ~ 64/40px → 16-20px) */
+.backdrop-blur-3xl { --tw-backdrop-blur: blur(20px) !important; }
+.backdrop-blur-2xl { --tw-backdrop-blur: blur(18px) !important; }
+
+/* 2. Mobile: lighter blur everywhere */
+@media (max-width: 768px) {
+  .glass-floating,
+  .glass-panel,
+  .glass-trigger,
+  .glass-tile,
+  .glass-icon-btn,
+  .glass-bubble-other,
+  .glass-bubble-me {
+    -webkit-backdrop-filter: blur(12px) saturate(1.3) !important;
+    backdrop-filter: blur(12px) saturate(1.3) !important;
+  }
+  .backdrop-blur-3xl,
+  .backdrop-blur-2xl,
+  .backdrop-blur-xl { --tw-backdrop-blur: blur(12px) !important; }
+}
+
+/* 3. Kill backdrop-filter while the user is scrolling — biggest perf win */
+html.is-scrolling .glass-floating,
+html.is-scrolling .glass-panel,
+html.is-scrolling .glass-trigger,
+html.is-scrolling .glass-tile,
+html.is-scrolling [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 4. Reduced motion: drop decorative animations & heavy blur */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .glass-floating, .glass-panel, .glass-trigger, [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+}
+
+/* Promote frequently-painted floating layers to their own GPU layer */
+.glass-floating { contain: layout paint; }
