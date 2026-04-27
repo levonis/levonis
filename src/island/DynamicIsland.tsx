@@ -52,17 +52,15 @@ const contentMotion = {
 };
 
 // Cross-fade used specifically for promo↔search swaps so the surface morphs
-// continuously without a vertical jump. We keep it short and blur-free so it
-// finishes in lock-step with the shell's width/height spring instead of
-// trailing behind it (which used to feel like a "double" animation).
+// continuously without a vertical jump.
 const morphMotion = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
+  initial: { opacity: 0, filter: "blur(4px)" },
+  animate: { opacity: 1, filter: "blur(0px)" },
+  exit: { opacity: 0, filter: "blur(4px)" },
 };
 
 const morphTransition: Transition = {
-  duration: 0.22,
+  duration: 0.4,
   ease: [0.22, 1, 0.36, 1],
 };
 
@@ -540,46 +538,46 @@ export const DynamicIsland = () => {
               transition={{
                 default: {
                   type: "spring",
-                  stiffness: 260,
-                  damping: 32,
-                  mass: 0.9,
+                  stiffness: 380,
+                  damping: 34,
+                  mass: 0.7,
                   restDelta: 0.5,
                   restSpeed: 0.5,
                 },
                 width: {
                   type: "spring",
-                  stiffness: 240,
+                  stiffness: 300,
                   damping: 32,
-                  mass: 0.9,
+                  mass: 0.8,
                   restDelta: 0.5,
                   restSpeed: 0.5,
                 },
                 height: {
                   type: "spring",
-                  stiffness: 260,
-                  damping: 34,
-                  mass: 0.85,
+                  stiffness: 400,
+                  damping: 36,
+                  mass: 0.7,
                   restDelta: 0.5,
                   restSpeed: 0.5,
                 },
                 borderRadius: {
                   type: "spring",
-                  stiffness: 260,
-                  damping: 32,
-                  mass: 0.9,
+                  stiffness: 380,
+                  damping: 34,
+                  mass: 0.7,
                 },
-                opacity: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.14, ease: [0.22, 1, 0.36, 1] },
                 scaleX: {
                   type: "spring",
-                  stiffness: 320,
+                  stiffness: 420,
                   damping: 34,
-                  mass: 0.75,
+                  mass: 0.65,
                 },
                 scaleY: {
                   type: "spring",
-                  stiffness: 340,
+                  stiffness: 460,
                   damping: 36,
-                  mass: 0.75,
+                  mass: 0.65,
                 },
               }}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
