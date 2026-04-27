@@ -152,7 +152,7 @@ const Home = () => {
           <StoriesBar />
         </section>
 
-        <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative" style={{ contain: 'layout', minHeight: '1260px' }}>
+        <section id="categories" className="container mx-auto px-4 py-8 md:py-12 relative min-h-[1260px] md:min-h-[800px]" style={{ contain: 'layout' }}>
           
           <div className="text-center mb-6 md:mb-8 relative z-10">
             <div className="inline-block mb-2">
