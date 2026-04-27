@@ -538,48 +538,31 @@ export const DynamicIsland = () => {
                 touchAction: "pan-y",
               }}
               transition={{
+                // Single, gently-tuned spring shared by width / height /
+                // borderRadius so the shell morphs as ONE coherent shape
+                // instead of each axis racing on its own clock. This is the
+                // key to the "Dynamic Island" feel — every dimension lands
+                // at the same instant.
                 default: {
                   type: "spring",
-                  stiffness: 380,
-                  damping: 34,
-                  mass: 0.7,
-                  restDelta: 0.5,
-                  restSpeed: 0.5,
+                  stiffness: 260,
+                  damping: 30,
+                  mass: 0.9,
+                  restDelta: 0.4,
+                  restSpeed: 0.4,
                 },
-                width: {
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 32,
-                  mass: 0.8,
-                  restDelta: 0.5,
-                  restSpeed: 0.5,
-                },
-                height: {
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 36,
-                  mass: 0.7,
-                  restDelta: 0.5,
-                  restSpeed: 0.5,
-                },
-                borderRadius: {
-                  type: "spring",
-                  stiffness: 380,
-                  damping: 34,
-                  mass: 0.7,
-                },
-                opacity: { duration: 0.14, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.18, ease: APPLE_EASE },
                 scaleX: {
                   type: "spring",
-                  stiffness: 420,
-                  damping: 34,
-                  mass: 0.65,
+                  stiffness: 320,
+                  damping: 32,
+                  mass: 0.8,
                 },
                 scaleY: {
                   type: "spring",
-                  stiffness: 460,
-                  damping: 36,
-                  mass: 0.65,
+                  stiffness: 320,
+                  damping: 32,
+                  mass: 0.8,
                 },
               }}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
