@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const siteUrl = "https://levonisiq.com";
     const productUrl = `${siteUrl}/product/${product.slug}`;
-    const imageUrl = product.image_url || `${siteUrl}/og-logo.png`;
+    const imageUrl = product.image_url || `${siteUrl}/og-image.jpg`;
     const title = product.name_ar || "LEVONIS";
     const description = product.description_ar
       ? product.description_ar.substring(0, 160)
