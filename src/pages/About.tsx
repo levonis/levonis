@@ -104,7 +104,7 @@ const About = () => {
       ctaShop: 'Shop Products',
       ctaContact: 'Contact Us',
       story: 'Our Story',
-      storyText: 'LEVONIS launched from Baghdad with a clear vision: become Iraq’s go-to destination for everything 3D printing. We are authorized specialists in Bambu Lab and Resin printers, and we stock filaments, resins, accessories and spare parts. Alongside our core 3D specialty, we run an electronics shipping service that brings devices from abroad at the lowest prices and fastest delivery.',
+      storyText: 'LEVONIS launched from Baghdad with a clear vision: become Iraq’s go-to destination for everything 3D printing. We are authorized specialists in Bambu Lab, Creality, and Resin printers, and we stock filaments, resins, accessories and spare parts. Alongside our core 3D specialty, we run an electronics shipping service that brings devices from abroad at the lowest prices and fastest delivery.',
       timeline: 'Our Journey',
       timelineList: [
         { year: '2022', title: 'Launched in Baghdad', text: 'Started with a vision to bring 3D printing technology to the Iraqi consumer.' },
