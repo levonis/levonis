@@ -84,7 +84,7 @@ export default function AppBackground() {
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 overflow-hidden"
-      style={{ zIndex: 0, background: '#103d33' }}
+      style={{ zIndex: 0, background: '#000000' }}
     >
       {/* Static blended green blooms — richer cinematic mixture */}
       <div
