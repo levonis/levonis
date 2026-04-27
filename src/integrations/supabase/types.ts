@@ -12317,6 +12317,10 @@ export type Database = {
         }
         Returns: Json
       }
+      grant_level_prize_coupon: {
+        Args: { p_prize_id: string; p_user_id: string }
+        Returns: undefined
+      }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
