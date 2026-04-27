@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe, Timer } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe, Timer, Hourglass } from "lucide-react";
 import CrossyRoadCanvas from "./CrossyRoadCanvas";
 import { useVipFreePlay } from "@/hooks/useVipPlus";
 import SeasonHeader from "@/components/games/SeasonHeader";
@@ -17,14 +17,23 @@ interface Props {
 function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: string | null; seasonName?: string | null; startsAt?: string | null }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    if (!endsAt) return;
+    if (!endsAt && !startsAt) return;
     const iv = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(iv);
-  }, [endsAt]);
+  }, [endsAt, startsAt]);
 
   const fmt = (iso?: string | null) => {
     if (!iso) return "";
     try { return new Date(iso).toLocaleDateString("ar-IQ", { year: "numeric", month: "short", day: "numeric" }); } catch { return ""; }
+  };
+
+  const fmtCountdown = (ms: number) => {
+    if (ms <= 0) return "";
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${d > 0 ? `${d}ي ` : ""}${h}س ${m}د ${s}ث`;
   };
 
   const noActiveSeason = !endsAt && !startsAt;
@@ -37,6 +46,27 @@ function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: strin
       </div>
     );
   }
+
+  const startMs = startsAt ? new Date(startsAt).getTime() : 0;
+  const isUpcoming = !!startsAt && startMs > now;
+  const startCountdown = isUpcoming ? fmtCountdown(startMs - now) : "";
+
+  // Upcoming-only state (start is scheduled, no active end yet)
+  if (isUpcoming && !endsAt) {
+    return (
+      <div className="rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 p-3 text-center space-y-1.5">
+        <div className="flex items-center justify-center gap-2">
+          <Hourglass className="h-4 w-4 text-primary animate-pulse" />
+          <span className="text-sm font-bold text-primary">{seasonName || "الموسم القادم"} يبدأ خلال</span>
+        </div>
+        <div className="font-mono font-black text-primary text-base bg-background/60 rounded-md py-1 tabular-nums">
+          {startCountdown}
+        </div>
+        <div className="text-[10px] text-muted-foreground">ينطلق: {fmt(startsAt)}</div>
+      </div>
+    );
+  }
+
   const diff = endsAt ? new Date(endsAt).getTime() - now : 0;
   const ended = endsAt ? diff <= 0 : false;
   const d = Math.floor(diff / 86400000);
@@ -51,14 +81,22 @@ function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: strin
           <Trophy className="h-4 w-4 text-primary" />
           <span className="text-sm font-bold text-primary">{seasonName || "الموسم الحالي"}</span>
         </div>
-        {startsAt && <span className="text-[10px] text-muted-foreground">بدأ: {fmt(startsAt)}</span>}
+        {startsAt && !isUpcoming && <span className="text-[10px] text-muted-foreground">بدأ: {fmt(startsAt)}</span>}
       </div>
+      {isUpcoming && (
+        <div className="flex items-center justify-between gap-2 bg-background/50 rounded-md px-2 py-1">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Hourglass className="h-3 w-3 text-primary animate-pulse" /> يبدأ خلال:
+          </div>
+          <span className="font-mono font-bold text-primary text-xs tabular-nums">{startCountdown}</span>
+        </div>
+      )}
       {endsAt && !ended && (
         <div className="flex items-center justify-between gap-2 bg-background/50 rounded-md px-2 py-1">
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Timer className="h-3 w-3 text-primary" /> ينتهي خلال:
           </div>
-          <span className="font-mono font-bold text-primary text-xs">
+          <span className="font-mono font-bold text-primary text-xs tabular-nums">
             {d > 0 && `${d}ي `}{h}س {m}د {s}ث
           </span>
         </div>
@@ -66,7 +104,7 @@ function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: strin
       {endsAt && ended && (
         <div className="text-xs text-primary font-bold text-center">انتهى الموسم — جاري التوزيع</div>
       )}
-      {!endsAt && (
+      {!endsAt && !isUpcoming && (
         <div className="text-xs text-primary font-bold text-center bg-background/50 rounded-md px-2 py-1">
           الموسم القادم يبدأ قريباً 🏆
         </div>
