@@ -176,7 +176,7 @@ const FloatingProductCard = memo(({
         {/* Product info */}
         <div className="p-2.5 pt-2 text-center space-y-1 flex-1 flex flex-col justify-center">
           <h3 className="text-[11px] md:text-sm font-bold text-foreground/85 leading-tight line-clamp-2">
-            {displayName}
+            {highlightQuery ? renderHighlighted(displayName, highlightQuery) : displayName}
           </h3>
           <div className="flex items-center justify-center gap-1">
             <span className="text-sm md:text-base font-black text-primary">
