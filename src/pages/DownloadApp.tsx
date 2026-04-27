@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 
-const logoNew = '/og-logo.png';
+const logoNew = '/logo-small.webp';
 
 type AppVersion = {
   id: string;

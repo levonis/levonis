@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Json } from '@/integrations/supabase/types';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 
 interface CropSettings {
   x: number;
@@ -46,24 +47,27 @@ const BannerImage = memo(({
 }) => {
   const [loaded, setLoaded] = useState(false);
 
+  // Use Supabase image transform to serve a right-sized version (banner displays max ~1200px)
+  const optimizedSrc = useMemo(() => resizeSupabaseImage(src, 1200, 80) || src, [src]);
+
   // Preload first image immediately via link tag
   useEffect(() => {
     if (isFirst && typeof window !== 'undefined') {
-      const existingPreload = document.querySelector(`link[href="${src}"]`);
+      const existingPreload = document.querySelector(`link[href="${optimizedSrc}"]`);
       if (!existingPreload) {
         const link = document.createElement('link');
         link.rel = 'preload';
         link.as = 'image';
-        link.href = src;
+        link.href = optimizedSrc;
         link.fetchPriority = 'high';
         document.head.appendChild(link);
       }
     }
-  }, [src, isFirst]);
+  }, [optimizedSrc, isFirst]);
 
   return (
     <img
-      src={src}
+      src={optimizedSrc}
       alt={alt}
       className={cn(
         "w-full h-full object-cover object-center transition-opacity duration-300",

@@ -1,4 +1,4 @@
-const logoNew = '/og-logo.png';
+const logoNew = '/logo-small.webp';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/i18n';
 
