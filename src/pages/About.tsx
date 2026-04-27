@@ -156,9 +156,9 @@ const About = () => {
     },
     ku: {
       title: 'دەربارەی ئێمە — LEVONIS',
-      desc: 'LEVONIS — پسپۆڕی پرینتەری 3D لە عێراق: Bambu Lab، Resin، Filaments و گەیاندنی ئەلیکترۆنیات بە هەرزانترین نرخ.',
+      desc: 'LEVONIS — پسپۆڕی پرینتەری 3D لە عێراق: Bambu Lab، Creality، Resin، Filaments و گەیاندنی ئەلیکترۆنیات بە هەرزانترین نرخ.',
       hero: 'ئێمە داهاتوو دەپرینت دەکەین',
-      sub: 'پسپۆڕانی پرینتەری 3D — Bambu Lab، Resin و Filaments',
+      sub: 'پسپۆڕانی پرینتەری 3D — Bambu Lab، Creality، Resin و Filaments',
       ctaShop: 'بەرهەمەکان',
       ctaContact: 'پەیوەندی',
       story: 'چیرۆکمان',
