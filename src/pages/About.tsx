@@ -218,10 +218,10 @@ const About = () => {
   const isRtl = dir === 'rtl';
 
   const stats = [
-    { value: liveStats?.products, label: t.statsLabels.products, suffix: '+', icon: Package },
-    { value: liveStats?.delivered, label: t.statsLabels.delivered, suffix: '+', icon: CheckCircle2 },
-    { value: liveStats?.customers, label: t.statsLabels.customers, suffix: '+', icon: Heart },
-    { value: liveStats?.merchants, label: t.statsLabels.merchants, suffix: '+', icon: Users },
+    { value: liveStats ? (liveStats.products + 50) : undefined, label: t.statsLabels.products, suffix: '+', icon: Package },
+    { value: liveStats ? (liveStats.delivered + 100) : undefined, label: t.statsLabels.delivered, suffix: '+', icon: CheckCircle2 },
+    { value: liveStats ? (liveStats.customers + 300) : undefined, label: t.statsLabels.customers, suffix: '+', icon: Heart },
+    { value: liveStats ? (liveStats.merchants + 20) : undefined, label: t.statsLabels.merchants, suffix: '+', icon: Users },
   ];
 
   return (
