@@ -66,14 +66,18 @@ export default function AssistanceCoupons() {
     toast.success("تم نسخ الكود");
   };
 
+  const glassCard = "rounded-xl border border-border/30 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+
   if (isLoading) {
-    return <div className="space-y-3">{[1, 2].map(i => <div key={i} className="h-28 rounded-xl bg-muted/30 animate-pulse" />)}</div>;
+    return <div className="space-y-3">{[1, 2].map(i => <div key={i} className={`h-28 ${glassCard} animate-pulse`} />)}</div>;
   }
 
   if (!coupons?.length) {
     return (
-      <div className="text-center py-12">
-        <Ticket className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+      <div className={`text-center py-12 ${glassCard}`}>
+        <div className="w-14 h-14 mx-auto mb-3 rounded-lg border border-primary/25 bg-primary/10 backdrop-blur-xl flex items-center justify-center">
+          <Ticket className="h-7 w-7 text-primary/60" />
+        </div>
         <p className="text-sm text-muted-foreground">لا توجد كوبونات متاحة حالياً</p>
       </div>
     );
@@ -87,15 +91,15 @@ export default function AssistanceCoupons() {
         const progress = (coupon.claimed_count / coupon.max_claims) * 100;
 
         return (
-          <div key={coupon.id} className="rounded-xl border border-border/40 bg-card p-4">
+          <div key={coupon.id} className={`${glassCard} p-4`}>
             <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-lg border border-primary/25 bg-primary/10 backdrop-blur-xl flex items-center justify-center shrink-0">
                 <Ticket className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className="font-bold text-sm text-foreground">{pickI18n(coupon, "title", language)}</h4>
-                  <Badge variant="secondary" className="text-[10px]">
+                  <Badge variant="secondary" className="text-[10px] bg-primary/15 text-primary border border-primary/25 backdrop-blur-xl">
                     {coupon.discount_type === "percentage"
                       ? `${coupon.discount_value}%`
                       : `${coupon.discount_value.toLocaleString()} د.ع`}
@@ -116,7 +120,7 @@ export default function AssistanceCoupons() {
 
             <div className="mt-3">
               {claim ? (
-                <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg p-2.5">
+                <div className="flex items-center gap-2 rounded-lg p-2.5 border border-primary/25 bg-primary/10 backdrop-blur-xl">
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-muted-foreground">كودك الخاص</p>
@@ -125,7 +129,7 @@ export default function AssistanceCoupons() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0"
+                    className="h-7 w-7 p-0 rounded-md border border-border/30 bg-card/40 backdrop-blur-xl hover:bg-card/60"
                     onClick={() => copyCode(claim.coupon_code)}
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -133,7 +137,7 @@ export default function AssistanceCoupons() {
                 </div>
               ) : remaining > 0 ? (
                 <Button
-                  className="w-full h-9 text-xs rounded-lg gap-1.5"
+                  className="w-full h-9 text-xs rounded-lg gap-1.5 border border-primary/30 bg-primary/15 text-primary backdrop-blur-xl hover:bg-primary/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                   onClick={() => claimMutation.mutate(coupon.id)}
                   disabled={claimMutation.isPending}
                 >
