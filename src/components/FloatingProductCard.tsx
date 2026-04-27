@@ -171,9 +171,10 @@ const FloatingProductCard = memo(({
         {/* Product image — fills the card top, no padding */}
         <div className="relative aspect-square overflow-hidden flex-shrink-0">
           <img
-            src={imageUrl || '/placeholder.svg'}
+            src={standardSrc}
             alt={displayName}
             loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
           {/* Discount badge */}
