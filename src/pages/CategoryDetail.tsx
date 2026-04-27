@@ -106,6 +106,60 @@ const CategoryDetail = () => {
     // Tokenize query for multi-word matching (every token must match somewhere).
     const qTokens = searchQ ? searchQ.split(/\s+/).filter(Boolean) : [];
 
+    // --- Tiny Levenshtein (capped at 'max' for early-exit performance) ---
+    const editDistance = (a: string, b: string, max: number): number => {
+      if (a === b) return 0;
+      const al = a.length;
+      const bl = b.length;
+      if (Math.abs(al - bl) > max) return max + 1;
+      if (al === 0) return bl;
+      if (bl === 0) return al;
+      let prev = new Array(bl + 1);
+      let curr = new Array(bl + 1);
+      for (let j = 0; j <= bl; j++) prev[j] = j;
+      for (let i = 1; i <= al; i++) {
+        curr[0] = i;
+        let rowMin = curr[0];
+        for (let j = 1; j <= bl; j++) {
+          const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+          curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+          if (curr[j] < rowMin) rowMin = curr[j];
+        }
+        if (rowMin > max) return max + 1; // early exit
+        [prev, curr] = [curr, prev];
+      }
+      return prev[bl];
+    };
+
+    /** Fuzzy distance: best edit-distance between any query token and any
+     *  word inside the haystack strings. Returns Infinity if all tokens
+     *  exceed their per-token threshold. */
+    const fuzzyDistance = (haystacks: string[]): number => {
+      if (qTokens.length === 0) return Infinity;
+      let total = 0;
+      for (const tok of qTokens) {
+        // Threshold scales with token length: 1 typo for 3-4 chars, 2 for 5-7, 3 for 8+.
+        const thr = tok.length <= 2 ? 0 : tok.length <= 4 ? 1 : tok.length <= 7 ? 2 : 3;
+        if (thr === 0) {
+          if (!haystacks.some((h) => h.includes(tok))) return Infinity;
+          continue;
+        }
+        let best = Infinity;
+        for (const h of haystacks) {
+          for (const word of h.split(/\s+/)) {
+            if (!word) continue;
+            const d = editDistance(tok, word, thr);
+            if (d < best) best = d;
+            if (best === 0) break;
+          }
+          if (best === 0) break;
+        }
+        if (best > thr) return Infinity;
+        total += best;
+      }
+      return total;
+    };
+
     /**
      * Lower score = more relevant. Combines:
      *  - exact name match              → 0
@@ -115,6 +169,7 @@ const CategoryDetail = () => {
      *  - all tokens found in names     → 30
      *  - all tokens found in keywords  → 50  (colors / option names / slug)
      *  - all tokens found in desc      → 70
+     *  - fuzzy name match (typo)       → 90 + edit distance
      *  - no match                      → Infinity (filtered out)
      * Shorter names get a tiny bonus (closer match = less noise around the term).
      */
@@ -144,6 +199,11 @@ const CategoryDetail = () => {
       else if (qTokens.length > 1 && allTokensIn(names)) base = 30;
       else if (allTokensIn(keywords)) base = 50;
       else if (descs.some((d) => d.includes(searchQ)) || (qTokens.length > 1 && allTokensIn(descs))) base = 70;
+      else if (searchQ.length >= 3) {
+        // Fuzzy fallback — only when nothing else hits and query is non-trivial.
+        const fd = fuzzyDistance(names);
+        if (isFinite(fd)) base = 90 + fd;
+      }
 
       if (!isFinite(base)) return Infinity;
       // Shorter, more focused names rank slightly higher (max +5 penalty).
