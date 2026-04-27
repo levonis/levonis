@@ -46,17 +46,17 @@ const About = () => {
       ctaShop: 'تسوّق المنتجات',
       ctaContact: 'تواصل معنا',
       story: 'قصتنا',
-      storyText: 'انطلق LEVONIS من بغداد برؤية واضحة: أن نكون المرجع الأول في العراق لكل ما يخص الطباعة ثلاثية الأبعاد. نحن وكلاء ومتخصصون في طابعات Bambu Lab و Creality وطابعات الـ Resin، ونوفّر مواد الـ Filaments بأنواعها، ومواد الـ Resin، إلى جانب جميع الإكسسوارات وقطع الغيار. وإلى جانب تخصصنا الأساسي، نقدّم خدمة شحن الأجهزة الإلكترونية من الخارج بأرخص الأسعار وأسرع وقت ممكن.',
+      storyText: 'انطلق LEVONIS من بابل برؤية واضحة: أن نكون المرجع الأول في العراق لكل ما يخص الطباعة ثلاثية الأبعاد. ونكون وكلاء ومتخصصون في طابعات Bambu Lab و Creality وطابعات الـ Resin، ونوفّر مواد الـ Filaments بأنواعها، ومواد الـ Resin، إلى جانب جميع الإكسسوارات وقطع الغيار. وإلى جانب تخصصنا الأساسي، نقدّم خدمة شحن الأجهزة الإلكترونية من الخارج بأرخص الأسعار وأسرع وقت ممكن.',
       timeline: 'محطات في رحلتنا',
       timelineList: [
-        { year: '2022', title: 'الانطلاقة من بغداد', text: 'بدأنا برؤية لتقديم تقنيات الطباعة 3D للمستهلك العراقي.' },
-        { year: '2023', title: 'وكلاء Bambu Lab', text: 'حصلنا على وكالة معتمدة لطابعات Bambu Lab مع خدمة الضمان الرسمي.' },
-        { year: '2024', title: 'توسعة المواد والـ Resin', text: 'أضفنا طابعات Resin ومواد Filaments بكل الأنواع والألوان.' },
-        { year: '2025', title: 'منصة متكاملة', text: 'أطلقنا التطبيق، نظام النقاط، والمجتمع، وخدمة شحن الإلكترونيات بأرخص الأسعار.' },
+        { year: '2025', title: 'الانطلاقة من بابل', text: 'بدأنا برؤية لتقديم تقنيات الطباعة 3D للمستهلك العراقي.' },
+        { year: '2025', title: 'طابعات Bambu Lab', text: 'وفرنا شحن الطابعات Bambu Lab مع خدمة الضمان الرسمي.' },
+        { year: '2026', title: 'توسعة المواد والـ Resin', text: 'أضفنا طابعات Resin ومواد Filaments بكل الأنواع والألوان.' },
+        { year: '2026', title: 'منصة متكاملة', text: 'أطلقنا التطبيق، نظام النقاط، والمجتمع، وخدمة شحن الإلكترونيات بأرخص الأسعار.' },
       ],
       what: 'تخصصنا الأساسي',
       services: [
-        { icon: Printer, title: 'طابعات Bambu Lab و Creality 3D', text: 'وكلاء معتمدون لموديلات Bambu Lab و Creality مع ضمان رسمي وصيانة محلية واستشارات فنية.' },
+        { icon: Printer, title: 'طابعات Bambu Lab و Creality 3D', text: 'نوفر جميع  الموديلات Bambu Lab و Creality مع ضمان رسمي وصيانة محلية واستشارات فنية.' },
         { icon: Sparkles, title: 'طابعات Resin ومواد الطباعة', text: 'طابعات Resin عالية الدقة مع راتنجات أصلية بألوان وخصائص متعددة لكل المشاريع.' },
         { icon: Layers, title: 'مواد Filaments والإكسسوارات', text: 'تشكيلة واسعة من خيوط الطباعة (PLA, PETG, ABS, TPU, Silk, Wood) مع نوزل وقطع غيار.' },
         { icon: Truck, title: 'شحن إلكترونيات بأرخص الأسعار', text: 'خدمة شحن الأجهزة الإلكترونية من الخارج (هواتف، لابتوبات، ملحقات) بأسرع وقت.' },
@@ -83,7 +83,7 @@ const About = () => {
       coverageText: 'بغداد، البصرة، أربيل، السليمانية، نينوى، النجف، كربلاء، بابل، الأنبار، ديالى، صلاح الدين، كركوك، دهوك، ميسان، القادسية، المثنى، ذي قار، واسط.',
       faq: 'الأسئلة الشائعة',
       faqList: [
-        { q: 'هل أنتم وكلاء معتمدون لـ Bambu Lab؟', a: 'نعم، نحن وكلاء معتمدون لطابعات Bambu Lab في العراق، ونوفّر الضمان الرسمي والصيانة المحلية لجميع الموديلات.' },
+        { q: 'هل جميع المنتجات اصليه منـ Bambu Lab؟', a: 'نعم، جميع الطابعات والاكسسوارات والغيار من Bambu Lab ، ونوفّر الضمان الرسمي والصيانة المحلية لجميع الموديلات.' },
         { q: 'ما أنواع الـ Filaments المتوفرة لديكم؟', a: 'نوفّر تشكيلة واسعة: PLA, PETG, ABS, TPU, PLA Silk, PLA Wood، إضافة لـ Bambu Lab original filaments بألوان متعددة.' },
         { q: 'هل تقدّمون خدمة شحن الإلكترونيات؟', a: 'نعم، نشحن الأجهزة الإلكترونية من الخارج (هواتف، لابتوبات، ملحقات) بأرخص الأسعار وأسرع وقت ممكن لكل المحافظات.' },
         { q: 'كم تستغرق فترة التوصيل؟', a: 'بغداد عادة 1–2 يوم، باقي المحافظات 2–4 أيام. شحن الإلكترونيات من الخارج يستغرق 7–14 يوماً.' },
@@ -319,7 +319,7 @@ const About = () => {
         {/* TIMELINE */}
         <section>
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-bold text-muted-foreground mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold text-muted-foreground mb-3 bg-background">
               <Target className="w-3 h-3" />
               {language === 'en' ? 'CHAPTER 02' : language === 'ku' ? 'بەشی ٠٢' : 'الفصل ٠٢'}
             </div>
@@ -356,7 +356,7 @@ const About = () => {
         {/* SERVICES */}
         <section>
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-bold text-muted-foreground mb-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold text-muted-foreground mb-3 bg-background">
               <Layers className="w-3 h-3" />
               {language === 'en' ? 'CHAPTER 03' : language === 'ku' ? 'بەشی ٠٣' : 'الفصل ٠٣'}
             </div>
