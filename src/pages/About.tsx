@@ -114,7 +114,7 @@ const About = () => {
       ],
       what: 'Our Core Specialty',
       services: [
-        { icon: Printer, title: 'Bambu Lab 3D Printers', text: 'Authorized dealer for the full Bambu Lab line-up with official warranty and local service.' },
+        { icon: Printer, title: 'Bambu Lab & Creality 3D Printers', text: 'Authorized dealer for Bambu Lab and Creality line-up with official warranty and local service.' },
         { icon: Sparkles, title: 'Resin Printers & Resins', text: 'High-precision Resin printers with original resins for every project.' },
         { icon: Layers, title: 'Filaments & Accessories', text: 'Full range of filaments (PLA, PETG, ABS, TPU, Silk, Wood) with nozzles and spare parts.' },
         { icon: Truck, title: 'Cheapest Electronics Shipping', text: 'We ship phones, laptops and accessories from abroad at the lowest prices.' },
