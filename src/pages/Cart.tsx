@@ -796,14 +796,37 @@ const Cart = () => {
     }
   }, [showCodOption, preOrderPaymentOption]);
 
-  // حساب رسوم الدفع عند الاستلام لكل منتج بناءً على شرائحه
+  // حساب رسوم الدفع عند الاستلام لكل منتج
+  // المنتجات المربوطة بـ link_direct_commission_to_cod: نستخدم نفس حساب سعر "البيع المباشر"
+  // المعروض في صفحة المنتج لضمان تطابق الإجمالي. غير ذلك نستخدم شرائح cod_fee_value.
   const codFee = useMemo(() => {
     if (!showCodOption || preOrderPaymentOption !== 'cod') return 0;
     const tiers = partialPaymentSettings?.fee_tiers || [];
     return items.reduce((sum: number, item: any) => {
-      const unitPrice = getCartItemPrice(item);
+      const product = item.products;
+      if (!product) return sum;
       const qty = item.quantity || 1;
-      const lineTotal = unitPrice * qty;
+      const preorderUnitPrice = getCartItemPrice(item); // السعر الحالي للطلب المسبق (يشمل الخيار/اللون)
+      // إذا كان المنتج مربوطاً بنسبة COD العالمية، احسب فرق سعر البيع المباشر مباشرةً
+      if (product.link_direct_commission_to_cod && codDefaults) {
+        const liveDirect = computeLinkedDirectSalePrice(
+          product as any,
+          { usd_to_iqd_rate: usdToIqd } as any,
+          codDefaults as any,
+        );
+        if (liveDirect != null) {
+          // أضف تعديل الخيار + تقريب 250 لمطابقة منطق صفحة المنتج
+          const optAdj = item.product_options?.price_adjustment
+            ? ensureAdjustmentIqd(Number(item.product_options.price_adjustment), usdToIqd, product.price_usd)
+            : 0;
+          const rawDirect = liveDirect + optAdj;
+          const directUnitPrice = product.round_up_price ? Math.ceil(rawDirect / 250) * 250 : rawDirect;
+          const feePerUnit = Math.max(0, directUnitPrice - preorderUnitPrice);
+          return sum + (feePerUnit * qty);
+        }
+      }
+      // المسار الافتراضي: شرائح COD المخصصة
+      const lineTotal = preorderUnitPrice * qty;
       const tier = tiers.length > 0
         ? (tiers.find(t => lineTotal >= t.min_amount && lineTotal <= t.max_amount) || tiers[tiers.length - 1])
         : null;
@@ -813,7 +836,7 @@ const Cart = () => {
       const fee = codType === 'percentage' ? Math.ceil(lineTotal * codVal / 100) : Math.ceil(codVal * qty);
       return sum + fee;
     }, 0);
-  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings]);
+  }, [showCodOption, preOrderPaymentOption, items, partialPaymentSettings, codDefaults, usdToIqd]);
 
   const isCodPayment = preOrderPaymentOption === 'cod' && showCodOption;
 
