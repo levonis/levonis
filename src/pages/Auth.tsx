@@ -78,7 +78,7 @@ const Auth = () => {
       // HTTPS domain registered with the OAuth broker.
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const isCapacitorOrigin = /capacitor:|file:|localhost|127\.0\.0\.1|10\.0\.2\.2/i.test(origin);
-      const redirectUri = isCapacitorOrigin ? 'https://levonis.lovable.app' : origin;
+      const redirectUri = isCapacitorOrigin ? 'https://levonisiq.com' : origin;
 
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: redirectUri,
