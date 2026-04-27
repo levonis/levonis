@@ -18,6 +18,9 @@ interface PageSearchContextValue {
   items: PageSearchItem[];
   registerSection: (key: string, items: PageSearchItem[]) => void;
   unregisterSection: (key: string) => void;
+  /** Live (un-debounced) search query the user is typing in the island. */
+  liveQuery: string;
+  setLiveQuery: (q: string) => void;
 }
 
 const Ctx = createContext<PageSearchContextValue | null>(null);
@@ -25,6 +28,11 @@ const Ctx = createContext<PageSearchContextValue | null>(null);
 export const PageSearchProvider = ({ children }: { children: ReactNode }) => {
   const sectionsRef = useRef<Map<string, PageSearchItem[]>>(new Map());
   const [version, setVersion] = useState(0);
+  const [liveQuery, setLiveQueryState] = useState("");
+
+  const setLiveQuery = useCallback((q: string) => {
+    setLiveQueryState(q);
+  }, []);
 
   const registerSection = useCallback((key: string, items: PageSearchItem[]) => {
     sectionsRef.current.set(key, items);
