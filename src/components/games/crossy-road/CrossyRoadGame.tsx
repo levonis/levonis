@@ -27,7 +27,16 @@ function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: strin
     try { return new Date(iso).toLocaleDateString("ar-IQ", { year: "numeric", month: "short", day: "numeric" }); } catch { return ""; }
   };
 
-  if (!endsAt && !seasonName && !startsAt) return null;
+  const noActiveSeason = !endsAt && !startsAt;
+  if (noActiveSeason && !seasonName) {
+    return (
+      <div className="rounded-xl bg-primary/10 border border-primary/20 p-3 text-center">
+        <Trophy className="h-5 w-5 text-primary mx-auto mb-1" />
+        <div className="text-sm font-bold text-primary">الموسم القادم يبدأ قريباً 🏆</div>
+        <div className="text-[10px] text-muted-foreground mt-1">تم تتويج الفائزين — ترقّب انطلاق الموسم الجديد</div>
+      </div>
+    );
+  }
   const diff = endsAt ? new Date(endsAt).getTime() - now : 0;
   const ended = endsAt ? diff <= 0 : false;
   const d = Math.floor(diff / 86400000);
@@ -56,6 +65,11 @@ function SeasonCountdownBanner({ endsAt, seasonName, startsAt }: { endsAt: strin
       )}
       {endsAt && ended && (
         <div className="text-xs text-primary font-bold text-center">انتهى الموسم — جاري التوزيع</div>
+      )}
+      {!endsAt && (
+        <div className="text-xs text-primary font-bold text-center bg-background/50 rounded-md px-2 py-1">
+          الموسم القادم يبدأ قريباً 🏆
+        </div>
       )}
     </div>
   );
