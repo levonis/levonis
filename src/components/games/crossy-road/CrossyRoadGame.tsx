@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe, Timer } from "lucide-react";
+import { ArrowRight, Ticket, Star, Trophy, Zap, Crown, Gift, Medal, Target, Gamepad2, Sparkles, Globe, Timer, Hourglass } from "lucide-react";
 import CrossyRoadCanvas from "./CrossyRoadCanvas";
 import { useVipFreePlay } from "@/hooks/useVipPlus";
 import SeasonHeader from "@/components/games/SeasonHeader";
