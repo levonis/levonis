@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { LogIn, UserPlus, User as UserIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ const GUEST_SESSION_KEY = "__levo_native_guest_session";
 const NativeAuthGate = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, setLanguage, dir } = useLanguage();
 
   // Detect native synchronously so the very first render of the app already
@@ -85,8 +86,8 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
     setGuestAccepted(true);
   };
 
-  // Web / not native: pass-through.
-  if (!isNative) return <>{children}</>;
+  // Web / not native / auth page: pass-through.
+  if (!isNative || location.pathname === "/auth") return <>{children}</>;
 
   // Still resolving auth state — show nothing (avoid flash).
   if (loading) return null;
