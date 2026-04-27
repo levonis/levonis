@@ -52,15 +52,17 @@ const contentMotion = {
 };
 
 // Cross-fade used specifically for promo↔search swaps so the surface morphs
-// continuously without a vertical jump.
+// continuously without a vertical jump. We keep it short and blur-free so it
+// finishes in lock-step with the shell's width/height spring instead of
+// trailing behind it (which used to feel like a "double" animation).
 const morphMotion = {
-  initial: { opacity: 0, filter: "blur(4px)" },
-  animate: { opacity: 1, filter: "blur(0px)" },
-  exit: { opacity: 0, filter: "blur(4px)" },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 const morphTransition: Transition = {
-  duration: 0.4,
+  duration: 0.22,
   ease: [0.22, 1, 0.36, 1],
 };
 
