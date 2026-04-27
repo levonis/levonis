@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getLocalizedField } from '@/hooks/useLocalizedProduct';
 import { useLanguage } from '@/lib/i18n';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
 
 interface FloatingProductCardProps {
