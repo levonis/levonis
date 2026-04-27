@@ -14,7 +14,7 @@ interface SEOProps {
 }
 
 const SITE = 'https://levonisiq.com';
-const DEFAULT_IMAGE = `${SITE}/og-logo.png`;
+const DEFAULT_IMAGE = `${SITE}/og-image.jpg`;
 
 const SEO = ({
   title,
