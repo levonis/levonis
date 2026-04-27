@@ -138,6 +138,7 @@ const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const MiniGames = lazy(() => import("./pages/MiniGames"));
 const GameWinnersPage = lazy(() => import("./pages/GameWinnersPage"));
+const GameWinnersArchive = lazy(() => import("./pages/GameWinnersArchive"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const ProductBundles = lazy(() => import("./pages/ProductBundles"));
@@ -316,6 +317,7 @@ function AppContent() {
             <Route path="/my-prizes" element={<RequireAuth><MyLevelPrizes /></RequireAuth>} />
             <Route path="/games" element={<MiniGames />} />
             <Route path="/games/winners" element={<GameWinnersPage />} />
+            <Route path="/games/winners/archive" element={<GameWinnersArchive />} />
             <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />

@@ -69,7 +69,16 @@ export default function GameWinnersPage() {
             <ArrowRight className="h-4 w-4" />
           </Button>
           <Trophy className="h-5 w-5 text-yellow-500" />
-          <h1 className="text-lg font-black text-foreground">الفائزون</h1>
+          <h1 className="text-lg font-black text-foreground flex-1">الفائزون</h1>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate("/games/winners/archive")}
+            className="h-9 rounded-xl gap-1.5"
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            أرشيف المواسم
+          </Button>
         </div>
       </div>
 
