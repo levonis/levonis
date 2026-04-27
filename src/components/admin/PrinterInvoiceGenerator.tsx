@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
-const logoImg = '/og-logo.png';
+const logoImg = '/logo-medium.png';
 
 interface PrinterData {
   id: string;
