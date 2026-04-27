@@ -96,9 +96,14 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
           <img src={levonisLogo} alt="Levonis" className="h-full w-full object-contain" />
         </div>
 
-        <div className="space-y-2">
-          <h1 className="text-2xl font-black text-foreground">{t('auth_native_welcome')}</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">{t('auth_native_subtitle')}</p>
+        <div className="space-y-2" lang={language} dir={dir}>
+          <h1 className="text-2xl font-black text-foreground font-sans">{t('auth_native_welcome')}</h1>
+          <p
+            className="text-sm text-muted-foreground leading-relaxed font-sans"
+            style={{ unicodeBidi: 'plaintext', wordSpacing: 'normal', letterSpacing: 'normal' }}
+          >
+            {t('auth_native_subtitle')}
+          </p>
         </div>
 
         <div className="w-full flex flex-col gap-3 mt-2">
