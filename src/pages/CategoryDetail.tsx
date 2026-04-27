@@ -103,7 +103,21 @@ const CategoryDetail = () => {
     const minP = minPrice ? Number(minPrice) : null;
     const maxP = maxPrice ? Number(maxPrice) : null;
 
-    // Score for search ranking: 0 name-prefix, 1 name-contains, 2 desc-contains, 3 no match
+    // Tokenize query for multi-word matching (every token must match somewhere).
+    const qTokens = searchQ ? searchQ.split(/\s+/).filter(Boolean) : [];
+
+    /**
+     * Lower score = more relevant. Combines:
+     *  - exact name match              → 0
+     *  - name starts with full query   → 5
+     *  - any name token starts with q  → 10
+     *  - name contains full query      → 20
+     *  - all tokens found in names     → 30
+     *  - all tokens found in keywords  → 50  (colors / option names / slug)
+     *  - all tokens found in desc      → 70
+     *  - no match                      → Infinity (filtered out)
+     * Shorter names get a tiny bonus (closer match = less noise around the term).
+     */
     const scoreFor = (p: any): number => {
       if (!searchQ) return 0;
       const names = [p.name, p.name_ar, p.name_en, p.name_ku]
@@ -112,10 +126,30 @@ const CategoryDetail = () => {
       const descs = [p.description, p.description_ar, p.description_en, p.description_ku]
         .filter(Boolean)
         .map((s: string) => String(s).toLowerCase());
-      if (names.some((n) => n.startsWith(searchQ))) return 0;
-      if (names.some((n) => n.includes(searchQ))) return 1;
-      if (descs.some((d) => d.includes(searchQ))) return 2;
-      return 3;
+      const colorWords = Array.isArray(p.colors)
+        ? p.colors.flatMap((c: any) => [c?.name, c?.name_ar, c?.name_en, c?.name_ku].filter(Boolean))
+        : [];
+      const keywords = [p.slug, ...colorWords]
+        .filter(Boolean)
+        .map((s: string) => String(s).toLowerCase());
+
+      const allTokensIn = (haystacks: string[]) =>
+        qTokens.every((tok) => haystacks.some((h) => h.includes(tok)));
+
+      let base = Infinity;
+      if (names.some((n) => n === searchQ)) base = 0;
+      else if (names.some((n) => n.startsWith(searchQ))) base = 5;
+      else if (names.some((n) => n.split(/\s+/).some((w) => w.startsWith(searchQ)))) base = 10;
+      else if (names.some((n) => n.includes(searchQ))) base = 20;
+      else if (qTokens.length > 1 && allTokensIn(names)) base = 30;
+      else if (allTokensIn(keywords)) base = 50;
+      else if (descs.some((d) => d.includes(searchQ)) || (qTokens.length > 1 && allTokensIn(descs))) base = 70;
+
+      if (!isFinite(base)) return Infinity;
+      // Shorter, more focused names rank slightly higher (max +5 penalty).
+      const shortest = Math.min(...names.map((n) => n.length), 999);
+      const lenBonus = Math.min(5, shortest / 20);
+      return base + lenBonus;
     };
 
     let arr = products.filter((p: any) => {
@@ -127,7 +161,7 @@ const CategoryDetail = () => {
       if (directOnly && !hasDirect) return false;
       if (minP != null && priceNum < minP) return false;
       if (maxP != null && priceNum > maxP) return false;
-      if (searchQ && scoreFor(p) === 3) return false;
+      if (searchQ && !isFinite(scoreFor(p))) return false;
       return true;
     });
 
@@ -140,14 +174,18 @@ const CategoryDetail = () => {
       'best-selling': (a, b) => (b.sold_count ?? 0) - (a.sold_count ?? 0),
       'name-asc': (a, b) => String(a.name_ar || '').localeCompare(String(b.name_ar || ''), 'ar'),
     };
-    // When searching, prioritize match quality first.
-    // Otherwise, prioritize direct-sale products first, then apply chosen sort as tie-breaker.
+    // When searching, relevance fully drives the order; popularity (sold_count)
+    // breaks ties so well-known matches surface first.
+    // Without a query, prioritize direct-sale products and apply the chosen sort.
     const directRank = (p: any) =>
       (p.has_in_stock ?? false) && !isAllDirectStockDepleted(p) ? 0 : 1;
     arr = [...arr].sort((a, b) => {
       if (searchQ) {
         const s = scoreFor(a) - scoreFor(b);
         if (s !== 0) return s;
+        const pop = (b.sold_count ?? 0) - (a.sold_count ?? 0);
+        if (pop !== 0) return pop;
+        return directRank(a) - directRank(b);
       }
       const d = directRank(a) - directRank(b);
       if (d !== 0) return d;
