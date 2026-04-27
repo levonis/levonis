@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
+import { resizeSupabaseImage } from "@/lib/imageUtils";
 
 interface OptimizedImageProps {
   src: string;
@@ -11,6 +12,14 @@ interface OptimizedImageProps {
   width?: number;
   height?: number;
   sizes?: string;
+  /**
+   * Pixel width to request from Supabase image transform.
+   * Defaults to `width * 2` (retina) when `width` is set, else 600.
+   * Pass a number explicitly to override (e.g. 400 for thumbnails).
+   */
+  targetWidth?: number;
+  /** Image quality 1-100. Default 75. */
+  quality?: number;
 }
 
 const OptimizedImage = memo(({ 
@@ -22,7 +31,9 @@ const OptimizedImage = memo(({
   onError,
   width,
   height,
-  sizes = "(max-width: 768px) 100vw, 50vw"
+  sizes = "(max-width: 768px) 100vw, 50vw",
+  targetWidth,
+  quality = 75,
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
@@ -70,6 +81,15 @@ const OptimizedImage = memo(({
     onError?.();
   };
 
+  // Compute optimized URL using Supabase image transform (snap to standard sizes for cache hits)
+  const optimizedSrc = useMemo(() => {
+    if (!src) return src;
+    const desired = targetWidth ?? (width ? width * 2 : 600);
+    const standardSizes = [100, 200, 300, 400, 600, 800, 1000, 1200, 1600, 2000];
+    const snapped = standardSizes.find((s) => s >= desired) || standardSizes[standardSizes.length - 1];
+    return resizeSupabaseImage(src, snapped, quality) || src;
+  }, [src, targetWidth, width, quality]);
+
   return (
     <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
       {/* Placeholder skeleton - uses CSS aspect-ratio if dimensions provided */}
@@ -90,7 +110,7 @@ const OptimizedImage = memo(({
       {/* Actual image - only load when in view */}
       {isInView && !hasError && (
         <img
-          src={src}
+          src={optimizedSrc}
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding="async"

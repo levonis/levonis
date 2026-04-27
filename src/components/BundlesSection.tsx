@@ -5,6 +5,7 @@ import { ArrowLeft, Sparkles } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { pickI18n } from '@/lib/i18nField';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 
 const BundlesSection = () => {
   const { t, language } = useLanguage();
@@ -73,9 +74,11 @@ const BundlesSection = () => {
               {bundle.image_url ? (
                 <div className="relative h-[88px] overflow-hidden">
                   <img
-                    src={bundle.image_url}
+                    src={resizeSupabaseImage(bundle.image_url, 400, 75) || bundle.image_url}
                     alt={pickI18n(bundle, 'title', language)}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none"
+                    loading="lazy"
+                    decoding="async"
                     draggable={false}
                   />
                   {/* Bottom fade into glass */}
