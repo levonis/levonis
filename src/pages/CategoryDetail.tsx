@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { usePageTitle } from '@/island/usePageTitle';
-import { usePageSearchSection, type PageSearchItem } from '@/island/PageSearchContext';
+import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { computeLinkedDirectSalePrice } from '@/lib/priceGuard';
