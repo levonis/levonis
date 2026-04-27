@@ -23,7 +23,6 @@ import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 import NativeAuthGate from "@/components/auth/NativeAuthGate";
 // EmailVerificationBanner available for post-login verification
-import AppBackground from "@/components/AppBackground";
 import ProfileOrb from "@/components/ProfileOrb";
 import ProfileExpansionShell from "@/components/ProfileExpansionShell";
 import { ProfileTransitionProvider } from "@/components/ProfileTransitionProvider";
@@ -183,7 +182,6 @@ function AppContent() {
 
   return (
     <>
-      <AppBackground />
       <ScrollRestoration />
       <Suspense fallback={null}>
         <DeferredEffects />
