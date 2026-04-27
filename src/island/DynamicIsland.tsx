@@ -567,7 +567,7 @@ export const DynamicIsland = () => {
               }}
               className="island-surface pointer-events-auto flex flex-col overflow-hidden will-change-transform"
             >
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence mode="wait" initial={false}>
             {/* PROMO ----------------------------------------------------- */}
             {state === "promo" && (
               <motion.div
