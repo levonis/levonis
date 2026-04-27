@@ -98,9 +98,9 @@ const About = () => {
     },
     en: {
       title: 'About Us — LEVONIS',
-      desc: 'LEVONIS — Iraq’s 3D printing specialists: Bambu Lab, Resin printers, filaments and accessories. Plus the cheapest electronics shipping.',
+      desc: 'LEVONIS — Iraq’s 3D printing specialists: Bambu Lab, Creality, Resin printers, filaments and accessories. Plus the cheapest electronics shipping.',
       hero: 'We Print The Future',
-      sub: '3D Printing specialists — Bambu Lab, Resin, Filaments and everything makers need',
+      sub: '3D Printing specialists — Bambu Lab, Creality, Resin, Filaments and everything makers need',
       ctaShop: 'Shop Products',
       ctaContact: 'Contact Us',
       story: 'Our Story',
