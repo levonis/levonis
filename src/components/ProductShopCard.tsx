@@ -170,8 +170,12 @@ const ProductShopCard = memo(({
             <div className="flex gap-3">
               {images[0] && (
                 <img 
-                  src={images[0]} 
+                  src={resizeSupabaseImage(images[0], 200, 75) || images[0]} 
                   alt={product.title_ar}
+                  loading="lazy"
+                  decoding="async"
+                  width={80}
+                  height={80}
                   className="w-20 h-20 rounded-lg object-cover"
                 />
               )}
