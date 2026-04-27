@@ -126,24 +126,24 @@ export default function CommunityExploreStrip({ className, searchQuery: external
         className="w-full"
       >
         <div className="flex items-center gap-2">
-          <TabsList className="levo-strip-frame grid flex-1 grid-cols-3 bg-transparent border-0 p-0.5 h-auto">
+          <TabsList className="items-center justify-center rounded-full border-[hsl(var(--border)/0.4)] backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.06)] levo-strip-frame grid flex-1 grid-cols-3 bg-transparent border-0 p-0.5 h-auto text-transparent">
             <TabsTrigger
               value="products"
-              className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1.5 font-medium ring-offset-background transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=active]:shadow-[0_4px_14px_hsl(var(--primary)/0.35),inset_0_1px_0_hsl(0_0%_100%/0.15)] data-[state=inactive]:hover:bg-[hsl(var(--foreground)/0.05)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 levo-tab-frame shrink-0 text-[11px] h-8 gap-1 bg-popover text-muted"
             >
               <Store className="h-3.5 w-3.5" />
               {t('explore_merchant_products')}
             </TabsTrigger>
             <TabsTrigger
               value="requests"
-              className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1.5 font-medium ring-offset-background transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=active]:shadow-[0_4px_14px_hsl(var(--primary)/0.35),inset_0_1px_0_hsl(0_0%_100%/0.15)] data-[state=inactive]:hover:bg-[hsl(var(--foreground)/0.05)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 levo-tab-frame shrink-0 text-[11px] h-8 gap-1 bg-popover text-muted"
             >
               <Users className="h-3.5 w-3.5" />
               {t('explore_customer_requests')}
             </TabsTrigger>
             <TabsTrigger
               value="merchants"
-              className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1.5 font-medium ring-offset-background transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] data-[state=active]:shadow-[0_4px_14px_hsl(var(--primary)/0.35),inset_0_1px_0_hsl(0_0%_100%/0.15)] data-[state=inactive]:hover:bg-[hsl(var(--foreground)/0.05)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 levo-tab-frame shrink-0 text-[11px] h-8 gap-1 bg-popover text-muted"
             >
               <Boxes className="h-3.5 w-3.5" />
               {t('explore_merchant_pages')}
