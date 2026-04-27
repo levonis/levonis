@@ -23,7 +23,35 @@ interface FloatingProductCardProps {
    * value reflecting the current COD setting / exchange rate — no reload needed.
    */
   directSalePriceLive?: number | null;
+  /** When set, highlights matches of this query inside the product name. */
+  highlightQuery?: string;
 }
+
+/** Split text into segments, marking matches of `query` (case-insensitive). */
+const renderHighlighted = (text: string, query: string) => {
+  const q = (query || '').trim();
+  if (!q || !text) return text;
+  // Match either the full query OR any single token, longest-first.
+  const tokens = Array.from(new Set([q, ...q.split(/\s+/).filter(Boolean)]))
+    .filter((t) => t.length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (tokens.length === 0) return text;
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`(${tokens.map(escape).join('|')})`, 'gi');
+  const parts = text.split(re);
+  return parts.map((part, i) =>
+    re.test(part) ? (
+      <mark
+        key={i}
+        className="bg-primary/25 text-primary rounded px-0.5 font-extrabold"
+      >
+        {part}
+      </mark>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+};
 
 const FloatingProductCard = memo(({
   nameAr,
