@@ -508,6 +508,7 @@ const CategoryDetail = () => {
                               )
                             : null
                         }
+                        highlightQuery={searchQ}
                       />
                     ))}
                   </div>
