@@ -30,13 +30,18 @@ export function resizeSupabaseImage(
     return url;
   }
 
-  // Strip any pre-existing width/quality so callers can re-resize safely
+  // Strip any pre-existing transform params so callers can re-resize safely
   const [path, query = ''] = base.split('?');
   const params = new URLSearchParams(query);
   params.delete('width');
+  params.delete('height');
   params.delete('quality');
+  params.delete('resize');
   params.set('width', String(width));
   params.set('quality', String(Math.max(1, Math.min(100, Math.round(quality)))));
+  // 'contain' preserves aspect ratio and never upscales beyond the source,
+  // preventing the "zoomed/oversized" appearance caused by the default 'cover' mode.
+  params.set('resize', 'contain');
   return `${path}?${params.toString()}`;
 }
 
