@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/i18n';
 import { usePageTitle } from '@/island/usePageTitle';
+import { usePageSearchSection, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { computeLinkedDirectSalePrice } from '@/lib/priceGuard';
@@ -167,6 +168,21 @@ const CategoryDetail = () => {
     () => filteredProducts.filter((p: any) => p.id !== featuredProduct?.id),
     [filteredProducts, featuredProduct?.id]
   );
+
+  // Register category products for in-page (local) search via the dynamic island
+  const sectionKey = `category:${slug ?? ''}`;
+  const searchItems = useMemo<PageSearchItem[]>(() => {
+    if (!products) return [];
+    return products.slice(0, 200).map((p: any) => ({
+      id: `cat-${p.id}`,
+      label: pickName(p.name as any, p.name_ar as any) || p.name_ar || p.name || '',
+      hint: category ? pickName(category.name as any, category.name_ar as any) : undefined,
+      keywords: [p.name, p.name_ar, p.name_en, p.name_ku].filter(Boolean) as string[],
+      to: `/product/${p.slug || p.id}`,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, category, language]);
+  usePageSearchSection(sectionKey, searchItems);
 
   const resetFilters = () => {
     setSortBy('default');
