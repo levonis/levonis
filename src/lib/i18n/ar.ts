@@ -26,7 +26,7 @@ export const ar: TranslationKeys = {
   nav_games: 'الألعاب',
   
   // Home page
-  home_subtitle: 'نوفّر لك أحدث الإلكترونيات من حول العالم بأسعار تنافسية… بضمان رسمي وخدمة سريعة بلا منافس',
+  home_subtitle: 'متخصصون في طابعات 3D — Bambu Lab، Creality, Resin، Filaments وكل ما يحتاجه صنّاع المحتوى',
   home_sections: 'الأقسام',
   home_sections_desc: 'اختر القسم الفرعي للانتقال',
   home_call_us: 'اتصل بنا',

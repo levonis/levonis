@@ -40,13 +40,13 @@ const About = () => {
   const t = {
     ar: {
       title: 'من نحن — LEVONIS',
-      desc: 'LEVONIS — متخصصون في طابعات Bambu Lab و Resin والـ Filaments، مع شحن إلكترونيات بأرخص الأسعار في العراق.',
+      desc: 'LEVONIS — متخصصون في طابعات Bambu Lab و Creality و Resin والـ Filaments، مع شحن إلكترونيات بأرخص الأسعار في العراق.',
       hero: 'نحن نطبع المستقبل',
-      sub: 'متخصصون في طابعات 3D — Bambu Lab، Resin، Filaments وكل ما يحتاجه صنّاع المحتوى',
+      sub: 'متخصصون في طابعات 3D — Bambu Lab، Creality, Resin، Filaments وكل ما يحتاجه صنّاع المحتوى',
       ctaShop: 'تسوّق المنتجات',
       ctaContact: 'تواصل معنا',
       story: 'قصتنا',
-      storyText: 'انطلق LEVONIS من بغداد برؤية واضحة: أن نكون المرجع الأول في العراق لكل ما يخص الطباعة ثلاثية الأبعاد. نحن وكلاء ومتخصصون في طابعات Bambu Lab وطابعات الـ Resin، ونوفّر مواد الـ Filaments بأنواعها، ومواد الـ Resin، إلى جانب جميع الإكسسوارات وقطع الغيار. وإلى جانب تخصصنا الأساسي، نقدّم خدمة شحن الأجهزة الإلكترونية من الخارج بأرخص الأسعار وأسرع وقت ممكن.',
+      storyText: 'انطلق LEVONIS من بغداد برؤية واضحة: أن نكون المرجع الأول في العراق لكل ما يخص الطباعة ثلاثية الأبعاد. نحن وكلاء ومتخصصون في طابعات Bambu Lab و Creality وطابعات الـ Resin، ونوفّر مواد الـ Filaments بأنواعها، ومواد الـ Resin، إلى جانب جميع الإكسسوارات وقطع الغيار. وإلى جانب تخصصنا الأساسي، نقدّم خدمة شحن الأجهزة الإلكترونية من الخارج بأرخص الأسعار وأسرع وقت ممكن.',
       timeline: 'محطات في رحلتنا',
       timelineList: [
         { year: '2022', title: 'الانطلاقة من بغداد', text: 'بدأنا برؤية لتقديم تقنيات الطباعة 3D للمستهلك العراقي.' },
@@ -56,7 +56,7 @@ const About = () => {
       ],
       what: 'تخصصنا الأساسي',
       services: [
-        { icon: Printer, title: 'طابعات Bambu Lab 3D', text: 'وكلاء معتمدون لكل موديلات Bambu Lab مع ضمان رسمي وصيانة محلية واستشارات فنية.' },
+        { icon: Printer, title: 'طابعات Bambu Lab و Creality 3D', text: 'وكلاء معتمدون لموديلات Bambu Lab و Creality مع ضمان رسمي وصيانة محلية واستشارات فنية.' },
         { icon: Sparkles, title: 'طابعات Resin ومواد الطباعة', text: 'طابعات Resin عالية الدقة مع راتنجات أصلية بألوان وخصائص متعددة لكل المشاريع.' },
         { icon: Layers, title: 'مواد Filaments والإكسسوارات', text: 'تشكيلة واسعة من خيوط الطباعة (PLA, PETG, ABS, TPU, Silk, Wood) مع نوزل وقطع غيار.' },
         { icon: Truck, title: 'شحن إلكترونيات بأرخص الأسعار', text: 'خدمة شحن الأجهزة الإلكترونية من الخارج (هواتف، لابتوبات، ملحقات) بأسرع وقت.' },
@@ -98,13 +98,13 @@ const About = () => {
     },
     en: {
       title: 'About Us — LEVONIS',
-      desc: 'LEVONIS — Iraq’s 3D printing specialists: Bambu Lab, Resin printers, filaments and accessories. Plus the cheapest electronics shipping.',
+      desc: 'LEVONIS — Iraq’s 3D printing specialists: Bambu Lab, Creality, Resin printers, filaments and accessories. Plus the cheapest electronics shipping.',
       hero: 'We Print The Future',
-      sub: '3D Printing specialists — Bambu Lab, Resin, Filaments and everything makers need',
+      sub: '3D Printing specialists — Bambu Lab, Creality, Resin, Filaments and everything makers need',
       ctaShop: 'Shop Products',
       ctaContact: 'Contact Us',
       story: 'Our Story',
-      storyText: 'LEVONIS launched from Baghdad with a clear vision: become Iraq’s go-to destination for everything 3D printing. We are authorized specialists in Bambu Lab and Resin printers, and we stock filaments, resins, accessories and spare parts. Alongside our core 3D specialty, we run an electronics shipping service that brings devices from abroad at the lowest prices and fastest delivery.',
+      storyText: 'LEVONIS launched from Baghdad with a clear vision: become Iraq’s go-to destination for everything 3D printing. We are authorized specialists in Bambu Lab, Creality, and Resin printers, and we stock filaments, resins, accessories and spare parts. Alongside our core 3D specialty, we run an electronics shipping service that brings devices from abroad at the lowest prices and fastest delivery.',
       timeline: 'Our Journey',
       timelineList: [
         { year: '2022', title: 'Launched in Baghdad', text: 'Started with a vision to bring 3D printing technology to the Iraqi consumer.' },
@@ -114,7 +114,7 @@ const About = () => {
       ],
       what: 'Our Core Specialty',
       services: [
-        { icon: Printer, title: 'Bambu Lab 3D Printers', text: 'Authorized dealer for the full Bambu Lab line-up with official warranty and local service.' },
+        { icon: Printer, title: 'Bambu Lab & Creality 3D Printers', text: 'Authorized dealer for Bambu Lab and Creality line-up with official warranty and local service.' },
         { icon: Sparkles, title: 'Resin Printers & Resins', text: 'High-precision Resin printers with original resins for every project.' },
         { icon: Layers, title: 'Filaments & Accessories', text: 'Full range of filaments (PLA, PETG, ABS, TPU, Silk, Wood) with nozzles and spare parts.' },
         { icon: Truck, title: 'Cheapest Electronics Shipping', text: 'We ship phones, laptops and accessories from abroad at the lowest prices.' },
@@ -156,13 +156,13 @@ const About = () => {
     },
     ku: {
       title: 'دەربارەی ئێمە — LEVONIS',
-      desc: 'LEVONIS — پسپۆڕی پرینتەری 3D لە عێراق: Bambu Lab، Resin، Filaments و گەیاندنی ئەلیکترۆنیات بە هەرزانترین نرخ.',
+      desc: 'LEVONIS — پسپۆڕی پرینتەری 3D لە عێراق: Bambu Lab، Creality، Resin، Filaments و گەیاندنی ئەلیکترۆنیات بە هەرزانترین نرخ.',
       hero: 'ئێمە داهاتوو دەپرینت دەکەین',
-      sub: 'پسپۆڕانی پرینتەری 3D — Bambu Lab، Resin و Filaments',
+      sub: 'پسپۆڕانی پرینتەری 3D — Bambu Lab، Creality، Resin و Filaments',
       ctaShop: 'بەرهەمەکان',
       ctaContact: 'پەیوەندی',
       story: 'چیرۆکمان',
-      storyText: 'LEVONIS لە بەغدا دەستی پێکرد بە بینایەکی ڕوون: ببینە یەکەم سەرچاوەی پرینتی 3D لە عێراق. ئێمە بریکاری پسپۆڕی Bambu Lab و پرینتەری Resin ین، هەروەها هەموو جۆرە Filaments و ڕەزین و کەرەستە و پارچەی یەدەکمان هەیە. لەگەڵ پسپۆڕی سەرەکیمان، خزمەتی گەیاندنی ئەلیکترۆنیاتمان لە دەرەوە بە هەرزانترین نرخ و خێراترین کات هەیە.',
+      storyText: 'LEVONIS لە بەغدا دەستی پێکرد بە بینایەکی ڕوون: ببینە یەکەم سەرچاوەی پرینتی 3D لە عێراق. ئێمە بریکاری پسپۆڕی Bambu Lab و Creality و پرینتەری Resin ین، هەروەها هەموو جۆرە Filaments و ڕەزین و کەرەستە و پارچەی یەدەکمان هەیە. لەگەڵ پسپۆڕی سەرەکیمان، خزمەتی گەیاندنی ئەلیکترۆنیاتمان لە دەرەوە بە هەرزانترین نرخ و خێراترین کات هەیە.',
       timeline: 'گەشتمان',
       timelineList: [
         { year: '2022', title: 'دەستپێکردن لە بەغدا', text: 'بە بینایەکی ڕوون بۆ هێنانی تەکنەلۆجیای 3D.' },
@@ -172,7 +172,7 @@ const About = () => {
       ],
       what: 'پسپۆڕی سەرەکیمان',
       services: [
-        { icon: Printer, title: 'پرینتەری Bambu Lab 3D', text: 'بریکاری فەرمی بە گەرەنتی و چاککردنەوە.' },
+        { icon: Printer, title: 'پرینتەری Bambu Lab و Creality 3D', text: 'بریکاری فەرمی بە گەرەنتی و چاککردنەوە.' },
         { icon: Sparkles, title: 'پرینتەری Resin', text: 'پرینتەری Resin بە دیقەتی بەرز.' },
         { icon: Layers, title: 'Filaments و کەرەستە', text: 'PLA, PETG, ABS, TPU، نۆزڵ و پارچەی یەدەک.' },
         { icon: Truck, title: 'گەیاندنی ئەلیکترۆنیات', text: 'بە هەرزانترین نرخ لە دەرەوە.' },
