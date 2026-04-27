@@ -66,6 +66,7 @@ const FloatingProductCard = memo(({
   nameKu = null,
   hasDirectSale = false,
   directSalePriceLive = null,
+  highlightQuery = '',
 }: FloatingProductCardProps) => {
   const { language } = useLanguage();
   const localProduct = { name_ar: nameAr, name_en: nameEn, name_ku: nameKu };
