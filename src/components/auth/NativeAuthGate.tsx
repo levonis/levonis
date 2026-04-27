@@ -5,6 +5,7 @@ import { LogIn, UserPlus, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage, LANGUAGE_LABELS, type Language } from "@/lib/i18n";
+import AppBackground from "@/components/AppBackground";
 import levonisLogo from "@/assets/levonis-logo.png";
 
 const GUEST_SESSION_KEY = "__levo_native_guest_session";
@@ -64,21 +65,10 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
       style={{
         paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)",
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)",
-        background:
-          "radial-gradient(120% 80% at 50% 0%, hsl(160 55% 18%) 0%, hsl(160 45% 12%) 55%, hsl(220 25% 6%) 100%)",
       }}
     >
-      {/* Decorative blurred orbs */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full opacity-40 blur-3xl"
-        style={{ background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 rounded-full opacity-30 blur-3xl"
-        style={{ background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 70%)" }}
-      />
+      {/* Site's main background */}
+      <AppBackground />
 
       {/* Language switcher */}
       <div
