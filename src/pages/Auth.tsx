@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import { useAuth } from '@/hooks/useAuth';
@@ -67,6 +67,7 @@ const Auth = () => {
   const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -95,6 +96,10 @@ const Auth = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    setShowSignup(searchParams.get('mode') === 'signup');
+  }, [searchParams]);
 
   useEffect(() => {
     if (resendTimer > 0) {
