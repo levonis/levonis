@@ -100,6 +100,11 @@ export type TranslationKeys = {
   auth_terms_agree: string;
   auth_terms: string;
   auth_privacy: string;
+  auth_continue_with_google: string;
+  auth_google_failed: string;
+  auth_native_welcome: string;
+  auth_native_subtitle: string;
+  auth_continue_as_guest: string;
   
   // Profile settings
   settings_title: string;

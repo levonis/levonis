@@ -73,11 +73,18 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
+      // Use the public published URL as redirect_uri so Google OAuth still works
+      // when the app runs inside a Capacitor WebView whose origin is not a real
+      // HTTPS domain registered with the OAuth broker.
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const isCapacitorOrigin = /capacitor:|file:|localhost|127\.0\.0\.1|10\.0\.2\.2/i.test(origin);
+      const redirectUri = isCapacitorOrigin ? 'https://levonis.lovable.app' : origin;
+
       const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
+        redirect_uri: redirectUri,
       });
       if (result.error) {
-        toast.error('فشل تسجيل الدخول عبر Google');
+        toast.error(`${t('auth_google_failed')}: ${result.error.message}`);
         setGoogleLoading(false);
         return;
       }
@@ -85,7 +92,8 @@ const Auth = () => {
       toast.success(t('auth_login_success'));
       navigate('/');
     } catch (err) {
-      toast.error('فشل تسجيل الدخول عبر Google');
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`${t('auth_google_failed')}: ${msg}`);
       setGoogleLoading(false);
     }
   };
@@ -531,7 +539,7 @@ const Auth = () => {
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
                 )}
-                <span>متابعة باستخدام Google</span>
+                <span>{t('auth_continue_with_google')}</span>
               </Button>
 
               <Button

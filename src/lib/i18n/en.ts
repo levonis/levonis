@@ -100,6 +100,11 @@ export const en: TranslationKeys = {
   auth_terms_agree: 'By signing up you agree to the',
   auth_terms: 'Terms of Service',
   auth_privacy: 'Privacy Policy',
+  auth_continue_with_google: 'Continue with Google',
+  auth_google_failed: 'Google sign-in failed',
+  auth_native_welcome: 'Welcome to Levonis',
+  auth_native_subtitle: 'Sign in to access your cart, orders and rewards — or continue as a guest to browse.',
+  auth_continue_as_guest: 'Continue as guest',
   
   // Profile settings
   settings_title: 'Settings',

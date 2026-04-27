@@ -78,11 +78,16 @@ export const usePageSearchContext = (): PageSearchContextValue | null => useCont
  */
 export const usePageSearchSection = (key: string, items: PageSearchItem[]) => {
   const ctx = useContext(Ctx);
+  // Serialize items so identity-only changes (new array same content) don't
+  // re-trigger register/unregister and cause "Maximum update depth exceeded".
+  const itemsKey = useMemo(() => JSON.stringify(items.map((i) => [i.id, i.label, i.hint, i.to])), [items]);
   useEffect(() => {
     if (!ctx) return;
     ctx.registerSection(key, items);
     return () => ctx.unregisterSection(key);
-  }, [ctx, key, items]);
+    // ctx callbacks are stable (useCallback); intentionally exclude `items` and use itemsKey instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, itemsKey]);
 };
 
 /** Read the current live (un-debounced) island search query. Empty string when none. */

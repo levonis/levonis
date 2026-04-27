@@ -90,8 +90,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icons/icon-192.png?v=levo-20260427',
-    badge: '/icons/icon-192.png?v=levo-20260427',
+    icon: '/icons/icon-192.png?v=levo-20260428',
+    badge: '/icons/icon-192.png?v=levo-20260428',
     dir: 'rtl',
     lang: 'ar',
     vibrate: [200, 100, 200],
