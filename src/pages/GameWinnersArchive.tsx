@@ -54,19 +54,47 @@ const positionLabel = (pos: number) => {
   return `المركز ${pos}`;
 };
 
+async function fetchGameWinners(game: GameKey) {
+  if (game === "crossy_road") {
+    return supabase
+      .from("crossy_road_winners")
+      .select("id, user_id, position, score, season, prize_name_ar, prize_type, product_id, selected_color, awarded_at")
+      .order("awarded_at", { ascending: false })
+      .limit(500);
+  }
+  if (game === "stack") {
+    return supabase
+      .from("stack_game_winners")
+      .select("id, user_id, position, score, season, prize_name_ar, prize_type, product_id, selected_color, awarded_at")
+      .order("awarded_at", { ascending: false })
+      .limit(500);
+  }
+  return supabase
+    .from("knife_rain_winners")
+    .select("id, user_id, position, score, season, prize_name_ar, prize_type, product_id, selected_color, awarded_at")
+    .order("awarded_at", { ascending: false })
+    .limit(500);
+}
+
 function useGameArchive(game: GameKey) {
   return useQuery({
     queryKey: ["winners-archive", game],
     staleTime: 60_000,
     queryFn: async (): Promise<ArchiveWinner[]> => {
-      const table = TABLE_BY_GAME[game];
-      const { data: rows, error } = await supabase
-        .from(table)
-        .select("id, user_id, position, score, season, prize_name_ar, prize_type, product_id, selected_color, awarded_at")
-        .order("awarded_at", { ascending: false })
-        .limit(500);
+      const { data, error } = await fetchGameWinners(game);
       if (error) throw error;
-      const winners = rows ?? [];
+      const winners = (data ?? []) as Array<{
+        id: string;
+        user_id: string;
+        position: number | null;
+        score: number | null;
+        season: number | null;
+        prize_name_ar: string;
+        prize_type: string;
+        product_id: string | null;
+        selected_color: string | null;
+        awarded_at: string;
+      }>;
 
       const userIds = Array.from(new Set(winners.map((w) => w.user_id))).filter(Boolean);
       const productIds = Array.from(new Set(winners.map((w) => w.product_id).filter(Boolean))) as string[];
@@ -83,7 +111,7 @@ function useGameArchive(game: GameKey) {
       const pMap = new Map((profilesRes.data || []).map((p: any) => [p.id, p]));
       const prodMap = new Map((productsRes.data || []).map((p: any) => [p.id, p]));
 
-      return winners.map((w: any): ArchiveWinner => {
+      return winners.map((w): ArchiveWinner => {
         const prof = pMap.get(w.user_id);
         const prod = w.product_id ? prodMap.get(w.product_id) : undefined;
         return {
@@ -93,7 +121,7 @@ function useGameArchive(game: GameKey) {
           avatar_url: prof?.avatar_url ?? null,
           position: w.position ?? 0,
           score: w.score ?? null,
-          season: (w as any).season ?? null,
+          season: w.season ?? null,
           prize_name: w.prize_name_ar || "جائزة",
           prize_type: w.prize_type || "leaderboard",
           awarded_at: w.awarded_at,
