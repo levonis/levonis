@@ -20,7 +20,6 @@ const PopoverContent = React.forwardRef<
       className={cn(
         "z-[300] w-72 rounded-2xl p-4 text-popover-foreground outline-none glass-floating",
         "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
-        "origin-[var(--radix-popover-content-transform-origin)]",
         className,
       )}
       {...props}

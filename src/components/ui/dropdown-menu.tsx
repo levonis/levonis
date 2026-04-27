@@ -65,7 +65,6 @@ const DropdownMenuContent = React.forwardRef<
       className={cn(
         "z-[300] min-w-[8rem] overflow-hidden rounded-xl p-1.5 text-popover-foreground glass-floating",
         "data-[state=open]:animate-glass-expand data-[state=closed]:animate-glass-collapse",
-        "data-[side=bottom]:origin-top data-[side=top]:origin-bottom data-[side=left]:origin-right data-[side=right]:origin-left",
         className,
       )}
       {...props}
