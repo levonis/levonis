@@ -172,7 +172,7 @@ const About = () => {
       ],
       what: 'پسپۆڕی سەرەکیمان',
       services: [
-        { icon: Printer, title: 'پرینتەری Bambu Lab 3D', text: 'بریکاری فەرمی بە گەرەنتی و چاککردنەوە.' },
+        { icon: Printer, title: 'پرینتەری Bambu Lab و Creality 3D', text: 'بریکاری فەرمی بە گەرەنتی و چاککردنەوە.' },
         { icon: Sparkles, title: 'پرینتەری Resin', text: 'پرینتەری Resin بە دیقەتی بەرز.' },
         { icon: Layers, title: 'Filaments و کەرەستە', text: 'PLA, PETG, ABS, TPU، نۆزڵ و پارچەی یەدەک.' },
         { icon: Truck, title: 'گەیاندنی ئەلیکترۆنیات', text: 'بە هەرزانترین نرخ لە دەرەوە.' },
