@@ -26,7 +26,7 @@ export const ku: TranslationKeys = {
   nav_games: 'یارییەکان',
   
   // Home page
-  home_subtitle: 'نوێترین ئەلیکترۆنیاتمان بۆ دابین دەکەیت لە هەموو جیهانەوە بە نرخی کێبڕکێ… بە گەرەنتی فەرمی و خزمەتگوزاری خێرا بێ هاوتا',
+  home_subtitle: 'پسپۆڕانی پرینتەری 3D — Bambu Lab، Creality، Resin و Filaments',
   home_sections: 'بەشەکان',
   home_sections_desc: 'بەشی لاوەکی هەڵبژێرە بۆ گەڕان',
   home_call_us: 'پەیوەندیمان پێوە بکە',
