@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { LogIn, UserPlus, User as UserIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, LANGUAGE_LABELS, type Language } from "@/lib/i18n";
 
 const GUEST_SESSION_KEY = "__levo_native_guest_session";
 
@@ -23,7 +23,7 @@ const GUEST_SESSION_KEY = "__levo_native_guest_session";
 const NativeAuthGate = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { language, dir } = useLanguage();
+  const { language, setLanguage, dir } = useLanguage();
 
   // Detect native synchronously so the very first render of the app already
   // hides the children behind the gate (avoids any flash of the home page).
@@ -97,24 +97,34 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
   return (
     <div
       dir={dir}
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center px-6 bg-background"
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center px-6"
       style={{
         paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)",
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)",
       }}
     >
-      {/* Soft branded glow backdrop */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 50% 30%, hsl(var(--primary) / 0.25), transparent 70%)",
-        }}
-      />
+      {/* Language switcher */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center gap-2 px-4"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
+      >
+        {(Object.keys(LANGUAGE_LABELS) as Language[]).map((lang) => (
+          <button
+            key={lang}
+            type="button"
+            onClick={() => setLanguage(lang)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
+              language === lang
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-transparent text-muted-foreground border-border/50 hover:text-foreground"
+            }`}
+          >
+            {LANGUAGE_LABELS[lang]}
+          </button>
+        ))}
+      </div>
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center gap-6">
-        <div className="w-20 h-20 rounded-3xl bg-card/60 backdrop-blur-xl border border-border/50 flex items-center justify-center shadow-xl">
+        <div className="w-20 h-20 rounded-3xl border border-border/50 flex items-center justify-center shadow-xl">
           <Sparkles className="w-10 h-10 text-primary" />
         </div>
 
