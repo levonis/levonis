@@ -14,21 +14,13 @@ const GUEST_SESSION_KEY = "__levo_native_guest_session";
  * --------------
  * On native (Capacitor) only, blocks access to the app for unauthenticated
  * users until they either sign in or explicitly continue as guest.
- *
- * The "guest" decision is stored in `sessionStorage` so it persists for the
- * current launch only — closing & reopening the app re-shows the gate, as
- * requested by the product owner.
- *
- * On the web (PWA / browser) this component renders nothing.
  */
 const NativeAuthGate = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { language, setLanguage, dir } = useLanguage();
+  const { language, setLanguage, dir, t } = useLanguage();
 
-  // Detect native synchronously so the very first render of the app already
-  // hides the children behind the gate (avoids any flash of the home page).
   const [isNative] = useState<boolean>(() => {
     try {
       return Capacitor.isNativePlatform();
@@ -46,8 +38,6 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
     }
   });
 
-  // Once authenticated, clear the guest flag so re-launching after logout
-  // shows the gate again.
   useEffect(() => {
     if (user) {
       try {
@@ -56,30 +46,6 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
-  const labels = {
-    ar: {
-      welcome: "أهلاً بك في Levonis",
-      sub: "سجّل الدخول للوصول إلى السلة، الطلبات، والمكافآت — أو تابع كضيف لتصفّح المتجر.",
-      login: "تسجيل الدخول",
-      signup: "إنشاء حساب جديد",
-      guest: "متابعة كضيف",
-    },
-    en: {
-      welcome: "Welcome to Levonis",
-      sub: "Sign in to access your cart, orders and rewards — or continue as a guest to browse.",
-      login: "Sign in",
-      signup: "Create an account",
-      guest: "Continue as guest",
-    },
-    ku: {
-      welcome: "بەخێربێیت بۆ Levonis",
-      sub: "بچۆرە ژوورەوە بۆ گەیشتن بە سەبەتەکەت، داواکارییەکانت و خەڵاتەکانت — یان وەک میوان بەردەوام بە.",
-      login: "چوونەژوورەوە",
-      signup: "دروستکردنی هەژمار",
-      guest: "بەردەوامبوون وەک میوان",
-    },
-  }[language === "en" ? "en" : language === "ku" ? "ku" : "ar"];
-
   const continueAsGuest = () => {
     try {
       sessionStorage.setItem(GUEST_SESSION_KEY, "1");
@@ -87,26 +53,36 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
     setGuestAccepted(true);
   };
 
-  // Web / not native / auth page: pass-through.
   if (!isNative || location.pathname === "/auth") return <>{children}</>;
-
-  // Still resolving auth state — show nothing (avoid flash).
   if (loading) return null;
-
-  // Authenticated or guest accepted for this launch — show the app.
   if (user || guestAccepted) return <>{children}</>;
 
   return (
     <div
       dir={dir}
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center px-6"
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center px-6 overflow-hidden"
       style={{
         paddingTop: "calc(env(safe-area-inset-top, 0px) + 2rem)",
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)",
+        background:
+          "radial-gradient(120% 80% at 50% 0%, hsl(160 55% 18%) 0%, hsl(160 45% 12%) 55%, hsl(220 25% 6%) 100%)",
       }}
     >
+      {/* Decorative blurred orbs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full opacity-40 blur-3xl"
+        style={{ background: "radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 rounded-full opacity-30 blur-3xl"
+        style={{ background: "radial-gradient(circle, hsl(var(--accent)) 0%, transparent 70%)" }}
+      />
+
       {/* Language switcher */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center gap-2 px-4"
+      <div
+        className="absolute top-0 left-0 right-0 z-20 flex justify-center gap-2 px-4"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
       >
         {(Object.keys(LANGUAGE_LABELS) as Language[]).map((lang) => (
@@ -114,10 +90,10 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
             key={lang}
             type="button"
             onClick={() => setLanguage(lang)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors border backdrop-blur-xl ${
               language === lang
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-transparent text-muted-foreground border-border/50 hover:text-foreground"
+                ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_12px_-2px_hsl(var(--primary)/0.6)]"
+                : "bg-white/5 text-foreground/80 border-white/15 hover:text-foreground"
             }`}
           >
             {LANGUAGE_LABELS[lang]}
@@ -126,13 +102,13 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
       </div>
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center text-center gap-6">
-        <div className="glass-panel w-24 h-24 rounded-3xl flex items-center justify-center shadow-xl p-3">
+        <div className="w-24 h-24 rounded-3xl flex items-center justify-center p-3 bg-white/5 backdrop-blur-xl border border-white/15 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5),inset_0_1px_0_0_hsl(0_0%_100%/0.15)]">
           <img src={levonisLogo} alt="Levonis" className="h-full w-full object-contain" />
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-black text-foreground">{labels.welcome}</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">{labels.sub}</p>
+          <h1 className="text-2xl font-black text-foreground">{t('auth_native_welcome')}</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">{t('auth_native_subtitle')}</p>
         </div>
 
         <div className="w-full flex flex-col gap-3 mt-2">
@@ -142,17 +118,17 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
             onClick={() => navigate("/auth")}
           >
             <LogIn className="w-5 h-5" />
-            {labels.login}
+            {t('auth_login')}
           </Button>
 
           <Button
             size="lg"
             variant="outline"
-            className="w-full h-12 rounded-2xl text-base font-bold gap-2"
+            className="w-full h-12 rounded-2xl text-base font-bold gap-2 bg-white/5 backdrop-blur-xl border-white/20"
             onClick={() => navigate("/auth?mode=signup")}
           >
             <UserPlus className="w-5 h-5" />
-            {labels.signup}
+            {t('auth_create_account')}
           </Button>
 
           <button
@@ -161,7 +137,7 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
             className="mt-1 inline-flex items-center justify-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors py-2"
           >
             <UserIcon className="w-4 h-4" />
-            {labels.guest}
+            {t('auth_continue_as_guest')}
           </button>
         </div>
       </div>
