@@ -80,6 +80,15 @@ const FloatingProductCard = memo(({
     ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
     : 0;
 
+  const featuredSrc = useMemo(
+    () => (imageUrl ? resizeSupabaseImage(imageUrl, 600, 80) || imageUrl : '/placeholder.svg'),
+    [imageUrl]
+  );
+  const standardSrc = useMemo(
+    () => (imageUrl ? resizeSupabaseImage(imageUrl, 400, 75) || imageUrl : '/placeholder.svg'),
+    [imageUrl]
+  );
+
   if (featured) {
     return (
       <Link to={`/product/${slug}`} className="block">
