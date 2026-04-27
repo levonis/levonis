@@ -39,8 +39,9 @@ const renderHighlighted = (text: string, query: string) => {
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(`(${tokens.map(escape).join('|')})`, 'gi');
   const parts = text.split(re);
+  const matchSet = new Set(tokens.map((t) => t.toLowerCase()));
   return parts.map((part, i) =>
-    re.test(part) ? (
+    matchSet.has(part.toLowerCase()) ? (
       <mark
         key={i}
         className="bg-primary/25 text-primary rounded px-0.5 font-extrabold"
