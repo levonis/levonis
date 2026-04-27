@@ -8,7 +8,7 @@ export const organizationLd = () => ({
   name: 'LEVONIS',
   alternateName: 'ليفونيس',
   url: SITE,
-  logo: `${SITE}/og-logo.png`,
+  logo: `${SITE}/logo-medium.png`,
   description:
     'متجر LEVONIS الإلكتروني — متخصص في طابعات 3D، الأجهزة الذكية، الإلكترونيات، الألعاب، ومجتمع التجار في العراق.',
   sameAs: [
