@@ -67,11 +67,7 @@ export default function IslandTransitionsLab() {
   const findIslandShell = (): HTMLElement | null => {
     // The island shell is the framer-motion div with [data-island-shell].
     // Falls back to the first element under the fixed island container.
-    return (
-      document.querySelector<HTMLElement>("[data-island-shell]") ??
-      document.querySelector<HTMLElement>(".dynamic-island [style*='border-radius']") ??
-      null
-    );
+    return document.querySelector<HTMLElement>("[data-dynamic-island]");
   };
 
   const measureMorph = (from: IslandState, to: IslandState) =>
