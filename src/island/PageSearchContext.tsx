@@ -85,6 +85,12 @@ export const usePageSearchSection = (key: string, items: PageSearchItem[]) => {
   }, [ctx, key, items]);
 };
 
+/** Read the current live (un-debounced) island search query. Empty string when none. */
+export const usePageLiveQuery = (): string => {
+  const ctx = useContext(Ctx);
+  return ctx?.liveQuery ?? "";
+};
+
 /** Match items against the user's query (case-insensitive, multi-token AND). */
 export const filterPageItems = (items: PageSearchItem[], query: string): PageSearchItem[] => {
   const q = query.trim().toLowerCase();
