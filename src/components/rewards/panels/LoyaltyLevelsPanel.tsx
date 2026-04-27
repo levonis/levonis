@@ -328,7 +328,39 @@ export default function LoyaltyLevelsPanel() {
         </CardContent>
       </Card>
 
+      {/* My Prizes — prominent CTA */}
+      <Link to="/my-prizes" className="block group">
+        <Card className="relative overflow-hidden border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-yellow-500/15 hover:border-amber-500/70 hover:shadow-lg hover:shadow-amber-500/20 transition-all">
+          <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-amber-400/20 blur-2xl pointer-events-none" />
+          <CardContent className="p-4 flex items-center gap-3 relative">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform">
+              <Trophy className="h-6 w-6 text-white drop-shadow" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-bold text-foreground">جوائزي</p>
+                {prizeStats && prizeStats.pending > 0 && (
+                  <Badge className="bg-red-500 hover:bg-red-500 text-white text-[10px] h-5 px-1.5 animate-pulse">
+                    {fmt(prizeStats.pending)} بانتظار الاستلام
+                  </Badge>
+                )}
+                {prizeStats && prizeStats.total > 0 && prizeStats.pending === 0 && (
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                    {fmt(prizeStats.total)}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                جوائز المستويات والكوبونات الممنوحة لك — اعرض، استلم، واستخدم
+              </p>
+            </div>
+            <Sparkles className="h-5 w-5 text-amber-500 shrink-0 group-hover:rotate-12 transition-transform" />
+          </CardContent>
+        </Card>
+      </Link>
+
       {/* Active Card */}
+
       {activeCardLevel && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">{t('ll_your_current_card')}</h3>
