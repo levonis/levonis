@@ -100,6 +100,11 @@ export const ku: TranslationKeys = {
   auth_terms_agree: 'بە تۆمارکردن ڕازی دەبیت بە',
   auth_terms: 'مەرجەکانی بەکارهێنان',
   auth_privacy: 'سیاسەتی تایبەتمەندی',
+  auth_continue_with_google: 'بەردەوامبوون بە Google',
+  auth_google_failed: 'چوونەژوورەوە بە Google سەرکەوتوو نەبوو',
+  auth_native_welcome: 'بەخێربێیت بۆ Levonis',
+  auth_native_subtitle: 'بچۆرە ژوورەوە بۆ گەیشتن بە سەبەتە، داواکارییەکان و خەڵاتەکان — یان وەک میوان بەردەوام بە.',
+  auth_continue_as_guest: 'بەردەوامبوون وەک میوان',
   
   // Profile settings
   settings_title: 'ڕێکخستنەکان',

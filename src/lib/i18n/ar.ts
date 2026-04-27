@@ -100,6 +100,11 @@ export const ar: TranslationKeys = {
   auth_terms_agree: 'بالتسجيل أنت توافق على',
   auth_terms: 'شروط الاستخدام',
   auth_privacy: 'سياسة الخصوصية',
+  auth_continue_with_google: 'متابعة باستخدام Google',
+  auth_google_failed: 'فشل تسجيل الدخول عبر Google',
+  auth_native_welcome: 'أهلاً بك في Levonis',
+  auth_native_subtitle: 'سجّل الدخول للوصول إلى السلة، الطلبات، والمكافآت — أو تابع كضيف لتصفّح المتجر.',
+  auth_continue_as_guest: 'متابعة كضيف',
   
   // Profile settings
   settings_title: 'الإعدادات',
