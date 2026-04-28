@@ -43,7 +43,7 @@ export function useProductCardDiscount() {
     cardDiscounts: Array<{ card_id: string; discount_amount: number }> | null | undefined
   ): ProductCardDiscountInfo | null => {
     if (!levelId || !cardDiscounts || !Array.isArray(cardDiscounts)) return null;
-    const match = cardDiscounts.find((d) => d.level_id === levelId);
+    const match = cardDiscounts.find((d) => d.card_id === levelId);
     if (!match || match.discount_amount <= 0) return null;
     return {
       discountAmount: match.discount_amount,

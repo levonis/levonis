@@ -61,7 +61,7 @@ export function useCartCardDiscount(
       const { data, error } = await supabase
         .from("card_discount_limits")
         .select("*")
-        .eq("level_id", levelId);
+        .eq("card_id", levelId);
       if (error) throw error;
       return data || [];
     },
@@ -145,7 +145,7 @@ export function useCartCardDiscount(
     const cardDiscounts: Array<{ card_id: string; discount_amount: number }> = Array.isArray(product.card_discounts) ? product.card_discounts : [];
 
     // Find discount for this card level
-    const match = cardDiscounts.find((d) => d.level_id === levelId);
+    const match = cardDiscounts.find((d) => d.card_id === levelId);
     if (!match || match.discount_amount <= 0) continue;
 
     // Check category limit
