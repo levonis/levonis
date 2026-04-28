@@ -725,13 +725,23 @@ const Cart = () => {
   const cardFreeShippingApplied = cardFreeShippingEligibleMethod
     && cardFreeShippingHasUses
     && total >= (cardDiscount?.freeShippingMinOrder || 0);
+
+  // Warranty free shipping: only if not already getting card free shipping
+  const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
+    && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
+  const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
+  const warrantyFreeShippingApplied = !cardFreeShippingApplied
+    && warrantyFreeShippingEligibleMethod
+    && warrantyFreeShippingHasUses
+    && total >= (warrantyBenefits?.freeShippingMinOrder || 0);
+
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
   const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
   const referralFreeShippingApplied = !!appliedReferral && total >= referralMinOrder;
   const referralRemainingForFreeDelivery = appliedReferral
     ? Math.max(0, referralMinOrder - total)
     : 0;
-  const deliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+  const deliveryFee = (cardFreeShippingApplied || warrantyFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
   
   // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
   const referralOwnerEarnings = appliedReferral
