@@ -56,7 +56,7 @@ export default function LoyaltyLevelsPanel() {
       const { data, error } = await supabase.rpc(rpcName, {
         p_gifter_id: user.id,
         p_recipient_id: selectedRecipient.id,
-        p_level_id: giftDialog.level.id,
+        p_card_id: giftDialog.level.id,
         p_message: giftMessage || null,
       });
       if (error) throw error;
