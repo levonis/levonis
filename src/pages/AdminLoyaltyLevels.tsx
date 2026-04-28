@@ -163,6 +163,18 @@ export default function AdminLoyaltyLevels() {
     },
   });
 
+  const { data: allCategoriesForBenefits } = useQuery({
+    queryKey: ["all-categories-for-loyalty-benefits"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, name_ar")
+        .order("name");
+      if (error) throw error;
+      return (data || []) as Array<{ id: string; name: string; name_ar: string | null }>;
+    },
+  });
+
   const { data: cardHolders } = useQuery({
     queryKey: ["cardHolders"],
     queryFn: async () => {
