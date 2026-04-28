@@ -63,6 +63,8 @@ export default function AdminLoyaltyLevels() {
     priority_support: false,
     special_name_style: { enabled: false, color: null as string | null, glow: false, badge_icon: null as string | null },
     profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
+    discount_applicable_category_ids: [] as string[],
+    free_shipping_applicable_category_ids: [] as string[],
   });
   const [benefits, setBenefits] = useState<Array<{ text_ar: string; text_en: string }>>([]);
 
@@ -378,6 +380,8 @@ export default function AdminLoyaltyLevels() {
       priority_support: false,
       special_name_style: { enabled: false, color: null, glow: false, badge_icon: null },
       profile_effects: { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
+      discount_applicable_category_ids: [],
+      free_shipping_applicable_category_ids: [],
     });
     setBenefits([]);
     setEditingLevel(null);
@@ -429,6 +433,8 @@ export default function AdminLoyaltyLevels() {
       priority_support: level.priority_support || false,
       special_name_style: level.special_name_style || { enabled: false, color: null, glow: false, badge_icon: null },
       profile_effects: level.profile_effects || { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
+      discount_applicable_category_ids: Array.isArray(level.discount_applicable_category_ids) ? level.discount_applicable_category_ids : [],
+      free_shipping_applicable_category_ids: Array.isArray(level.free_shipping_applicable_category_ids) ? level.free_shipping_applicable_category_ids : [],
     });
     setBenefits(level.benefits || []);
     setDialogOpen(true);
