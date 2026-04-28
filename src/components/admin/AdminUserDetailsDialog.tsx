@@ -104,7 +104,7 @@ export default function AdminUserDetailsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_cards")
-        .select("*, loyalty_levels(name_ar, color, icon, frame_url)")
+        .select("*, membership_cards:card_id(name_ar, color, icon, frame_url)")
         .eq("user_id", userId!)
         .eq("is_active", true)
         .maybeSingle();
