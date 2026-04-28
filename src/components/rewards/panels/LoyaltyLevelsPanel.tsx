@@ -168,6 +168,21 @@ export default function LoyaltyLevelsPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Membership cards (purchasable products) - separate from XP levels
+  const { data: membershipCards } = useQuery({
+    queryKey: ['membership-cards-panel'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('membership_cards')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: levelPrizes } = useQuery({
     queryKey: ['level-prizes'],
     queryFn: async () => {
