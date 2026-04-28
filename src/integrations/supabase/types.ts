@@ -9828,8 +9828,10 @@ export type Database = {
           invoice_html: string
           notes: string | null
           order_id: string | null
+          printer_id: string | null
           template_id: string | null
           updated_at: string
+          user_id: string | null
           warranty_expires_at: string | null
         }
         Insert: {
@@ -9839,8 +9841,10 @@ export type Database = {
           invoice_html: string
           notes?: string | null
           order_id?: string | null
+          printer_id?: string | null
           template_id?: string | null
           updated_at?: string
+          user_id?: string | null
           warranty_expires_at?: string | null
         }
         Update: {
@@ -9850,8 +9854,10 @@ export type Database = {
           invoice_html?: string
           notes?: string | null
           order_id?: string | null
+          printer_id?: string | null
           template_id?: string | null
           updated_at?: string
+          user_id?: string | null
           warranty_expires_at?: string | null
         }
         Relationships: [
@@ -9863,11 +9869,46 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "saved_invoices_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "order_items_for_serial"
+            referencedColumns: ["store_printer_id"]
+          },
+          {
+            foreignKeyName: "saved_invoices_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "store_printers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "saved_invoices_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "invoice_templates"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_invoices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_invoices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_invoices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_print_reputation"
+            referencedColumns: ["user_id"]
           },
         ]
       }

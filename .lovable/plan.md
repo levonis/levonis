@@ -1,36 +1,55 @@
-## المشكلة
+## Problem
 
-في `/cp-x9A3kL7m/printer-protection` يقوم الإدمن بضبط `activation_date` و`expiry_date` للطابعة (مثلاً 1-4) عبر `AdminQRPrinterTab` → `setWarrantyMutation`. عند مسح المستخدم لـ QR وتفعيل الطابعة لاحقاً (مثلاً 7-4)، يقوم `PrinterActivationPanel.tsx` بكتابة تاريخ جديد فوق التاريخ الذي ضبطه الإدمن:
+In `/cp-x9A3kL7m/printer-protection`, when generating a warranty invoice:
+- Admin selects a user from the buyer list (often sourced from `store_printers` which has no linked order)
+- Clicks "حفظ الفاتورة" (Save Invoice)
+- The invoice either fails silently or saves but never appears in the saved invoices list with user info
 
+### Root cause
+
+`saved_invoices` table only has `order_id` — no `user_id` column. When the selected buyer comes from `store_printers` (no order), the insert sets `order_id: null`. The record technically saves, but:
+1. `AdminSavedInvoices.tsx` displays the customer via `invoice.orders?.profiles` — null when there is no order, so it shows "غير معروف"
+2. The invoice can't be linked back to the user, defeating the purpose of "select a user and save"
+3. All 0 existing rows in DB have `order_id NOT NULL` — confirming nothing without an order has ever persisted usefully
+
+## Fix
+
+### 1. Database migration
+
+Add `user_id` (nullable uuid) and `printer_id` (nullable uuid, references `store_printers`) to `saved_invoices`. Backfill existing rows from `orders.user_id` where possible.
+
+### 2. PrinterInvoiceGenerator.tsx
+
+In the save handler (lines 544-567):
+- Include `user_id: selectedUserId` and `printer_id: printer.id` in the insert
+- Add a guard: require either `selectedUserId` or manual entry before allowing save (currently no validation)
+- Surface the actual Postgres error message in the toast for easier diagnosis (currently swallows error details)
+- Log the inserted row id on success
+
+### 3. AdminSavedInvoices.tsx
+
+Update the query to also fetch the standalone `user_id` (and printer info) and fall back to it when `orders` is null:
+
+```ts
+.select(`
+  *,
+  orders ( order_number, user_id, profiles (username, full_name) ),
+  user_profile:profiles!saved_invoices_user_id_fkey ( username, full_name ),
+  store_printers ( serial_number, model_name_ar )
+`)
 ```
-// السطر 85-86 و 124-125
-const activationDate = new Date();              // ❌ يتجاهل تاريخ الإدمن
-const expiryDate = addMonths(activationDate, printerData.warranty_months || 6);
-```
 
-هذا يؤدي إلى أن السيريال `31B8BP5B0801292` ضاع منه تاريخ الإدمن (1-4) واستُبدل بتاريخ التفعيل الفعلي (7-4).
+Display logic: prefer `orders.profiles` then fall back to `user_profile`. Show printer serial/model when no order exists.
 
-## الحل
+## Out of scope
 
-تعديل `src/components/rewards/panels/PrinterActivationPanel.tsx` ليحترم التواريخ التي ضبطها الإدمن مسبقاً:
+- Reworking the buyer selection UI
+- Changing the warranty calculation
+- The auto-generated invoices on order confirmation (already work, untouched)
 
-1. **في `activateMutation` (السطر 81–140):**
-   - إذا كان `printerData.activation_date` و`printerData.expiry_date` موجودان مسبقاً (ضبطهم الإدمن)، استخدمهما كما هما ولا تكتب فوقهما في `update()`.
-   - فقط إذا كانا فارغَين (null)، احسبهما من `new Date()` و`warranty_months` كسلوك احتياطي للحالات القديمة.
-   - في كلتا الحالتين، حدّث `buyer_user_id`, `status`, `is_registered` فقط.
+## Verification
 
-2. **في `onSuccess` (السطر 120–136):**
-   - استخدم نفس التواريخ المحفوظة في `printerData` بدل إنشاء `new Date()` جديد، حتى تظهر بطاقة الضمان للمستخدم بالتاريخ الصحيح فوراً بعد التفعيل.
-
-3. **إصلاح بأثر رجعي للسيريال المتأثر `31B8BP5B0801292`:**
-   - بعد التأكد من التاريخ الذي يريده الإدمن (1-4)، تشغيل تحديث يدوي لإرجاع `activation_date` و`expiry_date` إلى القيم الصحيحة عبر insert tool. سأطلب تأكيد التاريخ الفعلي قبل التشغيل، أو يمكن للإدمن إعادة ضبطه من واجهة `AdminQRPrinterTab` بعد نشر الإصلاح.
-
-## ملفات ستتغير
-
-- `src/components/rewards/panels/PrinterActivationPanel.tsx` — منع الكتابة فوق تواريخ الضمان المضبوطة من الإدمن.
-
-## ملاحظات تقنية
-
-- `printerData` مُحمَّل أصلاً من `store_printers` (السطر 50–60 من نفس الملف عبر `select('*')`)، فالحقول متاحة بدون استعلام إضافي.
-- لا حاجة لتغيير قاعدة البيانات أو RLS — فقط منطق العميل.
-- لا تأثير على `WarrantyDashboard.tsx` أو `MyPrintersPanel.tsx` لأنهما يقرآن التواريخ كما هي من قاعدة البيانات.
+After implementation:
+1. Open printer-protection → pick a printer → "إنشاء فاتورة" → select a user from `store_printers` only (no order) → Save → toast says success
+2. Visit `/cp-x9A3kL7m/saved-invoices` → invoice appears with the correct customer name and printer info
+3. Repeat with a buyer that has an order → still works as before (order_number shown)
