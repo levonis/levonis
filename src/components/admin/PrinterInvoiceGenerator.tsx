@@ -59,13 +59,23 @@ interface BuyerOption {
   totalPrice?: number;
   orderItemId?: string;
   paymentMethod?: string;
+  paymentStatus?: string;
+  orderSubtotal?: number;
+  orderTaxAmount?: number;
+  orderTaxPercent?: number;
+  orderTotalAmount?: number;
+  orderDiscountAmount?: number;
+  orderPaidAmount?: number;
+  orderRemainingAmount?: number;
+  orderDeliveryMethod?: string;
+  orderAdminShippingCost?: number;
 }
 
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxPercent: '3' });
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '0', taxPercent: '0' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -92,6 +102,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           user_id,
           shipping_address,
           payment_method,
+          payment_status,
+          subtotal,
+          tax_amount,
+          tax_percentage,
+          total_amount,
+          discount_amount,
+          paid_amount,
+          remaining_amount,
+          delivery_method,
+          admin_shipping_cost,
           order_items!order_items_order_id_fkey (
             id,
             product_id,
@@ -117,6 +137,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         orderItemId: string;
         shippingAddress: string;
         paymentMethod: string;
+        paymentStatus: string;
+        subtotal: number;
+        taxAmount: number;
+        taxPercent: number;
+        totalAmount: number;
+        discountAmount: number;
+        paidAmount: number;
+        remainingAmount: number;
+        deliveryMethod: string;
+        adminShippingCost: number;
       }> = [];
 
       printerOrders?.forEach((order: any) => {
@@ -134,6 +164,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               orderItemId: item.id,
               shippingAddress: order.shipping_address || '',
               paymentMethod: order.payment_method || '',
+              paymentStatus: order.payment_status || '',
+              subtotal: Number(order.subtotal || 0),
+              taxAmount: Number(order.tax_amount || 0),
+              taxPercent: Number(order.tax_percentage || 0),
+              totalAmount: Number(order.total_amount || 0),
+              discountAmount: Number(order.discount_amount || 0),
+              paidAmount: Number(order.paid_amount || 0),
+              remainingAmount: Number(order.remaining_amount || 0),
+              deliveryMethod: order.delivery_method || '',
+              adminShippingCost: Number(order.admin_shipping_cost || 0),
             });
           }
         });
@@ -185,6 +225,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           totalPrice: ob.totalPrice,
           orderItemId: ob.orderItemId,
           paymentMethod: ob.paymentMethod,
+          paymentStatus: ob.paymentStatus,
+          orderSubtotal: ob.subtotal,
+          orderTaxAmount: ob.taxAmount,
+          orderTaxPercent: ob.taxPercent,
+          orderTotalAmount: ob.totalAmount,
+          orderDiscountAmount: ob.discountAmount,
+          orderPaidAmount: ob.paidAmount,
+          orderRemainingAmount: ob.remainingAmount,
+          orderDeliveryMethod: ob.deliveryMethod,
+          orderAdminShippingCost: ob.adminShippingCost,
         });
       });
 
