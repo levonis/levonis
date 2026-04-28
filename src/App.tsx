@@ -147,6 +147,7 @@ const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
 const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
+const AdminPrinterWarrantyBenefits = lazy(() => import("./pages/AdminPrinterWarrantyBenefits"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const About = lazy(() => import("./pages/About"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -338,6 +339,7 @@ function AppContent() {
             <Route path="/competitions" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path={`${ADMIN_BASE_PATH}/printer-protection`} element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/printer-warranty-benefits`} element={<AdminRoute><AdminPrinterWarrantyBenefits /></AdminRoute>} />
             <Route path="/printer-protection" element={<Navigate to={`${ADMIN_BASE_PATH}/printer-protection`} replace />} />
             <Route path="/my-printers" element={<Navigate to="/rewards?tab=insurance&sub=status" replace />} />
             <Route path="/activate-printer" element={<ActivatePrinter />} />
