@@ -141,7 +141,11 @@ export default function AdminSavedInvoices() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-bold text-foreground">
-                          فاتورة #{invoice.orders?.order_number || 'غير معروف'}
+                          {invoice.orders?.order_number
+                            ? `فاتورة #${invoice.orders.order_number}`
+                            : invoice.store_printers?.serial_number
+                              ? `فاتورة ضمان - ${invoice.store_printers.serial_number}`
+                              : 'فاتورة بدون طلب'}
                         </h3>
                         {expired && (
                           <Badge variant="destructive" className="gap-1">
