@@ -70,7 +70,7 @@ const CategoryCard = ({
                  shadow-[0_4px_24px_-6px_hsl(var(--primary)/0.15)]
                  hover:border-primary/55 hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.35)]
                  hover:-translate-y-0.5 transition-all duration-300"
-      aria-label={nameAr || name}
+      aria-label={[nameAr || name, descriptionAr || description].filter(Boolean).join(' — ')}
     >
       {hasDirectSale && <DirectSaleRibbon />}
 
