@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { trackMetaEvent } from '@/lib/metaPixel';
 import StepIndicator from './StepIndicator';
 import Step1Account from './Step1Account';
 import Step2Profile from './Step2Profile';
@@ -154,6 +155,15 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       }
 
       const userId = data.user.id;
+
+      // Meta Pixel + CAPI: CompleteRegistration / Lead (non-blocking)
+      try {
+        void trackMetaEvent({
+          eventName: 'CompleteRegistration',
+          customData: { status: true },
+          user: { email: formData.email, externalId: userId },
+        });
+      } catch {}
 
       // Ensure we have a session for RLS-protected operations
       if (!data.session) {
