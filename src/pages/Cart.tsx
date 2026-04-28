@@ -1483,7 +1483,7 @@ const Cart = () => {
         ? orderSubtotal + codFee
         : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
 
-      const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || warrantyFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
