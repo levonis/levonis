@@ -22,6 +22,9 @@ export interface CardDiscountResult {
   percentageMaxAmount: number | null;
   percentageUsedSoFar: number;
   percentageRemaining: number | null;
+  // Category whitelists (empty = applies to all)
+  discountApplicableCategoryIds: string[];
+  freeShippingApplicableCategoryIds: string[];
 }
 
 export function useCartCardDiscount(
@@ -38,7 +41,7 @@ export function useCartCardDiscount(
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_cards")
-        .select("id, level_id, purchased_at, loyalty_levels:level_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses)")
+        .select("id, level_id, purchased_at, loyalty_levels:level_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses, discount_applicable_category_ids, free_shipping_applicable_category_ids)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
@@ -174,10 +177,29 @@ export function useCartCardDiscount(
     ? Math.max(0, percentageMaxAmount - percentageUsedSoFar)
     : null;
 
+  const discountCats: string[] = Array.isArray(level.discount_applicable_category_ids)
+    ? (level.discount_applicable_category_ids as any[]).filter((x) => typeof x === "string")
+    : [];
+  const shippingCats: string[] = Array.isArray(level.free_shipping_applicable_category_ids)
+    ? (level.free_shipping_applicable_category_ids as any[]).filter((x) => typeof x === "string")
+    : [];
+
+  // Eligible subtotal for percentage discount (gifts excluded). If whitelist empty -> use cart subtotal after per-item discounts.
+  let eligibleSubtotal = Math.max(0, cartSubtotal - totalDiscount);
+  if (discountCats.length > 0) {
+    eligibleSubtotal = 0;
+    for (const item of items) {
+      if (!item.products || (item as any).is_gift) continue;
+      const catId = (item.products as any).category_id;
+      if (catId && discountCats.includes(catId)) {
+        eligibleSubtotal += getItemPrice(item) * item.quantity;
+      }
+    }
+  }
+
   let percentageDiscount = 0;
-  if (percentageRate > 0) {
-    const baseAmount = Math.max(0, cartSubtotal - totalDiscount);
-    const raw = Math.floor((baseAmount * percentageRate) / 100);
+  if (percentageRate > 0 && eligibleSubtotal > 0) {
+    const raw = Math.floor((eligibleSubtotal * percentageRate) / 100);
     percentageDiscount = percentageRemaining != null
       ? Math.min(raw, percentageRemaining)
       : raw;
@@ -217,6 +239,8 @@ export function useCartCardDiscount(
       percentageMaxAmount,
       percentageUsedSoFar,
       percentageRemaining,
+      discountApplicableCategoryIds: discountCats,
+      freeShippingApplicableCategoryIds: shippingCats,
     },
     isLoading: false,
   };
