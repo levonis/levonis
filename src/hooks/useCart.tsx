@@ -6,6 +6,7 @@ import { useShippingSettings } from './useShippingCalculator';
 import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
+import { trackMetaEvent } from '@/lib/metaPixel';
 
 // Default IQD rate fallback used across the cart when shipping settings haven't
 // loaded yet. Kept in sync with the production exchange rate so prices computed
@@ -534,6 +535,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       
       await fetchCart();
+      // Meta Pixel + CAPI: AddToCart (non-blocking)
+      try {
+        void trackMetaEvent({
+          eventName: 'AddToCart',
+          customData: {
+            content_ids: [productId],
+            content_type: 'product',
+            currency: 'IQD',
+            num_items: quantity,
+          },
+        });
+      } catch {}
       return true;
     } catch (error: any) {
       if (error?.message === 'SALE_TYPE_CONFLICT') throw error;
