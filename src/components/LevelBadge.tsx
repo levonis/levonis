@@ -86,27 +86,11 @@ export default function LevelBadge({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Check if user has active VIP Plus card
-  const { data: activeCard } = useQuery({
-    queryKey: ["user-active-card-badge", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_cards")
-        .select("level_id, loyalty_levels:level_id(is_vip_plus, special_name_style)")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-  });
-
   if (!levelInfo) return null;
 
-  const isVipPlus = (activeCard?.loyalty_levels as any)?.is_vip_plus === true;
-  const specialStyle = (activeCard?.loyalty_levels as any)?.special_name_style as any;
+  // Account level badge is XP-based ONLY. Cards no longer affect the badge.
+  const isVipPlus = false;
+  const specialStyle: any = null;
 
   const sizeMap = {
     sm: { badge: "text-[10px] px-1.5 py-0.5", icon: 12 },
