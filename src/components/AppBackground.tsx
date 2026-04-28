@@ -130,27 +130,39 @@ export default function AppBackground() {
         }}
       />
 
-      {/* Velocity-reactive green LED bloom */}
-      <motion.div
-        className="absolute top-0"
+      {/* Velocity-reactive green LED bloom.
+          Wrapped in a static positioned container so the animated transforms on
+          the inner element never register as layout shifts (CLS). The container
+          fully clips and contains paint; the inner element only animates
+          transform/opacity/filter, which are composited and don't affect layout. */}
+      <div
+        className="absolute top-0 pointer-events-none"
         style={{
           right: '-15vw',
-          x: xVw,
-          y: yTranslate,
-          scale,
-          opacity,
           width: '90vw',
           height: '80vh',
           marginTop: '-40vh',
-          willChange: 'transform, opacity, filter',
           contain: 'strict',
-          background:
-            'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
-          filter,
-          mixBlendMode: 'screen',
+          isolation: 'isolate',
+          overflow: 'hidden',
         }}
-      />
-
+      >
+        <motion.div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            x: xVw,
+            y: yTranslate,
+            scale,
+            opacity,
+            willChange: 'transform, opacity, filter',
+            background:
+              'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
+            filter,
+            mixBlendMode: 'screen',
+          }}
+        />
+      </div>
       {/* Subtle film grain via gradient noise */}
       <div
         className="absolute inset-0 opacity-[0.04]"
