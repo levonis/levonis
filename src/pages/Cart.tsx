@@ -844,14 +844,14 @@ const Cart = () => {
     ? Math.ceil(subtotalWithTax * 0.5)
     : (isCodPayment ? 0 : subtotalWithTax);
 
-  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي/COD لأنها تُدفع لاحقاً)
+  // حساب المبلغ المستخدم من المحفظة (التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة)
   const walletDeduction = useWalletBalance && wallet?.balance && !isCodPayment
-    ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
+    ? Math.min(wallet.balance, preOrderPaymentAmount)
     : 0;
 
   const grandTotal = isCodPayment
-    ? 0
-    : Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
+    ? deliveryFee
+    : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
 
   // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
   const remainingAmount = isCodPayment
@@ -1040,8 +1040,8 @@ const Cart = () => {
     setShowClearCartDialog(false);
   };
 
-  // حساب المبلغ المطلوب دفعه الآن
-  const requiredPaymentNow = preOrderPaymentAmount + deliveryFee;
+  // حساب المبلغ المطلوب دفعه الآن من المحفظة (التوصيل يُدفع عند الاستلام دائماً)
+  const requiredPaymentNow = preOrderPaymentAmount;
   const walletBalance = wallet?.balance || 0;
   const hasEnoughBalance = walletBalance >= requiredPaymentNow;
 
@@ -1138,8 +1138,8 @@ const Cart = () => {
       const { data: orderNumberData } = await supabase.rpc('generate_order_number');
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      // Wallet deduction for direct sale
-      const walletDeductionAmount = data.useWallet ? Math.min(data.walletDeduction, orderSubtotal + deliveryFeeCalc) : 0;
+      // Wallet deduction for direct sale — التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة
+      const walletDeductionAmount = data.useWallet ? Math.min(data.walletDeduction, orderSubtotal) : 0;
       const codRemaining = (orderSubtotal + deliveryFeeCalc) - walletDeductionAmount;
 
       // Deduct from wallet if applicable
@@ -1442,11 +1442,12 @@ const Cart = () => {
       const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
+      // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
       const orderData = {
         total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0),
         subtotal: orderSubtotal,
-        paid_amount: isPreOrderCod ? 0 : (paidNow + orderDeliveryFee),
-        remaining_amount: orderRemaining + (isPreOrderCod ? orderDeliveryFee : 0),
+        paid_amount: isPreOrderCod ? 0 : paidNow,
+        remaining_amount: orderRemaining + orderDeliveryFee,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,

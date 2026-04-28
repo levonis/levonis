@@ -86,7 +86,9 @@ const DirectSaleCheckoutDialog = ({
   }, [open]);
 
   const grandTotal = totalAmount + deliveryFee;
-  const walletDeduction = useWallet ? Math.min(walletBalance, grandTotal) : 0;
+  // التوصيل يُدفع دائماً عند الاستلام — لا يُخصم من المحفظة.
+  // المحفظة تخصم فقط من قيمة المنتجات (totalAmount).
+  const walletDeduction = useWallet ? Math.min(walletBalance, totalAmount) : 0;
   const codAmount = grandTotal - walletDeduction;
 
   const handleConfirm = useCallback(async () => {
