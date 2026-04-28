@@ -149,9 +149,17 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         adminShippingCost: number;
       }> = [];
 
-      printerOrders?.forEach((order: any) => {
+      const typedPrinterOrders = (printerOrders || []) as Array<{
+        id: string; order_number?: string | null; user_id: string; shipping_address?: string | null;
+        payment_method?: string | null; payment_status?: string | null; subtotal?: number | null;
+        tax_amount?: number | null; tax_percentage?: number | null; total_amount?: number | null;
+        discount_amount?: number | null; paid_amount?: number | null; remaining_amount?: number | null;
+        delivery_method?: string | null; admin_shipping_cost?: number | null;
+        order_items?: Array<{ id: string; total_price?: number | null; products?: { name?: string | null; name_ar?: string | null; category_id?: string | null } | null }>;
+      }>;
+      typedPrinterOrders.forEach((order) => {
         const items = order.order_items || [];
-        items.forEach((item: any) => {
+        items.forEach((item) => {
           const product = item.products;
           if (product && product.category_id === PRINTER_CATEGORY_ID) {
             orderBuyers.push({
@@ -197,9 +205,9 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         .in('user_id', allUserIds)
         .order('is_default', { ascending: false });
 
-      const profileMap: Record<string, any> = {};
+      const profileMap: Record<string, { full_name?: string | null; username?: string | null; phone_number?: string | null }> = {};
       profiles?.forEach(p => { profileMap[p.id] = p; });
-      const addrMap: Record<string, any> = {};
+      const addrMap: Record<string, { governorate?: string | null; area?: string | null; neighborhood?: string | null; nearest_landmark?: string | null; phone_number?: string | null; full_name?: string | null }> = {};
       addresses?.forEach(a => { addrMap[a.user_id] = a; });
 
       const results: BuyerOption[] = [];
