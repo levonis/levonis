@@ -45,7 +45,9 @@ export default function AdminSavedInvoices() {
             order_number,
             user_id,
             profiles (username, full_name)
-          )
+          ),
+          user_profile:profiles!saved_invoices_user_id_fkey (username, full_name),
+          store_printers (serial_number, model_name_ar, model_name)
         `)
         .order("generated_at", { ascending: false });
 
