@@ -1243,7 +1243,9 @@ export default function AdminLoyaltyLevels() {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {levels.map((level) => (
+              {levels.map((lvl) => {
+                const level: any = lvl;
+                return (
                 <div key={level.id} className="relative group">
                   <LoyaltyCardPreview
                     name_ar={level.name_ar}
@@ -1301,7 +1303,8 @@ export default function AdminLoyaltyLevels() {
                     </Badge>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
