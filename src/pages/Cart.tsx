@@ -849,8 +849,9 @@ const Cart = () => {
     ? Math.min(wallet.balance, preOrderPaymentAmount)
     : 0;
 
+  // المطلوب الآن: في COD لا شيء (حتى التوصيل عند الاستلام). في غيره: المنتجات بعد المحفظة + التوصيل.
   const grandTotal = isCodPayment
-    ? deliveryFee
+    ? 0
     : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
 
   // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
