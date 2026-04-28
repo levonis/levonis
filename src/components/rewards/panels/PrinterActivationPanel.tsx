@@ -82,18 +82,27 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
     mutationFn: async () => {
       if (!user || !printerData) throw new Error(t('pa_incomplete_data'));
 
-      const activationDate = new Date();
-      const expiryDate = addMonths(activationDate, printerData.warranty_months || 6);
+      // Respect admin-set dates if present; otherwise fall back to today + warranty_months
+      const hasAdminDates = !!printerData.activation_date && !!printerData.expiry_date;
+      const activationDate = hasAdminDates ? new Date(printerData.activation_date) : new Date();
+      const expiryDate = hasAdminDates
+        ? new Date(printerData.expiry_date)
+        : addMonths(activationDate, printerData.warranty_months || 6);
+
+      const updatePayload: Record<string, any> = {
+        buyer_user_id: user.id,
+        status: 'active',
+        is_registered: true,
+      };
+      // Only write dates if admin hasn't already set them
+      if (!hasAdminDates) {
+        updatePayload.activation_date = activationDate.toISOString();
+        updatePayload.expiry_date = expiryDate.toISOString();
+      }
 
       const { error: updateError } = await supabase
         .from('store_printers')
-        .update({
-          buyer_user_id: user.id,
-          status: 'active',
-          is_registered: true,
-          activation_date: activationDate.toISOString(),
-          expiry_date: expiryDate.toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', printerData.id);
 
       if (updateError) throw updateError;
