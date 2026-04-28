@@ -47,8 +47,13 @@ const BannerImage = memo(({
 }) => {
   const [loaded, setLoaded] = useState(false);
 
-  // Use Supabase image transform to serve a right-sized version (banner displays max ~1200px)
-  const optimizedSrc = useMemo(() => resizeSupabaseImage(src, 1200, 80) || src, [src]);
+  // Use Supabase image transform to serve a right-sized version.
+  // Mobile devices (the common LCP critical path) only need ~800px;
+  // 1200 was over-fetching ~50% extra bytes for the banner above the fold.
+  const optimizedSrc = useMemo(
+    () => resizeSupabaseImage(src, isFirst ? 800 : 1200, 75) || src,
+    [src, isFirst]
+  );
 
   // Preload first image immediately via link tag
   useEffect(() => {
@@ -70,11 +75,15 @@ const BannerImage = memo(({
       src={optimizedSrc}
       alt={alt}
       className={cn(
-        "w-full h-full object-cover object-center transition-opacity duration-300",
-        loaded ? "opacity-100" : "opacity-0"
+        "w-full h-full object-cover object-center",
+        // Skip opacity transition for the LCP image so paint isn't delayed
+        isFirst ? "" : "transition-opacity duration-300",
+        isFirst || loaded ? "opacity-100" : "opacity-0"
       )}
       loading={isFirst ? 'eager' : 'lazy'}
       decoding={isFirst ? 'sync' : 'async'}
+      // @ts-expect-error - fetchPriority is valid HTML but not yet in React types in some versions
+      fetchpriority={isFirst ? 'high' : 'auto'}
       onLoad={() => setLoaded(true)}
       // Add intrinsic size hints to prevent layout shift
       width={1200}
