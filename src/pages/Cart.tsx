@@ -844,14 +844,14 @@ const Cart = () => {
     ? Math.ceil(subtotalWithTax * 0.5)
     : (isCodPayment ? 0 : subtotalWithTax);
 
-  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي/COD لأنها تُدفع لاحقاً)
+  // حساب المبلغ المستخدم من المحفظة (التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة)
   const walletDeduction = useWalletBalance && wallet?.balance && !isCodPayment
-    ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
+    ? Math.min(wallet.balance, preOrderPaymentAmount)
     : 0;
 
   const grandTotal = isCodPayment
-    ? 0
-    : Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
+    ? deliveryFee
+    : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
 
   // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
   const remainingAmount = isCodPayment
