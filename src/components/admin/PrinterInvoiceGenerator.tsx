@@ -245,7 +245,22 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         if (orderItem) subtotal = orderItem.total_price || 0;
       }
 
-      // Auto-link the serial number to this buyer
+      // Pull real delivery info from the order: pickup => 0, otherwise admin_shipping_cost
+      let realDelivery: number | null = null;
+      if (buyer.orderId) {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('delivery_method, admin_shipping_cost')
+          .eq('id', buyer.orderId)
+          .maybeSingle();
+        if (orderData) {
+          realDelivery = orderData.delivery_method === 'pickup'
+            ? 0
+            : Number(orderData.admin_shipping_cost ?? 0);
+        }
+      }
+
+      // Auto-link the serial number to this buyer (preserve admin-set warranty dates)
       if (printer.id && buyer.userId) {
         const { error: linkError } = await supabase
           .from('store_printers')
@@ -253,8 +268,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
             buyer_user_id: buyer.userId,
             is_registered: true,
             status: 'active',
-            activation_date: new Date().toISOString(),
-            expiry_date: new Date(Date.now() + (printer.warranty_months || 6) * 30 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .eq('id', printer.id);
 
@@ -273,11 +286,20 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
+      const deliveryFee = realDelivery !== null
+        ? realDelivery
+        : (manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000);
       const parsedTax = parseFloat(manualFields.taxPercent);
       const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
       const taxAmount = Math.round(sub * (taxPercent / 100));
       const now = new Date();
+
+      // Sync manual fields so the config step reflects real values
+      setManualFields(prev => ({
+        ...prev,
+        subtotal: sub ? String(sub) : prev.subtotal,
+        delivery: String(deliveryFee),
+      }));
 
       setSelectedOrderId(buyer.orderId || null);
       setInvoiceData({
