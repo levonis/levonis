@@ -131,38 +131,31 @@ export default function AppBackground() {
       />
 
       {/* Velocity-reactive green LED bloom.
-          Wrapped in a static positioned container so the animated transforms on
-          the inner element never register as layout shifts (CLS). The container
-          fully clips and contains paint; the inner element only animates
-          transform/opacity/filter, which are composited and don't affect layout. */}
-      <div
+          NOTE: We intentionally do NOT wrap this in a clipping container with
+          `contain: strict` / `overflow: hidden`. Hard clipping turns the soft
+          radial gradient's faded edges into a visible rectangular boundary
+          against the darker base — exactly the artifact users see. The outer
+          fixed wrapper already has `overflow: hidden`, which is enough to keep
+          paint inside the viewport. The radial gradient itself fades to
+          `transparent 75%`, so its natural edges remain organic. */}
+      <motion.div
         className="absolute top-0 pointer-events-none"
         style={{
           right: '-15vw',
           width: '90vw',
           height: '80vh',
           marginTop: '-40vh',
-          contain: 'strict',
-          isolation: 'isolate',
-          overflow: 'hidden',
+          x: xVw,
+          y: yTranslate,
+          scale,
+          opacity,
+          willChange: 'transform, opacity, filter',
+          background:
+            'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
+          filter,
+          mixBlendMode: 'screen',
         }}
-      >
-        <motion.div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            x: xVw,
-            y: yTranslate,
-            scale,
-            opacity,
-            willChange: 'transform, opacity, filter',
-            background:
-              'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
-            filter,
-            mixBlendMode: 'screen',
-          }}
-        />
-      </div>
+      />
       {/* Subtle film grain via gradient noise */}
       <div
         className="absolute inset-0 opacity-[0.04]"
