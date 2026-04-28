@@ -210,7 +210,7 @@ export default function RatingsPreview({ merchantId }: RatingsPreviewProps) {
       if (error) throw error;
       if (!data || data.length === 0) return [];
       const userIds = Array.from(new Set(data.map(c => c.user_id)));
-      const { data: profiles } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", userIds);
+      const { data: profiles } = await supabase.from("profiles_public").select("id, full_name, avatar_url").in("id", userIds);
       const pm = new Map(profiles?.map(p => [p.id, p]) || []);
       return data.map(c => ({
         ...c,

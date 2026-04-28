@@ -35,7 +35,7 @@ export default function GameWinnersPage() {
       comp.data?.forEach(w => userIds.add(w.user_id));
 
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, username, full_name")
         .in("id", Array.from(userIds));
 

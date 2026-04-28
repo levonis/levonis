@@ -73,7 +73,7 @@ export default function CommunityMessages() {
       } else if (userId) {
         sellerId = userId;
         const { data: targetProfile } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('full_name, username')
           .eq('id', userId)
           .maybeSingle();

@@ -45,7 +45,7 @@ export default function Wishes() {
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map((w: any) => w.user_id))];
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("id, full_name, username, avatar_url")
           .in("id", userIds);
         

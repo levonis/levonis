@@ -178,7 +178,7 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
       
       if (buyerIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("id, full_name, username")
           .in("id", buyerIds);
         
@@ -233,7 +233,7 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
       
       if (customerIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("id, full_name, username")
           .in("id", customerIds);
         
@@ -289,7 +289,7 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
       
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("profiles_public")
           .select("id, full_name, username")
           .in("id", userIds);
         
