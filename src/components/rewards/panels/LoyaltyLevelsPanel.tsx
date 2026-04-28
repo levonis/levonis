@@ -422,12 +422,14 @@ export default function LoyaltyLevelsPanel() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground">{t('ll_purchasable_cards')}</h3>
         <div className="grid gap-3">
-          {sortedLevels.filter(l => l.is_purchasable).map((level: any) => {
+          {(membershipCards || []).map((rawCard: any) => {
+            // Adapt new schema (price_points) to legacy field names used below
+            const level: any = { ...rawCard, purchase_price_points: rawCard.price_points };
             const isOwned = activeCardLevel?.id === level.id;
             const canAffordPoints = availablePoints >= (level.purchase_price_points || 0);
             const canAffordWallet = level.wallet_price ? walletBalance >= level.wallet_price : false;
             const hasWalletPrice = level.wallet_price && level.wallet_price > 0;
-            const prizesForLevel = levelPrizes?.filter(p => p.level_id === level.id) || [];
+            const prizesForLevel = levelPrizes?.filter(p => p.card_id === level.id) || [];
             const isVipPlus = level.is_vip_plus;
             const vipBenefits = isVipPlus ? getVipPlusBenefits(level) : [];
 
