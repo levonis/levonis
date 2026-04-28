@@ -1442,11 +1442,12 @@ const Cart = () => {
       const orderDeliveryFee = (cardFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
+      // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
       const orderData = {
         total_amount: orderSubtotal + orderDeliveryFee + (isPreOrderCod ? codFee : 0),
         subtotal: orderSubtotal,
-        paid_amount: isPreOrderCod ? 0 : (paidNow + orderDeliveryFee),
-        remaining_amount: orderRemaining + (isPreOrderCod ? orderDeliveryFee : 0),
+        paid_amount: isPreOrderCod ? 0 : paidNow,
+        remaining_amount: orderRemaining + orderDeliveryFee,
         shipping_address: shippingAddressText,
         phone_number: selectedAddress.phone_number,
         governorate: selectedAddress.governorate,
