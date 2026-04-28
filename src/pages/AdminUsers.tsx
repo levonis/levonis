@@ -124,7 +124,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_cards')
-        .select('user_id, loyalty_levels(name_ar, color)')
+        .select('user_id, membership_cards:card_id(name_ar, color)')
         .eq('is_active', true);
       
       if (error) throw error;
@@ -132,10 +132,10 @@ export default function AdminUsers() {
       // Map user_id to card info
       const cardsMap: Record<string, { name_ar: string; color: string }> = {};
       data?.forEach((c: any) => {
-        if (c.loyalty_levels) {
+        if (c.membership_cards) {
           cardsMap[c.user_id] = {
-            name_ar: c.loyalty_levels.name_ar,
-            color: c.loyalty_levels.color
+            name_ar: c.membership_cards.name_ar,
+            color: c.membership_cards.color
           };
         }
       });

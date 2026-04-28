@@ -40,7 +40,7 @@ interface PointsDiscrepancy {
 interface ActiveCard {
   id: string;
   user_id: string;
-  loyalty_level_id: string;
+  loyalty_card_id: string;
   purchased_at: string;
   expires_at: string | null;
   is_active: boolean;
@@ -130,7 +130,7 @@ export default function AdminPointsAuditTab() {
           purchased_at,
           expires_at,
           is_active,
-          loyalty_levels:level_id (
+          membership_cards:card_id (
             name_ar,
             color
           )
@@ -152,11 +152,11 @@ export default function AdminPointsAuditTab() {
 
       return cards.map((card: any) => {
         const profile = profilesMap.get(card.user_id);
-        const level = card.loyalty_levels as any;
+        const level = card.membership_cards as any;
         return {
           id: card.id,
           user_id: card.user_id,
-          loyalty_level_id: card.level_id,
+          loyalty_card_id: card.level_id,
           purchased_at: card.purchased_at,
           expires_at: card.expires_at,
           is_active: card.is_active,

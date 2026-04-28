@@ -534,23 +534,23 @@ export default function AdminUserDetailsDialog({
                   ) : (
                     <div className="rounded-xl border-2 p-6 bg-gradient-to-br from-primary/10 to-primary/5">
                       <div className="flex items-center gap-4">
-                        {userCard.loyalty_levels?.frame_url ? (
+                        {userCard.membership_cards?.frame_url ? (
                           <img
-                            src={userCard.loyalty_levels.frame_url}
+                            src={userCard.membership_cards.frame_url}
                             alt="Card"
                             className="h-20 w-20 object-contain"
                           />
                         ) : (
                           <div
                             className="h-20 w-20 rounded-full flex items-center justify-center text-3xl"
-                            style={{ backgroundColor: userCard.loyalty_levels?.color || "#6366f1" }}
+                            style={{ backgroundColor: userCard.membership_cards?.color || "#6366f1" }}
                           >
-                            {userCard.loyalty_levels?.icon || "⭐"}
+                            {userCard.membership_cards?.icon || "⭐"}
                           </div>
                         )}
                         <div className="flex-1">
                           <h3 className="text-xl font-bold">
-                            {userCard.loyalty_levels?.name_ar || "بطاقة عضوية"}
+                            {userCard.membership_cards?.name_ar || "بطاقة عضوية"}
                           </h3>
                           <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">

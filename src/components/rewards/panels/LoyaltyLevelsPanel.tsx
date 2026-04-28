@@ -56,7 +56,7 @@ export default function LoyaltyLevelsPanel() {
       const { data, error } = await supabase.rpc(rpcName, {
         p_gifter_id: user.id,
         p_recipient_id: selectedRecipient.id,
-        p_level_id: giftDialog.level.id,
+        p_card_id: giftDialog.level.id,
         p_message: giftMessage || null,
       });
       if (error) throw error;
@@ -95,7 +95,7 @@ export default function LoyaltyLevelsPanel() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_cards')
-        .select('*, loyalty_levels:level_id(*)')
+        .select('*, membership_cards:card_id(*)')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -190,7 +190,7 @@ export default function LoyaltyLevelsPanel() {
       const rpcName = purchaseDialog.method === 'wallet' ? 'purchase_card_with_wallet' : 'purchase_card_with_points';
       const { data, error } = await supabase.rpc(rpcName, {
         p_user_id: user.id,
-        p_level_id: purchaseDialog.level.id,
+        p_card_id: purchaseDialog.level.id,
       });
       
       if (error) throw error;
@@ -234,7 +234,7 @@ export default function LoyaltyLevelsPanel() {
   const availablePoints = userPointsData?.available_points || 0;
   const walletBalance = userWallet?.balance || 0;
   const userName = userProfile?.full_name || userProfile?.username || '';
-  const activeCardLevel = userCard?.loyalty_levels as any;
+  const activeCardLevel = userCard?.membership_cards as any;
   const sortedLevels = levels?.slice().sort((a, b) => a.display_order - b.display_order) || [];
 
   // Find the actual current level entity (matches level_number)

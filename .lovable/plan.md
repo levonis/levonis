@@ -1,40 +1,79 @@
-## Problem
+# فصل بطاقات الولاء عن مستويات الحساب
 
-In the warranty invoice (`PrinterInvoiceGenerator`):
+## المشكلة الجذرية
 
-1. **Subtotal**: For orders with COD (دفع عند الاستلام) or partial-payment (نصف المبلغ), the percentage shown on the invoice doesn't match what the customer agreed to. The current code uses `order_items.total_price` directly, which works for the printer line itself but doesn't reflect the actual price the user accepted in their order.
-2. **Delivery**: Hardcoded to **12,000** even when the user picked **استلام من المخزن (pickup)** — the order's `delivery_method = 'pickup'` and `admin_shipping_cost = 0` are ignored.
+حالياً يوجد جدول واحد `loyalty_levels` يخدم مفهومين مختلفين تماماً:
 
-## Root cause
+1. **مستوى الحساب**: 100 سجل (level_1 ... level_100) يمثلون تقدم المستخدم بناءً على XP/النقاط. يُحسبون من `user_points.level`.
+2. **بطاقات الولاء المشتراة**: نفس الجدول، لكن بعض السجلات معلّمة بـ `is_purchasable=true` و`is_vip_plus=true` لتعمل كمنتجات قابلة للشراء بخصومات وامتيازات.
 
-In `src/components/admin/PrinterInvoiceGenerator.tsx`, `handleSelectUser`:
-- Never reads the order's `delivery_method` or `admin_shipping_cost` — falls back to `12000` from `manualFields.delivery`.
-- Subtotal is taken from `order_items.total_price` only; for COD/partial orders we should anchor the printer line to its true `unit_price * quantity` (which is what `total_price` already is for a line — confirmed via DB sample). The "wrong percentage" symptom is downstream of the wrong delivery + tax calc inflating the total.
+النتيجة:
+- `user_cards.level_id` يشير إلى نفس المستويات التي تُمثّل التقدم.
+- شارة المستوى (`LevelBadge`) تتحول إلى "VIP+" بسبب البطاقة بدلاً من إظهار الرقم الحقيقي.
+- المنطق ملتبس في جميع المكونات (`ProfileHeader`, `CardsSection`, `useVipPlus`, `useCartCardDiscount`, إلخ).
 
-Also `handleManualEntry` defaults delivery to `12000` — should default to `0` for pickup-style scenarios; we'll keep it editable but no longer assume 12,000 silently.
+## الحل: جدول `membership_cards` مستقل
 
-## Fix
+```text
+loyalty_levels (التقدم فقط)        membership_cards (المنتجات)
+├── level_key, name, color         ├── card_key, name, color
+├── min_points, xp_required        ├── price_points, wallet_price
+└── display_order                  ├── duration_days
+                                   ├── is_vip_plus
+                                   ├── discount_percentage (+ caps)
+                                   ├── free_shipping (+ rules)
+                                   ├── frame_url, special_name_style
+                                   └── benefits (jsonb)
 
-### `src/components/admin/PrinterInvoiceGenerator.tsx` — `handleSelectUser`
+user_points.level → loyalty_levels.level_key   (مستوى الحساب)
+user_cards.card_id → membership_cards.id        (البطاقة المشتراة)
+```
 
-When the buyer has an `orderId`:
-1. Fetch the order's `delivery_method` and `admin_shipping_cost`.
-2. If `delivery_method === 'pickup'` → delivery = **0**.
-3. Else → delivery = `admin_shipping_cost ?? 0` (no more 12,000 fallback when there is a real order).
-4. Sync `manualFields.subtotal` and `manualFields.delivery` so the config step (if it ever opens) shows the real values, not 12,000.
-5. Recompute `total = subtotal + tax + delivery` with the corrected delivery.
+## الخطوات
 
-Also remove the **date-overwriting bug** that snuck back into the link step: `handleSelectUser` currently writes `activation_date: new Date()` and `expiry_date: now + warrantyMonths` whenever an admin opens the invoice generator — this contradicts the previous fix in `PrinterActivationPanel`. Drop both fields from the update so admin-set warranty dates are preserved.
+### 1) قاعدة البيانات (Migration)
 
-### Out of scope
+- إنشاء جدول جديد `membership_cards` يحوي كل الأعمدة المتعلقة بالبطاقات (السعر، VIP+، الخصومات، الإطارات، الامتيازات، التواريخ).
+- إنشاء جدول `card_discounts` (مرتبط بـ `membership_cards.id` بدل `level_id` للمنتجات) — أو إعادة تسمية العمود.
+- إعادة تسمية `user_cards.level_id` → `card_id` مع FK إلى `membership_cards`.
+- **حذف جميع سجلات `user_cards` الموجودة** (تنفيذ "إعادة تعيين" حسب اختيارك).
+- إزالة الأعمدة المخصصة للبطاقات من `loyalty_levels` (purchase_price_points, wallet_price, duration_days, is_purchasable, is_vip_plus, discount_percentage, free_shipping_*, frame_url, special_name_style, monthly_free_shipping, free_daily_games, wholesale_discount_enabled, investment_enabled, priority_*, exclusive_products, early_access, vip_support, card_discounts_enabled, free_tickets_monthly, discount_percentage_max_amount).
+- نقل البطاقات الـ4 الحالية القابلة للشراء (level_1..level_4) كسجلات أولية في `membership_cards`.
+- تحديث جميع دوال SQL المعنية (`get_user_card_*`, `purchase_card_*`, RPC الخصومات، إلخ) لاستخدام الجدول الجديد.
+- تحديث RLS على `membership_cards` (قراءة عامة، كتابة admin فقط) و`user_cards` (المالك + admin).
 
-- Changing how `order_items.total_price` is computed
-- Modifying COD/partial-payment surcharge logic
-- Changing the manual entry default of `12000` (still useful when there is no order at all — but it stops overriding real order data)
+### 2) الكود الأمامي
 
-## Verification
+تحديث جميع المراجع للتمييز بين المستوى والبطاقة:
 
-1. Generate invoice for an order with `delivery_method = 'pickup'` → invoice shows **التوصيل: 0**.
-2. Generate invoice for an order with `admin_shipping_cost = 5000` → invoice shows **التوصيل: 5,000**.
-3. Generate invoice for a COD/partial order → subtotal = printer's actual line price; total = subtotal + tax + real delivery (no inflation from 12,000).
-4. Re-open invoice generator on an already-activated printer with admin-set dates → dates remain unchanged in `store_printers`.
+| الملف | التغيير |
+|------|--------|
+| `src/components/LevelBadge.tsx` | إزالة استعلام `user_cards`/`is_vip_plus`. الشارة تعرض رقم المستوى من XP فقط بدون أي تأثير من البطاقة. |
+| `src/components/profile/ProfileHeader.tsx` | فصل الإطار/VIP+ عن لون المستوى. الإطار من البطاقة، رقم المستوى من XP. |
+| `src/hooks/useVipPlus.ts` | استعلام `user_cards → membership_cards` بدل `loyalty_levels`. |
+| `src/hooks/useProductCardDiscount.ts` | نفس الشيء. |
+| `src/hooks/useCartCardDiscount.tsx` | نفس الشيء. |
+| `src/hooks/useUserCardFrame.ts` | الإطار من `membership_cards.frame_url`. |
+| `src/components/rewards/CardsSection.tsx` | عرض البطاقات من `membership_cards`. |
+| `src/components/rewards/PointsSection.tsx` | عرض المستوى من `loyalty_levels` فقط، عرض البطاقة من `membership_cards`. |
+| `src/components/rewards/panels/LoyaltyLevelsPanel.tsx` | تقسيم لـ panel للمستويات وآخر للبطاقات (أو فصل العرض داخل نفس الـpanel). |
+| `src/pages/MyPoints.tsx` | المستوى من `loyalty_levels` فقط. |
+| `src/pages/AdminUsers.tsx`, `AdminUserDetailsDialog`, `AdminPointsAuditTab`, `AdminLevelPrizesTab`, `AdminPendingOrdersSheet`, `AdminChats` | تحديث الاستعلامات. |
+| `src/pages/Admin.tsx` + `AdminLoyaltyLevels.tsx` | فصل صفحة إدارة البطاقات (`AdminMembershipCards`) عن صفحة إدارة المستويات. |
+| `src/components/ProductRewardsSection.tsx` | استخدام `membership_cards` للخصومات المعروضة. |
+
+### 3) صفحة إدارة جديدة
+
+إنشاء `src/pages/AdminMembershipCards.tsx` لإدارة جدول `membership_cards` (إنشاء، تعديل، تفعيل، خصومات، VIP+، إطار، مدة، سعر). صفحة `AdminLoyaltyLevels` تبقى لإدارة المستويات (XP، رقم، لون، اسم) فقط.
+
+### 4) ذاكرة المشروع
+
+تحديث memory برابط جديد: "Membership Cards Separated From Levels" يوضح الفصل المعماري ويمنع إعادة الدمج مستقبلاً.
+
+## ملاحظات مهمة
+
+- **حذف بيانات**: جميع `user_cards` الحالية ستُمسح (حسب اختيارك "إعادة تعيين البطاقات"). المستخدمون سيبدؤون بدون بطاقات نشطة.
+- **مستويات XP لا تتأثر**: `user_points` يبقى كما هو، فلا يفقد أي مستخدم تقدمه.
+- **الترجمة**: مفاتيح i18n جديدة لـ "البطاقة" مقابل "المستوى" في ar/en/ku.
+- **شارة المستوى**: ستعرض دائماً "مستوى N" المحسوب من XP فقط، بغض النظر عن أي بطاقة.
+- بعد التطبيق سنحتاج إعادة إعداد الـ4 بطاقات (برونزي 1-4) من شاشة الإدارة الجديدة، أو يتم نقلها تلقائياً ضمن الـmigration كقيم افتراضية.
