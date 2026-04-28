@@ -58,10 +58,10 @@ export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }
             key={tab.id}
             onClick={() => onSubTabChange(tab.id)}
             className={cn(
-              "px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+              "px-4 py-1.5 rounded-full text-xs whitespace-nowrap transition-all",
               isActive 
-                ? "bg-foreground text-background shadow-sm"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-foreground text-background shadow-sm font-medium"
+                : "bg-[sidebar-primary-foreground] bg-zinc-950 text-primary font-semibold"
             )}
           >
             {t(tab.labelKey)}
