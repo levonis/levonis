@@ -56,7 +56,12 @@ const Cart = () => {
   };
 
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
-  const { cardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
+  const { cardDiscount: rawCardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
+  const { warrantyBenefits } = useCartWarrantyBenefits(items, getCartItemPrice, total);
+  // Pick best between loyalty card and warranty benefits (no stacking).
+  const useWarrantyOverCard = !!warrantyBenefits
+    && (warrantyBenefits.totalDiscount > (rawCardDiscount?.totalDiscount || 0));
+  const cardDiscount = useWarrantyOverCard ? null : rawCardDiscount;
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number; custom_message?: string | null; banner_style?: string | null } | null>(null);
