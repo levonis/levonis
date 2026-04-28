@@ -110,8 +110,8 @@ const WarrantyDashboard = () => {
           العودة
         </Button>
 
-        {/* Warranty loyalty-style benefits */}
-        <WarrantyBenefitsCard />
+        {/* Warranty loyalty-style benefits — only when active */}
+        {!isExpired && <WarrantyBenefitsCard />}
 
         {/* Printer Header */}
         <Card className="overflow-hidden">
@@ -170,9 +170,25 @@ const WarrantyDashboard = () => {
             )}
 
             {isExpired && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                <span>انتهى ضمانك. اشترك في باقة حماية للاستفادة من المزايا.</span>
+              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-destructive text-sm">انتهى الضمان</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      تم إيقاف جميع المزايا الشهرية المرتبطة بالضمان (الخصم على المشتريات، التوصيل المجاني، خصومات الصيانة). فعّل بطاقة تأمين لاستعادة الحماية والمزايا.
+                    </p>
+                  </div>
+                </div>
+                {!plan && (
+                  <Button
+                    className="w-full bg-destructive hover:bg-destructive/90"
+                    onClick={() => navigate('/rewards')}
+                  >
+                    <Shield className="w-4 h-4 ml-2" />
+                    اشترك في بطاقة تأمين الآن
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
