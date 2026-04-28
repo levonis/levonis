@@ -254,6 +254,12 @@ export default function AdminLoyaltyLevels() {
         ...formData,
         benefits,
         display_order: displayOrder,
+        discount_applicable_category_ids: formData.discount_applicable_category_ids.length > 0
+          ? formData.discount_applicable_category_ids
+          : null,
+        free_shipping_applicable_category_ids: formData.free_shipping_applicable_category_ids.length > 0
+          ? formData.free_shipping_applicable_category_ids
+          : null,
       };
 
       if (editingLevel) {
