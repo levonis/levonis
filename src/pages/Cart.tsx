@@ -854,11 +854,11 @@ const Cart = () => {
     ? 0
     : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
 
-  // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي أو رسوم COD)
+  // المبلغ المتبقي عند الاستلام (يشمل رسوم COD والتوصيل في حالة COD، أو رسوم الدفع الجزئي)
   const remainingAmount = isCodPayment
-    ? subtotalWithTax + codFee
+    ? subtotalWithTax + codFee + deliveryFee
     : (hasPreOrderItems && preOrderPaymentOption === 'half'
-        ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
+        ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee + deliveryFee
         : 0);
 
   const applyCoupon = async () => {
