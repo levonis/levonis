@@ -95,7 +95,7 @@ function useGameArchive(game: GameKey) {
 
       const [profilesRes, productsRes] = await Promise.all([
         userIds.length
-          ? supabase.from("profiles").select("id, username, full_name, avatar_url").in("id", userIds)
+          ? supabase.from("profiles_public").select("id, username, full_name, avatar_url").in("id", userIds)
           : Promise.resolve({ data: [] as any[] }),
         productIds.length
           ? supabase.from("products").select("id, name, name_ar, image_url").in("id", productIds)

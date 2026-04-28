@@ -348,7 +348,7 @@ export default function Competitions() {
       
       // Fetch profiles for those users
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id, username, full_name')
         .in('id', userIds);
       

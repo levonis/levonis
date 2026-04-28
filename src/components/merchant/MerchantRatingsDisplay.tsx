@@ -84,7 +84,7 @@ export default function MerchantRatingsDisplay({ merchantId, isAdmin = false }: 
 
       const customerIds = Array.from(new Set(ratingsData.map((r) => r.customer_id)));
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, avatar_url")
         .in("id", customerIds);
 
@@ -117,7 +117,7 @@ export default function MerchantRatingsDisplay({ merchantId, isAdmin = false }: 
 
       const userIds = Array.from(new Set(data.map(c => c.user_id)));
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, avatar_url")
         .in("id", userIds);
       const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);

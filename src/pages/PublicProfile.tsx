@@ -36,7 +36,7 @@ const PublicProfile = () => {
       if (isUuid) return paramId;
       // Look up by username
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id')
         .eq('username', paramId)
         .maybeSingle();
@@ -55,7 +55,7 @@ const PublicProfile = () => {
     queryFn: async () => {
       if (!userId) return null;
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id, full_name, username, avatar_url, created_at, cover_image_url')
         .eq('id', userId)
         .single();

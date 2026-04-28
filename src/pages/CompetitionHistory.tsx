@@ -74,7 +74,7 @@ export default function CompetitionHistory() {
           
           if (winnerUserIds.length > 0) {
             const { data: profiles } = await supabase
-              .from('profiles')
+              .from('profiles_public')
               .select('id, username, full_name, avatar_url')
               .in('id', winnerUserIds);
             
