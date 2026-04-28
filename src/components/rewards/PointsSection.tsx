@@ -78,7 +78,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_cards')
-        .select('*, loyalty_levels(*)')
+        .select('*, membership_cards:card_id(*)')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('purchased_at', { ascending: false })
@@ -121,21 +121,21 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
           </div>
         )}
 
-        {userCard?.loyalty_levels && (
+        {userCard?.membership_cards && (
           <Card className="border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: (userCard.loyalty_levels as any).color + '20' }}
+                    style={{ backgroundColor: (userCard.membership_cards as any).color + '20' }}
                   >
-                    <TrendingUp className="h-5 w-5" style={{ color: (userCard.loyalty_levels as any).color }} />
+                    <TrendingUp className="h-5 w-5" style={{ color: (userCard.membership_cards as any).color }} />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('points_current_card')}</p>
-                    <p className="font-bold" style={{ color: (userCard.loyalty_levels as any).color }}>
-                      {pickLocalized(userCard.loyalty_levels as any, 'name', language)}
+                    <p className="font-bold" style={{ color: (userCard.membership_cards as any).color }}>
+                      {pickLocalized(userCard.membership_cards as any, 'name', language)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {fmt((userPoints as any)?.total_xp || 0)} XP

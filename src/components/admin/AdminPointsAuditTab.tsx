@@ -130,7 +130,7 @@ export default function AdminPointsAuditTab() {
           purchased_at,
           expires_at,
           is_active,
-          loyalty_levels:level_id (
+          membership_cards:card_id (
             name_ar,
             color
           )
@@ -152,7 +152,7 @@ export default function AdminPointsAuditTab() {
 
       return cards.map((card: any) => {
         const profile = profilesMap.get(card.user_id);
-        const level = card.loyalty_levels as any;
+        const level = card.membership_cards as any;
         return {
           id: card.id,
           user_id: card.user_id,

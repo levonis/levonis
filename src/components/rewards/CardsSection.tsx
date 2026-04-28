@@ -66,7 +66,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_cards')
-        .select(`*, loyalty_levels:level_id(*)`)
+        .select(`*, membership_cards:card_id(*)`)
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -133,7 +133,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   if (activeSubTab === 'benefits') {
     const isLoading = loadingPoints || (userPoints && loadingLevel);
     const totalCouponValue = userCoupons?.reduce((sum, c) => sum + (c.prize_value || 0), 0) || 0;
-    const activeCardLevel = userCard?.loyalty_levels;
+    const activeCardLevel = userCard?.membership_cards;
     const displayLevel = activeCardLevel;
     const userName = userProfile?.full_name || userProfile?.username || '';
 

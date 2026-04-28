@@ -132,7 +132,7 @@ const ProductDetail = () => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase.from('user_cards').select('*, loyalty_levels:level_id(id, name_ar, display_order)').eq('user_id', user.id).gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await supabase.from('user_cards').select('*, membership_cards:card_id(id, name_ar, display_order)').eq('user_id', user.id).gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) { console.error('Error fetching user card:', error); return null; }
       return data;
     },
@@ -1280,7 +1280,7 @@ const ProductDetail = () => {
                   loyaltyLevels={allLoyaltyLevels || []}
                   userHasCard={!!userCard}
                   userCardLevelId={userCard?.level_id}
-                  userCardLevelOrder={userCard?.loyalty_levels?.display_order}
+                  userCardLevelOrder={userCard?.membership_cards?.display_order}
                   productPrice={finalPrice}
                   currency={currency}
                 />

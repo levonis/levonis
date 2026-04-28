@@ -103,7 +103,7 @@ const PublicProfile = () => {
       if (!userId) return null;
       const { data } = await supabase
         .from('user_cards')
-        .select('id, level_id, loyalty_levels:level_id(name_ar, card_color)')
+        .select('id, level_id, membership_cards:card_id(name_ar, card_color)')
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();
@@ -218,8 +218,8 @@ const PublicProfile = () => {
     ];
   }, [rep, t]);
 
-  const cardLevelName = (userCard?.loyalty_levels as any)?.name_ar;
-  const cardColor = (userCard?.loyalty_levels as any)?.card_color;
+  const cardLevelName = (userCard?.membership_cards as any)?.name_ar;
+  const cardColor = (userCard?.membership_cards as any)?.card_color;
 
   const hasAnyGame = (gameSettings?.stack !== false && stackStats) || 
                      (gameSettings?.knife !== false && knifeStats) || 

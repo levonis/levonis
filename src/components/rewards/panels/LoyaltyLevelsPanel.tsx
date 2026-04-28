@@ -95,7 +95,7 @@ export default function LoyaltyLevelsPanel() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_cards')
-        .select('*, loyalty_levels:level_id(*)')
+        .select('*, membership_cards:card_id(*)')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -234,7 +234,7 @@ export default function LoyaltyLevelsPanel() {
   const availablePoints = userPointsData?.available_points || 0;
   const walletBalance = userWallet?.balance || 0;
   const userName = userProfile?.full_name || userProfile?.username || '';
-  const activeCardLevel = userCard?.loyalty_levels as any;
+  const activeCardLevel = userCard?.membership_cards as any;
   const sortedLevels = levels?.slice().sort((a, b) => a.display_order - b.display_order) || [];
 
   // Find the actual current level entity (matches level_number)

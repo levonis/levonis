@@ -91,7 +91,7 @@ export default function AdminPendingOrdersSheet() {
           .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
 
         (cards || []).forEach((c: any) => {
-          const lvl = c.loyalty_levels;
+          const lvl = c.membership_cards;
           if (!lvl?.priority_shipping) return;
           const rank = lvl.display_order ?? 0;
           const existing = cardByUser[c.user_id];

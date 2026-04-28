@@ -21,7 +21,7 @@ export function useProductCardDiscount() {
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_cards")
-        .select("id, level_id, loyalty_levels:level_id(id, name_ar, card_color)")
+        .select("id, level_id, membership_cards:card_id(id, name_ar, card_color)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
@@ -32,9 +32,9 @@ export function useProductCardDiscount() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const levelId = (activeCard?.loyalty_levels as any)?.id || null;
-  const levelName = (activeCard?.loyalty_levels as any)?.name_ar || null;
-  const levelColor = (activeCard?.loyalty_levels as any)?.card_color || null;
+  const levelId = (activeCard?.membership_cards as any)?.id || null;
+  const levelName = (activeCard?.membership_cards as any)?.name_ar || null;
+  const levelColor = (activeCard?.membership_cards as any)?.card_color || null;
 
   /**
    * Calculate discount for a product given its card_discounts JSON array.

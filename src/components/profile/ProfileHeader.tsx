@@ -55,15 +55,15 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
     queryFn: async () => {
       const { data } = await supabase
         .from("user_cards")
-        .select("level_id, loyalty_levels:level_id(level_key, name_ar, color, min_points, is_vip_plus)")
+        .select("level_id, membership_cards:card_id(level_key, name_ar, color, min_points, is_vip_plus)")
         .eq("user_id", userId)
         .eq("is_active", true)
         .maybeSingle();
       return data;
     },
   });
-  const vipPlusActive = !!(activeCard?.loyalty_levels as any)?.is_vip_plus;
-  const cardLevelData = (activeCard?.loyalty_levels as any) || null;
+  const vipPlusActive = !!(activeCard?.membership_cards as any)?.is_vip_plus;
+  const cardLevelData = (activeCard?.membership_cards as any) || null;
 
   const { data: userPoints, isLoading: pointsLoading } = useQuery({
     queryKey: ["profile-user-points", userId],

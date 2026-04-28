@@ -41,7 +41,7 @@ export function useCartCardDiscount(
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_cards")
-        .select("id, level_id, purchased_at, loyalty_levels:level_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses, discount_applicable_category_ids, free_shipping_applicable_category_ids)")
+        .select("id, level_id, purchased_at, membership_cards:card_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses, discount_applicable_category_ids, free_shipping_applicable_category_ids)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
@@ -53,7 +53,7 @@ export function useCartCardDiscount(
   });
 
   // Get discount limits for user's card level
-  const levelId = (userCard?.loyalty_levels as any)?.id;
+  const levelId = (userCard?.membership_cards as any)?.id;
   const { data: discountLimits, isLoading: loadingLimits } = useQuery({
     queryKey: ["card-discount-limits", levelId],
     queryFn: async () => {
@@ -119,7 +119,7 @@ export function useCartCardDiscount(
     return { cardDiscount: null, isLoading };
   }
 
-  const level = userCard.loyalty_levels as any;
+  const level = userCard.membership_cards as any;
   if (!level) return { cardDiscount: null, isLoading: false };
 
   // Build usage count per category

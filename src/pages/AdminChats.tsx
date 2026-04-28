@@ -220,7 +220,7 @@ export default function AdminChats() {
 
       const vipMap = new Map<string, { rank: number; name: string; color: string | null }>();
       (cards || []).forEach((c: any) => {
-        const lvl = c.loyalty_levels;
+        const lvl = c.membership_cards;
         if (!lvl?.vip_support) return;
         const rank = lvl.display_order ?? 0;
         const existing = vipMap.get(c.user_id);
