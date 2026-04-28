@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.levonis.iq',
-  appName: 'levonis',
+  appName: 'LEVONIS',
   webDir: 'dist',
   server: {
     url: 'https://eae9743e-f7d4-438d-bfb8-c27f25184241.lovableproject.com?forceHideBadge=true',
