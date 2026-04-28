@@ -429,7 +429,7 @@ export default function LoyaltyLevelsPanel() {
             const canAffordPoints = availablePoints >= (level.purchase_price_points || 0);
             const canAffordWallet = level.wallet_price ? walletBalance >= level.wallet_price : false;
             const hasWalletPrice = level.wallet_price && level.wallet_price > 0;
-            const prizesForLevel = levelPrizes?.filter(p => p.card_id === level.id) || [];
+            const prizesForLevel: any[] = [];
             const isVipPlus = level.is_vip_plus;
             const vipBenefits = isVipPlus ? getVipPlusBenefits(level) : [];
 
