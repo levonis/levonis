@@ -10,9 +10,11 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
  */
 export default function AppBackground() {
   // Vertical position (still tracks scroll position, but velocity drives intensity)
+  // Use transform-based translateY to avoid CLS (changing `top` triggers layout
+  // shifts that Lighthouse penalizes even though the layer is fixed/pointer-none).
   const yPct = useMotionValue(40);
   const ySpring = useSpring(yPct, { stiffness: 60, damping: 22, mass: 1 });
-  const top = useTransform(ySpring, (v) => `${v}vh`);
+  const yTranslate = useTransform(ySpring, (v) => `${v - 40}vh`);
 
   // Velocity-driven values (0 = idle, 1 = fast scroll)
   const velocity = useMotionValue(0);
@@ -111,17 +113,18 @@ export default function AppBackground() {
 
       {/* Velocity-reactive green LED bloom */}
       <motion.div
-        className="absolute"
+        className="absolute top-0"
         style={{
-          top,
           right: '-15vw',
           x: xVw,
+          y: yTranslate,
           scale,
           opacity,
           width: '90vw',
           height: '80vh',
           marginTop: '-40vh',
-          willChange: 'top, transform, opacity, filter',
+          willChange: 'transform, opacity, filter',
+          contain: 'strict',
           background:
             'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
           filter,
