@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,6 +21,7 @@ interface PrinterActivationPanelProps {
 export default function PrinterActivationPanel({ onActivated }: PrinterActivationPanelProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [serialInput, setSerialInput] = useState(searchParams.get('serial') || '');
   const [printerData, setPrinterData] = useState<any>(null);
