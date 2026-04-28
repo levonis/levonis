@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Printer, Settings, ShieldCheck, Wrench } from "lucide-react";
+import { Printer, Settings, ShieldCheck, Wrench, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
 
@@ -14,6 +15,7 @@ export default function MyPrintersPanel() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { fmt } = useNumberFormat();
+  const navigate = useNavigate();
 
   const { data: printers, isLoading } = useQuery({
     queryKey: ['my-printers-panel', user?.id],
@@ -23,7 +25,7 @@ export default function MyPrintersPanel() {
         .from('user_printers')
         .select(`
           *,
-          store_printers:store_printer_id(model_name_ar, serial_number, image_url),
+          store_printers:store_printer_id(model_name_ar, serial_number, image_url, expiry_date, activation_date),
           printer_subscriptions(
             id, 
             status, 
