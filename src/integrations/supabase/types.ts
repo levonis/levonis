@@ -11815,6 +11815,68 @@ export type Database = {
       }
     }
     Views: {
+      community_complaints_safe: {
+        Row: {
+          complainant_id: string | null
+          complaint_type: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          images: string[] | null
+          offer_id: string | null
+          priority: string | null
+          reported_merchant_id: string | null
+          reported_user_id: string | null
+          request_id: string | null
+          resolved_at: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          complainant_id?: string | null
+          complaint_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          images?: string[] | null
+          offer_id?: string | null
+          priority?: string | null
+          reported_merchant_id?: string | null
+          reported_user_id?: string | null
+          request_id?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          complainant_id?: string | null
+          complaint_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          images?: string[] | null
+          offer_id?: string | null
+          priority?: string | null
+          reported_merchant_id?: string | null
+          reported_user_id?: string | null
+          request_id?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_complaints_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_customer_profiles_public: {
         Row: {
           avatar_url: string | null
