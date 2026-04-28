@@ -11853,8 +11853,10 @@ export type Database = {
           active_card_frame_url: string | null
           avatar_url: string | null
           bio: string | null
+          cover_image_url: string | null
           created_at: string | null
           full_name: string | null
+          gender: string | null
           id: string | null
           last_active_at: string | null
           selected_frame_id: string | null
@@ -11862,10 +11864,12 @@ export type Database = {
         }
         Insert: {
           active_card_frame_url?: string | null
-          avatar_url?: never
-          bio?: never
+          avatar_url?: string | null
+          bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string | null
           last_active_at?: string | null
           selected_frame_id?: string | null
@@ -11873,10 +11877,12 @@ export type Database = {
         }
         Update: {
           active_card_frame_url?: string | null
-          avatar_url?: never
-          bio?: never
+          avatar_url?: string | null
+          bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string | null
           last_active_at?: string | null
           selected_frame_id?: string | null
@@ -12248,11 +12254,16 @@ export type Database = {
         Returns: number
       }
       get_public_profiles: {
-        Args: { p_user_ids: string[] }
+        Args: { user_ids: string[] }
         Returns: {
+          active_card_frame_url: string
           avatar_url: string
+          bio: string
+          cover_image_url: string
           full_name: string
           id: string
+          last_active_at: string
+          selected_frame_id: string
           username: string
         }[]
       }
