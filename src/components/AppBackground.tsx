@@ -37,6 +37,17 @@ export default function AppBackground() {
     let lastT = performance.now();
     let decayRaf = 0;
 
+    // Cache scrollable height to avoid forced reflows on every scroll frame.
+    // We refresh it lazily on resize/orientationchange and via a low-frequency
+    // interval, which is enough for our purely-decorative parallax effect.
+    let cachedMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    let maxDirty = false;
+    const refreshMax = () => {
+      cachedMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      maxDirty = false;
+    };
+    const markDirty = () => { maxDirty = true; };
+
     const decay = () => {
       const cur = velocity.get();
       const next = cur * 0.92;
@@ -64,8 +75,9 @@ export default function AppBackground() {
         velocity.set(Math.max(velocity.get(), v));
         sway.set(Math.sign(dy));
 
-        const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-        const ratio = Math.min(1, scrollY / max);
+        // Use cached max; only re-measure when explicitly invalidated.
+        if (maxDirty) refreshMax();
+        const ratio = Math.min(1, scrollY / cachedMax);
         yPct.set(20 + ratio * 55);
 
         lastY = scrollY;
@@ -75,9 +87,16 @@ export default function AppBackground() {
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', markDirty, { passive: true });
+    window.addEventListener('orientationchange', markDirty, { passive: true });
+    // Periodic refresh to catch async content growth without per-frame reflow.
+    const refreshTimer = window.setInterval(markDirty, 1500);
     onScroll();
     return () => {
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', markDirty);
+      window.removeEventListener('orientationchange', markDirty);
+      clearInterval(refreshTimer);
       if (decayRaf) cancelAnimationFrame(decayRaf);
     };
   }, [yPct, velocity, sway]);
