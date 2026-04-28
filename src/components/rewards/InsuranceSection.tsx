@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
   const { t } = useLanguage();
   const { fmt } = useNumberFormat();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [expandedPrinter, setExpandedPrinter] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedPrinter, setSelectedPrinter] = useState<any>(null);
@@ -71,6 +73,22 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     enabled: !!user && (activeSubTab === 'status' || activeSubTab === 'maintenance'),
     staleTime: 2 * 60 * 1000,
   });
+
+  // Deep-link: auto-expand the printer matching ?printer=<serial>
+  const printerSerialParam = searchParams.get('printer');
+  useEffect(() => {
+    if (!printerSerialParam || !printers || printers.length === 0) return;
+    const match = (printers as any[]).find(
+      (p) => p.store_printers?.serial_number === printerSerialParam
+    );
+    if (match) {
+      setExpandedPrinter(match.id);
+      // Clear param so it doesn't keep re-triggering
+      const next = new URLSearchParams(searchParams);
+      next.delete('printer');
+      setSearchParams(next, { replace: true });
+    }
+  }, [printerSerialParam, printers]);
 
   const { data: plans, isLoading: loadingPlans } = useQuery({
     queryKey: ['all-protection-plans-section'],

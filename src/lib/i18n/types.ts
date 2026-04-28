@@ -2032,6 +2032,10 @@ export type TranslationKeys = {
   pa_warranty_start: string;
   pa_warranty_end: string;
   pa_days_remaining: string;
+  pa_offer_insurance_title: string;
+  pa_offer_insurance_desc: string;
+  pa_offer_insurance_cta: string;
+  pa_offer_insurance_skip: string;
   pa_pending_activation: string;
   pa_expires_on: string;
   pa_confirm_activate: string;
