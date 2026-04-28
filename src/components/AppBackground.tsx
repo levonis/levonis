@@ -113,17 +113,18 @@ export default function AppBackground() {
 
       {/* Velocity-reactive green LED bloom */}
       <motion.div
-        className="absolute"
+        className="absolute top-0"
         style={{
-          top,
           right: '-15vw',
           x: xVw,
+          y: yTranslate,
           scale,
           opacity,
           width: '90vw',
           height: '80vh',
           marginTop: '-40vh',
-          willChange: 'top, transform, opacity, filter',
+          willChange: 'transform, opacity, filter',
+          contain: 'strict',
           background:
             'radial-gradient(circle at center, hsl(160 50% 22% / 1) 0%, hsl(160 45% 15% / 0.65) 25%, hsl(160 45% 12% / 0.25) 55%, transparent 75%)',
           filter,
