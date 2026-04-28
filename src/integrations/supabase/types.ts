@@ -5377,6 +5377,7 @@ export type Database = {
           card_discounts_enabled: boolean | null
           color: string
           created_at: string
+          discount_applicable_category_ids: string[] | null
           discount_percentage: number | null
           discount_percentage_max_amount: number | null
           display_order: number
@@ -5387,6 +5388,7 @@ export type Database = {
           frame_url: string | null
           free_daily_games: number | null
           free_shipping: boolean | null
+          free_shipping_applicable_category_ids: string[] | null
           free_shipping_max_uses: number | null
           free_shipping_methods: Json
           free_shipping_min_order: number | null
@@ -5420,6 +5422,7 @@ export type Database = {
           card_discounts_enabled?: boolean | null
           color: string
           created_at?: string
+          discount_applicable_category_ids?: string[] | null
           discount_percentage?: number | null
           discount_percentage_max_amount?: number | null
           display_order: number
@@ -5430,6 +5433,7 @@ export type Database = {
           frame_url?: string | null
           free_daily_games?: number | null
           free_shipping?: boolean | null
+          free_shipping_applicable_category_ids?: string[] | null
           free_shipping_max_uses?: number | null
           free_shipping_methods?: Json
           free_shipping_min_order?: number | null
@@ -5463,6 +5467,7 @@ export type Database = {
           card_discounts_enabled?: boolean | null
           color?: string
           created_at?: string
+          discount_applicable_category_ids?: string[] | null
           discount_percentage?: number | null
           discount_percentage_max_amount?: number | null
           display_order?: number
@@ -5473,6 +5478,7 @@ export type Database = {
           frame_url?: string | null
           free_daily_games?: number | null
           free_shipping?: boolean | null
+          free_shipping_applicable_category_ids?: string[] | null
           free_shipping_max_uses?: number | null
           free_shipping_methods?: Json
           free_shipping_min_order?: number | null
@@ -8273,8 +8279,10 @@ export type Database = {
       printer_warranty_benefits: {
         Row: {
           created_at: string
+          discount_applicable_category_ids: string[] | null
           discount_max_amount_monthly: number
           discount_percentage: number
+          free_shipping_applicable_category_ids: string[] | null
           free_shipping_max_uses_monthly: number
           free_shipping_methods: Json
           free_shipping_min_order: number
@@ -8285,8 +8293,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          discount_applicable_category_ids?: string[] | null
           discount_max_amount_monthly?: number
           discount_percentage?: number
+          free_shipping_applicable_category_ids?: string[] | null
           free_shipping_max_uses_monthly?: number
           free_shipping_methods?: Json
           free_shipping_min_order?: number
@@ -8297,8 +8307,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          discount_applicable_category_ids?: string[] | null
           discount_max_amount_monthly?: number
           discount_percentage?: number
+          free_shipping_applicable_category_ids?: string[] | null
           free_shipping_max_uses_monthly?: number
           free_shipping_methods?: Json
           free_shipping_min_order?: number
@@ -12337,10 +12349,12 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: {
           activation_date: string
+          discount_applicable_category_ids: string[]
           discount_max_amount_monthly: number
           discount_percentage: number
           discount_used: number
           expiry_date: string
+          free_shipping_applicable_category_ids: string[]
           free_shipping_max_uses_monthly: number
           free_shipping_methods: Json
           free_shipping_min_order: number

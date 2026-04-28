@@ -63,6 +63,8 @@ export default function AdminLoyaltyLevels() {
     priority_support: false,
     special_name_style: { enabled: false, color: null as string | null, glow: false, badge_icon: null as string | null },
     profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
+    discount_applicable_category_ids: [] as string[],
+    free_shipping_applicable_category_ids: [] as string[],
   });
   const [benefits, setBenefits] = useState<Array<{ text_ar: string; text_en: string }>>([]);
 
@@ -161,6 +163,18 @@ export default function AdminLoyaltyLevels() {
     },
   });
 
+  const { data: allCategoriesForBenefits } = useQuery({
+    queryKey: ["all-categories-for-loyalty-benefits"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, name_ar")
+        .order("name");
+      if (error) throw error;
+      return (data || []) as Array<{ id: string; name: string; name_ar: string | null }>;
+    },
+  });
+
   const { data: cardHolders } = useQuery({
     queryKey: ["cardHolders"],
     queryFn: async () => {
@@ -252,6 +266,12 @@ export default function AdminLoyaltyLevels() {
         ...formData,
         benefits,
         display_order: displayOrder,
+        discount_applicable_category_ids: formData.discount_applicable_category_ids.length > 0
+          ? formData.discount_applicable_category_ids
+          : null,
+        free_shipping_applicable_category_ids: formData.free_shipping_applicable_category_ids.length > 0
+          ? formData.free_shipping_applicable_category_ids
+          : null,
       };
 
       if (editingLevel) {
@@ -378,6 +398,8 @@ export default function AdminLoyaltyLevels() {
       priority_support: false,
       special_name_style: { enabled: false, color: null, glow: false, badge_icon: null },
       profile_effects: { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
+      discount_applicable_category_ids: [],
+      free_shipping_applicable_category_ids: [],
     });
     setBenefits([]);
     setEditingLevel(null);
@@ -429,6 +451,8 @@ export default function AdminLoyaltyLevels() {
       priority_support: level.priority_support || false,
       special_name_style: level.special_name_style || { enabled: false, color: null, glow: false, badge_icon: null },
       profile_effects: level.profile_effects || { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
+      discount_applicable_category_ids: Array.isArray(level.discount_applicable_category_ids) ? level.discount_applicable_category_ids : [],
+      free_shipping_applicable_category_ids: Array.isArray(level.free_shipping_applicable_category_ids) ? level.free_shipping_applicable_category_ids : [],
     });
     setBenefits(level.benefits || []);
     setDialogOpen(true);
@@ -850,6 +874,46 @@ export default function AdminLoyaltyLevels() {
                                 : "غير محدود طوال صلاحية البطاقة"}
                             </p>
                           </div>
+                        </div>
+
+                        {/* Category whitelists for discount and free shipping */}
+                        <div className="space-y-3 mb-4">
+                          {[
+                            { key: 'discount_applicable_category_ids' as const, label: 'الأقسام المشمولة بالخصم' },
+                            { key: 'free_shipping_applicable_category_ids' as const, label: 'الأقسام المشمولة بالتوصيل المجاني' },
+                          ].map((sec) => {
+                            const selected = (formData as any)[sec.key] as string[];
+                            return (
+                              <div key={sec.key} className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
+                                <Label className="text-sm font-semibold">{sec.label}</Label>
+                                <p className="text-[11px] text-muted-foreground mb-2">اتركه فارغًا ليشمل جميع الأقسام</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {(allCategoriesForBenefits || []).map((c) => {
+                                    const checked = selected.includes(c.id);
+                                    return (
+                                      <label
+                                        key={c.id}
+                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer text-xs select-none border ${
+                                          checked ? 'bg-primary/10 border-primary/40' : 'bg-background border-border'
+                                        }`}
+                                      >
+                                        <Switch
+                                          checked={checked}
+                                          onCheckedChange={(v) => {
+                                            const next = v
+                                              ? Array.from(new Set([...selected, c.id]))
+                                              : selected.filter((x) => x !== c.id);
+                                            setFormData({ ...formData, [sec.key]: next } as any);
+                                          }}
+                                        />
+                                        <span>{c.name_ar || c.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">

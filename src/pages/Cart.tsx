@@ -717,22 +717,30 @@ const Cart = () => {
   const rawDeliveryFee = getDeliveryFee(selectedAddress?.governorate || profile?.governorate || null);
   
   // Apply card free shipping if eligible
-  // Apply card free shipping if eligible: must include selected method + have remaining uses
+  // Apply card free shipping if eligible: must include selected method + have remaining uses + cart contains an item from whitelist (if any)
+  const cardShipCats = cardDiscount?.freeShippingApplicableCategoryIds || [];
+  const cartHasCardShipCategory = cardShipCats.length === 0
+    || items.some((it: any) => it?.products?.category_id && cardShipCats.includes(it.products.category_id));
   const cardFreeShippingEligibleMethod = !!cardDiscount?.freeShipping
     && (cardDiscount?.freeShippingMethods?.length ? cardDiscount.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const cardFreeShippingHasUses = cardDiscount?.freeShippingRemainingUses == null
     || (cardDiscount?.freeShippingRemainingUses ?? 0) > 0;
   const cardFreeShippingApplied = cardFreeShippingEligibleMethod
     && cardFreeShippingHasUses
+    && cartHasCardShipCategory
     && total >= (cardDiscount?.freeShippingMinOrder || 0);
 
   // Warranty free shipping: only if not already getting card free shipping
+  const warrantyShipCats = warrantyBenefits?.freeShippingApplicableCategoryIds || [];
+  const cartHasWarrantyShipCategory = warrantyShipCats.length === 0
+    || items.some((it: any) => it?.products?.category_id && warrantyShipCats.includes(it.products.category_id));
   const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
     && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
   const warrantyFreeShippingApplied = !cardFreeShippingApplied
     && warrantyFreeShippingEligibleMethod
     && warrantyFreeShippingHasUses
+    && cartHasWarrantyShipCategory
     && total >= (warrantyBenefits?.freeShippingMinOrder || 0);
 
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
