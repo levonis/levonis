@@ -549,17 +549,20 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   const warrantyExpiresAt = new Date(invoiceData.date);
                   warrantyExpiresAt.setMonth(warrantyExpiresAt.getMonth() + warrantyMonths);
                   
-                  const { error } = await supabase.from('saved_invoices').insert({
+                  const { data, error } = await supabase.from('saved_invoices').insert({
                     order_id: selectedOrderId || null,
+                    user_id: selectedUserId || null,
+                    printer_id: printer.id || null,
                     invoice_html: invoiceHtml,
                     warranty_expires_at: warrantyExpiresAt.toISOString(),
                     notes: `طابعة: ${invoiceData.printerModel} - رقم تسلسلي: ${invoiceData.serialNumber}`,
-                  });
+                  }).select('id').single();
                   if (error) throw error;
+                  console.log('Invoice saved:', data?.id);
                   toast.success('تم حفظ الفاتورة بنجاح');
-                } catch (err) {
+                } catch (err: any) {
                   console.error('Error saving invoice:', err);
-                  toast.error('حدث خطأ أثناء حفظ الفاتورة');
+                  toast.error(`حدث خطأ أثناء حفظ الفاتورة: ${err?.message || 'غير معروف'}`);
                 }
               }} size="sm">
                 <Save className="w-4 h-4 ml-2" />
