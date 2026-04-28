@@ -370,6 +370,33 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
                   </p>
                 </div>
               )}
+
+              {active && (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/30 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                      <Shield className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="font-bold text-sm">{t('pa_offer_insurance_title')}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {t('pa_offer_insurance_desc')}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={() =>
+                      navigate(
+                        `/rewards?tab=insurance&printer=${encodeURIComponent(warrantyData.serial_number || '')}`
+                      )
+                    }
+                  >
+                    <Shield className="w-4 h-4 ml-2" />
+                    {t('pa_offer_insurance_cta')}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
