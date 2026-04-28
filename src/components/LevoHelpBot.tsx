@@ -589,6 +589,7 @@ export default function LevoHelpBot() {
         <div className="fixed bottom-[5.5rem] sm:bottom-24 left-4 sm:left-6 z-40 flex flex-col items-center gap-1 levo-help-bot-trigger">
           <button
             onClick={() => setIsOpen(true)}
+            aria-label="مساعد ليفو"
             className="group relative h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
           >
             <Bot className="h-5 w-5" />
