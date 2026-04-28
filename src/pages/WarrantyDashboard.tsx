@@ -110,6 +110,9 @@ const WarrantyDashboard = () => {
           العودة
         </Button>
 
+        {/* Warranty loyalty-style benefits */}
+        <WarrantyBenefitsCard />
+
         {/* Printer Header */}
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-l from-primary/10 to-primary/5 p-6">
