@@ -28,7 +28,7 @@ interface ProductCardProps {
   hasDirectSale?: boolean;
   inStock?: boolean;
   soldCount?: number;
-  cardDiscounts?: Array<{ level_id: string; discount_amount: number }> | null;
+  cardDiscounts?: Array<{ card_id: string; discount_amount: number }> | null;
   nameEn?: string | null;
   nameKu?: string | null;
   descriptionEn?: string | null;
