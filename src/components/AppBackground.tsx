@@ -10,9 +10,11 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
  */
 export default function AppBackground() {
   // Vertical position (still tracks scroll position, but velocity drives intensity)
+  // Use transform-based translateY to avoid CLS (changing `top` triggers layout
+  // shifts that Lighthouse penalizes even though the layer is fixed/pointer-none).
   const yPct = useMotionValue(40);
   const ySpring = useSpring(yPct, { stiffness: 60, damping: 22, mass: 1 });
-  const top = useTransform(ySpring, (v) => `${v}vh`);
+  const yTranslate = useTransform(ySpring, (v) => `${v - 40}vh`);
 
   // Velocity-driven values (0 = idle, 1 = fast scroll)
   const velocity = useMotionValue(0);
