@@ -161,7 +161,16 @@ export default function AdminSavedInvoices() {
                         )}
                       </div>
                       <div className="space-y-1 text-sm text-muted-foreground">
-                        <p>العميل: {invoice.orders?.profiles?.full_name || invoice.orders?.profiles?.username || 'غير معروف'}</p>
+                        <p>العميل: {
+                          invoice.orders?.profiles?.full_name
+                          || invoice.orders?.profiles?.username
+                          || (invoice as any).user_profile?.full_name
+                          || (invoice as any).user_profile?.username
+                          || 'غير معروف'
+                        }</p>
+                        {!invoice.orders && invoice.store_printers && (
+                          <p>الطابعة: {invoice.store_printers.model_name_ar || invoice.store_printers.model_name} — <span className="font-mono">{invoice.store_printers.serial_number}</span></p>
+                        )}
                         <p>تاريخ التوليد: {format(new Date(invoice.generated_at), 'dd/MM/yyyy - hh:mm a', { locale: ar })}</p>
                         {invoice.warranty_expires_at && (
                           <p>انتهاء الضمان: {format(new Date(invoice.warranty_expires_at), 'dd/MM/yyyy', { locale: ar })}</p>
