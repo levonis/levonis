@@ -273,7 +273,15 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     setSelectedUserId(buyer.userId);
     setLoading(true);
     try {
-      let subtotal = buyer.totalPrice || 0;
+      let subtotal = Number(buyer.orderSubtotal || buyer.totalPrice || 0);
+      let taxAmount = Number(buyer.orderTaxAmount || 0);
+      let taxPercent = Number(buyer.orderTaxPercent || 0);
+      let orderTotal = Number(buyer.orderTotalAmount || 0);
+      let orderDiscount = Number(buyer.orderDiscountAmount || 0);
+      let paidAmount = Number(buyer.orderPaidAmount || 0);
+      let remainingAmount = Number(buyer.orderRemainingAmount || 0);
+      let deliveryMethod = buyer.orderDeliveryMethod || '';
+      let adminShippingCost = Number(buyer.orderAdminShippingCost || 0);
       
       // Fallback: check printer's order_item_id
       if (!subtotal && printer.order_item_id) {
@@ -295,18 +303,25 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         if (orderItem) subtotal = orderItem.total_price || 0;
       }
 
-      // Pull real delivery info from the order: pickup => 0, otherwise admin_shipping_cost
-      let realDelivery: number | null = null;
+      // Pull real invoice totals from the order so warranty invoice matches order invoice/payment choice
       if (buyer.orderId) {
         const { data: orderData } = await supabase
           .from('orders')
-          .select('delivery_method, admin_shipping_cost')
+          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
           .eq('id', buyer.orderId)
           .maybeSingle();
         if (orderData) {
-          realDelivery = orderData.delivery_method === 'pickup'
-            ? 0
-            : Number(orderData.admin_shipping_cost ?? 0);
+          subtotal = Number(orderData.subtotal ?? subtotal);
+          taxAmount = Number(orderData.tax_amount ?? 0);
+          taxPercent = Number(orderData.tax_percentage ?? 0);
+          orderTotal = Number(orderData.total_amount ?? 0);
+          orderDiscount = Number(orderData.discount_amount ?? 0);
+          paidAmount = Number(orderData.paid_amount ?? 0);
+          remainingAmount = Number(orderData.remaining_amount ?? 0);
+          deliveryMethod = orderData.delivery_method || '';
+          adminShippingCost = Number(orderData.admin_shipping_cost ?? 0);
+          buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
+          buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
         }
       }
 
@@ -336,12 +351,10 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      const deliveryFee = realDelivery !== null
-        ? realDelivery
-        : (manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000);
-      const parsedTax = parseFloat(manualFields.taxPercent);
-      const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
-      const taxAmount = Math.round(sub * (taxPercent / 100));
+      const deliveryFromTotal = orderTotal > 0 ? Math.max(0, orderTotal - sub - taxAmount + orderDiscount) : 0;
+      const deliveryFee = deliveryMethod === 'pickup' ? 0 : Math.max(0, adminShippingCost || deliveryFromTotal || 0);
+      const finalTaxPercent = taxPercent || (sub > 0 && taxAmount > 0 ? Number(((taxAmount / sub) * 100).toFixed(2)) : 0);
+      const finalTotal = orderTotal > 0 ? orderTotal : sub + taxAmount + deliveryFee - orderDiscount;
       const now = new Date();
 
       // Sync manual fields so the config step reflects real values
@@ -349,6 +362,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         ...prev,
         subtotal: sub ? String(sub) : prev.subtotal,
         delivery: String(deliveryFee),
+        taxPercent: String(finalTaxPercent),
       }));
 
       setSelectedOrderId(buyer.orderId || null);
@@ -361,12 +375,16 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
         tax: taxAmount,
-        taxPercent: taxPercent,
+        taxPercent: finalTaxPercent,
         delivery: deliveryFee,
-        total: sub + taxAmount + deliveryFee,
+        total: finalTotal,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
-        paymentMethod: buyer.paymentMethod || 'نقداً',
+        paymentMethod: buyer.paymentStatus === 'cod'
+          ? 'دفع عند الاستلام'
+          : buyer.paymentStatus === 'partial'
+            ? `دفع جزئي${paidAmount > 0 ? ` - مدفوع ${paidAmount.toLocaleString()} د.ع` : ''}${remainingAmount > 0 ? ` - متبقي ${remainingAmount.toLocaleString()} د.ع` : ''}`
+            : (buyer.paymentMethod || 'نقداً'),
       });
       setStep(sub > 0 ? 'preview' : 'config');
     } catch {
@@ -387,9 +405,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       qrCodeData: printer.qr_code_data || '',
       subtotal: 0,
       tax: 0,
-      taxPercent: 3,
-      delivery: 12000,
-      total: 12000,
+      taxPercent: 0,
+      delivery: 0,
+      total: 0,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
       date: now,
       paymentMethod: 'نقداً',
@@ -402,9 +420,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
   const handleGeneratePreview = () => {
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
-    const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
+    const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 0;
     const parsedTax = parseFloat(manualFields.taxPercent);
-    const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
+    const taxPercent = isNaN(parsedTax) ? 0 : parsedTax;
     const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
       ...invoiceData,
@@ -447,7 +465,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setSelectedUserId(null);
       setSelectedOrderId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000', taxPercent: '3' });
+      setManualFields({ subtotal: '', delivery: '0', taxPercent: '0' });
     }
   }, [open]);
 
