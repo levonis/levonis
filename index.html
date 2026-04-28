@@ -14,6 +14,29 @@
     <link rel="preconnect" href="https://sajlfpygebpqwzpotrsg.supabase.co" crossorigin>
     <link rel="dns-prefetch" href="https://sajlfpygebpqwzpotrsg.supabase.co">
 
+    <!-- LCP optimization: kick off the active-banners fetch BEFORE the JS bundle
+         parses. The response is cached by the browser, so when React's TanStack
+         Query fires the same request, it resolves instantly. This eliminates
+         most of the ~3.2s "Resource load delay" on the LCP banner image.
+         The fetch is fire-and-forget; failure is silent and harmless. -->
+    <script>
+      (function() {
+        try {
+          var now = new Date().toISOString();
+          var url = 'https://sajlfpygebpqwzpotrsg.supabase.co/rest/v1/banners'
+            + '?select=*&is_active=eq.true'
+            + '&or=(start_date.is.null,start_date.lte.' + now + ')'
+            + '&or=(end_date.is.null,end_date.gte.' + now + ')'
+            + '&order=display_order.asc';
+          var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhamxmcHlnZWJwcXd6cG90cnNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTgwNjMsImV4cCI6MjA3NzY3NDA2M30.s4OmffUCWqYJqxo--zH7RjRXZ_CoUYEkoSKWW50CSGg';
+          fetch(url, {
+            headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' },
+            credentials: 'omit',
+          }).catch(function(){});
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Preload only the most critical font weight to reduce CLS without blocking FCP -->
     <link rel="preload" href="/fonts/cairo-400.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="/fonts/cairo-900.ttf" as="font" type="font/ttf" crossorigin>
