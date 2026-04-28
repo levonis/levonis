@@ -19,6 +19,12 @@ interface PrinterProduct {
   image_url: string | null;
 }
 
+interface CategoryRow {
+  id: string;
+  name: string;
+  name_ar: string | null;
+}
+
 interface BenefitSettings {
   id?: string;
   product_id: string;
@@ -28,25 +34,87 @@ interface BenefitSettings {
   free_shipping_max_uses_monthly: number;
   free_shipping_min_order: number;
   free_shipping_methods: string[];
+  discount_applicable_category_ids: string[];
+  free_shipping_applicable_category_ids: string[];
 }
 
 const DEFAULT_METHODS = ['standard', 'personal', 'pickup'];
 
-const SettingsRow = ({ product, existing }: { product: PrinterProduct; existing: BenefitSettings | null }) => {
+const CategoryMultiSelect = ({
+  label,
+  hint,
+  categories,
+  selected,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  categories: CategoryRow[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) => {
+  const toggle = (id: string) => {
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  };
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 space-y-2">
+      <div>
+        <Label className="text-xs font-semibold">{label}</Label>
+        <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {categories.map((c) => {
+          const checked = selected.includes(c.id);
+          return (
+            <label
+              key={c.id}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer text-xs select-none border ${
+                checked ? 'bg-primary/10 border-primary/40' : 'bg-background border-border'
+              }`}
+            >
+              <Checkbox checked={checked} onCheckedChange={() => toggle(c.id)} />
+              <span>{c.name_ar || c.name}</span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const SettingsRow = ({
+  product,
+  existing,
+  categories,
+}: {
+  product: PrinterProduct;
+  existing: BenefitSettings | null;
+  categories: CategoryRow[];
+}) => {
   const { t } = useLanguage();
   const qc = useQueryClient();
-  const [form, setForm] = useState<BenefitSettings>(() => existing ?? {
-    product_id: product.id,
-    is_active: false,
-    discount_percentage: 0,
-    discount_max_amount_monthly: 0,
-    free_shipping_max_uses_monthly: 0,
-    free_shipping_min_order: 0,
-    free_shipping_methods: ['standard'],
-  });
+  const [form, setForm] = useState<BenefitSettings>(() =>
+    existing ?? {
+      product_id: product.id,
+      is_active: false,
+      discount_percentage: 0,
+      discount_max_amount_monthly: 0,
+      free_shipping_max_uses_monthly: 0,
+      free_shipping_min_order: 0,
+      free_shipping_methods: ['standard'],
+      discount_applicable_category_ids: [],
+      free_shipping_applicable_category_ids: [],
+    }
+  );
 
   useEffect(() => {
-    if (existing) setForm(existing);
+    if (existing) {
+      setForm({
+        ...existing,
+        discount_applicable_category_ids: existing.discount_applicable_category_ids || [],
+        free_shipping_applicable_category_ids: existing.free_shipping_applicable_category_ids || [],
+      });
+    }
   }, [existing]);
 
   const saveMutation = useMutation({
@@ -59,6 +127,12 @@ const SettingsRow = ({ product, existing }: { product: PrinterProduct; existing:
         free_shipping_max_uses_monthly: Number(form.free_shipping_max_uses_monthly) || 0,
         free_shipping_min_order: Number(form.free_shipping_min_order) || 0,
         free_shipping_methods: form.free_shipping_methods,
+        discount_applicable_category_ids: form.discount_applicable_category_ids.length > 0
+          ? form.discount_applicable_category_ids
+          : null,
+        free_shipping_applicable_category_ids: form.free_shipping_applicable_category_ids.length > 0
+          ? form.free_shipping_applicable_category_ids
+          : null,
       };
       const { error } = await (supabase as any)
         .from('printer_warranty_benefits')
@@ -166,6 +240,22 @@ const SettingsRow = ({ product, existing }: { product: PrinterProduct; existing:
         </div>
       </div>
 
+      <CategoryMultiSelect
+        label={t('admin_benefits_categories_for_discount')}
+        hint={t('admin_benefits_categories_hint_all')}
+        categories={categories}
+        selected={form.discount_applicable_category_ids}
+        onChange={(next) => setForm({ ...form, discount_applicable_category_ids: next })}
+      />
+
+      <CategoryMultiSelect
+        label={t('admin_benefits_categories_for_shipping')}
+        hint={t('admin_benefits_categories_hint_all')}
+        categories={categories}
+        selected={form.free_shipping_applicable_category_ids}
+        onChange={(next) => setForm({ ...form, free_shipping_applicable_category_ids: next })}
+      />
+
       <Button
         onClick={() => saveMutation.mutate()}
         disabled={saveMutation.isPending}
@@ -215,6 +305,18 @@ const AdminPrinterWarrantyBenefits = () => {
     },
   });
 
+  const { data: allCategories } = useQuery({
+    queryKey: ['all-categories-for-benefits'],
+    queryFn: async (): Promise<CategoryRow[]> => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, name_ar')
+        .order('name');
+      if (error) throw error;
+      return (data || []) as CategoryRow[];
+    },
+  });
+
   const filtered = (printers || []).filter((p) =>
     !search ||
     p.name_ar?.toLowerCase().includes(search.toLowerCase()) ||
@@ -252,7 +354,12 @@ const AdminPrinterWarrantyBenefits = () => {
         ) : (
           <div className="space-y-3">
             {filtered.map((p) => (
-              <SettingsRow key={p.id} product={p} existing={benefitsMap.get(p.id) || null} />
+              <SettingsRow
+                key={p.id}
+                product={p}
+                existing={benefitsMap.get(p.id) || null}
+                categories={allCategories || []}
+              />
             ))}
             {filtered.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-12">No printer products found.</p>
