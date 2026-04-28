@@ -45,7 +45,9 @@ export default function AdminSavedInvoices() {
             order_number,
             user_id,
             profiles (username, full_name)
-          )
+          ),
+          user_profile:profiles!saved_invoices_user_id_fkey (username, full_name),
+          store_printers (serial_number, model_name_ar, model_name)
         `)
         .order("generated_at", { ascending: false });
 
@@ -139,7 +141,11 @@ export default function AdminSavedInvoices() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-bold text-foreground">
-                          فاتورة #{invoice.orders?.order_number || 'غير معروف'}
+                          {invoice.orders?.order_number
+                            ? `فاتورة #${invoice.orders.order_number}`
+                            : invoice.store_printers?.serial_number
+                              ? `فاتورة ضمان - ${invoice.store_printers.serial_number}`
+                              : 'فاتورة بدون طلب'}
                         </h3>
                         {expired && (
                           <Badge variant="destructive" className="gap-1">
@@ -155,7 +161,16 @@ export default function AdminSavedInvoices() {
                         )}
                       </div>
                       <div className="space-y-1 text-sm text-muted-foreground">
-                        <p>العميل: {invoice.orders?.profiles?.full_name || invoice.orders?.profiles?.username || 'غير معروف'}</p>
+                        <p>العميل: {
+                          invoice.orders?.profiles?.full_name
+                          || invoice.orders?.profiles?.username
+                          || (invoice as any).user_profile?.full_name
+                          || (invoice as any).user_profile?.username
+                          || 'غير معروف'
+                        }</p>
+                        {!invoice.orders && invoice.store_printers && (
+                          <p>الطابعة: {invoice.store_printers.model_name_ar || invoice.store_printers.model_name} — <span className="font-mono">{invoice.store_printers.serial_number}</span></p>
+                        )}
                         <p>تاريخ التوليد: {format(new Date(invoice.generated_at), 'dd/MM/yyyy - hh:mm a', { locale: ar })}</p>
                         {invoice.warranty_expires_at && (
                           <p>انتهاء الضمان: {format(new Date(invoice.warranty_expires_at), 'dd/MM/yyyy', { locale: ar })}</p>
