@@ -25,6 +25,9 @@ export interface WarrantyBenefitsResult {
   freeShippingMaxUsesMonthly: number;
   freeShippingUsedSoFar: number;
   freeShippingRemainingUses: number;
+  // Category whitelists (empty/null = applies to all)
+  discountApplicableCategoryIds: string[];
+  freeShippingApplicableCategoryIds: string[];
   // Aggregate
   totalDiscount: number;
   hasDiscount: boolean;
@@ -48,6 +51,8 @@ interface ActiveWarrantyRow {
   period_end: string | null;
   discount_used: number;
   free_shipping_used: number;
+  discount_applicable_category_ids: string[] | null;
+  free_shipping_applicable_category_ids: string[] | null;
 }
 
 export function useActiveWarrantyBenefits() {
@@ -70,7 +75,7 @@ export function useActiveWarrantyBenefits() {
 
 export function useCartWarrantyBenefits(
   items: CartItem[],
-  _getItemPrice: (item: CartItem) => number,
+  getItemPrice: (item: CartItem) => number,
   cartSubtotal: number
 ): { warrantyBenefits: WarrantyBenefitsResult | null; isLoading: boolean } {
   const { data: warranties, isLoading } = useActiveWarrantyBenefits();
@@ -78,16 +83,6 @@ export function useCartWarrantyBenefits(
   if (isLoading) return { warrantyBenefits: null, isLoading: true };
   if (!warranties || warranties.length === 0) return { warrantyBenefits: null, isLoading: false };
 
-  // Filter to only those with active benefits
-  const eligible = warranties.filter((w) => w.is_benefits_active && w.discount_percentage > 0);
-  if (eligible.length === 0) {
-    // Maybe only free shipping is configured? Keep them too (no discount but possibly shipping).
-    const shippingOnly = warranties.filter((w) => w.is_benefits_active);
-    if (shippingOnly.length === 0) return { warrantyBenefits: null, isLoading: false };
-  }
-
-  // Compute percentage discount for each warranty given the cart subtotal
-  // and pick the best (highest current discount).
   let best: WarrantyBenefitsResult | null = null;
 
   const candidates = warranties.filter((w) => w.is_benefits_active);
@@ -97,9 +92,29 @@ export function useCartWarrantyBenefits(
     const used = Number(w.discount_used) || 0;
     const remaining = Math.max(0, cap - used);
 
+    const discountCats = Array.isArray(w.discount_applicable_category_ids)
+      ? (w.discount_applicable_category_ids as string[]).filter(Boolean)
+      : [];
+    const shippingCats = Array.isArray(w.free_shipping_applicable_category_ids)
+      ? (w.free_shipping_applicable_category_ids as string[]).filter(Boolean)
+      : [];
+
+    // Eligible subtotal: if whitelist is empty, use full cart; otherwise sum only eligible items
+    let eligibleSubtotal = cartSubtotal;
+    if (discountCats.length > 0) {
+      eligibleSubtotal = 0;
+      for (const item of items) {
+        if ((item as any).is_gift) continue;
+        const catId = (item.products as any)?.category_id;
+        if (catId && discountCats.includes(catId)) {
+          eligibleSubtotal += getItemPrice(item) * item.quantity;
+        }
+      }
+    }
+
     let percentageDiscount = 0;
-    if (rate > 0 && remaining > 0) {
-      const raw = Math.floor((cartSubtotal * rate) / 100);
+    if (rate > 0 && remaining > 0 && eligibleSubtotal > 0) {
+      const raw = Math.floor((eligibleSubtotal * rate) / 100);
       percentageDiscount = Math.min(raw, remaining);
     }
 
@@ -126,6 +141,8 @@ export function useCartWarrantyBenefits(
         0,
         (Number(w.free_shipping_max_uses_monthly) || 0) - (Number(w.free_shipping_used) || 0)
       ),
+      discountApplicableCategoryIds: discountCats,
+      freeShippingApplicableCategoryIds: shippingCats,
       totalDiscount: percentageDiscount,
       hasDiscount: percentageDiscount > 0,
     };
