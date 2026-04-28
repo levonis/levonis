@@ -597,7 +597,8 @@ export default function LevoHelpBot() {
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); setShowHideMenu(!showHideMenu); }}
-            className="text-[8px] text-muted-foreground/60 hover:text-foreground transition-colors"
+            aria-label="إخفاء المساعد"
+            className="text-[8px] text-muted-foreground/60 hover:text-foreground transition-colors min-w-[24px] min-h-[24px] inline-flex items-center justify-center px-1"
           >
             إخفاء
           </button>
