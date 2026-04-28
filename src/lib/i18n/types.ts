@@ -1130,6 +1130,9 @@ export type TranslationKeys = {
   admin_warranty_benefits_ship_methods: string;
   admin_warranty_benefits_save: string;
   admin_warranty_benefits_saved: string;
+  admin_benefits_categories_for_discount: string;
+  admin_benefits_categories_for_shipping: string;
+  admin_benefits_categories_hint_all: string;
   warranty_expired_title: string;
   warranty_expired_benefits_disabled: string;
   warranty_expired_cta: string;
