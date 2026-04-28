@@ -684,42 +684,42 @@ export type Database = {
       }
       card_discount_limits: {
         Row: {
+          card_id: string
           category_id: string
           created_at: string
           id: string
-          level_id: string
           max_uses: number
           updated_at: string
         }
         Insert: {
+          card_id: string
           category_id: string
           created_at?: string
           id?: string
-          level_id: string
           max_uses?: number
           updated_at?: string
         }
         Update: {
+          card_id?: string
           category_id?: string
           created_at?: string
           id?: string
-          level_id?: string
           max_uses?: number
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "card_discount_limits_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "membership_cards"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "card_discount_limits_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "card_discount_limits_level_id_fkey"
-            columns: ["level_id"]
-            isOneToOne: false
-            referencedRelation: "loyalty_levels"
             referencedColumns: ["id"]
           },
         ]
@@ -729,7 +729,6 @@ export type Database = {
           card_id: string
           category_id: string
           id: string
-          level_id: string
           order_id: string | null
           used_at: string
           user_id: string
@@ -738,7 +737,6 @@ export type Database = {
           card_id: string
           category_id: string
           id?: string
-          level_id: string
           order_id?: string | null
           used_at?: string
           user_id: string
@@ -747,7 +745,6 @@ export type Database = {
           card_id?: string
           category_id?: string
           id?: string
-          level_id?: string
           order_id?: string | null
           used_at?: string
           user_id?: string
@@ -767,13 +764,6 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "card_discount_usage_level_id_fkey"
-            columns: ["level_id"]
-            isOneToOne: false
-            referencedRelation: "loyalty_levels"
-            referencedColumns: ["id"]
-          },
         ]
       }
       card_exclusive_offers: {
@@ -785,7 +775,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
-          min_card_level_id: string | null
+          min_card_id: string | null
           offer_type: string
           offer_value: number | null
           title_ar: string
@@ -803,7 +793,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
-          min_card_level_id?: string | null
+          min_card_id?: string | null
           offer_type?: string
           offer_value?: number | null
           title_ar: string
@@ -821,7 +811,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
-          min_card_level_id?: string | null
+          min_card_id?: string | null
           offer_type?: string
           offer_value?: number | null
           title_ar?: string
@@ -833,10 +823,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "card_exclusive_offers_min_card_level_id_fkey"
-            columns: ["min_card_level_id"]
+            foreignKeyName: "card_exclusive_offers_min_card_id_fkey"
+            columns: ["min_card_id"]
             isOneToOne: false
-            referencedRelation: "loyalty_levels"
+            referencedRelation: "membership_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -845,10 +835,10 @@ export type Database = {
         Row: {
           amount_paid: number
           card_id: string | null
+          card_target_id: string
           created_at: string
           gifter_id: string
           id: string
-          level_id: string
           message: string | null
           payment_method: string
           recipient_id: string
@@ -856,10 +846,10 @@ export type Database = {
         Insert: {
           amount_paid?: number
           card_id?: string | null
+          card_target_id: string
           created_at?: string
           gifter_id: string
           id?: string
-          level_id: string
           message?: string | null
           payment_method?: string
           recipient_id: string
@@ -867,10 +857,10 @@ export type Database = {
         Update: {
           amount_paid?: number
           card_id?: string | null
+          card_target_id?: string
           created_at?: string
           gifter_id?: string
           id?: string
-          level_id?: string
           message?: string | null
           payment_method?: string
           recipient_id?: string
@@ -884,10 +874,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "card_gifts_level_id_fkey"
-            columns: ["level_id"]
+            foreignKeyName: "card_gifts_card_target_id_fkey"
+            columns: ["card_target_id"]
             isOneToOne: false
-            referencedRelation: "loyalty_levels"
+            referencedRelation: "membership_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -5320,7 +5310,6 @@ export type Database = {
           card_id: string
           delivery_method_key: string
           id: string
-          level_id: string
           order_id: string | null
           saved_amount: number
           used_at: string
@@ -5330,7 +5319,6 @@ export type Database = {
           card_id: string
           delivery_method_key: string
           id?: string
-          level_id: string
           order_id?: string | null
           saved_amount?: number
           used_at?: string
@@ -5340,7 +5328,6 @@ export type Database = {
           card_id?: string
           delivery_method_key?: string
           id?: string
-          level_id?: string
           order_id?: string | null
           saved_amount?: number
           used_at?: string
@@ -5352,13 +5339,6 @@ export type Database = {
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "user_cards"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "loyalty_free_shipping_usage_level_id_fkey"
-            columns: ["level_id"]
-            isOneToOne: false
-            referencedRelation: "loyalty_levels"
             referencedColumns: ["id"]
           },
           {
@@ -5374,136 +5354,49 @@ export type Database = {
         Row: {
           benefits: Json
           bonus_points_percentage: number | null
-          card_discounts_enabled: boolean | null
           color: string
           created_at: string
-          discount_applicable_category_ids: string[] | null
-          discount_percentage: number | null
-          discount_percentage_max_amount: number | null
           display_order: number
-          duration_days: number | null
-          early_access: boolean | null
-          exclusive_products: boolean | null
-          frame_animation: string | null
-          frame_url: string | null
-          free_daily_games: number | null
-          free_shipping: boolean | null
-          free_shipping_applicable_category_ids: string[] | null
-          free_shipping_max_uses: number | null
-          free_shipping_methods: Json
-          free_shipping_min_order: number | null
-          free_tickets_monthly: number | null
           icon: string | null
           id: string
-          investment_enabled: boolean | null
-          is_purchasable: boolean | null
-          is_vip_plus: boolean | null
           level_key: string
           level_number: number | null
           min_points: number
-          monthly_free_shipping: number | null
           name_ar: string
           name_en: string
-          priority_packaging: boolean | null
-          priority_shipping: boolean | null
-          priority_support: boolean | null
-          profile_effects: Json | null
-          purchase_price_points: number | null
-          special_name_style: Json | null
           updated_at: string
-          vip_support: boolean | null
-          wallet_price: number | null
-          wholesale_discount_enabled: boolean | null
           xp_required: number
         }
         Insert: {
           benefits?: Json
           bonus_points_percentage?: number | null
-          card_discounts_enabled?: boolean | null
           color: string
           created_at?: string
-          discount_applicable_category_ids?: string[] | null
-          discount_percentage?: number | null
-          discount_percentage_max_amount?: number | null
           display_order: number
-          duration_days?: number | null
-          early_access?: boolean | null
-          exclusive_products?: boolean | null
-          frame_animation?: string | null
-          frame_url?: string | null
-          free_daily_games?: number | null
-          free_shipping?: boolean | null
-          free_shipping_applicable_category_ids?: string[] | null
-          free_shipping_max_uses?: number | null
-          free_shipping_methods?: Json
-          free_shipping_min_order?: number | null
-          free_tickets_monthly?: number | null
           icon?: string | null
           id?: string
-          investment_enabled?: boolean | null
-          is_purchasable?: boolean | null
-          is_vip_plus?: boolean | null
           level_key: string
           level_number?: number | null
           min_points?: number
-          monthly_free_shipping?: number | null
           name_ar: string
           name_en: string
-          priority_packaging?: boolean | null
-          priority_shipping?: boolean | null
-          priority_support?: boolean | null
-          profile_effects?: Json | null
-          purchase_price_points?: number | null
-          special_name_style?: Json | null
           updated_at?: string
-          vip_support?: boolean | null
-          wallet_price?: number | null
-          wholesale_discount_enabled?: boolean | null
           xp_required?: number
         }
         Update: {
           benefits?: Json
           bonus_points_percentage?: number | null
-          card_discounts_enabled?: boolean | null
           color?: string
           created_at?: string
-          discount_applicable_category_ids?: string[] | null
-          discount_percentage?: number | null
-          discount_percentage_max_amount?: number | null
           display_order?: number
-          duration_days?: number | null
-          early_access?: boolean | null
-          exclusive_products?: boolean | null
-          frame_animation?: string | null
-          frame_url?: string | null
-          free_daily_games?: number | null
-          free_shipping?: boolean | null
-          free_shipping_applicable_category_ids?: string[] | null
-          free_shipping_max_uses?: number | null
-          free_shipping_methods?: Json
-          free_shipping_min_order?: number | null
-          free_tickets_monthly?: number | null
           icon?: string | null
           id?: string
-          investment_enabled?: boolean | null
-          is_purchasable?: boolean | null
-          is_vip_plus?: boolean | null
           level_key?: string
           level_number?: number | null
           min_points?: number
-          monthly_free_shipping?: number | null
           name_ar?: string
           name_en?: string
-          priority_packaging?: boolean | null
-          priority_shipping?: boolean | null
-          priority_support?: boolean | null
-          profile_effects?: Json | null
-          purchase_price_points?: number | null
-          special_name_style?: Json | null
           updated_at?: string
-          vip_support?: boolean | null
-          wallet_price?: number | null
-          wholesale_discount_enabled?: boolean | null
           xp_required?: number
         }
         Relationships: []
@@ -5513,7 +5406,6 @@ export type Database = {
           card_id: string
           discount_amount: number
           id: string
-          level_id: string
           order_id: string | null
           used_at: string
           user_id: string
@@ -5522,7 +5414,6 @@ export type Database = {
           card_id: string
           discount_amount?: number
           id?: string
-          level_id: string
           order_id?: string | null
           used_at?: string
           user_id: string
@@ -5531,7 +5422,6 @@ export type Database = {
           card_id?: string
           discount_amount?: number
           id?: string
-          level_id?: string
           order_id?: string | null
           used_at?: string
           user_id?: string
@@ -5710,6 +5600,150 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      membership_cards: {
+        Row: {
+          benefits: Json | null
+          bonus_points_percentage: number | null
+          card_color: string | null
+          card_discounts_enabled: boolean
+          card_key: string
+          color: string | null
+          created_at: string
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          discount_applicable_category_ids: string[] | null
+          discount_percentage: number
+          discount_percentage_max_amount: number | null
+          display_order: number
+          duration_days: number
+          early_access: boolean | null
+          exclusive_products: boolean | null
+          frame_animation: string | null
+          frame_url: string | null
+          free_daily_games: number | null
+          free_shipping: boolean
+          free_shipping_applicable_category_ids: string[] | null
+          free_shipping_max_uses: number | null
+          free_shipping_methods: Json | null
+          free_shipping_min_order: number | null
+          free_tickets_monthly: number | null
+          icon: string | null
+          id: string
+          investment_enabled: boolean | null
+          is_active: boolean
+          is_vip_plus: boolean
+          monthly_free_shipping: number | null
+          name_ar: string
+          name_en: string | null
+          name_ku: string | null
+          price_points: number
+          priority_packaging: boolean | null
+          priority_shipping: boolean | null
+          priority_support: boolean | null
+          profile_effects: Json | null
+          special_name_style: Json | null
+          updated_at: string
+          vip_support: boolean | null
+          wallet_price: number | null
+          wholesale_discount_enabled: boolean | null
+        }
+        Insert: {
+          benefits?: Json | null
+          bonus_points_percentage?: number | null
+          card_color?: string | null
+          card_discounts_enabled?: boolean
+          card_key: string
+          color?: string | null
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          discount_applicable_category_ids?: string[] | null
+          discount_percentage?: number
+          discount_percentage_max_amount?: number | null
+          display_order?: number
+          duration_days?: number
+          early_access?: boolean | null
+          exclusive_products?: boolean | null
+          frame_animation?: string | null
+          frame_url?: string | null
+          free_daily_games?: number | null
+          free_shipping?: boolean
+          free_shipping_applicable_category_ids?: string[] | null
+          free_shipping_max_uses?: number | null
+          free_shipping_methods?: Json | null
+          free_shipping_min_order?: number | null
+          free_tickets_monthly?: number | null
+          icon?: string | null
+          id?: string
+          investment_enabled?: boolean | null
+          is_active?: boolean
+          is_vip_plus?: boolean
+          monthly_free_shipping?: number | null
+          name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
+          price_points?: number
+          priority_packaging?: boolean | null
+          priority_shipping?: boolean | null
+          priority_support?: boolean | null
+          profile_effects?: Json | null
+          special_name_style?: Json | null
+          updated_at?: string
+          vip_support?: boolean | null
+          wallet_price?: number | null
+          wholesale_discount_enabled?: boolean | null
+        }
+        Update: {
+          benefits?: Json | null
+          bonus_points_percentage?: number | null
+          card_color?: string | null
+          card_discounts_enabled?: boolean
+          card_key?: string
+          color?: string | null
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          discount_applicable_category_ids?: string[] | null
+          discount_percentage?: number
+          discount_percentage_max_amount?: number | null
+          display_order?: number
+          duration_days?: number
+          early_access?: boolean | null
+          exclusive_products?: boolean | null
+          frame_animation?: string | null
+          frame_url?: string | null
+          free_daily_games?: number | null
+          free_shipping?: boolean
+          free_shipping_applicable_category_ids?: string[] | null
+          free_shipping_max_uses?: number | null
+          free_shipping_methods?: Json | null
+          free_shipping_min_order?: number | null
+          free_tickets_monthly?: number | null
+          icon?: string | null
+          id?: string
+          investment_enabled?: boolean | null
+          is_active?: boolean
+          is_vip_plus?: boolean
+          monthly_free_shipping?: number | null
+          name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
+          price_points?: number
+          priority_packaging?: boolean | null
+          priority_shipping?: boolean | null
+          priority_support?: boolean | null
+          profile_effects?: Json | null
+          special_name_style?: Json | null
+          updated_at?: string
+          vip_support?: boolean | null
+          wallet_price?: number | null
+          wholesale_discount_enabled?: boolean | null
+        }
+        Relationships: []
       }
       merchant_ad_bookings: {
         Row: {
@@ -8536,35 +8570,35 @@ export type Database = {
       }
       product_card_discounts: {
         Row: {
+          card_id: string
           created_at: string
           discount_percentage: number
           id: string
           is_active: boolean
-          level_id: string
           product_id: string
         }
         Insert: {
+          card_id: string
           created_at?: string
           discount_percentage?: number
           id?: string
           is_active?: boolean
-          level_id: string
           product_id: string
         }
         Update: {
+          card_id?: string
           created_at?: string
           discount_percentage?: number
           id?: string
           is_active?: boolean
-          level_id?: string
           product_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "product_card_discounts_level_id_fkey"
-            columns: ["level_id"]
+            foreignKeyName: "product_card_discounts_card_id_fkey"
+            columns: ["card_id"]
             isOneToOne: false
-            referencedRelation: "loyalty_levels"
+            referencedRelation: "membership_cards"
             referencedColumns: ["id"]
           },
           {
@@ -11047,11 +11081,11 @@ export type Database = {
       }
       user_cards: {
         Row: {
+          card_id: string
           created_at: string
           expires_at: string | null
           id: string
           is_active: boolean
-          level_id: string
           payment_method: string | null
           points_spent: number
           purchased_at: string
@@ -11060,11 +11094,11 @@ export type Database = {
           wallet_amount_paid: number | null
         }
         Insert: {
+          card_id: string
           created_at?: string
           expires_at?: string | null
           id?: string
           is_active?: boolean
-          level_id: string
           payment_method?: string | null
           points_spent?: number
           purchased_at?: string
@@ -11073,11 +11107,11 @@ export type Database = {
           wallet_amount_paid?: number | null
         }
         Update: {
+          card_id?: string
           created_at?: string
           expires_at?: string | null
           id?: string
           is_active?: boolean
-          level_id?: string
           payment_method?: string | null
           points_spent?: number
           purchased_at?: string
@@ -11087,10 +11121,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_cards_level_id_fkey"
-            columns: ["level_id"]
+            foreignKeyName: "user_cards_card_id_fkey"
+            columns: ["card_id"]
             isOneToOne: false
-            referencedRelation: "loyalty_levels"
+            referencedRelation: "membership_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -12189,7 +12223,7 @@ export type Database = {
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
       admin_gift_loyalty_card: {
-        Args: { p_level_id: string; p_message?: string; p_recipient_id: string }
+        Args: { p_admin_note?: string; p_card_id: string; p_user_id: string }
         Returns: Json
       }
       admin_update_level_prize_claim: {
@@ -12222,10 +12256,16 @@ export type Database = {
         Args: { p_cancelled_by?: string; p_order_id: string }
         Returns: Json
       }
-      check_card_discount: {
-        Args: { p_category_id: string; p_user_id: string }
-        Returns: Json
-      }
+      check_card_discount:
+        | {
+            Args: {
+              p_card_id: string
+              p_category_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | { Args: { p_category_id: string; p_user_id: string }; Returns: Json }
       check_crossy_road_milestone: {
         Args: { p_score: number; p_session_id?: string; p_user_id: string }
         Returns: Json
@@ -12255,10 +12295,9 @@ export type Database = {
         Args: { username_to_check: string }
         Returns: boolean
       }
-      check_vip_free_play: {
-        Args: { p_game_type: string; p_user_id: string }
-        Returns: Json
-      }
+      check_vip_free_play:
+        | { Args: { p_user_id: string }; Returns: boolean }
+        | { Args: { p_game_type: string; p_user_id: string }; Returns: Json }
       claim_assistance_coupon: {
         Args: { p_coupon_id: string; p_user_id: string }
         Returns: string
@@ -12472,14 +12511,12 @@ export type Database = {
           user_printer_id: string
         }[]
       }
-      get_card_free_shipping_used: {
-        Args: { p_card_id: string }
-        Returns: number
-      }
-      get_card_percentage_discount_used: {
-        Args: { p_card_id: string }
-        Returns: number
-      }
+      get_card_free_shipping_used:
+        | { Args: { p_card_id: string }; Returns: number }
+        | { Args: { p_card_id: string; p_user_id: string }; Returns: number }
+      get_card_percentage_discount_used:
+        | { Args: { p_card_id: string }; Returns: number }
+        | { Args: { p_card_id: string; p_user_id: string }; Returns: number }
       get_direct_sale_category_ids: {
         Args: never
         Returns: {
@@ -12507,8 +12544,6 @@ export type Database = {
       get_user_card_frame: {
         Args: { p_user_id: string }
         Returns: {
-          card_color: string
-          card_name: string
           frame_animation: string
           frame_url: string
         }[]
@@ -12564,8 +12599,8 @@ export type Database = {
       }
       gift_card_with_points: {
         Args: {
+          p_card_id: string
           p_gifter_id: string
-          p_level_id: string
           p_message?: string
           p_recipient_id: string
         }
@@ -12573,8 +12608,8 @@ export type Database = {
       }
       gift_card_with_wallet: {
         Args: {
+          p_card_id: string
           p_gifter_id: string
-          p_level_id: string
           p_message?: string
           p_recipient_id: string
         }
@@ -12624,11 +12659,11 @@ export type Database = {
         Returns: Json
       }
       purchase_card_with_points: {
-        Args: { p_level_id: string; p_user_id: string }
+        Args: { p_card_id: string; p_user_id: string }
         Returns: Json
       }
       purchase_card_with_wallet: {
-        Args: { p_level_id: string; p_user_id: string }
+        Args: { p_card_id: string; p_user_id: string }
         Returns: Json
       }
       purchase_competition_ticket:
@@ -12756,10 +12791,24 @@ export type Database = {
       }
       update_stack_high_score: { Args: { p_score: number }; Returns: undefined }
       update_user_last_active: { Args: never; Returns: undefined }
-      use_card_discount: {
-        Args: { p_category_id: string; p_order_id?: string; p_user_id: string }
-        Returns: Json
-      }
+      use_card_discount:
+        | {
+            Args: {
+              p_card_id: string
+              p_category_id: string
+              p_order_id?: string
+              p_user_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_category_id: string
+              p_order_id?: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       use_vip_free_play: {
         Args: { p_game_type: string; p_user_id: string }
         Returns: boolean
