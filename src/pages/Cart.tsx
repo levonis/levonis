@@ -2673,7 +2673,7 @@ const Cart = () => {
                   )}
 
                   {/* خيارات التوصيل */}
-                  {isFreeDeliveryApplied && !cardFreeShippingApplied ? (
+                  {isFreeDeliveryApplied && !cardFreeShippingApplied && !warrantyFreeShippingApplied ? (
                     (() => {
                       const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
                       return (
