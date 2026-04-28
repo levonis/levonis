@@ -103,7 +103,7 @@ const PublicProfile = () => {
       if (!userId) return null;
       const { data } = await supabase
         .from('user_cards')
-        .select('id, level_id, membership_cards:card_id(name_ar, card_color)')
+        .select('id, card_id, membership_cards:card_id(name_ar, card_color)')
         .eq('user_id', userId)
         .eq('is_active', true)
         .maybeSingle();

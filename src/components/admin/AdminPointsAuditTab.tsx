@@ -40,7 +40,7 @@ interface PointsDiscrepancy {
 interface ActiveCard {
   id: string;
   user_id: string;
-  loyalty_level_id: string;
+  loyalty_card_id: string;
   purchased_at: string;
   expires_at: string | null;
   is_active: boolean;
@@ -156,7 +156,7 @@ export default function AdminPointsAuditTab() {
         return {
           id: card.id,
           user_id: card.user_id,
-          loyalty_level_id: card.level_id,
+          loyalty_card_id: card.level_id,
           purchased_at: card.purchased_at,
           expires_at: card.expires_at,
           is_active: card.is_active,

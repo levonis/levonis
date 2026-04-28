@@ -55,7 +55,7 @@ export default function ProfileHeader({ userId, profile, cardFrame }: ProfileHea
     queryFn: async () => {
       const { data } = await supabase
         .from("user_cards")
-        .select("level_id, membership_cards:card_id(level_key, name_ar, color, min_points, is_vip_plus)")
+        .select("card_id, membership_cards:card_id(level_key, name_ar, color, min_points, is_vip_plus)")
         .eq("user_id", userId)
         .eq("is_active", true)
         .maybeSingle();

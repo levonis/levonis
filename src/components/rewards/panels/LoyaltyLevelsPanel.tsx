@@ -190,7 +190,7 @@ export default function LoyaltyLevelsPanel() {
       const rpcName = purchaseDialog.method === 'wallet' ? 'purchase_card_with_wallet' : 'purchase_card_with_points';
       const { data, error } = await supabase.rpc(rpcName, {
         p_user_id: user.id,
-        p_level_id: purchaseDialog.level.id,
+        p_card_id: purchaseDialog.level.id,
       });
       
       if (error) throw error;

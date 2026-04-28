@@ -41,7 +41,7 @@ export function useCartCardDiscount(
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_cards")
-        .select("id, level_id, purchased_at, membership_cards:card_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses, discount_applicable_category_ids, free_shipping_applicable_category_ids)")
+        .select("id, card_id, purchased_at, membership_cards:card_id(id, name_ar, discount_percentage, discount_percentage_max_amount, free_shipping, free_shipping_min_order, free_shipping_methods, free_shipping_max_uses, discount_applicable_category_ids, free_shipping_applicable_category_ids)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .maybeSingle();
@@ -142,7 +142,7 @@ export function useCartCardDiscount(
     if (!item.products || (item as any).is_gift) continue;
     const product = item.products as any;
     const categoryId = product.category_id;
-    const cardDiscounts: Array<{ level_id: string; discount_amount: number }> = Array.isArray(product.card_discounts) ? product.card_discounts : [];
+    const cardDiscounts: Array<{ card_id: string; discount_amount: number }> = Array.isArray(product.card_discounts) ? product.card_discounts : [];
 
     // Find discount for this card level
     const match = cardDiscounts.find((d) => d.level_id === levelId);
