@@ -1,55 +1,40 @@
 ## Problem
 
-In `/cp-x9A3kL7m/printer-protection`, when generating a warranty invoice:
-- Admin selects a user from the buyer list (often sourced from `store_printers` which has no linked order)
-- Clicks "حفظ الفاتورة" (Save Invoice)
-- The invoice either fails silently or saves but never appears in the saved invoices list with user info
+In the warranty invoice (`PrinterInvoiceGenerator`):
 
-### Root cause
+1. **Subtotal**: For orders with COD (دفع عند الاستلام) or partial-payment (نصف المبلغ), the percentage shown on the invoice doesn't match what the customer agreed to. The current code uses `order_items.total_price` directly, which works for the printer line itself but doesn't reflect the actual price the user accepted in their order.
+2. **Delivery**: Hardcoded to **12,000** even when the user picked **استلام من المخزن (pickup)** — the order's `delivery_method = 'pickup'` and `admin_shipping_cost = 0` are ignored.
 
-`saved_invoices` table only has `order_id` — no `user_id` column. When the selected buyer comes from `store_printers` (no order), the insert sets `order_id: null`. The record technically saves, but:
-1. `AdminSavedInvoices.tsx` displays the customer via `invoice.orders?.profiles` — null when there is no order, so it shows "غير معروف"
-2. The invoice can't be linked back to the user, defeating the purpose of "select a user and save"
-3. All 0 existing rows in DB have `order_id NOT NULL` — confirming nothing without an order has ever persisted usefully
+## Root cause
+
+In `src/components/admin/PrinterInvoiceGenerator.tsx`, `handleSelectUser`:
+- Never reads the order's `delivery_method` or `admin_shipping_cost` — falls back to `12000` from `manualFields.delivery`.
+- Subtotal is taken from `order_items.total_price` only; for COD/partial orders we should anchor the printer line to its true `unit_price * quantity` (which is what `total_price` already is for a line — confirmed via DB sample). The "wrong percentage" symptom is downstream of the wrong delivery + tax calc inflating the total.
+
+Also `handleManualEntry` defaults delivery to `12000` — should default to `0` for pickup-style scenarios; we'll keep it editable but no longer assume 12,000 silently.
 
 ## Fix
 
-### 1. Database migration
+### `src/components/admin/PrinterInvoiceGenerator.tsx` — `handleSelectUser`
 
-Add `user_id` (nullable uuid) and `printer_id` (nullable uuid, references `store_printers`) to `saved_invoices`. Backfill existing rows from `orders.user_id` where possible.
+When the buyer has an `orderId`:
+1. Fetch the order's `delivery_method` and `admin_shipping_cost`.
+2. If `delivery_method === 'pickup'` → delivery = **0**.
+3. Else → delivery = `admin_shipping_cost ?? 0` (no more 12,000 fallback when there is a real order).
+4. Sync `manualFields.subtotal` and `manualFields.delivery` so the config step (if it ever opens) shows the real values, not 12,000.
+5. Recompute `total = subtotal + tax + delivery` with the corrected delivery.
 
-### 2. PrinterInvoiceGenerator.tsx
+Also remove the **date-overwriting bug** that snuck back into the link step: `handleSelectUser` currently writes `activation_date: new Date()` and `expiry_date: now + warrantyMonths` whenever an admin opens the invoice generator — this contradicts the previous fix in `PrinterActivationPanel`. Drop both fields from the update so admin-set warranty dates are preserved.
 
-In the save handler (lines 544-567):
-- Include `user_id: selectedUserId` and `printer_id: printer.id` in the insert
-- Add a guard: require either `selectedUserId` or manual entry before allowing save (currently no validation)
-- Surface the actual Postgres error message in the toast for easier diagnosis (currently swallows error details)
-- Log the inserted row id on success
+### Out of scope
 
-### 3. AdminSavedInvoices.tsx
-
-Update the query to also fetch the standalone `user_id` (and printer info) and fall back to it when `orders` is null:
-
-```ts
-.select(`
-  *,
-  orders ( order_number, user_id, profiles (username, full_name) ),
-  user_profile:profiles!saved_invoices_user_id_fkey ( username, full_name ),
-  store_printers ( serial_number, model_name_ar )
-`)
-```
-
-Display logic: prefer `orders.profiles` then fall back to `user_profile`. Show printer serial/model when no order exists.
-
-## Out of scope
-
-- Reworking the buyer selection UI
-- Changing the warranty calculation
-- The auto-generated invoices on order confirmation (already work, untouched)
+- Changing how `order_items.total_price` is computed
+- Modifying COD/partial-payment surcharge logic
+- Changing the manual entry default of `12000` (still useful when there is no order at all — but it stops overriding real order data)
 
 ## Verification
 
-After implementation:
-1. Open printer-protection → pick a printer → "إنشاء فاتورة" → select a user from `store_printers` only (no order) → Save → toast says success
-2. Visit `/cp-x9A3kL7m/saved-invoices` → invoice appears with the correct customer name and printer info
-3. Repeat with a buyer that has an order → still works as before (order_number shown)
+1. Generate invoice for an order with `delivery_method = 'pickup'` → invoice shows **التوصيل: 0**.
+2. Generate invoice for an order with `admin_shipping_cost = 5000` → invoice shows **التوصيل: 5,000**.
+3. Generate invoice for a COD/partial order → subtotal = printer's actual line price; total = subtotal + tax + real delivery (no inflation from 12,000).
+4. Re-open invoice generator on an already-activated printer with admin-set dates → dates remain unchanged in `store_printers`.
