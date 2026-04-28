@@ -2558,7 +2558,7 @@ const Cart = () => {
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    {(cardFreeShippingApplied || isFreeDeliveryApplied) ? (
+                    {(cardFreeShippingApplied || warrantyFreeShippingApplied || isFreeDeliveryApplied) ? (
                       <span className="font-bold text-emerald-600">
                         {t('cart_free_delivery_won')} {rawDeliveryFee > 0 && <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>}
                       </span>
