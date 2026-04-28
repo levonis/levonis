@@ -36,13 +36,7 @@ const NativeAuthGate = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const { language, setLanguage, dir, t } = useLanguage();
 
-  const [isNative] = useState<boolean>(() => {
-    try {
-      return Capacitor.isNativePlatform();
-    } catch {
-      return false;
-    }
-  });
+  const [isNative] = useState<boolean>(() => isNativePlatform());
 
   const [guestAccepted, setGuestAccepted] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
