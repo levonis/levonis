@@ -797,7 +797,19 @@ const Admin = () => {
       }
 
       if (newImageUrls.length > 0) {
-        setUploadedImages([...uploadedImages, ...newImageUrls]);
+        // If editing an existing product, append directly to its images array
+        // so the new images appear immediately in the main draggable grid
+        // (allowing set-as-main and reordering without saving first).
+        if (editingProduct) {
+          const merged = [...(editingProduct.images || []), ...newImageUrls];
+          setEditingProduct({
+            ...editingProduct,
+            images: merged,
+            image_url: editingProduct.image_url || merged[0] || null,
+          });
+        } else {
+          setUploadedImages([...uploadedImages, ...newImageUrls]);
+        }
         toast.success(`تم رفع ${newImageUrls.length} صورة بنجاح`);
       }
       
