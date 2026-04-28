@@ -36,6 +36,7 @@ import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import { trackMetaEvent } from "@/lib/metaPixel";
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
@@ -1409,6 +1410,20 @@ const Cart = () => {
       setShowDirectSaleDialog(false);
       setSuccessOrderNumber(orderResult.order_number);
       setShowOrderSuccess(true);
+      // Meta Pixel + CAPI: Purchase (non-blocking)
+      try {
+        void trackMetaEvent({
+          eventName: 'Purchase',
+          customData: {
+            currency: 'IQD',
+            value: Number(orderSubtotal + deliveryFeeCalc) || 0,
+            content_ids: items.filter(i => i.product_id).map(i => i.product_id),
+            content_type: 'product',
+            num_items: items.reduce((s, i) => s + (i.quantity || 0), 0),
+            order_id: orderResult.order_number,
+          },
+        });
+      } catch {}
     } catch (error) {
       console.error('Direct sale checkout error:', error);
       toast({ title: "خطأ", description: "حدث خطأ أثناء إتمام الطلب", variant: "destructive" });
@@ -1898,6 +1913,21 @@ const Cart = () => {
 
       // Clear cart after successful order
       await clearCart();
+
+      // Meta Pixel + CAPI: Purchase (non-blocking)
+      try {
+        void trackMetaEvent({
+          eventName: 'Purchase',
+          customData: {
+            currency: 'IQD',
+            value: Number(grandTotal) || 0,
+            content_ids: items.filter(i => i.product_id).map(i => i.product_id),
+            content_type: 'product',
+            num_items: items.reduce((s, i) => s + (i.quantity || 0), 0),
+            order_id: order.order_number,
+          },
+        });
+      } catch {}
 
       // Encode the message for URL
       const encodedMessage = encodeURIComponent(message);
