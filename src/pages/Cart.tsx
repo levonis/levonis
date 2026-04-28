@@ -1853,6 +1853,32 @@ const Cart = () => {
         });
       }
 
+      // Record warranty benefit usage (standard order) — non-blocking
+      if (warrantyBenefits) {
+        try {
+          if (warrantyDiscountAmount > 0) {
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
+              p_order_id: order.id,
+              p_benefit_type: 'discount',
+              p_amount: warrantyDiscountAmount,
+              p_delivery_method_key: null,
+            });
+          }
+          if (warrantyFreeShippingApplied) {
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
+              p_order_id: order.id,
+              p_benefit_type: 'free_shipping',
+              p_amount: rawDeliveryFee,
+              p_delivery_method_key: selectedDeliveryMethod,
+            });
+          }
+        } catch (e) {
+          console.warn('Warranty benefit consumption failed:', e);
+        }
+      }
+
       // Update order with card discount info
       if (cardDiscountAmount > 0) {
         await supabase.from('orders').update({
