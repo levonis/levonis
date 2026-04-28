@@ -130,10 +130,10 @@ export default function MiniGames() {
   });
 
   // Mark disabled games instead of filtering them out
-  // Gacha is admin-only
-  const adminOnlyGames = ["gacha"];
+  // Gacha is fully disabled (hidden for everyone)
+  const disabledGames = ["gacha"];
   const gamesWithStatus = GAME_NODES.map(game => {
-    if (adminOnlyGames.includes(game.node_name) && !isAdmin) {
+    if (disabledGames.includes(game.node_name)) {
       return { ...game, _disabled: true, _hidden: true };
     }
     if (game.node_name === "stack_tower" && stackSettings && !stackSettings.game_enabled) {
