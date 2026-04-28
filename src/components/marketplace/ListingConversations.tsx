@@ -116,7 +116,7 @@ function AdminUserSearchResults({
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
       const { data } = await supabase
-        .from('profiles')
+        .from('profiles_public')
         .select('id, full_name, username, avatar_url')
         .or(`full_name.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%`)
         .neq('id', SUPPORT_USER_ID)
@@ -2033,7 +2033,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                             .maybeSingle();
                                           if (data) {
                                             const { data: profile } = await supabase
-                                              .from('profiles')
+                                              .from('profiles_public')
                                               .select('id, full_name, username, avatar_url')
                                               .eq('id', data.user_id)
                                               .single();

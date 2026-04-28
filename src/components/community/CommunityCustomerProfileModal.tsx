@@ -246,7 +246,7 @@ export default function CommunityCustomerProfileModal({
     setCheckingUsername(true);
     try {
       const { data: existing } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id")
         .ilike("username", username)
         .neq("id", user?.id ?? "")
