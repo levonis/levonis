@@ -661,9 +661,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   if (error) throw error;
                   console.log('Invoice saved:', data?.id);
                   toast.success('تم حفظ الفاتورة بنجاح');
-                } catch (err: any) {
+                } catch (err: unknown) {
                   console.error('Error saving invoice:', err);
-                  toast.error(`حدث خطأ أثناء حفظ الفاتورة: ${err?.message || 'غير معروف'}`);
+                  toast.error(`حدث خطأ أثناء حفظ الفاتورة: ${err instanceof Error ? err.message : 'غير معروف'}`);
                 }
               }} size="sm">
                 <Save className="w-4 h-4 ml-2" />
