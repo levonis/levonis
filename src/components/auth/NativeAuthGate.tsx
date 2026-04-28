@@ -1,7 +1,21 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
 import { LogIn, UserPlus, User as UserIcon } from "lucide-react";
+
+// Web-safe native detection: Capacitor injects `window.Capacitor` on native
+// builds before our bundle runs. Avoiding the `@capacitor/core` static import
+// keeps the heavy `vendor-capacitor` chunk OUT of the entry's critical chain
+// (saves ~6 KiB + a network roundtrip on every web page load).
+const isNativePlatform = (): boolean => {
+  try {
+    const cap = (typeof window !== "undefined" ? (window as any).Capacitor : null);
+    return !!(cap && typeof cap.isNativePlatform === "function"
+      ? cap.isNativePlatform()
+      : cap?.isNative);
+  } catch {
+    return false;
+  }
+};
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage, LANGUAGE_LABELS, type Language } from "@/lib/i18n";
