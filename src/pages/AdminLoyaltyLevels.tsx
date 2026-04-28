@@ -876,6 +876,46 @@ export default function AdminLoyaltyLevels() {
                           </div>
                         </div>
 
+                        {/* Category whitelists for discount and free shipping */}
+                        <div className="space-y-3 mb-4">
+                          {[
+                            { key: 'discount_applicable_category_ids' as const, label: 'الأقسام المشمولة بالخصم' },
+                            { key: 'free_shipping_applicable_category_ids' as const, label: 'الأقسام المشمولة بالتوصيل المجاني' },
+                          ].map((sec) => {
+                            const selected = (formData as any)[sec.key] as string[];
+                            return (
+                              <div key={sec.key} className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
+                                <Label className="text-sm font-semibold">{sec.label}</Label>
+                                <p className="text-[11px] text-muted-foreground mb-2">اتركه فارغًا ليشمل جميع الأقسام</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {(allCategoriesForBenefits || []).map((c) => {
+                                    const checked = selected.includes(c.id);
+                                    return (
+                                      <label
+                                        key={c.id}
+                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer text-xs select-none border ${
+                                          checked ? 'bg-primary/10 border-primary/40' : 'bg-background border-border'
+                                        }`}
+                                      >
+                                        <Switch
+                                          checked={checked}
+                                          onCheckedChange={(v) => {
+                                            const next = v
+                                              ? Array.from(new Set([...selected, c.id]))
+                                              : selected.filter((x) => x !== c.id);
+                                            setFormData({ ...formData, [sec.key]: next } as any);
+                                          }}
+                                        />
+                                        <span>{c.name_ar || c.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <Label className="flex items-center gap-2 text-sm">
