@@ -8270,6 +8270,94 @@ export type Database = {
           },
         ]
       }
+      printer_warranty_benefits: {
+        Row: {
+          created_at: string
+          discount_max_amount_monthly: number
+          discount_percentage: number
+          free_shipping_max_uses_monthly: number
+          free_shipping_methods: Json
+          free_shipping_min_order: number
+          id: string
+          is_active: boolean
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_max_amount_monthly?: number
+          discount_percentage?: number
+          free_shipping_max_uses_monthly?: number
+          free_shipping_methods?: Json
+          free_shipping_min_order?: number
+          id?: string
+          is_active?: boolean
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_max_amount_monthly?: number
+          discount_percentage?: number
+          free_shipping_max_uses_monthly?: number
+          free_shipping_methods?: Json
+          free_shipping_min_order?: number
+          id?: string
+          is_active?: boolean
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_warranty_benefits_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printer_warranty_usage: {
+        Row: {
+          benefit_type: string
+          delivery_method_key: string | null
+          id: string
+          order_id: string
+          saved_amount: number
+          used_at: string
+          user_id: string
+          user_printer_id: string
+        }
+        Insert: {
+          benefit_type: string
+          delivery_method_key?: string | null
+          id?: string
+          order_id: string
+          saved_amount?: number
+          used_at?: string
+          user_id: string
+          user_printer_id: string
+        }
+        Update: {
+          benefit_type?: string
+          delivery_method_key?: string | null
+          id?: string
+          order_id?: string
+          saved_amount?: number
+          used_at?: string
+          user_id?: string
+          user_printer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_warranty_usage_user_printer_id_fkey"
+            columns: ["user_printer_id"]
+            isOneToOne: false
+            referencedRelation: "user_printers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_batches: {
         Row: {
           batch_cost: number
@@ -12094,6 +12182,16 @@ export type Database = {
         }
         Returns: number
       }
+      consume_warranty_benefit: {
+        Args: {
+          p_amount: number
+          p_benefit_type: string
+          p_delivery_method_key?: string
+          p_order_id: string
+          p_user_printer_id: string
+        }
+        Returns: boolean
+      }
       convert_points_to_tickets: {
         Args: { points_amount: number }
         Returns: Json
@@ -12235,6 +12333,28 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_active_warranty_benefits_for_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          activation_date: string
+          discount_max_amount_monthly: number
+          discount_percentage: number
+          discount_used: number
+          expiry_date: string
+          free_shipping_max_uses_monthly: number
+          free_shipping_methods: Json
+          free_shipping_min_order: number
+          free_shipping_used: number
+          is_benefits_active: boolean
+          model_name_ar: string
+          period_end: string
+          period_start: string
+          product_id: string
+          serial_number: string
+          store_printer_id: string
+          user_printer_id: string
+        }[]
+      }
       get_card_free_shipping_used: {
         Args: { p_card_id: string }
         Returns: number
@@ -12310,6 +12430,21 @@ export type Database = {
       }
       get_user_level: { Args: { p_user_id: string }; Returns: string }
       get_user_lock_key: { Args: { p_user_id: string }; Returns: number }
+      get_warranty_discount_used: {
+        Args: { p_user_printer_id: string }
+        Returns: number
+      }
+      get_warranty_free_shipping_used: {
+        Args: { p_user_printer_id: string }
+        Returns: number
+      }
+      get_warranty_period_bounds: {
+        Args: { p_user_printer_id: string }
+        Returns: {
+          period_end: string
+          period_start: string
+        }[]
+      }
       gift_card_with_points: {
         Args: {
           p_gifter_id: string
