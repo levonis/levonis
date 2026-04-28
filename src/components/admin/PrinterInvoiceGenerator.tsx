@@ -59,13 +59,23 @@ interface BuyerOption {
   totalPrice?: number;
   orderItemId?: string;
   paymentMethod?: string;
+  paymentStatus?: string;
+  orderSubtotal?: number;
+  orderTaxAmount?: number;
+  orderTaxPercent?: number;
+  orderTotalAmount?: number;
+  orderDiscountAmount?: number;
+  orderPaidAmount?: number;
+  orderRemainingAmount?: number;
+  orderDeliveryMethod?: string;
+  orderAdminShippingCost?: number;
 }
 
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '12000', taxPercent: '3' });
+  const [manualFields, setManualFields] = useState({ subtotal: '', delivery: '0', taxPercent: '0' });
   const [step, setStep] = useState<'select-user' | 'config' | 'preview'>('select-user');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -92,6 +102,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           user_id,
           shipping_address,
           payment_method,
+          payment_status,
+          subtotal,
+          tax_amount,
+          tax_percentage,
+          total_amount,
+          discount_amount,
+          paid_amount,
+          remaining_amount,
+          delivery_method,
+          admin_shipping_cost,
           order_items!order_items_order_id_fkey (
             id,
             product_id,
@@ -117,11 +137,29 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         orderItemId: string;
         shippingAddress: string;
         paymentMethod: string;
+        paymentStatus: string;
+        subtotal: number;
+        taxAmount: number;
+        taxPercent: number;
+        totalAmount: number;
+        discountAmount: number;
+        paidAmount: number;
+        remainingAmount: number;
+        deliveryMethod: string;
+        adminShippingCost: number;
       }> = [];
 
-      printerOrders?.forEach((order: any) => {
+      const typedPrinterOrders = (printerOrders || []) as Array<{
+        id: string; order_number?: string | null; user_id: string; shipping_address?: string | null;
+        payment_method?: string | null; payment_status?: string | null; subtotal?: number | null;
+        tax_amount?: number | null; tax_percentage?: number | null; total_amount?: number | null;
+        discount_amount?: number | null; paid_amount?: number | null; remaining_amount?: number | null;
+        delivery_method?: string | null; admin_shipping_cost?: number | null;
+        order_items?: Array<{ id: string; total_price?: number | null; products?: { name?: string | null; name_ar?: string | null; category_id?: string | null } | null }>;
+      }>;
+      typedPrinterOrders.forEach((order) => {
         const items = order.order_items || [];
-        items.forEach((item: any) => {
+        items.forEach((item) => {
           const product = item.products;
           if (product && product.category_id === PRINTER_CATEGORY_ID) {
             orderBuyers.push({
@@ -134,6 +172,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               orderItemId: item.id,
               shippingAddress: order.shipping_address || '',
               paymentMethod: order.payment_method || '',
+              paymentStatus: order.payment_status || '',
+              subtotal: Number(order.subtotal || 0),
+              taxAmount: Number(order.tax_amount || 0),
+              taxPercent: Number(order.tax_percentage || 0),
+              totalAmount: Number(order.total_amount || 0),
+              discountAmount: Number(order.discount_amount || 0),
+              paidAmount: Number(order.paid_amount || 0),
+              remainingAmount: Number(order.remaining_amount || 0),
+              deliveryMethod: order.delivery_method || '',
+              adminShippingCost: Number(order.admin_shipping_cost || 0),
             });
           }
         });
@@ -157,9 +205,9 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         .in('user_id', allUserIds)
         .order('is_default', { ascending: false });
 
-      const profileMap: Record<string, any> = {};
+      const profileMap: Record<string, { full_name?: string | null; username?: string | null; phone_number?: string | null }> = {};
       profiles?.forEach(p => { profileMap[p.id] = p; });
-      const addrMap: Record<string, any> = {};
+      const addrMap: Record<string, { governorate?: string | null; area?: string | null; neighborhood?: string | null; nearest_landmark?: string | null; phone_number?: string | null; full_name?: string | null }> = {};
       addresses?.forEach(a => { addrMap[a.user_id] = a; });
 
       const results: BuyerOption[] = [];
@@ -185,6 +233,16 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           totalPrice: ob.totalPrice,
           orderItemId: ob.orderItemId,
           paymentMethod: ob.paymentMethod,
+          paymentStatus: ob.paymentStatus,
+          orderSubtotal: ob.subtotal,
+          orderTaxAmount: ob.taxAmount,
+          orderTaxPercent: ob.taxPercent,
+          orderTotalAmount: ob.totalAmount,
+          orderDiscountAmount: ob.discountAmount,
+          orderPaidAmount: ob.paidAmount,
+          orderRemainingAmount: ob.remainingAmount,
+          orderDeliveryMethod: ob.deliveryMethod,
+          orderAdminShippingCost: ob.adminShippingCost,
         });
       });
 
@@ -223,7 +281,15 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     setSelectedUserId(buyer.userId);
     setLoading(true);
     try {
-      let subtotal = buyer.totalPrice || 0;
+      let subtotal = Number(buyer.orderSubtotal || buyer.totalPrice || 0);
+      let taxAmount = Number(buyer.orderTaxAmount || 0);
+      let taxPercent = Number(buyer.orderTaxPercent || 0);
+      let orderTotal = Number(buyer.orderTotalAmount || 0);
+      let orderDiscount = Number(buyer.orderDiscountAmount || 0);
+      let paidAmount = Number(buyer.orderPaidAmount || 0);
+      let remainingAmount = Number(buyer.orderRemainingAmount || 0);
+      let deliveryMethod = buyer.orderDeliveryMethod || '';
+      let adminShippingCost = Number(buyer.orderAdminShippingCost || 0);
       
       // Fallback: check printer's order_item_id
       if (!subtotal && printer.order_item_id) {
@@ -245,18 +311,25 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         if (orderItem) subtotal = orderItem.total_price || 0;
       }
 
-      // Pull real delivery info from the order: pickup => 0, otherwise admin_shipping_cost
-      let realDelivery: number | null = null;
+      // Pull real invoice totals from the order so warranty invoice matches order invoice/payment choice
       if (buyer.orderId) {
         const { data: orderData } = await supabase
           .from('orders')
-          .select('delivery_method, admin_shipping_cost')
+          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
           .eq('id', buyer.orderId)
           .maybeSingle();
         if (orderData) {
-          realDelivery = orderData.delivery_method === 'pickup'
-            ? 0
-            : Number(orderData.admin_shipping_cost ?? 0);
+          subtotal = Number(orderData.subtotal ?? subtotal);
+          taxAmount = Number(orderData.tax_amount ?? 0);
+          taxPercent = Number(orderData.tax_percentage ?? 0);
+          orderTotal = Number(orderData.total_amount ?? 0);
+          orderDiscount = Number(orderData.discount_amount ?? 0);
+          paidAmount = Number(orderData.paid_amount ?? 0);
+          remainingAmount = Number(orderData.remaining_amount ?? 0);
+          deliveryMethod = orderData.delivery_method || '';
+          adminShippingCost = Number(orderData.admin_shipping_cost ?? 0);
+          buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
+          buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
         }
       }
 
@@ -286,12 +359,13 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      const deliveryFee = realDelivery !== null
-        ? realDelivery
-        : (manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000);
-      const parsedTax = parseFloat(manualFields.taxPercent);
-      const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
-      const taxAmount = Math.round(sub * (taxPercent / 100));
+      const customerTotalDue = (paidAmount + remainingAmount) > 0 ? paidAmount + remainingAmount : orderTotal;
+      const deliveryFromTotal = orderTotal > 0 ? Math.max(0, orderTotal - sub - taxAmount + orderDiscount) : 0;
+      const deliveryFee = deliveryMethod === 'pickup' ? 0 : Math.max(0, adminShippingCost || deliveryFromTotal || 0);
+      const derivedPaymentFee = customerTotalDue > 0 ? Math.max(0, customerTotalDue - sub - deliveryFee) : 0;
+      const finalTaxAmount = taxAmount > 0 ? taxAmount : derivedPaymentFee;
+      const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0 ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
+      const finalTotal = customerTotalDue > 0 ? customerTotalDue : sub + finalTaxAmount + deliveryFee;
       const now = new Date();
 
       // Sync manual fields so the config step reflects real values
@@ -299,6 +373,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         ...prev,
         subtotal: sub ? String(sub) : prev.subtotal,
         delivery: String(deliveryFee),
+        taxPercent: String(finalTaxPercent),
       }));
 
       setSelectedOrderId(buyer.orderId || null);
@@ -310,13 +385,17 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         serialNumber: printer.serial_number,
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
-        tax: taxAmount,
-        taxPercent: taxPercent,
+        tax: finalTaxAmount,
+        taxPercent: finalTaxPercent,
         delivery: deliveryFee,
-        total: sub + taxAmount + deliveryFee,
+        total: finalTotal,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
-        paymentMethod: buyer.paymentMethod || 'نقداً',
+        paymentMethod: buyer.paymentStatus === 'cod'
+          ? 'دفع عند الاستلام'
+          : buyer.paymentStatus === 'partial'
+            ? `دفع جزئي${paidAmount > 0 ? ` - مدفوع ${paidAmount.toLocaleString()} د.ع` : ''}${remainingAmount > 0 ? ` - متبقي ${remainingAmount.toLocaleString()} د.ع` : ''}`
+            : (buyer.paymentMethod || 'نقداً'),
       });
       setStep(sub > 0 ? 'preview' : 'config');
     } catch {
@@ -337,9 +416,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       qrCodeData: printer.qr_code_data || '',
       subtotal: 0,
       tax: 0,
-      taxPercent: 3,
-      delivery: 12000,
-      total: 12000,
+      taxPercent: 0,
+      delivery: 0,
+      total: 0,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
       date: now,
       paymentMethod: 'نقداً',
@@ -352,9 +431,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
   const handleGeneratePreview = () => {
     if (!invoiceData) return;
     const sub = parseFloat(manualFields.subtotal) || invoiceData.subtotal;
-    const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 12000;
+    const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 0;
     const parsedTax = parseFloat(manualFields.taxPercent);
-    const taxPercent = isNaN(parsedTax) ? 3 : parsedTax;
+    const taxPercent = isNaN(parsedTax) ? 0 : parsedTax;
     const taxAmount = Math.round(sub * (taxPercent / 100));
     setInvoiceData({
       ...invoiceData,
@@ -397,7 +476,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       setSelectedUserId(null);
       setSelectedOrderId(null);
       setBuyerSearch('');
-      setManualFields({ subtotal: '', delivery: '12000', taxPercent: '3' });
+      setManualFields({ subtotal: '', delivery: '0', taxPercent: '0' });
     }
   }, [open]);
 
@@ -582,9 +661,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                   if (error) throw error;
                   console.log('Invoice saved:', data?.id);
                   toast.success('تم حفظ الفاتورة بنجاح');
-                } catch (err: any) {
+                } catch (err: unknown) {
                   console.error('Error saving invoice:', err);
-                  toast.error(`حدث خطأ أثناء حفظ الفاتورة: ${err?.message || 'غير معروف'}`);
+                  toast.error(`حدث خطأ أثناء حفظ الفاتورة: ${err instanceof Error ? err.message : 'غير معروف'}`);
                 }
               }} size="sm">
                 <Save className="w-4 h-4 ml-2" />
