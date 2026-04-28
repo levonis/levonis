@@ -351,10 +351,13 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
+      const customerTotalDue = (paidAmount + remainingAmount) > 0 ? paidAmount + remainingAmount : orderTotal;
       const deliveryFromTotal = orderTotal > 0 ? Math.max(0, orderTotal - sub - taxAmount + orderDiscount) : 0;
       const deliveryFee = deliveryMethod === 'pickup' ? 0 : Math.max(0, adminShippingCost || deliveryFromTotal || 0);
-      const finalTaxPercent = taxPercent || (sub > 0 && taxAmount > 0 ? Number(((taxAmount / sub) * 100).toFixed(2)) : 0);
-      const finalTotal = orderTotal > 0 ? orderTotal : sub + taxAmount + deliveryFee - orderDiscount;
+      const derivedPaymentFee = customerTotalDue > 0 ? Math.max(0, customerTotalDue - sub - deliveryFee) : 0;
+      const finalTaxAmount = taxAmount > 0 ? taxAmount : derivedPaymentFee;
+      const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0 ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
+      const finalTotal = customerTotalDue > 0 ? customerTotalDue : sub + finalTaxAmount + deliveryFee;
       const now = new Date();
 
       // Sync manual fields so the config step reflects real values
@@ -374,7 +377,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         serialNumber: printer.serial_number,
         qrCodeData: printer.qr_code_data || '',
         subtotal: sub,
-        tax: taxAmount,
+        tax: finalTaxAmount,
         taxPercent: finalTaxPercent,
         delivery: deliveryFee,
         total: finalTotal,
