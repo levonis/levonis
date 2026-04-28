@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,45 @@ const CF_API = "https://api.cloudflare.com/client/v4";
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY: Verify caller is an authenticated admin server-side
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const jwt = authHeader.replace(/^Bearer\s+/i, "");
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  if (!jwt) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+  });
+
+  const { data: userData, error: userErr } = await supabase.auth.getUser(jwt);
+  if (userErr || !userData?.user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const { data: roleRow } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (!roleRow) {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   const API_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN");
