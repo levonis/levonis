@@ -2553,8 +2553,32 @@ const Cart = () => {
                       </span>
                     </div>
                   )}
-                  
-                  {/* الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل */}
+
+                  {/* خصم ضمان الطابعة */}
+                  {warrantyDiscountAmount > 0 && warrantyBenefits && (
+                    <div className="flex justify-between items-center animate-fade-in rounded-xl p-3 border border-emerald-500/30 bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent backdrop-blur-sm shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center shadow-inner">
+                          <Sparkles className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 block flex items-center gap-1">
+                            {t('cart_warranty_discount', { percent: warrantyBenefits.percentageRate })}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {t('cart_warranty_discount_subtitle', {
+                              remaining: formatPrice(Math.max(0, warrantyBenefits.percentageRemaining - warrantyDiscountAmount)),
+                              day: warrantyBenefits.activationDay,
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-black text-emerald-600 text-sm animate-pulse">
+                        -<AnimatedPrice value={warrantyDiscountAmount} formatFn={formatPrice} /> {t('cart_iqd_short')}
+                      </span>
+                    </div>
+                  )}
+
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
