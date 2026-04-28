@@ -83,9 +83,12 @@ export default function MyPrintersPanel() {
     <div className="space-y-4">
       {printers.map((printer: any) => {
         const activeSub = printer.printer_subscriptions?.find((s: any) => s.status === 'active');
-        
+        const expiryDate = printer.store_printers?.expiry_date ? new Date(printer.store_printers.expiry_date) : null;
+        const isExpired = !!expiryDate && expiryDate.getTime() <= Date.now();
+        const showExpiredBanner = isExpired && !activeSub;
+
         return (
-          <Card key={printer.id}>
+          <Card key={printer.id} className={showExpiredBanner ? 'border-destructive/40' : undefined}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -104,6 +107,11 @@ export default function MyPrintersPanel() {
                         <ShieldCheck className="h-3 w-3 ml-1" />
                         {t('mp_protected')}
                       </Badge>
+                    ) : isExpired ? (
+                      <Badge className="bg-destructive shrink-0">
+                        <AlertTriangle className="h-3 w-3 ml-1" />
+                        {t('warranty_expired_short_badge')}
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="shrink-0">{t('mp_unprotected')}</Badge>
                     )}
@@ -117,6 +125,22 @@ export default function MyPrintersPanel() {
                       <p className="text-[10px] text-muted-foreground">
                         {fmt(activeSub.monthly_price ?? 0)} {t('mp_per_month')}
                       </p>
+                    </div>
+                  )}
+
+                  {showExpiredBanner && (
+                    <div className="mt-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+                      <p className="text-xs text-foreground leading-relaxed">
+                        {t('warranty_expired_panel_desc')}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full bg-destructive hover:bg-destructive/90"
+                        onClick={() => navigate('/rewards')}
+                      >
+                        <Shield className="h-3.5 w-3.5 ml-1" />
+                        {t('warranty_expired_cta')}
+                      </Button>
                     </div>
                   )}
 
