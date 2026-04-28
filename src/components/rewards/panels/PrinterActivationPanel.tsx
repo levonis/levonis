@@ -128,10 +128,13 @@ export default function PrinterActivationPanel({ onActivated }: PrinterActivatio
     },
     onSuccess: () => {
       toast.success(t('pa_activation_success'));
-      // Show warranty data after activation
+      // Show warranty data after activation — preserve admin-set dates if any
       if (printerData) {
-        const activationDate = new Date();
-        const expiryDate = addMonths(activationDate, printerData.warranty_months || 6);
+        const hasAdminDates = !!printerData.activation_date && !!printerData.expiry_date;
+        const activationDate = hasAdminDates ? new Date(printerData.activation_date) : new Date();
+        const expiryDate = hasAdminDates
+          ? new Date(printerData.expiry_date)
+          : addMonths(activationDate, printerData.warranty_months || 6);
         setWarrantyData({
           ...printerData,
           activation_date: activationDate.toISOString(),
