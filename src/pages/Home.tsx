@@ -218,7 +218,7 @@ const Home = () => {
                   <div>
                     <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
                       <div className="w-1 h-5 md:h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
-                      <h3 className="text-lg md:text-xl font-black text-primary">{getSectionName(mainSection)}</h3>
+                      <h2 className="text-lg md:text-xl font-black text-primary">{getSectionName(mainSection)}</h2>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
                       {sectionCategories.map((category) => (
