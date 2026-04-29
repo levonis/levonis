@@ -80,11 +80,13 @@ export default function WarrantyBenefitsCard() {
       {rows.map((r) => {
         const discountRemaining = Math.max(0, r.discountCap - r.discountUsed);
         const shippingRemaining = Math.max(0, r.shipMax - r.shipUsed);
-        const accent = r.source === "subscription" ? "amber" : "emerald";
+        const isSub = r.source === "subscription";
         return (
           <Card
             key={r.key}
-            className={`p-4 border-${accent}-500/30 bg-gradient-to-br from-${accent}-500/10 via-${accent}-500/5 to-transparent`}
+            className={isSub
+              ? "p-4 border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent"
+              : "p-4 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent"}
           >
             <div className="flex items-center justify-between mb-3 gap-2">
               <div className="flex items-center gap-2 min-w-0">
