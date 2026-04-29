@@ -830,8 +830,8 @@ const Cart = () => {
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
   // Independent ledgers — both stack in the cart total.
-  const warrantyDiscountAmount = useHardwareOverCard ? (warrantyBenefits?.totalDiscount || 0) : 0;
-  const subscriptionDiscountAmount = useHardwareOverCard ? (subscriptionBenefits?.totalDiscount || 0) : 0;
+  const warrantyDiscountAmount = (useHardwareOverCard && useWarrantyContrib) ? (warrantyBenefits?.totalDiscount || 0) : 0;
+  const subscriptionDiscountAmount = (useHardwareOverCard && useSubscriptionContrib) ? (subscriptionBenefits?.totalDiscount || 0) : 0;
   const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
