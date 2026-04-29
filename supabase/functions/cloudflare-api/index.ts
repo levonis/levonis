@@ -159,6 +159,92 @@ serve(async (req: Request) => {
         url = `${CF_API}/zones/${ZONE_ID}`;
         break;
 
+      // ===== Wildcard Subdomain Setup (smart, idempotent) =====
+      // Checks if a "*" A record exists. If not, creates it pointing to Lovable's IP.
+      // Returns { success, status: "exists" | "created" | "error", record }
+      case "wildcard_setup": {
+        const targetIp = params?.ip || "185.158.133.1";
+        const proxied = params?.proxied ?? true;
+
+        // 1) Get zone name
+        const zoneRes = await fetch(`${CF_API}/zones/${ZONE_ID}`, { headers });
+        const zoneJson = await zoneRes.json();
+        if (!zoneJson?.success) {
+          return new Response(JSON.stringify({ success: false, status: "error", error: zoneJson?.errors || "zone fetch failed" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const zoneName: string = zoneJson.result.name;
+        const wildcardName = `*.${zoneName}`;
+
+        // 2) List existing A records and look for "*"
+        const listRes = await fetch(`${CF_API}/zones/${ZONE_ID}/dns_records?type=A&name=${encodeURIComponent(wildcardName)}`, { headers });
+        const listJson = await listRes.json();
+        const existing = listJson?.result?.[0];
+
+        if (existing) {
+          return new Response(JSON.stringify({
+            success: true,
+            status: "exists",
+            zone: zoneName,
+            record: existing,
+            message: `Wildcard ${wildcardName} موجود مسبقاً → ${existing.content} (${existing.proxied ? "Proxied" : "DNS only"})`,
+          }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        // 3) Create wildcard A record
+        const createRes = await fetch(`${CF_API}/zones/${ZONE_ID}/dns_records`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            type: "A",
+            name: "*",
+            content: targetIp,
+            ttl: 1,
+            proxied,
+            comment: "Wildcard for merchant standalone storefronts (auto-created by Levonis)",
+          }),
+        });
+        const createJson = await createRes.json();
+        if (!createJson?.success) {
+          return new Response(JSON.stringify({
+            success: false,
+            status: "error",
+            zone: zoneName,
+            error: createJson?.errors || "create failed",
+          }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          status: "created",
+          zone: zoneName,
+          record: createJson.result,
+          message: `تم إنشاء ${wildcardName} → ${targetIp} بنجاح ✅`,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // ===== Check a single subdomain status =====
+      case "subdomain_check": {
+        const sub = params?.slug;
+        if (!sub) throw new Error("slug required");
+        const zoneRes = await fetch(`${CF_API}/zones/${ZONE_ID}`, { headers });
+        const zoneJson = await zoneRes.json();
+        const zoneName: string = zoneJson?.result?.name || "";
+        const fullHost = `${sub}.${zoneName}`;
+        // Wildcard auto-covers it; we just confirm wildcard exists
+        const listRes = await fetch(`${CF_API}/zones/${ZONE_ID}/dns_records?type=A&name=${encodeURIComponent("*." + zoneName)}`, { headers });
+        const listJson = await listRes.json();
+        const wildcard = listJson?.result?.[0];
+        return new Response(JSON.stringify({
+          success: true,
+          host: fullHost,
+          covered_by_wildcard: !!wildcard,
+          wildcard,
+          url: `https://${fullHost}`,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: `Unknown action: ${action}` }),
