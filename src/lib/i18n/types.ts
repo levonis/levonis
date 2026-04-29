@@ -1110,6 +1110,12 @@ export type TranslationKeys = {
   cart_card_discount: string;
   cart_card_discount_subtitle: string;
   cart_warranty_discount: string;
+  cart_hardware_benefits_picker_title: string;
+  cart_hardware_benefits_use_warranty: string;
+  cart_hardware_benefits_use_subscription: string;
+  cart_hardware_benefits_use_both: string;
+  cart_hardware_benefits_recommended: string;
+  cart_hardware_benefits_picker_hint: string;
   cart_warranty_discount_subtitle: string;
   cart_warranty_free_shipping: string;
   warranty_benefits_title: string;

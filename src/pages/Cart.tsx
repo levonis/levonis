@@ -63,8 +63,28 @@ const Cart = () => {
   // Paid protection-plan subscriptions are an independent system that STACKS with
   // the official warranty (different funding, different consumption ledger).
   const { subscriptionBenefits } = useCartSubscriptionBenefits(items, getCartItemPrice, total);
+
+  // User-controlled selector when both warranty AND subscription are active.
+  // 'both' = stack (default). 'warranty' = use only official warranty (freeze subscription).
+  // 'subscription' = use only paid plan (freeze warranty).
+  const [hardwareBenefitMode, setHardwareBenefitMode] = useState<'both' | 'warranty' | 'subscription'>('both');
+  const hasWarrantyContrib = !!(warrantyBenefits && ((warrantyBenefits.totalDiscount || 0) > 0 || warrantyBenefits.freeShipping));
+  const hasSubscriptionContrib = !!(subscriptionBenefits && ((subscriptionBenefits.totalDiscount || 0) > 0 || subscriptionBenefits.freeShipping));
+  const hasBothActive = hasWarrantyContrib && hasSubscriptionContrib;
+  // Auto-reset to 'both' if one source disappears (cart changed, used up, etc.)
+  useEffect(() => {
+    if (!hasBothActive && hardwareBenefitMode !== 'both') {
+      setHardwareBenefitMode('both');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasBothActive]);
+  const useWarrantyContrib = hardwareBenefitMode !== 'subscription';
+  const useSubscriptionContrib = hardwareBenefitMode !== 'warranty';
+
   // Loyalty card vs combined hardware benefits (warranty + subscription) — pick best (no stacking with card).
-  const combinedHardwareDiscount = (warrantyBenefits?.totalDiscount || 0) + (subscriptionBenefits?.totalDiscount || 0);
+  // Use only the SELECTED sources for this comparison.
+  const combinedHardwareDiscount = (useWarrantyContrib ? (warrantyBenefits?.totalDiscount || 0) : 0)
+    + (useSubscriptionContrib ? (subscriptionBenefits?.totalDiscount || 0) : 0);
   const useHardwareOverCard = combinedHardwareDiscount > (rawCardDiscount?.totalDiscount || 0);
   const cardDiscount = useHardwareOverCard ? null : rawCardDiscount;
   const [couponCode, setCouponCode] = useState('');
@@ -742,6 +762,8 @@ const Cart = () => {
   const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
     && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
+  // Frozen by user selector
+  const warrantyFreeShippingAllowed = useWarrantyContrib;
   const warrantyFreeShippingEligible = !cardFreeShippingApplied
     && warrantyFreeShippingEligibleMethod
     && warrantyFreeShippingHasUses
@@ -762,8 +784,9 @@ const Cart = () => {
     && total >= (subscriptionBenefits?.freeShippingMinOrder || 0);
 
   // Prefer warranty (free to user); fall back to subscription if warranty cannot cover.
-  const warrantyFreeShippingApplied = warrantyFreeShippingEligible;
-  const subscriptionFreeShippingApplied = !warrantyFreeShippingApplied && subFreeShippingEligible;
+  // User selector can freeze either source.
+  const warrantyFreeShippingApplied = useWarrantyContrib && warrantyFreeShippingEligible;
+  const subscriptionFreeShippingApplied = useSubscriptionContrib && !warrantyFreeShippingApplied && subFreeShippingEligible;
   const hardwareFreeShippingApplied = warrantyFreeShippingApplied || subscriptionFreeShippingApplied;
 
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
@@ -807,8 +830,8 @@ const Cart = () => {
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
   // Independent ledgers — both stack in the cart total.
-  const warrantyDiscountAmount = useHardwareOverCard ? (warrantyBenefits?.totalDiscount || 0) : 0;
-  const subscriptionDiscountAmount = useHardwareOverCard ? (subscriptionBenefits?.totalDiscount || 0) : 0;
+  const warrantyDiscountAmount = (useHardwareOverCard && useWarrantyContrib) ? (warrantyBenefits?.totalDiscount || 0) : 0;
+  const subscriptionDiscountAmount = (useHardwareOverCard && useSubscriptionContrib) ? (subscriptionBenefits?.totalDiscount || 0) : 0;
   const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
@@ -2666,6 +2689,57 @@ const Cart = () => {
                       <span className="font-black text-primary text-sm animate-pulse">
                         -<AnimatedPrice value={cardDiscountAmount} formatFn={formatPrice} /> {t('cart_iqd_short')}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Selector: Warranty / Subscription / Both — only when both are active */}
+                  {hasBothActive && (
+                    <div className="animate-fade-in rounded-xl p-3 border border-primary/20 bg-gradient-to-br from-primary/5 via-background/40 to-background/20 backdrop-blur-md shadow-sm space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs font-bold text-foreground">{t('cart_hardware_benefits_picker_title')}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setHardwareBenefitMode('warranty')}
+                          className={`text-[10px] font-semibold px-2 py-2 rounded-lg border transition-all ${
+                            hardwareBenefitMode === 'warranty'
+                              ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                              : 'border-border/50 bg-background/40 text-muted-foreground hover:border-emerald-500/40'
+                          }`}
+                        >
+                          {t('cart_hardware_benefits_use_warranty')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHardwareBenefitMode('subscription')}
+                          className={`text-[10px] font-semibold px-2 py-2 rounded-lg border transition-all ${
+                            hardwareBenefitMode === 'subscription'
+                              ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 shadow-sm'
+                              : 'border-border/50 bg-background/40 text-muted-foreground hover:border-amber-500/40'
+                          }`}
+                        >
+                          {t('cart_hardware_benefits_use_subscription')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHardwareBenefitMode('both')}
+                          className={`relative text-[10px] font-semibold px-2 py-2 rounded-lg border transition-all ${
+                            hardwareBenefitMode === 'both'
+                              ? 'border-primary bg-gradient-to-br from-emerald-500/20 to-amber-500/20 text-foreground shadow-sm'
+                              : 'border-border/50 bg-background/40 text-muted-foreground hover:border-primary/40'
+                          }`}
+                        >
+                          {t('cart_hardware_benefits_use_both')}
+                          <span className="absolute -top-1.5 -right-1.5 text-[7px] font-black px-1 py-0.5 rounded-full bg-primary text-primary-foreground shadow">
+                            {t('cart_hardware_benefits_recommended')}
+                          </span>
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground leading-relaxed">
+                        {t('cart_hardware_benefits_picker_hint')}
+                      </p>
                     </div>
                   )}
 
