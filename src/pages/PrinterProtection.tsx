@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { 
   Shield, ShieldCheck, Check, Printer, Loader2, Crown, Star, 
   Calendar, AlertCircle, ChevronLeft, ChevronRight, Wrench,
-  MessageCircle, CheckCircle2, XCircle, Clock
+  MessageCircle, CheckCircle2, XCircle, Clock, Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { addMonths, addDays, format } from 'date-fns';
