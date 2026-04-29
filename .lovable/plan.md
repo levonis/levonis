@@ -1,79 +1,85 @@
-# فصل بطاقات الولاء عن مستويات الحساب
+## الهدف
 
-## المشكلة الجذرية
+كل باقة حماية (`protection_plans`) ستحمل إعداداتها الخاصة لـ:
 
-حالياً يوجد جدول واحد `loyalty_levels` يخدم مفهومين مختلفين تماماً:
+1. **خصم النسبة المئوية** + حد أقصى شهري بمبلغ ثابت (مثلاً 10% بحد 10,000 د.ع/شهر)
+2. **عدد مرات الشحن المجاني الشهرية** (1 للباقة الأساسية، 5 للباقة المتقدمة)
+3. **شروط الشحن المجاني**:
+   - حد أدنى لقيمة الطلب (مثل 100,000 د.ع)
+   - طرق التوصيل المسموحة فقط (مثل `standard` فقط، بدون `personal`)
+   - الأقسام المسموحة فقط (مثل PLA فقط)
+4. **الأقسام المؤهلة للخصم** (whitelist)
 
-1. **مستوى الحساب**: 100 سجل (level_1 ... level_100) يمثلون تقدم المستخدم بناءً على XP/النقاط. يُحسبون من `user_points.level`.
-2. **بطاقات الولاء المشتراة**: نفس الجدول، لكن بعض السجلات معلّمة بـ `is_purchasable=true` و`is_vip_plus=true` لتعمل كمنتجات قابلة للشراء بخصومات وامتيازات.
+عند الشراء سيتم تطبيق فوائد **كل طابعة مشتركة على حدة** (الطابعة المؤمَّنة بالباقة 1 تحصل على فوائد الباقة 1، والمؤمَّنة بالباقة 2 تحصل على فوائد الباقة 2). إذا كان للمستخدم أكثر من اشتراك يغطي نفس البند تُختار الفائدة الأفضل لكل بند (best-of) كما هو حالياً مع ضمان الشراء.
 
-النتيجة:
-- `user_cards.level_id` يشير إلى نفس المستويات التي تُمثّل التقدم.
-- شارة المستوى (`LevelBadge`) تتحول إلى "VIP+" بسبب البطاقة بدلاً من إظهار الرقم الحقيقي.
-- المنطق ملتبس في جميع المكونات (`ProfileHeader`, `CardsSection`, `useVipPlus`, `useCartCardDiscount`, إلخ).
-
-## الحل: جدول `membership_cards` مستقل
+## التصميم
 
 ```text
-loyalty_levels (التقدم فقط)        membership_cards (المنتجات)
-├── level_key, name, color         ├── card_key, name, color
-├── min_points, xp_required        ├── price_points, wallet_price
-└── display_order                  ├── duration_days
-                                   ├── is_vip_plus
-                                   ├── discount_percentage (+ caps)
-                                   ├── free_shipping (+ rules)
-                                   ├── frame_url, special_name_style
-                                   └── benefits (jsonb)
+protection_plans (يضاف إليها الأعمدة)
+   ├─ benefit_discount_percentage          numeric
+   ├─ benefit_discount_max_amount_monthly  numeric
+   ├─ benefit_discount_category_ids        uuid[]
+   ├─ benefit_free_shipping_max_monthly    integer
+   ├─ benefit_free_shipping_min_order      numeric
+   ├─ benefit_free_shipping_methods        jsonb (مثل ["standard"])
+   └─ benefit_free_shipping_category_ids   uuid[]
 
-user_points.level → loyalty_levels.level_key   (مستوى الحساب)
-user_cards.card_id → membership_cards.id        (البطاقة المشتراة)
+printer_subscriptions (status='active' + ضمن فترة الاشتراك)
+   ↓
+get_active_subscription_benefits_for_user(user)
+   ↓ يرجّع صفّاً لكل اشتراك نشط مع:
+       - user_printer_id, plan_id
+       - الإعدادات الكاملة من plan
+       - الاستخدام الشهري الحالي (discount_used / free_shipping_used)
+   ↓
+useCartWarrantyBenefits (موجود) + useCartSubscriptionBenefits (جديد)
+   ↓ يطبّقان نفس المنطق ويأخذان best-of
 ```
 
-## الخطوات
+## خطوات التنفيذ
 
-### 1) قاعدة البيانات (Migration)
+### 1. قاعدة البيانات (هجرة)
 
-- إنشاء جدول جديد `membership_cards` يحوي كل الأعمدة المتعلقة بالبطاقات (السعر، VIP+، الخصومات، الإطارات، الامتيازات، التواريخ).
-- إنشاء جدول `card_discounts` (مرتبط بـ `membership_cards.id` بدل `level_id` للمنتجات) — أو إعادة تسمية العمود.
-- إعادة تسمية `user_cards.level_id` → `card_id` مع FK إلى `membership_cards`.
-- **حذف جميع سجلات `user_cards` الموجودة** (تنفيذ "إعادة تعيين" حسب اختيارك).
-- إزالة الأعمدة المخصصة للبطاقات من `loyalty_levels` (purchase_price_points, wallet_price, duration_days, is_purchasable, is_vip_plus, discount_percentage, free_shipping_*, frame_url, special_name_style, monthly_free_shipping, free_daily_games, wholesale_discount_enabled, investment_enabled, priority_*, exclusive_products, early_access, vip_support, card_discounts_enabled, free_tickets_monthly, discount_percentage_max_amount).
-- نقل البطاقات الـ4 الحالية القابلة للشراء (level_1..level_4) كسجلات أولية في `membership_cards`.
-- تحديث جميع دوال SQL المعنية (`get_user_card_*`, `purchase_card_*`, RPC الخصومات، إلخ) لاستخدام الجدول الجديد.
-- تحديث RLS على `membership_cards` (قراءة عامة، كتابة admin فقط) و`user_cards` (المالك + admin).
+- إضافة الأعمدة الجديدة إلى `protection_plans` (كلها NULL/0 افتراضياً للحفاظ على التوافق).
+- إنشاء جدول جديد `subscription_benefit_usage` (مثل `printer_warranty_usage` تماماً) يربط `subscription_id` + `user_printer_id` + `order_id` + `benefit_type` + `saved_amount` + `delivery_method_key`.
+- إنشاء RPC `get_active_subscription_benefits_for_user(p_user_id)` يرجّع لكل اشتراك نشط (`status='active'` و `start_date <= now() < end_date OR end_date IS NULL`):
+  - بيانات الطابعة (model + category_id) + بيانات الباقة الكاملة + المستخدم الشهري الحالي.
+- ترحيل خفيف: نسخ القيم الحالية الافتراضية للباقات الموجودة (يبقى المستخدم يضبطها من لوحة الأدمن).
 
-### 2) الكود الأمامي
+### 2. لوحة الأدمن
 
-تحديث جميع المراجع للتمييز بين المستوى والبطاقة:
+في `src/pages/AdminPrinterProtection.tsx` (إدارة الباقات) إضافة قسم "فوائد الباقة" داخل تحرير كل باقة، بنفس واجهة `AdminPrinterWarrantyBenefits.tsx` الموجودة:
+- حقل النسبة + حقل الحد الأقصى الشهري + اختيار الأقسام
+- حقل عدد مرات الشحن المجاني + حد أدنى للطلب + اختيار طرق التوصيل المسموحة (checkboxes: standard / pickup / personal) + اختيار الأقسام المؤهلة
 
-| الملف | التغيير |
-|------|--------|
-| `src/components/LevelBadge.tsx` | إزالة استعلام `user_cards`/`is_vip_plus`. الشارة تعرض رقم المستوى من XP فقط بدون أي تأثير من البطاقة. |
-| `src/components/profile/ProfileHeader.tsx` | فصل الإطار/VIP+ عن لون المستوى. الإطار من البطاقة، رقم المستوى من XP. |
-| `src/hooks/useVipPlus.ts` | استعلام `user_cards → membership_cards` بدل `loyalty_levels`. |
-| `src/hooks/useProductCardDiscount.ts` | نفس الشيء. |
-| `src/hooks/useCartCardDiscount.tsx` | نفس الشيء. |
-| `src/hooks/useUserCardFrame.ts` | الإطار من `membership_cards.frame_url`. |
-| `src/components/rewards/CardsSection.tsx` | عرض البطاقات من `membership_cards`. |
-| `src/components/rewards/PointsSection.tsx` | عرض المستوى من `loyalty_levels` فقط، عرض البطاقة من `membership_cards`. |
-| `src/components/rewards/panels/LoyaltyLevelsPanel.tsx` | تقسيم لـ panel للمستويات وآخر للبطاقات (أو فصل العرض داخل نفس الـpanel). |
-| `src/pages/MyPoints.tsx` | المستوى من `loyalty_levels` فقط. |
-| `src/pages/AdminUsers.tsx`, `AdminUserDetailsDialog`, `AdminPointsAuditTab`, `AdminLevelPrizesTab`, `AdminPendingOrdersSheet`, `AdminChats` | تحديث الاستعلامات. |
-| `src/pages/Admin.tsx` + `AdminLoyaltyLevels.tsx` | فصل صفحة إدارة البطاقات (`AdminMembershipCards`) عن صفحة إدارة المستويات. |
-| `src/components/ProductRewardsSection.tsx` | استخدام `membership_cards` للخصومات المعروضة. |
+### 3. تطبيق الفوائد في السلة
 
-### 3) صفحة إدارة جديدة
+- إنشاء `src/hooks/useCartSubscriptionBenefits.tsx` (مرآة لـ `useCartWarrantyBenefits`) يقرأ من RPC الجديد ويحسب نفس النتيجة (`SubscriptionBenefitsResult`).
+- في `src/hooks/useCart.tsx` أو حيث يتم تجميع الفوائد: ضمّ نتائج الاثنين واختيار **الأفضل لكل بند** (الخصم بالنسبة، عدد الشحن المجاني، شروطه).
+- بقاء قاعدة "الشحن المجاني للتوصيل العادي فقط" مُحقَّقة عبر `freeShippingMethods` (الموجودة فعلاً في فحص السلة) — فقط نتأكد أن طرق التوصيل المختلفة `standard`/`personal`/`pickup` تطابق ما في السلة.
+- بقاء قاعدة "الحد الأدنى للطلب" مُحقَّقة عبر `freeShippingMinOrder` (موجودة).
 
-إنشاء `src/pages/AdminMembershipCards.tsx` لإدارة جدول `membership_cards` (إنشاء، تعديل، تفعيل، خصومات، VIP+، إطار، مدة، سعر). صفحة `AdminLoyaltyLevels` تبقى لإدارة المستويات (XP، رقم، لون، اسم) فقط.
+### 4. تسجيل الاستخدام عند إنشاء الطلب
 
-### 4) ذاكرة المشروع
+- في مسار checkout/إنشاء الطلب (نفس الموضع الذي يُسجَّل فيه `printer_warranty_usage`) إضافة كتابة موازية إلى `subscription_benefit_usage` عند تطبيق فوائد اشتراك.
 
-تحديث memory برابط جديد: "Membership Cards Separated From Levels" يوضح الفصل المعماري ويمنع إعادة الدمج مستقبلاً.
+### 5. واجهة المستخدم
 
-## ملاحظات مهمة
+- تحديث `src/components/WarrantyBenefitsCard.tsx` (وما يستخدمها في `Cart`/`Checkout`) لتعرض مصدر الفائدة: "ضمان الطابعة" أو "باقة الحماية: Standard"، مع شارة الباقة.
+- تحديث `src/pages/PrinterProtection.tsx` و `InsuranceSection.tsx` ليُظهرا في كل باقة قائمة الفوائد المُحدَّثة (الخصم + الشحن المجاني + الأقسام).
 
-- **حذف بيانات**: جميع `user_cards` الحالية ستُمسح (حسب اختيارك "إعادة تعيين البطاقات"). المستخدمون سيبدؤون بدون بطاقات نشطة.
-- **مستويات XP لا تتأثر**: `user_points` يبقى كما هو، فلا يفقد أي مستخدم تقدمه.
-- **الترجمة**: مفاتيح i18n جديدة لـ "البطاقة" مقابل "المستوى" في ar/en/ku.
-- **شارة المستوى**: ستعرض دائماً "مستوى N" المحسوب من XP فقط، بغض النظر عن أي بطاقة.
-- بعد التطبيق سنحتاج إعادة إعداد الـ4 بطاقات (برونزي 1-4) من شاشة الإدارة الجديدة، أو يتم نقلها تلقائياً ضمن الـmigration كقيم افتراضية.
+### 6. الذاكرة والتوثيق
+
+- تحديث `mem://features/hardware/warranty-loyalty-benefits` لتذكر أن الفوائد تأتي من مصدرين (ضمان الشراء + اشتراك الحماية) وأن `best-of` يُطبَّق لكل بند.
+
+## ملاحظات مهمة (تقنية)
+
+- لا حاجة لتغيير منطق الشحن في السلة جذرياً — الشروط (طريقة + حد أدنى + أقسام) موجودة في `useCartWarrantyBenefits` ومُختبرة. سنعيد استخدام نفس البنية.
+- استراتيجية best-of تُحسب لكل طابعة على حدة ثم تجمع: `max(discount_percentage)`, `max(free_shipping_remaining)` مع احترام شروطها.
+- `subscription_benefit_usage.subscription_id` يُتيح عرض إحصائيات الاستخدام لكل اشتراك في صفحة المستخدم لاحقاً.
+- لا تغيير في طريقة دفع الاشتراك أو RPC `purchase_printer_subscription` — فقط الفوائد المُطبَّقة بعد الاشتراك.
+
+## الملفات المتأثرة
+
+- جديد: migration SQL، `src/hooks/useCartSubscriptionBenefits.tsx`
+- تعديل: `src/pages/AdminPrinterProtection.tsx`، `src/hooks/useCart.tsx` (دمج الفوائد)، `src/components/WarrantyBenefitsCard.tsx`، `src/pages/PrinterProtection.tsx`، `src/components/rewards/InsuranceSection.tsx`، `src/pages/Checkout*.tsx` (تسجيل الاستخدام)، `src/lib/i18n/{ar,en,ku,types}.ts`
