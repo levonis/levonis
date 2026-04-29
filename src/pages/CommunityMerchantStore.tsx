@@ -95,7 +95,7 @@ export default function CommunityMerchantStore() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, is_verified, badge_tier, store_paused, store_pause_end_date, store_pause_message, store_layout")
+        .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, is_verified, badge_tier, store_paused, store_pause_end_date, store_pause_message, store_layout, store_slug")
         .eq("user_id", user!.id)
         .eq("status", "approved")
         .maybeSingle();
