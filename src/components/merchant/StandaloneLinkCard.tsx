@@ -41,6 +41,40 @@ export default function StandaloneLinkCard({ slug, onOpen }: Props) {
       .then(({ data }) => setIsAdmin(!!data));
   }, [user?.id]);
 
+  // Auto-check wildcard status on mount, and auto-setup if admin & missing
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("cloudflare-api", {
+          body: { action: "subdomain_check", params: { slug } },
+        });
+        if (cancelled) return;
+        if (data?.covered_by_wildcard) {
+          setWildcardStatus("ready");
+          return;
+        }
+        setWildcardStatus("missing");
+        // Auto-create wildcard if user is admin
+        if (isAdmin) {
+          const { data: setupData } = await supabase.functions.invoke("cloudflare-api", {
+            body: { action: "wildcard_setup", params: { proxied: true } },
+          });
+          if (!cancelled && setupData?.success) {
+            setWildcardStatus("ready");
+            toast({
+              title: "✅ Wildcard مُفعّل تلقائياً",
+              description: "نطاقات المتاجر الفرعية جاهزة للعمل",
+            });
+          }
+        }
+      } catch {
+        if (!cancelled) setWildcardStatus("missing");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [slug, isAdmin, toast]);
+
   const checkWildcard = async () => {
     setChecking(true);
     try {
