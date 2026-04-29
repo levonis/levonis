@@ -1405,16 +1405,12 @@ const Cart = () => {
         });
       }
 
-      // Record warranty / subscription benefit usage (direct sale) — non-blocking
-      if (warrantyBenefits) {
+      // Record official warranty benefit usage (direct sale) — non-blocking
+      if (warrantyBenefits && (warrantyDiscountAmount > 0 || warrantyFreeShippingApplied)) {
         try {
-          const isSubscription = warrantyBenefits.source === 'subscription' && !!warrantyBenefits.subscriptionId;
-          const rpcName = isSubscription ? 'consume_subscription_benefit' : 'consume_warranty_benefit';
-          const idKey: 'p_subscription_id' | 'p_user_printer_id' = isSubscription ? 'p_subscription_id' : 'p_user_printer_id';
-          const idValue: string = isSubscription ? (warrantyBenefits.subscriptionId as string) : warrantyBenefits.userPrinterId;
           if (warrantyDiscountAmount > 0) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: orderResult.id,
               p_benefit_type: 'discount',
               p_amount: warrantyDiscountAmount,
@@ -1422,8 +1418,8 @@ const Cart = () => {
             });
           }
           if (warrantyFreeShippingApplied) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: orderResult.id,
               p_benefit_type: 'free_shipping',
               p_amount: rawDeliveryFee,
@@ -1431,7 +1427,33 @@ const Cart = () => {
             });
           }
         } catch (e) {
-          console.warn('Benefit consumption failed:', e);
+          console.warn('Warranty benefit consumption failed:', e);
+        }
+      }
+
+      // Record paid subscription benefit usage (direct sale) — independent ledger
+      if (subscriptionBenefits && (subscriptionDiscountAmount > 0 || subscriptionFreeShippingApplied)) {
+        try {
+          if (subscriptionDiscountAmount > 0) {
+            await (supabase as any).rpc('consume_subscription_benefit', {
+              p_subscription_id: subscriptionBenefits.subscriptionId,
+              p_order_id: orderResult.id,
+              p_benefit_type: 'discount',
+              p_amount: subscriptionDiscountAmount,
+              p_delivery_method_key: null,
+            });
+          }
+          if (subscriptionFreeShippingApplied) {
+            await (supabase as any).rpc('consume_subscription_benefit', {
+              p_subscription_id: subscriptionBenefits.subscriptionId,
+              p_order_id: orderResult.id,
+              p_benefit_type: 'free_shipping',
+              p_amount: rawDeliveryFee,
+              p_delivery_method_key: selectedDeliveryMethod,
+            });
+          }
+        } catch (e) {
+          console.warn('Subscription benefit consumption failed:', e);
         }
       }
 
