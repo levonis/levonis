@@ -8,11 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import StandaloneShell from "@/components/merchant/StandaloneShell";
 
-// Reuse existing storefront content
 const CommunityMerchantStorePage = lazy(
   () => import("./CommunityMerchantStorePage")
 );
-// Reuse existing dashboard for owner
 const CommunityMerchantProfessionalDashboard = lazy(
   () => import("./CommunityMerchantProfessionalDashboard")
 );
@@ -30,7 +28,7 @@ interface MerchantBasic {
  * /s/:slug/dashboard   → standalone owner dashboard (auth + ownership required)
  *
  * Both routes share a merchant-branded header and a "Powered by Levonis" footer
- * to give the merchant a feeling of having their own site.
+ * to give the merchant the feeling of an independent website.
  */
 export default function MerchantStandalone() {
   const { slug } = useParams<{ slug: string }>();
@@ -67,7 +65,6 @@ export default function MerchantStandalone() {
     },
   });
 
-  // Owner check (only matters for dashboard route)
   const { data: isOwner } = useQuery({
     queryKey: ["merchant-owner", merchant?.id, user?.id],
     enabled: !!merchant?.id && !!user?.id,
@@ -82,7 +79,6 @@ export default function MerchantStandalone() {
     },
   });
 
-  // Update document title to feel like an independent site
   useEffect(() => {
     if (merchant?.display_name) {
       const suffix = isDashboard ? " — لوحة التحكم" : "";
@@ -94,12 +90,7 @@ export default function MerchantStandalone() {
     if (!merchant) return null;
     if (isDashboard) {
       return (
-        <Button
-          asChild
-          size="sm"
-          variant="outline"
-          className="h-8 text-xs gap-1"
-        >
+        <Button asChild size="sm" variant="outline" className="h-8 text-xs gap-1">
           <Link to={`/s/${merchant.store_slug}`}>
             <ArrowRight className="h-3.5 w-3.5" />
             للمتجر
@@ -143,7 +134,6 @@ export default function MerchantStandalone() {
     );
   }
 
-  // Dashboard route — only the owner can view
   if (isDashboard) {
     if (!user) {
       navigate(`/auth?redirect=/s/${merchant.store_slug}/dashboard`, {
@@ -191,38 +181,9 @@ export default function MerchantStandalone() {
         {isDashboard ? (
           <CommunityMerchantProfessionalDashboard />
         ) : (
-          <StorefrontByMerchantId merchantId={merchant.id} />
+          <CommunityMerchantStorePage merchantIdOverride={merchant.id} />
         )}
       </Suspense>
     </StandaloneShell>
-  );
-}
-
-/**
- * Renders CommunityMerchantStorePage for the resolved merchantId.
- * The existing page reads :merchantId from useParams; we wrap it in a
- * synthetic route so the slug→id mapping is transparent.
- */
-function StorefrontByMerchantId({ merchantId }: { merchantId: string }) {
-  // CommunityMerchantStorePage uses useParams<{ merchantId }>(). We need
-  // to provide that param. Easiest path: use a memory router scoped here
-  // would be overkill — instead, directly reuse the storefront content
-  // by routing inline.
-  return (
-    <InlineMerchantStore merchantId={merchantId} />
-  );
-}
-
-// We can't easily inject params, so we re-export the page wrapped in
-// a router that provides the merchantId path param.
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-
-function InlineMerchantStore({ merchantId }: { merchantId: string }) {
-  return (
-    <MemoryRouter initialEntries={[`/store/${merchantId}`]}>
-      <Routes>
-        <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
-      </Routes>
-    </MemoryRouter>
   );
 }
