@@ -167,18 +167,58 @@ const PrinterProtection = () => {
     },
   });
 
-  // Subscribe mutation
+  // Build a map: user_printer_id -> active subscription (for upgrade detection)
+  const activeSubByPrinterId = React.useMemo(() => {
+    const map: Record<string, Subscription & { plan_id?: string }> = {};
+    (subscriptions || []).forEach((s: any) => {
+      if (s.status === 'active' && s.user_printer_id) {
+        map[s.user_printer_id] = s;
+      }
+    });
+    return map;
+  }, [subscriptions]);
+
+  // Get the active subscription for the currently selected printer (if any)
+  const currentActiveSub = selectedPrinter?.user_printer_id
+    ? activeSubByPrinterId[selectedPrinter.user_printer_id]
+    : null;
+
+  // Determine the relationship between selectedPlan and current sub
+  // 'new' | 'same' | 'upgrade' | 'downgrade'
+  const subscriptionMode: 'new' | 'same' | 'upgrade' | 'downgrade' = (() => {
+    if (!currentActiveSub || !selectedPlan) return 'new';
+    if ((currentActiveSub as any).plan_id === selectedPlan.id) return 'same';
+    if (selectedPlan.monthly_price > (currentActiveSub.monthly_price || 0)) return 'upgrade';
+    return 'downgrade';
+  })();
+
+  const upgradeDiscount = subscriptionMode === 'upgrade' && currentActiveSub
+    ? Math.min(currentActiveSub.monthly_price || 0, selectedPlan?.monthly_price || 0)
+    : 0;
+  const upgradeCost = selectedPlan
+    ? Math.max(0, (selectedPlan.monthly_price || 0) - upgradeDiscount)
+    : 0;
+
+  // Subscribe / Upgrade mutation (uses RPC for atomic wallet+sub handling)
   const subscribeMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPlan || !selectedPrinter) {
         throw new Error('الرجاء اختيار الطابعة والباقة');
       }
 
+      // Block "same" plan
+      if (subscriptionMode === 'same') {
+        throw new Error('هذه الطابعة محمية بالفعل بنفس الباقة');
+      }
+      // Block downgrade
+      if (subscriptionMode === 'downgrade') {
+        throw new Error('لا يمكن التحويل إلى باقة أقل. الطابعة محمية بباقة أعلى بالفعل');
+      }
+
       // First register the printer if not registered
       let userPrinterId = selectedPrinter.user_printer_id;
-      
+
       if (!userPrinterId) {
-        // Get or create store printer
         let { data: storePrinter } = await supabase
           .from('store_printers')
           .select('id')
@@ -195,12 +235,10 @@ const PrinterProtection = () => {
             })
             .select('id')
             .single();
-
           if (createError) throw createError;
           storePrinter = newPrinter;
         }
 
-        // Create user printer
         const { data: newUserPrinter, error: userPrinterError } = await supabase
           .from('user_printers')
           .insert({
@@ -211,46 +249,31 @@ const PrinterProtection = () => {
           })
           .select('id')
           .single();
-
         if (userPrinterError) throw userPrinterError;
         userPrinterId = newUserPrinter.id;
       }
 
-      const startDate = new Date();
-      const nextBillingDate = addMonths(startDate, 1);
-      const waitingPeriodEndsAt = addDays(startDate, selectedPlan.waiting_period_days);
+      const isUpgrade = subscriptionMode === 'upgrade';
+      const price = isUpgrade ? upgradeCost : selectedPlan.monthly_price;
 
-      const { error } = await supabase
-        .from('printer_subscriptions')
-        .insert({
-          user_id: user!.id,
-          user_printer_id: userPrinterId,
-          plan_id: selectedPlan.id,
-          status: 'active',
-          start_date: startDate.toISOString(),
-          next_billing_date: nextBillingDate.toISOString(),
-          monthly_price: selectedPlan.monthly_price,
-          waiting_period_ends_at: waitingPeriodEndsAt.toISOString(),
-          auto_renew: true,
-        });
-
-      if (error) throw error;
-
-      // Log the action
-      await supabase.from('printer_protection_logs').insert({
-        user_id: user!.id,
-        action: 'subscribe',
-        entity_type: 'subscription',
-        details: {
-          plan_type: selectedPlan.plan_type,
-          printer_serial: selectedPrinter.serial_number,
-        },
+      const { error } = await supabase.rpc('purchase_printer_subscription', {
+        p_printer_id: userPrinterId,
+        p_plan_id: selectedPlan.id,
+        p_price: price,
+        p_is_upgrade: isUpgrade,
+        p_current_sub_id: isUpgrade && currentActiveSub ? currentActiveSub.id : null,
       });
+      if (error) throw new Error(error.message);
+
+      return { isUpgrade };
     },
-    onSuccess: () => {
-      toast.success('تم الاشتراك بنجاح! 🎉');
+    onSuccess: (data) => {
+      toast.success(data?.isUpgrade ? 'تمت ترقية الباقة بنجاح! 🎉' : 'تم الاشتراك بنجاح! 🎉');
       queryClient.invalidateQueries({ queryKey: ['user-subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['eligible-printers'] });
+      queryClient.invalidateQueries({ queryKey: ['my-printers-with-subs'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
       setSubscribeDialogOpen(false);
       setSelectedPlan(null);
       setSelectedPrinter(null);
