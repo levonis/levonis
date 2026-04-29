@@ -762,6 +762,8 @@ const Cart = () => {
   const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
     && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
+  // Frozen by user selector
+  const warrantyFreeShippingAllowed = useWarrantyContrib;
   const warrantyFreeShippingEligible = !cardFreeShippingApplied
     && warrantyFreeShippingEligibleMethod
     && warrantyFreeShippingHasUses
