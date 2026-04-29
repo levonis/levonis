@@ -213,6 +213,19 @@ export default function CommunityCart() {
 
 
 
+  const updateQuantity = useMutation({
+    mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
+      if (quantity <= 0) {
+        const { error } = await supabase.from("community_cart_items").delete().eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("community_cart_items").update({ quantity }).eq("id", id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["community-cart"] }),
+  });
+
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("community_cart_items").delete().eq("id", id);
