@@ -424,7 +424,10 @@ export default function CommunityCart() {
         {/* Merchant Groups */}
         {groupedItems.map((group) => {
           const groupTotal = group.items.reduce((s, i) => s + i.product_price * i.quantity, 0);
-          const groupGrandTotal = groupTotal + group.deliveryPrice;
+          const isDiscountedMerchant = appliedDiscount?.merchant_id === group.merchantId;
+          const groupDiscount = isDiscountedMerchant ? discountInfo.amount : 0;
+          const groupDelivery = (isDiscountedMerchant && discountInfo.freeDelivery) ? 0 : group.deliveryPrice;
+          const groupGrandTotal = Math.max(0, groupTotal - groupDiscount) + groupDelivery;
 
           return (
             <div key={group.merchantId} className="mt-4">
@@ -439,6 +442,30 @@ export default function CommunityCart() {
                 <span className="text-sm font-bold text-foreground">{group.merchantName}</span>
                 <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
               </button>
+
+              {/* Applied Discount Badge */}
+              {isDiscountedMerchant && appliedDiscount && (
+                <div className="mx-4 mb-2 rounded-2xl border border-emerald-500/30 bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent backdrop-blur-md px-3 py-2 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    {discountInfo.freeDelivery ? <Truck className="h-4 w-4 text-emerald-600" /> : discountInfo.gift ? <Gift className="h-4 w-4 text-emerald-600" /> : <Percent className="h-4 w-4 text-emerald-600" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 line-clamp-1">{appliedDiscount.title_ar}</p>
+                    <p className="text-[9px] text-emerald-700/70 dark:text-emerald-400/70 line-clamp-1">
+                      {discountInfo.amount > 0 && `وفّرت ${discountInfo.amount.toLocaleString()} د.ع`}
+                      {discountInfo.freeDelivery && (discountInfo.amount > 0 ? ' · توصيل مجاني' : 'توصيل مجاني')}
+                      {discountInfo.gift && `هدية: ${discountInfo.gift}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={removeAppliedDiscount}
+                    className="h-7 w-7 rounded-lg hover:bg-emerald-500/15 flex items-center justify-center transition-colors shrink-0"
+                    aria-label="إزالة الخصم"
+                  >
+                    <XIcon className="h-3.5 w-3.5 text-emerald-700/70" />
+                  </button>
+                </div>
+              )}
 
               {/* Items */}
               <div className="px-4 space-y-2">
