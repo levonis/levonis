@@ -106,6 +106,7 @@ const CommunityMerchantStore = lazy(() => import("./pages/CommunityMerchantStore
 const CommunityMerchantOrders = lazy(() => import("./pages/CommunityMerchantOrders"));
 const CommunityAllMerchantsProducts = lazy(() => import("./pages/CommunityAllMerchantsProducts"));
 const CommunityMerchantStorePage = lazy(() => import("./pages/CommunityMerchantStorePage"));
+const MerchantStandalone = lazy(() => import("./pages/MerchantStandalone"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
