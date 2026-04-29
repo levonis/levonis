@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,11 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, ShoppingBag, Trash2, Plus, Minus, Store, 
-  Package, ShoppingCart, Truck, Loader2, ChevronLeft
+  Package, ShoppingCart, Truck, Loader2, ChevronLeft,
+  Tag, X as XIcon, CheckCircle, Percent, Gift
 } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 import Footer from "@/components/Footer";
+
+interface AppliedDiscount {
+  id: string;
+  merchant_id: string;
+  merchant_store_name: string | null;
+  discount_type: string;
+  discount_value: number;
+  min_purchase_amount: number;
+  gift_description: string | null;
+  title_ar: string;
+  valid_until: string | null;
+}
+
 
 interface CartItem {
   id: string;
