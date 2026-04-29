@@ -98,22 +98,120 @@ export default function CommunityCart() {
   }, [cartItems, merchantDeliveryPrices]);
 
   const productsTotal = cartItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-  const deliveryTotal = groupedItems.reduce((sum, g) => sum + g.deliveryPrice, 0);
-  const totalPrice = productsTotal + deliveryTotal;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const updateQuantity = useMutation({
-    mutationFn: async ({ id, quantity }: { id: string; quantity: number }) => {
-      if (quantity <= 0) {
-        const { error } = await supabase.from("community_cart_items").delete().eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("community_cart_items").update({ quantity }).eq("id", id);
-        if (error) throw error;
+  // Applied merchant discount (from /special-coupons → "Use" button)
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+
+  // Compute per-merchant subtotal
+  const merchantSubtotals = useMemo(() => {
+    const m: Record<string, number> = {};
+    cartItems.forEach(i => {
+      m[i.merchant_id] = (m[i.merchant_id] || 0) + i.product_price * i.quantity;
+    });
+    return m;
+  }, [cartItems]);
+
+  // Compute discount amount + delivery override based on applied discount
+  const discountInfo = useMemo(() => {
+    if (!appliedDiscount) return { amount: 0, freeDelivery: false, gift: null as string | null };
+    const sub = merchantSubtotals[appliedDiscount.merchant_id] || 0;
+    if (sub <= 0) return { amount: 0, freeDelivery: false, gift: null };
+    if (appliedDiscount.min_purchase_amount && sub < appliedDiscount.min_purchase_amount) {
+      return { amount: 0, freeDelivery: false, gift: null };
+    }
+    switch (appliedDiscount.discount_type) {
+      case 'percentage':
+      case 'min_purchase_percentage':
+        return { amount: Math.round((sub * (appliedDiscount.discount_value || 0)) / 100), freeDelivery: false, gift: null };
+      case 'fixed_amount':
+        return { amount: Math.min(sub, appliedDiscount.discount_value || 0), freeDelivery: false, gift: null };
+      case 'free_delivery':
+      case 'min_purchase_delivery':
+        return { amount: 0, freeDelivery: true, gift: null };
+      case 'free_gift':
+        return { amount: 0, freeDelivery: false, gift: appliedDiscount.gift_description };
+      default:
+        return { amount: 0, freeDelivery: false, gift: null };
+    }
+  }, [appliedDiscount, merchantSubtotals]);
+
+  const deliveryTotal = groupedItems.reduce((sum, g) => {
+    if (discountInfo.freeDelivery && appliedDiscount?.merchant_id === g.merchantId) return sum;
+    return sum + g.deliveryPrice;
+  }, 0);
+  const totalPrice = Math.max(0, productsTotal - discountInfo.amount) + deliveryTotal;
+
+  // Auto-apply pending merchant discount from /special-coupons
+  useEffect(() => {
+    if (appliedDiscount) return;
+    if (cartItems.length === 0) return;
+    let pending: { discount_id?: string; merchant_id?: string; merchant_name?: string } | null = null;
+    try {
+      const raw = localStorage.getItem('pending_community_discount');
+      if (raw) pending = JSON.parse(raw);
+    } catch {}
+    if (!pending?.discount_id || !pending?.merchant_id) return;
+    try { localStorage.removeItem('pending_community_discount'); } catch {}
+
+    // Validate the user has items from this merchant
+    const merchantSub = cartItems
+      .filter(i => i.merchant_id === pending!.merchant_id)
+      .reduce((s, i) => s + i.product_price * i.quantity, 0);
+    if (merchantSub <= 0) {
+      toast.error(`أضف منتجات من ${pending.merchant_name || 'المتجر'} أولاً لتفعيل الخصم`);
+      navigate(`/community/store/${pending.merchant_id}`);
+      return;
+    }
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('merchant_store_discounts')
+        .select('*')
+        .eq('id', pending!.discount_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error || !data) {
+        toast.error('الخصم لم يعد متاحاً');
+        return;
       }
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["community-cart"] }),
-  });
+      if (data.valid_until && new Date(data.valid_until).getTime() < Date.now()) {
+        toast.error('انتهت صلاحية هذا الخصم');
+        return;
+      }
+      if (data.min_purchase_amount && merchantSub < data.min_purchase_amount) {
+        toast.error(`الحد الأدنى ${data.min_purchase_amount.toLocaleString()} د.ع لمنتجات هذا التاجر`);
+        return;
+      }
+      setAppliedDiscount(data as AppliedDiscount);
+      // Persist on items so checkout knows
+      await supabase
+        .from('community_cart_items')
+        .update({ discount_id: data.id })
+        .eq('user_id', user!.id)
+        .eq('merchant_id', data.merchant_id);
+      queryClient.invalidateQueries({ queryKey: ['community-cart'] });
+      toast.success('تم تطبيق الخصم على منتجات التاجر');
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartItems.length]);
+
+  const removeAppliedDiscount = async () => {
+    if (!appliedDiscount || !user) return;
+    const merchantId = appliedDiscount.merchant_id;
+    setAppliedDiscount(null);
+    try {
+      await supabase
+        .from('community_cart_items')
+        .update({ discount_id: null })
+        .eq('user_id', user.id)
+        .eq('merchant_id', merchantId);
+      queryClient.invalidateQueries({ queryKey: ['community-cart'] });
+    } catch {}
+    toast.success('تم إزالة الخصم');
+  };
+
+
 
   const removeItem = useMutation({
     mutationFn: async (id: string) => {
