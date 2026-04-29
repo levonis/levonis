@@ -5,12 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { 
   ArrowLeft, Percent, Truck, Gift, Tag, Copy, Store, Clock, Ticket, 
   Sparkles, CheckCircle, Package, Settings2, ChevronLeft,
-  Star, Zap
+  Zap, ShoppingBag, Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -55,6 +56,7 @@ const discountIcons: Record<string, typeof Percent> = {
   free_gift: Gift,
   min_purchase_percentage: Percent,
   min_purchase_delivery: Truck,
+  free_product: Gift,
 };
 
 const discountLabels: Record<string, string> = {
@@ -62,9 +64,13 @@ const discountLabels: Record<string, string> = {
   fixed_amount: "خصم مبلغ",
   free_delivery: "توصيل مجاني",
   free_gift: "هدية مجانية",
+  free_product: "منتج مجاني",
   min_purchase_percentage: "خصم عند الشراء",
   min_purchase_delivery: "توصيل مجاني عند الشراء",
 };
+
+const PENDING_SITE_KEY = 'pending_site_coupon';
+const PENDING_COMMUNITY_KEY = 'pending_community_discount';
 
 export default function CustomerSpecialCoupons() {
   const navigate = useNavigate();
@@ -72,6 +78,7 @@ export default function CustomerSpecialCoupons() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedDiscount, setSelectedDiscount] = useState<StoreDiscount | null>(null);
   const [showMerchantManager, setShowMerchantManager] = useState(false);
+  const [activeTab, setActiveTab] = useState<'site' | 'community'>('site');
 
   const { data: merchantApp } = useQuery({
     queryKey: ["merchant-app-for-coupons", user?.id],
@@ -124,6 +131,37 @@ export default function CustomerSpecialCoupons() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const useSiteCoupon = (coupon: SpecialCoupon) => {
+    if (!coupon.coupon_code) {
+      toast.info("هذا عرض ترويجي بدون كود — تصفّح المنتجات للاستفادة");
+      return;
+    }
+    try {
+      localStorage.setItem(PENDING_SITE_KEY, JSON.stringify({
+        code: coupon.coupon_code,
+        title: coupon.title_ar,
+        ts: Date.now(),
+      }));
+    } catch {}
+    toast.success("تم تفعيل الكوبون — سيُطبَّق في السلة");
+    navigate("/cart");
+  };
+
+  const useCommunityDiscount = (discount: StoreDiscount) => {
+    try {
+      localStorage.setItem(PENDING_COMMUNITY_KEY, JSON.stringify({
+        discount_id: discount.id,
+        merchant_id: discount.merchant_id,
+        merchant_name: discount.merchant_store_name,
+        title: discount.title_ar,
+        ts: Date.now(),
+      }));
+    } catch {}
+    toast.success("تم تفعيل الخصم — سيُطبَّق في سلة المجتمع");
+    setSelectedDiscount(null);
+    navigate("/community/cart");
+  };
+
   const getDiscountDisplay = (d: StoreDiscount) => {
     switch (d.discount_type) {
       case 'percentage': case 'min_purchase_percentage': return `${d.discount_value}%`;
@@ -146,7 +184,8 @@ export default function CustomerSpecialCoupons() {
   }, [storeDiscounts]);
 
   const isLoading = couponsLoading || discountsLoading;
-  const hasContent = (coupons && coupons.length > 0) || (storeDiscounts && storeDiscounts.length > 0);
+  const siteCount = coupons?.length || 0;
+  const communityCount = storeDiscounts?.length || 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
@@ -163,7 +202,7 @@ export default function CustomerSpecialCoupons() {
               </div>
               <div>
                 <h1 className="text-sm font-black text-foreground">العروض والخصومات</h1>
-                <p className="text-[9px] text-muted-foreground">وفّر مع كل طلب</p>
+                <p className="text-[9px] text-muted-foreground">فعّل الكوبون لتطبيقه تلقائياً</p>
               </div>
             </div>
           </div>
@@ -181,31 +220,7 @@ export default function CustomerSpecialCoupons() {
         </div>
       </div>
 
-      {/* Stats */}
-      {!isLoading && hasContent && (
-        <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {discountsByStore.size > 0 && (
-            <div className="flex items-center gap-1.5 bg-primary/10 rounded-full px-3 py-1.5 shrink-0">
-              <Store className="h-3 w-3 text-primary" />
-              <span className="text-[10px] font-bold text-primary">{discountsByStore.size} متجر</span>
-            </div>
-          )}
-          {storeDiscounts && storeDiscounts.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-3 py-1.5 shrink-0">
-              <Zap className="h-3 w-3 text-foreground" />
-              <span className="text-[10px] font-bold">{storeDiscounts.length} عرض</span>
-            </div>
-          )}
-          {coupons && coupons.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-3 py-1.5 shrink-0">
-              <Ticket className="h-3 w-3 text-foreground" />
-              <span className="text-[10px] font-bold">{coupons.length} كوبون</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      <main className="flex-1 px-4 py-3 space-y-5">
+      <main className="flex-1 px-4 py-3 space-y-4">
         {/* Merchant Manager */}
         {showMerchantManager && isMerchant && merchantApp && (
           <div className="rounded-2xl border border-primary/20 bg-card/50 backdrop-blur-sm overflow-hidden">
@@ -213,164 +228,198 @@ export default function CustomerSpecialCoupons() {
           </div>
         )}
 
-        {/* Per-Store Discount Sections */}
-        {Array.from(discountsByStore.entries()).map(([storeName, discounts]) => (
-          <section key={storeName} className="space-y-2">
-            {/* Store Header */}
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                <Store className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-[11px] font-black text-foreground truncate">{storeName}</h3>
-                <p className="text-[8px] text-muted-foreground">{discounts.length} عرض متاح</p>
-              </div>
-              <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 text-primary px-2"
-                onClick={() => navigate(`/community/store/${discounts[0].merchant_id}`)}>
-                زيارة<ChevronLeft className="h-2.5 w-2.5" />
-              </Button>
+        {/* Tabs: Site vs Community */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'site' | 'community')} className="w-full">
+          <TabsList className="grid grid-cols-2 w-full h-12 p-1 rounded-2xl">
+            <TabsTrigger value="site" className="rounded-xl gap-1.5 text-[11px] font-bold data-[state=active]:shadow-md">
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span>كوبونات الموقع</span>
+              {siteCount > 0 && (
+                <Badge className="h-4 px-1.5 text-[9px] bg-primary/15 text-primary border-0 mr-0.5">{siteCount}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="community" className="rounded-xl gap-1.5 text-[11px] font-bold data-[state=active]:shadow-md">
+              <Users className="h-3.5 w-3.5" />
+              <span>المجتمع والتجار</span>
+              {communityCount > 0 && (
+                <Badge className="h-4 px-1.5 text-[9px] bg-primary/15 text-primary border-0 mr-0.5">{communityCount}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* SITE TAB — admin coupons */}
+          <TabsContent value="site" className="mt-4 space-y-3">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Zap className="h-3 w-3 text-primary" />
+              <span>تُستخدم في سلة الموقع الرسمي</span>
             </div>
 
-            {/* Horizontal cards */}
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 snap-x">
-              {discounts.map((discount) => {
-                const Icon = discountIcons[discount.discount_type] || Percent;
-                return (
-                  <div key={discount.id} className="shrink-0 w-[160px] snap-start cursor-pointer" onClick={() => setSelectedDiscount(discount)}>
-                    <div className="rounded-xl overflow-hidden border border-border/30 bg-card hover:border-primary/30 hover:shadow-lg transition-all">
-                      {/* Compact gradient header */}
-                      <div className="relative h-14 bg-gradient-to-br from-primary/80 to-primary/40 p-2 flex items-center justify-between">
-                        <div className="w-6 h-6 rounded-md bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
-                          <Icon className="h-3 w-3 text-primary-foreground" />
-                        </div>
-                        <span className="text-xl font-black text-primary-foreground leading-none drop-shadow-sm">
-                          {getDiscountDisplay(discount)}
-                        </span>
-                      </div>
-                      <div className="p-2 space-y-1">
-                        <h4 className="text-[10px] font-bold text-foreground line-clamp-1">{discount.title_ar}</h4>
-                        {discount.min_purchase_amount > 0 && (
-                          <p className="text-[8px] text-primary font-bold bg-primary/5 rounded px-1.5 py-0.5 w-fit border border-primary/10">
-                            {discount.min_purchase_amount.toLocaleString()}+ د.ع
-                          </p>
-                        )}
-                        {discount.valid_until && (
-                          <div className="flex items-center gap-1 text-[8px] text-muted-foreground">
-                            <Clock className="h-2 w-2" />
-                            {format(new Date(discount.valid_until), "d MMM", { locale: ar })}
+            {isLoading && (
+              <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
+            )}
+
+            {!isLoading && (!coupons || coupons.length === 0) && (
+              <EmptyState message="لا توجد كوبونات للموقع حالياً" />
+            )}
+
+            {!isLoading && coupons && coupons.length > 0 && (
+              <div className="space-y-2">
+                {coupons.map((coupon) => {
+                  const Icon = discountIcons[coupon.coupon_type] || Percent;
+                  const label = discountLabels[coupon.coupon_type] || "خصم";
+                  const isCopied = copiedId === coupon.id;
+                  return (
+                    <div key={coupon.id} className="rounded-2xl border border-border/30 bg-card overflow-hidden hover:border-primary/30 hover:shadow-md transition-all">
+                      <div className="flex">
+                        {/* Value badge */}
+                        <div className="w-20 shrink-0 flex flex-col items-center justify-center py-3 bg-gradient-to-b from-primary/15 to-primary/5 border-l border-dashed border-border/40 relative">
+                          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-background" />
+                          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-background" />
+                          <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center mb-1">
+                            <Icon className="h-4 w-4 text-primary" />
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-
-        {/* Admin Coupons */}
-        {coupons && coupons.length > 0 && (
-          <section className="space-y-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                <Ticket className="h-3.5 w-3.5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-[11px] font-black text-foreground">كوبونات خاصة</h3>
-                <p className="text-[8px] text-muted-foreground">{coupons.length} كوبون متاح</p>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              {coupons.map((coupon) => {
-                const Icon = discountIcons[coupon.coupon_type] || Percent;
-                const label = discountLabels[coupon.coupon_type] || "خصم";
-                const isCopied = copiedId === coupon.id;
-
-                return (
-                  <div key={coupon.id} className="rounded-xl border border-border/30 bg-card overflow-hidden hover:border-primary/20 transition-all">
-                    <div className="flex">
-                      {/* Value badge */}
-                      <div className="w-16 shrink-0 flex flex-col items-center justify-center py-2.5 bg-gradient-to-b from-primary/10 to-primary/5 border-l border-dashed border-border/30 relative">
-                        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-background" />
-                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-background" />
-                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center mb-0.5">
-                          <Icon className="h-3.5 w-3.5 text-primary" />
+                          {coupon.coupon_type === "percentage" && coupon.discount_value > 0 && (
+                            <span className="text-base font-black text-primary leading-none">{coupon.discount_value}%</span>
+                          )}
+                          {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
+                            <span className="text-[10px] font-black text-primary leading-tight text-center">{coupon.discount_value?.toLocaleString()}<br/><span className="text-[7px]">د.ع</span></span>
+                          )}
+                          {coupon.coupon_type === "free_delivery" && (
+                            <span className="text-[9px] font-black text-primary text-center">توصيل<br/>مجاني</span>
+                          )}
+                          {coupon.coupon_type === "free_product" && (
+                            <span className="text-[9px] font-black text-primary">هدية</span>
+                          )}
                         </div>
-                        {coupon.coupon_type === "percentage" && coupon.discount_value > 0 && (
-                          <span className="text-sm font-black text-primary">{coupon.discount_value}%</span>
-                        )}
-                        {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
-                          <span className="text-[9px] font-black text-primary">{coupon.discount_value?.toLocaleString()}<span className="text-[6px]"> د.ع</span></span>
-                        )}
-                        {coupon.coupon_type === "free_delivery" && (
-                          <span className="text-[8px] font-black text-primary">مجاني</span>
-                        )}
-                        {coupon.coupon_type === "free_product" && (
-                          <span className="text-[8px] font-black text-primary">هدية</span>
-                        )}
-                      </div>
 
-                      <div className="flex-1 p-2.5 space-y-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-bold text-[10px] text-foreground line-clamp-1">{coupon.title_ar}</h4>
-                          <Badge className="text-[7px] bg-primary/10 text-primary border-0 shrink-0 px-1.5 h-4 rounded-md">{label}</Badge>
-                        </div>
-                        {coupon.description_ar && (
-                          <p className="text-[8px] text-muted-foreground line-clamp-1 leading-relaxed">{coupon.description_ar}</p>
-                        )}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            {coupon.coupon_code && (
-                              <button
-                                className={`flex items-center gap-1 text-[8px] font-mono rounded-md px-1.5 py-0.5 transition-all active:scale-95 ${
-                                  isCopied ? "bg-primary/15 border border-primary/30 text-primary" : "bg-muted/50 border border-dashed border-border/50 text-foreground hover:border-primary/30"
-                                }`}
-                                onClick={() => copyCode(coupon.coupon_code!, coupon.id)}
-                              >
-                                {isCopied ? <CheckCircle className="h-2 w-2" /> : <Copy className="h-2 w-2" />}
-                                {coupon.coupon_code}
-                              </button>
-                            )}
-                            {coupon.merchant_store_name && (
-                              <span className="flex items-center gap-1 text-[7px] text-muted-foreground">
-                                <Store className="h-2 w-2" />{coupon.merchant_store_name}
-                              </span>
-                            )}
+                        <div className="flex-1 p-3 space-y-1.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-bold text-[11px] text-foreground line-clamp-1">{coupon.title_ar}</h4>
+                            <Badge className="text-[8px] bg-primary/10 text-primary border-0 shrink-0 px-1.5 h-4 rounded-md">{label}</Badge>
                           </div>
-                          {coupon.valid_until && (
-                            <span className="flex items-center gap-1 text-[7px] text-muted-foreground">
-                              <Clock className="h-2 w-2" />
-                              {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
-                            </span>
+                          {coupon.description_ar && (
+                            <p className="text-[9px] text-muted-foreground line-clamp-2 leading-relaxed">{coupon.description_ar}</p>
+                          )}
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {coupon.coupon_code && (
+                                <button
+                                  className={`flex items-center gap-1 text-[9px] font-mono rounded-md px-1.5 py-0.5 transition-all active:scale-95 ${
+                                    isCopied ? "bg-primary/15 border border-primary/30 text-primary" : "bg-muted/50 border border-dashed border-border/50 text-foreground hover:border-primary/30"
+                                  }`}
+                                  onClick={() => copyCode(coupon.coupon_code!, coupon.id)}
+                                >
+                                  {isCopied ? <CheckCircle className="h-2.5 w-2.5" /> : <Copy className="h-2.5 w-2.5" />}
+                                  {coupon.coupon_code}
+                                </button>
+                              )}
+                              {coupon.valid_until && (
+                                <span className="flex items-center gap-1 text-[8px] text-muted-foreground">
+                                  <Clock className="h-2 w-2" />
+                                  {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Use button */}
+                          {coupon.coupon_code ? (
+                            <Button
+                              size="sm"
+                              className="w-full h-7 mt-1 text-[10px] font-black rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm gap-1"
+                              onClick={() => useSiteCoupon(coupon)}
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              استخدام في السلة
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full h-7 mt-1 text-[10px] font-bold rounded-lg"
+                              onClick={() => navigate("/products")}
+                            >
+                              تصفّح المنتجات
+                            </Button>
                           )}
                         </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* COMMUNITY TAB — merchant store discounts */}
+          <TabsContent value="community" className="mt-4 space-y-4">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Users className="h-3 w-3 text-primary" />
+              <span>تُستخدم في سلة المجتمع لمنتجات التجار</span>
+            </div>
+
+            {isLoading && (
+              <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
+            )}
+
+            {!isLoading && discountsByStore.size === 0 && (
+              <EmptyState message="لا توجد عروض من المتاجر حالياً" actionLabel="تصفّح المتاجر" onAction={() => navigate("/community")} />
+            )}
+
+            {!isLoading && Array.from(discountsByStore.entries()).map(([storeName, discounts]) => (
+              <section key={storeName} className="space-y-2">
+                {/* Store Header */}
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                    <Store className="h-3.5 w-3.5 text-primary" />
                   </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[11px] font-black text-foreground truncate">{storeName}</h3>
+                    <p className="text-[8px] text-muted-foreground">{discounts.length} عرض متاح</p>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-1 text-primary px-2"
+                    onClick={() => navigate(`/community/store/${discounts[0].merchant_id}`)}>
+                    زيارة<ChevronLeft className="h-2.5 w-2.5" />
+                  </Button>
+                </div>
 
-        {isLoading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
-          </div>
-        )}
-
-        {!isLoading && !hasContent && (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-card to-muted border border-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-7 w-7 text-primary/30" />
-            </div>
-            <p className="text-foreground font-black text-sm">لا توجد عروض حالياً</p>
-            <p className="text-[10px] text-muted-foreground mt-1 mb-4">ترقب العروض القادمة من متاجر المجتمع</p>
-            <Button variant="outline" size="sm" className="rounded-xl text-xs" onClick={() => navigate("/community")}>تصفح المتاجر</Button>
-          </div>
-        )}
+                {/* Horizontal cards */}
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 snap-x">
+                  {discounts.map((discount) => {
+                    const Icon = discountIcons[discount.discount_type] || Percent;
+                    return (
+                      <div key={discount.id} className="shrink-0 w-[170px] snap-start cursor-pointer" onClick={() => setSelectedDiscount(discount)}>
+                        <div className="rounded-xl overflow-hidden border border-border/30 bg-card hover:border-primary/30 hover:shadow-lg transition-all">
+                          <div className="relative h-14 bg-gradient-to-br from-primary/80 to-primary/40 p-2 flex items-center justify-between">
+                            <div className="w-6 h-6 rounded-md bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
+                              <Icon className="h-3 w-3 text-primary-foreground" />
+                            </div>
+                            <span className="text-xl font-black text-primary-foreground leading-none drop-shadow-sm">
+                              {getDiscountDisplay(discount)}
+                            </span>
+                          </div>
+                          <div className="p-2 space-y-1">
+                            <h4 className="text-[10px] font-bold text-foreground line-clamp-1">{discount.title_ar}</h4>
+                            {discount.min_purchase_amount > 0 && (
+                              <p className="text-[8px] text-primary font-bold bg-primary/5 rounded px-1.5 py-0.5 w-fit border border-primary/10">
+                                {discount.min_purchase_amount.toLocaleString()}+ د.ع
+                              </p>
+                            )}
+                            {discount.valid_until && (
+                              <div className="flex items-center gap-1 text-[8px] text-muted-foreground">
+                                <Clock className="h-2 w-2" />
+                                {format(new Date(discount.valid_until), "d MMM", { locale: ar })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Discount Detail Sheet */}
@@ -444,10 +493,19 @@ export default function CustomerSpecialCoupons() {
                   )}
                 </div>
 
-                <div className="p-4 pt-2 border-t border-border/30">
-                  <Button className="w-full h-11 gap-2 rounded-2xl text-xs font-black shadow-lg shadow-primary/20"
-                    onClick={() => { navigate(`/community/store/${selectedDiscount.merchant_id}`); setSelectedDiscount(null); }}>
+                <div className="p-4 pt-2 border-t border-border/30 grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-11 gap-2 rounded-2xl text-xs font-bold"
+                    onClick={() => { navigate(`/community/store/${selectedDiscount.merchant_id}`); setSelectedDiscount(null); }}
+                  >
                     <Store className="h-4 w-4" />تسوّق من المتجر
+                  </Button>
+                  <Button
+                    className="h-11 gap-2 rounded-2xl text-xs font-black bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg"
+                    onClick={() => useCommunityDiscount(selectedDiscount)}
+                  >
+                    <CheckCircle className="h-4 w-4" />استخدام في سلة المجتمع
                   </Button>
                 </div>
               </div>
@@ -457,6 +515,20 @@ export default function CustomerSpecialCoupons() {
       </Sheet>
 
       <Footer />
+    </div>
+  );
+}
+
+function EmptyState({ message, actionLabel, onAction }: { message: string; actionLabel?: string; onAction?: () => void }) {
+  return (
+    <div className="text-center py-16">
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-card to-muted border border-primary/10 flex items-center justify-center mx-auto mb-4">
+        <Sparkles className="h-7 w-7 text-primary/30" />
+      </div>
+      <p className="text-foreground font-black text-sm">{message}</p>
+      {actionLabel && onAction && (
+        <Button variant="outline" size="sm" className="rounded-xl text-xs mt-4" onClick={onAction}>{actionLabel}</Button>
+      )}
     </div>
   );
 }
