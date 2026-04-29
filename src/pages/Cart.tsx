@@ -735,18 +735,36 @@ const Cart = () => {
     && cartHasCardShipCategory
     && total >= (cardDiscount?.freeShippingMinOrder || 0);
 
-  // Warranty free shipping: only if not already getting card free shipping
+  // Warranty free shipping (official, free system) — only if not already getting card free shipping
   const warrantyShipCats = warrantyBenefits?.freeShippingApplicableCategoryIds || [];
   const cartHasWarrantyShipCategory = warrantyShipCats.length === 0
     || items.some((it: any) => it?.products?.category_id && warrantyShipCats.includes(it.products.category_id));
   const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
     && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
-  const warrantyFreeShippingApplied = !cardFreeShippingApplied
+  const warrantyFreeShippingEligible = !cardFreeShippingApplied
     && warrantyFreeShippingEligibleMethod
     && warrantyFreeShippingHasUses
     && cartHasWarrantyShipCategory
     && total >= (warrantyBenefits?.freeShippingMinOrder || 0);
+
+  // Subscription (paid protection plan) free shipping — independent ledger; falls back if warranty has no uses
+  const subShipCats = subscriptionBenefits?.freeShippingApplicableCategoryIds || [];
+  const cartHasSubShipCategory = subShipCats.length === 0
+    || items.some((it: any) => it?.products?.category_id && subShipCats.includes(it.products.category_id));
+  const subFreeShippingEligibleMethod = !!subscriptionBenefits?.freeShipping
+    && (subscriptionBenefits?.freeShippingMethods?.length ? subscriptionBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
+  const subFreeShippingHasUses = (subscriptionBenefits?.freeShippingRemainingUses ?? 0) > 0;
+  const subFreeShippingEligible = !cardFreeShippingApplied
+    && subFreeShippingEligibleMethod
+    && subFreeShippingHasUses
+    && cartHasSubShipCategory
+    && total >= (subscriptionBenefits?.freeShippingMinOrder || 0);
+
+  // Prefer warranty (free to user); fall back to subscription if warranty cannot cover.
+  const warrantyFreeShippingApplied = warrantyFreeShippingEligible;
+  const subscriptionFreeShippingApplied = !warrantyFreeShippingApplied && subFreeShippingEligible;
+  const hardwareFreeShippingApplied = warrantyFreeShippingApplied || subscriptionFreeShippingApplied;
 
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
   const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
@@ -754,7 +772,8 @@ const Cart = () => {
   const referralRemainingForFreeDelivery = appliedReferral
     ? Math.max(0, referralMinOrder - total)
     : 0;
-  const deliveryFee = (cardFreeShippingApplied || warrantyFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+
   
   // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
   const referralOwnerEarnings = appliedReferral
@@ -787,8 +806,10 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
-  const warrantyDiscountAmount = warrantyBenefits?.totalDiscount || 0;
-  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount + referralOwnerEarnings;
+  // Independent ledgers — both stack in the cart total.
+  const warrantyDiscountAmount = useHardwareOverCard ? (warrantyBenefits?.totalDiscount || 0) : 0;
+  const subscriptionDiscountAmount = useHardwareOverCard ? (subscriptionBenefits?.totalDiscount || 0) : 0;
+  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
