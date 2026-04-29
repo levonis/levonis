@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy } from "lucide-react";
 
@@ -13,6 +14,37 @@ interface WinnerEntry {
 
 export default function WinnersTicker() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Realtime: refresh ticker when seasons end and prizes are awarded
+  useEffect(() => {
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ["recent-game-winners-ticker"] });
+    };
+
+    const channel = supabase
+      .channel("winners-ticker-live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "crossy_road_winners" },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "stack_game_winners" },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "competition_prizes" },
+        invalidate,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: winners } = useQuery({
     queryKey: ["recent-game-winners-ticker"],
