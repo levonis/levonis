@@ -192,9 +192,9 @@ function AppContent() {
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
-      {!isAuthPage && <DynamicIsland />}
-      {!isAuthPage && <ProfileOrb />}
-      {!isAuthPage && (
+      {!isAuthPage && !isStandaloneStore && <DynamicIsland />}
+      {!isAuthPage && !isStandaloneStore && <ProfileOrb />}
+      {!isAuthPage && !isStandaloneStore && (
         <ProfileExpansionShell>
           <Suspense fallback={null}>
             <RequireAuth>
