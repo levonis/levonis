@@ -1557,7 +1557,7 @@ const Cart = () => {
         ? orderSubtotal + codFee
         : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
 
-      const orderDeliveryFee = (cardFreeShippingApplied || warrantyFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
@@ -2694,10 +2694,35 @@ const Cart = () => {
                     </div>
                   )}
 
+                  {/* خصم باقة الحماية (التأمين المدفوع) — مستقل عن الضمان ويتراكم معه */}
+                  {subscriptionDiscountAmount > 0 && subscriptionBenefits && (
+                    <div className="flex justify-between items-center animate-fade-in rounded-xl p-3 border border-amber-500/30 bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent backdrop-blur-sm shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shadow-inner">
+                          <Sparkles className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400 block flex items-center gap-1">
+                            {subscriptionBenefits.planNameAr || ''} — {subscriptionBenefits.percentageRate}%
+                          </span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {t('cart_warranty_discount_subtitle', {
+                              remaining: formatPrice(Math.max(0, subscriptionBenefits.percentageRemaining - subscriptionDiscountAmount)),
+                              day: 1,
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-black text-amber-600 text-sm animate-pulse">
+                        -<AnimatedPrice value={subscriptionDiscountAmount} formatFn={formatPrice} /> {t('cart_iqd_short')}
+                      </span>
+                    </div>
+                  )}
+
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    {(cardFreeShippingApplied || warrantyFreeShippingApplied || isFreeDeliveryApplied) ? (
+                    {(cardFreeShippingApplied || hardwareFreeShippingApplied || isFreeDeliveryApplied) ? (
                       <span className="font-bold text-emerald-600">
                         {t('cart_free_delivery_won')} {rawDeliveryFee > 0 && <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>}
                       </span>
@@ -2812,7 +2837,7 @@ const Cart = () => {
                   )}
 
                   {/* خيارات التوصيل */}
-                  {isFreeDeliveryApplied && !cardFreeShippingApplied && !warrantyFreeShippingApplied ? (
+                  {isFreeDeliveryApplied && !cardFreeShippingApplied && !hardwareFreeShippingApplied ? (
                     (() => {
                       const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
                       return (
