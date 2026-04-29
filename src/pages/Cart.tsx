@@ -784,8 +784,9 @@ const Cart = () => {
     && total >= (subscriptionBenefits?.freeShippingMinOrder || 0);
 
   // Prefer warranty (free to user); fall back to subscription if warranty cannot cover.
-  const warrantyFreeShippingApplied = warrantyFreeShippingEligible;
-  const subscriptionFreeShippingApplied = !warrantyFreeShippingApplied && subFreeShippingEligible;
+  // User selector can freeze either source.
+  const warrantyFreeShippingApplied = useWarrantyContrib && warrantyFreeShippingEligible;
+  const subscriptionFreeShippingApplied = useSubscriptionContrib && !warrantyFreeShippingApplied && subFreeShippingEligible;
   const hardwareFreeShippingApplied = warrantyFreeShippingApplied || subscriptionFreeShippingApplied;
 
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
