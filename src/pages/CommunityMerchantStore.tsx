@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
+import StandaloneLinkCard from "@/components/merchant/StandaloneLinkCard";
 
 interface MerchantProduct {
   id: string;
