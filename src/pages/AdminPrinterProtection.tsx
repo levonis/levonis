@@ -116,6 +116,7 @@ interface DeliveredOrderItem {
 
 const AdminPrinterProtection = () => {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
