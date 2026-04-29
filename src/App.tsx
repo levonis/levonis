@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import LanguageProvider from "@/components/LanguageProvider";
 import ScrollRestoration from "@/components/ScrollRestoration";
@@ -106,6 +106,7 @@ const CommunityMerchantStore = lazy(() => import("./pages/CommunityMerchantStore
 const CommunityMerchantOrders = lazy(() => import("./pages/CommunityMerchantOrders"));
 const CommunityAllMerchantsProducts = lazy(() => import("./pages/CommunityAllMerchantsProducts"));
 const CommunityMerchantStorePage = lazy(() => import("./pages/CommunityMerchantStorePage"));
+const MerchantStandalone = lazy(() => import("./pages/MerchantStandalone"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
@@ -161,12 +162,14 @@ import PageFade from "@/components/PageFade";
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { visible: islandVisible } = useIsland();
   useGlobalNavSearchItems();
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const isAuthPage = location.pathname === "/auth";
-  const hideChrome = isGamesPage || isReelsPage || isAuthPage;
+  const isStandaloneStore = location.pathname.startsWith("/s/");
+  const hideChrome = isGamesPage || isReelsPage || isAuthPage || isStandaloneStore;
 
   useEffect(() => {
     if (isReelsPage) return;
@@ -180,6 +183,30 @@ function AppContent() {
     document.documentElement.style.overflowY = "";
   }, [location.pathname, isReelsPage]);
 
+  // Wildcard subdomain support: <slug>.levonisiq.com → /s/<slug>
+  // Only triggers on actual subdomains (skips id-preview, www, root).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const host = window.location.hostname;
+    const RESERVED = new Set([
+      "levonisiq.com",
+      "www.levonisiq.com",
+      "levonis.lovable.app",
+    ]);
+    if (RESERVED.has(host)) return;
+    if (host.includes("lovable.app") || host.includes("localhost")) return;
+    const parts = host.split(".");
+    // Only treat as merchant subdomain if exactly: <slug>.levonisiq.com
+    if (parts.length === 3 && parts[1] === "levonisiq" && parts[2] === "com") {
+      const slug = parts[0];
+      if (slug && slug !== "www" && !location.pathname.startsWith("/s/")) {
+        navigate(`/s/${slug}${location.pathname === "/" ? "" : location.pathname}`, {
+          replace: true,
+        });
+      }
+    }
+  }, [navigate, location.pathname]);
+
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
   const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
@@ -190,9 +217,9 @@ function AppContent() {
       <Suspense fallback={null}>
         <DeferredEffects />
       </Suspense>
-      {!isAuthPage && <DynamicIsland />}
-      {!isAuthPage && <ProfileOrb />}
-      {!isAuthPage && (
+      {!isAuthPage && !isStandaloneStore && <DynamicIsland />}
+      {!isAuthPage && !isStandaloneStore && <ProfileOrb />}
+      {!isAuthPage && !isStandaloneStore && (
         <ProfileExpansionShell>
           <Suspense fallback={null}>
             <RequireAuth>
@@ -310,6 +337,9 @@ function AppContent() {
             <Route path="/community/merchants" element={<RequireCommunityProfile><CommunityMerchantsPages /></RequireCommunityProfile>} />
             <Route path="/community/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
+            {/* Standalone merchant storefront — feels like a separate site */}
+            <Route path="/s/:slug" element={<MerchantStandalone />} />
+            <Route path="/s/:slug/dashboard" element={<MerchantStandalone />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
             {/* /profile is rendered by ProfileExpansionShell at app level (overlay) */}

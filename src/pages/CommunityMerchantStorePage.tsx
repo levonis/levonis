@@ -43,9 +43,17 @@ interface MerchantProduct {
   material_type?: "resin" | "filament" | "both" | null;
 }
 
-export default function CommunityMerchantStorePage() {
+interface CommunityMerchantStorePageProps {
+  /** Optional override for the merchantId (used by the standalone storefront /s/:slug). */
+  merchantIdOverride?: string;
+}
+
+export default function CommunityMerchantStorePage({
+  merchantIdOverride,
+}: CommunityMerchantStorePageProps = {}) {
   const navigate = useNavigate();
-  const { merchantId } = useParams<{ merchantId: string }>();
+  const params = useParams<{ merchantId: string }>();
+  const merchantId = merchantIdOverride ?? params.merchantId;
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
