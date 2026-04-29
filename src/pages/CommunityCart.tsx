@@ -536,10 +536,28 @@ export default function CommunityCart() {
                       <Truck className="h-3.5 w-3.5 text-primary/60" />
                       رسوم التوصيل
                     </span>
-                    <span className="text-[11px] font-bold text-foreground">{group.deliveryPrice.toLocaleString()} د.ع</span>
+                    {isDiscountedMerchant && discountInfo.freeDelivery ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-[10px] line-through text-muted-foreground/60">{group.deliveryPrice.toLocaleString()} د.ع</span>
+                        <span className="text-[11px] font-black text-emerald-600">مجاني</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold text-foreground">{group.deliveryPrice.toLocaleString()} د.ع</span>
+                    )}
+                  </div>
+                )}
+                {/* Discount line */}
+                {isDiscountedMerchant && discountInfo.amount > 0 && (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                    <span className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400">
+                      <Tag className="h-3.5 w-3.5" />
+                      الخصم المُفعَّل
+                    </span>
+                    <span className="text-[11px] font-black text-emerald-600">- {discountInfo.amount.toLocaleString()} د.ع</span>
                   </div>
                 )}
               </div>
+
 
               {/* Order Button */}
               <div className="px-4 mt-3">
