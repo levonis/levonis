@@ -5889,6 +5889,7 @@ export type Database = {
           store_pause_end_date: string | null
           store_pause_message: string | null
           store_paused: boolean | null
+          store_slug: string | null
           updated_at: string
           user_id: string
           welcome_message: string | null
@@ -5920,6 +5921,7 @@ export type Database = {
           store_pause_end_date?: string | null
           store_pause_message?: string | null
           store_paused?: boolean | null
+          store_slug?: string | null
           updated_at?: string
           user_id: string
           welcome_message?: string | null
@@ -5951,6 +5953,7 @@ export type Database = {
           store_pause_end_date?: string | null
           store_pause_message?: string | null
           store_paused?: boolean | null
+          store_slug?: string | null
           updated_at?: string
           user_id?: string
           welcome_message?: string | null
@@ -6334,6 +6337,7 @@ export type Database = {
           specialty: string | null
           store_image_url: string | null
           store_layout: string
+          store_slug: string | null
           total_debt: number
           updated_at: string
         }
@@ -6355,6 +6359,7 @@ export type Database = {
           specialty?: string | null
           store_image_url?: string | null
           store_layout?: string
+          store_slug?: string | null
           total_debt?: number
           updated_at?: string
         }
@@ -6376,6 +6381,7 @@ export type Database = {
           specialty?: string | null
           store_image_url?: string | null
           store_layout?: string
+          store_slug?: string | null
           total_debt?: number
           updated_at?: string
         }
@@ -12749,6 +12755,7 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_store_slug: { Args: { input: string }; Returns: string }
       normalize_text_key: { Args: { p_text: string }; Returns: string }
       notify_draw_happening: { Args: { comp_id: string }; Returns: undefined }
       pay_order_from_wallet: {
