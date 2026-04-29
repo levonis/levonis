@@ -1060,6 +1060,24 @@ const Cart = () => {
     });
   };
 
+  // Auto-apply pending coupon coming from /special-coupons "Use" button.
+  // Runs once when the cart has loaded and no coupon is currently applied.
+  useEffect(() => {
+    if (appliedCoupon || appliedReferral) return;
+    let pending: { code?: string; title?: string } | null = null;
+    try {
+      const raw = localStorage.getItem('pending_site_coupon');
+      if (raw) pending = JSON.parse(raw);
+    } catch {}
+    if (!pending?.code) return;
+    // Clear immediately to avoid loops on re-render
+    try { localStorage.removeItem('pending_site_coupon'); } catch {}
+    setCouponCode(pending.code);
+    // Defer to next tick so state is set before applyCoupon reads it
+    setTimeout(() => { applyCoupon(); }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Helper to wrap cart-changing actions with cart request warning
   const wrapWithCartRequestCheck = async (action: () => Promise<void>) => {
     // Always check database for latest pending cart request
