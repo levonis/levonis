@@ -11,7 +11,7 @@ import { Loader2, Shield, Save, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n';
 import { useNavigate } from 'react-router-dom';
-import { ADMIN_BASE_PATH } from '@/lib/admin';
+import { ADMIN_BASE_PATH } from '@/config/adminConfig';
 
 interface CategoryRow { id: string; name: string; name_ar: string | null }
 
