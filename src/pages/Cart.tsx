@@ -63,8 +63,28 @@ const Cart = () => {
   // Paid protection-plan subscriptions are an independent system that STACKS with
   // the official warranty (different funding, different consumption ledger).
   const { subscriptionBenefits } = useCartSubscriptionBenefits(items, getCartItemPrice, total);
+
+  // User-controlled selector when both warranty AND subscription are active.
+  // 'both' = stack (default). 'warranty' = use only official warranty (freeze subscription).
+  // 'subscription' = use only paid plan (freeze warranty).
+  const [hardwareBenefitMode, setHardwareBenefitMode] = useState<'both' | 'warranty' | 'subscription'>('both');
+  const hasWarrantyContrib = !!(warrantyBenefits && ((warrantyBenefits.totalDiscount || 0) > 0 || warrantyBenefits.freeShipping));
+  const hasSubscriptionContrib = !!(subscriptionBenefits && ((subscriptionBenefits.totalDiscount || 0) > 0 || subscriptionBenefits.freeShipping));
+  const hasBothActive = hasWarrantyContrib && hasSubscriptionContrib;
+  // Auto-reset to 'both' if one source disappears (cart changed, used up, etc.)
+  useEffect(() => {
+    if (!hasBothActive && hardwareBenefitMode !== 'both') {
+      setHardwareBenefitMode('both');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasBothActive]);
+  const useWarrantyContrib = hardwareBenefitMode !== 'subscription';
+  const useSubscriptionContrib = hardwareBenefitMode !== 'warranty';
+
   // Loyalty card vs combined hardware benefits (warranty + subscription) — pick best (no stacking with card).
-  const combinedHardwareDiscount = (warrantyBenefits?.totalDiscount || 0) + (subscriptionBenefits?.totalDiscount || 0);
+  // Use only the SELECTED sources for this comparison.
+  const combinedHardwareDiscount = (useWarrantyContrib ? (warrantyBenefits?.totalDiscount || 0) : 0)
+    + (useSubscriptionContrib ? (subscriptionBenefits?.totalDiscount || 0) : 0);
   const useHardwareOverCard = combinedHardwareDiscount > (rawCardDiscount?.totalDiscount || 0);
   const cardDiscount = useHardwareOverCard ? null : rawCardDiscount;
   const [couponCode, setCouponCode] = useState('');
