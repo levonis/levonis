@@ -1380,16 +1380,12 @@ const Cart = () => {
         });
       }
 
-      // Record warranty / subscription benefit usage (direct sale) — non-blocking
+      // Record warranty benefit usage (direct sale) — non-blocking
       if (warrantyBenefits) {
         try {
-          const isSubscription = warrantyBenefits.source === 'subscription' && !!warrantyBenefits.subscriptionId;
-          const rpcName = isSubscription ? 'consume_subscription_benefit' : 'consume_warranty_benefit';
-          const idKey: 'p_subscription_id' | 'p_user_printer_id' = isSubscription ? 'p_subscription_id' : 'p_user_printer_id';
-          const idValue: string = isSubscription ? (warrantyBenefits.subscriptionId as string) : warrantyBenefits.userPrinterId;
           if (warrantyDiscountAmount > 0) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: orderResult.id,
               p_benefit_type: 'discount',
               p_amount: warrantyDiscountAmount,
@@ -1397,8 +1393,8 @@ const Cart = () => {
             });
           }
           if (warrantyFreeShippingApplied) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: orderResult.id,
               p_benefit_type: 'free_shipping',
               p_amount: rawDeliveryFee,
@@ -1406,7 +1402,7 @@ const Cart = () => {
             });
           }
         } catch (e) {
-          console.warn('Benefit consumption failed:', e);
+          console.warn('Warranty benefit consumption failed:', e);
         }
       }
 
@@ -1880,16 +1876,12 @@ const Cart = () => {
         });
       }
 
-      // Record warranty / subscription benefit usage (standard order) — non-blocking
+      // Record warranty benefit usage (standard order) — non-blocking
       if (warrantyBenefits) {
         try {
-          const isSubscription = warrantyBenefits.source === 'subscription' && !!warrantyBenefits.subscriptionId;
-          const rpcName = isSubscription ? 'consume_subscription_benefit' : 'consume_warranty_benefit';
-          const idKey: 'p_subscription_id' | 'p_user_printer_id' = isSubscription ? 'p_subscription_id' : 'p_user_printer_id';
-          const idValue: string = isSubscription ? (warrantyBenefits.subscriptionId as string) : warrantyBenefits.userPrinterId;
           if (warrantyDiscountAmount > 0) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: order.id,
               p_benefit_type: 'discount',
               p_amount: warrantyDiscountAmount,
@@ -1897,8 +1889,8 @@ const Cart = () => {
             });
           }
           if (warrantyFreeShippingApplied) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: order.id,
               p_benefit_type: 'free_shipping',
               p_amount: rawDeliveryFee,
@@ -1906,7 +1898,7 @@ const Cart = () => {
             });
           }
         } catch (e) {
-          console.warn('Benefit consumption failed:', e);
+          console.warn('Warranty benefit consumption failed:', e);
         }
       }
 
