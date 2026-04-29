@@ -312,6 +312,9 @@ function AppContent() {
             <Route path="/community/merchants" element={<RequireCommunityProfile><CommunityMerchantsPages /></RequireCommunityProfile>} />
             <Route path="/community/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
+            {/* Standalone merchant storefront — feels like a separate site */}
+            <Route path="/s/:slug" element={<MerchantStandalone />} />
+            <Route path="/s/:slug/dashboard" element={<MerchantStandalone />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
             {/* /profile is rendered by ProfileExpansionShell at app level (overlay) */}
