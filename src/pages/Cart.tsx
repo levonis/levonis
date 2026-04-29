@@ -6,6 +6,7 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useCartWarrantyBenefits } from '@/hooks/useCartWarrantyBenefits';
+import { useCartSubscriptionBenefits } from '@/hooks/useCartSubscriptionBenefits';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Sparkles } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
@@ -59,10 +60,13 @@ const Cart = () => {
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
   const { cardDiscount: rawCardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const { warrantyBenefits } = useCartWarrantyBenefits(items, getCartItemPrice, total);
-  // Pick best between loyalty card and warranty benefits (no stacking).
-  const useWarrantyOverCard = !!warrantyBenefits
-    && (warrantyBenefits.totalDiscount > (rawCardDiscount?.totalDiscount || 0));
-  const cardDiscount = useWarrantyOverCard ? null : rawCardDiscount;
+  // Paid protection-plan subscriptions are an independent system that STACKS with
+  // the official warranty (different funding, different consumption ledger).
+  const { subscriptionBenefits } = useCartSubscriptionBenefits(items, getCartItemPrice, total);
+  // Loyalty card vs combined hardware benefits (warranty + subscription) — pick best (no stacking with card).
+  const combinedHardwareDiscount = (warrantyBenefits?.totalDiscount || 0) + (subscriptionBenefits?.totalDiscount || 0);
+  const useHardwareOverCard = combinedHardwareDiscount > (rawCardDiscount?.totalDiscount || 0);
+  const cardDiscount = useHardwareOverCard ? null : rawCardDiscount;
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number; custom_message?: string | null; banner_style?: string | null } | null>(null);
