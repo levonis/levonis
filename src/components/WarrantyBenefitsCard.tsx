@@ -3,8 +3,9 @@ import { useActiveSubscriptionBenefits } from "@/hooks/useCartSubscriptionBenefi
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
-import { Shield, Sparkles, Truck, Calendar } from "lucide-react";
+import { Shield, Sparkles, Truck, Calendar, Package, Ship } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { translateShippingOption } from "@/lib/shippingLabel";
 
 interface UnifiedRow {
   key: string;
@@ -18,6 +19,7 @@ interface UnifiedRow {
   shipMax: number;
   shipUsed: number;
   shipMin: number;
+  shipMethods: string[];
 }
 
 export default function WarrantyBenefitsCard() {
@@ -42,6 +44,9 @@ export default function WarrantyBenefitsCard() {
       shipMax: Number(w.free_shipping_max_uses_monthly) || 0,
       shipUsed: Number(w.free_shipping_used) || 0,
       shipMin: Number(w.free_shipping_min_order) || 0,
+      shipMethods: Array.isArray(w.free_shipping_methods)
+        ? (w.free_shipping_methods as any[]).filter((m) => typeof m === "string")
+        : [],
     });
   }
 
@@ -58,6 +63,9 @@ export default function WarrantyBenefitsCard() {
       shipMax: Number(s.free_shipping_max_uses_monthly) || 0,
       shipUsed: Number(s.free_shipping_used) || 0,
       shipMin: Number(s.free_shipping_min_order) || 0,
+      shipMethods: Array.isArray((s as any).free_shipping_methods)
+        ? ((s as any).free_shipping_methods as any[]).filter((m) => typeof m === "string")
+        : [],
     });
   }
 
@@ -72,10 +80,13 @@ export default function WarrantyBenefitsCard() {
       {rows.map((r) => {
         const discountRemaining = Math.max(0, r.discountCap - r.discountUsed);
         const shippingRemaining = Math.max(0, r.shipMax - r.shipUsed);
+        const isSub = r.source === "subscription";
         return (
           <Card
             key={r.key}
-            className="p-4 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent"
+            className={isSub
+              ? "p-4 border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent"
+              : "p-4 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent"}
           >
             <div className="flex items-center justify-between mb-3 gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -100,7 +111,7 @@ export default function WarrantyBenefitsCard() {
               <div className="rounded-lg bg-background/60 p-3 mb-2 border border-emerald-500/20">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-emerald-600" />
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-foreground">
                       {t('warranty_benefits_discount_label')} — {r.discountPct}%
                     </div>
@@ -113,19 +124,51 @@ export default function WarrantyBenefitsCard() {
             )}
 
             {r.shipMax > 0 && (
-              <div className="rounded-lg bg-background/60 p-3 border border-emerald-500/20">
+              <div className="rounded-lg bg-background/60 p-3 border border-emerald-500/20 space-y-2">
                 <div className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-emerald-600" />
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="text-xs font-bold text-foreground">
                       {t('warranty_benefits_free_shipping_label')}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       {t('warranty_benefits_remaining')}: {shippingRemaining} / {r.shipMax}
-                      {r.shipMin > 0 && (
-                        <> · {t('warranty_benefits_min_order', { amount: formatPrice(r.shipMin) })}</>
-                      )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Conditions row: minimum order + allowed shipping methods */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-emerald-500/15">
+                  {r.shipMin > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] gap-1 bg-background/70 border-emerald-500/30 text-foreground font-bold"
+                    >
+                      <Package className="h-2.5 w-2.5 text-emerald-600" />
+                      {t('warranty_benefits_min_order_label')}: {formatPrice(r.shipMin)}
+                    </Badge>
+                  )}
+
+                  {/* Shipping method chips */}
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className="text-[9px] text-muted-foreground font-bold inline-flex items-center gap-0.5">
+                      <Ship className="h-2.5 w-2.5" />
+                      {t('warranty_benefits_allowed_shipping')}:
+                    </span>
+                    {r.shipMethods.length === 0 ? (
+                      <Badge className="text-[10px] bg-emerald-500/15 text-emerald-700 border-0">
+                        {t('warranty_benefits_all_shipping')}
+                      </Badge>
+                    ) : (
+                      r.shipMethods.map((m) => (
+                        <Badge
+                          key={m}
+                          className="text-[10px] bg-emerald-500/15 text-emerald-700 border border-emerald-500/30"
+                        >
+                          {translateShippingOption(m, t)}
+                        </Badge>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

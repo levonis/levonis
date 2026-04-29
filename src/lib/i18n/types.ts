@@ -1124,6 +1124,9 @@ export type TranslationKeys = {
   warranty_benefits_remaining: string;
   warranty_benefits_renews_on_day: string;
   warranty_benefits_min_order: string;
+  warranty_benefits_min_order_label: string;
+  warranty_benefits_allowed_shipping: string;
+  warranty_benefits_all_shipping: string;
   warranty_benefits_no_active: string;
   warranty_benefits_inactive: string;
   warranty_benefits_for_printer: string;
