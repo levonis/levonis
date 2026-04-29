@@ -82,10 +82,12 @@ export default function WarrantyBenefitsCard() {
                 <div className="font-bold text-foreground text-sm truncate">{r.label}</div>
                 {r.source === "subscription" ? (
                   <Badge className="text-[10px] bg-amber-500/15 text-amber-700 border-amber-500/30 shrink-0">
-                    باقة الحماية{r.badge ? `: ${r.badge}` : ''}
+                    {r.badge ? `باقة الحماية: ${r.badge}` : 'باقة الحماية (اشتراك مدفوع)'}
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="text-[10px] shrink-0">ضمان الطابعة</Badge>
+                  <Badge className="text-[10px] bg-emerald-500/15 text-emerald-700 border-emerald-500/30 shrink-0">
+                    الضمان الرسمي (مجاني)
+                  </Badge>
                 )}
               </div>
               <div className="text-[10px] text-muted-foreground flex items-center gap-1 shrink-0">

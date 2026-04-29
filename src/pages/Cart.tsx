@@ -6,6 +6,7 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { useCartProtectionDiscount } from '@/hooks/useCartProtectionDiscount';
 import { useCartCardDiscount } from '@/hooks/useCartCardDiscount';
 import { useCartWarrantyBenefits } from '@/hooks/useCartWarrantyBenefits';
+import { useCartSubscriptionBenefits } from '@/hooks/useCartSubscriptionBenefits';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText, Truck, MapPin, Gift, Sparkles } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
@@ -59,10 +60,13 @@ const Cart = () => {
   const { cartDiscount: protectionDiscount } = useCartProtectionDiscount(items, getCartItemPrice);
   const { cardDiscount: rawCardDiscount } = useCartCardDiscount(items, getCartItemPrice, total);
   const { warrantyBenefits } = useCartWarrantyBenefits(items, getCartItemPrice, total);
-  // Pick best between loyalty card and warranty benefits (no stacking).
-  const useWarrantyOverCard = !!warrantyBenefits
-    && (warrantyBenefits.totalDiscount > (rawCardDiscount?.totalDiscount || 0));
-  const cardDiscount = useWarrantyOverCard ? null : rawCardDiscount;
+  // Paid protection-plan subscriptions are an independent system that STACKS with
+  // the official warranty (different funding, different consumption ledger).
+  const { subscriptionBenefits } = useCartSubscriptionBenefits(items, getCartItemPrice, total);
+  // Loyalty card vs combined hardware benefits (warranty + subscription) — pick best (no stacking with card).
+  const combinedHardwareDiscount = (warrantyBenefits?.totalDiscount || 0) + (subscriptionBenefits?.totalDiscount || 0);
+  const useHardwareOverCard = combinedHardwareDiscount > (rawCardDiscount?.totalDiscount || 0);
+  const cardDiscount = useHardwareOverCard ? null : rawCardDiscount;
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [appliedReferral, setAppliedReferral] = useState<{ coupon_id: string; owner_username: string; owner_user_id: string; free_delivery_min_order_iqd?: number; custom_message?: string | null; banner_style?: string | null } | null>(null);
@@ -731,18 +735,36 @@ const Cart = () => {
     && cartHasCardShipCategory
     && total >= (cardDiscount?.freeShippingMinOrder || 0);
 
-  // Warranty free shipping: only if not already getting card free shipping
+  // Warranty free shipping (official, free system) — only if not already getting card free shipping
   const warrantyShipCats = warrantyBenefits?.freeShippingApplicableCategoryIds || [];
   const cartHasWarrantyShipCategory = warrantyShipCats.length === 0
     || items.some((it: any) => it?.products?.category_id && warrantyShipCats.includes(it.products.category_id));
   const warrantyFreeShippingEligibleMethod = !!warrantyBenefits?.freeShipping
     && (warrantyBenefits?.freeShippingMethods?.length ? warrantyBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
   const warrantyFreeShippingHasUses = (warrantyBenefits?.freeShippingRemainingUses ?? 0) > 0;
-  const warrantyFreeShippingApplied = !cardFreeShippingApplied
+  const warrantyFreeShippingEligible = !cardFreeShippingApplied
     && warrantyFreeShippingEligibleMethod
     && warrantyFreeShippingHasUses
     && cartHasWarrantyShipCategory
     && total >= (warrantyBenefits?.freeShippingMinOrder || 0);
+
+  // Subscription (paid protection plan) free shipping — independent ledger; falls back if warranty has no uses
+  const subShipCats = subscriptionBenefits?.freeShippingApplicableCategoryIds || [];
+  const cartHasSubShipCategory = subShipCats.length === 0
+    || items.some((it: any) => it?.products?.category_id && subShipCats.includes(it.products.category_id));
+  const subFreeShippingEligibleMethod = !!subscriptionBenefits?.freeShipping
+    && (subscriptionBenefits?.freeShippingMethods?.length ? subscriptionBenefits.freeShippingMethods.includes(selectedDeliveryMethod) : true);
+  const subFreeShippingHasUses = (subscriptionBenefits?.freeShippingRemainingUses ?? 0) > 0;
+  const subFreeShippingEligible = !cardFreeShippingApplied
+    && subFreeShippingEligibleMethod
+    && subFreeShippingHasUses
+    && cartHasSubShipCategory
+    && total >= (subscriptionBenefits?.freeShippingMinOrder || 0);
+
+  // Prefer warranty (free to user); fall back to subscription if warranty cannot cover.
+  const warrantyFreeShippingApplied = warrantyFreeShippingEligible;
+  const subscriptionFreeShippingApplied = !warrantyFreeShippingApplied && subFreeShippingEligible;
+  const hardwareFreeShippingApplied = warrantyFreeShippingApplied || subscriptionFreeShippingApplied;
 
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
   const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
@@ -750,7 +772,8 @@ const Cart = () => {
   const referralRemainingForFreeDelivery = appliedReferral
     ? Math.max(0, referralMinOrder - total)
     : 0;
-  const deliveryFee = (cardFreeShippingApplied || warrantyFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+  const deliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : rawDeliveryFee;
+
   
   // Referral commission per unit — added to the buyer's final price (paid to VIP+ owner)
   const referralOwnerEarnings = appliedReferral
@@ -783,8 +806,10 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const protectionDiscountAmount = (protectionDiscount?.canUse && protectionDiscount?.totalDiscount) ? protectionDiscount.totalDiscount : 0;
   const cardDiscountAmount = cardDiscount?.totalDiscount || 0;
-  const warrantyDiscountAmount = warrantyBenefits?.totalDiscount || 0;
-  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount + referralOwnerEarnings;
+  // Independent ledgers — both stack in the cart total.
+  const warrantyDiscountAmount = useHardwareOverCard ? (warrantyBenefits?.totalDiscount || 0) : 0;
+  const subscriptionDiscountAmount = useHardwareOverCard ? (subscriptionBenefits?.totalDiscount || 0) : 0;
+  const subtotalAfterDiscount = effectiveSubtotal - discount - protectionDiscountAmount - cardDiscountAmount - warrantyDiscountAmount - subscriptionDiscountAmount + referralOwnerEarnings;
   
   // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
   const subtotalWithTax = subtotalAfterDiscount;
@@ -1380,16 +1405,12 @@ const Cart = () => {
         });
       }
 
-      // Record warranty / subscription benefit usage (direct sale) — non-blocking
-      if (warrantyBenefits) {
+      // Record official warranty benefit usage (direct sale) — non-blocking
+      if (warrantyBenefits && (warrantyDiscountAmount > 0 || warrantyFreeShippingApplied)) {
         try {
-          const isSubscription = warrantyBenefits.source === 'subscription' && !!warrantyBenefits.subscriptionId;
-          const rpcName = isSubscription ? 'consume_subscription_benefit' : 'consume_warranty_benefit';
-          const idKey: 'p_subscription_id' | 'p_user_printer_id' = isSubscription ? 'p_subscription_id' : 'p_user_printer_id';
-          const idValue: string = isSubscription ? (warrantyBenefits.subscriptionId as string) : warrantyBenefits.userPrinterId;
           if (warrantyDiscountAmount > 0) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: orderResult.id,
               p_benefit_type: 'discount',
               p_amount: warrantyDiscountAmount,
@@ -1397,8 +1418,8 @@ const Cart = () => {
             });
           }
           if (warrantyFreeShippingApplied) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: orderResult.id,
               p_benefit_type: 'free_shipping',
               p_amount: rawDeliveryFee,
@@ -1406,7 +1427,33 @@ const Cart = () => {
             });
           }
         } catch (e) {
-          console.warn('Benefit consumption failed:', e);
+          console.warn('Warranty benefit consumption failed:', e);
+        }
+      }
+
+      // Record paid subscription benefit usage (direct sale) — independent ledger
+      if (subscriptionBenefits && (subscriptionDiscountAmount > 0 || subscriptionFreeShippingApplied)) {
+        try {
+          if (subscriptionDiscountAmount > 0) {
+            await (supabase as any).rpc('consume_subscription_benefit', {
+              p_subscription_id: subscriptionBenefits.subscriptionId,
+              p_order_id: orderResult.id,
+              p_benefit_type: 'discount',
+              p_amount: subscriptionDiscountAmount,
+              p_delivery_method_key: null,
+            });
+          }
+          if (subscriptionFreeShippingApplied) {
+            await (supabase as any).rpc('consume_subscription_benefit', {
+              p_subscription_id: subscriptionBenefits.subscriptionId,
+              p_order_id: orderResult.id,
+              p_benefit_type: 'free_shipping',
+              p_amount: rawDeliveryFee,
+              p_delivery_method_key: selectedDeliveryMethod,
+            });
+          }
+        } catch (e) {
+          console.warn('Subscription benefit consumption failed:', e);
         }
       }
 
@@ -1510,7 +1557,7 @@ const Cart = () => {
         ? orderSubtotal + codFee
         : (isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0);
 
-      const orderDeliveryFee = (cardFreeShippingApplied || warrantyFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
+      const orderDeliveryFee = (cardFreeShippingApplied || hardwareFreeShippingApplied || referralFreeShippingApplied) ? 0 : getDeliveryFee(selectedAddress.governorate);
       
       // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
       // التوصيل يُدفع دائماً عند الاستلام — لا يُحتسب ضمن paid_amount
@@ -1880,16 +1927,12 @@ const Cart = () => {
         });
       }
 
-      // Record warranty / subscription benefit usage (standard order) — non-blocking
-      if (warrantyBenefits) {
+      // Record official warranty benefit usage (standard order) — non-blocking
+      if (warrantyBenefits && (warrantyDiscountAmount > 0 || warrantyFreeShippingApplied)) {
         try {
-          const isSubscription = warrantyBenefits.source === 'subscription' && !!warrantyBenefits.subscriptionId;
-          const rpcName = isSubscription ? 'consume_subscription_benefit' : 'consume_warranty_benefit';
-          const idKey: 'p_subscription_id' | 'p_user_printer_id' = isSubscription ? 'p_subscription_id' : 'p_user_printer_id';
-          const idValue: string = isSubscription ? (warrantyBenefits.subscriptionId as string) : warrantyBenefits.userPrinterId;
           if (warrantyDiscountAmount > 0) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: order.id,
               p_benefit_type: 'discount',
               p_amount: warrantyDiscountAmount,
@@ -1897,8 +1940,8 @@ const Cart = () => {
             });
           }
           if (warrantyFreeShippingApplied) {
-            await (supabase as any).rpc(rpcName, {
-              [idKey]: idValue,
+            await (supabase as any).rpc('consume_warranty_benefit', {
+              p_user_printer_id: warrantyBenefits.userPrinterId,
               p_order_id: order.id,
               p_benefit_type: 'free_shipping',
               p_amount: rawDeliveryFee,
@@ -1906,7 +1949,33 @@ const Cart = () => {
             });
           }
         } catch (e) {
-          console.warn('Benefit consumption failed:', e);
+          console.warn('Warranty benefit consumption failed:', e);
+        }
+      }
+
+      // Record paid subscription benefit usage (standard order) — independent ledger
+      if (subscriptionBenefits && (subscriptionDiscountAmount > 0 || subscriptionFreeShippingApplied)) {
+        try {
+          if (subscriptionDiscountAmount > 0) {
+            await (supabase as any).rpc('consume_subscription_benefit', {
+              p_subscription_id: subscriptionBenefits.subscriptionId,
+              p_order_id: order.id,
+              p_benefit_type: 'discount',
+              p_amount: subscriptionDiscountAmount,
+              p_delivery_method_key: null,
+            });
+          }
+          if (subscriptionFreeShippingApplied) {
+            await (supabase as any).rpc('consume_subscription_benefit', {
+              p_subscription_id: subscriptionBenefits.subscriptionId,
+              p_order_id: order.id,
+              p_benefit_type: 'free_shipping',
+              p_amount: rawDeliveryFee,
+              p_delivery_method_key: selectedDeliveryMethod,
+            });
+          }
+        } catch (e) {
+          console.warn('Subscription benefit consumption failed:', e);
         }
       }
 
@@ -2625,10 +2694,35 @@ const Cart = () => {
                     </div>
                   )}
 
+                  {/* خصم باقة الحماية (التأمين المدفوع) — مستقل عن الضمان ويتراكم معه */}
+                  {subscriptionDiscountAmount > 0 && subscriptionBenefits && (
+                    <div className="flex justify-between items-center animate-fade-in rounded-xl p-3 border border-amber-500/30 bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent backdrop-blur-sm shadow-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shadow-inner">
+                          <Sparkles className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-amber-700 dark:text-amber-400 block flex items-center gap-1">
+                            {subscriptionBenefits.planNameAr || ''} — {subscriptionBenefits.percentageRate}%
+                          </span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {t('cart_warranty_discount_subtitle', {
+                              remaining: formatPrice(Math.max(0, subscriptionBenefits.percentageRemaining - subscriptionDiscountAmount)),
+                              day: 1,
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="font-black text-amber-600 text-sm animate-pulse">
+                        -<AnimatedPrice value={subscriptionDiscountAmount} formatFn={formatPrice} /> {t('cart_iqd_short')}
+                      </span>
+                    </div>
+                  )}
+
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
-                    {(cardFreeShippingApplied || warrantyFreeShippingApplied || isFreeDeliveryApplied) ? (
+                    {(cardFreeShippingApplied || hardwareFreeShippingApplied || isFreeDeliveryApplied) ? (
                       <span className="font-bold text-emerald-600">
                         {t('cart_free_delivery_won')} {rawDeliveryFee > 0 && <span className="text-xs line-through text-muted-foreground mr-1">{formatPrice(rawDeliveryFee)}</span>}
                       </span>
@@ -2743,7 +2837,7 @@ const Cart = () => {
                   )}
 
                   {/* خيارات التوصيل */}
-                  {isFreeDeliveryApplied && !cardFreeShippingApplied && !warrantyFreeShippingApplied ? (
+                  {isFreeDeliveryApplied && !cardFreeShippingApplied && !hardwareFreeShippingApplied ? (
                     (() => {
                       const selectedMethod = visibleDeliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
                       return (
