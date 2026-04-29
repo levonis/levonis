@@ -9176,6 +9176,13 @@ export type Database = {
         Row: {
           annual_coverage_cap: number | null
           badge_text: string | null
+          benefit_discount_category_ids: string[] | null
+          benefit_discount_max_amount_monthly: number
+          benefit_discount_percentage: number
+          benefit_free_shipping_category_ids: string[] | null
+          benefit_free_shipping_max_monthly: number
+          benefit_free_shipping_methods: Json
+          benefit_free_shipping_min_order: number
           created_at: string | null
           description_ar: string | null
           description_en: string | null
@@ -9210,6 +9217,13 @@ export type Database = {
         Insert: {
           annual_coverage_cap?: number | null
           badge_text?: string | null
+          benefit_discount_category_ids?: string[] | null
+          benefit_discount_max_amount_monthly?: number
+          benefit_discount_percentage?: number
+          benefit_free_shipping_category_ids?: string[] | null
+          benefit_free_shipping_max_monthly?: number
+          benefit_free_shipping_methods?: Json
+          benefit_free_shipping_min_order?: number
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -9244,6 +9258,13 @@ export type Database = {
         Update: {
           annual_coverage_cap?: number | null
           badge_text?: string | null
+          benefit_discount_category_ids?: string[] | null
+          benefit_discount_max_amount_monthly?: number
+          benefit_discount_percentage?: number
+          benefit_free_shipping_category_ids?: string[] | null
+          benefit_free_shipping_max_monthly?: number
+          benefit_free_shipping_methods?: Json
+          benefit_free_shipping_min_order?: number
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -10756,6 +10777,57 @@ export type Database = {
             columns: ["section_id"]
             isOneToOne: false
             referencedRelation: "story_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_benefit_usage: {
+        Row: {
+          benefit_type: string
+          delivery_method_key: string | null
+          id: string
+          order_id: string
+          saved_amount: number
+          subscription_id: string
+          used_at: string
+          user_id: string
+          user_printer_id: string
+        }
+        Insert: {
+          benefit_type: string
+          delivery_method_key?: string | null
+          id?: string
+          order_id: string
+          saved_amount?: number
+          subscription_id: string
+          used_at?: string
+          user_id: string
+          user_printer_id: string
+        }
+        Update: {
+          benefit_type?: string
+          delivery_method_key?: string | null
+          id?: string
+          order_id?: string
+          saved_amount?: number
+          subscription_id?: string
+          used_at?: string
+          user_id?: string
+          user_printer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_benefit_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_benefit_usage_user_printer_id_fkey"
+            columns: ["user_printer_id"]
+            isOneToOne: false
+            referencedRelation: "user_printers"
             referencedColumns: ["id"]
           },
         ]
@@ -12487,6 +12559,34 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_active_subscription_benefits_for_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          discount_applicable_category_ids: string[]
+          discount_max_amount_monthly: number
+          discount_percentage: number
+          discount_used: number
+          end_date: string
+          free_shipping_applicable_category_ids: string[]
+          free_shipping_max_uses_monthly: number
+          free_shipping_methods: Json
+          free_shipping_min_order: number
+          free_shipping_used: number
+          is_benefits_active: boolean
+          model_name_ar: string
+          period_end: string
+          period_start: string
+          plan_badge_text: string
+          plan_id: string
+          plan_name_ar: string
+          product_id: string
+          serial_number: string
+          start_date: string
+          store_printer_id: string
+          subscription_id: string
+          user_printer_id: string
+        }[]
+      }
       get_active_warranty_benefits_for_user: {
         Args: { p_user_id: string }
         Returns: {
