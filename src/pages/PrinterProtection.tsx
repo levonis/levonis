@@ -1024,19 +1024,20 @@ const PrinterProtection = () => {
               <Button
                 onClick={handleConfirmSubscription}
                 disabled={
-                  (confirmStep === 1 && !selectedPrinter) || 
+                  (confirmStep === 1 && !selectedPrinter) ||
+                  (confirmStep === 2 && (subscriptionMode === 'same' || subscriptionMode === 'downgrade')) ||
                   subscribeMutation.isPending
                 }
               >
                 {subscribeMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري الاشتراك...
+                    {subscriptionMode === 'upgrade' ? 'جاري الترقية...' : 'جاري الاشتراك...'}
                   </>
                 ) : confirmStep === 3 ? (
                   <>
                     <Check className="w-4 h-4 ml-2" />
-                    تأكيد الاشتراك
+                    {subscriptionMode === 'upgrade' ? 'تأكيد الترقية' : 'تأكيد الاشتراك'}
                   </>
                 ) : (
                   <>
