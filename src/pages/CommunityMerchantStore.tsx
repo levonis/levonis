@@ -408,44 +408,10 @@ export default function CommunityMerchantStore() {
 
         {/* Standalone storefront link — feels like the merchant has their own site */}
         {(merchantApp as any).store_slug && (
-          <Card className="mb-6 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card">
-            <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <ExternalLink className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-bold">موقع متجرك المستقل</h3>
-                </div>
-                <p className="text-xs text-muted-foreground mb-2">
-                  افتح متجرك كأنه موقع منفصل بهويتك الخاصة، شاركه مع زبائنك مباشرة.
-                </p>
-                <code className="text-[11px] bg-muted/50 px-2 py-1 rounded inline-block break-all">
-                  {`${window.location.origin}/s/${(merchantApp as any).store_slug}`}
-                </code>
-              </div>
-              <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 sm:flex-none"
-                  onClick={() => {
-                    const url = `${window.location.origin}/s/${(merchantApp as any).store_slug}`;
-                    navigator.clipboard.writeText(url);
-                    toast({ title: "تم نسخ الرابط" });
-                  }}
-                >
-                  نسخ الرابط
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 sm:flex-none gap-1"
-                  onClick={() => navigate(`/s/${(merchantApp as any).store_slug}`)}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  افتح
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <StandaloneLinkCard
+            slug={(merchantApp as any).store_slug}
+            onOpen={() => navigate(`/s/${(merchantApp as any).store_slug}`)}
+          />
         )}
 
         {/* Stats */}
