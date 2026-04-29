@@ -12408,6 +12408,16 @@ export type Database = {
         }
         Returns: number
       }
+      consume_subscription_benefit: {
+        Args: {
+          p_amount: number
+          p_benefit_type: string
+          p_delivery_method_key?: string
+          p_order_id: string
+          p_subscription_id: string
+        }
+        Returns: boolean
+      }
       consume_warranty_benefit: {
         Args: {
           p_amount: number
