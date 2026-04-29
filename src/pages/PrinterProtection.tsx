@@ -782,46 +782,78 @@ const PrinterProtection = () => {
               {/* Step 1: Select/Confirm Printer */}
               {confirmStep === 1 && (
                 <div className="space-y-4">
-                  {selectedPrinter ? (
+                  {selectedPrinter && (
                     <Card className="bg-primary/5 border-primary/30">
                       <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            <Printer className="w-5 h-5 text-primary" />
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                              <Printer className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{selectedPrinter.product_name_ar}</p>
+                              <p className="text-sm text-muted-foreground font-mono truncate" dir="ltr">
+                                SN: {selectedPrinter.serial_number}
+                              </p>
+                              {currentActiveSub && (
+                                <Badge className="mt-1 bg-green-500/20 text-green-500 border-green-500/30 text-[10px]">
+                                  <ShieldCheck className="w-3 h-3 ml-1" />
+                                  محمية حالياً: {currentActiveSub.protection_plans?.name_ar}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{selectedPrinter.product_name_ar}</p>
-                            <p className="text-sm text-muted-foreground font-mono" dir="ltr">
-                              SN: {selectedPrinter.serial_number}
-                            </p>
-                          </div>
+                          {eligibleForSubscription.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedPrinter(null)}
+                            >
+                              تغيير
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
-                  ) : eligibleForSubscription.length > 0 ? (
+                  )}
+
+                  {!selectedPrinter && eligibleForSubscription.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground mb-3">اختر الطابعة:</p>
-                      {eligibleForSubscription.map((printer) => (
-                        <Card 
-                          key={printer.order_item_id}
-                          className="cursor-pointer hover:border-primary/50 transition-colors"
-                          onClick={() => setSelectedPrinter(printer)}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex items-center gap-3">
-                              <Printer className="w-5 h-5 text-primary" />
-                              <div>
-                                <p className="font-medium text-sm">{printer.product_name_ar}</p>
-                                <p className="text-xs text-muted-foreground font-mono" dir="ltr">
-                                  SN: {printer.serial_number}
-                                </p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        اختر الطابعة التي تريد تأمينها:
+                      </p>
+                      {eligibleForSubscription.map((printer) => {
+                        const sub = printer.user_printer_id ? activeSubByPrinterId[printer.user_printer_id] : null;
+                        return (
+                          <Card 
+                            key={printer.order_item_id}
+                            className="cursor-pointer hover:border-primary/50 transition-colors"
+                            onClick={() => setSelectedPrinter(printer)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3">
+                                <Printer className="w-5 h-5 text-primary shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-sm truncate">{printer.product_name_ar}</p>
+                                  <p className="text-xs text-muted-foreground font-mono truncate" dir="ltr">
+                                    SN: {printer.serial_number}
+                                  </p>
+                                  {sub && (
+                                    <Badge className="mt-1 bg-green-500/20 text-green-500 border-green-500/30 text-[10px]">
+                                      <ShieldCheck className="w-3 h-3 ml-1" />
+                                      محمية: {sub.protection_plans?.name_ar}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
-                  ) : (
+                  )}
+
+                  {!selectedPrinter && eligibleForSubscription.length === 0 && (
                     <div className="text-center py-6">
                       <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                       <p className="text-muted-foreground">
@@ -832,43 +864,88 @@ const PrinterProtection = () => {
                 </div>
               )}
 
-              {/* Step 2: Show Plan Details */}
+              {/* Step 2: Show Plan Details + Upgrade/Same notice */}
               {confirmStep === 2 && selectedPlan && (
-                <Card className="bg-muted/50">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${getPlanColor(selectedPlan.plan_type)} text-white`}>
-                        {getPlanIcon(selectedPlan.icon_name)}
-                      </div>
-                      <div>
-                        <h4 className="font-bold">{selectedPlan.name_ar}</h4>
-                        <p className="text-sm text-muted-foreground">{selectedPlan.description_ar}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">السعر الشهري:</span>
-                        <span className="font-medium">{selectedPlan.monthly_price.toLocaleString()} د.ع</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">خصم الصيانة:</span>
-                        <span>{selectedPlan.maintenance_discount_percentage}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">خصم قطع الغيار:</span>
-                        <span>{selectedPlan.parts_discount_percentage}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">طلبات الخدمة شهرياً:</span>
-                        <span>{selectedPlan.max_service_requests_per_month}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">فترة الانتظار:</span>
-                        <span>{selectedPlan.waiting_period_days} يوم</span>
+                <div className="space-y-3">
+                  {subscriptionMode === 'same' && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-amber-500">التأمين موجود بالفعل</p>
+                        <p className="text-muted-foreground text-xs mt-1">
+                          هذه الطابعة محمية بنفس الباقة. اختر باقة مختلفة أو طابعة أخرى.
+                        </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
+                  {subscriptionMode === 'downgrade' && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-destructive">لا يمكن التخفيض</p>
+                        <p className="text-muted-foreground text-xs mt-1">
+                          الطابعة محمية حالياً بباقة أعلى ({currentActiveSub?.protection_plans?.name_ar}). لا يمكن التحويل إلى باقة أقل.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {subscriptionMode === 'upgrade' && currentActiveSub && (
+                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-start gap-2">
+                      <Sparkles className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                      <div className="text-sm flex-1">
+                        <p className="font-medium text-blue-500">ترقية الباقة</p>
+                        <p className="text-muted-foreground text-xs mt-1">
+                          من <span className="font-medium">{currentActiveSub.protection_plans?.name_ar}</span> إلى <span className="font-medium">{selectedPlan.name_ar}</span>
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs line-through text-muted-foreground">
+                            {selectedPlan.monthly_price.toLocaleString()} د.ع
+                          </span>
+                          <span className="text-sm font-bold text-primary">
+                            {upgradeCost.toLocaleString()} د.ع
+                          </span>
+                          <Badge className="bg-amber-500 text-[9px]">خصم {upgradeDiscount.toLocaleString()}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className={`p-2 rounded-lg bg-gradient-to-br ${getPlanColor(selectedPlan.plan_type)} text-white`}>
+                          {getPlanIcon(selectedPlan.icon_name)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold">{selectedPlan.name_ar}</h4>
+                          <p className="text-sm text-muted-foreground">{selectedPlan.description_ar}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">السعر الشهري:</span>
+                          <span className="font-medium">{selectedPlan.monthly_price.toLocaleString()} د.ع</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">خصم الصيانة:</span>
+                          <span>{selectedPlan.maintenance_discount_percentage}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">خصم قطع الغيار:</span>
+                          <span>{selectedPlan.parts_discount_percentage}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">طلبات الخدمة شهرياً:</span>
+                          <span>{selectedPlan.max_service_requests_per_month}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">فترة الانتظار:</span>
+                          <span>{selectedPlan.waiting_period_days} يوم</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
 
               {/* Step 3: Summary */}
@@ -876,7 +953,9 @@ const PrinterProtection = () => {
                 <div className="space-y-4">
                   <Card className="bg-muted/50">
                     <CardContent className="p-4 space-y-3">
-                      <h4 className="font-bold mb-3">ملخص الاشتراك</h4>
+                      <h4 className="font-bold mb-3">
+                        {subscriptionMode === 'upgrade' ? 'ملخص الترقية' : 'ملخص الاشتراك'}
+                      </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">الطابعة:</span>
@@ -886,22 +965,36 @@ const PrinterProtection = () => {
                           <span className="text-muted-foreground">الرقم التسلسلي:</span>
                           <span className="font-mono" dir="ltr">{selectedPrinter.serial_number}</span>
                         </div>
+                        {subscriptionMode === 'upgrade' && currentActiveSub && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">الباقة الحالية:</span>
+                            <span>{currentActiveSub.protection_plans?.name_ar}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">الباقة:</span>
+                          <span className="text-muted-foreground">
+                            {subscriptionMode === 'upgrade' ? 'الباقة الجديدة:' : 'الباقة:'}
+                          </span>
                           <span className="font-medium">{selectedPlan.name_ar}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">السعر الشهري:</span>
-                          <span className="font-medium">{selectedPlan.monthly_price.toLocaleString()} د.ع</span>
+                          <span className="text-muted-foreground">
+                            {subscriptionMode === 'upgrade' ? 'تكلفة الترقية:' : 'السعر الشهري:'}
+                          </span>
+                          <span className="font-medium text-primary">
+                            {(subscriptionMode === 'upgrade' ? upgradeCost : selectedPlan.monthly_price).toLocaleString()} د.ع
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">تاريخ البدء:</span>
                           <span>{format(new Date(), 'dd MMMM yyyy', { locale: ar })}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">انتهاء فترة الانتظار:</span>
-                          <span>{format(addDays(new Date(), selectedPlan.waiting_period_days), 'dd MMMM yyyy', { locale: ar })}</span>
-                        </div>
+                        {subscriptionMode !== 'upgrade' && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">انتهاء فترة الانتظار:</span>
+                            <span>{format(addDays(new Date(), selectedPlan.waiting_period_days), 'dd MMMM yyyy', { locale: ar })}</span>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -909,8 +1002,9 @@ const PrinterProtection = () => {
                   <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
                     <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-muted-foreground">
-                      بالاشتراك، أنت توافق على شروط الخدمة والدفع الشهري للباقة المختارة. 
-                      فترة الانتظار ({selectedPlan.waiting_period_days} يوم) ستبدأ من تاريخ الاشتراك.
+                      {subscriptionMode === 'upgrade'
+                        ? 'سيتم خصم تكلفة الترقية من المحفظة فوراً وستحصل على مزايا الباقة الجديدة.'
+                        : `بالاشتراك، أنت توافق على شروط الخدمة والدفع الشهري للباقة المختارة. فترة الانتظار (${selectedPlan.waiting_period_days} يوم) ستبدأ من تاريخ الاشتراك.`}
                     </p>
                   </div>
                 </div>
