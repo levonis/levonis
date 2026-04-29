@@ -338,12 +338,13 @@ const PrinterProtection = () => {
       toast.error('هذه الطابعة غير مؤهلة للحماية - الرقم التسلسلي غير متوفر');
       return;
     }
-    if (printer.has_active_subscription) {
-      toast.info('هذه الطابعة لديها اشتراك نشط بالفعل');
-      return;
-    }
     setSelectedPrinter(printer);
-    toast.success('تم تحديد الطابعة، اختر الباقة المناسبة');
+    const activeSub = printer.user_printer_id ? activeSubByPrinterId[printer.user_printer_id] : null;
+    if (activeSub) {
+      toast.info(`الطابعة محمية حالياً بباقة "${activeSub.protection_plans?.name_ar}". اختر باقة أعلى للترقية.`);
+    } else {
+      toast.success('تم تحديد الطابعة، اختر الباقة المناسبة');
+    }
   };
 
   const handleConfirmSubscription = () => {
@@ -354,15 +355,24 @@ const PrinterProtection = () => {
       }
       setConfirmStep(2);
     } else if (confirmStep === 2) {
+      // Pre-validate before showing summary
+      if (subscriptionMode === 'same') {
+        toast.error('هذه الطابعة محمية بالفعل بنفس الباقة');
+        return;
+      }
+      if (subscriptionMode === 'downgrade') {
+        toast.error('لا يمكن التحويل إلى باقة أقل. الطابعة محمية بباقة أعلى بالفعل');
+        return;
+      }
       setConfirmStep(3);
     } else {
       subscribeMutation.mutate();
     }
   };
 
-  // Get printers that can subscribe (have serial and no active subscription)
+  // Get printers that can subscribe (have serial - includes already-subscribed for upgrade)
   const eligibleForSubscription = eligiblePrinters?.filter(
-    p => p.serial_number && !p.has_active_subscription
+    p => p.serial_number
   ) || [];
 
   // Get printers without serial
