@@ -167,7 +167,8 @@ function AppContent() {
   const isGamesPage = location.pathname === "/games";
   const isReelsPage = location.pathname.startsWith("/community/reels");
   const isAuthPage = location.pathname === "/auth";
-  const hideChrome = isGamesPage || isReelsPage || isAuthPage;
+  const isStandaloneStore = location.pathname.startsWith("/s/");
+  const hideChrome = isGamesPage || isReelsPage || isAuthPage || isStandaloneStore;
 
   useEffect(() => {
     if (isReelsPage) return;
