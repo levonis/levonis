@@ -182,6 +182,30 @@ function AppContent() {
     document.documentElement.style.overflowY = "";
   }, [location.pathname, isReelsPage]);
 
+  // Wildcard subdomain support: <slug>.levonisiq.com → /s/<slug>
+  // Only triggers on actual subdomains (skips id-preview, www, root).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const host = window.location.hostname;
+    const RESERVED = new Set([
+      "levonisiq.com",
+      "www.levonisiq.com",
+      "levonis.lovable.app",
+    ]);
+    if (RESERVED.has(host)) return;
+    if (host.includes("lovable.app") || host.includes("localhost")) return;
+    const parts = host.split(".");
+    // Only treat as merchant subdomain if exactly: <slug>.levonisiq.com
+    if (parts.length === 3 && parts[1] === "levonisiq" && parts[2] === "com") {
+      const slug = parts[0];
+      if (slug && slug !== "www" && !location.pathname.startsWith("/s/")) {
+        navigate(`/s/${slug}${location.pathname === "/" ? "" : location.pathname}`, {
+          replace: true,
+        });
+      }
+    }
+  }, [navigate, location.pathname]);
+
   // Padding mirrors island visibility so the layout breathes in/out smoothly.
   const mainPaddingTop = hideChrome || !islandVisible ? 0 : 64;
 
