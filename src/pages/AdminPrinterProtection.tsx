@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ADMIN_BASE_PATH } from '@/config/adminConfig';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -114,6 +116,7 @@ interface DeliveredOrderItem {
 
 const AdminPrinterProtection = () => {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -786,9 +789,14 @@ const AdminPrinterProtection = () => {
                   <Settings className="w-5 h-5" />
                   إدارة الباقات
                 </CardTitle>
-                <Button onClick={() => setAddPlanDialogOpen(true)}>
-                  إضافة باقة جديدة
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={() => navigate(`${ADMIN_BASE_PATH}/protection-plan-benefits`)}>
+                    إعدادات فوائد الباقات
+                  </Button>
+                  <Button onClick={() => setAddPlanDialogOpen(true)}>
+                    إضافة باقة جديدة
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {plansLoading ? (
