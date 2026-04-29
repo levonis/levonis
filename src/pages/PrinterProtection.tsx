@@ -69,6 +69,8 @@ interface Subscription {
   monthly_price: number;
   auto_renew: boolean;
   waiting_period_ends_at: string | null;
+  plan_id: string;
+  user_printer_id: string;
   user_printers: {
     store_printers: {
       model_name_ar: string;
