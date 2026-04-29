@@ -2692,6 +2692,57 @@ const Cart = () => {
                     </div>
                   )}
 
+                  {/* Selector: Warranty / Subscription / Both — only when both are active */}
+                  {hasBothActive && (
+                    <div className="animate-fade-in rounded-xl p-3 border border-primary/20 bg-gradient-to-br from-primary/5 via-background/40 to-background/20 backdrop-blur-md shadow-sm space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs font-bold text-foreground">{t('cart_hardware_benefits_picker_title')}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setHardwareBenefitMode('warranty')}
+                          className={`text-[10px] font-semibold px-2 py-2 rounded-lg border transition-all ${
+                            hardwareBenefitMode === 'warranty'
+                              ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                              : 'border-border/50 bg-background/40 text-muted-foreground hover:border-emerald-500/40'
+                          }`}
+                        >
+                          {t('cart_hardware_benefits_use_warranty')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHardwareBenefitMode('subscription')}
+                          className={`text-[10px] font-semibold px-2 py-2 rounded-lg border transition-all ${
+                            hardwareBenefitMode === 'subscription'
+                              ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 shadow-sm'
+                              : 'border-border/50 bg-background/40 text-muted-foreground hover:border-amber-500/40'
+                          }`}
+                        >
+                          {t('cart_hardware_benefits_use_subscription')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHardwareBenefitMode('both')}
+                          className={`relative text-[10px] font-semibold px-2 py-2 rounded-lg border transition-all ${
+                            hardwareBenefitMode === 'both'
+                              ? 'border-primary bg-gradient-to-br from-emerald-500/20 to-amber-500/20 text-foreground shadow-sm'
+                              : 'border-border/50 bg-background/40 text-muted-foreground hover:border-primary/40'
+                          }`}
+                        >
+                          {t('cart_hardware_benefits_use_both')}
+                          <span className="absolute -top-1.5 -right-1.5 text-[7px] font-black px-1 py-0.5 rounded-full bg-primary text-primary-foreground shadow">
+                            {t('cart_hardware_benefits_recommended')}
+                          </span>
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground leading-relaxed">
+                        {t('cart_hardware_benefits_picker_hint')}
+                      </p>
+                    </div>
+                  )}
+
                   {/* خصم ضمان الطابعة */}
                   {warrantyDiscountAmount > 0 && warrantyBenefits && (
                     <div className="flex justify-between items-center animate-fade-in rounded-xl p-3 border border-emerald-500/30 bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent backdrop-blur-sm shadow-sm">
