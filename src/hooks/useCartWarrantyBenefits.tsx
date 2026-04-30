@@ -80,23 +80,26 @@ export function useActiveWarrantyBenefits() {
   });
 }
 
+// Warranty benefits apply ONLY to direct-sale items. Preorder/sea/air items
+// never qualify for the percentage discount or the free shipping perk.
+const isDirectItem = (item: CartItem) =>
+  ((item as any).sale_type ?? '').toString().toLowerCase() === 'direct';
+
 function computeDiscount(
   rate: number,
   remaining: number,
   discountCats: string[],
   items: CartItem[],
   getItemPrice: (item: CartItem) => number,
-  cartSubtotal: number
+  _cartSubtotal: number
 ): number {
-  let eligibleSubtotal = cartSubtotal;
-  if (discountCats.length > 0) {
-    eligibleSubtotal = 0;
-    for (const item of items) {
-      if ((item as any).is_gift) continue;
-      const catId = (item.products as any)?.category_id;
-      if (catId && discountCats.includes(catId)) {
-        eligibleSubtotal += getItemPrice(item) * item.quantity;
-      }
+  let eligibleSubtotal = 0;
+  for (const item of items) {
+    if ((item as any).is_gift) continue;
+    if (!isDirectItem(item)) continue;
+    const catId = (item.products as any)?.category_id;
+    if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
+      eligibleSubtotal += getItemPrice(item) * item.quantity;
     }
   }
   if (rate > 0 && remaining > 0 && eligibleSubtotal > 0) {
