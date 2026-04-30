@@ -99,6 +99,13 @@ export function useCartSubscriptionBenefits(
   if (isLoading) return { subscriptionBenefits: null, allSubscriptionBenefits: [], isLoading: true };
   if (!rows || rows.length === 0) return { subscriptionBenefits: null, allSubscriptionBenefits: [], isLoading: false };
 
+  // Subscription benefits apply ONLY to direct-sale items. Preorder/sea/air
+  // items never qualify for the percentage discount or the free shipping perk.
+  const isDirectItem = (item: CartItem) =>
+    ((item as any).sale_type ?? '').toString().toLowerCase() === 'direct';
+  const nonGiftItems = items.filter((i) => !(i as any).is_gift);
+  const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
+
   const candidates = rows.filter((r) => r.is_benefits_active);
   const computed: SubscriptionBenefitsResult[] = [];
 
@@ -115,16 +122,14 @@ export function useCartSubscriptionBenefits(
       ? (r.free_shipping_applicable_category_ids as string[]).filter(Boolean)
       : [];
 
-    // Eligible subtotal for percentage discount
-    let eligibleSubtotal = cartSubtotal;
-    if (discountCats.length > 0) {
-      eligibleSubtotal = 0;
-      for (const item of items) {
-        if ((item as any).is_gift) continue;
-        const catId = (item.products as any)?.category_id;
-        if (catId && discountCats.includes(catId)) {
-          eligibleSubtotal += getItemPrice(item) * item.quantity;
-        }
+    // Eligible subtotal for percentage discount — direct-sale items only.
+    let eligibleSubtotal = 0;
+    for (const item of items) {
+      if ((item as any).is_gift) continue;
+      if (!isDirectItem(item)) continue;
+      const catId = (item.products as any)?.category_id;
+      if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
+        eligibleSubtotal += getItemPrice(item) * item.quantity;
       }
     }
 
