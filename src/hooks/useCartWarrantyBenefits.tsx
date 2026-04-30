@@ -119,6 +119,11 @@ export function useCartWarrantyBenefits(
 
   const candidates: WarrantyBenefitsResult[] = [];
 
+  // Free shipping is granted only when the entire (non-gift) cart is direct
+  // sale, since shipping is charged per-order and cannot be partially waived.
+  const nonGiftItems = items.filter((i) => !(i as any).is_gift);
+  const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
+
   for (const w of (warranties || []).filter((x) => x.is_benefits_active)) {
     const rate = Number(w.discount_percentage) || 0;
     const cap = Number(w.discount_max_amount_monthly) || 0;
