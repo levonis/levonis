@@ -80,23 +80,26 @@ export function useActiveWarrantyBenefits() {
   });
 }
 
+// Warranty benefits apply ONLY to direct-sale items. Preorder/sea/air items
+// never qualify for the percentage discount or the free shipping perk.
+const isDirectItem = (item: CartItem) =>
+  ((item as any).sale_type ?? '').toString().toLowerCase() === 'direct';
+
 function computeDiscount(
   rate: number,
   remaining: number,
   discountCats: string[],
   items: CartItem[],
   getItemPrice: (item: CartItem) => number,
-  cartSubtotal: number
+  _cartSubtotal: number
 ): number {
-  let eligibleSubtotal = cartSubtotal;
-  if (discountCats.length > 0) {
-    eligibleSubtotal = 0;
-    for (const item of items) {
-      if ((item as any).is_gift) continue;
-      const catId = (item.products as any)?.category_id;
-      if (catId && discountCats.includes(catId)) {
-        eligibleSubtotal += getItemPrice(item) * item.quantity;
-      }
+  let eligibleSubtotal = 0;
+  for (const item of items) {
+    if ((item as any).is_gift) continue;
+    if (!isDirectItem(item)) continue;
+    const catId = (item.products as any)?.category_id;
+    if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
+      eligibleSubtotal += getItemPrice(item) * item.quantity;
     }
   }
   if (rate > 0 && remaining > 0 && eligibleSubtotal > 0) {
@@ -115,6 +118,11 @@ export function useCartWarrantyBenefits(
   if (isLoading) return { warrantyBenefits: null, isLoading: true };
 
   const candidates: WarrantyBenefitsResult[] = [];
+
+  // Free shipping is granted only when the entire (non-gift) cart is direct
+  // sale, since shipping is charged per-order and cannot be partially waived.
+  const nonGiftItems = items.filter((i) => !(i as any).is_gift);
+  const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
 
   for (const w of (warranties || []).filter((x) => x.is_benefits_active)) {
     const rate = Number(w.discount_percentage) || 0;
@@ -143,17 +151,16 @@ export function useCartWarrantyBenefits(
       percentageUsedSoFar: used,
       percentageRemaining: remaining,
       percentageDiscount,
-      freeShipping: Number(w.free_shipping_max_uses_monthly) > 0,
+      freeShipping: cartIsAllDirect && Number(w.free_shipping_max_uses_monthly) > 0,
       freeShippingMinOrder: Number(w.free_shipping_min_order) || 0,
       freeShippingMethods: Array.isArray(w.free_shipping_methods)
         ? (w.free_shipping_methods as any[]).filter((m) => typeof m === "string")
         : ["standard"],
       freeShippingMaxUsesMonthly: Number(w.free_shipping_max_uses_monthly) || 0,
       freeShippingUsedSoFar: Number(w.free_shipping_used) || 0,
-      freeShippingRemainingUses: Math.max(
-        0,
-        (Number(w.free_shipping_max_uses_monthly) || 0) - (Number(w.free_shipping_used) || 0)
-      ),
+      freeShippingRemainingUses: cartIsAllDirect
+        ? Math.max(0, (Number(w.free_shipping_max_uses_monthly) || 0) - (Number(w.free_shipping_used) || 0))
+        : 0,
       discountApplicableCategoryIds: discountCats,
       freeShippingApplicableCategoryIds: shippingCats,
       totalDiscount: percentageDiscount,
