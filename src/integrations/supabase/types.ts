@@ -5884,6 +5884,9 @@ export type Database = {
           social_links: Json | null
           specialty: string | null
           status: string
+          store_background_blur: number
+          store_background_type: string
+          store_background_value: string | null
           store_image_url: string | null
           store_layout: string
           store_pause_end_date: string | null
@@ -5916,6 +5919,9 @@ export type Database = {
           social_links?: Json | null
           specialty?: string | null
           status?: string
+          store_background_blur?: number
+          store_background_type?: string
+          store_background_value?: string | null
           store_image_url?: string | null
           store_layout?: string
           store_pause_end_date?: string | null
@@ -5948,6 +5954,9 @@ export type Database = {
           social_links?: Json | null
           specialty?: string | null
           status?: string
+          store_background_blur?: number
+          store_background_type?: string
+          store_background_value?: string | null
           store_image_url?: string | null
           store_layout?: string
           store_pause_end_date?: string | null
