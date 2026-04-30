@@ -197,6 +197,9 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
           away_message: awayMessage.trim() || null,
           inquiry_template: inquiryTemplate.trim() || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟",
           is_away: isAway,
+          store_background_type: bgType,
+          store_background_value: bgType === "glass" ? null : (bgValue || null),
+          store_background_blur: bgBlur,
         })
         .eq("id", merchantApp.id);
       if (error) throw error;
