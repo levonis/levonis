@@ -108,6 +108,9 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
       setAwayMessage(merchantApp.away_message || "");
       setInquiryTemplate(merchantApp.inquiry_template || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟");
       setIsAway(merchantApp.is_away || false);
+      setBgType((merchantApp.store_background_type as StoreBackgroundType) || "glass");
+      setBgValue(merchantApp.store_background_value || "");
+      setBgBlur(merchantApp.store_background_blur ?? 20);
     }
   }, [open, merchantApp]);
   const [uploading, setUploading] = useState(false);
