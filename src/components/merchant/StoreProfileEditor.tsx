@@ -118,6 +118,20 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   const [inquiryTemplate, setInquiryTemplate] = useState(merchantApp.inquiry_template || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟");
   const [isAway, setIsAway] = useState(merchantApp.is_away || false);
 
+  // Background customization state
+  const [bgType, setBgType] = useState<StoreBackgroundType>(
+    (merchantApp.store_background_type as StoreBackgroundType) || "glass"
+  );
+  const [bgValue, setBgValue] = useState<string>(merchantApp.store_background_value || "");
+  const [bgBlur, setBgBlur] = useState<number>(merchantApp.store_background_blur ?? 20);
+  const [bgUploading, setBgUploading] = useState(false);
+  const parseGradient = (v: string): [string, string] => {
+    const m = v.match(/#[0-9a-fA-F]{6}/g);
+    if (m && m.length >= 2) return [m[0], m[1]];
+    return ["#1e3a8a", "#0f172a"];
+  };
+  const [grad1, grad2] = parseGradient(bgValue);
+
   // Fetch available frames
   const { data: frames = [] } = useQuery({
     queryKey: ["avatar-frames"],
