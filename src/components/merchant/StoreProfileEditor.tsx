@@ -72,6 +72,9 @@ interface StoreProfileEditorProps {
     away_message?: string | null;
     inquiry_template?: string | null;
     is_away?: boolean;
+    store_background_type?: StoreBackgroundType | null;
+    store_background_value?: string | null;
+    store_background_blur?: number | null;
   };
 }
 
