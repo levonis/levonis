@@ -155,17 +155,16 @@ export function useCartSubscriptionBenefits(
       percentageUsedSoFar: used,
       percentageRemaining: remaining,
       percentageDiscount,
-      freeShipping: Number(r.free_shipping_max_uses_monthly) > 0,
+      freeShipping: cartIsAllDirect && Number(r.free_shipping_max_uses_monthly) > 0,
       freeShippingMinOrder: Number(r.free_shipping_min_order) || 0,
       freeShippingMethods: Array.isArray(r.free_shipping_methods)
         ? (r.free_shipping_methods as any[]).filter((m) => typeof m === "string")
         : ["standard"],
       freeShippingMaxUsesMonthly: Number(r.free_shipping_max_uses_monthly) || 0,
       freeShippingUsedSoFar: Number(r.free_shipping_used) || 0,
-      freeShippingRemainingUses: Math.max(
-        0,
-        (Number(r.free_shipping_max_uses_monthly) || 0) - (Number(r.free_shipping_used) || 0)
-      ),
+      freeShippingRemainingUses: cartIsAllDirect
+        ? Math.max(0, (Number(r.free_shipping_max_uses_monthly) || 0) - (Number(r.free_shipping_used) || 0))
+        : 0,
       discountApplicableCategoryIds: discountCats,
       freeShippingApplicableCategoryIds: shippingCats,
       totalDiscount: percentageDiscount,
