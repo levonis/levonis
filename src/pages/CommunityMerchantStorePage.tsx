@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import RatingsPreview from "@/components/merchant/RatingsPreview";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
+import StoreBackgroundLayer, { type StoreBackgroundType } from "@/components/merchant/StoreBackgroundLayer";
 
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import CompactProductCard from "@/components/merchant/CompactProductCard";
