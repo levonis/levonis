@@ -104,7 +104,7 @@ export default function CommunityMerchantStorePage({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier, selected_frame_id, specialty, store_layout")
+        .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier, selected_frame_id, specialty, store_layout, store_background_type, store_background_value, store_background_blur")
         .eq("id", merchantId!)
         .maybeSingle();
       if (error) throw error;
