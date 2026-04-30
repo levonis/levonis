@@ -277,8 +277,13 @@ export default function CommunityMerchantStorePage({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-6 max-w-5xl">
+    <div className="min-h-screen relative">
+      <StoreBackgroundLayer
+        type={(merchantApp.store_background_type as StoreBackgroundType) || "glass"}
+        value={merchantApp.store_background_value}
+        blur={merchantApp.store_background_blur ?? 20}
+      />
+      <main className="container mx-auto px-4 py-6 max-w-5xl relative">
         {/* Professional Hero Section */}
         <div className="relative mb-6 rounded-2xl overflow-hidden border border-border/40 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)]">
           <div className="relative p-6 sm:p-8">
