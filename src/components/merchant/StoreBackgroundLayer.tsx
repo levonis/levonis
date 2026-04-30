@@ -1,5 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { buildBackgroundSrcSet, pickBackgroundUrl } from "@/lib/backgroundImage";
+import {
+  BACKGROUND_RESPONSIVE_WIDTHS,
+  buildBackgroundSrcSet,
+  pickBackgroundUrl,
+} from "@/lib/backgroundImage";
 
 export type StoreBackgroundType = "glass" | "color" | "gradient" | "image";
 
@@ -11,6 +15,10 @@ export interface StoreBackgroundConfig {
   blur?: number | null;
 }
 
+// ─── Module-level constants ──────────────────────────────────────────────────
+// Defined once per module load so referential equality is preserved across
+// every render of every instance.
+
 const GLASS_DEFAULT_BG =
   "radial-gradient(ellipse at 20% 0%, hsl(var(--primary) / 0.18), transparent 55%)," +
   "radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / 0.12), transparent 55%)," +
@@ -19,24 +27,76 @@ const GLASS_DEFAULT_BG =
 const VIGNETTE_BG =
   "radial-gradient(ellipse at center, transparent 55%, hsl(var(--background)/0.5) 100%)";
 
-const VIGNETTE_STYLE: CSSProperties = { backgroundImage: VIGNETTE_BG };
+const ROOT_CLASS = "fixed inset-0 -z-10 pointer-events-none overflow-hidden";
+const LAYER_CLASS = "absolute inset-0";
+const VEIL_CLASS = "absolute inset-0 bg-background/40";
+const IMG_CLASS = "absolute inset-0 w-full h-full object-cover select-none";
+
+const VIGNETTE_STYLE: CSSProperties = Object.freeze({ backgroundImage: VIGNETTE_BG }) as CSSProperties;
+const GLASS_STYLE: CSSProperties = Object.freeze({ background: GLASS_DEFAULT_BG }) as CSSProperties;
+
+// Cache `{ background: <css> }` per unique color/gradient string so identical
+// configs across renders (and even across instances) yield the same object ref.
+const cssBackgroundCache = new Map<string, CSSProperties>();
+function cssBackgroundStyle(css: string): CSSProperties {
+  let s = cssBackgroundCache.get(css);
+  if (!s) {
+    s = Object.freeze({ background: css }) as CSSProperties;
+    cssBackgroundCache.set(css, s);
+    // Soft cap so a runaway theming UI can't grow this unbounded.
+    if (cssBackgroundCache.size > 64) {
+      const firstKey = cssBackgroundCache.keys().next().value;
+      if (firstKey !== undefined) cssBackgroundCache.delete(firstKey);
+    }
+  }
+  return s;
+}
+
+// Cache veil styles by the integer blur value (0-60). 61 possible keys max.
+const veilStyleCache = new Map<number, CSSProperties>();
+function veilStyleFor(blur: number): CSSProperties {
+  let s = veilStyleCache.get(blur);
+  if (!s) {
+    const filter = `blur(${blur}px) saturate(140%)`;
+    s = Object.freeze({
+      backdropFilter: filter,
+      WebkitBackdropFilter: filter,
+      willChange: "backdrop-filter",
+    }) as CSSProperties;
+    veilStyleCache.set(blur, s);
+  }
+  return s;
+}
+
+// ─── Hooks ───────────────────────────────────────────────────────────────────
 
 /**
- * Tracks the current viewport width — coarsely bucketed — so we can pick the
- * right responsive variant without re-rendering on every resize pixel.
+ * Snap a raw viewport width to the nearest responsive bucket. Resize events
+ * within the same bucket do NOT trigger a re-render.
  */
+function snapToBucket(width: number): number {
+  for (const w of BACKGROUND_RESPONSIVE_WIDTHS) {
+    if (w >= width) return w;
+  }
+  return BACKGROUND_RESPONSIVE_WIDTHS[BACKGROUND_RESPONSIVE_WIDTHS.length - 1];
+}
+
 function useViewportBucket(): number {
-  const compute = () => {
+  const [bucket, setBucket] = useState<number>(() => {
     if (typeof window === "undefined") return 1280;
-    return window.innerWidth;
-  };
-  const [w, setW] = useState<number>(compute);
+    return snapToBucket(window.innerWidth);
+  });
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     let raf = 0;
     const onResize = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setW(window.innerWidth));
+      raf = requestAnimationFrame(() => {
+        const next = snapToBucket(window.innerWidth);
+        // Functional setter — React bails out if value is identical.
+        setBucket((prev) => (prev === next ? prev : next));
+      });
     };
     window.addEventListener("resize", onResize, { passive: true });
     return () => {
@@ -44,7 +104,8 @@ function useViewportBucket(): number {
       cancelAnimationFrame(raf);
     };
   }, []);
-  return w;
+
+  return bucket;
 }
 
 /**
@@ -58,7 +119,7 @@ function useDecodedImage(url: string | null | undefined): string | null {
   useEffect(() => {
     if (!url) {
       lastUrlRef.current = null;
-      setResolved(null);
+      setResolved((prev) => (prev === null ? prev : null));
       return;
     }
     if (lastUrlRef.current === url) return;
@@ -70,7 +131,8 @@ function useDecodedImage(url: string | null | undefined): string | null {
     img.src = url;
 
     const finalize = () => {
-      if (!cancelled) setResolved(url);
+      if (cancelled) return;
+      setResolved((prev) => (prev === url ? prev : url));
     };
 
     if (typeof img.decode === "function") {
@@ -91,30 +153,24 @@ function useDecodedImage(url: string | null | undefined): string | null {
   return resolved;
 }
 
-/**
- * Renders a fixed full-viewport background for the merchant store page.
- *
- * Image mode now uses a real `<img>` element with `srcSet`/`sizes` so the
- * browser picks the smallest responsive variant for the current device — and
- * Supabase image transforms auto-negotiate WebP/AVIF based on Accept headers.
- */
+// ─── Component ───────────────────────────────────────────────────────────────
+
 function StoreBackgroundLayerImpl({
   type = "glass",
   value,
   blur = 20,
 }: StoreBackgroundConfig) {
+  // Round + clamp so identical visual blur shares the same cache key.
   const safeBlur = useMemo(
-    () => Math.max(0, Math.min(60, blur ?? 20)),
+    () => Math.round(Math.max(0, Math.min(60, blur ?? 20))),
     [blur],
   );
 
-  const viewportWidth = useViewportBucket();
+  const viewportBucket = useViewportBucket();
 
-  // Pre-pick the URL for the current viewport so the decode-ahead hook keys
-  // off the same string the <img> will request.
   const responsiveUrl = useMemo(
-    () => (type === "image" ? pickBackgroundUrl(value, viewportWidth) : null),
-    [type, value, viewportWidth],
+    () => (type === "image" ? pickBackgroundUrl(value, viewportBucket) : null),
+    [type, value, viewportBucket],
   );
   const srcSet = useMemo(
     () => (type === "image" && value ? buildBackgroundSrcSet(value) : ""),
@@ -123,27 +179,22 @@ function StoreBackgroundLayerImpl({
 
   const decodedUrl = useDecodedImage(responsiveUrl);
 
+  // Pull from module-level caches → stable references across renders.
   const cssBgStyle = useMemo<CSSProperties>(() => {
-    if (type === "color" && value) return { background: value };
-    if (type === "gradient" && value) return { background: value };
-    return { background: GLASS_DEFAULT_BG };
+    if ((type === "color" || type === "gradient") && value) {
+      return cssBackgroundStyle(value);
+    }
+    return GLASS_STYLE;
   }, [type, value]);
 
-  const veilStyle = useMemo<CSSProperties>(() => {
-    const filter = `blur(${safeBlur}px) saturate(140%)`;
-    return {
-      backdropFilter: filter,
-      WebkitBackdropFilter: filter,
-      willChange: "backdrop-filter",
-    };
-  }, [safeBlur]);
+  const veilStyle = useMemo<CSSProperties>(() => veilStyleFor(safeBlur), [safeBlur]);
 
   const showImage = type === "image" && !!decodedUrl;
 
   return (
-    <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+    <div aria-hidden className={ROOT_CLASS}>
       {/* CSS wallpaper (color/gradient/glass fallback while image decodes). */}
-      <div className="absolute inset-0" style={cssBgStyle} />
+      <div className={LAYER_CLASS} style={cssBgStyle} />
 
       {/* Image wallpaper — responsive via srcSet, format-negotiated by Supabase. */}
       {showImage && (
@@ -157,19 +208,31 @@ function StoreBackgroundLayerImpl({
           // @ts-expect-error - fetchPriority is a valid HTML attribute, not yet typed in React 18
           fetchpriority="high"
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover select-none"
+          className={IMG_CLASS}
         />
       )}
 
       {/* Glass veil — softens busy backgrounds & guarantees text contrast */}
-      <div className="absolute inset-0 bg-background/40" style={veilStyle} />
+      <div className={VEIL_CLASS} style={veilStyle} />
       {/* Subtle vignette for depth */}
-      <div className="absolute inset-0" style={VIGNETTE_STYLE} />
+      <div className={LAYER_CLASS} style={VIGNETTE_STYLE} />
     </div>
   );
 }
 
-const StoreBackgroundLayer = memo(StoreBackgroundLayerImpl);
+/**
+ * Custom equality: treat null/undefined as the same, and bucket `blur` to its
+ * clamped+rounded form so a slider passing 20.2 → 20.4 doesn't re-render.
+ */
+function arePropsEqual(prev: StoreBackgroundConfig, next: StoreBackgroundConfig) {
+  if (prev.type !== next.type) return false;
+  if ((prev.value ?? null) !== (next.value ?? null)) return false;
+  const pb = Math.round(Math.max(0, Math.min(60, prev.blur ?? 20)));
+  const nb = Math.round(Math.max(0, Math.min(60, next.blur ?? 20)));
+  return pb === nb;
+}
+
+const StoreBackgroundLayer = memo(StoreBackgroundLayerImpl, arePropsEqual);
 StoreBackgroundLayer.displayName = "StoreBackgroundLayer";
 
 export default StoreBackgroundLayer;
