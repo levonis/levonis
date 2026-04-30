@@ -1,42 +1,47 @@
-# تطوير صفحة التاجر `/store/:merchantId`
+# تحسين أداء `StoreBackgroundLayer`
 
-## الهدف
-1. جعل خلفية صفحة التاجر زجاجية شفافة (Glassmorphism) افتراضياً.
-2. السماح للتاجر بتخصيص الخلفية (لون / تدرّج / صورة) من إعدادات المتجر.
-3. إخفاء الـ Dynamic Island تماماً عند فتح صفحة التاجر.
+## الأهداف
+1. منع إعادة الرندر غير الضرورية عندما يعيد الأب الرندر بنفس الـ props.
+2. تحميل صور الخلفية بكفاءة (decoding غير متزامن + lazy) لتجنّب توقّف الـ paint.
+3. ضمان عدم وجود تسرّب ذاكرة عند تبديل الخلفيات بسرعة (إلغاء طلبات `Image` المعلّقة).
 
-## الملفات والتغييرات
+## التغييرات (ملف واحد فقط: `src/components/merchant/StoreBackgroundLayer.tsx`)
 
-### 1. قاعدة البيانات — Migration جديد
-إضافة 3 أعمدة لجدول `merchant_applications`:
-- `store_background_type TEXT DEFAULT 'glass'` — القيم: `glass` | `color` | `gradient` | `image`
-- `store_background_value TEXT NULL` — لون hex، أو CSS gradient، أو URL صورة
-- `store_background_blur INT DEFAULT 20` — شدة الـ blur (0-40px) للطبقة الزجاجية فوق الخلفية
+### 1. تغليف المكوّن بـ `React.memo`
+نقل المنطق إلى `StoreBackgroundLayerImpl` ثم تصدير `memo(StoreBackgroundLayerImpl)`.
+الأب (`CommunityMerchantStorePage`) يعيد الرندر كثيراً بسبب `useQuery` و `useState`؛ مع `memo` لن يُعاد رندر طبقة الخلفية ما لم تتغير `type`/`value`/`blur` فعلياً.
 
-### 2. إخفاء الجزيرة على صفحة المتجر
-**`src/island/IslandContext.tsx`** — إضافة `/store` و `/community/store` و `/community/merchant/store` إلى `HIDDEN_PREFIXES`.
+### 2. تحويل بناء الستايل إلى `useMemo`
+حالياً ينشئ `bgStyle` و كائنات الـ `style` عند كل رندر، مما يكسر مرجعية الكائن ويُعيد تطبيق الـ inline style. سيتم:
+- `useMemo` لـ `bgStyle` (يعتمد على `type`, `value`, `decodedUrl`).
+- `useMemo` لـ `veilStyle` (يعتمد على `safeBlur` فقط).
+- `useMemo` لـ `vignetteStyle` (ثابت — يُحسب مرة).
+- نقل ثابتي `GLASS_DEFAULT_BG` و `VIGNETTE_BG` خارج المكوّن (module scope) لمنع إعادة بنائهم.
 
-### 3. خلفية Glassmorphism + خلفية مخصصة
-**`src/pages/CommunityMerchantStorePage.tsx`**:
-- استبدال `min-h-screen bg-background` بحاوية تحتوي على:
-  - طبقة خلفية (`fixed inset-0 -z-10`) تعرض اللون/التدرج/الصورة المختارة من بيانات التاجر، وعند `glass` تعرض تدرجاً ناعماً افتراضياً يستخدم لون الـ primary.
-  - المحتوى فوقها بـ `relative` + بطاقات `glass-panel` / `glass-tile` (متّبعة معيار Glassmorphism Professional من ذاكرة المشروع).
-- جلب الحقول الجديدة ضمن استعلام بيانات التاجر.
+### 3. تحسين الـ vignette
+استبدال كلاس Tailwind المُولِّد لقيمة `bg-[radial-gradient(...)]` بـ inline style ثابت، لتفادي توليد كلاس عشوائي عند كل تغيير viewport.
 
-### 4. واجهة التخصيص في الإعدادات
-**`src/components/merchant/StoreProfileEditor.tsx`** — إضافة قسم جديد "خلفية المتجر" يحوي:
-- 4 تبويبات: زجاجي (افتراضي) / لون موحد / تدرّج / صورة.
-- منتقي لون (`<input type="color">`) للوضعين color/gradient (لونان للتدرج).
-- رفع صورة الخلفية إلى bucket `store-assets` (موجود) مع معاينة.
-- شريط تمرير لشدّة الـ blur الأمامي (10-40px).
-- معاينة مباشرة Live Preview أعلى القسم.
-- حفظ الحقول الثلاثة الجديدة عند الضغط على "حفظ".
+### 4. إضافة `will-change: backdrop-filter` للطبقة الزجاجية
+تضمن لطبقة الـ blur أن تُرفع إلى compositor layer مستقلة بدلاً من إعادة طلائها عند كل scroll/animation للأب.
 
-### 5. مكوّن مساعد جديد
-**`src/components/merchant/StoreBackgroundLayer.tsx`** — مكوّن صغير يستقبل `{ type, value, blur }` ويُصدر طبقة `fixed inset-0 -z-10` مع غلاف زجاجي (`backdrop-blur-[var]`, طبقة شفافة بلون الخلفية) لضمان قراءة النصوص.
+### 5. تحميل ذكي للصور عبر hook جديد `useDecodedImage`
+- يستخدم `Image` خارج DOM مع `decoding="async"` و `loading="lazy"` و `img.decode()` لفك ترميز الصورة خارج الـ main thread.
+- لا يطبّق `backgroundImage` على DOM إلا بعد نجاح الـ decode → لا يحدث paint blocking.
+- يحتفظ بآخر URL في `useRef` ليتخطى العمل عندما يعيد الأب الرندر بنفس الـ URL.
+- في `cleanup`: يضع علم `cancelled = true` ويُفرغ `img.src = ""` ويُصفّر الـ handlers لإلغاء الطلب وتحرير البتماب من الذاكرة فوراً عند:
+  - فك تركيب المكوّن.
+  - تغيير الـ URL أثناء التحميل (مهم: عندما يجرّب التاجر صور متعددة بسرعة من معاينة الإعدادات).
+- أثناء فك ترميز الصورة الجديدة، يبقي الخلفية الزجاجية الافتراضية لتجنّب وميض/فراغ.
+
+### 6. تجاهل الـ effect عند عدم الحاجة
+يتم تمرير `null` للـ hook عندما `type !== "image"` بحيث لا يبدأ أي تحميل في وضع color/gradient/glass.
+
+## النتائج المتوقّعة
+- صفر إعادات رندر للطبقة عند تنقّل المستخدم/فتح ديالوجات في صفحة المتجر.
+- صفر paint كبير عند تبديل صورة الخلفية (الـ decode يحصل قبل التطبيق).
+- صفر تسرّب ذاكرة عند تجربة عدة صور بسرعة من إعدادات المتجر.
+- أنعم scroll لأن الـ blur layer أصبحت compositor layer مستقلة.
 
 ## ملاحظات
-- يتم تطبيق الخلفية فقط على صفحة التاجر، ولا يؤثر على باقي التطبيق.
-- الزائرون يرون نفس التخصيص؛ المالك فقط يستطيع تعديله من زر الإعدادات الموجود.
-- لا حاجة لتغييرات في `MerchantStandalone.tsx` لأنه يستخدم نفس `CommunityMerchantStorePage` داخلياً (سيرث التخصيص تلقائياً).
-- متوافق مع ذاكرة المشروع: Glassmorphism Professional Standard، i18n (لا نصوص ثابتة بلغة واحدة في إعدادات الواجهة).
+- لا تغييرات على API المكوّن — نفس الـ props ونفس الاستخدام في `CommunityMerchantStorePage` و `StoreProfileEditor`.
+- لا حاجة لتغييرات على قاعدة البيانات أو ملفات أخرى.
