@@ -508,6 +508,132 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
               <PrinterModelsEditor merchantId={merchantApp.id} />
             </div>
 
+            {/* Store Background Customization */}
+            <div className="pt-4 border-t border-border/50 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Palette className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">خلفية المتجر</h3>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    خصّص خلفية صفحة متجرك. الافتراضي زجاجي شفاف يبرز محتواك.
+                  </p>
+                </div>
+              </div>
+
+              {/* Live preview */}
+              <div className="relative h-28 rounded-2xl overflow-hidden border border-border/40">
+                <div className="absolute inset-0">
+                  <StoreBackgroundLayer type={bgType} value={bgType === "glass" ? null : bgValue} blur={bgBlur} />
+                </div>
+                <div className="relative h-full flex items-center justify-center">
+                  <div className="glass-tile px-4 py-2 rounded-xl text-xs font-bold">
+                    معاينة مباشرة
+                  </div>
+                </div>
+              </div>
+
+              {/* Type tabs */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { v: "glass", label: "زجاجي" },
+                  { v: "color", label: "لون" },
+                  { v: "gradient", label: "تدرّج" },
+                  { v: "image", label: "صورة" },
+                ].map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => {
+                      setBgType(opt.v as StoreBackgroundType);
+                      if (opt.v === "gradient") updateGradient(grad1, grad2);
+                      if (opt.v === "color" && !bgValue.startsWith("#")) setBgValue("#1e3a8a");
+                      if (opt.v === "glass") setBgValue("");
+                    }}
+                    className={`px-2 py-2 text-xs rounded-xl border font-medium transition-all ${
+                      bgType === opt.v
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Per-type editor */}
+              {bgType === "color" && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+                  <input
+                    type="color"
+                    value={bgValue && bgValue.startsWith("#") ? bgValue : "#1e3a8a"}
+                    onChange={(e) => setBgValue(e.target.value)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border-0"
+                  />
+                  <div>
+                    <p className="text-xs font-medium">لون الخلفية</p>
+                    <p className="text-[10px] text-muted-foreground">{bgValue || "#1e3a8a"}</p>
+                  </div>
+                </div>
+              )}
+
+              {bgType === "gradient" && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+                  <input
+                    type="color"
+                    value={grad1}
+                    onChange={(e) => updateGradient(e.target.value, grad2)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border-0"
+                  />
+                  <input
+                    type="color"
+                    value={grad2}
+                    onChange={(e) => updateGradient(grad1, e.target.value)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border-0"
+                  />
+                  <p className="text-[10px] text-muted-foreground flex-1">تدرّج قُطري</p>
+                </div>
+              )}
+
+              {bgType === "image" && (
+                <div className="space-y-2">
+                  <label className="flex items-center justify-center gap-2 h-11 rounded-xl border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors text-sm">
+                    <Upload className="h-4 w-4" />
+                    {bgUploading ? "جاري الرفع..." : bgValue ? "تغيير الصورة" : "رفع صورة"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBackgroundUpload}
+                      disabled={bgUploading}
+                    />
+                  </label>
+                  {bgValue && (
+                    <Button variant="ghost" size="sm" onClick={() => setBgValue("")} className="w-full text-xs text-muted-foreground">
+                      إزالة الصورة
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Blur slider */}
+              <div className="space-y-2 p-3 rounded-xl border border-border bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">شدة الضبابية</Label>
+                  <span className="text-xs font-bold text-primary">{bgBlur}px</span>
+                </div>
+                <Slider
+                  value={[bgBlur]}
+                  onValueChange={(v) => setBgBlur(v[0])}
+                  min={0}
+                  max={40}
+                  step={2}
+                />
+                <p className="text-[10px] text-muted-foreground">قيمة أعلى = خلفية أنعم وقراءة أوضح للنصوص.</p>
+              </div>
+            </div>
+
             {/* Auto-Response Settings */}
             <div className="pt-4 border-t border-border/50 space-y-4">
               <div className="flex items-center gap-2 mb-3">
