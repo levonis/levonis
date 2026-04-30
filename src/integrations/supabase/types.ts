@@ -6344,6 +6344,9 @@ export type Database = {
           selected_frame_id: string | null
           social_links: Json | null
           specialty: string | null
+          store_background_blur: number
+          store_background_type: string
+          store_background_value: string | null
           store_image_url: string | null
           store_layout: string
           store_slug: string | null
@@ -6366,6 +6369,9 @@ export type Database = {
           selected_frame_id?: string | null
           social_links?: Json | null
           specialty?: string | null
+          store_background_blur?: number
+          store_background_type?: string
+          store_background_value?: string | null
           store_image_url?: string | null
           store_layout?: string
           store_slug?: string | null
@@ -6388,6 +6394,9 @@ export type Database = {
           selected_frame_id?: string | null
           social_links?: Json | null
           specialty?: string | null
+          store_background_blur?: number
+          store_background_type?: string
+          store_background_value?: string | null
           store_image_url?: string | null
           store_layout?: string
           store_slug?: string | null
