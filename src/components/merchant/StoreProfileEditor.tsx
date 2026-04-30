@@ -300,9 +300,35 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
     }
   };
 
+  const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    setBgUploading(true);
+    try {
+      const processed = await compressImage(file, 1600, 0.85);
+      const path = `${user.id}/bg-${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant_stores")
+        .upload(path, processed, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("merchant_stores").getPublicUrl(path);
+      setBgValue(urlData.publicUrl);
+      toast({ title: "تم الرفع", description: "تم رفع صورة الخلفية." });
+    } catch (err: any) {
+      toast({ title: "خطأ", description: err?.message || "فشل الرفع.", variant: "destructive" });
+    } finally {
+      setBgUploading(false);
+    }
+  };
+
+  const updateGradient = (c1: string, c2: string) => {
+    setBgValue(`linear-gradient(135deg, ${c1}, ${c2})`);
+  };
+
   const canUseFrame = (frame: Frame) => {
     return frame.is_free || ownedFrames.includes(frame.id);
   };
+
 
   return (
     <>
