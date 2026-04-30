@@ -305,15 +305,20 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
     if (!file || !user?.id) return;
     setBgUploading(true);
     try {
-      const processed = await compressImage(file, 1600, 0.85);
-      const path = `${user.id}/bg-${Date.now()}.jpg`;
+      const { compressBackgroundToBest } = await import("@/lib/backgroundImage");
+      const { blob, mime, ext, originalBytes, compressedBytes } = await compressBackgroundToBest(file, 1920);
+      const path = `${user.id}/bg-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("merchant_stores")
-        .upload(path, processed, { upsert: true, contentType: "image/jpeg" });
+        .upload(path, blob, { upsert: true, contentType: mime, cacheControl: "31536000" });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("merchant_stores").getPublicUrl(path);
       setBgValue(urlData.publicUrl);
-      toast({ title: "تم الرفع", description: "تم رفع صورة الخلفية." });
+      const saved = Math.max(0, Math.round(((originalBytes - compressedBytes) / originalBytes) * 100));
+      toast({
+        title: "تم الرفع",
+        description: `تم ضغط الصورة (${ext.toUpperCase()}) — توفير ${saved}% من الحجم.`,
+      });
     } catch (err: any) {
       toast({ title: "خطأ", description: err?.message || "فشل الرفع.", variant: "destructive" });
     } finally {

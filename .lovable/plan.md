@@ -1,65 +1,71 @@
-# خطة اختبار صفحة /store
+# ضغط وتحويل صور الخلفية تلقائياً + مقاسات responsive
 
-## الهدف
-التحقق البصري من أن `StoreBackgroundLayer` يعمل بشكل صحيح مع جميع أنواع الخلفيات (glass/color/gradient/image) وأن التخطيط لا ينكسر على الجوال/التابلت/الديسكتوب، وأن الجزيرة العائمة مخفية.
+## الوضع الحالي
+- `handleBackgroundUpload` في `StoreProfileEditor.tsx` يستدعي `compressImage(file, 1600, 0.85)` الذي يُخرج **JPEG فقط** (canvas.toBlob "image/jpeg")، بحجم أقصى 1600px ضلع طويل.
+- الصور تُرفع إلى bucket `merchant_stores` ثم تُحفظ كـ public URL.
+- `StoreBackgroundLayer` يستخدم URL الخام بدون srcset أو width/dpr-aware sizing.
+- يوجد بالفعل `src/lib/imageUtils.ts` فيه `resizeSupabaseImage` (يستخدم `/storage/v1/render/image/public/` مع width/quality) — موجود لكنه غير مستخدم في الخلفية.
 
-## ملاحظة مهمة (وضع القراءة فقط)
-هذا الوضع للقراءة فقط، لكن أدوات المتصفح (`browser--*`) متاحة للاختبار البصري دون تعديل الكود. سأستخدمها مباشرة بعد موافقتك. **لن أعدّل أي ملف** — فقط أختبر وأقدّم تقريراً.
+## الأهداف
+1. **WebP/AVIF تلقائياً عند الرفع** مع fallback ذكي إلى JPEG عند عدم الدعم.
+2. **توليد عدة مقاسات** (sm/md/lg/xl) عند العرض عبر Supabase image transforms (لا حاجة لرفع نسخ متعددة).
+3. **اختيار المقاس المناسب لكل شاشة** عبر `<img srcset>` أو media-query-based switching داخل `StoreBackgroundLayer`.
+4. **تخفيض حجم الرفع الأصلي** بشكل آمن (cap عند 1920px للضلع الأطول).
 
-إذا اكتُشفت مشاكل بصرية فعلية، سأتوقف وأقدّم خطة إصلاح منفصلة لتعتمدها.
+## التغييرات المقترحة
 
-## خطوات الاختبار
+### 1. أداة جديدة: `src/lib/backgroundImage.ts`
+دالتان أساسيتان:
 
-### 1. التحضير — جمع بيانات
-- قراءة `CommunityMerchantStorePage.tsx` لمعرفة كيف تُمرَّر إعدادات الخلفية ومسار الصفحة الفعلي (`/store` vs `/s/:slug`).
-- قراءة `StoreProfileEditor.tsx` للتأكد من قيم `store_background_type` المتاحة.
-- استعلام قاعدة البيانات (read-only) لاختيار تاجر اختباري له صفحة منشورة.
+- **`compressBackgroundToBest(file, maxSide=1920)`**: تختار الأفضل من { AVIF → WebP → JPEG } حسب دعم المتصفح:
+  - تجرب `canvas.toBlob(_, 'image/avif', 0.6)` أولاً.
+  - إن فشلت، تجرب `'image/webp', 0.78`.
+  - وإلا fallback `'image/jpeg', 0.85`.
+  - تُرجع `{ blob, mime, ext }`.
+  - تتعامل مع EXIF orientation عبر createImageBitmap({ imageOrientation: 'from-image' }) عند الإمكان.
 
-### 2. التحقق من إخفاء الجزيرة (Island)
-- التنقل إلى `/store` (أو `/s/:slug`) والتقاط لقطة شاشة.
-- التحقق من `IslandContext` بصرياً أن الجزيرة لا تظهر.
+- **`pickBackgroundUrl(baseUrl, viewportWidth, dpr)`**: يلفّ `resizeSupabaseImage` ويختار width من جدول snap [640, 960, 1280, 1600, 1920, 2560] بناءً على `viewportWidth * min(dpr, 2)`.
 
-### 3. اختبار 4 أنواع خلفية
-لكل نوع، سأحدّث قاعدة البيانات لتاجر الاختبار **فقط إذا وافقت** (يتطلب وضع البناء — وإلا سأكتفي بحالة قاعدة البيانات الحالية وأطلب منك تبديل النوع يدوياً من إعدادات المتجر).
+- **`buildBackgroundSrcSet(baseUrl)`**: يُنتج srcset متعدد العرض لاستخدامه في `<img>`.
 
-البديل الأفضل في وضع القراءة: **اختبار الحالة الحالية فقط** + توثيق كيفية اختبار باقي الأنواع.
+### 2. تحديث `handleBackgroundUpload` في `StoreProfileEditor.tsx`
+- استبدال `compressImage(file, 1600, 0.85)` بـ `compressBackgroundToBest(file, 1920)`.
+- استخدام `mime` و `ext` المُرجعة في:
+  - اسم المسار: `${user.id}/bg-${Date.now()}.${ext}`
+  - `contentType: mime` في `supabase.storage.upload`.
+- إظهار حجم الملف الأصلي vs المضغوط في toast (UX).
+- التحقق من حد أقصى **5MB** للملف المُدخل (قبل الضغط) لمنع الانهيار.
 
-| النوع | ما نتحقق منه |
-|------|------------|
-| `glass` (افتراضي) | تدرّج زجاجي ناعم + الـ veil يُظهر النص بوضوح |
-| `color` | لون صلب يملأ الشاشة + النص مقروء |
-| `gradient` | تدرّج CSS صحيح بدون شريط أبيض |
-| `image` | الصورة تُحمَّل (lazy decode) + لا وميض + الـ blur veil يخفّف الازدحام |
+### 3. تحديث `StoreBackgroundLayer.tsx`
+حالياً يطبّق الصورة كـ CSS `background-image: url(...)` — هذا **لا يدعم srcset**. سنحوّل طبقة الـ image إلى `<img>` فعلي مع:
+- `loading="eager"` (الخلفية above-the-fold)
+- `decoding="async"`
+- `fetchPriority="high"` للصورة الأولى
+- `srcSet` من `buildBackgroundSrcSet(value)`
+- `sizes="100vw"`
+- `className="absolute inset-0 w-full h-full object-cover"`
+- إبقاء `useDecodedImage` المحسّن لكن يعمل الآن على الـ URL المختار للشاشة الحالية.
 
-### 4. اختبار التخطيط على 3 أحجام شاشات
-لكل نوع خلفية، سأغيّر الـ viewport عبر `browser--set_viewport_size`:
-- **جوال**: 390×844 (iPhone)
-- **تابلت**: 820×1180 (iPad)
-- **ديسكتوب**: 1366×768
+أوضاع `color/gradient/glass` تبقى كما هي (CSS فقط).
 
-نقاط الفحص لكل حجم:
-- لا يوجد scroll أفقي.
-- `StoreHeroSection` غير مقصوص (avatar + display_name + badges مرئية).
-- شبكة المنتجات تتكيف.
-- زر الإعدادات (إن كان المالك) لا يتداخل مع البطاقة.
-- النص فوق الخلفية مقروء (تباين كافٍ بفضل الـ veil).
+### 4. تنظيف ملفات قديمة (اختياري لاحقاً)
+أي ملفات `.jpg` قديمة في `merchant_stores/{user_id}/bg-*` تبقى صالحة (الـ render endpoint يحوّل لأي تنسيق output). لا حاجة لـ migration.
 
-### 5. فحص الأداء
-- `browser--performance_profile` لقراءة JS heap و layout counts بعد التنقل.
-- `browser--read_console_logs` للتقاط أي أخطاء/تحذيرات React.
-- `browser--list_network_requests` للتحقق أن صورة الخلفية لا تُطلب في وضع `glass/color/gradient`.
+## نقاط فنية مهمة
+- **Supabase Image Transformations** يدعم `format=webp` تلقائياً عبر header `Accept: image/webp` من المتصفح — لذا حتى الصور المرفوعة كـ JPEG ستُقدَّم WebP في المتصفحات الداعمة عبر `/render/image/public/`. الفائدة من رفع AVIF/WebP أصلاً = توفير مساحة التخزين + مصدر أفضل.
+- `canvas.toBlob('image/avif')` مدعوم في Chrome 105+ و Edge 105+ فقط، وليس في Safari/Firefox stable. لذا fallback ضروري.
+- `image/webp` مدعوم في كل المتصفحات الحديثة (Chrome/Edge/FF/Safari 14+).
+- `resizeSupabaseImage` يستخدم `resize=contain`؛ لخلفية تملأ الشاشة نحتاج `resize=cover` أو نتركه contain ونعتمد على `object-fit: cover` في الـ `<img>`. الخيار الأنسب: `object-fit: cover` (يحتفظ بحرية اختيار CSS).
 
-### 6. التقرير النهائي
-سأقدّم:
-- جدول نتائج (نوع × حجم × pass/fail).
-- لقطات شاشة لكل تركيبة مهمة.
-- قائمة أي مشاكل مكتشفة + خطة إصلاح إن لزم.
+## ملخص الملفات المتأثرة
+- جديد: `src/lib/backgroundImage.ts`
+- تعديل: `src/components/merchant/StoreProfileEditor.tsx` (دالة `handleBackgroundUpload` فقط)
+- تعديل: `src/components/merchant/StoreBackgroundLayer.tsx` (طبقة الـ image تتحول إلى `<img>` مع srcset)
+- لا تغيير على قاعدة البيانات.
+- لا تغيير على bucket policies.
 
-## ما لن يُعدَّل في هذه المهمة
-- لا تعديل على `StoreBackgroundLayer.tsx` ولا أي ملف آخر إلا لو اكتُشف خلل.
-- لا تعديل على قاعدة البيانات (سأقترح تبديل النوع من واجهة الإعدادات إن أردت تغطية كل الأنواع).
-
-## تأكيد قبل المتابعة
-هل تريدني أن:
-- **(أ)** أختبر فقط الحالة الحالية للتاجر الموجود + ألتقط لقطات شاملة عبر الأحجام؟ (الأسرع، يبقى في وضع القراءة)
-- **(ب)** أنتقل لوضع البناء لتغيير `store_background_type` مؤقتاً وتغطية الأنواع الأربعة، ثم إعادتها لما كانت عليه؟
+## النتائج المتوقعة
+- صور خلفية أصغر بـ 30–60% (WebP) إلى 60–80% (AVIF) مقابل JPEG الحالي.
+- الجوال يحمّل ~960px بدل 1600px → توفير ~40% إضافية على الجوال.
+- لا فرق بصري ملحوظ بفضل `object-fit: cover` و quality المعقول.
+- لا breaking changes — الصور القديمة المخزّنة كـ JPEG تستمر بالعمل.
