@@ -246,7 +246,8 @@ export default function CommunityMerchantStorePage({
 
   if (appLoading || productsLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen relative">
+        <StoreBackgroundLayer type="glass" />
         <main className="container mx-auto px-4 py-6 max-w-5xl">
           <Skeleton className="h-48 rounded-2xl mb-4" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -261,7 +262,8 @@ export default function CommunityMerchantStorePage({
 
   if (!merchantApp) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen relative">
+        <StoreBackgroundLayer type="glass" />
         <main className="container mx-auto px-4 py-6 max-w-3xl">
           <Card className="p-8 text-center rounded-2xl border-border/50">
             <Store className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
