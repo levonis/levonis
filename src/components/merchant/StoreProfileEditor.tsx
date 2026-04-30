@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock, FolderOpen } from "lucide-react";
+import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock, FolderOpen, Palette, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import AvatarWithFrame from "./AvatarWithFrame";
 import PrinterModelsEditor from "./PrinterModelsEditor";
 import MerchantCategoriesManager from "./MerchantCategoriesManager";
 import StoreLayoutSelector from "./StoreLayoutSelector";
+import StoreBackgroundLayer, { type StoreBackgroundType } from "./StoreBackgroundLayer";
+import { Slider } from "@/components/ui/slider";
 
 // Compress image to JPEG with max dimensions
 function compressImage(file: File, maxSize = 800, quality = 0.85): Promise<Blob> {
