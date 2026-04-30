@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { buildBackgroundSrcSet, pickBackgroundUrl } from "@/lib/backgroundImage";
 
 export type StoreBackgroundType = "glass" | "color" | "gradient" | "image";
 
@@ -21,12 +22,34 @@ const VIGNETTE_BG =
 const VIGNETTE_STYLE: CSSProperties = { backgroundImage: VIGNETTE_BG };
 
 /**
- * Decodes a remote image off the main thread (when supported) so applying it
- * as a CSS background-image doesn't trigger a long paint. Returns the URL
- * once it's safe to render, or `null` while loading / when input is empty.
- *
- * Cleans up the in-flight Image on unmount or URL change to prevent leaking
- * decoded bitmaps when the user toggles backgrounds rapidly from settings.
+ * Tracks the current viewport width — coarsely bucketed — so we can pick the
+ * right responsive variant without re-rendering on every resize pixel.
+ */
+function useViewportBucket(): number {
+  const compute = () => {
+    if (typeof window === "undefined") return 1280;
+    return window.innerWidth;
+  };
+  const [w, setW] = useState<number>(compute);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setW(window.innerWidth));
+    };
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+  return w;
+}
+
+/**
+ * Decode-ahead an image so applying it doesn't trigger a long paint. Returns
+ * the URL once decoded, or null while loading.
  */
 function useDecodedImage(url: string | null | undefined): string | null {
   const [resolved, setResolved] = useState<string | null>(null);
@@ -44,7 +67,6 @@ function useDecodedImage(url: string | null | undefined): string | null {
     let cancelled = false;
     const img = new Image();
     img.decoding = "async";
-    img.loading = "lazy";
     img.src = url;
 
     const finalize = () => {
@@ -62,7 +84,6 @@ function useDecodedImage(url: string | null | undefined): string | null {
       cancelled = true;
       img.onload = null;
       img.onerror = null;
-      // Drop the bitmap reference so the GC can reclaim it immediately.
       img.src = "";
     };
   }, [url]);
@@ -73,12 +94,9 @@ function useDecodedImage(url: string | null | undefined): string | null {
 /**
  * Renders a fixed full-viewport background for the merchant store page.
  *
- * Performance:
- * - `React.memo` short-circuits when parent re-renders with identical props.
- * - Inline style objects are memoised so referential equality is preserved.
- * - Image backgrounds are decoded off-thread before being applied.
- * - The blur veil hints `will-change: backdrop-filter` so the compositor
- *   uploads it to its own layer once.
+ * Image mode now uses a real `<img>` element with `srcSet`/`sizes` so the
+ * browser picks the smallest responsive variant for the current device — and
+ * Supabase image transforms auto-negotiate WebP/AVIF based on Accept headers.
  */
 function StoreBackgroundLayerImpl({
   type = "glass",
@@ -90,24 +108,26 @@ function StoreBackgroundLayerImpl({
     [blur],
   );
 
-  // Only feed the decoder when in image mode — saves work in other modes.
-  const imageUrl = type === "image" && value ? value : null;
-  const decodedUrl = useDecodedImage(imageUrl);
+  const viewportWidth = useViewportBucket();
 
-  const bgStyle = useMemo<CSSProperties>(() => {
+  // Pre-pick the URL for the current viewport so the decode-ahead hook keys
+  // off the same string the <img> will request.
+  const responsiveUrl = useMemo(
+    () => (type === "image" ? pickBackgroundUrl(value, viewportWidth) : null),
+    [type, value, viewportWidth],
+  );
+  const srcSet = useMemo(
+    () => (type === "image" && value ? buildBackgroundSrcSet(value) : ""),
+    [type, value],
+  );
+
+  const decodedUrl = useDecodedImage(responsiveUrl);
+
+  const cssBgStyle = useMemo<CSSProperties>(() => {
     if (type === "color" && value) return { background: value };
     if (type === "gradient" && value) return { background: value };
-    if (type === "image") {
-      if (!decodedUrl) return { background: GLASS_DEFAULT_BG };
-      return {
-        backgroundImage: `url("${decodedUrl}")`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      };
-    }
     return { background: GLASS_DEFAULT_BG };
-  }, [type, value, decodedUrl]);
+  }, [type, value]);
 
   const veilStyle = useMemo<CSSProperties>(() => {
     const filter = `blur(${safeBlur}px) saturate(140%)`;
@@ -118,10 +138,29 @@ function StoreBackgroundLayerImpl({
     };
   }, [safeBlur]);
 
+  const showImage = type === "image" && !!decodedUrl;
+
   return (
     <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-      {/* Wallpaper layer */}
-      <div className="absolute inset-0" style={bgStyle} />
+      {/* CSS wallpaper (color/gradient/glass fallback while image decodes). */}
+      <div className="absolute inset-0" style={cssBgStyle} />
+
+      {/* Image wallpaper — responsive via srcSet, format-negotiated by Supabase. */}
+      {showImage && (
+        <img
+          src={decodedUrl ?? undefined}
+          srcSet={srcSet || undefined}
+          sizes="100vw"
+          alt=""
+          decoding="async"
+          loading="eager"
+          // @ts-expect-error - fetchPriority is a valid HTML attribute, not yet typed in React 18
+          fetchpriority="high"
+          draggable={false}
+          className="absolute inset-0 w-full h-full object-cover select-none"
+        />
+      )}
+
       {/* Glass veil — softens busy backgrounds & guarantees text contrast */}
       <div className="absolute inset-0 bg-background/40" style={veilStyle} />
       {/* Subtle vignette for depth */}
