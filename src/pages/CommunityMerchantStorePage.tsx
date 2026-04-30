@@ -597,6 +597,9 @@ export default function CommunityMerchantStorePage({
             selected_frame_id: editableMerchantApp.selected_frame_id,
             specialty: (editableMerchantApp.specialty as "resin" | "filament" | "both") || undefined,
             store_layout: (editableMerchantApp.store_layout as "standard" | "grid_images" | "strip" | "sidebar") || undefined,
+            store_background_type: ((editableMerchantApp as any).store_background_type as StoreBackgroundType) || "glass",
+            store_background_value: (editableMerchantApp as any).store_background_value ?? null,
+            store_background_blur: (editableMerchantApp as any).store_background_blur ?? 20,
           }}
         />
       )}
