@@ -151,17 +151,16 @@ export function useCartWarrantyBenefits(
       percentageUsedSoFar: used,
       percentageRemaining: remaining,
       percentageDiscount,
-      freeShipping: Number(w.free_shipping_max_uses_monthly) > 0,
+      freeShipping: cartIsAllDirect && Number(w.free_shipping_max_uses_monthly) > 0,
       freeShippingMinOrder: Number(w.free_shipping_min_order) || 0,
       freeShippingMethods: Array.isArray(w.free_shipping_methods)
         ? (w.free_shipping_methods as any[]).filter((m) => typeof m === "string")
         : ["standard"],
       freeShippingMaxUsesMonthly: Number(w.free_shipping_max_uses_monthly) || 0,
       freeShippingUsedSoFar: Number(w.free_shipping_used) || 0,
-      freeShippingRemainingUses: Math.max(
-        0,
-        (Number(w.free_shipping_max_uses_monthly) || 0) - (Number(w.free_shipping_used) || 0)
-      ),
+      freeShippingRemainingUses: cartIsAllDirect
+        ? Math.max(0, (Number(w.free_shipping_max_uses_monthly) || 0) - (Number(w.free_shipping_used) || 0))
+        : 0,
       discountApplicableCategoryIds: discountCats,
       freeShippingApplicableCategoryIds: shippingCats,
       totalDiscount: percentageDiscount,
