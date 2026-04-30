@@ -1,55 +1,42 @@
-## تقسيم `/special-coupons` إلى تبويبَين + زر "استخدام" يفعّل الكوبون فعلياً في السلتَين
+# تطوير صفحة التاجر `/store/:merchantId`
 
-### الوضع الحالي (مشكلة)
-- صفحة `/special-coupons` تعرض شيئَين مدموجَين بدون فصل:
-  1. كوبونات الإدارة (`customer_special_coupons`) — للموقع الرسمي.
-  2. خصومات متاجر المجتمع (`merchant_store_discounts`) — للمجتمع.
-- **لا يوجد زر "استخدام"**: المستخدم يرى الكوبون فقط ويحتاج نسخ الكود يدوياً.
-- **سلة الموقع** (`Cart.tsx`) تطبّق كوبونات الإدارة فقط بإدخال الكود يدوياً.
-- **سلة المجتمع** (`CommunityCart.tsx`) لا تدعم الكوبونات/الخصومات إطلاقاً في الـ UI رغم أن `community_cart_items.discount_id` موجود في الـ schema.
+## الهدف
+1. جعل خلفية صفحة التاجر زجاجية شفافة (Glassmorphism) افتراضياً.
+2. السماح للتاجر بتخصيص الخلفية (لون / تدرّج / صورة) من إعدادات المتجر.
+3. إخفاء الـ Dynamic Island تماماً عند فتح صفحة التاجر.
 
-### السلوك الجديد
+## الملفات والتغييرات
 
-#### 1) صفحة `/special-coupons` — تبويبان أعلى الصفحة
-شريط Tabs بنمط Glassmorphism فيه تبويبَين:
+### 1. قاعدة البيانات — Migration جديد
+إضافة 3 أعمدة لجدول `merchant_applications`:
+- `store_background_type TEXT DEFAULT 'glass'` — القيم: `glass` | `color` | `gradient` | `image`
+- `store_background_value TEXT NULL` — لون hex، أو CSS gradient، أو URL صورة
+- `store_background_blur INT DEFAULT 20` — شدة الـ blur (0-40px) للطبقة الزجاجية فوق الخلفية
 
-**أ) "كوبونات الموقع" (افتراضي)** — يعرض فقط `customer_special_coupons` (كوبونات الإدارة الرسمية):
-- كل بطاقة فيها زر **"استخدام في السلة"** (أخضر بارز).
-- الضغط: يحفظ الكوبون في `localStorage` تحت مفتاح `pending_site_coupon` ثم ينتقل إلى `/cart` ويعرض toast "تم تفعيل الكوبون — سيُطبَّق في السلة".
-- في `Cart.tsx` نضيف `useEffect` يلتقط هذا المفتاح عند التحميل، يضع الكود في `couponCode` ويستدعي `applyCoupon()` تلقائياً، ثم يمسح المفتاح.
-- إذا لم يكن للكوبون كود (مثل عرض ضمني)، يُعرض الكود المُولَّد من `coupon_code` field — وإن كان فارغاً نُخفي زر "استخدام" ونعرض "كوبون عرض" فقط.
+### 2. إخفاء الجزيرة على صفحة المتجر
+**`src/island/IslandContext.tsx`** — إضافة `/store` و `/community/store` و `/community/merchant/store` إلى `HIDDEN_PREFIXES`.
 
-**ب) "كوبونات المجتمع والتجار"** — يعرض فقط `merchant_store_discounts` (خصومات التجار، مجمّعة حسب المتجر كما حالياً):
-- كل بطاقة فيها زر **"استخدام في سلة المجتمع"**.
-- الضغط: يحفظ `{ discount_id, merchant_id }` في `localStorage` تحت `pending_community_discount` وينتقل إلى `/community/cart`.
-- يعمل التفعيل فقط إذا السلة تحوي منتجات من نفس المتجر؛ وإلا يفتح صفحة المتجر `/community/store/:merchant_id` ليضيف منتجاً أولاً.
+### 3. خلفية Glassmorphism + خلفية مخصصة
+**`src/pages/CommunityMerchantStorePage.tsx`**:
+- استبدال `min-h-screen bg-background` بحاوية تحتوي على:
+  - طبقة خلفية (`fixed inset-0 -z-10`) تعرض اللون/التدرج/الصورة المختارة من بيانات التاجر، وعند `glass` تعرض تدرجاً ناعماً افتراضياً يستخدم لون الـ primary.
+  - المحتوى فوقها بـ `relative` + بطاقات `glass-panel` / `glass-tile` (متّبعة معيار Glassmorphism Professional من ذاكرة المشروع).
+- جلب الحقول الجديدة ضمن استعلام بيانات التاجر.
 
-#### 2) `Cart.tsx` (سلة الموقع)
-- إضافة `useEffect` عند التحميل يقرأ `pending_site_coupon` ويستدعي `applyCoupon` تلقائياً (مع رسالة نجاح/فشل). يُمسح المفتاح بعد المحاولة.
-- يستخدم نفس مسار التحقق الحالي `validate_coupon_with_rate_limit` (لا تغيير في الـ RPC).
+### 4. واجهة التخصيص في الإعدادات
+**`src/components/merchant/StoreProfileEditor.tsx`** — إضافة قسم جديد "خلفية المتجر" يحوي:
+- 4 تبويبات: زجاجي (افتراضي) / لون موحد / تدرّج / صورة.
+- منتقي لون (`<input type="color">`) للوضعين color/gradient (لونان للتدرج).
+- رفع صورة الخلفية إلى bucket `store-assets` (موجود) مع معاينة.
+- شريط تمرير لشدّة الـ blur الأمامي (10-40px).
+- معاينة مباشرة Live Preview أعلى القسم.
+- حفظ الحقول الثلاثة الجديدة عند الضغط على "حفظ".
 
-#### 3) `CommunityCart.tsx` (سلة المجتمع)
-- إضافة state: `appliedDiscount` يحمل الخصم المُفعَّل + التحقق من `min_purchase_amount`.
-- `useEffect` يقرأ `pending_community_discount`، يجلب الخصم من `merchant_store_discounts` مع التحقق:
-  - `is_active = true` و (`valid_until` فارغ أو > الآن).
-  - مجموع منتجات هذا التاجر في السلة ≥ `min_purchase_amount`.
-- إذا نجح: يحفظ `discount_id` على عناصر السلة الخاصة بهذا التاجر (`UPDATE community_cart_items SET discount_id = ... WHERE merchant_id = ... AND user_id = ...`).
-- يُحسب الخصم في الإجمالي بحسب `discount_type`:
-  - `percentage` / `min_purchase_percentage`: خصم نسبة من مجموع منتجات التاجر.
-  - `fixed_amount`: خصم مبلغ ثابت.
-  - `free_delivery` / `min_purchase_delivery`: تصفير `merchantDeliveryPrices[merchant_id]`.
-  - `free_gift`: عرض الهدية كـ badge فقط (لا حساب).
-- بطاقة Glassmorphism في ملخص السلة تعرض الخصم المُفعَّل + زر إزالة (يمسح `discount_id` من العناصر).
-- توست خطأ واضح إذا لم يتحقق الحد الأدنى أو لا توجد منتجات من التاجر.
+### 5. مكوّن مساعد جديد
+**`src/components/merchant/StoreBackgroundLayer.tsx`** — مكوّن صغير يستقبل `{ type, value, blur }` ويُصدر طبقة `fixed inset-0 -z-10` مع غلاف زجاجي (`backdrop-blur-[var]`, طبقة شفافة بلون الخلفية) لضمان قراءة النصوص.
 
-### الملفات المتأثرة
-- `src/pages/CustomerSpecialCoupons.tsx` — إعادة هيكلة بالـ Tabs + زر "استخدام".
-- `src/pages/Cart.tsx` — `useEffect` لقراءة `pending_site_coupon` + استدعاء `applyCoupon`.
-- `src/pages/CommunityCart.tsx` — منطق جديد لتطبيق الخصم + UI badge + حساب الإجمالي بعد الخصم.
-- `src/lib/i18n/{ar,en,ku,types}.ts` — مفاتيح ترجمة جديدة (عناوين تبويبَين، أزرار، رسائل toast).
-- لا تغييرات في DB / RPCs.
-
-### نتيجة المستخدم
-- يدخل `/special-coupons` → يرى تبويبَين واضحَين.
-- يضغط "استخدام" على كوبون الموقع → ينتقل إلى السلة الرسمية وقد طُبِّق الكوبون تلقائياً.
-- يضغط "استخدام" على خصم تاجر → ينتقل إلى سلة المجتمع وقد طُبِّق الخصم على منتجات هذا التاجر (إن كانت موجودة)، أو يُوجَّه لإضافة منتجات أولاً.
+## ملاحظات
+- يتم تطبيق الخلفية فقط على صفحة التاجر، ولا يؤثر على باقي التطبيق.
+- الزائرون يرون نفس التخصيص؛ المالك فقط يستطيع تعديله من زر الإعدادات الموجود.
+- لا حاجة لتغييرات في `MerchantStandalone.tsx` لأنه يستخدم نفس `CommunityMerchantStorePage` داخلياً (سيرث التخصيص تلقائياً).
+- متوافق مع ذاكرة المشروع: Glassmorphism Professional Standard، i18n (لا نصوص ثابتة بلغة واحدة في إعدادات الواجهة).

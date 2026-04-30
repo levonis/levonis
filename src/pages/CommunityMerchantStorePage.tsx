@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import RatingsPreview from "@/components/merchant/RatingsPreview";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
+import StoreBackgroundLayer, { type StoreBackgroundType } from "@/components/merchant/StoreBackgroundLayer";
 
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import CompactProductCard from "@/components/merchant/CompactProductCard";
@@ -89,7 +90,7 @@ export default function CommunityMerchantStorePage({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, store_layout")
+        .select("id, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, store_layout, store_background_type, store_background_value, store_background_blur")
         .eq("id", merchantId!)
         .maybeSingle();
       if (error) throw error;
@@ -103,7 +104,7 @@ export default function CommunityMerchantStorePage({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier, selected_frame_id, specialty, store_layout")
+        .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier, selected_frame_id, specialty, store_layout, store_background_type, store_background_value, store_background_blur")
         .eq("id", merchantId!)
         .maybeSingle();
       if (error) throw error;
@@ -245,7 +246,8 @@ export default function CommunityMerchantStorePage({
 
   if (appLoading || productsLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen relative">
+        <StoreBackgroundLayer type="glass" />
         <main className="container mx-auto px-4 py-6 max-w-5xl">
           <Skeleton className="h-48 rounded-2xl mb-4" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -260,7 +262,8 @@ export default function CommunityMerchantStorePage({
 
   if (!merchantApp) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen relative">
+        <StoreBackgroundLayer type="glass" />
         <main className="container mx-auto px-4 py-6 max-w-3xl">
           <Card className="p-8 text-center rounded-2xl border-border/50">
             <Store className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
@@ -276,8 +279,13 @@ export default function CommunityMerchantStorePage({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-6 max-w-5xl">
+    <div className="min-h-screen relative">
+      <StoreBackgroundLayer
+        type={(merchantApp.store_background_type as StoreBackgroundType) || "glass"}
+        value={merchantApp.store_background_value}
+        blur={merchantApp.store_background_blur ?? 20}
+      />
+      <main className="container mx-auto px-4 py-6 max-w-5xl relative">
         {/* Professional Hero Section */}
         <div className="relative mb-6 rounded-2xl overflow-hidden border border-border/40 bg-card/30 backdrop-blur-xl shadow-[inset_0_1px_0_0_hsl(var(--foreground)/0.05)]">
           <div className="relative p-6 sm:p-8">
@@ -589,6 +597,9 @@ export default function CommunityMerchantStorePage({
             selected_frame_id: editableMerchantApp.selected_frame_id,
             specialty: (editableMerchantApp.specialty as "resin" | "filament" | "both") || undefined,
             store_layout: (editableMerchantApp.store_layout as "standard" | "grid_images" | "strip" | "sidebar") || undefined,
+            store_background_type: ((editableMerchantApp as any).store_background_type as StoreBackgroundType) || "glass",
+            store_background_value: (editableMerchantApp as any).store_background_value ?? null,
+            store_background_blur: (editableMerchantApp as any).store_background_blur ?? 20,
           }}
         />
       )}

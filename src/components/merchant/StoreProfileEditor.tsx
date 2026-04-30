@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock, FolderOpen } from "lucide-react";
+import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock, FolderOpen, Palette, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import AvatarWithFrame from "./AvatarWithFrame";
 import PrinterModelsEditor from "./PrinterModelsEditor";
 import MerchantCategoriesManager from "./MerchantCategoriesManager";
 import StoreLayoutSelector from "./StoreLayoutSelector";
+import StoreBackgroundLayer, { type StoreBackgroundType } from "./StoreBackgroundLayer";
+import { Slider } from "@/components/ui/slider";
 
 // Compress image to JPEG with max dimensions
 function compressImage(file: File, maxSize = 800, quality = 0.85): Promise<Blob> {
@@ -70,6 +72,9 @@ interface StoreProfileEditorProps {
     away_message?: string | null;
     inquiry_template?: string | null;
     is_away?: boolean;
+    store_background_type?: StoreBackgroundType | null;
+    store_background_value?: string | null;
+    store_background_blur?: number | null;
   };
 }
 
@@ -103,6 +108,9 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
       setAwayMessage(merchantApp.away_message || "");
       setInquiryTemplate(merchantApp.inquiry_template || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟");
       setIsAway(merchantApp.is_away || false);
+      setBgType((merchantApp.store_background_type as StoreBackgroundType) || "glass");
+      setBgValue(merchantApp.store_background_value || "");
+      setBgBlur(merchantApp.store_background_blur ?? 20);
     }
   }, [open, merchantApp]);
   const [uploading, setUploading] = useState(false);
@@ -112,6 +120,20 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   const [awayMessage, setAwayMessage] = useState(merchantApp.away_message || "");
   const [inquiryTemplate, setInquiryTemplate] = useState(merchantApp.inquiry_template || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟");
   const [isAway, setIsAway] = useState(merchantApp.is_away || false);
+
+  // Background customization state
+  const [bgType, setBgType] = useState<StoreBackgroundType>(
+    (merchantApp.store_background_type as StoreBackgroundType) || "glass"
+  );
+  const [bgValue, setBgValue] = useState<string>(merchantApp.store_background_value || "");
+  const [bgBlur, setBgBlur] = useState<number>(merchantApp.store_background_blur ?? 20);
+  const [bgUploading, setBgUploading] = useState(false);
+  const parseGradient = (v: string): [string, string] => {
+    const m = v.match(/#[0-9a-fA-F]{6}/g);
+    if (m && m.length >= 2) return [m[0], m[1]];
+    return ["#1e3a8a", "#0f172a"];
+  };
+  const [grad1, grad2] = parseGradient(bgValue);
 
   // Fetch available frames
   const { data: frames = [] } = useQuery({
@@ -175,6 +197,9 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
           away_message: awayMessage.trim() || null,
           inquiry_template: inquiryTemplate.trim() || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟",
           is_away: isAway,
+          store_background_type: bgType,
+          store_background_value: bgType === "glass" ? null : (bgValue || null),
+          store_background_blur: bgBlur,
         })
         .eq("id", merchantApp.id);
       if (error) throw error;
@@ -275,9 +300,35 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
     }
   };
 
+  const handleBackgroundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    setBgUploading(true);
+    try {
+      const processed = await compressImage(file, 1600, 0.85);
+      const path = `${user.id}/bg-${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant_stores")
+        .upload(path, processed, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("merchant_stores").getPublicUrl(path);
+      setBgValue(urlData.publicUrl);
+      toast({ title: "تم الرفع", description: "تم رفع صورة الخلفية." });
+    } catch (err: any) {
+      toast({ title: "خطأ", description: err?.message || "فشل الرفع.", variant: "destructive" });
+    } finally {
+      setBgUploading(false);
+    }
+  };
+
+  const updateGradient = (c1: string, c2: string) => {
+    setBgValue(`linear-gradient(135deg, ${c1}, ${c2})`);
+  };
+
   const canUseFrame = (frame: Frame) => {
     return frame.is_free || ownedFrames.includes(frame.id);
   };
+
 
   return (
     <>
@@ -455,6 +506,132 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             <div className="pt-2 border-t border-border/50 space-y-1">
               <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">أضف طابعاتك مع المواصفات ليعرف العملاء قدراتك (مثال: Elegoo Mars 3 Pro - دقة 4K). يزيد من مصداقيتك.</p>
               <PrinterModelsEditor merchantId={merchantApp.id} />
+            </div>
+
+            {/* Store Background Customization */}
+            <div className="pt-4 border-t border-border/50 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Palette className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">خلفية المتجر</h3>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    خصّص خلفية صفحة متجرك. الافتراضي زجاجي شفاف يبرز محتواك.
+                  </p>
+                </div>
+              </div>
+
+              {/* Live preview */}
+              <div className="relative h-28 rounded-2xl overflow-hidden border border-border/40">
+                <div className="absolute inset-0">
+                  <StoreBackgroundLayer type={bgType} value={bgType === "glass" ? null : bgValue} blur={bgBlur} />
+                </div>
+                <div className="relative h-full flex items-center justify-center">
+                  <div className="glass-tile px-4 py-2 rounded-xl text-xs font-bold">
+                    معاينة مباشرة
+                  </div>
+                </div>
+              </div>
+
+              {/* Type tabs */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { v: "glass", label: "زجاجي" },
+                  { v: "color", label: "لون" },
+                  { v: "gradient", label: "تدرّج" },
+                  { v: "image", label: "صورة" },
+                ].map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => {
+                      setBgType(opt.v as StoreBackgroundType);
+                      if (opt.v === "gradient") updateGradient(grad1, grad2);
+                      if (opt.v === "color" && !bgValue.startsWith("#")) setBgValue("#1e3a8a");
+                      if (opt.v === "glass") setBgValue("");
+                    }}
+                    className={`px-2 py-2 text-xs rounded-xl border font-medium transition-all ${
+                      bgType === opt.v
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Per-type editor */}
+              {bgType === "color" && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+                  <input
+                    type="color"
+                    value={bgValue && bgValue.startsWith("#") ? bgValue : "#1e3a8a"}
+                    onChange={(e) => setBgValue(e.target.value)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border-0"
+                  />
+                  <div>
+                    <p className="text-xs font-medium">لون الخلفية</p>
+                    <p className="text-[10px] text-muted-foreground">{bgValue || "#1e3a8a"}</p>
+                  </div>
+                </div>
+              )}
+
+              {bgType === "gradient" && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20">
+                  <input
+                    type="color"
+                    value={grad1}
+                    onChange={(e) => updateGradient(e.target.value, grad2)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border-0"
+                  />
+                  <input
+                    type="color"
+                    value={grad2}
+                    onChange={(e) => updateGradient(grad1, e.target.value)}
+                    className="h-10 w-14 rounded-lg cursor-pointer border-0"
+                  />
+                  <p className="text-[10px] text-muted-foreground flex-1">تدرّج قُطري</p>
+                </div>
+              )}
+
+              {bgType === "image" && (
+                <div className="space-y-2">
+                  <label className="flex items-center justify-center gap-2 h-11 rounded-xl border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors text-sm">
+                    <Upload className="h-4 w-4" />
+                    {bgUploading ? "جاري الرفع..." : bgValue ? "تغيير الصورة" : "رفع صورة"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleBackgroundUpload}
+                      disabled={bgUploading}
+                    />
+                  </label>
+                  {bgValue && (
+                    <Button variant="ghost" size="sm" onClick={() => setBgValue("")} className="w-full text-xs text-muted-foreground">
+                      إزالة الصورة
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Blur slider */}
+              <div className="space-y-2 p-3 rounded-xl border border-border bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">شدة الضبابية</Label>
+                  <span className="text-xs font-bold text-primary">{bgBlur}px</span>
+                </div>
+                <Slider
+                  value={[bgBlur]}
+                  onValueChange={(v) => setBgBlur(v[0])}
+                  min={0}
+                  max={40}
+                  step={2}
+                />
+                <p className="text-[10px] text-muted-foreground">قيمة أعلى = خلفية أنعم وقراءة أوضح للنصوص.</p>
+              </div>
             </div>
 
             {/* Auto-Response Settings */}
