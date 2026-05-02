@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, Trash2, Download, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -33,6 +33,7 @@ export default function AdminSavedInvoices() {
   const queryClient = useQueryClient();
   const [viewingInvoice, setViewingInvoice] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["saved-invoices"],
@@ -75,17 +76,52 @@ export default function AdminSavedInvoices() {
     },
   });
 
-  const downloadInvoice = (invoice: any) => {
-    const blob = new Blob([invoice.invoice_html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoice-${invoice.orders?.order_number || invoice.id}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("تم تنزيل الفاتورة");
+  const downloadInvoice = async (invoice: any) => {
+    let offscreen: HTMLDivElement | null = null;
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      offscreen = document.createElement("div");
+      offscreen.style.position = "fixed";
+      offscreen.style.top = "0";
+      offscreen.style.left = "-10000px";
+      offscreen.style.width = "210mm";
+      offscreen.style.background = "#fff";
+      offscreen.style.direction = "ltr";
+      offscreen.innerHTML = DOMPurify.sanitize(invoice.invoice_html);
+      document.body.appendChild(offscreen);
+
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: "#fff" });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 5;
+      const contentWidth = pdfWidth - margin * 2;
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+      if (contentHeight <= pdfHeight - margin * 2) {
+        pdf.addImage(imgData, "PNG", margin, margin, contentWidth, contentHeight);
+      } else {
+        let remainingHeight = contentHeight;
+        let position = margin;
+        pdf.addImage(imgData, "PNG", margin, position, contentWidth, contentHeight);
+        remainingHeight -= pdfHeight - margin * 2;
+        while (remainingHeight > 0) {
+          pdf.addPage();
+          position = margin - (contentHeight - remainingHeight);
+          pdf.addImage(imgData, "PNG", margin, position, contentWidth, contentHeight);
+          remainingHeight -= pdfHeight - margin * 2;
+        }
+      }
+      pdf.save(`invoice-${invoice.orders?.order_number || invoice.id}.pdf`);
+      toast.success("تم تنزيل الفاتورة PDF");
+    } catch (error) {
+      console.error("Saved invoice PDF error:", error);
+      toast.error("حدث خطأ أثناء تنزيل الفاتورة");
+    } finally {
+      if (offscreen?.parentNode) offscreen.parentNode.removeChild(offscreen);
+    }
   };
 
   const isWarrantyExpired = (expiryDate: string | null) => {
