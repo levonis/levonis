@@ -34,6 +34,8 @@ interface InvoiceData {
   tax: number;
   taxPercent: number;
   delivery: number;
+  paymentFee: number;
+  paymentFeeLabel: string;
   discount: number;
   cardDiscount: number;
   total: number;
@@ -74,10 +76,38 @@ interface BuyerOption {
   orderCardDiscountAmount?: number;
 }
 
+interface DiscountBreakdown {
+  discount: number;
+  cardDiscount: number;
+  totalDiscount: number;
+}
+
 const toInvoiceNumber = (value: unknown, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+const normalizeDiscountBreakdown = (discountAmount: number, cardDiscountAmount: number): DiscountBreakdown => {
+  const cardDiscount = Math.max(0, Math.round(cardDiscountAmount || 0));
+  const rawDiscount = Math.max(0, Math.round(discountAmount || 0));
+  const discount = cardDiscount > 0 && rawDiscount >= cardDiscount
+    ? rawDiscount - cardDiscount
+    : rawDiscount;
+
+  return {
+    discount,
+    cardDiscount,
+    totalDiscount: discount + cardDiscount,
+  };
+};
+
+const getPaymentFeeLabel = (paymentMethod?: string | null, paymentStatus?: string | null) => (
+  paymentMethod === 'cod' || paymentStatus === 'cod'
+    ? 'COD fee:'
+    : paymentStatus === 'partial'
+      ? 'payment fee:'
+      : 'extra fee:'
+);
 
 const deriveCustomerDeliveryFee = ({
   subtotal,
@@ -87,6 +117,7 @@ const deriveCustomerDeliveryFee = ({
   cardDiscountAmount,
   adminShippingCost,
   deliveryMethod,
+  calculatedDeliveryFee,
 }: {
   subtotal: number;
   taxAmount: number;
@@ -95,15 +126,112 @@ const deriveCustomerDeliveryFee = ({
   cardDiscountAmount: number;
   adminShippingCost: number;
   deliveryMethod?: string | null;
+  calculatedDeliveryFee?: number;
 }) => {
-  if (deliveryMethod === 'pickup') return 0;
-
-  const derivedFromCustomerTotal = totalAmount + discountAmount + cardDiscountAmount - subtotal - taxAmount;
-  if (Number.isFinite(derivedFromCustomerTotal) && derivedFromCustomerTotal > 0) {
-    return Math.round(derivedFromCustomerTotal);
+  if (deliveryMethod === 'pickup') {
+    return { deliveryFee: 0, paymentFee: Math.max(0, Math.round(totalAmount + discountAmount + cardDiscountAmount - subtotal - taxAmount)) };
   }
 
-  return Math.max(0, Math.round(adminShippingCost || 0));
+  const storedDelivery = Math.max(0, Math.round(adminShippingCost || 0));
+  const expectedDelivery = Math.max(0, Math.round(calculatedDeliveryFee || storedDelivery || 0));
+  const derivedFromCustomerTotal = Math.max(0, Math.round(totalAmount + discountAmount + cardDiscountAmount - subtotal - taxAmount));
+
+  if (derivedFromCustomerTotal <= 0) {
+    return { deliveryFee: expectedDelivery, paymentFee: 0 };
+  }
+
+  if (expectedDelivery > 0) {
+    return {
+      deliveryFee: Math.min(expectedDelivery, derivedFromCustomerTotal),
+      paymentFee: Math.max(0, derivedFromCustomerTotal - expectedDelivery),
+    };
+  }
+
+  return { deliveryFee: derivedFromCustomerTotal, paymentFee: 0 };
+};
+
+const calculateOrderDeliveryFeeFromRules = async ({
+  orderId,
+  deliveryMethod,
+  governorate,
+  orderTotalForFreeDelivery,
+}: {
+  orderId?: string | null;
+  deliveryMethod?: string | null;
+  governorate?: string | null;
+  orderTotalForFreeDelivery: number;
+}) => {
+  const methodKey = deliveryMethod || 'standard';
+  if (!orderId || methodKey === 'pickup') return 0;
+
+  const [{ data: items }, { data: methods }, { data: govExceptions }, { data: catExceptions }] = await Promise.all([
+    supabase
+      .from('order_items')
+      .select('quantity, products!order_items_product_id_fkey(category_id)')
+      .eq('order_id', orderId),
+    supabase
+      .from('delivery_methods')
+      .select('*')
+      .eq('is_active', true),
+    supabase
+      .from('delivery_governorate_exceptions')
+      .select('*')
+      .eq('delivery_method_key', methodKey),
+    supabase
+      .from('delivery_category_exceptions')
+      .select('*')
+      .eq('delivery_method_key', methodKey),
+  ]);
+
+  const method = (methods || []).find((m: any) => m.method_key === methodKey);
+  if (!method) return 0;
+
+  const basePrice = Number((method as any).base_price) || 0;
+  if ((method as any).free_delivery_enabled) {
+    const minOrder = Number((method as any).free_delivery_min_order) || 0;
+    if (minOrder === 0 || orderTotalForFreeDelivery >= minOrder) return 0;
+  }
+
+  const categoryQty: Record<string, number> = {};
+  let hasNoCategoryItems = false;
+  (items || []).forEach((item: any) => {
+    const catId = item.products?.category_id;
+    if (!catId) {
+      hasNoCategoryItems = true;
+      return;
+    }
+    categoryQty[catId] = (categoryQty[catId] || 0) + (Number(item.quantity) || 1);
+  });
+
+  let totalFee = 0;
+  const handledCategories = new Set<string>();
+  for (const exc of (catExceptions || []) as any[]) {
+    const catId = exc.category_id;
+    if (!catId || handledCategories.has(catId) || !categoryQty[catId]) continue;
+
+    const matchesGov = !exc.governorate || exc.governorate === governorate || exc.governorate === '__follow_gov__';
+    if (!matchesGov) continue;
+
+    handledCategories.add(catId);
+    const deliveryCount = Math.ceil(categoryQty[catId] / (Number(exc.units_per_delivery) || 1));
+    const govMatch = (govExceptions || []).find((g: any) => g.governorate === governorate);
+    const price = exc.governorate === '__follow_gov__'
+      ? (govMatch ? Number((govMatch as any).delivery_price) : basePrice)
+      : Number(exc.delivery_price);
+    totalFee += Math.max(0, price) * deliveryCount;
+  }
+
+  const hasUncoveredItems = Object.keys(categoryQty).some(catId => !handledCategories.has(catId));
+  if (handledCategories.size > 0) {
+    if (hasUncoveredItems || hasNoCategoryItems) {
+      const govMatch = (govExceptions || []).find((exc: any) => exc.governorate === governorate);
+      totalFee += govMatch ? Number((govMatch as any).delivery_price) : basePrice;
+    }
+    return Math.max(0, Math.round(totalFee));
+  }
+
+  const govMatch = (govExceptions || []).find((exc: any) => exc.governorate === governorate);
+  return Math.max(0, Math.round(govMatch ? Number((govMatch as any).delivery_price) : basePrice));
 };
 
 const invoiceLineStyle: React.CSSProperties = {
@@ -472,18 +600,26 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       const finalTaxAmount = Math.max(0, taxAmount);
       const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0
         ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
-      const deliveryFee = deriveCustomerDeliveryFee({
+      const discounts = normalizeDiscountBreakdown(orderDiscount, cardDiscount);
+      const calculatedDeliveryFee = await calculateOrderDeliveryFeeFromRules({
+        orderId: buyer.orderId,
+        deliveryMethod,
+        governorate: buyer.address?.split(' - ')?.[0] || null,
+        orderTotalForFreeDelivery: sub,
+      });
+      const { deliveryFee, paymentFee } = deriveCustomerDeliveryFee({
         subtotal: sub,
         taxAmount: finalTaxAmount,
         totalAmount: orderTotal,
-        discountAmount: orderDiscount,
-        cardDiscountAmount: cardDiscount,
+        discountAmount: discounts.discount,
+        cardDiscountAmount: discounts.cardDiscount,
         adminShippingCost,
         deliveryMethod,
+        calculatedDeliveryFee,
       });
       const finalTotal = orderTotal > 0
         ? orderTotal
-        : Math.max(0, sub + finalTaxAmount + deliveryFee - orderDiscount - cardDiscount);
+        : Math.max(0, sub + finalTaxAmount + deliveryFee + paymentFee - discounts.totalDiscount);
       const now = new Date();
 
       // Sync manual fields so the config step reflects real values
@@ -506,8 +642,10 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         tax: finalTaxAmount,
         taxPercent: finalTaxPercent,
         delivery: deliveryFee,
-        discount: orderDiscount,
-        cardDiscount: cardDiscount,
+        paymentFee,
+        paymentFeeLabel: getPaymentFeeLabel(buyer.paymentMethod, buyer.paymentStatus),
+        discount: discounts.discount,
+        cardDiscount: discounts.cardDiscount,
         total: finalTotal,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
@@ -538,6 +676,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: 0,
       taxPercent: 0,
       delivery: 0,
+      paymentFee: 0,
+      paymentFeeLabel: 'extra fee:',
       discount: 0,
       cardDiscount: 0,
       total: 0,
@@ -565,7 +705,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: taxAmount,
       taxPercent: taxPercent,
       delivery: deliveryFee,
-      total: Math.max(0, sub + taxAmount + deliveryFee - (invoiceData.discount || 0) - (invoiceData.cardDiscount || 0)),
+      total: Math.max(0, sub + taxAmount + deliveryFee + (invoiceData.paymentFee || 0) - (invoiceData.discount || 0) - (invoiceData.cardDiscount || 0)),
     });
     setStep('preview');
   };
@@ -826,7 +966,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string }) {
   const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const totalCheck = Math.max(0, data.subtotal + data.tax + data.delivery - data.discount - data.cardDiscount);
+  const totalCheck = Math.max(0, data.subtotal + data.tax + data.delivery + data.paymentFee - data.discount - data.cardDiscount);
   const displayTotal = data.total > 0 ? data.total : totalCheck;
 
   return (
@@ -907,6 +1047,12 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
               <span style={invoiceLabelStyle}>delivery:</span>
               <span style={invoiceAmountStyle}>{data.delivery.toLocaleString()} د.ع</span>
             </div>
+            {data.paymentFee > 0 && (
+              <div style={invoiceLineStyle}>
+                <span style={invoiceLabelStyle}>{data.paymentFeeLabel}</span>
+                <span style={invoiceAmountStyle}>{data.paymentFee.toLocaleString()} د.ع</span>
+              </div>
+            )}
             {data.discount > 0 && (
               <div style={invoiceLineStyle}>
                 <span style={invoiceLabelStyle}>discount:</span>
