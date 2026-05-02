@@ -34,6 +34,8 @@ interface InvoiceData {
   tax: number;
   taxPercent: number;
   delivery: number;
+  discount: number;
+  cardDiscount: number;
   total: number;
   invoiceNo: string;
   date: Date;
