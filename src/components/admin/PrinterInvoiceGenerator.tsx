@@ -73,6 +73,38 @@ interface BuyerOption {
   orderAdminShippingCost?: number;
 }
 
+const toInvoiceNumber = (value: unknown, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const deriveCustomerDeliveryFee = ({
+  subtotal,
+  taxAmount,
+  totalAmount,
+  discountAmount,
+  cardDiscountAmount,
+  adminShippingCost,
+  deliveryMethod,
+}: {
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  discountAmount: number;
+  cardDiscountAmount: number;
+  adminShippingCost: number;
+  deliveryMethod?: string | null;
+}) => {
+  if (deliveryMethod === 'pickup') return 0;
+
+  const derivedFromCustomerTotal = totalAmount + discountAmount + cardDiscountAmount - subtotal - taxAmount;
+  if (Number.isFinite(derivedFromCustomerTotal) && derivedFromCustomerTotal > 0) {
+    return Math.round(derivedFromCustomerTotal);
+  }
+
+  return Math.max(0, Math.round(adminShippingCost || 0));
+};
+
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -283,15 +315,15 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     setSelectedUserId(buyer.userId);
     setLoading(true);
     try {
-      let subtotal = Number(buyer.orderSubtotal || buyer.totalPrice || 0);
-      let taxAmount = Number(buyer.orderTaxAmount || 0);
-      let taxPercent = Number(buyer.orderTaxPercent || 0);
-      let orderTotal = Number(buyer.orderTotalAmount || 0);
-      let orderDiscount = Number(buyer.orderDiscountAmount || 0);
-      let paidAmount = Number(buyer.orderPaidAmount || 0);
-      let remainingAmount = Number(buyer.orderRemainingAmount || 0);
+      let subtotal = toInvoiceNumber(buyer.orderSubtotal || buyer.totalPrice || 0);
+      let taxAmount = toInvoiceNumber(buyer.orderTaxAmount || 0);
+      let taxPercent = toInvoiceNumber(buyer.orderTaxPercent || 0);
+      let orderTotal = toInvoiceNumber(buyer.orderTotalAmount || 0);
+      let orderDiscount = toInvoiceNumber(buyer.orderDiscountAmount || 0);
+      let paidAmount = toInvoiceNumber(buyer.orderPaidAmount || 0);
+      let remainingAmount = toInvoiceNumber(buyer.orderRemainingAmount || 0);
       let deliveryMethod = buyer.orderDeliveryMethod || '';
-      let adminShippingCost = Number(buyer.orderAdminShippingCost || 0);
+      let adminShippingCost = toInvoiceNumber(buyer.orderAdminShippingCost || 0);
       
       // Fallback: check printer's order_item_id
       if (!subtotal && printer.order_item_id) {
@@ -321,18 +353,18 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           .eq('id', buyer.orderId)
           .maybeSingle();
         if (orderData) {
-          subtotal = Number(orderData.subtotal ?? subtotal);
-          taxAmount = Number(orderData.tax_amount ?? 0);
-          taxPercent = Number(orderData.tax_percentage ?? 0);
-          orderTotal = Number(orderData.total_amount ?? 0);
-          orderDiscount = Number(orderData.discount_amount ?? 0);
-          paidAmount = Number(orderData.paid_amount ?? 0);
-          remainingAmount = Number(orderData.remaining_amount ?? 0);
+          subtotal = toInvoiceNumber(orderData.subtotal ?? subtotal);
+          taxAmount = toInvoiceNumber(orderData.tax_amount ?? 0);
+          taxPercent = toInvoiceNumber(orderData.tax_percentage ?? 0);
+          orderTotal = toInvoiceNumber(orderData.total_amount ?? 0);
+          orderDiscount = toInvoiceNumber(orderData.discount_amount ?? 0);
+          paidAmount = toInvoiceNumber(orderData.paid_amount ?? 0);
+          remainingAmount = toInvoiceNumber(orderData.remaining_amount ?? 0);
           deliveryMethod = orderData.delivery_method || '';
-          adminShippingCost = Number(orderData.admin_shipping_cost ?? 0);
+          adminShippingCost = toInvoiceNumber(orderData.admin_shipping_cost ?? 0);
           buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
           buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
-          (buyer as any).cardDiscount = Number(orderData.card_discount_amount ?? 0);
+          (buyer as any).cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? 0);
         }
       }
 
@@ -361,13 +393,19 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      // Use stored order values directly. Do NOT derive tax/delivery from totals
-      // (it breaks when discounts or card discounts are present).
-      const deliveryFee = deliveryMethod === 'pickup' ? 0 : Math.max(0, adminShippingCost || 0);
       const finalTaxAmount = Math.max(0, taxAmount);
       const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0
         ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
-      const cardDiscount = Number((buyer as any).cardDiscount || 0);
+      const cardDiscount = toInvoiceNumber((buyer as any).cardDiscount || 0);
+      const deliveryFee = deriveCustomerDeliveryFee({
+        subtotal: sub,
+        taxAmount: finalTaxAmount,
+        totalAmount: orderTotal,
+        discountAmount: orderDiscount,
+        cardDiscountAmount: cardDiscount,
+        adminShippingCost,
+        deliveryMethod,
+      });
       const finalTotal = orderTotal > 0
         ? orderTotal
         : Math.max(0, sub + finalTaxAmount + deliveryFee - orderDiscount - cardDiscount);
