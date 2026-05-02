@@ -268,7 +268,6 @@ export default function AdminSavedInvoices() {
           </DialogHeader>
           {viewingInvoice && (
             <div 
-              ref={previewRef}
               className="border rounded-lg p-4"
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewingInvoice.invoice_html) }}
             />
