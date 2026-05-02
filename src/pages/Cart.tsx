@@ -1338,7 +1338,10 @@ const Cart = () => {
       // Invalidate caches
       queryClient.invalidateQueries({ queryKey: ['today-direct-orders'] });
       if (walletDeductionAmount > 0) {
+        queryClient.invalidateQueries({ queryKey: ['wallet', user.id] });
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+        queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['wallet-balance-checkout', user.id] });
       }
 
       // Send telegram notification
