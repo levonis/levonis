@@ -425,6 +425,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: 0,
       taxPercent: 0,
       delivery: 0,
+      discount: 0,
+      cardDiscount: 0,
       total: 0,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
       date: now,
