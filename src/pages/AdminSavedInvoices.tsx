@@ -210,8 +210,8 @@ export default function AdminSavedInvoices() {
                         <p>العميل: {
                           invoice.orders?.profiles?.full_name
                           || invoice.orders?.profiles?.username
-                          || (invoice as any).user_profile?.full_name
-                          || (invoice as any).user_profile?.username
+                          || invoice.user_profile?.full_name
+                          || invoice.user_profile?.username
                           || 'غير معروف'
                         }</p>
                         {!invoice.orders && invoice.store_printers && (
