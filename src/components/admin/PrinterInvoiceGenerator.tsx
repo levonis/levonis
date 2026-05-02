@@ -966,7 +966,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string }) {
   const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const totalCheck = Math.max(0, data.subtotal + data.tax + data.delivery - data.discount - data.cardDiscount);
+  const totalCheck = Math.max(0, data.subtotal + data.tax + data.delivery + data.paymentFee - data.discount - data.cardDiscount);
   const displayTotal = data.total > 0 ? data.total : totalCheck;
 
   return (
@@ -1047,6 +1047,12 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
               <span style={invoiceLabelStyle}>delivery:</span>
               <span style={invoiceAmountStyle}>{data.delivery.toLocaleString()} د.ع</span>
             </div>
+            {data.paymentFee > 0 && (
+              <div style={invoiceLineStyle}>
+                <span style={invoiceLabelStyle}>{data.paymentFeeLabel}</span>
+                <span style={invoiceAmountStyle}>{data.paymentFee.toLocaleString()} د.ع</span>
+              </div>
+            )}
             {data.discount > 0 && (
               <div style={invoiceLineStyle}>
                 <span style={invoiceLabelStyle}>discount:</span>
