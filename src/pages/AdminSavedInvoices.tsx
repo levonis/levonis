@@ -28,10 +28,21 @@ import { ar } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminEmptyState, AdminLoading } from "@/components/admin/AdminLayout";
 
+type SavedInvoice = {
+  id: string;
+  invoice_html: string;
+  generated_at: string;
+  warranty_expires_at: string | null;
+  notes: string | null;
+  orders?: { order_number?: string | null; profiles?: { username?: string | null; full_name?: string | null } | null } | null;
+  user_profile?: { username?: string | null; full_name?: string | null } | null;
+  store_printers?: { serial_number?: string | null; model_name_ar?: string | null; model_name?: string | null } | null;
+};
+
 export default function AdminSavedInvoices() {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [viewingInvoice, setViewingInvoice] = useState<any>(null);
+  const [viewingInvoice, setViewingInvoice] = useState<SavedInvoice | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: invoices, isLoading } = useQuery({
@@ -75,17 +86,52 @@ export default function AdminSavedInvoices() {
     },
   });
 
-  const downloadInvoice = (invoice: any) => {
-    const blob = new Blob([invoice.invoice_html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoice-${invoice.orders?.order_number || invoice.id}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("تم تنزيل الفاتورة");
+  const downloadInvoice = async (invoice: SavedInvoice) => {
+    let offscreen: HTMLDivElement | null = null;
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      offscreen = document.createElement("div");
+      offscreen.style.position = "fixed";
+      offscreen.style.top = "0";
+      offscreen.style.left = "-10000px";
+      offscreen.style.width = "210mm";
+      offscreen.style.background = "#fff";
+      offscreen.style.direction = "ltr";
+      offscreen.innerHTML = DOMPurify.sanitize(invoice.invoice_html);
+      document.body.appendChild(offscreen);
+
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: "#fff" });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 5;
+      const contentWidth = pdfWidth - margin * 2;
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+      if (contentHeight <= pdfHeight - margin * 2) {
+        pdf.addImage(imgData, "PNG", margin, margin, contentWidth, contentHeight);
+      } else {
+        let remainingHeight = contentHeight;
+        let position = margin;
+        pdf.addImage(imgData, "PNG", margin, position, contentWidth, contentHeight);
+        remainingHeight -= pdfHeight - margin * 2;
+        while (remainingHeight > 0) {
+          pdf.addPage();
+          position = margin - (contentHeight - remainingHeight);
+          pdf.addImage(imgData, "PNG", margin, position, contentWidth, contentHeight);
+          remainingHeight -= pdfHeight - margin * 2;
+        }
+      }
+      pdf.save(`invoice-${invoice.orders?.order_number || invoice.id}.pdf`);
+      toast.success("تم تنزيل الفاتورة PDF");
+    } catch (error) {
+      console.error("Saved invoice PDF error:", error);
+      toast.error("حدث خطأ أثناء تنزيل الفاتورة");
+    } finally {
+      if (offscreen?.parentNode) offscreen.parentNode.removeChild(offscreen);
+    }
   };
 
   const isWarrantyExpired = (expiryDate: string | null) => {
@@ -164,8 +210,8 @@ export default function AdminSavedInvoices() {
                         <p>العميل: {
                           invoice.orders?.profiles?.full_name
                           || invoice.orders?.profiles?.username
-                          || (invoice as any).user_profile?.full_name
-                          || (invoice as any).user_profile?.username
+                          || invoice.user_profile?.full_name
+                          || invoice.user_profile?.username
                           || 'غير معروف'
                         }</p>
                         {!invoice.orders && invoice.store_printers && (

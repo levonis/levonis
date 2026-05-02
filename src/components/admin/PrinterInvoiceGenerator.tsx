@@ -71,6 +71,7 @@ interface BuyerOption {
   orderRemainingAmount?: number;
   orderDeliveryMethod?: string;
   orderAdminShippingCost?: number;
+  orderCardDiscountAmount?: number;
 }
 
 const toInvoiceNumber = (value: unknown, fallback = 0) => {
@@ -103,6 +104,76 @@ const deriveCustomerDeliveryFee = ({
   }
 
   return Math.max(0, Math.round(adminShippingCost || 0));
+};
+
+const invoiceLineStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '18px',
+  marginBottom: '8px',
+};
+
+const invoiceLabelStyle: React.CSSProperties = {
+  fontWeight: 700,
+  fontSize: '13px',
+  whiteSpace: 'nowrap',
+};
+
+const invoiceAmountStyle: React.CSSProperties = {
+  fontSize: '14px',
+  minWidth: '120px',
+  textAlign: 'right',
+  direction: 'rtl',
+};
+
+const captureInvoiceElementToPdf = async (source: HTMLElement, fileName: string) => {
+  const html2canvas = (await import('html2canvas')).default;
+  const { jsPDF } = await import('jspdf');
+  let offscreen: HTMLDivElement | null = null;
+
+  try {
+    offscreen = document.createElement('div');
+    offscreen.style.position = 'fixed';
+    offscreen.style.top = '0';
+    offscreen.style.left = '-10000px';
+    offscreen.style.width = '210mm';
+    offscreen.style.background = '#fff';
+    offscreen.style.direction = 'ltr';
+    offscreen.innerHTML = source.innerHTML;
+    document.body.appendChild(offscreen);
+
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = 210;
+    const pdfHeight = 297;
+    const margin = 5;
+    const contentWidth = pdfWidth - margin * 2;
+    const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+    if (contentHeight <= pdfHeight - margin * 2) {
+      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+    } else {
+      let remainingHeight = contentHeight;
+      let position = margin;
+      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+      remainingHeight -= (pdfHeight - margin * 2);
+      while (remainingHeight > 0) {
+        pdf.addPage();
+        position = margin - (contentHeight - remainingHeight);
+        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+        remainingHeight -= (pdfHeight - margin * 2);
+      }
+    }
+
+    pdf.save(fileName);
+  } finally {
+    if (offscreen?.parentNode) {
+      offscreen.parentNode.removeChild(offscreen);
+    }
+  }
 };
 
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
@@ -142,6 +213,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           tax_percentage,
           total_amount,
           discount_amount,
+          card_discount_amount,
           paid_amount,
           remaining_amount,
           delivery_method,
@@ -177,6 +249,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         taxPercent: number;
         totalAmount: number;
         discountAmount: number;
+        cardDiscountAmount: number;
         paidAmount: number;
         remainingAmount: number;
         deliveryMethod: string;
@@ -187,7 +260,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         id: string; order_number?: string | null; user_id: string; shipping_address?: string | null;
         payment_method?: string | null; payment_status?: string | null; subtotal?: number | null;
         tax_amount?: number | null; tax_percentage?: number | null; total_amount?: number | null;
-        discount_amount?: number | null; paid_amount?: number | null; remaining_amount?: number | null;
+        discount_amount?: number | null; card_discount_amount?: number | null; paid_amount?: number | null; remaining_amount?: number | null;
         delivery_method?: string | null; admin_shipping_cost?: number | null;
         order_items?: Array<{ id: string; total_price?: number | null; products?: { name?: string | null; name_ar?: string | null; category_id?: string | null } | null }>;
       }>;
@@ -212,6 +285,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               taxPercent: Number(order.tax_percentage || 0),
               totalAmount: Number(order.total_amount || 0),
               discountAmount: Number(order.discount_amount || 0),
+              cardDiscountAmount: Number(order.card_discount_amount || 0),
               paidAmount: Number(order.paid_amount || 0),
               remainingAmount: Number(order.remaining_amount || 0),
               deliveryMethod: order.delivery_method || '',
@@ -273,6 +347,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           orderTaxPercent: ob.taxPercent,
           orderTotalAmount: ob.totalAmount,
           orderDiscountAmount: ob.discountAmount,
+          orderCardDiscountAmount: ob.cardDiscountAmount,
           orderPaidAmount: ob.paidAmount,
           orderRemainingAmount: ob.remainingAmount,
           orderDeliveryMethod: ob.deliveryMethod,
@@ -320,6 +395,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       let taxPercent = toInvoiceNumber(buyer.orderTaxPercent || 0);
       let orderTotal = toInvoiceNumber(buyer.orderTotalAmount || 0);
       let orderDiscount = toInvoiceNumber(buyer.orderDiscountAmount || 0);
+      let cardDiscount = toInvoiceNumber(buyer.orderCardDiscountAmount || 0);
       let paidAmount = toInvoiceNumber(buyer.orderPaidAmount || 0);
       let remainingAmount = toInvoiceNumber(buyer.orderRemainingAmount || 0);
       let deliveryMethod = buyer.orderDeliveryMethod || '';
@@ -364,7 +440,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           adminShippingCost = toInvoiceNumber(orderData.admin_shipping_cost ?? 0);
           buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
           buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
-          (buyer as any).cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? 0);
+          cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? cardDiscount);
         }
       }
 
@@ -396,7 +472,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       const finalTaxAmount = Math.max(0, taxAmount);
       const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0
         ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
-      const cardDiscount = toInvoiceNumber((buyer as any).cardDiscount || 0);
       const deliveryFee = deriveCustomerDeliveryFee({
         subtotal: sub,
         taxAmount: finalTaxAmount,
@@ -720,53 +795,11 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
               </Button>
               <Button onClick={async () => {
                 if (!invoiceRef.current) return;
-                let offscreen: HTMLDivElement | null = null;
                 try {
-                  const html2canvas = (await import('html2canvas')).default;
-                  const { jsPDF } = await import('jspdf');
-                  offscreen = document.createElement('div');
-                  offscreen.style.position = 'fixed';
-                  offscreen.style.top = '0';
-                  offscreen.style.left = '-10000px';
-                  offscreen.style.width = '210mm';
-                  offscreen.style.background = '#fff';
-                  offscreen.setAttribute('dir', 'rtl');
-                  offscreen.innerHTML = invoiceRef.current.innerHTML;
-                  document.body.appendChild(offscreen);
-
-                  await new Promise((r) => requestAnimationFrame(() => r(null)));
-                  const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: '#fff' });
-                  const imgData = canvas.toDataURL('image/png');
-                  const pdf = new jsPDF('p', 'mm', 'a4');
-                  const pdfWidth = 210;
-                  const pdfHeight = 297;
-                  const margin = 5;
-                  const contentWidth = pdfWidth - margin * 2;
-                  const contentHeight = (canvas.height * contentWidth) / canvas.width;
-                  
-                  if (contentHeight <= pdfHeight - margin * 2) {
-                    pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
-                  } else {
-                    // Multi-page
-                    let remainingHeight = contentHeight;
-                    let position = margin;
-                    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-                    remainingHeight -= (pdfHeight - margin * 2);
-                    while (remainingHeight > 0) {
-                      pdf.addPage();
-                      position = margin - (contentHeight - remainingHeight);
-                      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-                      remainingHeight -= (pdfHeight - margin * 2);
-                    }
-                  }
-                  pdf.save(`invoice-${invoiceData.invoiceNo}.pdf`);
+                  await captureInvoiceElementToPdf(invoiceRef.current, `invoice-${invoiceData.invoiceNo}.pdf`);
                 } catch (err) {
                   console.error('PDF generation error:', err);
                   toast.error('حدث خطأ أثناء توليد PDF');
-                } finally {
-                  if (offscreen?.parentNode) {
-                    offscreen.parentNode.removeChild(offscreen);
-                  }
                 }
               }} variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-2" />
@@ -793,6 +826,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string }) {
   const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const totalCheck = Math.max(0, data.subtotal + data.tax + data.delivery - data.discount - data.cardDiscount);
+  const displayTotal = data.total > 0 ? data.total : totalCheck;
 
   return (
     <div style={{
@@ -807,12 +842,12 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
       direction: 'ltr',
     }}>
       {/* Header */}
-      <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '4px', marginBottom: '20px', fontVariant: 'small-caps' }}>
+      <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '3px', marginBottom: '20px', fontVariant: 'small-caps', whiteSpace: 'nowrap' }}>
         INVOICE AND WARRANTY
       </div>
 
       {/* Two column layout */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr', gap: '30px', alignItems: 'start' }}>
         {/* Left Column */}
         <div style={{ flex: '1.2' }}>
           {/* Brand */}
@@ -844,13 +879,13 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
 
           {/* Table */}
           <div style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ccc', paddingBottom: '8px', marginBottom: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '16px', borderBottom: '1px solid #ccc', paddingBottom: '8px', marginBottom: '15px' }}>
               <span style={{ fontWeight: 700, fontSize: '13px' }}>Description</span>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>Subtotal</span>
+              <span style={{ fontWeight: 700, fontSize: '13px', textAlign: 'right' }}>Subtotal</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px' }}>
-              <span style={{ fontSize: '14px' }}>{data.printerModel}</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.subtotal.toLocaleString()} د.ع</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '16px', paddingBottom: '10px', alignItems: 'start' }}>
+              <span style={{ fontSize: '14px', lineHeight: 1.5 }}>{data.printerModel}</span>
+              <span style={{ fontSize: '14px', textAlign: 'right', direction: 'rtl', whiteSpace: 'nowrap' }}>{data.subtotal.toLocaleString()} د.ع</span>
             </div>
             {/* Empty rows like template */}
             <div style={{ borderBottom: '1px solid #ddd', marginBottom: '12px', paddingBottom: '12px' }}></div>
@@ -860,33 +895,33 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
 
           {/* Totals */}
           <div style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>Sub-total:</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.subtotal.toLocaleString()} د.ع</span>
+            <div style={invoiceLineStyle}>
+              <span style={invoiceLabelStyle}>Sub-total:</span>
+              <span style={invoiceAmountStyle}>{data.subtotal.toLocaleString()} د.ع</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>tax ({data.taxPercent}%):</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.tax.toLocaleString()} د.ع</span>
+            <div style={invoiceLineStyle}>
+              <span style={invoiceLabelStyle}>tax ({data.taxPercent}%):</span>
+              <span style={invoiceAmountStyle}>{data.tax.toLocaleString()} د.ع</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery:</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.delivery.toLocaleString()} د.ع</span>
+            <div style={invoiceLineStyle}>
+              <span style={invoiceLabelStyle}>delivery:</span>
+              <span style={invoiceAmountStyle}>{data.delivery.toLocaleString()} د.ع</span>
             </div>
             {data.discount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontWeight: 700, fontSize: '13px' }}>discount:</span>
-                <span style={{ fontSize: '14px', color: '#c0392b' }} dir="rtl">- {data.discount.toLocaleString()} د.ع</span>
+              <div style={invoiceLineStyle}>
+                <span style={invoiceLabelStyle}>discount:</span>
+                <span style={{ ...invoiceAmountStyle, color: '#c0392b' }}>- {data.discount.toLocaleString()} د.ع</span>
               </div>
             )}
             {data.cardDiscount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontWeight: 700, fontSize: '13px' }}>card discount:</span>
-                <span style={{ fontSize: '14px', color: '#c0392b' }} dir="rtl">- {data.cardDiscount.toLocaleString()} د.ع</span>
+              <div style={invoiceLineStyle}>
+                <span style={invoiceLabelStyle}>card discount:</span>
+                <span style={{ ...invoiceAmountStyle, color: '#c0392b' }}>- {data.cardDiscount.toLocaleString()} د.ع</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', borderTop: '1px solid #999', paddingTop: '10px' }}>
-              <span style={{ fontWeight: 700, fontSize: '15px' }}>Total:</span>
-              <span style={{ fontWeight: 700, fontSize: '18px' }} dir="rtl">{data.total.toLocaleString()} د.ع</span>
+            <div style={{ ...invoiceLineStyle, marginTop: '10px', borderTop: '1px solid #999', paddingTop: '10px' }}>
+              <span style={{ ...invoiceLabelStyle, fontSize: '15px' }}>Total:</span>
+              <span style={{ ...invoiceAmountStyle, fontWeight: 700, fontSize: '18px' }}>{displayTotal.toLocaleString()} د.ع</span>
             </div>
           </div>
         </div>
