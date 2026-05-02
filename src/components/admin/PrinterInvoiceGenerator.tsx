@@ -481,7 +481,9 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 0;
     const parsedTax = parseFloat(manualFields.taxPercent);
     const taxPercent = isNaN(parsedTax) ? 0 : parsedTax;
-    const taxAmount = Math.round(sub * (taxPercent / 100));
+    const taxAmount = taxPercent === invoiceData.taxPercent
+      ? invoiceData.tax
+      : Math.round(sub * (taxPercent / 100));
     setInvoiceData({
       ...invoiceData,
       subtotal: sub,
@@ -721,7 +723,19 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 try {
                   const html2canvas = (await import('html2canvas')).default;
                   const { jsPDF } = await import('jspdf');
-                  const canvas = await html2canvas(invoiceRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+                  const offscreen = document.createElement('div');
+                  offscreen.style.position = 'fixed';
+                  offscreen.style.top = '0';
+                  offscreen.style.left = '-10000px';
+                  offscreen.style.width = '210mm';
+                  offscreen.style.background = '#fff';
+                  offscreen.setAttribute('dir', 'rtl');
+                  offscreen.innerHTML = invoiceRef.current.innerHTML;
+                  document.body.appendChild(offscreen);
+
+                  await new Promise((r) => requestAnimationFrame(() => r(null)));
+                  const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+                  document.body.removeChild(offscreen);
                   const imgData = canvas.toDataURL('image/png');
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   const pdfWidth = 210;
