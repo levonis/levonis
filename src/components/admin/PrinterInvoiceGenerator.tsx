@@ -826,6 +826,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string }) {
   const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const totalCheck = Math.max(0, data.subtotal + data.tax + data.delivery - data.discount - data.cardDiscount);
+  const displayTotal = data.total > 0 ? data.total : totalCheck;
 
   return (
     <div style={{
@@ -840,12 +842,12 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
       direction: 'ltr',
     }}>
       {/* Header */}
-      <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '4px', marginBottom: '20px', fontVariant: 'small-caps' }}>
+      <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '3px', marginBottom: '20px', fontVariant: 'small-caps', whiteSpace: 'nowrap' }}>
         INVOICE AND WARRANTY
       </div>
 
       {/* Two column layout */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr', gap: '30px', alignItems: 'start' }}>
         {/* Left Column */}
         <div style={{ flex: '1.2' }}>
           {/* Brand */}
