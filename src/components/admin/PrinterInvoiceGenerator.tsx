@@ -815,6 +815,18 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
               <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery:</span>
               <span style={{ fontSize: '14px' }} dir="rtl">{data.delivery.toLocaleString()} د.ع</span>
             </div>
+            {data.discount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>discount:</span>
+                <span style={{ fontSize: '14px', color: '#c0392b' }} dir="rtl">- {data.discount.toLocaleString()} د.ع</span>
+              </div>
+            )}
+            {data.cardDiscount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>card discount:</span>
+                <span style={{ fontSize: '14px', color: '#c0392b' }} dir="rtl">- {data.cardDiscount.toLocaleString()} د.ع</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', borderTop: '1px solid #999', paddingTop: '10px' }}>
               <span style={{ fontWeight: 700, fontSize: '15px' }}>Total:</span>
               <span style={{ fontWeight: 700, fontSize: '18px' }} dir="rtl">{data.total.toLocaleString()} د.ع</span>
