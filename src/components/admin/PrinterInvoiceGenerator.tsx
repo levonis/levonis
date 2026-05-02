@@ -795,53 +795,11 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
               </Button>
               <Button onClick={async () => {
                 if (!invoiceRef.current) return;
-                let offscreen: HTMLDivElement | null = null;
                 try {
-                  const html2canvas = (await import('html2canvas')).default;
-                  const { jsPDF } = await import('jspdf');
-                  offscreen = document.createElement('div');
-                  offscreen.style.position = 'fixed';
-                  offscreen.style.top = '0';
-                  offscreen.style.left = '-10000px';
-                  offscreen.style.width = '210mm';
-                  offscreen.style.background = '#fff';
-                  offscreen.setAttribute('dir', 'rtl');
-                  offscreen.innerHTML = invoiceRef.current.innerHTML;
-                  document.body.appendChild(offscreen);
-
-                  await new Promise((r) => requestAnimationFrame(() => r(null)));
-                  const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: '#fff' });
-                  const imgData = canvas.toDataURL('image/png');
-                  const pdf = new jsPDF('p', 'mm', 'a4');
-                  const pdfWidth = 210;
-                  const pdfHeight = 297;
-                  const margin = 5;
-                  const contentWidth = pdfWidth - margin * 2;
-                  const contentHeight = (canvas.height * contentWidth) / canvas.width;
-                  
-                  if (contentHeight <= pdfHeight - margin * 2) {
-                    pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
-                  } else {
-                    // Multi-page
-                    let remainingHeight = contentHeight;
-                    let position = margin;
-                    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-                    remainingHeight -= (pdfHeight - margin * 2);
-                    while (remainingHeight > 0) {
-                      pdf.addPage();
-                      position = margin - (contentHeight - remainingHeight);
-                      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
-                      remainingHeight -= (pdfHeight - margin * 2);
-                    }
-                  }
-                  pdf.save(`invoice-${invoiceData.invoiceNo}.pdf`);
+                  await captureInvoiceElementToPdf(invoiceRef.current, `invoice-${invoiceData.invoiceNo}.pdf`);
                 } catch (err) {
                   console.error('PDF generation error:', err);
                   toast.error('حدث خطأ أثناء توليد PDF');
-                } finally {
-                  if (offscreen?.parentNode) {
-                    offscreen.parentNode.removeChild(offscreen);
-                  }
                 }
               }} variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-2" />
