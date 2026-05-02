@@ -315,7 +315,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       if (buyer.orderId) {
         const { data: orderData } = await supabase
           .from('orders')
-          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
+          .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, card_discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
           .eq('id', buyer.orderId)
           .maybeSingle();
         if (orderData) {
@@ -330,6 +330,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           adminShippingCost = Number(orderData.admin_shipping_cost ?? 0);
           buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
           buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
+          (buyer as any).cardDiscount = Number(orderData.card_discount_amount ?? 0);
         }
       }
 
@@ -347,7 +348,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         if (linkError) {
           console.error('Failed to link serial to buyer:', linkError);
         } else {
-          // Also create user_printers record if not exists
           await supabase
             .from('user_printers')
             .upsert({
@@ -359,13 +359,16 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       }
 
       const sub = subtotal || parseFloat(manualFields.subtotal) || 0;
-      const customerTotalDue = (paidAmount + remainingAmount) > 0 ? paidAmount + remainingAmount : orderTotal;
-      const deliveryFromTotal = orderTotal > 0 ? Math.max(0, orderTotal - sub - taxAmount + orderDiscount) : 0;
-      const deliveryFee = deliveryMethod === 'pickup' ? 0 : Math.max(0, adminShippingCost || deliveryFromTotal || 0);
-      const derivedPaymentFee = customerTotalDue > 0 ? Math.max(0, customerTotalDue - sub - deliveryFee) : 0;
-      const finalTaxAmount = taxAmount > 0 ? taxAmount : derivedPaymentFee;
-      const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0 ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
-      const finalTotal = customerTotalDue > 0 ? customerTotalDue : sub + finalTaxAmount + deliveryFee;
+      // Use stored order values directly. Do NOT derive tax/delivery from totals
+      // (it breaks when discounts or card discounts are present).
+      const deliveryFee = deliveryMethod === 'pickup' ? 0 : Math.max(0, adminShippingCost || 0);
+      const finalTaxAmount = Math.max(0, taxAmount);
+      const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0
+        ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
+      const cardDiscount = Number((buyer as any).cardDiscount || 0);
+      const finalTotal = orderTotal > 0
+        ? orderTotal
+        : Math.max(0, sub + finalTaxAmount + deliveryFee - orderDiscount - cardDiscount);
       const now = new Date();
 
       // Sync manual fields so the config step reflects real values
