@@ -240,6 +240,20 @@ const AdminOrders = () => {
       const warrantyExpiresAt = new Date();
       warrantyExpiresAt.setFullYear(warrantyExpiresAt.getFullYear() + 1);
       
+      // Compute totals breakdown
+      const fmt = (n: number) => Math.round(Number(n) || 0).toLocaleString('en-US');
+      const itemsSubtotal = (order.order_items || []).reduce(
+        (s: number, it: any) => s + (Number(it.total_price) || 0), 0
+      );
+      const subtotal = Number(order.subtotal) > 0 ? Number(order.subtotal) : itemsSubtotal;
+      const shippingCost = Number(order.admin_shipping_cost) || 0;
+      const taxAmt = Number(order.tax_amount) || 0;
+      const taxPct = Number(order.tax_percentage) || 0;
+      const discount = Number(order.discount_amount) || 0;
+      const cardDiscount = Number(order.card_discount_amount) || 0;
+      const grandTotal = Number(order.total_amount) || (subtotal + shippingCost + taxAmt - discount - cardDiscount);
+      const cur = order.currency || 'د.ع';
+
       // Create simple invoice HTML
       const invoiceHTML = `
         <div style="direction: rtl; font-family: Cairo, sans-serif; padding: 20px;">
@@ -252,11 +266,18 @@ const AdminOrders = () => {
           <h3>المنتجات:</h3>
           <ul>
              ${order.order_items?.map((item: any) => `
-               <li>${item.is_gift ? '🎁 ' : ''}${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${item.total_price?.toLocaleString()}</li>
+               <li>${item.is_gift ? '🎁 ' : ''}${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${fmt(item.total_price)} ${cur}</li>
             `).join('') || ''}
           </ul>
           <hr/>
-          <p><strong>المجموع: ${order.total_amount} ${order.currency}</strong></p>
+          <table style="width:100%; font-size:14px;">
+            <tr><td>المجموع الفرعي</td><td style="text-align:left;">${fmt(subtotal)} ${cur}</td></tr>
+            ${shippingCost > 0 ? `<tr><td>التوصيل</td><td style="text-align:left;">${fmt(shippingCost)} ${cur}</td></tr>` : ''}
+            ${taxAmt > 0 ? `<tr><td>الضريبة${taxPct > 0 ? ` (${taxPct}%)` : ''}</td><td style="text-align:left;">${fmt(taxAmt)} ${cur}</td></tr>` : ''}
+            ${discount > 0 ? `<tr><td>الخصم</td><td style="text-align:left;">- ${fmt(discount)} ${cur}</td></tr>` : ''}
+            ${cardDiscount > 0 ? `<tr><td>خصم البطاقة</td><td style="text-align:left;">- ${fmt(cardDiscount)} ${cur}</td></tr>` : ''}
+            <tr style="font-weight:bold; border-top:1px solid #ccc;"><td>الإجمالي</td><td style="text-align:left;">${fmt(grandTotal)} ${cur}</td></tr>
+          </table>
         </div>
       `;
       
