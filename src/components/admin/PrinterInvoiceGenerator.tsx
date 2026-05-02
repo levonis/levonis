@@ -71,6 +71,7 @@ interface BuyerOption {
   orderRemainingAmount?: number;
   orderDeliveryMethod?: string;
   orderAdminShippingCost?: number;
+  orderCardDiscountAmount?: number;
 }
 
 const toInvoiceNumber = (value: unknown, fallback = 0) => {
@@ -142,6 +143,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           tax_percentage,
           total_amount,
           discount_amount,
+          card_discount_amount,
           paid_amount,
           remaining_amount,
           delivery_method,
@@ -177,6 +179,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         taxPercent: number;
         totalAmount: number;
         discountAmount: number;
+        cardDiscountAmount: number;
         paidAmount: number;
         remainingAmount: number;
         deliveryMethod: string;
@@ -187,7 +190,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         id: string; order_number?: string | null; user_id: string; shipping_address?: string | null;
         payment_method?: string | null; payment_status?: string | null; subtotal?: number | null;
         tax_amount?: number | null; tax_percentage?: number | null; total_amount?: number | null;
-        discount_amount?: number | null; paid_amount?: number | null; remaining_amount?: number | null;
+        discount_amount?: number | null; card_discount_amount?: number | null; paid_amount?: number | null; remaining_amount?: number | null;
         delivery_method?: string | null; admin_shipping_cost?: number | null;
         order_items?: Array<{ id: string; total_price?: number | null; products?: { name?: string | null; name_ar?: string | null; category_id?: string | null } | null }>;
       }>;
@@ -212,6 +215,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
               taxPercent: Number(order.tax_percentage || 0),
               totalAmount: Number(order.total_amount || 0),
               discountAmount: Number(order.discount_amount || 0),
+              cardDiscountAmount: Number(order.card_discount_amount || 0),
               paidAmount: Number(order.paid_amount || 0),
               remainingAmount: Number(order.remaining_amount || 0),
               deliveryMethod: order.delivery_method || '',
@@ -273,6 +277,7 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
           orderTaxPercent: ob.taxPercent,
           orderTotalAmount: ob.totalAmount,
           orderDiscountAmount: ob.discountAmount,
+          orderCardDiscountAmount: ob.cardDiscountAmount,
           orderPaidAmount: ob.paidAmount,
           orderRemainingAmount: ob.remainingAmount,
           orderDeliveryMethod: ob.deliveryMethod,
