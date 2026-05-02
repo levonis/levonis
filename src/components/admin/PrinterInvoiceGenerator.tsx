@@ -393,6 +393,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         tax: finalTaxAmount,
         taxPercent: finalTaxPercent,
         delivery: deliveryFee,
+        discount: orderDiscount,
+        cardDiscount: cardDiscount,
         total: finalTotal,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
