@@ -720,10 +720,11 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
               </Button>
               <Button onClick={async () => {
                 if (!invoiceRef.current) return;
+                let offscreen: HTMLDivElement | null = null;
                 try {
                   const html2canvas = (await import('html2canvas')).default;
                   const { jsPDF } = await import('jspdf');
-                  const offscreen = document.createElement('div');
+                  offscreen = document.createElement('div');
                   offscreen.style.position = 'fixed';
                   offscreen.style.top = '0';
                   offscreen.style.left = '-10000px';
@@ -735,7 +736,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
                   await new Promise((r) => requestAnimationFrame(() => r(null)));
                   const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: '#fff' });
-                  document.body.removeChild(offscreen);
                   const imgData = canvas.toDataURL('image/png');
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   const pdfWidth = 210;
@@ -763,6 +763,10 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
                 } catch (err) {
                   console.error('PDF generation error:', err);
                   toast.error('حدث خطأ أثناء توليد PDF');
+                } finally {
+                  if (offscreen?.parentNode) {
+                    offscreen.parentNode.removeChild(offscreen);
+                  }
                 }
               }} variant="outline" size="sm">
                 <Download className="w-4 h-4 ml-2" />
@@ -800,6 +804,7 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
       background: '#fff',
       position: 'relative',
       boxSizing: 'border-box',
+      direction: 'ltr',
     }}>
       {/* Header */}
       <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '4px', marginBottom: '20px', fontVariant: 'small-caps' }}>
