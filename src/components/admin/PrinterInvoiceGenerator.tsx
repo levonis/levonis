@@ -325,6 +325,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       let taxPercent = toInvoiceNumber(buyer.orderTaxPercent || 0);
       let orderTotal = toInvoiceNumber(buyer.orderTotalAmount || 0);
       let orderDiscount = toInvoiceNumber(buyer.orderDiscountAmount || 0);
+      let cardDiscount = toInvoiceNumber(buyer.orderCardDiscountAmount || 0);
       let paidAmount = toInvoiceNumber(buyer.orderPaidAmount || 0);
       let remainingAmount = toInvoiceNumber(buyer.orderRemainingAmount || 0);
       let deliveryMethod = buyer.orderDeliveryMethod || '';
@@ -369,7 +370,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
           adminShippingCost = toInvoiceNumber(orderData.admin_shipping_cost ?? 0);
           buyer.paymentMethod = orderData.payment_method || buyer.paymentMethod;
           buyer.paymentStatus = orderData.payment_status || buyer.paymentStatus;
-          (buyer as any).cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? 0);
+          cardDiscount = toInvoiceNumber(orderData.card_discount_amount ?? cardDiscount);
         }
       }
 
@@ -401,7 +402,6 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       const finalTaxAmount = Math.max(0, taxAmount);
       const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0
         ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
-      const cardDiscount = toInvoiceNumber((buyer as any).cardDiscount || 0);
       const deliveryFee = deriveCustomerDeliveryFee({
         subtotal: sub,
         taxAmount: finalTaxAmount,
