@@ -481,7 +481,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
     const deliveryFee = manualFields.delivery !== '' ? parseFloat(manualFields.delivery) : 0;
     const parsedTax = parseFloat(manualFields.taxPercent);
     const taxPercent = isNaN(parsedTax) ? 0 : parsedTax;
-    const taxAmount = taxPercent === invoiceData.taxPercent
+    const taxAmount = taxPercent === invoiceData.taxPercent && sub === invoiceData.subtotal
       ? invoiceData.tax
       : Math.round(sub * (taxPercent / 100));
     setInvoiceData({
