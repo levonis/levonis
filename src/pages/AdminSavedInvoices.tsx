@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, Eye, Trash2, Download, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import DOMPurify from "dompurify";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -28,12 +28,22 @@ import { ar } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminEmptyState, AdminLoading } from "@/components/admin/AdminLayout";
 
+type SavedInvoice = {
+  id: string;
+  invoice_html: string;
+  generated_at: string;
+  warranty_expires_at: string | null;
+  notes: string | null;
+  orders?: { order_number?: string | null; profiles?: { username?: string | null; full_name?: string | null } | null } | null;
+  user_profile?: { username?: string | null; full_name?: string | null } | null;
+  store_printers?: { serial_number?: string | null; model_name_ar?: string | null; model_name?: string | null } | null;
+};
+
 export default function AdminSavedInvoices() {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [viewingInvoice, setViewingInvoice] = useState<any>(null);
+  const [viewingInvoice, setViewingInvoice] = useState<SavedInvoice | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ["saved-invoices"],
@@ -76,7 +86,7 @@ export default function AdminSavedInvoices() {
     },
   });
 
-  const downloadInvoice = async (invoice: any) => {
+  const downloadInvoice = async (invoice: SavedInvoice) => {
     let offscreen: HTMLDivElement | null = null;
     try {
       const html2canvas = (await import("html2canvas")).default;
