@@ -705,7 +705,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: taxAmount,
       taxPercent: taxPercent,
       delivery: deliveryFee,
-      total: Math.max(0, sub + taxAmount + deliveryFee - (invoiceData.discount || 0) - (invoiceData.cardDiscount || 0)),
+      total: Math.max(0, sub + taxAmount + deliveryFee + (invoiceData.paymentFee || 0) - (invoiceData.discount || 0) - (invoiceData.cardDiscount || 0)),
     });
     setStep('preview');
   };
