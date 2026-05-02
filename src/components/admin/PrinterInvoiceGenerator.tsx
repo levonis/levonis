@@ -34,6 +34,8 @@ interface InvoiceData {
   tax: number;
   taxPercent: number;
   delivery: number;
+  discount: number;
+  cardDiscount: number;
   total: number;
   invoiceNo: string;
   date: Date;
@@ -391,6 +393,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         tax: finalTaxAmount,
         taxPercent: finalTaxPercent,
         delivery: deliveryFee,
+        discount: orderDiscount,
+        cardDiscount: cardDiscount,
         total: finalTotal,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
@@ -421,6 +425,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: 0,
       taxPercent: 0,
       delivery: 0,
+      discount: 0,
+      cardDiscount: 0,
       total: 0,
       invoiceNo: format(now, 'yyyyMMdd-HHmm'),
       date: now,
@@ -444,7 +450,7 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: taxAmount,
       taxPercent: taxPercent,
       delivery: deliveryFee,
-      total: sub + taxAmount + deliveryFee,
+      total: Math.max(0, sub + taxAmount + deliveryFee - (invoiceData.discount || 0) - (invoiceData.cardDiscount || 0)),
     });
     setStep('preview');
   };
@@ -809,6 +815,18 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
               <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery:</span>
               <span style={{ fontSize: '14px' }} dir="rtl">{data.delivery.toLocaleString()} د.ع</span>
             </div>
+            {data.discount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>discount:</span>
+                <span style={{ fontSize: '14px', color: '#c0392b' }} dir="rtl">- {data.discount.toLocaleString()} د.ع</span>
+              </div>
+            )}
+            {data.cardDiscount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, fontSize: '13px' }}>card discount:</span>
+                <span style={{ fontSize: '14px', color: '#c0392b' }} dir="rtl">- {data.cardDiscount.toLocaleString()} د.ع</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', borderTop: '1px solid #999', paddingTop: '10px' }}>
               <span style={{ fontWeight: 700, fontSize: '15px' }}>Total:</span>
               <span style={{ fontWeight: 700, fontSize: '18px' }} dir="rtl">{data.total.toLocaleString()} د.ع</span>
