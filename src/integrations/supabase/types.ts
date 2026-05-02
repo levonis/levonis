@@ -12661,6 +12661,10 @@ export type Database = {
         Args: { p_merchant_user_id: string }
         Returns: number
       }
+      get_price_protection_current_price: {
+        Args: { p_order_item_id: string }
+        Returns: number
+      }
       get_public_profiles: {
         Args: { user_ids: string[] }
         Returns: {
