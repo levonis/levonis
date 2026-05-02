@@ -879,13 +879,13 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
 
           {/* Table */}
           <div style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ccc', paddingBottom: '8px', marginBottom: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '16px', borderBottom: '1px solid #ccc', paddingBottom: '8px', marginBottom: '15px' }}>
               <span style={{ fontWeight: 700, fontSize: '13px' }}>Description</span>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>Subtotal</span>
+              <span style={{ fontWeight: 700, fontSize: '13px', textAlign: 'right' }}>Subtotal</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px' }}>
-              <span style={{ fontSize: '14px' }}>{data.printerModel}</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.subtotal.toLocaleString()} د.ع</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '16px', paddingBottom: '10px', alignItems: 'start' }}>
+              <span style={{ fontSize: '14px', lineHeight: 1.5 }}>{data.printerModel}</span>
+              <span style={{ fontSize: '14px', textAlign: 'right', direction: 'rtl', whiteSpace: 'nowrap' }}>{data.subtotal.toLocaleString()} د.ع</span>
             </div>
             {/* Empty rows like template */}
             <div style={{ borderBottom: '1px solid #ddd', marginBottom: '12px', paddingBottom: '12px' }}></div>
@@ -895,17 +895,17 @@ function InvoiceTemplate({ data, logoSrc }: { data: InvoiceData; logoSrc: string
 
           {/* Totals */}
           <div style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>Sub-total:</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.subtotal.toLocaleString()} د.ع</span>
+            <div style={invoiceLineStyle}>
+              <span style={invoiceLabelStyle}>Sub-total:</span>
+              <span style={invoiceAmountStyle}>{data.subtotal.toLocaleString()} د.ع</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>tax ({data.taxPercent}%):</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.tax.toLocaleString()} د.ع</span>
+            <div style={invoiceLineStyle}>
+              <span style={invoiceLabelStyle}>tax ({data.taxPercent}%):</span>
+              <span style={invoiceAmountStyle}>{data.tax.toLocaleString()} د.ع</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '13px' }}>delivery:</span>
-              <span style={{ fontSize: '14px' }} dir="rtl">{data.delivery.toLocaleString()} د.ع</span>
+            <div style={invoiceLineStyle}>
+              <span style={invoiceLabelStyle}>delivery:</span>
+              <span style={invoiceAmountStyle}>{data.delivery.toLocaleString()} د.ع</span>
             </div>
             {data.discount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
