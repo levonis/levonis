@@ -106,6 +106,76 @@ const deriveCustomerDeliveryFee = ({
   return Math.max(0, Math.round(adminShippingCost || 0));
 };
 
+const invoiceLineStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '18px',
+  marginBottom: '8px',
+};
+
+const invoiceLabelStyle: React.CSSProperties = {
+  fontWeight: 700,
+  fontSize: '13px',
+  whiteSpace: 'nowrap',
+};
+
+const invoiceAmountStyle: React.CSSProperties = {
+  fontSize: '14px',
+  minWidth: '120px',
+  textAlign: 'right',
+  direction: 'rtl',
+};
+
+const captureInvoiceElementToPdf = async (source: HTMLElement, fileName: string) => {
+  const html2canvas = (await import('html2canvas')).default;
+  const { jsPDF } = await import('jspdf');
+  let offscreen: HTMLDivElement | null = null;
+
+  try {
+    offscreen = document.createElement('div');
+    offscreen.style.position = 'fixed';
+    offscreen.style.top = '0';
+    offscreen.style.left = '-10000px';
+    offscreen.style.width = '210mm';
+    offscreen.style.background = '#fff';
+    offscreen.style.direction = 'ltr';
+    offscreen.innerHTML = source.innerHTML;
+    document.body.appendChild(offscreen);
+
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    const canvas = await html2canvas(offscreen, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = 210;
+    const pdfHeight = 297;
+    const margin = 5;
+    const contentWidth = pdfWidth - margin * 2;
+    const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+    if (contentHeight <= pdfHeight - margin * 2) {
+      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
+    } else {
+      let remainingHeight = contentHeight;
+      let position = margin;
+      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+      remainingHeight -= (pdfHeight - margin * 2);
+      while (remainingHeight > 0) {
+        pdf.addPage();
+        position = margin - (contentHeight - remainingHeight);
+        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, contentHeight);
+        remainingHeight -= (pdfHeight - margin * 2);
+      }
+    }
+
+    pdf.save(fileName);
+  } finally {
+    if (offscreen?.parentNode) {
+      offscreen.parentNode.removeChild(offscreen);
+    }
+  }
+};
+
 export default function PrinterInvoiceGenerator({ printer, open, onClose }: Props) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
