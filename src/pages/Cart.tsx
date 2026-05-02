@@ -2035,6 +2035,14 @@ const Cart = () => {
       // Clear cart after successful order
       await clearCart();
 
+      // Invalidate wallet caches so balance updates immediately in UI
+      if (!isPreOrderCod && requiredPaymentNow > 0) {
+        queryClient.invalidateQueries({ queryKey: ['wallet', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+        queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['wallet-balance-checkout', user.id] });
+      }
+
       // Meta Pixel + CAPI: Purchase (non-blocking)
       try {
         void trackMetaEvent({
