@@ -600,18 +600,26 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       const finalTaxAmount = Math.max(0, taxAmount);
       const finalTaxPercent = taxPercent || (sub > 0 && finalTaxAmount > 0
         ? Number(((finalTaxAmount / sub) * 100).toFixed(2)) : 0);
-      const deliveryFee = deriveCustomerDeliveryFee({
+      const discounts = normalizeDiscountBreakdown(orderDiscount, cardDiscount);
+      const calculatedDeliveryFee = await calculateOrderDeliveryFeeFromRules({
+        orderId: buyer.orderId,
+        deliveryMethod,
+        governorate: buyer.address?.split(' - ')?.[0] || null,
+        orderTotalForFreeDelivery: sub,
+      });
+      const { deliveryFee, paymentFee } = deriveCustomerDeliveryFee({
         subtotal: sub,
         taxAmount: finalTaxAmount,
         totalAmount: orderTotal,
-        discountAmount: orderDiscount,
-        cardDiscountAmount: cardDiscount,
+        discountAmount: discounts.discount,
+        cardDiscountAmount: discounts.cardDiscount,
         adminShippingCost,
         deliveryMethod,
+        calculatedDeliveryFee,
       });
       const finalTotal = orderTotal > 0
         ? orderTotal
-        : Math.max(0, sub + finalTaxAmount + deliveryFee - orderDiscount - cardDiscount);
+        : Math.max(0, sub + finalTaxAmount + deliveryFee + paymentFee - discounts.totalDiscount);
       const now = new Date();
 
       // Sync manual fields so the config step reflects real values
@@ -634,8 +642,10 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
         tax: finalTaxAmount,
         taxPercent: finalTaxPercent,
         delivery: deliveryFee,
-        discount: orderDiscount,
-        cardDiscount: cardDiscount,
+        paymentFee,
+        paymentFeeLabel: getPaymentFeeLabel(buyer.paymentMethod, buyer.paymentStatus),
+        discount: discounts.discount,
+        cardDiscount: discounts.cardDiscount,
         total: finalTotal,
         invoiceNo: buyer.orderNumber || format(now, 'yyyyMMdd-HHmm'),
         date: now,
@@ -666,6 +676,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
       tax: 0,
       taxPercent: 0,
       delivery: 0,
+      paymentFee: 0,
+      paymentFeeLabel: 'extra fee:',
       discount: 0,
       cardDiscount: 0,
       total: 0,
