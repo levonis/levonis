@@ -26,8 +26,17 @@ import {
   Sparkles,
 } from "lucide-react";
 
-type Step = "sale-type" | "category" | "confirm";
+type Step = "sale-type" | "category" | "offer" | "confirm";
 type SaleType = "direct" | "preorder";
+type Offer = {
+  id: string;
+  sale_type: SaleType;
+  title_ar: string;
+  description_ar: string | null;
+  image_url: string | null;
+  price_iqd: number;
+  display_order: number;
+};
 
 export default function RandomFilament() {
   const navigate = useNavigate();
@@ -36,6 +45,7 @@ export default function RandomFilament() {
   const [step, setStep] = useState<Step>("sale-type");
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [offerId, setOfferId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
