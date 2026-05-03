@@ -1628,24 +1628,7 @@ const Cart = () => {
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'half';
       const isPreOrderCod = hasPreOrderItems && isCodPayment;
 
-      // Random filament items MUST be paid via wallet (no COD, no partial)
-      try {
-        const cartItemIds = items.map(i => i.id).filter(Boolean);
-        if (cartItemIds.length > 0) {
-          const { data: rfRows } = await (supabase as any)
-            .from('random_filament_orders')
-            .select('cart_item_id')
-            .in('cart_item_id', cartItemIds);
-          if (rfRows && rfRows.length > 0 && (isPreOrderCod || isPreOrderWithPartialPayment)) {
-            toast({
-              title: 'الدفع من المحفظة مطلوب',
-              description: 'الفلمنت العشوائي يتطلب الدفع الكامل من المحفظة لكشف النوع واللون.',
-              variant: 'destructive',
-            });
-            return;
-          }
-        }
-      } catch (e) { console.warn('rf check failed', e); }
+      // Random filament with COD/partial: kept hidden as "Mystery" until full wallet payment.
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
       const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
       const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.5) : orderSubtotal);
