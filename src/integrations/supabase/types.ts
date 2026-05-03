@@ -9463,6 +9463,7 @@ export type Database = {
           category_id: string
           created_at: string
           id: string
+          offer_id: string | null
           order_id: string | null
           price_iqd: number
           product_id: string
@@ -9477,6 +9478,7 @@ export type Database = {
           category_id: string
           created_at?: string
           id?: string
+          offer_id?: string | null
           order_id?: string | null
           price_iqd: number
           product_id: string
@@ -9491,6 +9493,7 @@ export type Database = {
           category_id?: string
           created_at?: string
           id?: string
+          offer_id?: string | null
           order_id?: string | null
           price_iqd?: number
           product_id?: string
@@ -9513,6 +9516,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "random_filament_orders_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "random_filament_offers"
             referencedColumns: ["id"]
           },
           {
