@@ -271,9 +271,13 @@ export default function RandomFilament() {
                 className="glass-panel cursor-pointer hover:border-primary transition overflow-hidden"
                 onClick={() => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); }}
               >
-                {o.image_url && (
-                  <img src={o.image_url} alt={o.title_ar} className="w-full h-32 object-cover" loading="lazy" />
-                )}
+                <div className="w-full h-32 relative overflow-hidden">
+                  {o.image_url ? (
+                    <img src={o.image_url} alt={o.title_ar} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <WavyColors />
+                  )}
+                </div>
                 <CardContent className="p-4 space-y-2">
                   <h3 className="font-bold">{o.title_ar}</h3>
                   {o.description_ar && (
