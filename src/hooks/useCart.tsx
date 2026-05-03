@@ -328,10 +328,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
-        // Map offer purchase data
+        // Detect random-filament cart items so UI can lock them (no delete/qty change)
+        let rfIds = new Set<string>();
+        try {
+          const ids = (data || []).map((i: any) => i.id).filter(Boolean);
+          if (ids.length > 0) {
+            const { data: rfRows } = await (supabase as any)
+              .from('random_filament_orders')
+              .select('cart_item_id')
+              .in('cart_item_id', ids);
+            (rfRows || []).forEach((r: any) => r?.cart_item_id && rfIds.add(r.cart_item_id));
+          }
+        } catch (e) { /* non-blocking */ }
+
+        // Map offer purchase data + force is_locked for RF items
         const mappedData = (data || []).map((item: any) => ({
           ...item,
           offer_purchase: item.product_offer_purchases || null,
+          is_locked: item.is_locked || rfIds.has(item.id),
+          is_random_filament: rfIds.has(item.id),
         }));
         setItems(mappedData as CartItem[]);
       }
