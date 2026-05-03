@@ -141,6 +141,7 @@ const OrderDetail = () => {
   const canCancelOrder = (order: any) => {
     if (!order || order.status === 'cancelled' || order.status === 'delivered' || order.status === 'shipped' || order.status === 'arrived_iraq') return false;
     if (isAdmin) return true;
+    if (hasRandomFilament) return false;
     const createdAt = new Date(order.created_at);
     const now = new Date();
     const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
