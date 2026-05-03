@@ -289,7 +289,7 @@ export default function RandomFilament() {
         open={confirmOpen}
         onOpenChange={(o) => {
           setConfirmOpen(o);
-          if (!o) setStep("category");
+          if (!o) setStep("offer");
         }}
       >
         <DialogContent className="!overflow-hidden !max-h-none">
