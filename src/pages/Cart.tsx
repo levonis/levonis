@@ -1275,12 +1275,26 @@ const Cart = () => {
         return;
       }
 
+      // Identify random filament cart items (kept hidden until wallet payment reveals)
+      const cartItemIdsAll = items.map(i => i.id).filter(Boolean);
+      let randomFilamentIds = new Set<string>();
+      try {
+        if (cartItemIdsAll.length > 0) {
+          const { data: rfRows } = await (supabase as any)
+            .from('random_filament_orders')
+            .select('cart_item_id')
+            .in('cart_item_id', cartItemIdsAll);
+          randomFilamentIds = new Set((rfRows || []).map((r: any) => r.cart_item_id));
+        }
+      } catch (e) { console.warn('rf lookup failed', e); }
+
       // Create order items
       const orderItems = items
         .filter(item => item.product_id || item.custom_request_id || (item as any).bundle_id)
         .map(item => {
           const isCustomRequest = !!item.custom_request_id;
           const isBundle = !!(item as any).bundle_id;
+          const isRandomFilament = randomFilamentIds.has(item.id);
           const itemOption = (item as any).product_options;
           const itemColor = (item as any).selected_color;
           const colorData = itemColor && item.products?.colors
@@ -1291,10 +1305,14 @@ const Cart = () => {
           const bundle = isBundle ? (item as any).product_bundles : null;
           const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
 
-          const productName = isCustomRequest 
+          const productName = isRandomFilament
+            ? 'Mystery Random Filament'
+            : isCustomRequest 
             ? (item.custom_product_requests?.product_name || 'طلب مخصص')
             : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name || 'منتج');
-          const productNameAr = isCustomRequest 
+          const productNameAr = isRandomFilament
+            ? 'فلمنت عشوائي مجهول'
+            : isCustomRequest 
             ? (item.custom_product_requests?.product_name || 'طلب مخصص')
             : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name_ar || 'منتج');
 
@@ -1307,9 +1325,9 @@ const Cart = () => {
             quantity: item.quantity,
             unit_price: itemPrice,
             total_price: itemPrice * item.quantity,
-            selected_color: itemColor || null,
-            color_image_url: (item as any).color_image_url || null,
-            selected_option: itemOption?.name_ar || null,
+            selected_color: isRandomFilament ? null : (itemColor || null),
+            color_image_url: isRandomFilament ? null : ((item as any).color_image_url || null),
+            selected_option: isRandomFilament ? null : (itemOption?.name_ar || null),
             product_name: productName,
             product_name_ar: productNameAr,
             is_gift: !!(item as any).is_gift,
@@ -1335,11 +1353,19 @@ const Cart = () => {
         }
       }
 
-      // Reveal random filament selections (no-op if none)
+      // Random filament: always link selection to order (admin sees it).
+      // Reveal real product/color to user only when fully paid via wallet.
       try {
-        await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+        await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: orderResult.id });
+        const _hasPreOrderItems = items.some((it: any) => it.sale_type === 'preorder');
+        const _isPreOrderCod = _hasPreOrderItems && isCodPayment;
+        const _isPreOrderWithPartialPayment = _hasPreOrderItems && preOrderPaymentOption === 'half';
+        const fullyWalletPaid = !_isPreOrderCod && !_isPreOrderWithPartialPayment;
+        if (fullyWalletPaid) {
+          await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+        }
       } catch (e) {
-        console.warn('reveal_random_filament_orders failed', e);
+        console.warn('random filament link/reveal failed', e);
       }
 
       // Invalidate caches
@@ -1602,24 +1628,7 @@ const Cart = () => {
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'half';
       const isPreOrderCod = hasPreOrderItems && isCodPayment;
 
-      // Random filament items MUST be paid via wallet (no COD, no partial)
-      try {
-        const cartItemIds = items.map(i => i.id).filter(Boolean);
-        if (cartItemIds.length > 0) {
-          const { data: rfRows } = await (supabase as any)
-            .from('random_filament_orders')
-            .select('cart_item_id')
-            .in('cart_item_id', cartItemIds);
-          if (rfRows && rfRows.length > 0 && (isPreOrderCod || isPreOrderWithPartialPayment)) {
-            toast({
-              title: 'الدفع من المحفظة مطلوب',
-              description: 'الفلمنت العشوائي يتطلب الدفع الكامل من المحفظة لكشف النوع واللون.',
-              variant: 'destructive',
-            });
-            return;
-          }
-        }
-      } catch (e) { console.warn('rf check failed', e); }
+      // Random filament with COD/partial: kept hidden as "Mystery" until full wallet payment.
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
       const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
       const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.5) : orderSubtotal);

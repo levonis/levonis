@@ -13113,6 +13113,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_random_filament_to_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
