@@ -93,9 +93,8 @@ export default function ProductOffersPage() {
     queryKey: ['product-offers-active'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('product_offers')
+        .from('product_offers_public' as any)
         .select('*')
-        .eq('status', 'active')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as ProductOffer[];

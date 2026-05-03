@@ -25,9 +25,8 @@ export default function OffersStorageSection() {
     queryKey: ['home-product-offers-preview'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('product_offers')
+        .from('product_offers_public' as any)
         .select('id, title_ar, image_url, price, currency, gift_tickets, stock_quantity')
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(6);
       
