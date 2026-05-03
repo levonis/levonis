@@ -650,6 +650,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
+    // Client-side guard: never attempt to delete random-filament items
+    const target = items.find(i => i.id === itemId) as any;
+    if (target?.is_random_filament || target?.is_locked) {
+      toast.error('لا يمكن إلغاء طلب الفلمنت العشوائي. أي محاولة قد تؤدي للحظر الدائم من القسم.');
+      return;
+    }
     // Optimistic update with lock
     optimisticLockRef.current++;
     const previousItems = items;
