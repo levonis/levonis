@@ -1335,6 +1335,13 @@ const Cart = () => {
         }
       }
 
+      // Reveal random filament selections (no-op if none)
+      try {
+        await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+      } catch (e) {
+        console.warn('reveal_random_filament_orders failed', e);
+      }
+
       // Invalidate caches
       queryClient.invalidateQueries({ queryKey: ['today-direct-orders'] });
       if (walletDeductionAmount > 0) {
@@ -1594,6 +1601,25 @@ const Cart = () => {
       // Calculate payment info for pre-orders
       const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'half';
       const isPreOrderCod = hasPreOrderItems && isCodPayment;
+
+      // Random filament items MUST be paid via wallet (no COD, no partial)
+      try {
+        const cartItemIds = items.map(i => i.id).filter(Boolean);
+        if (cartItemIds.length > 0) {
+          const { data: rfRows } = await (supabase as any)
+            .from('random_filament_orders')
+            .select('cart_item_id')
+            .in('cart_item_id', cartItemIds);
+          if (rfRows && rfRows.length > 0 && (isPreOrderCod || isPreOrderWithPartialPayment)) {
+            toast({
+              title: 'الدفع من المحفظة مطلوب',
+              description: 'الفلمنت العشوائي يتطلب الدفع الكامل من المحفظة لكشف النوع واللون.',
+              variant: 'destructive',
+            });
+            return;
+          }
+        }
+      } catch (e) { console.warn('rf check failed', e); }
       // Subtotal includes referral commission (added to buyer price, paid out to VIP+ owner)
       const orderSubtotal = total - discount - protectionDiscountAmount - cardDiscountAmount + referralOwnerEarnings;
       const paidNow = isPreOrderCod ? 0 : (isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.5) : orderSubtotal);

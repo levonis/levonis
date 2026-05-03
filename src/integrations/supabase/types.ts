@@ -9386,6 +9386,147 @@ export type Database = {
         }
         Relationships: []
       }
+      random_filament_bans: {
+        Row: {
+          banned_at: string
+          banned_by: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string
+          banned_by?: string | null
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          banned_at?: string
+          banned_by?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      random_filament_orders: {
+        Row: {
+          cart_item_id: string
+          category_id: string
+          created_at: string
+          id: string
+          order_id: string | null
+          price_iqd: number
+          product_id: string
+          product_option_id: string | null
+          revealed_at: string | null
+          sale_type: string
+          selected_color: string | null
+          user_id: string
+        }
+        Insert: {
+          cart_item_id: string
+          category_id: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          price_iqd: number
+          product_id: string
+          product_option_id?: string | null
+          revealed_at?: string | null
+          sale_type: string
+          selected_color?: string | null
+          user_id: string
+        }
+        Update: {
+          cart_item_id?: string
+          category_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          price_iqd?: number
+          product_id?: string
+          product_option_id?: string | null
+          revealed_at?: string | null
+          sale_type?: string
+          selected_color?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "random_filament_orders_cart_item_id_fkey"
+            columns: ["cart_item_id"]
+            isOneToOne: true
+            referencedRelation: "cart_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "random_filament_orders_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "random_filament_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "random_filament_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "random_filament_orders_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      random_filament_settings: {
+        Row: {
+          category_ids: string[]
+          created_at: string
+          description_ar: string
+          direct_price_iqd: number
+          enabled: boolean
+          id: string
+          pre_order_price_iqd: number
+          singleton: boolean
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          category_ids?: string[]
+          created_at?: string
+          description_ar?: string
+          direct_price_iqd?: number
+          enabled?: boolean
+          id?: string
+          pre_order_price_iqd?: number
+          singleton?: boolean
+          title_ar?: string
+          updated_at?: string
+        }
+        Update: {
+          category_ids?: string[]
+          created_at?: string
+          description_ar?: string
+          direct_price_iqd?: number
+          enabled?: boolean
+          id?: string
+          pre_order_price_iqd?: number
+          singleton?: boolean
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       redemption_settings: {
         Row: {
           created_at: string
@@ -12679,6 +12820,10 @@ export type Database = {
         }
         Returns: string
       }
+      create_random_filament_order: {
+        Args: { p_category_id: string; p_sale_type: string }
+        Returns: Json
+      }
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
       deduct_prize_stock: {
         Args: { p_color?: string; p_option_name?: string; p_product_id: string }
@@ -13086,6 +13231,10 @@ export type Database = {
         Args: { p_claim_id: string; p_reason: string }
         Returns: Json
       }
+      request_cancel_random_filament_order: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       request_level_prize_shipping: {
         Args: { p_address_id?: string; p_claim_id: string }
         Returns: Json
@@ -13097,6 +13246,10 @@ export type Database = {
       request_product_delivery: {
         Args: { p_product_ids: string[] }
         Returns: Json
+      }
+      reveal_random_filament_orders: {
+        Args: { p_order_id: string }
+        Returns: undefined
       }
       search_users_for_gift: {
         Args: { p_query: string }
