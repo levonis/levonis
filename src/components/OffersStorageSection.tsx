@@ -24,10 +24,9 @@ export default function OffersStorageSection() {
   const { data: offers, isLoading: offersLoading } = useQuery({
     queryKey: ['home-product-offers-preview'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_offers')
+      const { data, error } = await (supabase as any)
+        .from('product_offers_public')
         .select('id, title_ar, image_url, price, currency, gift_tickets, stock_quantity')
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(6);
       

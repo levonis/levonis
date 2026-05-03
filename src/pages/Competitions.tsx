@@ -154,10 +154,9 @@ export default function Competitions() {
   const { data: productOffers, isLoading: isLoadingOffers } = useQuery({
     queryKey: ['product-offers-list'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_offers')
+      const { data, error } = await (supabase as any)
+        .from('product_offers_public')
         .select('*')
-        .eq('status', 'active')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;

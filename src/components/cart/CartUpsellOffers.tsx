@@ -29,9 +29,8 @@ export default function CartUpsellOffers() {
     queryKey: ['cart-upsell-offers'],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from('product_offers')
+        .from('product_offers_public' as any)
         .select('id, title_ar, description_ar, image_url, price, currency, gift_tickets, points_reward, stock_quantity, status')
-        .eq('status', 'active')
         .eq('show_in_cart', true)
         .order('created_at', { ascending: false });
       if (error) throw error;

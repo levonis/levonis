@@ -86,10 +86,9 @@ export default function AllOffersPanel() {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       
-      const { data, error } = await supabase
-        .from('product_offers')
+      const { data, error } = await (supabase as any)
+        .from('product_offers_public')
         .select('*')
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .range(from, to);
       

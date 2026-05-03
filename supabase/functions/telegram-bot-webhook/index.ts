@@ -60,6 +60,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate Telegram webhook secret token to prevent forged updates
+    const expectedSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
+    if (expectedSecret) {
+      const incomingSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
+      if (incomingSecret !== expectedSecret) {
+        return new Response(JSON.stringify({ success: false, error: "Unauthorized" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
+      }
+    }
+
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
