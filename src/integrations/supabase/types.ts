@@ -9409,6 +9409,7 @@ export type Database = {
       }
       random_filament_offers: {
         Row: {
+          allowed_product_ids: string[]
           category_id: string | null
           created_at: string
           description_ar: string | null
@@ -9422,6 +9423,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allowed_product_ids?: string[]
           category_id?: string | null
           created_at?: string
           description_ar?: string | null
@@ -9435,6 +9437,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allowed_product_ids?: string[]
           category_id?: string | null
           created_at?: string
           description_ar?: string | null
