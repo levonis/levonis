@@ -61,6 +61,7 @@ export const ADMIN_ROUTES = {
   priceProtection: `${ADMIN_BASE_PATH}/price-protection`,
   winners: `${ADMIN_BASE_PATH}/winners`,
   productColorQa: `${ADMIN_BASE_PATH}/product-color-qa`,
+  randomFilament: `${ADMIN_BASE_PATH}/random-filament`,
 } as const;
 
 // Helper to check if a path is an admin path

@@ -21,6 +21,7 @@ import { organizationLd, websiteLd } from '@/lib/seo/structured';
 const BundlesSection = lazy(() => import('@/components/BundlesSection'));
 // CommunitySection moved off the homepage to /community to reduce initial load.
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
+const RandomFilamentSection = lazy(() => import('@/components/RandomFilamentSection'));
 
 
 const MemoizedCategoryCard = memo(CategoryCard);
@@ -265,6 +266,12 @@ const Home = () => {
         <ProgressiveSection minHeight="200px" rootMargin="500px">
           <Suspense fallback={<div className="h-32 flex items-center justify-center"><div className="w-full max-w-md space-y-2 px-4"><div className="h-4 w-3/4 rounded bg-muted animate-pulse" /><div className="h-4 w-1/2 rounded bg-muted animate-pulse" /></div></div>}>
             <OffersStorageSection />
+          </Suspense>
+        </ProgressiveSection>
+
+        <ProgressiveSection minHeight="120px" rootMargin="500px">
+          <Suspense fallback={<div className="h-24" />}>
+            <RandomFilamentSection />
           </Suspense>
         </ProgressiveSection>
 
