@@ -103,6 +103,19 @@ const OrderDetail = () => {
     enabled: canQuery
   });
 
+  const { data: hasRandomFilament } = useQuery({
+    queryKey: ['order-has-rf', orderId],
+    queryFn: async () => {
+      if (!orderId) return false;
+      const { count } = await supabase
+        .from('random_filament_orders' as any)
+        .select('id', { count: 'exact', head: true })
+        .eq('order_id', orderId);
+      return (count || 0) > 0;
+    },
+    enabled: !!orderId,
+  });
+
   const handleCancelOrder = async () => {
     if (!orderId || isCancelling) return;
     setIsCancelling(true);
@@ -119,15 +132,21 @@ const OrderDetail = () => {
       } catch (e) { console.error('Telegram error:', e); }
       toast.success(t('od_toast_cancel_success') + (res.refunded_amount > 0 ? ` ${t('od_toast_refunded_suffix')} ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Cancel order error:', error);
-      toast.error(t('od_toast_cancel_error'));
+      const msg = String(error?.message || '');
+      if (msg.includes('RANDOM_FILAMENT_ORDER_LOCKED')) {
+        toast.error('لا يمكن إلغاء طلب يحتوي على فلمنت عشوائي');
+      } else {
+        toast.error(t('od_toast_cancel_error'));
+      }
     } finally { setIsCancelling(false); setShowCancelDialog(false); }
   };
 
   const canCancelOrder = (order: any) => {
     if (!order || order.status === 'cancelled' || order.status === 'delivered' || order.status === 'shipped' || order.status === 'arrived_iraq') return false;
     if (isAdmin) return true;
+    if (hasRandomFilament) return false;
     const createdAt = new Date(order.created_at);
     const now = new Date();
     const hoursSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
