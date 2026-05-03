@@ -18,6 +18,7 @@ const PRINTING_MATERIALS_ID = "c3177652-b079-46a5-9435-f641e4c5fd58";
 type Offer = {
   id?: string;
   sale_type: "direct" | "preorder";
+  category_id: string | null;
   title_ar: string;
   description_ar: string | null;
   image_url: string | null;
