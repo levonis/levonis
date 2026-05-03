@@ -1307,7 +1307,7 @@ const Cart = () => {
 
           const isDirect = (item as any).sale_type === 'direct';
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
+          const itemPrice = (item as any).is_gift ? 0 : (isRandomFilament ? (rfPriceByCartItem.get(item.id) || 0) : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults)));
 
           const productName = isRandomFilament
             ? 'Mystery Random Filament'
