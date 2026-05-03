@@ -2085,6 +2085,7 @@ const Admin = () => {
                 { icon: BadgeDollarSign, title: 'حماية السعر', desc: 'استرداد فرق', path: ADMIN_ROUTES.priceProtection },
                 { icon: Trophy, title: 'الفائزون', desc: 'جوائز', path: ADMIN_ROUTES.winners },
                 { icon: Flag, title: 'فحص الألوان', desc: 'مطابقة الصور', path: ADMIN_ROUTES.productColorQa },
+                { icon: Sparkles, title: 'فلمنت عشوائي', desc: 'إعدادات وحظر', path: ADMIN_ROUTES.randomFilament },
               ].map((item, idx) => (
                 <button
                   key={idx}
