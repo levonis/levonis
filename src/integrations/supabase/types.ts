@@ -9407,6 +9407,45 @@ export type Database = {
         }
         Relationships: []
       }
+      random_filament_offers: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          display_order: number
+          enabled: boolean
+          id: string
+          image_url: string | null
+          price_iqd: number
+          sale_type: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          enabled?: boolean
+          id?: string
+          image_url?: string | null
+          price_iqd?: number
+          sale_type: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          enabled?: boolean
+          id?: string
+          image_url?: string | null
+          price_iqd?: number
+          sale_type?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       random_filament_orders: {
         Row: {
           cart_item_id: string
@@ -12821,7 +12860,7 @@ export type Database = {
         Returns: string
       }
       create_random_filament_order: {
-        Args: { p_category_id: string; p_sale_type: string }
+        Args: { p_category_id: string; p_offer_id: string }
         Returns: Json
       }
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }

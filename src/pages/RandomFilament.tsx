@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,8 +26,17 @@ import {
   Sparkles,
 } from "lucide-react";
 
-type Step = "sale-type" | "category" | "confirm";
+type Step = "sale-type" | "category" | "offer" | "confirm";
 type SaleType = "direct" | "preorder";
+type Offer = {
+  id: string;
+  sale_type: SaleType;
+  title_ar: string;
+  description_ar: string | null;
+  image_url: string | null;
+  price_iqd: number;
+  display_order: number;
+};
 
 export default function RandomFilament() {
   const navigate = useNavigate();
@@ -36,6 +45,7 @@ export default function RandomFilament() {
   const [step, setStep] = useState<Step>("sale-type");
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [offerId, setOfferId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -76,13 +86,22 @@ export default function RandomFilament() {
     },
   });
 
-  const price = useMemo(() => {
-    if (!settings || !saleType) return 0;
-    return saleType === "direct"
-      ? Number(settings.direct_price_iqd || 0)
-      : Number(settings.pre_order_price_iqd || 0);
-  }, [settings, saleType]);
+  const { data: offers } = useQuery<Offer[]>({
+    queryKey: ["rf-offers-public", saleType],
+    enabled: !!saleType,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("random_filament_offers")
+        .select("id, sale_type, title_ar, description_ar, image_url, price_iqd, display_order")
+        .eq("sale_type", saleType)
+        .eq("enabled", true)
+        .order("display_order");
+      return (data || []) as Offer[];
+    },
+  });
 
+  const selectedOffer = offers?.find((o) => o.id === offerId) || null;
+  const price = selectedOffer?.price_iqd || 0;
   const selectedCategory = categories?.find((c) => c.id === categoryId);
 
   useEffect(() => {
@@ -98,12 +117,12 @@ export default function RandomFilament() {
       navigate("/auth");
       return;
     }
-    if (!saleType || !categoryId) return;
+    if (!categoryId || !offerId) return;
     setSubmitting(true);
     try {
       const { data, error } = await (supabase as any).rpc(
         "create_random_filament_order",
-        { p_category_id: categoryId, p_sale_type: saleType }
+        { p_category_id: categoryId, p_offer_id: offerId }
       );
       if (error) throw error;
       if (!data?.success) throw new Error("UNKNOWN");
@@ -117,6 +136,7 @@ export default function RandomFilament() {
         USER_BANNED: "أنت محظور من قسم الفلمنت العشوائي",
         SECTION_DISABLED: "القسم متوقف حالياً",
         CATEGORY_NOT_ALLOWED: "هذه الفئة غير مفعّلة",
+        OFFER_NOT_FOUND: "العرض غير متاح",
         NO_PRODUCT_AVAILABLE: "لا توجد منتجات متاحة في هذه الفئة",
         NO_COLOR_AVAILABLE: "لا توجد ألوان متاحة حالياً",
         PRICE_NOT_CONFIGURED: "السعر غير مضبوط من الإدارة",
@@ -169,7 +189,7 @@ export default function RandomFilament() {
 
       {/* progress */}
       <div className="flex items-center gap-2 justify-center text-xs">
-        {(["sale-type", "category", "confirm"] as Step[]).map((s, i) => (
+        {(["sale-type", "category", "offer", "confirm"] as Step[]).map((s, i, arr) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className={`size-7 rounded-full flex items-center justify-center font-bold ${
@@ -180,7 +200,7 @@ export default function RandomFilament() {
             >
               {i + 1}
             </div>
-            {i < 2 && <div className="w-6 h-px bg-border" />}
+            {i < arr.length - 1 && <div className="w-6 h-px bg-border" />}
           </div>
         ))}
       </div>
@@ -189,38 +209,22 @@ export default function RandomFilament() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
-            onClick={() => {
-              setSaleType("direct");
-              setStep("category");
-            }}
+            onClick={() => { setSaleType("direct"); setStep("category"); }}
           >
             <CardContent className="p-5 text-center space-y-2">
               <Truck className="size-8 mx-auto text-primary" />
               <h3 className="font-bold">بيع مباشر</h3>
-              <p className="text-xs text-muted-foreground">
-                من المخزون المتوفر — لون عشوائي
-              </p>
-              <Badge variant="secondary">
-                {Number(settings.direct_price_iqd || 0).toLocaleString()} د.ع
-              </Badge>
+              <p className="text-xs text-muted-foreground">من المخزون المتوفر — لون عشوائي</p>
             </CardContent>
           </Card>
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
-            onClick={() => {
-              setSaleType("preorder");
-              setStep("category");
-            }}
+            onClick={() => { setSaleType("preorder"); setStep("category"); }}
           >
             <CardContent className="p-5 text-center space-y-2">
               <Package className="size-8 mx-auto text-primary" />
               <h3 className="font-bold">حجز مسبق</h3>
-              <p className="text-xs text-muted-foreground">
-                نوع ولون عشوائي من القسم
-              </p>
-              <Badge variant="secondary">
-                {Number(settings.pre_order_price_iqd || 0).toLocaleString()} د.ع
-              </Badge>
+              <p className="text-xs text-muted-foreground">نوع ولون عشوائي من القسم</p>
             </CardContent>
           </Card>
         </div>
@@ -228,25 +232,16 @@ export default function RandomFilament() {
 
       {step === "category" && (
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-3"
-            onClick={() => setStep("sale-type")}
-          >
-            <ArrowRight className="size-4" />
-            رجوع
+          <Button variant="ghost" size="sm" className="mb-3" onClick={() => setStep("sale-type")}>
+            <ArrowRight className="size-4" /> رجوع
           </Button>
+          <h2 className="text-sm font-bold mb-2 text-center">اختر القسم الفرعي</h2>
           <div className="grid grid-cols-2 gap-3">
             {categories?.map((cat) => (
               <Card
                 key={cat.id}
                 className="glass-panel cursor-pointer hover:border-primary transition"
-                onClick={() => {
-                  setCategoryId(cat.id);
-                  setConfirmOpen(true);
-                  setStep("confirm");
-                }}
+                onClick={() => { setCategoryId(cat.id); setStep("offer"); }}
               >
                 <CardContent className="p-4 text-center space-y-2">
                   <Sparkles className="size-7 mx-auto text-primary" />
@@ -258,11 +253,43 @@ export default function RandomFilament() {
         </div>
       )}
 
+      {step === "offer" && (
+        <div>
+          <Button variant="ghost" size="sm" className="mb-3" onClick={() => setStep("category")}>
+            <ArrowRight className="size-4" /> رجوع
+          </Button>
+          <h2 className="text-sm font-bold mb-2 text-center">اختر العرض</h2>
+          {offers?.length === 0 && (
+            <p className="text-center text-muted-foreground py-6 text-sm">لا توجد عروض متاحة حالياً</p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {offers?.map((o) => (
+              <Card
+                key={o.id}
+                className="glass-panel cursor-pointer hover:border-primary transition overflow-hidden"
+                onClick={() => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); }}
+              >
+                {o.image_url && (
+                  <img src={o.image_url} alt={o.title_ar} className="w-full h-32 object-cover" loading="lazy" />
+                )}
+                <CardContent className="p-4 space-y-2">
+                  <h3 className="font-bold">{o.title_ar}</h3>
+                  {o.description_ar && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{o.description_ar}</p>
+                  )}
+                  <Badge variant="secondary">{Number(o.price_iqd).toLocaleString()} د.ع</Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Dialog
         open={confirmOpen}
         onOpenChange={(o) => {
           setConfirmOpen(o);
-          if (!o) setStep("category");
+          if (!o) setStep("offer");
         }}
       >
         <DialogContent className="!overflow-hidden !max-h-none">
