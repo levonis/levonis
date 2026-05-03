@@ -1,17 +1,4 @@
 #!/usr/bin/env node
-/**
- * Android build runner with detailed, timestamped logs.
- *
- * Usage:
- *   node scripts/android-build.mjs              # full: build + sync + gradle assembleDebug
- *   node scripts/android-build.mjs sync         # only: vite build + cap sync
- *   node scripts/android-build.mjs gradle       # only: ./gradlew assembleDebug
- *   node scripts/android-build.mjs release      # full + ./gradlew assembleRelease
- *   node scripts/android-build.mjs doctor       # environment diagnostics only
- *
- * All output is mirrored to console AND saved to:
- *   logs/android-build-<timestamp>.log
- */
 import { spawn } from "node:child_process";
 import { mkdirSync, createWriteStream, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -63,7 +50,6 @@ function ok(msg) { write(`✓ ${msg}`, COLORS.green); }
 function warn(msg) { write(`⚠ ${msg}`, COLORS.yellow); }
 function err(msg) { write(`✗ ${msg}`, COLORS.red); }
 
-/** Run a command, mirror stdout/stderr to console + log file. */
 function run(cmd, args, opts = {}) {
   return new Promise((resolvePromise) => {
     const display = `${cmd} ${args.join(" ")}`;
@@ -72,7 +58,7 @@ function run(cmd, args, opts = {}) {
 
     const child = spawn(cmd, args, {
       cwd: opts.cwd || ROOT,
-      shell: IS_WIN, // needed for .cmd shims on Windows (npx, gradlew.bat)
+      shell: IS_WIN,
       env: { ...process.env, ...(opts.env || {}) },
     });
 
@@ -81,7 +67,7 @@ function run(cmd, args, opts = {}) {
         const text = chunk.toString();
         logStream.write(text);
         process.stdout.write(text);
-        // Capture telltale failure markers for the summary
+        
         if (isErr || /FAILURE|error:|ERROR /i.test(text)) {
           for (const line of text.split("\n")) {
             const t = line.trim();
