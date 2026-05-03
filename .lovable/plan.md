@@ -1,77 +1,74 @@
-# قصر مميزات الضمان والتأمين على البيع المباشر فقط
 
-## السلوك المطلوب
-كل مميزات الضمان (المجاني) واشتراك خطة الحماية (المدفوعة) وخصم قطع الغيار من خطة الحماية:
-- **الخصم النسبي**: يُحسب فقط من إجمالي عناصر `sale_type === 'direct'` (يستثني preorder/sea/air).
-- **التوصيل المجاني**: يُمنح فقط إذا كانت كل عناصر العربة (غير الهدايا) من البيع المباشر — لأن الشحن مفرد لكل طلب ولا يمكن "تجزئته".
-- **خصم قطع الغيار من خطة الحماية**: العناصر المؤهلة يجب أيضاً أن تكون `direct`.
+# قسم الفلمنت العشوائي (Random Filament)
 
-## التغييرات
+قسم جديد يدفع المستخدم لاكتشاف نوع/لون الفلمنت بعد الشراء. يُعرض في الصفحة الرئيسية تحت قسم العروض.
 
-### 1. `src/hooks/useCartWarrantyBenefits.tsx`
-- داخل `computeDiscount`: فلتر `items` لاستثناء أي عنصر ليس `sale_type === 'direct'` قبل حساب `eligibleSubtotal`. عند غياب whitelist للفئات (الحالة الافتراضية)، نُعيد بناء `eligibleSubtotal` من العناصر `direct` فقط بدل استخدام `cartSubtotal`.
-- بعد الحساب: ضبط `freeShipping = false` تلقائياً إذا احتوت العربة على أي عنصر غير-`direct` (ما عدا الهدايا).
+## تجربة المستخدم
 
-### 2. `src/hooks/useCartSubscriptionBenefits.tsx`
-- نفس المنطق: حساب `eligibleSubtotal` فقط من العناصر `direct` (مع تطبيق whitelist الفئات إن وجد فوقه).
-- ضبط `freeShipping = false` إذا العربة فيها عنصر غير-`direct`.
+1. كرت في الصفحة الرئيسية تحت `OffersStorageSection` يفتح صفحة `/random-filament`.
+2. خطوة 1: يختار طريقة الاستلام: **بيع مباشر** أو **حجز مسبق**.
+3. خطوة 2: يختار الفئة (PLA / PETG / ASA / ABS / Esun PLA Plus … من فئات يفعّلها الأدمن).
+4. خطوة 3: نافذة منبثقة فيها:
+   - تنبيه: "ادفع من المحفظة لتعرف ماذا حصلت مباشرةً" (الدفع من المحفظة شرط).
+   - تنبيه: "الطلب غير قابل للإلغاء. أي محاولة إلغاء = حظر دائم من هذا القسم."
+   - السعر، طريقة الاستلام، الفئة (بدون ذكر النوع/اللون).
+   - زر **إضافة إلى السلة**.
+5. عند إضافة للسلة، النظام يختار عشوائياً ويحجز الاختيار، لكن لا يكشفه. عند الدفع من المحفظة في السلة يتم الكشف عن النوع واللون في صفحة "تم الشراء" + داخل السلة بعد الدفع.
+6. الأدمن يرى دائماً ما تم اختياره.
 
-### 3. `src/hooks/useCartProtectionDiscount.tsx`
-- في فلترة `eligibleItems`: اشترط `item.sale_type === 'direct'` بالإضافة لمطابقة الفئة.
+## منطق الاختيار العشوائي
 
-## التفاصيل التقنية
+- **بيع مباشر**: ضمن منتجات الفئة المختارة (مثلاً جميع منتجات فئة PLA) المتاحة للبيع المباشر مع `direct_stock > 0`. يختار النظام منتج عشوائي ثم لون عشوائي من `product_options` مع `available_for_direct_sale=true` و `stock_quantity > 0`.
+- **حجز مسبق**: يختار النظام نوع المنتج عشوائياً (PLA Basic / Esun PLA Plus / إلخ من المنتجات المفعّلة في القسم العشوائي ضمن الفئة) ثم لون عشوائي من `product_options` مع `available_for_pre_order=true`.
+- يضاف للسلة كـ `cart_items` عادي (`product_id`, `product_option_id`, `selected_color`, `sale_type`) لتدخل في تدفق الشحن/المحفظة الموجود.
 
-دالة مساعدة موحّدة (داخل كل hook، صغيرة بما يكفي لتكرارها):
-```ts
-const isDirect = (item: CartItem) =>
-  (item.sale_type ?? '').toLowerCase() === 'direct';
+## إعدادات الأدمن
 
-const cartIsAllDirect = items
-  .filter(i => !(i as any).is_gift)
-  .every(isDirect);
-```
+- صفحة `/admin/random-filament` تحت قائمة الإدارة:
+  - تفعيل/تعطيل القسم.
+  - اختيار الفئات المسموح بها (Multi-select من جدول `categories`).
+  - تحديد سعر ثابت لكل فئة لكل من البيع المباشر والحجز المسبق (لأن المنتج مجهول).
+  - استعراض الطلبات العشوائية مع معرفة المستخدم + النوع/اللون الذي حصل عليه + الحالة.
+  - استعراض/إدارة قائمة المحظورين من القسم.
 
-في `useCartWarrantyBenefits.computeDiscount`:
-```ts
-const directItems = items.filter(i => !(i as any).is_gift && isDirect(i));
-let eligibleSubtotal = 0;
-for (const item of directItems) {
-  const catId = (item.products as any)?.category_id;
-  if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
-    eligibleSubtotal += getItemPrice(item) * item.quantity;
-  }
-}
-```
+## قواعد الإلغاء والحظر
 
-في `useCartSubscriptionBenefits` نفس المعالجة.
+- جدول `random_filament_orders` يربط الطلب الأصلي + المنتج/الخيار المختار + المستخدم.
+- جدول `random_filament_bans` لحظر المستخدمين دائماً من هذا القسم فقط.
+- Trigger على `orders` (أو `cart_items`) يكتشف أي محاولة إلغاء/حذف لطلب من القسم العشوائي ويضيف المستخدم تلقائياً إلى `random_filament_bans` ويرفض الإلغاء.
+- صفحة `/random-filament` تتحقق من الحظر وتعرض رسالة واضحة بدلاً من السماح بالشراء.
+- الدفع مقيّد بالمحفظة فقط (الواجهة + RPC `create_random_filament_order` ترفض غير ذلك).
 
-في `useCartProtectionDiscount`:
-```ts
-const eligibleItems = items.filter(item =>
-  isDirect(item) &&
-  item.products?.category_id &&
-  planCategories.includes(item.products.category_id)
-);
-```
+## التقنية
 
-`freeShipping` override (للضمان والاشتراك):
-```ts
-const allowFreeShipping = cartIsAllDirect;
-freeShipping: allowFreeShipping && Number(...max_uses_monthly) > 0,
-freeShippingRemainingUses: allowFreeShipping ? remaining : 0,
-```
+### قاعدة البيانات (migration)
 
-## الملفات المتأثرة
-- تعديل: `src/hooks/useCartWarrantyBenefits.tsx`
-- تعديل: `src/hooks/useCartSubscriptionBenefits.tsx`
-- تعديل: `src/hooks/useCartProtectionDiscount.tsx`
-- لا حاجة لتعديل `Cart.tsx` (المنطق محصور داخل الـ hooks).
-- لا تغييرات على قاعدة البيانات.
+- إنشاء `random_filament_settings` (singleton): `enabled`, `direct_price_iqd`, `pre_order_price_iqd`, `category_ids uuid[]`.
+- إنشاء `random_filament_orders`: `user_id`, `cart_item_id`, `order_id (nullable)`, `category_id`, `sale_type`, `product_id`, `product_option_id`, `selected_color`, `revealed_at`.
+- إنشاء `random_filament_bans`: `user_id PK`, `reason`, `banned_at`.
+- RPC `create_random_filament_order(p_category_id uuid, p_sale_type text)`:
+  - `SECURITY DEFINER`، يتحقق من الحظر، يختار المنتج/الخيار العشوائي مع قفل الصف، ينقص المخزون فقط عند البيع المباشر، يدرج في `cart_items`، يدرج في `random_filament_orders`، ويعيد `id` السطر.
+- Trigger `prevent_random_filament_cancel` على `orders`: عند تحديث الحالة إلى `cancelled` أو حذف عنصر مرتبط، يضاف المستخدم في `random_filament_bans` ويُلقى استثناء.
+- RLS: المستخدم يقرأ طلباته فقط. الأدمن يقرأ الكل. `random_filament_settings` للقراءة العامة (`enabled` + `category_ids` + الأسعار).
 
-## النتيجة المتوقعة
-- عربة فيها preorder + direct: الخصم يُحسب من جزء `direct` فقط، والشحن المجاني **غير مفعّل** (لوجود preorder).
-- عربة كلها `direct`: تطبيق كامل لكل المميزات كما السابق.
-- عربة كلها preorder: لا خصم ولا شحن مجاني للضمان/الاشتراك.
+### الواجهة الأمامية
 
-## تحديث الذاكرة
-سيتم تحديث mem://features/hardware/warranty-loyalty-benefits لإضافة قاعدة "Direct sale only" على كل benefits الضمان/التأمين.
+- `src/components/RandomFilamentSection.tsx` (كرت بسيط في الصفحة الرئيسية تحت `OffersStorageSection`).
+- `src/pages/RandomFilament.tsx` (3 خطوات: sale type → category → confirm dialog).
+- `src/pages/AdminRandomFilament.tsx` للإعدادات + سجل الطلبات + المحظورين.
+- داخل السلة (`Cart.tsx`): إذا كان `cart_item` مرتبطاً بـ `random_filament_orders` غير مكشوف، نخفي الاسم/اللون ونعرض شارة "فلمنت عشوائي - يكشف بعد الدفع".
+- بعد نجاح الدفع من المحفظة، نحدث `revealed_at` ونعرض شاشة كشف بالنوع واللون.
+- الدفع: نتحقق في صفحة الدفع أن وسيلة الدفع = wallet عند وجود عناصر random-filament، وإلا نمنع المتابعة.
+
+### i18n
+- إضافة مفاتيح في `ar.ts/en.ts/ku.ts` لجميع النصوص (عنوان القسم، خطوات، تحذير الإلغاء/الحظر، رسالة الكشف).
+
+### الصلاحيات والأمان
+- الإلغاء يتم منعه على مستوى DB (ليس فقط UI) لمنع التحايل.
+- الحظر يُسجَّل فقط من خلال trigger ولا يستطيع المستخدم فكه — فقط الأدمن.
+
+## نقاط مفتوحة سأفترضها ما لم تخبرني خلاف ذلك
+
+- السعر يحدده الأدمن لكل فئة (لا يأخذ سعر المنتج الأصلي) لأن الميزة مفاجأة.
+- الكميّة لكل طلب = 1.
+- لا يحق للمستخدم استبدال أو إعادة الطلب.
