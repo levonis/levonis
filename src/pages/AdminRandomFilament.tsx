@@ -270,6 +270,23 @@ export default function AdminRandomFilament() {
                 <div><span className="text-muted-foreground">اللون: </span>{o.selected_color}</div>
                 <div><span className="text-muted-foreground">السعر: </span>{Number(o.price_iqd).toLocaleString()} د.ع</div>
                 <div><Badge variant={o.order_id ? "default" : "secondary"}>{o.order_id ? "تم الدفع" : "في السلة"}</Badge></div>
+                {o.order_id && (
+                  <div className="col-span-2 pt-2 border-t">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        const reason = window.prompt("سبب الحظر (سيظهر للمستخدم):", "عدم استلام طلب فلمنت عشوائي");
+                        if (!reason) return;
+                        const { error } = await (supabase as any).rpc("ban_user_for_unreceived_random_filament", { p_order_id: o.order_id, p_reason: reason });
+                        if (error) toast.error("فشل الحظر");
+                        else { toast.success("تم حظر المستخدم"); qc.invalidateQueries({ queryKey: ["admin-rf-bans"] }); }
+                      }}
+                    >
+                      حظر المستخدم لعدم الاستلام
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
