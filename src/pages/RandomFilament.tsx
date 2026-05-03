@@ -32,7 +32,7 @@ type SaleType = "direct" | "preorder";
 export default function RandomFilament() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { fetchCart } = useCart();
+  const { refreshCart } = useCart();
   const [step, setStep] = useState<Step>("sale-type");
   const [saleType, setSaleType] = useState<SaleType | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export default function RandomFilament() {
       );
       if (error) throw error;
       if (!data?.success) throw new Error("UNKNOWN");
-      await fetchCart();
+      await refreshCart();
       toast.success("تم إضافة الفلمنت العشوائي إلى السلة!");
       setConfirmOpen(false);
       navigate("/cart");
