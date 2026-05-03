@@ -298,8 +298,8 @@ export default function RandomFilament() {
             <div className="rounded-xl border border-primary/40 bg-primary/10 p-3 text-xs flex gap-2">
               <Wallet className="size-4 mt-0.5 shrink-0 text-primary" />
               <span>
-                <b>قم بالدفع من المحفظة لتعرف ماذا حصلت مباشرةً.</b>
-                {" "}الدفع من المحفظة شرط لكشف النوع واللون فور الشراء.
+                <b>ادفع من المحفظة لتعرف ماذا حصلت فوراً.</b>
+                {" "}إذا اخترت الدفع عند الاستلام يبقى الطلب مجهولاً لك حتى تستلمه — الإدارة فقط تعرف الاختيار.
               </span>
             </div>
 
