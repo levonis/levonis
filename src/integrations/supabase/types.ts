@@ -1457,6 +1457,13 @@ export type Database = {
             referencedRelation: "community_print_requests"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "community_complaints_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       community_customer_profiles: {
@@ -3217,6 +3224,13 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "community_print_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_transactions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests_public"
             referencedColumns: ["id"]
           },
         ]
@@ -7993,6 +8007,13 @@ export type Database = {
             referencedRelation: "community_print_requests"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "print_offers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       print_ratings: {
@@ -8729,6 +8750,13 @@ export type Database = {
             referencedRelation: "product_offers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_offer_purchases_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "product_offers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_offers: {
@@ -9123,7 +9151,6 @@ export type Database = {
           telegram_chat_id: string | null
           telegram_notifications: Json | null
           username: string
-          wallet_pin: string | null
           warnings_count: number | null
         }
         Insert: {
@@ -9153,7 +9180,6 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_notifications?: Json | null
           username: string
-          wallet_pin?: string | null
           warnings_count?: number | null
         }
         Update: {
@@ -9183,7 +9209,6 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_notifications?: Json | null
           username?: string
-          wallet_pin?: string | null
           warnings_count?: number | null
         }
         Relationships: [
@@ -9641,6 +9666,13 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "community_print_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_edit_history_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests_public"
             referencedColumns: ["id"]
           },
         ]
@@ -12046,6 +12078,13 @@ export type Database = {
             referencedRelation: "community_print_requests"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "community_complaints_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       community_customer_profiles_public: {
@@ -12098,6 +12137,89 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      community_print_requests_public: {
+        Row: {
+          accepted_at: string | null
+          accepted_offer_id: string | null
+          colors: string | null
+          created_at: string | null
+          customer_confirmed_at: string | null
+          customer_governorate: string | null
+          delivered_at: string | null
+          description: string | null
+          escrow_amount: number | null
+          id: string | null
+          image_url: string | null
+          images: string[] | null
+          material_type: string | null
+          notes: string | null
+          quantity: number | null
+          reference_links: string[] | null
+          size: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_offer_id?: string | null
+          colors?: string | null
+          created_at?: string | null
+          customer_confirmed_at?: string | null
+          customer_governorate?: string | null
+          delivered_at?: string | null
+          description?: string | null
+          escrow_amount?: number | null
+          id?: string | null
+          image_url?: string | null
+          images?: string[] | null
+          material_type?: string | null
+          notes?: string | null
+          quantity?: number | null
+          reference_links?: string[] | null
+          size?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_offer_id?: string | null
+          colors?: string | null
+          created_at?: string | null
+          customer_confirmed_at?: string | null
+          customer_governorate?: string | null
+          delivered_at?: string | null
+          description?: string | null
+          escrow_amount?: number | null
+          id?: string | null
+          image_url?: string | null
+          images?: string[] | null
+          material_type?: string | null
+          notes?: string | null
+          quantity?: number | null
+          reference_links?: string[] | null
+          size?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_print_requests_accepted_offer_id_fkey"
+            columns: ["accepted_offer_id"]
+            isOneToOne: false
+            referencedRelation: "print_offers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_rating_stats: {
         Row: {
@@ -12180,6 +12302,84 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      product_offers_public: {
+        Row: {
+          colors: Json | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
+          gift_tickets: number | null
+          id: string | null
+          image_url: string | null
+          images: string[] | null
+          options: Json | null
+          points_reward: number | null
+          price: number | null
+          show_in_cart: boolean | null
+          status: string | null
+          stock_quantity: number | null
+          title: string | null
+          title_ar: string | null
+          title_en: string | null
+          title_ku: string | null
+          total_sold: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          colors?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          gift_tickets?: number | null
+          id?: string | null
+          image_url?: string | null
+          images?: string[] | null
+          options?: Json | null
+          points_reward?: number | null
+          price?: number | null
+          show_in_cart?: boolean | null
+          status?: string | null
+          stock_quantity?: number | null
+          title?: string | null
+          title_ar?: string | null
+          title_en?: string | null
+          title_ku?: string | null
+          total_sold?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          colors?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
+          gift_tickets?: number | null
+          id?: string | null
+          image_url?: string | null
+          images?: string[] | null
+          options?: Json | null
+          points_reward?: number | null
+          price?: number | null
+          show_in_cart?: boolean | null
+          status?: string | null
+          stock_quantity?: number | null
+          title?: string | null
+          title_ar?: string | null
+          title_en?: string | null
+          title_ku?: string | null
+          total_sold?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles_public: {
         Row: {
