@@ -25,6 +25,7 @@ import {
   Package,
   Sparkles,
 } from "lucide-react";
+import WavyColors from "@/components/WavyColors";
 
 type Step = "sale-type" | "category" | "offer" | "confirm";
 type SaleType = "direct" | "preorder";
