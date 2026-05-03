@@ -1278,13 +1278,17 @@ const Cart = () => {
       // Identify random filament cart items (kept hidden until wallet payment reveals)
       const cartItemIdsAll = items.map(i => i.id).filter(Boolean);
       let randomFilamentIds = new Set<string>();
+      const rfPriceByCartItem = new Map<string, number>();
       try {
         if (cartItemIdsAll.length > 0) {
           const { data: rfRows } = await (supabase as any)
             .from('random_filament_orders')
-            .select('cart_item_id')
+            .select('cart_item_id, price_iqd')
             .in('cart_item_id', cartItemIdsAll);
-          randomFilamentIds = new Set((rfRows || []).map((r: any) => r.cart_item_id));
+          (rfRows || []).forEach((r: any) => {
+            randomFilamentIds.add(r.cart_item_id);
+            rfPriceByCartItem.set(r.cart_item_id, Number(r.price_iqd) || 0);
+          });
         }
       } catch (e) { console.warn('rf lookup failed', e); }
 
