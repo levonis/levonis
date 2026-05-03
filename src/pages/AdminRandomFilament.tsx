@@ -221,6 +221,21 @@ export default function AdminRandomFilament() {
                       </div>
                     </div>
                     <div>
+                      <Label className="text-xs">القسم الفرعي (اتركه على "الكل" ليطبّق على جميع الأقسام)</Label>
+                      <Select
+                        value={o.category_id || "__all__"}
+                        onValueChange={(v) => updateOffer(o.id!, { category_id: v === "__all__" ? null : v })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">كل الأقسام المفعّلة</SelectItem>
+                          {categories?.filter((c: any) => selectedCats.includes(c.id)).map((c: any) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <Label className="text-xs">الوصف (اختياري)</Label>
                       <Textarea defaultValue={o.description_ar || ""} rows={2}
                         onBlur={(e) => e.target.value !== (o.description_ar || "") && updateOffer(o.id!, { description_ar: e.target.value || null })} />
