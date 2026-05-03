@@ -12741,6 +12741,10 @@ export type Database = {
       }
       auto_award_expired_seasons: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
+      ban_user_for_unreceived_random_filament: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: Json
+      }
       calculate_merchant_badge_tier:
         | { Args: { p_merchant_id: string }; Returns: string }
         | {
