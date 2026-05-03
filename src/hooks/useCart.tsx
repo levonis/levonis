@@ -618,6 +618,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
       return;
     }
+    // Locked random-filament items cannot change quantity
+    const target = items.find(i => i.id === itemId) as any;
+    if (target?.is_random_filament || target?.is_locked) {
+      toast.error('لا يمكن تعديل كمية طلب الفلمنت العشوائي');
+      return;
+    }
 
     // Optimistic update with lock to prevent fetchCart from overwriting
     optimisticLockRef.current++;
