@@ -132,9 +132,14 @@ const OrderDetail = () => {
       } catch (e) { console.error('Telegram error:', e); }
       toast.success(t('od_toast_cancel_success') + (res.refunded_amount > 0 ? ` ${t('od_toast_refunded_suffix')} ${Number(res.refunded_amount).toLocaleString()} د.ع` : ''));
       queryClient.invalidateQueries({ queryKey: ['order-detail', orderId] });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Cancel order error:', error);
-      toast.error(t('od_toast_cancel_error'));
+      const msg = String(error?.message || '');
+      if (msg.includes('RANDOM_FILAMENT_ORDER_LOCKED')) {
+        toast.error('لا يمكن إلغاء طلب يحتوي على فلمنت عشوائي');
+      } else {
+        toast.error(t('od_toast_cancel_error'));
+      }
     } finally { setIsCancelling(false); setShowCancelDialog(false); }
   };
 
