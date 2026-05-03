@@ -693,16 +693,31 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = async () => {
     if (!user) return;
 
+    // Skip locked / random-filament items — they can never be removed by the user
+    const deletableIds = items
+      .filter((i: any) => !i.is_random_filament && !i.is_locked)
+      .map(i => i.id);
+    const hasLocked = deletableIds.length !== items.length;
+
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
+      let error: any = null;
+      if (deletableIds.length > 0) {
+        const res = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', deletableIds);
+        error = res.error;
+      }
 
       if (error) throw error;
       
-      setItems([]);
-      toast.success('تم تفريغ السلة');
+      setItems(prev => prev.filter((i: any) => i.is_random_filament || i.is_locked));
+      if (hasLocked) {
+        toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المحجوزة)');
+      } else {
+        toast.success('تم تفريغ السلة');
+      }
     } catch (error) {
       console.error('Error clearing cart:', error);
       toast.error('حدث خطأ في تفريغ السلة');
@@ -712,14 +727,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) return false;
     try {
-      // Clear cart items directly in DB
-      const { error: clearError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
-      if (clearError) throw clearError;
-      // Reset local items so addToCart won't detect a conflict
-      setItems([]);
+      // Clear cart items directly in DB — exclude locked / random-filament items
+      const deletableIds = items
+        .filter((i: any) => !i.is_random_filament && !i.is_locked)
+        .map(i => i.id);
+      if (deletableIds.length > 0) {
+        const { error: clearError } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', deletableIds);
+        if (clearError) throw clearError;
+      }
+      // Reset local items, keeping locked ones
+      setItems(prev => prev.filter((i: any) => i.is_random_filament || i.is_locked));
 
       // Now insert the new item directly (bypass addToCart conflict check)
       const { data: productData } = await supabase
