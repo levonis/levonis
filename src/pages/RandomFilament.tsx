@@ -88,14 +88,15 @@ export default function RandomFilament() {
   });
 
   const { data: offers } = useQuery<Offer[]>({
-    queryKey: ["rf-offers-public", saleType],
-    enabled: !!saleType,
+    queryKey: ["rf-offers-public", saleType, categoryId],
+    enabled: !!saleType && !!categoryId,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("random_filament_offers")
-        .select("id, sale_type, title_ar, description_ar, image_url, price_iqd, display_order")
+        .select("id, sale_type, category_id, title_ar, description_ar, image_url, price_iqd, display_order")
         .eq("sale_type", saleType)
         .eq("enabled", true)
+        .or(`category_id.is.null,category_id.eq.${categoryId}`)
         .order("display_order");
       return (data || []) as Offer[];
     },
