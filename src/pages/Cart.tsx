@@ -1357,7 +1357,10 @@ const Cart = () => {
       // Reveal real product/color to user only when fully paid via wallet.
       try {
         await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: orderResult.id });
-        const fullyWalletPaid = !isPreOrderCod && !isPreOrderWithPartialPayment;
+        const _hasPreOrderItems = items.some((it: any) => it.sale_type === 'preorder');
+        const _isPreOrderCod = _hasPreOrderItems && isCodPayment;
+        const _isPreOrderWithPartialPayment = _hasPreOrderItems && preOrderPaymentOption === 'half';
+        const fullyWalletPaid = !_isPreOrderCod && !_isPreOrderWithPartialPayment;
         if (fullyWalletPaid) {
           await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
         }
