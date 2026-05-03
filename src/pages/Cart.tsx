@@ -1353,11 +1353,16 @@ const Cart = () => {
         }
       }
 
-      // Reveal random filament selections (no-op if none)
+      // Random filament: always link selection to order (admin sees it).
+      // Reveal real product/color to user only when fully paid via wallet.
       try {
-        await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+        await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: orderResult.id });
+        const fullyWalletPaid = !isPreOrderCod && !isPreOrderWithPartialPayment;
+        if (fullyWalletPaid) {
+          await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+        }
       } catch (e) {
-        console.warn('reveal_random_filament_orders failed', e);
+        console.warn('random filament link/reveal failed', e);
       }
 
       // Invalidate caches
