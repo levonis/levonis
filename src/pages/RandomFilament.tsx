@@ -86,13 +86,22 @@ export default function RandomFilament() {
     },
   });
 
-  const price = useMemo(() => {
-    if (!settings || !saleType) return 0;
-    return saleType === "direct"
-      ? Number(settings.direct_price_iqd || 0)
-      : Number(settings.pre_order_price_iqd || 0);
-  }, [settings, saleType]);
+  const { data: offers } = useQuery<Offer[]>({
+    queryKey: ["rf-offers-public", saleType],
+    enabled: !!saleType,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("random_filament_offers")
+        .select("id, sale_type, title_ar, description_ar, image_url, price_iqd, display_order")
+        .eq("sale_type", saleType)
+        .eq("enabled", true)
+        .order("display_order");
+      return (data || []) as Offer[];
+    },
+  });
 
+  const selectedOffer = offers?.find((o) => o.id === offerId) || null;
+  const price = selectedOffer?.price_iqd || 0;
   const selectedCategory = categories?.find((c) => c.id === categoryId);
 
   useEffect(() => {
@@ -108,12 +117,12 @@ export default function RandomFilament() {
       navigate("/auth");
       return;
     }
-    if (!saleType || !categoryId) return;
+    if (!categoryId || !offerId) return;
     setSubmitting(true);
     try {
       const { data, error } = await (supabase as any).rpc(
         "create_random_filament_order",
-        { p_category_id: categoryId, p_sale_type: saleType }
+        { p_category_id: categoryId, p_offer_id: offerId }
       );
       if (error) throw error;
       if (!data?.success) throw new Error("UNKNOWN");
@@ -127,6 +136,7 @@ export default function RandomFilament() {
         USER_BANNED: "أنت محظور من قسم الفلمنت العشوائي",
         SECTION_DISABLED: "القسم متوقف حالياً",
         CATEGORY_NOT_ALLOWED: "هذه الفئة غير مفعّلة",
+        OFFER_NOT_FOUND: "العرض غير متاح",
         NO_PRODUCT_AVAILABLE: "لا توجد منتجات متاحة في هذه الفئة",
         NO_COLOR_AVAILABLE: "لا توجد ألوان متاحة حالياً",
         PRICE_NOT_CONFIGURED: "السعر غير مضبوط من الإدارة",
