@@ -18,6 +18,7 @@ const PRINTING_MATERIALS_ID = "c3177652-b079-46a5-9435-f641e4c5fd58";
 type Offer = {
   id?: string;
   sale_type: "direct" | "preorder";
+  category_id: string | null;
   title_ar: string;
   description_ar: string | null;
   image_url: string | null;
@@ -218,6 +219,21 @@ export default function AdminRandomFilament() {
                         <Input type="number" defaultValue={o.display_order}
                           onBlur={(e) => Number(e.target.value) !== o.display_order && updateOffer(o.id!, { display_order: Number(e.target.value) || 0 })} />
                       </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">القسم الفرعي (اتركه على "الكل" ليطبّق على جميع الأقسام)</Label>
+                      <Select
+                        value={o.category_id || "__all__"}
+                        onValueChange={(v) => updateOffer(o.id!, { category_id: v === "__all__" ? null : v })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__all__">كل الأقسام المفعّلة</SelectItem>
+                          {categories?.filter((c: any) => selectedCats.includes(c.id)).map((c: any) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="text-xs">الوصف (اختياري)</Label>

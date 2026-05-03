@@ -9409,6 +9409,7 @@ export type Database = {
       }
       random_filament_offers: {
         Row: {
+          category_id: string | null
           created_at: string
           description_ar: string | null
           display_order: number
@@ -9421,6 +9422,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           description_ar?: string | null
           display_order?: number
@@ -9433,6 +9435,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           description_ar?: string | null
           display_order?: number
@@ -9444,7 +9447,15 @@ export type Database = {
           title_ar?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "random_filament_offers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       random_filament_orders: {
         Row: {
