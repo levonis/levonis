@@ -1,25 +1,4 @@
 #!/usr/bin/env node
-/**
- * verify-build.mjs
- * ----------------
- * فحص شامل لمخرجات البناء قبل الرفع للإنتاج.
- *
- * الخطوات:
- *  1. حذف مجلد dist القديم (اختياري عبر --skip-clean).
- *  2. تشغيل `vite build`.
- *  3. التحقق من وجود dist/index.html وأصول JS/CSS.
- *  4. إثبات أن ملفات JS و CSS مُصغّرة فعلاً (minified) عبر مقاييس
- *     عملية: نسبة الأسطر الطويلة، غياب التعليقات، عدم وجود مسافات بادئة.
- *  5. (اختياري) تشغيل `vite preview` لمدة قصيرة والتأكد من استجابة 200.
- *
- * الاستخدام:
- *   node scripts/verify-build.mjs              # بناء + فحص
- *   node scripts/verify-build.mjs --preview    # + تشغيل preview للتحقق
- *   node scripts/verify-build.mjs --skip-build # افحص dist الموجود فقط
- *
- * الخروج بكود 0 = نجاح، 1 = فشل (مناسب لـ CI).
- */
-
 import { spawn, spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync, existsSync, rmSync } from "node:fs";
 import { join, extname, relative } from "node:path";
@@ -46,37 +25,33 @@ const head = (m) => log(`\n${C.bold}${C.cyan}━━ ${m} ━━${C.reset}`);
 let errors = 0;
 const failHard = (m) => { fail(m); errors++; };
 
-// ─── 1. تنظيف ─────────────────────────────────────────────
 if (!SKIP_BUILD && !SKIP_CLEAN && existsSync(DIST)) {
-  head("تنظيف dist السابق");
+  head("clean dist");
   rmSync(DIST, { recursive: true, force: true });
-  ok("تم حذف dist القديم");
+  ok("removed old dist");
 }
 
-// ─── 2. البناء ─────────────────────────────────────────────
 if (!SKIP_BUILD) {
-  head("تنفيذ vite build");
+  head("vite build");
   const r = spawnSync("npx", ["vite", "build"], {
     cwd: ROOT, stdio: "inherit", shell: true,
   });
   if (r.status !== 0) {
-    fail(`vite build فشل بكود ${r.status}`);
+    fail(`vite build exit ${r.status}`);
     process.exit(1);
   }
-  ok("اكتمل البناء");
+  ok("build complete");
 }
 
-// ─── 3. وجود الملفات الأساسية ──────────────────────────────
-head("التحقق من بنية dist");
+head("verify dist structure");
 if (!existsSync(DIST)) {
-  fail("مجلد dist غير موجود — نفّذ بدون --skip-build أولاً");
+  fail("dist missing");
   process.exit(1);
 }
 const indexHtml = join(DIST, "index.html");
-if (!existsSync(indexHtml)) failHard("dist/index.html مفقود");
-else ok("dist/index.html موجود");
+if (!existsSync(indexHtml)) failHard("dist/index.html missing");
+else ok("dist/index.html present");
 
-// جمع كل الأصول
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -91,20 +66,17 @@ const jsFiles = all.filter((f) => extname(f.path) === ".js");
 const cssFiles = all.filter((f) => extname(f.path) === ".css");
 const mapFiles = all.filter((f) => f.path.endsWith(".map"));
 
-ok(`عدد ملفات JS: ${jsFiles.length}`);
-ok(`عدد ملفات CSS: ${cssFiles.length}`);
-ok(`عدد source maps: ${mapFiles.length}`);
+ok(`js files: ${jsFiles.length}`);
+ok(`css files: ${cssFiles.length}`);
+ok(`source maps: ${mapFiles.length}`);
 
-if (jsFiles.length === 0) failHard("لا توجد ملفات JS في dist");
-if (cssFiles.length === 0) failHard("لا توجد ملفات CSS في dist");
+if (jsFiles.length === 0) failHard("no JS in dist");
+if (cssFiles.length === 0) failHard("no CSS in dist");
 
-// ─── 4. فحوصات Minification ────────────────────────────────
-head("فحص ضغط (minify) الملفات");
+head("minify check");
 
-/** يحدد إن كان الملف مضغوطاً بناءً على مقاييس عملية. */
 function inspectMinify(filePath, kind) {
   const rel = relative(ROOT, filePath);
-  // تخطي source maps
   if (filePath.endsWith(".map")) return { ok: true, rel };
 
   const src = readFileSync(filePath, "utf8");
@@ -115,36 +87,28 @@ function inspectMinify(filePath, kind) {
   const longRatio = total > 0 ? longLines / total : 0;
   const avgLen = bytes / Math.max(1, total);
 
-  // إشارات "غير مضغوط":
-  //  - متوسط طول السطر منخفض جداً (<80) مع وجود الكثير من الأسطر
-  //  - تعليقات JS متعددة الأسطر بكثرة
-  //  - مسافات بادئة منتظمة (4 مسافات/تاب) في معظم الأسطر
   const indented = lines.filter((l) => /^( {2,}|\t)/.test(l)).length;
   const indentedRatio = total > 0 ? indented / total : 0;
 
-  // قواعد القرار حسب النوع:
   let minified = false;
   let reason = "";
   if (kind === "js") {
-    // ملفات JS الإنتاجية المضغوطة عادةً تحتوي أسطراً طويلة جداً.
-    // نقبل: إما long ratio مرتفعة، أو متوسط طول سطر >300، أو ملف صغير جداً.
-    if (bytes < 2_000) { minified = true; reason = "ملف صغير جداً"; }
+    if (bytes < 2_000) { minified = true; reason = "tiny"; }
     else if (longRatio >= 0.5 || avgLen > 300) {
       minified = true;
-      reason = `avgLen=${avgLen.toFixed(0)}، longRatio=${(longRatio * 100).toFixed(0)}%`;
+      reason = `avgLen=${avgLen.toFixed(0)}, longRatio=${(longRatio * 100).toFixed(0)}%`;
     } else if (indentedRatio > 0.3) {
-      reason = `أسطر مزاحة ${(indentedRatio * 100).toFixed(0)}%، avgLen=${avgLen.toFixed(0)}`;
+      reason = `indented=${(indentedRatio * 100).toFixed(0)}%, avgLen=${avgLen.toFixed(0)}`;
     } else {
-      reason = `avgLen=${avgLen.toFixed(0)}، longRatio=${(longRatio * 100).toFixed(0)}%`;
+      reason = `avgLen=${avgLen.toFixed(0)}, longRatio=${(longRatio * 100).toFixed(0)}%`;
     }
   } else if (kind === "css") {
-    // CSS مضغوط عادة سطر واحد طويل جداً، أو متوسط طول سطر مرتفع
-    if (bytes < 500) { minified = true; reason = "ملف صغير جداً"; }
+    if (bytes < 500) { minified = true; reason = "tiny"; }
     else if (total <= 5 || avgLen > 200 || longRatio >= 0.3) {
       minified = true;
-      reason = `lines=${total}، avgLen=${avgLen.toFixed(0)}`;
+      reason = `lines=${total}, avgLen=${avgLen.toFixed(0)}`;
     } else {
-      reason = `lines=${total}، avgLen=${avgLen.toFixed(0)}، indented=${(indentedRatio * 100).toFixed(0)}%`;
+      reason = `lines=${total}, avgLen=${avgLen.toFixed(0)}, indented=${(indentedRatio * 100).toFixed(0)}%`;
     }
   }
 
@@ -158,41 +122,38 @@ for (const f of jsFiles) {
   const r = inspectMinify(f.path, "js");
   totalJsBytes += r.bytes || 0;
   if (r.ok) { jsMinifiedCount++; }
-  else failHard(`JS غير مضغوط: ${r.rel} — ${r.reason}`);
+  else failHard(`JS not minified: ${r.rel} - ${r.reason}`);
 }
 
 for (const f of cssFiles) {
   const r = inspectMinify(f.path, "css");
   totalCssBytes += r.bytes || 0;
   if (r.ok) { cssMinifiedCount++; }
-  else failHard(`CSS غير مضغوط: ${r.rel} — ${r.reason}`);
+  else failHard(`CSS not minified: ${r.rel} - ${r.reason}`);
 }
 
 const fmt = (b) => b > 1024 * 1024
   ? `${(b / 1024 / 1024).toFixed(2)} MB`
   : `${(b / 1024).toFixed(1)} KB`;
 
-ok(`JS مضغوط: ${jsMinifiedCount}/${jsFiles.length} (إجمالي ${fmt(totalJsBytes)})`);
-ok(`CSS مضغوط: ${cssMinifiedCount}/${cssFiles.length} (إجمالي ${fmt(totalCssBytes)})`);
+ok(`JS minified: ${jsMinifiedCount}/${jsFiles.length} (total ${fmt(totalJsBytes)})`);
+ok(`CSS minified: ${cssMinifiedCount}/${cssFiles.length} (total ${fmt(totalCssBytes)})`);
 
-// تحذيرات للحجم
 if (totalJsBytes > 5 * 1024 * 1024) {
-  warn(`إجمالي JS كبير (${fmt(totalJsBytes)}) — راجع code splitting`);
+  warn(`JS bundle large (${fmt(totalJsBytes)})`);
 }
 if (totalCssBytes > 500 * 1024) {
-  warn(`إجمالي CSS كبير (${fmt(totalCssBytes)})`);
+  warn(`CSS bundle large (${fmt(totalCssBytes)})`);
 }
 
-// أكبر 5 ملفات
-head("أكبر 5 ملفات JS/CSS");
+head("top 5 files");
 [...jsFiles, ...cssFiles]
   .sort((a, b) => b.size - a.size)
   .slice(0, 5)
   .forEach((f) => log(`  ${fmt(f.size).padStart(10)}  ${relative(DIST, f.path)}`));
 
-// ─── 5. preview (اختياري) ─────────────────────────────────
 async function tryPreview() {
-  head("تشغيل vite preview");
+  head("vite preview");
   const port = 4173;
   const proc = spawn("npx", ["vite", "preview", "--port", String(port)], {
     cwd: ROOT, shell: true, stdio: ["ignore", "pipe", "pipe"],
@@ -204,27 +165,26 @@ async function tryPreview() {
     if (s.includes("Local:") || s.includes(`:${port}`)) ready = true;
   });
 
-  // انتظر حتى 15ث لجاهزية الخادم
   const start = Date.now();
   while (!ready && Date.now() - start < 15_000) {
     await new Promise((r) => setTimeout(r, 250));
   }
   if (!ready) {
     proc.kill();
-    failHard("preview لم يبدأ خلال 15 ثانية");
+    failHard("preview did not start in 15s");
     return;
   }
 
   try {
     const res = await fetch(`http://localhost:${port}/`);
-    if (res.status !== 200) failHard(`preview أرجع ${res.status}`);
+    if (res.status !== 200) failHard(`preview returned ${res.status}`);
     else {
       const html = await res.text();
-      if (!html.includes("<div id=\"root\"")) failHard("HTML لا يحوي #root");
-      else ok(`preview يستجيب 200 على :${port}`);
+      if (!html.includes("<div id=\"root\"")) failHard("HTML missing #root");
+      else ok(`preview 200 on :${port}`);
     }
   } catch (e) {
-    failHard(`فشل الاتصال بـ preview: ${e.message}`);
+    failHard(`preview fetch failed: ${e.message}`);
   } finally {
     proc.kill();
   }
@@ -234,11 +194,10 @@ if (RUN_PREVIEW) {
   await tryPreview();
 }
 
-// ─── النتيجة النهائية ─────────────────────────────────────
-head("النتيجة");
+head("result");
 if (errors > 0) {
-  fail(`فشل الفحص: ${errors} خطأ — لا ترفع هذه النسخة للإنتاج`);
+  fail(`failed: ${errors} error(s)`);
   process.exit(1);
 }
-ok("جميع الفحوصات نجحت — البناء جاهز للإنتاج ✨");
+ok("all checks passed");
 process.exit(0);
