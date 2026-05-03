@@ -31,6 +31,7 @@ type SaleType = "direct" | "preorder";
 type Offer = {
   id: string;
   sale_type: SaleType;
+  category_id: string | null;
   title_ar: string;
   description_ar: string | null;
   image_url: string | null;
