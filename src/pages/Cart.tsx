@@ -1275,12 +1275,26 @@ const Cart = () => {
         return;
       }
 
+      // Identify random filament cart items (kept hidden until wallet payment reveals)
+      const cartItemIdsAll = items.map(i => i.id).filter(Boolean);
+      let randomFilamentIds = new Set<string>();
+      try {
+        if (cartItemIdsAll.length > 0) {
+          const { data: rfRows } = await (supabase as any)
+            .from('random_filament_orders')
+            .select('cart_item_id')
+            .in('cart_item_id', cartItemIdsAll);
+          randomFilamentIds = new Set((rfRows || []).map((r: any) => r.cart_item_id));
+        }
+      } catch (e) { console.warn('rf lookup failed', e); }
+
       // Create order items
       const orderItems = items
         .filter(item => item.product_id || item.custom_request_id || (item as any).bundle_id)
         .map(item => {
           const isCustomRequest = !!item.custom_request_id;
           const isBundle = !!(item as any).bundle_id;
+          const isRandomFilament = randomFilamentIds.has(item.id);
           const itemOption = (item as any).product_options;
           const itemColor = (item as any).selected_color;
           const colorData = itemColor && item.products?.colors
@@ -1291,10 +1305,14 @@ const Cart = () => {
           const bundle = isBundle ? (item as any).product_bundles : null;
           const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
 
-          const productName = isCustomRequest 
+          const productName = isRandomFilament
+            ? 'Mystery Random Filament'
+            : isCustomRequest 
             ? (item.custom_product_requests?.product_name || 'طلب مخصص')
             : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name || 'منتج');
-          const productNameAr = isCustomRequest 
+          const productNameAr = isRandomFilament
+            ? 'فلمنت عشوائي مجهول'
+            : isCustomRequest 
             ? (item.custom_product_requests?.product_name || 'طلب مخصص')
             : isBundle ? (bundle?.title_ar || 'بندل') : (item.products?.name_ar || 'منتج');
 
@@ -1307,9 +1325,9 @@ const Cart = () => {
             quantity: item.quantity,
             unit_price: itemPrice,
             total_price: itemPrice * item.quantity,
-            selected_color: itemColor || null,
-            color_image_url: (item as any).color_image_url || null,
-            selected_option: itemOption?.name_ar || null,
+            selected_color: isRandomFilament ? null : (itemColor || null),
+            color_image_url: isRandomFilament ? null : ((item as any).color_image_url || null),
+            selected_option: isRandomFilament ? null : (itemOption?.name_ar || null),
             product_name: productName,
             product_name_ar: productNameAr,
             is_gift: !!(item as any).is_gift,
