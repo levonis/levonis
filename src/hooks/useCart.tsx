@@ -328,10 +328,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
-        // Map offer purchase data
+        // Detect random-filament cart items so UI can lock them (no delete/qty change)
+        let rfIds = new Set<string>();
+        try {
+          const ids = (data || []).map((i: any) => i.id).filter(Boolean);
+          if (ids.length > 0) {
+            const { data: rfRows } = await (supabase as any)
+              .from('random_filament_orders')
+              .select('cart_item_id')
+              .in('cart_item_id', ids);
+            (rfRows || []).forEach((r: any) => r?.cart_item_id && rfIds.add(r.cart_item_id));
+          }
+        } catch (e) { /* non-blocking */ }
+
+        // Map offer purchase data + force is_locked for RF items
         const mappedData = (data || []).map((item: any) => ({
           ...item,
           offer_purchase: item.product_offer_purchases || null,
+          is_locked: item.is_locked || rfIds.has(item.id),
+          is_random_filament: rfIds.has(item.id),
         }));
         setItems(mappedData as CartItem[]);
       }
@@ -603,6 +618,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
       return;
     }
+    // Locked random-filament items cannot change quantity
+    const target = items.find(i => i.id === itemId) as any;
+    if (target?.is_random_filament || target?.is_locked) {
+      toast.error('لا يمكن تعديل كمية طلب الفلمنت العشوائي');
+      return;
+    }
 
     // Optimistic update with lock to prevent fetchCart from overwriting
     optimisticLockRef.current++;
@@ -633,6 +654,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const removeFromCart = async (itemId: string) => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
+      return;
+    }
+    // Client-side guard: never attempt to delete random-filament items
+    const target = items.find(i => i.id === itemId) as any;
+    if (target?.is_random_filament || target?.is_locked) {
+      toast.error('لا يمكن إلغاء طلب الفلمنت العشوائي. أي محاولة قد تؤدي للحظر الدائم من القسم.');
       return;
     }
     // Optimistic update with lock
@@ -672,16 +699,31 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = async () => {
     if (!user) return;
 
+    // Skip locked / random-filament items — they can never be removed by the user
+    const deletableIds = items
+      .filter((i: any) => !i.is_random_filament && !i.is_locked)
+      .map(i => i.id);
+    const hasLocked = deletableIds.length !== items.length;
+
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
+      let error: any = null;
+      if (deletableIds.length > 0) {
+        const res = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', deletableIds);
+        error = res.error;
+      }
 
       if (error) throw error;
       
-      setItems([]);
-      toast.success('تم تفريغ السلة');
+      setItems(prev => prev.filter((i: any) => i.is_random_filament || i.is_locked));
+      if (hasLocked) {
+        toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المحجوزة)');
+      } else {
+        toast.success('تم تفريغ السلة');
+      }
     } catch (error) {
       console.error('Error clearing cart:', error);
       toast.error('حدث خطأ في تفريغ السلة');
@@ -691,14 +733,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const forceAddToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) return false;
     try {
-      // Clear cart items directly in DB
-      const { error: clearError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
-      if (clearError) throw clearError;
-      // Reset local items so addToCart won't detect a conflict
-      setItems([]);
+      // Clear cart items directly in DB — exclude locked / random-filament items
+      const deletableIds = items
+        .filter((i: any) => !i.is_random_filament && !i.is_locked)
+        .map(i => i.id);
+      if (deletableIds.length > 0) {
+        const { error: clearError } = await supabase
+          .from('cart_items')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', deletableIds);
+        if (clearError) throw clearError;
+      }
+      // Reset local items, keeping locked ones
+      setItems(prev => prev.filter((i: any) => i.is_random_filament || i.is_locked));
 
       // Now insert the new item directly (bypass addToCart conflict check)
       const { data: productData } = await supabase
