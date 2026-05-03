@@ -1335,6 +1335,13 @@ const Cart = () => {
         }
       }
 
+      // Reveal random filament selections (no-op if none)
+      try {
+        await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+      } catch (e) {
+        console.warn('reveal_random_filament_orders failed', e);
+      }
+
       // Invalidate caches
       queryClient.invalidateQueries({ queryKey: ['today-direct-orders'] });
       if (walletDeductionAmount > 0) {
