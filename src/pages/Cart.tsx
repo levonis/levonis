@@ -1354,13 +1354,12 @@ const Cart = () => {
       }
 
       // Random filament: always link selection to order (admin sees it).
-      // Reveal real product/color to user only when fully paid via wallet.
+      // Reveal real product/color to user ONLY when fully paid via wallet (no COD at all).
       try {
         await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: orderResult.id });
         const _hasPreOrderItems = items.some((it: any) => it.sale_type === 'preorder');
-        const _isPreOrderCod = _hasPreOrderItems && isCodPayment;
         const _isPreOrderWithPartialPayment = _hasPreOrderItems && preOrderPaymentOption === 'half';
-        const fullyWalletPaid = !_isPreOrderCod && !_isPreOrderWithPartialPayment;
+        const fullyWalletPaid = !isCodPayment && !_isPreOrderWithPartialPayment;
         if (fullyWalletPaid) {
           await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
         }
