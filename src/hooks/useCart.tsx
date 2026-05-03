@@ -651,13 +651,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         console.error('Remove from cart error:', error);
         // Revert on error
         setItems(previousItems);
+        const msg = String((error as any)?.message || '');
+        if (msg.includes('RANDOM_FILAMENT_LOCKED')) {
+          toast.error('لا يمكن إلغاء طلب الفلمنت العشوائي. أي محاولة قد تؤدي للحظر الدائم من القسم.');
+          return;
+        }
         throw error;
       }
       
       toast.success('تم حذف المنتج من السلة');
     } catch (error) {
       console.error('Error removing from cart:', error);
-      toast.error('حدث خطأ في حذف المنتج');
+      const msg = String((error as any)?.message || '');
+      if (!msg.includes('RANDOM_FILAMENT_LOCKED')) {
+        toast.error('حدث خطأ في حذف المنتج');
+      }
     }
   };
 
