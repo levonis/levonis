@@ -103,6 +103,19 @@ const OrderDetail = () => {
     enabled: canQuery
   });
 
+  const { data: hasRandomFilament } = useQuery({
+    queryKey: ['order-has-rf', orderId],
+    queryFn: async () => {
+      if (!orderId) return false;
+      const { count } = await supabase
+        .from('random_filament_orders' as any)
+        .select('id', { count: 'exact', head: true })
+        .eq('order_id', orderId);
+      return (count || 0) > 0;
+    },
+    enabled: !!orderId,
+  });
+
   const handleCancelOrder = async () => {
     if (!orderId || isCancelling) return;
     setIsCancelling(true);
