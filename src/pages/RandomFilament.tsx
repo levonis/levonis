@@ -219,7 +219,7 @@ export default function RandomFilament() {
             <div
               className={`size-7 rounded-full flex items-center justify-center font-bold ${
                 step === s
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-transparent text-primary-foreground"
                   : "bg-muted text-muted-foreground"
               }`}
             >
