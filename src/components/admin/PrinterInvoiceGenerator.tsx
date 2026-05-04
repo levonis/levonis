@@ -327,8 +327,8 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         .not('buyer_user_id', 'is', null);
 
       // Source 2: completed orders containing printer products
-      const { data: printerOrders } = await supabase
-        .from('orders')
+      const { data: printerOrders } = await (supabase as any)
+        .from('orders_admin')
         .select(`
           id,
           order_number,
