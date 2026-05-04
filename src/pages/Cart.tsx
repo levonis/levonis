@@ -79,6 +79,35 @@ const Cart = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasBothActive]);
+
+  // Periodic stock re-check while user sits on the cart page.
+  // useCart.fetchCart() pulls live RF stock and auto-caps quantities, so a
+  // lightweight 30s refresh keeps the cart aligned with inventory without a
+  // manual reload. Pauses when the tab is hidden and resumes on visibility.
+  useEffect(() => {
+    if (!user?.id) return;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        if (typeof document !== 'undefined' && document.hidden) return;
+        try { refreshCart?.(); } catch {}
+      }, 30000);
+    };
+    const stop = () => {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    };
+    const onVisibility = () => {
+      if (document.hidden) { stop(); }
+      else { try { refreshCart?.(); } catch {} ; start(); }
+    };
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [user?.id, refreshCart]);
   const useWarrantyContrib = hardwareBenefitMode !== 'subscription';
   const useSubscriptionContrib = hardwareBenefitMode !== 'warranty';
 
