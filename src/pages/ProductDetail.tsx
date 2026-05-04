@@ -184,6 +184,20 @@ const ProductDetail = () => {
     enabled: !!product && !!product.category_id
   });
 
+  // Live direct prices for related products (so cards never leak base price)
+  const relatedLinkedIds = useMemo(
+    () => (relatedProducts || [])
+      .filter((p: any) => p.link_direct_commission_to_cod && (p.has_in_stock ?? false))
+      .map((p: any) => p.id),
+    [relatedProducts]
+  );
+  const { data: relatedLiveDirectMap } = useQuery({
+    queryKey: ['related-live-direct-prices', relatedLinkedIds],
+    queryFn: () => fetchLiveDirectSalePrices(relatedLinkedIds),
+    enabled: relatedLinkedIds.length > 0,
+    staleTime: 60 * 1000,
+  });
+
   const { data: notifySubscriptions } = useQuery({
     queryKey: ['stock-notify', product?.id, user?.id],
     queryFn: async () => {
