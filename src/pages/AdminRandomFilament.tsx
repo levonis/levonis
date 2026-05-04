@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Trash2, Plus, Save, Sparkles, Package2, Ban, ShieldX,
   Search, Check, Image as ImageIcon, Upload, AlertTriangle,
-  TrendingUp, Boxes, Pencil, Truck,
+  TrendingUp, Boxes, Pencil, Truck, Layers,
 } from "lucide-react";
 import WavyColors from "@/components/WavyColors";
 
