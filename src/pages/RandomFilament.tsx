@@ -289,7 +289,10 @@ export default function RandomFilament() {
                   {o.description_ar && (
                     <p className="text-xs text-muted-foreground line-clamp-2">{o.description_ar}</p>
                   )}
-                  <Badge variant="secondary">{Number(o.price_iqd).toLocaleString()} د.ع</Badge>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary">{Number(o.price_iqd).toLocaleString()} د.ع</Badge>
+                    <EligibilityBadges offerId={o.id} />
+                  </div>
                 </CardContent>
               </Card>
             ))}
