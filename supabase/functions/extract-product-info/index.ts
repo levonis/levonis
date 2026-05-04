@@ -1136,12 +1136,38 @@ serve(async (req) => {
     }
     
     // Validate URL can be parsed
+    let parsedUrl: URL;
     try {
-      new URL(url);
+      parsedUrl = new URL(url);
     } catch {
       return new Response(
         JSON.stringify({ success: false, error: 'صيغة الرابط غير صحيحة', requiresManualInput: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // SECURITY: SSRF protection — allowlist of trusted hostnames
+    const ALLOWED_DOMAINS = [
+      'taobao.com','tmall.com','tb.cn','m.tb.cn','m.taobao.com','detail.tmall.com',
+      '1688.com','m.1688.com','aliexpress.com','aliexpress.us','ae01.alicdn.com',
+      'alibaba.com','m.alibaba.com',
+      'amazon.com','amazon.ae','amazon.sa','a.co',
+      'bambulab.com','store.bambulab.com',
+      'creality.com','store.creality.com',
+      'anycubic.com','elegoo.com','prusa3d.com','prusaprinters.org',
+      'thingiverse.com','printables.com','makerworld.com','cults3d.com',
+      'shopify.com',
+    ];
+    const host = parsedUrl.hostname.toLowerCase();
+    const allowed = ALLOWED_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+    // Block private/loopback IPs explicitly
+    const isPrivate = /^(127\.|10\.|192\.168\.|169\.254\.|0\.|::1|fc[0-9a-f]{2}:|fe80:)/i.test(host)
+      || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+      || host === 'localhost' || host === 'metadata.google.internal';
+    if (isPrivate || !allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'النطاق غير مسموح به', requiresManualInput: true }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
