@@ -26,7 +26,7 @@ import { usePageTitle } from '@/island/usePageTitle';
 import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
-import { computeLinkedDirectSalePrice } from '@/lib/priceGuard';
+import { computeLinkedDirectSalePrice, ensurePriceIqd } from '@/lib/priceGuard';
 
 type SortKey =
   | 'default'
