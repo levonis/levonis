@@ -305,7 +305,21 @@ export default function RandomFilament() {
       })()}
 
       {step === "sale-type" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <>
+          {existingRfSaleType && (
+            <div className="mb-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm text-center">
+              لديك طلب فلمنت عشوائي من <strong>{existingRfSaleType === "direct" ? "البيع المباشر" : "الحجز المسبق"}</strong> في السلة.
+              يجب إتمام الطلب أولاً قبل إضافة نوع آخر.
+              <button
+                type="button"
+                className="block mx-auto mt-2 text-primary underline font-bold"
+                onClick={() => navigate("/cart")}
+              >
+                الذهاب إلى السلة
+              </button>
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
             onClick={() => handlePickSaleType("direct")}
