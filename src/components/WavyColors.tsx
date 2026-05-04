@@ -103,18 +103,25 @@ export default function WavyColors({
       ctx.fillStyle = "#0b0d12";
       ctx.fillRect(0, 0, w, h);
 
-      ctx.globalCompositeOperation = "screen";
+      ctx.globalCompositeOperation = "lighter";
       blobs.forEach((b) => {
         const cx = w * (0.5 + b.ax * Math.sin(tt * b.fx + b.phase));
         const cy = h * (0.5 + b.ay * Math.cos(tt * b.fy + b.phase * 1.3));
         const radius = Math.max(w, h) * b.r;
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-        g.addColorStop(0, b.color);
-        g.addColorStop(0.5, b.color);
-        g.addColorStop(1, b.color);
-        // Use globalAlpha for fade so we keep hsl() compatibility.
+        // Convert hsl(H S% L%) -> hsla() with alpha falloff so blobs blend softly.
+        const toAlpha = (col: string, a: number) => {
+          if (col.startsWith("hsl(") && !col.startsWith("hsla(")) {
+            return col.replace("hsl(", "hsla(").replace(")", ` / ${a})`);
+          }
+          // hex/rgb fallback: rely on globalAlpha at fill time
+          return col;
+        };
+        g.addColorStop(0, toAlpha(b.color, 0.85));
+        g.addColorStop(0.5, toAlpha(b.color, 0.35));
+        g.addColorStop(1, toAlpha(b.color, 0));
         ctx.save();
-        ctx.globalAlpha = 0.55;
+        ctx.globalAlpha = 0.9;
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, w, h);
         ctx.restore();
