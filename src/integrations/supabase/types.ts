@@ -9411,6 +9411,7 @@ export type Database = {
         Row: {
           allowed_product_ids: string[]
           category_id: string | null
+          category_ids: string[]
           created_at: string
           description_ar: string | null
           display_order: number
@@ -9425,6 +9426,7 @@ export type Database = {
         Insert: {
           allowed_product_ids?: string[]
           category_id?: string | null
+          category_ids?: string[]
           created_at?: string
           description_ar?: string | null
           display_order?: number
@@ -9439,6 +9441,7 @@ export type Database = {
         Update: {
           allowed_product_ids?: string[]
           category_id?: string | null
+          category_ids?: string[]
           created_at?: string
           description_ar?: string | null
           display_order?: number
@@ -13322,6 +13325,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      rf_offer_stock_summary: { Args: { p_offer_id: string }; Returns: Json }
       search_users_for_gift: {
         Args: { p_query: string }
         Returns: {
