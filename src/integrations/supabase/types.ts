@@ -12954,6 +12954,27 @@ export type Database = {
           },
         ]
       }
+      merchant_debt_self: {
+        Row: {
+          debt_suspended: boolean | null
+          debt_suspended_at: string | null
+          id: string | null
+          total_debt: number | null
+        }
+        Insert: {
+          debt_suspended?: boolean | null
+          debt_suspended_at?: string | null
+          id?: string | null
+          total_debt?: number | null
+        }
+        Update: {
+          debt_suspended?: boolean | null
+          debt_suspended_at?: string | null
+          id?: string | null
+          total_debt?: number | null
+        }
+        Relationships: []
+      }
       merchant_rating_stats: {
         Row: {
           average_rating: number | null
