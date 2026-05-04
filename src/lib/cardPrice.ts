@@ -107,46 +107,46 @@ export function computeUnifiedCardOriginalPrice(
 }
 
 /**
- * Dev-only parity check: warns if the card price disagrees with what the
- * detail page would show for the cheapest available option. Caller passes
- * the same product + state used by the detail page.
+ * Dev-only parity check.
  *
- * This is the runtime safety net — if a future change causes drift, the
- * console will scream.
+ * Invariant: the price shown on the card MUST be ≤ the price shown on the
+ * detail page for the currently-selected option (the card promises the
+ * cheapest possible). If the card ever shows a price *higher* than what
+ * the detail page actually charges for some option, that's a leak — warn.
+ *
+ * Same invariant applies to the original (strikethrough) price.
  */
 export function assertCardDetailParity(
   product: any,
   usdToIqd: number,
   codDefaults: any,
   liveDirectMap: Map<string, number> | null | undefined,
-  detailFinalPriceForCheapest: number,
-  detailFinalOriginalForCheapest: number | null,
+  detailFinalPrice: number,
+  detailFinalOriginal: number | null,
 ): void {
   if (!product) return;
-  // Only run in dev-mode browsers (Vite injects import.meta.env.DEV).
-  // In tests / SSR we still allow it; it just warns.
   try {
     // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta?.env && import.meta.env.DEV !== true && import.meta.env.MODE !== 'test') return;
+    const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : null;
+    if (env && env.DEV !== true && env.MODE !== 'test') return;
   } catch {}
 
   const cardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
-  if (cardPrice !== detailFinalPriceForCheapest) {
+  if (cardPrice > detailFinalPrice + 1) {
     // eslint-disable-next-line no-console
-    console.warn(
-      '[Price Parity] card price ≠ detail cheapest',
-      { product: product?.slug || product?.id, cardPrice, detailFinalPriceForCheapest },
-    );
+    console.warn('[Price Parity] card overcharges vs detail', {
+      product: product?.slug || product?.id,
+      cardPrice,
+      detailFinalPrice,
+    });
   }
   const cardOrig = computeUnifiedCardOriginalPrice(product, usdToIqd, codDefaults, liveDirectMap);
-  const expectedOrig = detailFinalOriginalForCheapest != null && detailFinalOriginalForCheapest > detailFinalPriceForCheapest
-    ? detailFinalOriginalForCheapest
-    : null;
-  if (cardOrig !== expectedOrig) {
+  if (cardOrig != null && detailFinalOriginal != null && cardOrig > detailFinalOriginal + 1) {
     // eslint-disable-next-line no-console
-    console.warn(
-      '[Price Parity] card original ≠ detail original',
-      { product: product?.slug || product?.id, cardOrig, expectedOrig },
-    );
+    console.warn('[Price Parity] card original overcharges vs detail', {
+      product: product?.slug || product?.id,
+      cardOrig,
+      detailFinalOriginal,
+    });
   }
 }
