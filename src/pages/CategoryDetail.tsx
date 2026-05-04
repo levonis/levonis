@@ -563,32 +563,27 @@ const CategoryDetail = () => {
                 {otherProducts.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
                     {otherProducts.map((product) => {
+                      const finalCardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
                       const shouldRoundUp = (product as any).round_up_price === true;
                       const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
-                      const cardPrice = roundIfNeeded(ensurePriceIqd(Number(product.price), (product as any).price_usd, usdToIqd));
-                      const cardOriginal = product.original_price
+                      const rawOriginal = product.original_price
                         ? roundIfNeeded(ensurePriceIqd(Number(product.original_price), (product as any).price_usd, usdToIqd))
                         : undefined;
-                      const liveDirect = (product as any).link_direct_commission_to_cod
-                        ? computeLinkedDirectSalePrice(
-                            product as any,
-                            { usd_to_iqd_rate: usdToIqd } as any,
-                            codDefaults as any,
-                          )
-                        : null;
+                      // Only show original if it's actually higher than the final shown price
+                      const cardOriginal = rawOriginal && rawOriginal > finalCardPrice ? rawOriginal : undefined;
                       return (
                         <FloatingProductCard
                           key={product.id}
                           id={product.id}
                           name={product.name}
                           nameAr={product.name_ar}
-                          price={cardPrice}
+                          price={finalCardPrice}
                           originalPrice={cardOriginal}
                           imageUrl={product.image_url || undefined}
                           currency={product.currency || undefined}
                           slug={product.slug}
                           hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
-                          directSalePriceLive={liveDirect != null ? roundIfNeeded(liveDirect) : null}
+                          directSalePriceLive={null}
                           highlightQuery={searchQ}
                         />
                       );
