@@ -92,6 +92,38 @@ export default function AdminRandomFilament() {
     },
   });
 
+  // Realtime: refresh stock summaries + dialog product list whenever a random
+  // filament order is placed OR a product's colors JSON changes (server RPC
+  // mutates products.colors when deducting direct-sale stock).
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-rf-sync")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "random_filament_orders" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["rf-offer-summary"] });
+          qc.invalidateQueries({ queryKey: ["rf-dialog-products"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "products" },
+        (payload: any) => {
+          const oldColors = JSON.stringify(payload.old?.colors ?? null);
+          const newColors = JSON.stringify(payload.new?.colors ?? null);
+          if (oldColors !== newColors) {
+            qc.invalidateQueries({ queryKey: ["rf-offer-summary"] });
+            qc.invalidateQueries({ queryKey: ["rf-dialog-products"] });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   const toggleSectionEnabled = async (v: boolean) => {
     if (!settings?.id) return;
     const { error } = await (supabase as any)
