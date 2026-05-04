@@ -144,7 +144,7 @@ const Cart = () => {
   const { data: deliveryMethods = [] } = useQuery({
     queryKey: ['delivery-methods'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('delivery_methods').select('*').eq('is_active', true).order('display_order');
+      const { data, error } = await supabase.from('delivery_methods').select('id, method_key, name_ar, name_en, name_ku, description_ar, description_en, description_ku, base_price, is_active, display_order, icon, base_price_category_id, base_price_units_per_delivery, free_delivery_enabled, free_delivery_min_order, created_at, updated_at').eq('is_active', true).order('display_order');
       if (error) throw error;
       return data;
     },
