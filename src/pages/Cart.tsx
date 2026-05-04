@@ -2616,6 +2616,7 @@ const Cart = () => {
                   <Hash className="ml-2 h-4 w-4" />
                   {t('cart_code')}
                 </Button>
+                {items.some((i: any) => !i.is_random_filament && !i.is_locked) && (
                 <Button
                   variant="outline"
                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive"
@@ -2624,6 +2625,7 @@ const Cart = () => {
                   <Trash2 className="ml-2 h-4 w-4" />
                   {t('cart_clear')}
                 </Button>
+                )}
               </div>
             </div>
 
