@@ -421,7 +421,7 @@ function EligibleProductsDialog({
       const allowed: string[] = offer.allowed_product_ids || [];
       let q = supabase
         .from("products")
-        .select("id, name_ar, image_url, in_stock, colors")
+        .select("id, name_ar, image_url, in_stock, colors, product_options(id, name_ar, available_for_direct_sale, available_for_pre_order, stock_quantity, in_stock)")
         .order("name_ar")
         .limit(200);
       if (catIds.length) q = q.in("category_id", catIds);
@@ -432,6 +432,7 @@ function EligibleProductsDialog({
       return list
         .map((p: any) => {
           const colors = Array.isArray(p.colors) ? p.colors : [];
+          const opts = Array.isArray(p.product_options) ? p.product_options : [];
           const eligibleColors = colors.filter((c: any) => {
             if (isDirect) {
               if (c?.available_for_direct_sale !== true) return false;
@@ -440,7 +441,15 @@ function EligibleProductsDialog({
             }
             return c?.available_for_pre_order !== false;
           });
-          return { ...p, eligibleColors };
+          const eligibleOptions = opts.filter((o: any) => {
+            if (isDirect) {
+              if (o?.available_for_direct_sale !== true) return false;
+              if (o?.in_stock === false) return false;
+              return o?.stock_quantity == null || Number(o.stock_quantity) > 0;
+            }
+            return o?.available_for_pre_order !== false;
+          });
+          return { ...p, eligibleColors, eligibleOptions };
         })
         .filter((p: any) => (isDirect ? p.in_stock !== false : true) && p.eligibleColors.length > 0);
     },
