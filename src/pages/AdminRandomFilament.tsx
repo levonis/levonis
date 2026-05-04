@@ -478,8 +478,8 @@ function OfferDialog({
 
   return (
     <Dialog open={!!offer} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="!overflow-hidden !max-h-none max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="!overflow-hidden !max-h-[90vh] max-w-3xl flex flex-col p-0">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
             {draft.id ? "تعديل عرض" : "إضافة عرض جديد"}
@@ -489,8 +489,8 @@ function OfferDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh]">
-          <div className="space-y-4 px-1 pb-2">
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="space-y-4 px-1 pb-4">
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">اسم العرض *</Label>
