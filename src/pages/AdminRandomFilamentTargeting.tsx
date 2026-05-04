@@ -283,12 +283,19 @@ function OfferTargetingRow({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">
                 {filteredProducts.map((p: any) => {
                   const isOn = allowed.includes(p.id);
+                  const w = weights[p.id]?.weight;
+                  const hasCustomWeights =
+                    !!weights[p.id] &&
+                    (w !== undefined ||
+                      Object.keys(weights[p.id]?.colors || {}).length > 0 ||
+                      Object.keys(weights[p.id]?.options || {}).length > 0);
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      type="button"
                       onClick={() => toggleProduct(p.id)}
-                      className={`relative rounded-md border p-2 text-right transition ${
+                      role="button"
+                      tabIndex={0}
+                      className={`relative rounded-md border p-2 text-right transition cursor-pointer ${
                         isOn ? "border-primary bg-primary/10" : "hover:border-primary/50"
                       }`}
                     >
@@ -303,7 +310,26 @@ function OfferTargetingRow({
                       {isOn && (
                         <Check className="absolute top-1 left-1 size-4 text-primary bg-background rounded-full p-0.5" />
                       )}
-                    </button>
+                      {isOn && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }}
+                          title="إعدادات الأوزان"
+                          className={`absolute bottom-1 left-1 size-6 rounded-full flex items-center justify-center transition ${
+                            hasCustomWeights
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background/80 hover:bg-primary hover:text-primary-foreground border"
+                          }`}
+                        >
+                          <Settings2 className="size-3.5" />
+                        </button>
+                      )}
+                      {hasCustomWeights && w !== undefined && (
+                        <Badge variant="outline" className="absolute top-1 right-1 text-[9px] px-1 py-0 gap-0.5">
+                          <Sliders className="size-2.5" />×{w}
+                        </Badge>
+                      )}
+                    </div>
                   );
                 })}
                 {filteredProducts.length === 0 && (
