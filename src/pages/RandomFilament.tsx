@@ -487,7 +487,7 @@ function EligibleProductsDialog({
                       key={i}
                       title={c?.name || ""}
                       className="size-4 rounded-full border"
-                      style={{ background: c?.hex || c?.color || "#888" }}
+                      style={{ background: c?.hex_code || c?.hex || c?.color || "#888" }}
                     />
                   ))}
                   {p.eligibleColors.length > 8 && (
