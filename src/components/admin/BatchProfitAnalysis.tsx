@@ -60,17 +60,31 @@ const BatchProfitAnalysis = ({ usdToIqdRate }: BatchProfitAnalysisProps) => {
   const { data: allOrders = [] } = useQuery({
     queryKey: ['batch-all-orders'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *, order_type,
-          profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-          order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, selected_color)
-        `)
+      const { data: ordersData, error } = await (supabase as any)
+        .from('orders_admin')
+        .select('*, order_type')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: true });
       if (error) throw error;
-      return data || [];
+      const rows = (ordersData as any[]) || [];
+      const orderIds = rows.map((o) => o.id);
+      const userIds = Array.from(new Set(rows.map((o) => o.user_id).filter(Boolean)));
+      const [itemsRes, profilesRes] = await Promise.all([
+        orderIds.length
+          ? (supabase as any).from('order_items_admin').select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, selected_color').in('order_id', orderIds)
+          : Promise.resolve({ data: [] }),
+        userIds.length
+          ? supabase.from('profiles').select('id, username, full_name').in('id', userIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+      const itemsByOrder = new Map<string, any[]>();
+      ((itemsRes.data as any[]) || []).forEach((it: any) => {
+        const arr = itemsByOrder.get(it.order_id) || [];
+        arr.push(it); itemsByOrder.set(it.order_id, arr);
+      });
+      const profById = new Map<string, any>();
+      ((profilesRes.data as any[]) || []).forEach((p: any) => profById.set(p.id, p));
+      return rows.map((o) => ({ ...o, profile: profById.get(o.user_id) || null, order_items: itemsByOrder.get(o.id) || [] }));
     },
     staleTime: 5 * 60 * 1000,
   });
