@@ -296,7 +296,12 @@ function OfferCard({
       const { data } = await (supabase as any).rpc("rf_offer_stock_summary", {
         p_offer_id: offer.id,
       });
-      return data as { direct_stock_total: number; sales_count: number };
+      return data as {
+        direct_stock_total: number;
+        sales_count: number;
+        eligible_products: number;
+        eligible_colors: number;
+      };
     },
     staleTime: 30_000,
   });
@@ -304,7 +309,10 @@ function OfferCard({
   const isDirect = offer.sale_type === "direct";
   const stock = Number(summary?.direct_stock_total ?? 0);
   const sales = Number(summary?.sales_count ?? 0);
+  const eligibleProducts = Number(summary?.eligible_products ?? 0);
+  const eligibleColors = Number(summary?.eligible_colors ?? 0);
   const isOutOfStock = isDirect && stock <= 0;
+  const whitelistCount = offer.allowed_product_ids?.length || 0;
 
   return (
     <Card className={`glass-panel overflow-hidden ${isOutOfStock ? "opacity-80" : ""}`}>
@@ -328,8 +336,23 @@ function OfferCard({
           </Badge>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <Stat icon={<Package2 className="size-3.5" />} label="منتجات" value={offer.allowed_product_ids?.length || 0} />
+        {/* Eligibility row — visible BEFORE order placement */}
+        <div className="grid grid-cols-2 gap-2 text-center">
+          <Stat
+            icon={<Package2 className="size-3.5" />}
+            label={`مؤهل / مسموح`}
+            value={`${eligibleProducts} / ${whitelistCount || "∞"}`}
+            accent={eligibleProducts > 0 ? "ok" : "bad"}
+          />
+          <Stat
+            icon={<Sparkles className="size-3.5" />}
+            label="ألوان مؤهلة"
+            value={eligibleColors}
+            accent={eligibleColors > 0 ? "ok" : "bad"}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-center">
           {isDirect ? (
             <Stat icon={<Boxes className="size-3.5" />} label="المخزون" value={stock} accent={stock > 0 ? "ok" : "bad"} />
           ) : (
