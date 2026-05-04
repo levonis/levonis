@@ -63,13 +63,14 @@ Deno.serve(async (req) => {
 
     const totalCost = machine.ticket_cost * spin_count;
 
-    // 2. Check user tickets
-    const { data: ticketData } = await supabase
-      .from("user_tickets").select("ticket_count").eq("user_id", user.id).single();
-    
-    const currentTickets = ticketData?.ticket_count ?? 0;
-    if (currentTickets < totalCost) {
-      return new Response(JSON.stringify({ error: "Not enough tickets", required: totalCost, available: currentTickets }), {
+    // 2. Atomically deduct tickets up-front (with row-level locking inside the RPC).
+    // Prevents race conditions where concurrent spins double-spend the same balance.
+    const { data: deductOk, error: deductErr } = await supabase.rpc("deduct_user_tickets", {
+      p_user_id: user.id,
+      p_amount: totalCost,
+    });
+    if (deductErr || !deductOk) {
+      return new Response(JSON.stringify({ error: "Not enough tickets", required: totalCost }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -289,17 +290,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 9. Deduct tickets
-    await supabase
-      .from("user_tickets")
-      .update({ ticket_count: currentTickets - totalCost })
-      .eq("user_id", user.id);
+    // 9. Tickets already deducted atomically at the top — fetch remaining for response.
+    const { data: remainingTicketsData } = await supabase
+      .from("user_tickets").select("ticket_count").eq("user_id", user.id).single();
 
     return new Response(JSON.stringify({
       success: true,
       results,
       tickets_spent: totalCost,
-      remaining_tickets: currentTickets - totalCost,
+      remaining_tickets: remainingTicketsData?.ticket_count ?? 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
