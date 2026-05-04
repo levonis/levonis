@@ -33,95 +33,66 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get listing
+    // Atomic purchase via SECURITY DEFINER RPC (row locks + transactional)
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: rpcRes, error: rpcErr } = await userClient.rpc("gacha_market_buy_atomic", {
+      p_listing_id: listing_id,
+    });
+
+    if (rpcErr || !rpcRes) {
+      console.error("gacha_market_buy_atomic error:", rpcErr);
+      return new Response(JSON.stringify({ error: "Purchase failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const result = rpcRes as Record<string, unknown>;
+    if (!result.success) {
+      const errKey = String(result.error || "error");
+      const map: Record<string, [number, string]> = {
+        unauthorized: [401, "Unauthorized"],
+        listing_not_found: [404, "Listing not found or sold"],
+        cannot_buy_own: [400, "Cannot buy your own listing"],
+        insufficient_points: [400, "Not enough points"],
+      };
+      const [status, msg] = map[errKey] ?? [400, errKey];
+      return new Response(JSON.stringify({ error: msg, ...result }), {
+        status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Side-effects (non-atomic but safe): get listing/doll for record keeping
     const { data: listing } = await supabase
       .from("gacha_marketplace")
       .select("*, gacha_dolls(*)")
       .eq("id", listing_id)
-      .eq("status", "active")
       .single();
+    const doll = listing?.gacha_dolls;
+    const sellerId = result.seller_id as string;
+    const fee = Number(result.fee || 0);
+    const sellerReceives = Number(result.seller_receives || 0);
 
-    if (!listing) {
-      return new Response(JSON.stringify({ error: "Listing not found or sold" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (listing.seller_id === user.id) {
-      return new Response(JSON.stringify({ error: "Cannot buy your own listing" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check buyer points
-    const { data: buyerPts } = await supabase
-      .from("user_points").select("available_points").eq("user_id", user.id).single();
-    
-    const buyerPoints = buyerPts?.available_points ?? 0;
-    if (buyerPoints < listing.asking_price) {
-      return new Response(JSON.stringify({ error: "Not enough points", required: listing.asking_price, available: buyerPoints }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get fee
-    const { data: feeSetting } = await supabase
-      .from("gacha_settings").select("value").eq("key", "marketplace_fee_percent").single();
-    const feePercent = Number(feeSetting?.value ?? 5);
-    const fee = Math.round(listing.asking_price * feePercent / 100);
-    const sellerReceives = listing.asking_price - fee;
-
-    // Deduct buyer points
-    await supabase
-      .from("user_points")
-      .update({ available_points: buyerPoints - listing.asking_price })
-      .eq("user_id", user.id);
-
-    // Add seller points
-    const { data: sellerPts } = await supabase
-      .from("user_points").select("available_points").eq("user_id", listing.seller_id).single();
-    if (sellerPts) {
-      await supabase
-        .from("user_points")
-        .update({ available_points: sellerPts.available_points + sellerReceives })
-        .eq("user_id", listing.seller_id);
-    }
-
-    // Transfer inventory: update existing item to buyer
-    await supabase
-      .from("gacha_user_inventory")
-      .update({ user_id: user.id, is_listed: false, acquired_from: "marketplace", acquired_price: listing.asking_price })
-      .eq("id", listing.inventory_item_id);
-
-    // Mark listing as sold
-    await supabase
-      .from("gacha_marketplace")
-      .update({ status: "sold", buyer_id: user.id, sold_at: new Date().toISOString() })
-      .eq("id", listing_id);
-
-    // Update doll demand
-    const doll = listing.gacha_dolls;
     if (doll) {
-      await supabase
-        .from("gacha_dolls")
+      await supabase.from("gacha_dolls")
         .update({ demand_score: (doll.demand_score ?? 0) + 1 })
         .eq("id", doll.id);
     }
 
-    // Record transactions
     await supabase.from("gacha_transactions").insert([
       {
         user_id: user.id,
         transaction_type: "market_buy",
-        amount: -listing.asking_price,
+        amount: -Number(result.price_paid || 0),
         reference_type: "listing",
         reference_id: listing_id,
-        counterparty_id: listing.seller_id,
+        counterparty_id: sellerId,
         description: `Bought: ${doll?.name}`,
         description_ar: `شراء: ${doll?.name_ar}`,
       },
       {
-        user_id: listing.seller_id,
+        user_id: sellerId,
         transaction_type: "market_sell",
         amount: sellerReceives,
         reference_type: "listing",
@@ -132,20 +103,22 @@ Deno.serve(async (req) => {
       },
     ]);
 
-    // Price history snapshot
-    await supabase.from("gacha_price_history").insert({
-      doll_id: listing.doll_id,
-      price: listing.asking_price,
-      demand_score: doll?.demand_score,
-      supply_count: doll?.supply_count,
-    });
+    if (doll) {
+      await supabase.from("gacha_price_history").insert({
+        doll_id: doll.id,
+        price: Number(result.price_paid || 0),
+        demand_score: doll.demand_score,
+        supply_count: doll.supply_count,
+      });
+    }
 
     return new Response(JSON.stringify({
       success: true,
-      price_paid: listing.asking_price,
+      price_paid: Number(result.price_paid || 0),
       fee,
-      remaining_points: buyerPoints - listing.asking_price,
+      remaining_points: Number(result.remaining_points || 0),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
 
   } catch (err) {
     console.error("Gacha market buy error:", err);
