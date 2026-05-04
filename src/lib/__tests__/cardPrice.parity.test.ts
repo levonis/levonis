@@ -14,6 +14,7 @@ describe('computeUnifiedCardPrice', () => {
       price: 200000,
       direct_sale_price: 150000,
       has_in_stock: true,
+      direct_stock: 5,
     };
     expect(computeUnifiedCardPrice(p, USD, null)).toBe(150000);
   });
