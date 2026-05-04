@@ -1,0 +1,1 @@
+ALTER FUNCTION public._rf_weighted_pick(jsonb) SET search_path = public;
