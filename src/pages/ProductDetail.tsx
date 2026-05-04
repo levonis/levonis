@@ -1365,15 +1365,35 @@ const ProductDetail = () => {
                 <div>
                   <h2 className="text-lg font-black text-foreground mb-4">{t('product_related')}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {relatedProducts.map((rp: any) => (
-                      <ProductCard key={rp.id} id={rp.id} name={rp.name} nameAr={rp.name_ar}
-                        description={rp.description} descriptionAr={rp.description_ar}
-                        price={Number(rp.price)} originalPrice={rp.original_price ? Number(rp.original_price) : undefined}
-                        imageUrl={rp.image_url} images={rp.images}
-                        currency={rp.currency || t('pd_currency_iqd')} slug={rp.slug}
-                        hasDirectSale={(rp.has_in_stock ?? false) && !isAllDirectStockDepleted(rp)}
-                        cardDiscounts={rp.card_discounts} />
-                    ))}
+                    {relatedProducts.map((rp: any) => {
+                      const shouldRoundUp = rp?.round_up_price === true;
+                      const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
+                      const hasDirect = rp?.has_in_stock ?? false;
+                      let finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.price || 0), rp.price_usd, usdToIqd));
+                      if (hasDirect) {
+                        const fromServer = relatedLiveDirectMap?.get(rp.id);
+                        if (fromServer != null && fromServer > 0) {
+                          finalPrice = roundIfNeeded(fromServer);
+                        } else if (rp.link_direct_commission_to_cod && codDefaults) {
+                          const live = computeLinkedDirectSalePrice(rp, { usd_to_iqd_rate: usdToIqd } as any, codDefaults as any);
+                          if (live != null && live > 0) finalPrice = roundIfNeeded(live);
+                          else if (rp.direct_sale_price != null) finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd));
+                        } else if (rp.direct_sale_price != null) {
+                          finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd));
+                        }
+                      }
+                      const rawOrig = rp.original_price ? roundIfNeeded(ensurePriceIqd(Number(rp.original_price), rp.price_usd, usdToIqd)) : 0;
+                      const showOrig = rawOrig > finalPrice ? rawOrig : undefined;
+                      return (
+                        <ProductCard key={rp.id} id={rp.id} name={rp.name} nameAr={rp.name_ar}
+                          description={rp.description} descriptionAr={rp.description_ar}
+                          price={finalPrice} originalPrice={showOrig}
+                          imageUrl={rp.image_url} images={rp.images}
+                          currency={rp.currency || t('pd_currency_iqd')} slug={rp.slug}
+                          hasDirectSale={hasDirect && !isAllDirectStockDepleted(rp)}
+                          cardDiscounts={rp.card_discounts} />
+                      );
+                    })}
                   </div>
                 </div>
               )}
