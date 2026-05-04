@@ -553,7 +553,7 @@ const CategoryDetail = () => {
                         id={product.id}
                         name={product.name}
                         nameAr={product.name_ar}
-                        price={Number(product.price)}
+                        price={ensurePriceIqd(Number(product.price), (product as any).price_usd, usdToIqd)}
                         originalPrice={product.original_price ? Number(product.original_price) : undefined}
                         imageUrl={product.image_url || undefined}
                         currency={product.currency || undefined}
