@@ -28,6 +28,49 @@ import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 
+/**
+ * Unified price for product cards — MUST match what the product detail page shows
+ * for the default (direct) sale type, so users never see a price leak between card and details.
+ *
+ * Priority:
+ *  1. Server-computed live direct-sale price (when linked to global COD %)
+ *  2. Locally computed live direct-sale price (when COD defaults are loaded)
+ *  3. Stored direct_sale_price (guarded for USD→IQD)
+ *  4. Stored base price (guarded for USD→IQD)
+ * Then applies round_up_price (250 IQD) if the product flag is set.
+ */
+function computeUnifiedCardPrice(
+  product: any,
+  usdToIqd: number,
+  codDefaults: any,
+  liveDirectMap: Map<string, number> | undefined,
+): number {
+  const shouldRoundUp = product?.round_up_price === true;
+  const roundIfNeeded = (n: number) => (shouldRoundUp ? Math.ceil(n / 250) * 250 : n);
+  const hasDirect = (product?.has_in_stock ?? false);
+
+  if (hasDirect) {
+    // 1. Server-computed live price
+    const fromServer = liveDirectMap?.get(product.id);
+    if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
+    // 2. Local fallback
+    if (product?.link_direct_commission_to_cod && codDefaults) {
+      const liveDirect = computeLinkedDirectSalePrice(
+        product,
+        { usd_to_iqd_rate: usdToIqd } as any,
+        codDefaults,
+      );
+      if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
+    }
+    // 3. Stored direct_sale_price
+    if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
+      return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
+    }
+  }
+  // 4. Base price fallback
+  return roundIfNeeded(ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd));
+}
+
 type SortKey =
   | 'default'
   | 'price-asc'
