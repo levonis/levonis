@@ -281,7 +281,7 @@ export default function RandomFilament() {
                   {o.image_url ? (
                     <img src={o.image_url} alt={o.title_ar} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <WavyColors />
+                    <WavyColors seed={o.id} />
                   )}
                 </div>
                 <CardContent className="p-4 space-y-2">
