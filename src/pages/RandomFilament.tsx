@@ -94,12 +94,17 @@ export default function RandomFilament() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("random_filament_offers")
-        .select("id, sale_type, category_id, title_ar, description_ar, image_url, price_iqd, display_order")
+        .select("id, sale_type, category_id, category_ids, title_ar, description_ar, image_url, price_iqd, display_order, allowed_product_ids")
         .eq("sale_type", saleType)
         .eq("enabled", true)
-        .or(`category_id.is.null,category_id.eq.${categoryId}`)
         .order("display_order");
-      return (data || []) as Offer[];
+      const list = (data || []) as any[];
+      // filter offers that include this category (new array or legacy single)
+      return list.filter((o) =>
+        (Array.isArray(o.category_ids) && o.category_ids.length > 0
+          ? o.category_ids.includes(categoryId)
+          : (o.category_id == null || o.category_id === categoryId))
+      ) as Offer[];
     },
   });
 
@@ -140,8 +145,8 @@ export default function RandomFilament() {
         SECTION_DISABLED: "القسم متوقف حالياً",
         CATEGORY_NOT_ALLOWED: "هذه الفئة غير مفعّلة",
         OFFER_NOT_FOUND: "العرض غير متاح",
-        NO_PRODUCT_AVAILABLE: "لا توجد منتجات متاحة في هذه الفئة",
-        NO_COLOR_AVAILABLE: "لا توجد ألوان متاحة حالياً",
+        NO_PRODUCT_AVAILABLE: "انتهى هذا العرض — لا منتجات متاحة حالياً",
+        NO_COLOR_AVAILABLE: "انتهى هذا العرض — لا ألوان متاحة حالياً",
         PRICE_NOT_CONFIGURED: "السعر غير مضبوط من الإدارة",
       };
       const key = Object.keys(map).find((k) => msg.includes(k));

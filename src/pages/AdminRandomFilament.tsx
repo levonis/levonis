@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -10,23 +10,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Trash2, Plus, Save, Sparkles, Settings, Package2, Ban, Filter,
-  Truck, ClipboardList, ShieldX, Search, Check,
+  Trash2, Plus, Save, Sparkles, Package2, Ban, ShieldX,
+  Search, Check, Image as ImageIcon, Upload, AlertTriangle,
+  TrendingUp, Boxes, Pencil, Truck,
 } from "lucide-react";
 import WavyColors from "@/components/WavyColors";
 
-const PRINTING_MATERIALS_ID = "c3177652-b079-46a5-9435-f641e4c5fd58";
-
+type SaleType = "direct" | "preorder";
 type Offer = {
-  id?: string;
-  sale_type: "direct" | "preorder";
+  id: string;
+  sale_type: SaleType;
   category_id: string | null;
+  category_ids: string[];
   title_ar: string;
   description_ar: string | null;
   image_url: string | null;
@@ -36,13 +39,23 @@ type Offer = {
   allowed_product_ids: string[];
 };
 
+const PRINTING_MATERIALS_ID = "c3177652-b079-46a5-9435-f641e4c5fd58";
+
+const blankOffer = (): Partial<Offer> => ({
+  sale_type: "direct",
+  title_ar: "",
+  description_ar: "",
+  image_url: null,
+  price_iqd: 0,
+  display_order: 0,
+  enabled: true,
+  category_ids: [],
+  allowed_product_ids: [],
+});
+
 export default function AdminRandomFilament() {
   const qc = useQueryClient();
-  const [enabled, setEnabled] = useState(false);
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [productPickerFor, setProductPickerFor] = useState<Offer | null>(null);
+  const [editing, setEditing] = useState<Partial<Offer> | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: ["admin-rf-settings"],
@@ -50,26 +63,6 @@ export default function AdminRandomFilament() {
       const { data } = await (supabase as any)
         .from("random_filament_settings").select("*").limit(1).maybeSingle();
       return data;
-    },
-  });
-
-  useEffect(() => {
-    if (!settings) return;
-    setEnabled(!!settings.enabled);
-    setSelectedCats(settings.category_ids || []);
-    setTitle(settings.title_ar || "");
-    setDesc(settings.description_ar || "");
-  }, [settings]);
-
-  const { data: categories } = useQuery({
-    queryKey: ["admin-rf-printing-categories"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("categories")
-        .select("id, name_ar")
-        .eq("main_section_id", PRINTING_MATERIALS_ID)
-        .order("name_ar");
-      return data || [];
     },
   });
 
@@ -83,53 +76,31 @@ export default function AdminRandomFilament() {
     },
   });
 
-  const { data: orders } = useQuery({
-    queryKey: ["admin-rf-orders"],
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("random_filament_orders")
-        .select("id, user_id, sale_type, selected_color, price_iqd, revealed_at, created_at, order_id, products(name_ar), categories(name_ar)")
-        .order("created_at", { ascending: false }).limit(200);
-      return data || [];
-    },
-  });
-
   const { data: bans } = useQuery({
     queryKey: ["admin-rf-bans"],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("random_filament_bans").select("user_id, reason, banned_at")
+      const { data: banRows } = await (supabase as any)
+        .from("random_filament_bans")
+        .select("user_id, reason, banned_at")
         .order("banned_at", { ascending: false });
-      return data || [];
+      const ids = (banRows || []).map((b: any) => b.user_id);
+      if (!ids.length) return [];
+      const { data: profs } = await supabase
+        .from("profiles").select("id, full_name, email").in("id", ids);
+      const map = new Map((profs || []).map((p: any) => [p.id, p]));
+      return (banRows || []).map((b: any) => ({ ...b, profile: map.get(b.user_id) || null }));
     },
   });
 
-  const saveSettings = async () => {
+  const toggleSectionEnabled = async (v: boolean) => {
     if (!settings?.id) return;
     const { error } = await (supabase as any)
-      .from("random_filament_settings")
-      .update({ enabled, category_ids: selectedCats, title_ar: title, description_ar: desc })
-      .eq("id", settings.id);
-    if (error) { toast.error("فشل الحفظ"); return; }
-    toast.success("تم الحفظ");
+      .from("random_filament_settings").update({ enabled: v }).eq("id", settings.id);
+    if (error) { toast.error("فشل"); return; }
+    toast.success(v ? "القسم مفعّل" : "القسم متوقف");
     qc.invalidateQueries({ queryKey: ["admin-rf-settings"] });
     qc.invalidateQueries({ queryKey: ["random-filament-settings-public"] });
     qc.invalidateQueries({ queryKey: ["random-filament-settings-page"] });
-  };
-
-  const addOffer = async (sale_type: "direct" | "preorder") => {
-    const { error } = await (supabase as any).from("random_filament_offers").insert({
-      sale_type, title_ar: "عرض جديد", price_iqd: 0,
-      display_order: (offers?.length || 0) + 1, allowed_product_ids: [],
-    });
-    if (error) toast.error("فشل الإضافة");
-    else { toast.success("أُضيف عرض"); refetchOffers(); }
-  };
-
-  const updateOffer = async (id: string, patch: Partial<Offer>) => {
-    const { error } = await (supabase as any).from("random_filament_offers").update(patch).eq("id", id);
-    if (error) toast.error("فشل التحديث");
-    else { refetchOffers(); qc.invalidateQueries({ queryKey: ["rf-offers-public"] }); }
   };
 
   const deleteOffer = async (id: string) => {
@@ -139,25 +110,19 @@ export default function AdminRandomFilament() {
     else { toast.success("حُذف"); refetchOffers(); }
   };
 
+  const toggleOfferEnabled = async (id: string, v: boolean) => {
+    const { error } = await (supabase as any)
+      .from("random_filament_offers").update({ enabled: v }).eq("id", id);
+    if (error) toast.error("فشل التحديث");
+    else refetchOffers();
+  };
+
   const removeBan = async (uid: string) => {
-    const { error } = await (supabase as any).from("random_filament_bans").delete().eq("user_id", uid);
+    const { error } = await (supabase as any)
+      .from("random_filament_bans").delete().eq("user_id", uid);
     if (error) toast.error("فشل");
     else { toast.success("تم رفع الحظر"); qc.invalidateQueries({ queryKey: ["admin-rf-bans"] }); }
   };
-
-  const toggleCat = (id: string) =>
-    setSelectedCats((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-
-  const stats = useMemo(() => {
-    const total = orders?.length || 0;
-    const paid = (orders || []).filter((o: any) => !!o.order_id).length;
-    return {
-      offers: offers?.length || 0,
-      orders: total,
-      paid,
-      bans: bans?.length || 0,
-    };
-  }, [offers, orders, bans]);
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
@@ -166,222 +131,87 @@ export default function AdminRandomFilament() {
         <div className="absolute inset-0 -z-10 opacity-40 pointer-events-none">
           <WavyColors />
         </div>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black flex items-center gap-2">
               <Sparkles className="size-6 text-primary" />
               إدارة الفلمنت العشوائي
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              ضع عروضك، اربط منتجات محددة لكل عرض، وراقب الطلبات والمحظورين.
+              أنشئ عروضاً مخصصة، اربطها بأقسام ومنتجات متعددة، وتحكم بالمخزون.
             </p>
           </div>
-          <Badge variant={enabled ? "default" : "secondary"} className="text-xs">
-            {enabled ? "القسم مفعّل" : "موقوف"}
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
-          <StatChip icon={<Package2 className="size-4" />} label="العروض" value={stats.offers} />
-          <StatChip icon={<ClipboardList className="size-4" />} label="الطلبات" value={stats.orders} />
-          <StatChip icon={<Truck className="size-4" />} label="مدفوعة" value={stats.paid} />
-          <StatChip icon={<Ban className="size-4" />} label="محظورون" value={stats.bans} />
+          <div className="flex items-center gap-2 rounded-xl border bg-card/60 px-3 py-2">
+            <Switch checked={!!settings?.enabled} onCheckedChange={toggleSectionEnabled} />
+            <span className="text-xs">{settings?.enabled ? "القسم مفعّل" : "القسم متوقف"}</span>
+          </div>
         </div>
       </div>
 
       <Tabs defaultValue="offers" className="space-y-4">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="offers"><Sparkles className="size-3.5 ml-1" /> العروض</TabsTrigger>
-          <TabsTrigger value="settings"><Settings className="size-3.5 ml-1" /> الإعدادات</TabsTrigger>
-          <TabsTrigger value="orders"><ClipboardList className="size-3.5 ml-1" /> الطلبات</TabsTrigger>
           <TabsTrigger value="bans"><ShieldX className="size-3.5 ml-1" /> المحظورون</TabsTrigger>
         </TabsList>
 
-        {/* SETTINGS */}
-        <TabsContent value="settings" className="space-y-4">
-          <Card className="glass-panel">
-            <CardHeader><CardTitle className="text-base">الإعدادات العامة</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-xl border p-3">
-                <div>
-                  <Label className="text-sm">تفعيل القسم</Label>
-                  <p className="text-xs text-muted-foreground">عند الإيقاف لن يظهر القسم في الواجهة</p>
-                </div>
-                <Switch checked={enabled} onCheckedChange={setEnabled} />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">عنوان القسم</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">وصف القسم</Label>
-                  <Input value={desc} onChange={(e) => setDesc(e.target.value)} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs flex items-center gap-1"><Filter className="size-3.5" /> الأقسام الفرعية المسموح بها</Label>
-                <div className="flex flex-wrap gap-2">
-                  {categories?.map((c: any) => (
-                    <Badge key={c.id}
-                      variant={selectedCats.includes(c.id) ? "default" : "outline"}
-                      className="cursor-pointer hover:scale-105 transition" onClick={() => toggleCat(c.id)}>
-                      {selectedCats.includes(c.id) && <Check className="size-3 ml-1" />}
-                      {c.name_ar}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <Button onClick={saveSettings} className="w-full sm:w-auto">
-                <Save className="size-4 ml-1" /> حفظ الإعدادات
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* OFFERS */}
         <TabsContent value="offers" className="space-y-4">
-          {(["direct", "preorder"] as const).map((st) => (
-            <Card key={st} className="glass-panel">
-              <CardHeader className="flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  {st === "direct" ? <Truck className="size-4 text-primary" /> : <Package2 className="size-4 text-primary" />}
-                  عروض {st === "direct" ? "البيع المباشر" : "الحجز المسبق"}
-                </CardTitle>
-                <Button size="sm" onClick={() => addOffer(st)}>
-                  <Plus className="size-4 ml-1" /> إضافة
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {offers?.filter((o) => o.sale_type === st).length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-6">لا عروض بعد — اضغط إضافة</p>
-                )}
-                {offers?.filter((o) => o.sale_type === st).map((o) => (
-                  <div key={o.id} className="rounded-2xl border p-3 bg-card/50 hover:border-primary/40 transition">
-                    <div className="grid sm:grid-cols-[120px,1fr] gap-3">
-                      {/* Animated preview */}
-                      <div className="rounded-xl overflow-hidden h-24 sm:h-full border border-border/40 relative">
-                        {o.image_url ? (
-                          <img src={o.image_url} alt={o.title_ar} className="w-full h-full object-cover" />
-                        ) : (
-                          <WavyColors />
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="grid sm:grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-[11px]">العنوان</Label>
-                            <Input defaultValue={o.title_ar}
-                              onBlur={(e) => e.target.value !== o.title_ar && updateOffer(o.id!, { title_ar: e.target.value })} />
-                          </div>
-                          <div>
-                            <Label className="text-[11px]">السعر (د.ع)</Label>
-                            <Input type="number" defaultValue={o.price_iqd}
-                              onBlur={(e) => Number(e.target.value) !== Number(o.price_iqd) && updateOffer(o.id!, { price_iqd: Number(e.target.value) || 0 })} />
-                          </div>
-                          <div>
-                            <Label className="text-[11px]">رابط صورة (اختياري — تترك فارغة لتظهر الموجة)</Label>
-                            <Input defaultValue={o.image_url || ""}
-                              onBlur={(e) => e.target.value !== (o.image_url || "") && updateOffer(o.id!, { image_url: e.target.value || null })} />
-                          </div>
-                          <div>
-                            <Label className="text-[11px]">ترتيب</Label>
-                            <Input type="number" defaultValue={o.display_order}
-                              onBlur={(e) => Number(e.target.value) !== o.display_order && updateOffer(o.id!, { display_order: Number(e.target.value) || 0 })} />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-[11px]">القسم الفرعي</Label>
-                          <Select
-                            value={o.category_id || "__all__"}
-                            onValueChange={(v) => updateOffer(o.id!, { category_id: v === "__all__" ? null : v })}
-                          >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">كل الأقسام المفعّلة</SelectItem>
-                              {categories?.filter((c: any) => selectedCats.includes(c.id)).map((c: any) => (
-                                <SelectItem key={c.id} value={c.id}>{c.name_ar}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-[11px]">الوصف (اختياري)</Label>
-                          <Textarea defaultValue={o.description_ar || ""} rows={2}
-                            onBlur={(e) => e.target.value !== (o.description_ar || "") && updateOffer(o.id!, { description_ar: e.target.value || null })} />
-                        </div>
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <Button variant="outline" size="sm" onClick={() => setProductPickerFor(o)}>
-                            <Package2 className="size-3.5 ml-1" />
-                            المنتجات المسموحة ({o.allowed_product_ids?.length || 0})
-                          </Button>
-                          <div className="flex items-center gap-2">
-                            <Switch checked={o.enabled} onCheckedChange={(v) => updateOffer(o.id!, { enabled: v })} />
-                            <span className="text-xs text-muted-foreground">{o.enabled ? "مفعّل" : "متوقف"}</span>
-                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteOffer(o.id!)}>
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        {/* ORDERS */}
-        <TabsContent value="orders" className="space-y-2">
-          {orders?.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">لا طلبات</p>
-          )}
-          <div className="grid sm:grid-cols-2 gap-3">
-            {orders?.map((o: any) => (
-              <Card key={o.id} className="glass-panel">
-                <CardContent className="p-4 text-sm space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant={o.order_id ? "default" : "secondary"}>{o.order_id ? "تم الدفع" : "في السلة"}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{new Date(o.created_at).toLocaleString("ar-IQ")}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    <Info label="المستخدم" value={o.user_id?.slice(0, 8) + "…"} mono />
-                    <Info label="النوع" value={o.sale_type === "direct" ? "بيع مباشر" : "حجز مسبق"} />
-                    <Info label="القسم" value={o.categories?.name_ar || "—"} />
-                    <Info label="المنتج" value={o.products?.name_ar || "—"} />
-                    <Info label="اللون" value={o.selected_color || "—"} />
-                    <Info label="السعر" value={`${Number(o.price_iqd).toLocaleString()} د.ع`} />
-                  </div>
-                  {o.order_id && (
-                    <Button
-                      variant="destructive" size="sm" className="w-full"
-                      onClick={async () => {
-                        const reason = window.prompt("سبب الحظر:", "عدم استلام طلب فلمنت عشوائي");
-                        if (!reason) return;
-                        const { error } = await (supabase as any).rpc("ban_user_for_unreceived_random_filament", { p_order_id: o.order_id, p_reason: reason });
-                        if (error) toast.error("فشل الحظر");
-                        else { toast.success("تم حظر المستخدم"); qc.invalidateQueries({ queryKey: ["admin-rf-bans"] }); }
-                      }}
-                    >
-                      <Ban className="size-3.5 ml-1" /> حظر المستخدم
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex items-center justify-end">
+            <Button onClick={() => setEditing(blankOffer())}>
+              <Plus className="size-4 ml-1" /> إضافة عرض جديد
+            </Button>
           </div>
+
+          {(["direct", "preorder"] as const).map((st) => (
+            <div key={st} className="space-y-3">
+              <h2 className="text-sm font-bold flex items-center gap-2 text-muted-foreground">
+                {st === "direct" ? <Truck className="size-4" /> : <Package2 className="size-4" />}
+                عروض {st === "direct" ? "البيع المباشر" : "الحجز المسبق"}
+              </h2>
+
+              {(offers || []).filter((o) => o.sale_type === st).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4 border border-dashed rounded-xl">
+                  لا عروض بعد
+                </p>
+              )}
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                {(offers || []).filter((o) => o.sale_type === st).map((o) => (
+                  <OfferCard
+                    key={o.id}
+                    offer={o}
+                    onEdit={() => setEditing(o)}
+                    onDelete={() => deleteOffer(o.id)}
+                    onToggle={(v) => toggleOfferEnabled(o.id, v)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </TabsContent>
 
         {/* BANS */}
         <TabsContent value="bans" className="space-y-2">
-          {bans?.length === 0 && <p className="text-center text-muted-foreground py-8">لا محظورين</p>}
+          {(!bans || bans.length === 0) && (
+            <p className="text-center text-muted-foreground py-8">لا محظورين</p>
+          )}
           {bans?.map((b: any) => (
             <Card key={b.user_id} className="glass-panel">
-              <CardContent className="p-4 flex items-center justify-between gap-3 text-sm">
-                <div className="min-w-0">
-                  <div className="font-mono text-xs truncate">{b.user_id}</div>
-                  <div className="text-muted-foreground text-xs truncate">{b.reason}</div>
+              <CardContent className="p-4 flex items-center justify-between gap-3 text-sm flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold truncate">
+                    {b.profile?.full_name || "—"}
+                  </div>
+                  <div className="text-muted-foreground text-xs truncate">
+                    {b.profile?.email || b.user_id}
+                  </div>
+                  <div className="mt-1 inline-flex items-center gap-1 text-xs text-destructive">
+                    <AlertTriangle className="size-3.5" />
+                    <span className="truncate">{b.reason || "بدون سبب"}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">
+                    {b.banned_at ? new Date(b.banned_at).toLocaleString("ar-IQ") : ""}
+                  </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => removeBan(b.user_id)}>
                   <Trash2 className="size-3.5 ml-1" /> رفع الحظر
@@ -392,153 +222,438 @@ export default function AdminRandomFilament() {
         </TabsContent>
       </Tabs>
 
-      <ProductPicker
-        offer={productPickerFor}
-        onClose={() => setProductPickerFor(null)}
-        onSave={async (ids) => {
-          if (!productPickerFor?.id) return;
-          await updateOffer(productPickerFor.id, { allowed_product_ids: ids });
-          toast.success("تم حفظ المنتجات");
-          setProductPickerFor(null);
+      <OfferDialog
+        offer={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          refetchOffers();
+          qc.invalidateQueries({ queryKey: ["rf-offers-public"] });
         }}
       />
     </div>
   );
 }
 
-function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
-  return (
-    <div className="rounded-xl border bg-card/60 px-3 py-2">
-      <div className="text-[10px] text-muted-foreground flex items-center gap-1">{icon}{label}</div>
-      <div className="text-lg font-black">{value}</div>
-    </div>
-  );
-}
-
-function Info({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={`text-xs font-bold truncate ${mono ? "font-mono" : ""}`}>{value}</div>
-    </div>
-  );
-}
-
-function ProductPicker({
-  offer, onClose, onSave,
+function OfferCard({
+  offer, onEdit, onDelete, onToggle,
 }: {
-  offer: Offer | null;
-  onClose: () => void;
-  onSave: (ids: string[]) => void;
+  offer: Offer;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: (v: boolean) => void;
 }) {
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { data: summary } = useQuery({
+    queryKey: ["rf-offer-summary", offer.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("rf_offer_stock_summary", {
+        p_offer_id: offer.id,
+      });
+      return data as { direct_stock_total: number; sales_count: number };
+    },
+    staleTime: 30_000,
+  });
+
+  const isDirect = offer.sale_type === "direct";
+  const stock = Number(summary?.direct_stock_total ?? 0);
+  const sales = Number(summary?.sales_count ?? 0);
+  const isOutOfStock = isDirect && stock <= 0;
+
+  return (
+    <Card className={`glass-panel overflow-hidden ${isOutOfStock ? "opacity-80" : ""}`}>
+      <div className="relative h-28 w-full bg-muted">
+        {offer.image_url ? (
+          <img src={offer.image_url} alt={offer.title_ar} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <WavyColors />
+        )}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center">
+            <Badge variant="destructive" className="text-xs font-bold">انتهى العرض</Badge>
+          </div>
+        )}
+      </div>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-bold text-sm leading-tight line-clamp-2">{offer.title_ar}</h3>
+          <Badge variant="secondary" className="shrink-0">
+            {Number(offer.price_iqd).toLocaleString()} د.ع
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <Stat icon={<Package2 className="size-3.5" />} label="منتجات" value={offer.allowed_product_ids?.length || 0} />
+          {isDirect ? (
+            <Stat icon={<Boxes className="size-3.5" />} label="المخزون" value={stock} accent={stock > 0 ? "ok" : "bad"} />
+          ) : (
+            <Stat icon={<Boxes className="size-3.5" />} label="حجز" value="—" />
+          )}
+          <Stat icon={<TrendingUp className="size-3.5" />} label="مبيعات" value={sales} />
+        </div>
+
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="flex items-center gap-2">
+            <Switch checked={offer.enabled} onCheckedChange={onToggle} disabled={isOutOfStock} />
+            <span className="text-xs text-muted-foreground">{offer.enabled ? "مفعّل" : "متوقف"}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={onEdit}>
+              <Pencil className="size-3.5 ml-1" /> تعديل
+            </Button>
+            <Button variant="ghost" size="icon" className="text-destructive" onClick={onDelete}>
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: any; accent?: "ok" | "bad" }) {
+  const cls = accent === "ok" ? "text-emerald-600" : accent === "bad" ? "text-destructive" : "";
+  return (
+    <div className="rounded-lg border bg-card/60 px-2 py-1.5">
+      <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">{icon}{label}</div>
+      <div className={`text-sm font-black ${cls}`}>{value}</div>
+    </div>
+  );
+}
+
+/* ----------------------------- Offer Dialog ----------------------------- */
+
+function OfferDialog({
+  offer, onClose, onSaved,
+}: {
+  offer: Partial<Offer> | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [draft, setDraft] = useState<Partial<Offer>>({});
+  const [mainSectionId, setMainSectionId] = useState<string>(PRINTING_MATERIALS_ID);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   useEffect(() => {
-    setSelected(new Set(offer?.allowed_product_ids || []));
-    setSearch("");
+    if (!offer) return;
+    setDraft({
+      ...offer,
+      category_ids: offer.category_ids?.length ? offer.category_ids : (offer.category_id ? [offer.category_id] : []),
+      allowed_product_ids: offer.allowed_product_ids || [],
+    });
+    setProductSearch("");
   }, [offer]);
 
-  const { data: products } = useQuery({
-    queryKey: ["rf-picker-products", offer?.category_id],
-    enabled: !!offer,
+  const { data: mainSections } = useQuery({
+    queryKey: ["main-sections-rf"],
     queryFn: async () => {
-      let q = supabase
-        .from("products")
-        .select("id, name_ar, image_url, category_id, categories(name_ar)")
-        .order("name_ar")
-        .limit(500);
-      if (offer?.category_id) q = q.eq("category_id", offer.category_id);
-      else {
-        // restrict to printing materials section via settings
-        const { data: s } = await (supabase as any)
-          .from("random_filament_settings").select("category_ids").limit(1).maybeSingle();
-        const ids: string[] = s?.category_ids || [];
-        if (ids.length) q = q.in("category_id", ids);
-      }
-      const { data } = await q;
+      const { data } = await supabase.from("main_sections").select("id, name_ar").order("display_order");
       return data || [];
     },
   });
 
-  const filtered = useMemo(
-    () => (products || []).filter((p: any) =>
-      !search || p.name_ar?.toLowerCase().includes(search.toLowerCase())
-    ),
-    [products, search]
-  );
+  const { data: subCategories } = useQuery({
+    queryKey: ["rf-subcats-by-main", mainSectionId],
+    enabled: !!mainSectionId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("categories").select("id, name_ar")
+        .eq("main_section_id", mainSectionId).order("name_ar");
+      return data || [];
+    },
+  });
 
-  const toggle = (id: string) => {
-    setSelected((p) => {
-      const n = new Set(p);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
+  const { data: products } = useQuery({
+    queryKey: ["rf-dialog-products", draft.sale_type, draft.category_ids],
+    enabled: !!offer && !!draft.category_ids?.length,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select(`
+          id, name_ar, image_url, category_id, in_stock,
+          product_options (id, available_for_direct_sale, available_for_pre_order, stock_quantity)
+        `)
+        .in("category_id", draft.category_ids as string[])
+        .order("name_ar")
+        .limit(500);
+      return (data || []) as any[];
+    },
+  });
+
+  const filteredProducts = useMemo(() => {
+    const list = (products || []).map((p: any) => {
+      const opts = p.product_options || [];
+      const directStock = opts
+        .filter((o: any) => o.available_for_direct_sale && Number(o.stock_quantity) > 0)
+        .reduce((s: number, o: any) => s + Number(o.stock_quantity || 0), 0);
+      const hasPreorder = opts.some((o: any) => o.available_for_pre_order !== false);
+      return { ...p, directStock, hasPreorder };
     });
+
+    let res = list;
+    if (draft.sale_type === "direct") {
+      res = res.filter((p: any) => p.in_stock !== false && p.directStock > 0);
+    } else {
+      res = res.filter((p: any) => p.hasPreorder);
+    }
+    if (productSearch.trim()) {
+      const q = productSearch.toLowerCase();
+      res = res.filter((p: any) => (p.name_ar || "").toLowerCase().includes(q));
+    }
+    return res;
+  }, [products, draft.sale_type, productSearch]);
+
+  const toggleCat = (id: string) => {
+    setDraft((d) => {
+      const cur = d.category_ids || [];
+      const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+      // remove allowed products that are not in selected categories anymore
+      const allowedProductIds = (d.allowed_product_ids || []);
+      return { ...d, category_ids: next, allowed_product_ids: allowedProductIds };
+    });
+  };
+
+  const toggleProduct = (id: string) => {
+    setDraft((d) => {
+      const cur = d.allowed_product_ids || [];
+      return { ...d, allowed_product_ids: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] };
+    });
+  };
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `offers/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("random-filament-offers").upload(path, file, { upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from("random-filament-offers").getPublicUrl(path);
+      setDraft((d) => ({ ...d, image_url: data.publicUrl }));
+      toast.success("تم رفع الصورة");
+    } catch (e: any) {
+      toast.error("فشل الرفع: " + (e?.message || ""));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const save = async () => {
+    if (!draft.title_ar?.trim()) { toast.error("أدخل اسم العرض"); return; }
+    if (!draft.price_iqd || Number(draft.price_iqd) <= 0) { toast.error("أدخل السعر"); return; }
+    if (!draft.sale_type) { toast.error("اختر نوع البيع"); return; }
+    if (!(draft.category_ids?.length)) { toast.error("اختر قسماً فرعياً واحداً على الأقل"); return; }
+
+    setSaving(true);
+    try {
+      const payload: any = {
+        sale_type: draft.sale_type,
+        title_ar: draft.title_ar.trim(),
+        description_ar: draft.description_ar || null,
+        image_url: draft.image_url || null,
+        price_iqd: Number(draft.price_iqd) || 0,
+        display_order: Number(draft.display_order) || 0,
+        enabled: draft.enabled !== false,
+        category_ids: draft.category_ids,
+        category_id: draft.category_ids?.[0] || null, // legacy compatibility
+        allowed_product_ids: draft.allowed_product_ids || [],
+      };
+
+      if (draft.id) {
+        const { error } = await (supabase as any)
+          .from("random_filament_offers").update(payload).eq("id", draft.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("random_filament_offers").insert(payload);
+        if (error) throw error;
+      }
+      toast.success("تم الحفظ");
+      onSaved();
+    } catch (e: any) {
+      toast.error("فشل الحفظ: " + (e?.message || ""));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Dialog open={!!offer} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="!overflow-hidden !max-h-none max-w-2xl">
+      <DialogContent className="!overflow-hidden !max-h-none max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package2 className="size-5 text-primary" />
-            المنتجات المسموحة لهذا العرض
+            <Sparkles className="size-5 text-primary" />
+            {draft.id ? "تعديل عرض" : "إضافة عرض جديد"}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
-            اترك القائمة فارغة ليشمل العرض كل منتجات القسم. أو اختر منتجات محددة (مثل Esun PLA Plus فقط).
-          </p>
+          <DialogDescription>
+            املأ بيانات العرض، اختر الأقسام الفرعية، ثم حدد المنتجات.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="relative">
-          <Search className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pr-9" placeholder="ابحث باسم المنتج..."
-            value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
+        <ScrollArea className="max-h-[70vh]">
+          <div className="space-y-4 px-1 pb-2">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">اسم العرض *</Label>
+                <Input value={draft.title_ar || ""} onChange={(e) => setDraft({ ...draft, title_ar: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">السعر (د.ع) *</Label>
+                <Input type="number" value={draft.price_iqd ?? ""} onChange={(e) => setDraft({ ...draft, price_iqd: Number(e.target.value) || 0 })} />
+              </div>
+            </div>
 
-        <ScrollArea className="h-[55vh] -mx-2 px-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {filtered.map((p: any) => {
-              const isOn = selected.has(p.id);
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => toggle(p.id)}
-                  className={`text-right rounded-xl border p-2 flex items-center gap-2 transition ${
-                    isOn ? "border-primary bg-primary/10" : "hover:border-primary/40"
-                  }`}
-                >
-                  {p.image_url ? (
-                    <img src={p.image_url} alt="" className="w-10 h-10 rounded object-cover" />
+            {/* image upload */}
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1"><ImageIcon className="size-3.5" /> صورة العرض</Label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-28 h-20 rounded-xl overflow-hidden border bg-muted shrink-0">
+                  {draft.image_url ? (
+                    <img src={draft.image_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded bg-muted" />
+                    <WavyColors />
                   )}
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold truncate">{p.name_ar}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {p.categories?.name_ar}
-                    </div>
-                  </div>
-                  {isOn && <Check className="size-4 text-primary shrink-0" />}
-                </button>
-              );
-            })}
-            {filtered.length === 0 && (
-              <p className="col-span-full text-center text-sm text-muted-foreground py-6">لا منتجات</p>
-            )}
+                </div>
+                <div className="flex flex-col gap-2 flex-1">
+                  <label className="inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs cursor-pointer hover:bg-muted">
+                    <Upload className="size-3.5" />
+                    {uploading ? "جاري الرفع..." : "رفع صورة"}
+                    <input
+                      type="file" accept="image/*" hidden
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
+                    />
+                  </label>
+                  {draft.image_url && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setDraft({ ...draft, image_url: null })}>
+                      <Trash2 className="size-3.5 ml-1" /> حذف الصورة
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">الوصف (اختياري)</Label>
+              <Textarea rows={2} value={draft.description_ar || ""} onChange={(e) => setDraft({ ...draft, description_ar: e.target.value })} />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">نوع البيع *</Label>
+                <Select value={draft.sale_type} onValueChange={(v: SaleType) => setDraft({ ...draft, sale_type: v, allowed_product_ids: [] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="direct">بيع مباشر</SelectItem>
+                    <SelectItem value="preorder">حجز مسبق</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">القسم الرئيسي</Label>
+                <Select value={mainSectionId} onValueChange={setMainSectionId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(mainSections || []).map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name_ar}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">الأقسام الفرعية * (اختر واحد أو أكثر)</Label>
+              <div className="flex flex-wrap gap-2">
+                {(subCategories || []).map((c: any) => {
+                  const on = (draft.category_ids || []).includes(c.id);
+                  return (
+                    <Badge key={c.id}
+                      variant={on ? "default" : "outline"}
+                      className="cursor-pointer hover:scale-105 transition"
+                      onClick={() => toggleCat(c.id)}>
+                      {on && <Check className="size-3 ml-1" />}
+                      {c.name_ar}
+                    </Badge>
+                  );
+                })}
+                {(!subCategories || subCategories.length === 0) && (
+                  <p className="text-xs text-muted-foreground">لا أقسام فرعية</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center justify-between">
+                <span>المنتجات * ({(draft.allowed_product_ids || []).length} مختار)</span>
+                {draft.sale_type === "direct" && (
+                  <span className="text-[10px] text-muted-foreground">يظهر فقط ما له مخزون متاح</span>
+                )}
+              </Label>
+
+              <div className="relative">
+                <Search className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pr-9" placeholder="ابحث باسم المنتج..."
+                  value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+              </div>
+
+              <div className="max-h-72 overflow-y-auto rounded-lg border p-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {filteredProducts.map((p: any) => {
+                    const isOn = (draft.allowed_product_ids || []).includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => toggleProduct(p.id)}
+                        className={`text-right rounded-xl border p-2 flex items-center gap-2 transition ${
+                          isOn ? "border-primary bg-primary/10" : "hover:border-primary/40"
+                        }`}
+                      >
+                        {p.image_url ? (
+                          <img src={p.image_url} alt="" className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-muted" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold truncate">{p.name_ar}</div>
+                          {draft.sale_type === "direct" && (
+                            <div className="text-[10px] text-muted-foreground">
+                              مخزون: {p.directStock}
+                            </div>
+                          )}
+                        </div>
+                        {isOn && <Check className="size-4 text-primary shrink-0" />}
+                      </button>
+                    );
+                  })}
+                  {filteredProducts.length === 0 && (
+                    <p className="col-span-full text-center text-xs text-muted-foreground py-6">
+                      {draft.category_ids?.length ? "لا منتجات متاحة" : "اختر قسماً فرعياً أولاً"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">ترتيب العرض</Label>
+                <Input type="number" value={draft.display_order ?? 0}
+                  onChange={(e) => setDraft({ ...draft, display_order: Number(e.target.value) || 0 })} />
+              </div>
+              <div className="flex items-center gap-2 pt-5">
+                <Switch checked={draft.enabled !== false} onCheckedChange={(v) => setDraft({ ...draft, enabled: v })} />
+                <Label className="text-xs">{draft.enabled !== false ? "مفعّل" : "متوقف"}</Label>
+              </div>
+            </div>
           </div>
         </ScrollArea>
 
-        <DialogFooter className="gap-2 flex-row justify-between sm:justify-between">
-          <span className="text-xs text-muted-foreground self-center">
-            مختار: {selected.size}
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setSelected(new Set())}>تفريغ</Button>
-            <Button size="sm" onClick={() => onSave(Array.from(selected))}>
-              <Save className="size-3.5 ml-1" /> حفظ
-            </Button>
-          </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={saving}>إلغاء</Button>
+          <Button onClick={save} disabled={saving || uploading}>
+            <Save className="size-4 ml-1" />
+            {saving ? "جاري الحفظ..." : "حفظ العرض"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,74 +1,108 @@
 
-# قسم الفلمنت العشوائي (Random Filament)
+## الهدف
 
-قسم جديد يدفع المستخدم لاكتشاف نوع/لون الفلمنت بعد الشراء. يُعرض في الصفحة الرئيسية تحت قسم العروض.
+تبسيط `/cp-x9A3kL7m/random-filament` إلى **تبويبتين فقط**:
+1. **العروض** (إضافة/تعديل/حذف بنموذج كامل)
+2. **المحظورون** (رفع الحظر + سبب الحظر)
 
-## تجربة المستخدم
+وتحسين تجربة الإضافة، ودقة المخزون، وتنبيه "انتهى العرض" عند عدم توفر منتجات بيع مباشر.
 
-1. كرت في الصفحة الرئيسية تحت `OffersStorageSection` يفتح صفحة `/random-filament`.
-2. خطوة 1: يختار طريقة الاستلام: **بيع مباشر** أو **حجز مسبق**.
-3. خطوة 2: يختار الفئة (PLA / PETG / ASA / ABS / Esun PLA Plus … من فئات يفعّلها الأدمن).
-4. خطوة 3: نافذة منبثقة فيها:
-   - تنبيه: "ادفع من المحفظة لتعرف ماذا حصلت مباشرةً" (الدفع من المحفظة شرط).
-   - تنبيه: "الطلب غير قابل للإلغاء. أي محاولة إلغاء = حظر دائم من هذا القسم."
-   - السعر، طريقة الاستلام، الفئة (بدون ذكر النوع/اللون).
-   - زر **إضافة إلى السلة**.
-5. عند إضافة للسلة، النظام يختار عشوائياً ويحجز الاختيار، لكن لا يكشفه. عند الدفع من المحفظة في السلة يتم الكشف عن النوع واللون في صفحة "تم الشراء" + داخل السلة بعد الدفع.
-6. الأدمن يرى دائماً ما تم اختياره.
+---
 
-## منطق الاختيار العشوائي
+## 1) صفحة الإدارة الجديدة
 
-- **بيع مباشر**: ضمن منتجات الفئة المختارة (مثلاً جميع منتجات فئة PLA) المتاحة للبيع المباشر مع `direct_stock > 0`. يختار النظام منتج عشوائي ثم لون عشوائي من `product_options` مع `available_for_direct_sale=true` و `stock_quantity > 0`.
-- **حجز مسبق**: يختار النظام نوع المنتج عشوائياً (PLA Basic / Esun PLA Plus / إلخ من المنتجات المفعّلة في القسم العشوائي ضمن الفئة) ثم لون عشوائي من `product_options` مع `available_for_pre_order=true`.
-- يضاف للسلة كـ `cart_items` عادي (`product_id`, `product_option_id`, `selected_color`, `sale_type`) لتدخل في تدفق الشحن/المحفظة الموجود.
+### إزالة:
+- تبويب **الإعدادات** (تفعيل/تعطيل + عنوان/وصف + قائمة الأقسام).
+- تبويب **الطلبات**.
+- بطاقات الإحصائيات في الـ Hero (تُختصر أو تُحذف).
 
-## إعدادات الأدمن
+### إبقاء وتحويل الإعدادات لمستوى العرض:
+- التفعيل العام للقسم وقائمة الأقسام الفرعية المسموحة سيُديرها كل **عرض** بنفسه (يحدد أقسامه الفرعية)، مع switch واحد بسيط أعلى الصفحة لتفعيل/تعطيل القسم بالكامل (chip صغير في الـ header، يحفظ مباشرة).
 
-- صفحة `/admin/random-filament` تحت قائمة الإدارة:
-  - تفعيل/تعطيل القسم.
-  - اختيار الفئات المسموح بها (Multi-select من جدول `categories`).
-  - تحديد سعر ثابت لكل فئة لكل من البيع المباشر والحجز المسبق (لأن المنتج مجهول).
-  - استعراض الطلبات العشوائية مع معرفة المستخدم + النوع/اللون الذي حصل عليه + الحالة.
-  - استعراض/إدارة قائمة المحظورين من القسم.
+### تبويب 1: **العروض**
+- زر علوي واحد: **إضافة عرض جديد** يفتح Dialog (نموذج موحد للإضافة والتعديل).
+- قائمة العروض مقسمة بصرياً: **بيع مباشر** و **حجز مسبق**.
+- كل بطاقة عرض تعرض:
+  - الصورة + العنوان + السعر + عدد المنتجات المرتبطة + عدد الأقسام الفرعية.
+  - **مؤشر مخزون مباشر**: مجموع `stock_quantity` للخيارات المتاحة (`available_for_direct_sale=true AND stock_quantity > 0`) عبر كل المنتجات المرتبطة. إذا = 0 ⇒ شارة حمراء **"انتهى العرض"** مع تعطيل تلقائي للعرض.
+  - **عداد المبيعات**: عدد صفوف `random_filament_orders` المرتبطة بهذا `offer_id` حيث `order_id IS NOT NULL`.
+  - أزرار: تعديل / حذف / تفعيل-تعطيل.
 
-## قواعد الإلغاء والحظر
+### تبويب 2: **المحظورون**
+- بطاقة لكل محظور: المعرّف، اسم/إيميل المستخدم (Join مع `profiles`)، **سبب الحظر**، تاريخ الحظر، وزر **رفع الحظر**.
 
-- جدول `random_filament_orders` يربط الطلب الأصلي + المنتج/الخيار المختار + المستخدم.
-- جدول `random_filament_bans` لحظر المستخدمين دائماً من هذا القسم فقط.
-- Trigger على `orders` (أو `cart_items`) يكتشف أي محاولة إلغاء/حذف لطلب من القسم العشوائي ويضيف المستخدم تلقائياً إلى `random_filament_bans` ويرفض الإلغاء.
-- صفحة `/random-filament` تتحقق من الحظر وتعرض رسالة واضحة بدلاً من السماح بالشراء.
-- الدفع مقيّد بالمحفظة فقط (الواجهة + RPC `create_random_filament_order` ترفض غير ذلك).
+---
 
-## التقنية
+## 2) Dialog إضافة/تعديل عرض (موحد)
 
-### قاعدة البيانات (migration)
+حقول النموذج بترتيب التعبئة:
 
-- إنشاء `random_filament_settings` (singleton): `enabled`, `direct_price_iqd`, `pre_order_price_iqd`, `category_ids uuid[]`.
-- إنشاء `random_filament_orders`: `user_id`, `cart_item_id`, `order_id (nullable)`, `category_id`, `sale_type`, `product_id`, `product_option_id`, `selected_color`, `revealed_at`.
-- إنشاء `random_filament_bans`: `user_id PK`, `reason`, `banned_at`.
-- RPC `create_random_filament_order(p_category_id uuid, p_sale_type text)`:
-  - `SECURITY DEFINER`، يتحقق من الحظر، يختار المنتج/الخيار العشوائي مع قفل الصف، ينقص المخزون فقط عند البيع المباشر، يدرج في `cart_items`، يدرج في `random_filament_orders`، ويعيد `id` السطر.
-- Trigger `prevent_random_filament_cancel` على `orders`: عند تحديث الحالة إلى `cancelled` أو حذف عنصر مرتبط، يضاف المستخدم في `random_filament_bans` ويُلقى استثناء.
-- RLS: المستخدم يقرأ طلباته فقط. الأدمن يقرأ الكل. `random_filament_settings` للقراءة العامة (`enabled` + `category_ids` + الأسعار).
+1. **الاسم (عربي)** — `title_ar`
+2. **السعر (د.ع)** — `price_iqd`
+3. **رفع صورة** — Input من نوع file، يرفع إلى Supabase Storage (bucket `product-images` أو `random-filament` إن وُجد) ويحفظ URL في `image_url`. يدعم المعاينة قبل الحفظ.
+4. **الوصف (اختياري)** — `description_ar`
+5. **نوع البيع** — Radio: بيع مباشر / حجز مسبق
+6. **القسم الرئيسي** — Select من `main_sections` (للتصفية فقط؛ افتراضياً مواد الطباعة).
+7. **الأقسام الفرعية (متعدد)** — Checkboxes من `categories` تحت القسم الرئيسي المختار. **تغيير في الـ schema**: استبدال `category_id uuid` بـ `category_ids uuid[]` على `random_filament_offers`.
+8. **المنتجات (متعدد)** — قائمة بالمنتجات الموجودة في الأقسام الفرعية المختارة فقط:
+   - **في حالة بيع مباشر**: تعرض فقط المنتجات التي تحوي خياراً واحداً على الأقل بـ `available_for_direct_sale=true AND stock_quantity > 0`. كل منتج يعرض بجواره مخزونه المتاح.
+   - **في حالة حجز مسبق**: تعرض كل المنتجات (مع `available_for_pre_order` افتراضياً true).
+   - دعم اختيار متعدد عبر أكثر من قسم فرعي.
 
-### الواجهة الأمامية
+زر **حفظ** يُنشئ/يُحدّث الصف ثم يقفل الـ Dialog.
 
-- `src/components/RandomFilamentSection.tsx` (كرت بسيط في الصفحة الرئيسية تحت `OffersStorageSection`).
-- `src/pages/RandomFilament.tsx` (3 خطوات: sale type → category → confirm dialog).
-- `src/pages/AdminRandomFilament.tsx` للإعدادات + سجل الطلبات + المحظورين.
-- داخل السلة (`Cart.tsx`): إذا كان `cart_item` مرتبطاً بـ `random_filament_orders` غير مكشوف، نخفي الاسم/اللون ونعرض شارة "فلمنت عشوائي - يكشف بعد الدفع".
-- بعد نجاح الدفع من المحفظة، نحدث `revealed_at` ونعرض شاشة كشف بالنوع واللون.
-- الدفع: نتحقق في صفحة الدفع أن وسيلة الدفع = wallet عند وجود عناصر random-filament، وإلا نمنع المتابعة.
+---
 
-### i18n
-- إضافة مفاتيح في `ar.ts/en.ts/ku.ts` لجميع النصوص (عنوان القسم، خطوات، تحذير الإلغاء/الحظر، رسالة الكشف).
+## 3) تغييرات قاعدة البيانات
 
-### الصلاحيات والأمان
-- الإلغاء يتم منعه على مستوى DB (ليس فقط UI) لمنع التحايل.
-- الحظر يُسجَّل فقط من خلال trigger ولا يستطيع المستخدم فكه — فقط الأدمن.
+### Migration A — توسيع جدول العروض:
+```sql
+ALTER TABLE public.random_filament_offers
+  ADD COLUMN category_ids uuid[] NOT NULL DEFAULT '{}';
 
-## نقاط مفتوحة سأفترضها ما لم تخبرني خلاف ذلك
+-- ترحيل القيم القديمة من category_id إلى category_ids
+UPDATE public.random_filament_offers
+   SET category_ids = ARRAY[category_id]
+ WHERE category_id IS NOT NULL AND array_length(category_ids,1) IS NULL;
+```
+- **لا** نحذف `category_id` فوراً (لتفادي كسر RPC القديمة)؛ نهمل استخدامه في الواجهة الجديدة، وبعد تحديث الـ RPC نتجاهل القيمة.
 
-- السعر يحدده الأدمن لكل فئة (لا يأخذ سعر المنتج الأصلي) لأن الميزة مفاجأة.
-- الكميّة لكل طلب = 1.
-- لا يحق للمستخدم استبدال أو إعادة الطلب.
+### Migration B — تحديث RPC `create_random_filament_order`:
+- يقبل نفس البارامترات `(p_category_id, p_offer_id)`.
+- التحقق يصبح: `p_category_id = ANY(v_offer.category_ids)` بدل `v_offer.category_id`.
+- اختيار المنتج العشوائي: من `allowed_product_ids` المتقاطعة مع منتجات الفئة المختارة (أو كل القسم الفرعي إن كانت `allowed_product_ids` فارغة وكان للعرض أقسام محددة).
+- **بيع مباشر**: شرط `available_for_direct_sale=true AND stock_quantity > 0` كما هو، مع `FOR UPDATE SKIP LOCKED` لقفل الخيار.
+- **خصم المخزون**: `UPDATE product_options SET stock_quantity = stock_quantity - 1 WHERE id = v_option.id` (لا يحدث حالياً).
+- إذا فشل اختيار منتج/خيار في البيع المباشر ⇒ `NO_PRODUCT_AVAILABLE` (الواجهة تترجم لـ "انتهى العرض").
+
+### Migration C — RPC جديدة `rf_offer_stock_summary(offer_id)`:
+ترجع `{ direct_stock_total, sales_count }` — تستخدمها بطاقة العرض لعرض المؤشرين بدون N+1.
+
+### Storage:
+استخدام bucket موجود (مثل `product-images`) لرفع صور العروض، أو إنشاء bucket عام `random-filament-offers` بسياسات: قراءة عامة + كتابة للأدمن فقط.
+
+---
+
+## 4) واجهة `/random-filament` (المستخدم)
+
+تحديث طفيف فقط:
+- استعلام العروض يستخدم `category_ids` بدل `category_id` (`.contains('category_ids', [categoryId])`).
+- إذا أرجعت RPC `NO_PRODUCT_AVAILABLE` على عرض بيع مباشر، نعرض رسالة "انتهى هذا العرض" بدلاً من رسالة عامة، ونُبطل الكرت في القائمة.
+
+---
+
+## 5) الملفات المتأثرة
+
+- `src/pages/AdminRandomFilament.tsx` — إعادة كتابة شبه كاملة (تبويبتان + Dialog موحد + رفع صورة + اختيار أقسام/منتجات متعدد + بطاقات بمخزون ومبيعات).
+- `src/pages/RandomFilament.tsx` — تكييف استعلام العروض على `category_ids` ومعالجة "انتهى العرض".
+- Migration SQL جديد لكل من: `category_ids`, تحديث `create_random_filament_order` (مع خصم المخزون), دالة `rf_offer_stock_summary`, وسياسة Storage إن لزم.
+
+---
+
+## 6) ملاحظات تقنية
+
+- **حساب المبيعات** = `count(random_filament_orders WHERE offer_id = X AND order_id IS NOT NULL)` (فقط المدفوعة).
+- **مخزون البيع المباشر** يُحسب على مستوى `product_options.stock_quantity` (مصدر الحقيقة) لجميع المنتجات في `allowed_product_ids` للعرض، مع `available_for_direct_sale=true`.
+- **خصم المخزون** يحدث داخل الـ RPC ضمن ترانزاكشن واحد مع قفل الصف، لتفادي البيع المضاعف.
+- جميع النصوص بالعربية وفق سياسة المشروع (مع إمكانية إضافة مفاتيح i18n لاحقاً).
+- التصميم يتبع Glassmorphism Professional الموجود.
