@@ -372,8 +372,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
               }
             });
           }
-          // fetch offer prices + stock for new-flow RF rows
+          // fetch offer prices + stock for new-flow RF rows; auto-cap qty against available stock
           const offerIds = Array.from(new Set((data || []).map((i: any) => i.rf_offer_id).filter(Boolean)));
+          const cappedIds = new Set<string>();
           if (offerIds.length > 0) {
             const { data: offerRows } = await (supabase as any)
               .from('random_filament_offers')
@@ -388,22 +389,44 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
               if (o?.sale_type === 'direct') {
                 try {
                   const { data: s } = await (supabase as any).rpc('rf_offer_stock_summary', { p_offer_id: it.rf_offer_id });
-                  rfMaxStockById.set(it.id, Number(s?.direct_stock_total ?? 0));
+                  const maxStock = Number(s?.direct_stock_total ?? 0);
+                  rfMaxStockById.set(it.id, maxStock);
+                  // Auto-cap quantity if it now exceeds available stock (and item not already locked/finalized)
+                  if (!rfRevealedIds.has(it.id) && Number(it.quantity) > maxStock) {
+                    if (maxStock > 0) {
+                      await (supabase as any).from('cart_items').update({ quantity: maxStock }).eq('id', it.id);
+                      it.quantity = maxStock;
+                      cappedIds.add(it.id);
+                    } else {
+                      await (supabase as any).from('cart_items').delete().eq('id', it.id);
+                      (it as any).__rf_removed = true;
+                    }
+                  }
                 } catch {}
               }
             }
           }
         } catch (e) { /* non-blocking */ }
 
-        const mappedData = (data || []).map((item: any) => ({
-          ...item,
-          offer_purchase: item.product_offer_purchases || null,
-          is_locked: item.is_locked || rfRevealedIds.has(item.id),
-          is_random_filament: rfIds.has(item.id),
-          is_random_filament_revealed: rfRevealedIds.has(item.id),
-          random_filament_price_iqd: rfPriceById.get(item.id) ?? null,
-          random_filament_max_stock: rfMaxStockById.get(item.id) ?? null,
-        }));
+        const mappedData = (data || [])
+          .filter((it: any) => !it.__rf_removed)
+          .map((item: any) => ({
+            ...item,
+            offer_purchase: item.product_offer_purchases || null,
+            is_locked: item.is_locked || rfRevealedIds.has(item.id),
+            is_random_filament: rfIds.has(item.id),
+            is_random_filament_revealed: rfRevealedIds.has(item.id),
+            random_filament_price_iqd: rfPriceById.get(item.id) ?? null,
+            random_filament_max_stock: rfMaxStockById.get(item.id) ?? null,
+            random_filament_was_capped: (typeof URLSearchParams !== 'undefined') && false || false,
+          }));
+        // attach capped flag explicitly (avoid TDZ)
+        const cappedSet = (typeof Set !== 'undefined') ? new Set(Array.from(cappedIds || [])) : null;
+        if (cappedSet && cappedSet.size > 0) {
+          for (const m of mappedData as any[]) {
+            if (cappedSet.has(m.id)) m.random_filament_was_capped = true;
+          }
+        }
         setItems(mappedData as CartItem[]);
       }
     } catch (error) {

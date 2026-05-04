@@ -2489,6 +2489,11 @@ const Cart = () => {
                                     سيتم الكشف عن المنتج واللون عند التوصيل
                                   </div>
                                 )}
+                                {(item as any).random_filament_was_capped && (
+                                  <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 p-1.5 rounded-md bg-amber-500/10 border border-amber-500/30">
+                                    ⚠ تم تحديث الكمية تلقائيًا إلى الحد الأقصى المتوفر في المخزون ({item.quantity})
+                                  </div>
+                                )}
                               </div>
 
                               {/* Delete button - hidden for locked gifts */}
