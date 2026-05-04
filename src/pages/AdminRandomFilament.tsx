@@ -316,11 +316,11 @@ function OfferCard({
 
   return (
     <Card className={`glass-panel overflow-hidden ${isOutOfStock ? "opacity-80" : ""}`}>
-      <div className="relative h-28 w-full bg-muted">
+      <div className="relative h-28 w-full bg-muted overflow-hidden">
         {offer.image_url ? (
           <img src={offer.image_url} alt={offer.title_ar} className="w-full h-full object-cover" loading="lazy" />
         ) : (
-          <WavyColors />
+          <WavyColors seed={offer.id} />
         )}
         {isOutOfStock && (
           <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center">
