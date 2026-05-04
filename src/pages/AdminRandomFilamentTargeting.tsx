@@ -184,6 +184,11 @@ function OfferTargetingRow({
       // Drop allowed products no longer matching the categories
       const validIds = new Set((products || []).map((p: any) => p.id));
       const cleaned = allowed.filter((id) => validIds.has(id));
+      // Drop weights for products no longer in the whitelist
+      const cleanedWeights: ProductWeights = {};
+      for (const id of cleaned) {
+        if (weights[id]) cleanedWeights[id] = weights[id];
+      }
 
       const { error } = await (supabase as any)
         .from("random_filament_offers")
@@ -191,10 +196,12 @@ function OfferTargetingRow({
           category_ids: categoryIds,
           category_id: categoryIds[0],
           allowed_product_ids: cleaned,
+          product_weights: cleanedWeights,
         })
         .eq("id", offer.id);
       if (error) throw error;
       setAllowed(cleaned);
+      setWeights(cleanedWeights);
       toast.success("تم الحفظ");
       onSaved();
     } catch (e: any) {
