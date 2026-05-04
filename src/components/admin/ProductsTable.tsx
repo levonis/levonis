@@ -218,7 +218,9 @@ const ProductsTable = memo(({
                 <h4 className="text-xs font-bold text-foreground truncate">{product.name_ar}</h4>
                 <p className="text-[10px] text-muted-foreground mt-0.5">{product.categories?.name_ar || '-'}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-bold text-primary">{formatPrice(product.original_price ?? product.price)} د.ع</span>
+                  <span className="text-xs font-bold text-primary" title="السعر الأصلي قبل الخصم (د.ع)">
+                    {product.original_price != null ? `${formatPrice(product.original_price)} د.ع` : '—'}
+                  </span>
                   <Badge variant={product.in_stock ? "default" : "destructive"} className="text-[9px] h-4 px-1.5">
                     {product.in_stock ? 'متوفر' : 'نفد'}
                   </Badge>
