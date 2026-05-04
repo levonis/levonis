@@ -941,8 +941,10 @@ const ProductDetail = () => {
                 <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-black text-primary">{formatPrice(finalPrice)}</span>
                   <span className="text-sm text-muted-foreground">{currency}</span>
-                  {hasSale && finalOriginalPrice && (
-                    <span className="text-sm line-through text-muted-foreground/50">{formatPrice(finalOriginalPrice)}</span>
+                  {product.original_price != null && Number(product.original_price) > 0 && (
+                    <span className="text-sm line-through text-muted-foreground/50">
+                      {Number(product.original_price).toLocaleString()} iq
+                    </span>
                   )}
                 </div>
                 {/* Protection Plan Discount Badge */}
