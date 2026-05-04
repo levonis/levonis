@@ -25,6 +25,12 @@ import {
 import WavyColors from "@/components/WavyColors";
 
 type SaleType = "direct" | "preorder";
+type ProductWeights = Record<string, {
+  weight?: number;
+  options?: Record<string, number>;
+  colors?: Record<string, number>;
+}>;
+
 type Offer = {
   id: string;
   sale_type: SaleType;
@@ -37,6 +43,7 @@ type Offer = {
   display_order: number;
   enabled: boolean;
   allowed_product_ids: string[];
+  product_weights: ProductWeights;
 };
 
 const PRINTING_MATERIALS_ID = "c3177652-b079-46a5-9435-f641e4c5fd58";
@@ -51,6 +58,7 @@ const blankOffer = (): Partial<Offer> => ({
   enabled: true,
   category_ids: [],
   allowed_product_ids: [],
+  product_weights: {},
 });
 
 export default function AdminRandomFilament() {
