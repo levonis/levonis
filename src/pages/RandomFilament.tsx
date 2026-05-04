@@ -441,6 +441,7 @@ export default function RandomFilament() {
 /* ----------------- Eligibility preview (public) ----------------- */
 function EligibilityBadges({ offerId }: { offerId: string }) {
   const [open, setOpen] = useState(false);
+  const { capture, originRef } = useOriginPoint();
   const { data } = useQuery({
     queryKey: ["rf-public-summary", offerId],
     queryFn: async () => {
@@ -457,13 +458,13 @@ function EligibilityBadges({ offerId }: { offerId: string }) {
     <>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        onClick={(e) => { e.stopPropagation(); capture(e); setOpen(true); }}
         className="inline-flex items-center gap-1.5 text-[11px] rounded-full border bg-background/60 px-2 py-1 hover:border-primary transition"
       >
         <Package className="size-3 text-primary" />
         <span><b>{products}</b> منتج · <b>{colors}</b> لون</span>
       </button>
-      <EligibleProductsDialog offerId={offerId} open={open} onOpenChange={setOpen} />
+      <EligibleProductsDialog offerId={offerId} open={open} onOpenChange={setOpen} originRef={originRef} />
     </>
   );
 }
