@@ -78,6 +78,34 @@ export default function RandomFilament() {
     },
   });
 
+  // Existing unrevealed/unpaid RF cart items — used to enforce single sale_type per cart
+  const { data: existingRfSaleType } = useQuery<SaleType | null>({
+    queryKey: ["rf-existing-cart-sale-type", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("random_filament_orders")
+        .select("sale_type, revealed_at, order_id")
+        .eq("user_id", user!.id)
+        .is("order_id", null)
+        .is("revealed_at", null)
+        .limit(1)
+        .maybeSingle();
+      return (data?.sale_type as SaleType) || null;
+    },
+  });
+
+  const handlePickSaleType = (next: SaleType) => {
+    if (existingRfSaleType && existingRfSaleType !== next) {
+      const existingLabel = existingRfSaleType === "direct" ? "البيع المباشر" : "الحجز المسبق";
+      toast.error(`لديك طلب فلمنت عشوائي من ${existingLabel} في السلة — أكمل الطلب أولاً قبل إضافة نوع آخر`);
+      navigate("/cart");
+      return;
+    }
+    setSaleType(next);
+    setStep("category");
+  };
+
   const { data: categories } = useQuery({
     queryKey: ["random-filament-allowed-categories", settings?.category_ids],
     enabled: !!settings?.category_ids?.length,
