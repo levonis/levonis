@@ -53,18 +53,23 @@ function computeUnifiedCardPrice(
   const useDirect = hasDirect || (!hasPreOrder && (product?.has_in_stock ?? false));
 
   if (useDirect) {
+    // 1. Server RPC live price (overrides stored when linked) — matches ProductDetail
+    if (product?.link_direct_commission_to_cod) {
+      const fromServer = liveDirectMap?.get(product.id);
+      if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
+      // Local fallback while RPC loads
+      if (codDefaults) {
+        const liveDirect = computeLinkedDirectSalePrice(
+          product,
+          { usd_to_iqd_rate: usdToIqd } as any,
+          codDefaults,
+        );
+        if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
+      }
+    }
+    // 2. Stored direct_sale_price
     if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
       return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
-    }
-    const fromServer = liveDirectMap?.get(product.id);
-    if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
-    if (product?.link_direct_commission_to_cod && codDefaults) {
-      const liveDirect = computeLinkedDirectSalePrice(
-        product,
-        { usd_to_iqd_rate: usdToIqd } as any,
-        codDefaults,
-      );
-      if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
     }
   }
   // Pre-order fallback: use sea/air price like ProductDetail does
