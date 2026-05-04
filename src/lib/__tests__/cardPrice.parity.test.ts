@@ -93,6 +93,7 @@ describe('computeUnifiedCardPrice', () => {
   it('rounds up to 250 when round_up_price is true', () => {
     const p = {
       has_in_stock: true,
+      direct_stock: 5,
       direct_sale_price: 100123,
       round_up_price: true,
     };
