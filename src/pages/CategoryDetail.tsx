@@ -97,6 +97,21 @@ const CategoryDetail = () => {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Fetch server-computed live direct-sale prices for all products linked to global COD %.
+  // This ensures the card price matches what the product detail page shows — no leak.
+  const linkedIds = useMemo(
+    () => (products || [])
+      .filter((p: any) => p.link_direct_commission_to_cod && (p.has_in_stock ?? false))
+      .map((p: any) => p.id),
+    [products]
+  );
+  const { data: liveDirectMap } = useQuery({
+    queryKey: ['category-live-direct-prices', linkedIds],
+    queryFn: () => fetchLiveDirectSalePrices(linkedIds),
+    enabled: linkedIds.length > 0,
+    staleTime: 60 * 1000,
+  });
+
   // Apply filters & sort
   const filteredProducts = useMemo(() => {
     if (!products) return [];
