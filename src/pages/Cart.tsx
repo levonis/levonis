@@ -38,6 +38,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Warehouse, UserCheck, ChevronDown } from 'lucide-react';
 import { getColorSwatchStyle } from "@/lib/colorSwatch";
 import { trackMetaEvent } from "@/lib/metaPixel";
+import WavyColors from "@/components/WavyColors";
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart, cartSaleType } = useCart();
@@ -2197,6 +2198,11 @@ const Cart = () => {
               {(() => {
                 // Group items by product + option + color combination
                 const groupedItems = items.reduce((acc, item) => {
+                  // Random filament: render each as single mystery item (never grouped)
+                  if ((item as any).is_random_filament) {
+                    acc.push({ type: 'single', items: [item] });
+                    return acc;
+                  }
                   // Offer purchase items (from storage) are rendered as single items
                   if ((item as any).offer_purchase_id) {
                     acc.push({ type: 'offer_purchase', items: [item] });
@@ -2402,8 +2408,15 @@ const Cart = () => {
                           </div>
                         )}
                         <div className="flex gap-2.5 sm:gap-4">
-                          {/* Product Image - compact on mobile */}
-                          {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
+                          {/* Product Image - compact on mobile. RF items show wavy mystery image. */}
+                          {(item as any).is_random_filament ? (
+                            <div className="flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24 rounded-lg border border-primary/40 overflow-hidden relative">
+                              <WavyColors seed={item.id} />
+                              <div className="absolute inset-0 flex items-center justify-center bg-background/20">
+                                <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-white drop-shadow" />
+                              </div>
+                            </div>
+                          ) : ((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
                             <Link 
                               to={item.products ? `/product/${item.products.slug}` : '#'}
                               className="flex-shrink-0"
@@ -2420,7 +2433,13 @@ const Cart = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-1">
                               <div className="min-w-0 flex-1">
-                                {item.products ? (
+                                {(item as any).is_random_filament ? (
+                                  <div className="font-bold text-xs sm:text-sm text-foreground line-clamp-1 flex items-center gap-1">
+                                    <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                                    فلمنت عشوائي
+                                    <span className="text-[9px] bg-primary/20 text-primary px-1 py-0.5 rounded-full shrink-0">مفاجأة</span>
+                                  </div>
+                                ) : item.products ? (
                                   <Link 
                                     to={`/product/${item.products.slug}`}
                                     className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors line-clamp-1 block"
@@ -2434,8 +2453,8 @@ const Cart = () => {
                                   </div>
                                 )}
                                 
-                                {/* Option/Color/Shipping tags inline */}
-                                {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
+                                {/* Option/Color/Shipping tags inline — hidden for RF (mystery) */}
+                                {!(item as any).is_random_filament && (itemOption || colorData || (item as any).shipping_option_name_ar) && (
                                   <div className="flex flex-wrap gap-1 mt-0.5">
                                     {itemOption && (
                                       <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
@@ -2449,6 +2468,11 @@ const Cart = () => {
                                     {(item as any).shipping_option_name_ar && (
                                       <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{translateShippingOption((item as any).shipping_option_name_ar, t)}</span>
                                     )}
+                                  </div>
+                                )}
+                                {(item as any).is_random_filament && (
+                                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    سيتم الكشف عن المنتج واللون عند التوصيل
                                   </div>
                                 )}
                               </div>

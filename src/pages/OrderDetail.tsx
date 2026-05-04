@@ -5,7 +5,8 @@ import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotificat
 import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info } from 'lucide-react';
+import { Loader2, Package, Truck, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Image, File, Download, Ship, Plane, MessageCircle, XCircle, Wallet, Clock, CheckCircle2, Receipt, Hash, Info, Sparkles } from 'lucide-react';
+import WavyColors from '@/components/WavyColors';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -103,17 +104,24 @@ const OrderDetail = () => {
     enabled: canQuery
   });
 
-  const { data: hasRandomFilament } = useQuery({
-    queryKey: ['order-has-rf', orderId],
+  const { data: rfRows } = useQuery({
+    queryKey: ['order-rf-rows', orderId],
     queryFn: async () => {
-      if (!orderId) return false;
-      const { count } = await supabase
-        .from('random_filament_orders' as any)
-        .select('id', { count: 'exact', head: true })
+      if (!orderId) return [] as any[];
+      const { data } = await (supabase as any)
+        .from('random_filament_orders')
+        .select('id, product_id, product_option_id, selected_color, revealed_at, sale_type')
         .eq('order_id', orderId);
-      return (count || 0) > 0;
+      return (data || []) as any[];
     },
     enabled: !!orderId,
+  });
+  const hasRandomFilament = (rfRows?.length || 0) > 0;
+  // Build a key -> rf row map for per-item lookups
+  const rfByKey = new Map<string, any>();
+  (rfRows || []).forEach((r: any) => {
+    const k = `${r.product_id || ''}_${r.product_option_id || ''}`;
+    rfByKey.set(k, r);
   });
 
   const handleCancelOrder = async () => {
@@ -364,6 +372,11 @@ const OrderDetail = () => {
           <div className="space-y-3">
             {order.order_items?.map((item: any, index: number) => {
               const isCustomRequest = !!item.custom_request_id;
+              const rfRow = rfByKey.get(`${item.product_id || ''}_${item.product_option_id || ''}`);
+              const isRandomFilament = !!rfRow;
+              const isRevealed = !!rfRow?.revealed_at;
+              // Non-admin user sees the mystery image until reveal (after delivery or full wallet payment)
+              const hideRfDetails = isRandomFilament && !isRevealed && !isAdmin;
               const imageUrl = isCustomRequest 
                 ? item.custom_product_requests?.image_url 
                 : (item.products?.images?.[0] || item.products?.image_url);
@@ -382,15 +395,26 @@ const OrderDetail = () => {
                   <div className="flex gap-3">
                     {/* Images */}
                     <div className="flex gap-2 shrink-0">
-                      {imageUrl && (
-                        <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/30 shadow-sm">
-                          <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                      {hideRfDetails ? (
+                        <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-primary/40 shadow-sm relative">
+                          <WavyColors seed={item.id} />
+                          <div className="absolute inset-0 flex items-center justify-center bg-background/15">
+                            <Sparkles className="h-6 w-6 text-white drop-shadow" />
+                          </div>
                         </div>
-                      )}
-                      {item.color_image_url && (
-                        <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-primary/30 shadow-sm">
-                          <img src={item.color_image_url} alt={`لون ${item.selected_color}`} className="w-full h-full object-cover" />
-                        </div>
+                      ) : (
+                        <>
+                          {imageUrl && (
+                            <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-border/30 shadow-sm">
+                              <img src={imageUrl} alt={productName} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          {item.color_image_url && (
+                            <div className="w-[72px] h-[72px] rounded-xl overflow-hidden border border-primary/30 shadow-sm">
+                              <img src={item.color_image_url} alt={`لون ${item.selected_color}`} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                     
@@ -399,12 +423,25 @@ const OrderDetail = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h4 className="font-bold text-sm text-foreground leading-tight truncate flex items-center gap-1.5">
-                            {productName}
-                            {isCustomRequest && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">{t('od_badge_custom')}</span>
-                            )}
-                            {item.is_gift && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{t('od_badge_gift')}</span>
+                            {hideRfDetails ? (
+                              <>
+                                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                                فلمنت عشوائي
+                                <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">مفاجأة</span>
+                              </>
+                            ) : (
+                              <>
+                                {productName}
+                                {isRandomFilament && isRevealed && (
+                                  <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">عشوائي</span>
+                                )}
+                                {isCustomRequest && (
+                                  <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">{t('od_badge_custom')}</span>
+                                )}
+                                {item.is_gift && (
+                                  <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{t('od_badge_gift')}</span>
+                                )}
+                              </>
                             )}
                           </h4>
                           {isAdmin && !isCustomRequest && item.products?.taobao_url && (
@@ -425,20 +462,28 @@ const OrderDetail = () => {
                       
                       {/* Meta */}
                       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                        {item.selected_option && (
-                          <span className="text-[11px] text-muted-foreground">
-                            {t('od_meta_option')}: <span className="text-foreground font-medium">{item.selected_option}</span>
+                        {hideRfDetails ? (
+                          <span className="text-[11px] text-muted-foreground italic">
+                            سيتم الكشف عن المنتج واللون عند تأكيد التوصيل
                           </span>
-                        )}
-                        {item.selected_color && (
-                          <span className="text-[11px] text-muted-foreground">
-                            {t('od_meta_color')}: <span className="text-foreground font-medium">{item.selected_color}</span>
-                          </span>
-                        )}
-                        {item.shipping_option_name_ar && (
-                          <span className="text-[11px] text-muted-foreground">
-                            {t('od_meta_shipping')}: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span>
-                          </span>
+                        ) : (
+                          <>
+                            {item.selected_option && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {t('od_meta_option')}: <span className="text-foreground font-medium">{item.selected_option}</span>
+                              </span>
+                            )}
+                            {item.selected_color && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {t('od_meta_color')}: <span className="text-foreground font-medium">{item.selected_color}</span>
+                              </span>
+                            )}
+                            {item.shipping_option_name_ar && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {t('od_meta_shipping')}: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span>
+                              </span>
+                            )}
+                          </>
                         )}
                         <span className="text-[11px] text-muted-foreground">
                           {t('od_meta_quantity')}: <span className="text-foreground font-medium">{item.quantity}</span>
