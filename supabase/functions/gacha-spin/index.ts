@@ -290,17 +290,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 9. Deduct tickets
-    await supabase
-      .from("user_tickets")
-      .update({ ticket_count: currentTickets - totalCost })
-      .eq("user_id", user.id);
+    // 9. Tickets already deducted atomically at the top — fetch remaining for response.
+    const { data: remainingTicketsData } = await supabase
+      .from("user_tickets").select("ticket_count").eq("user_id", user.id).single();
 
     return new Response(JSON.stringify({
       success: true,
       results,
       tickets_spent: totalCost,
-      remaining_tickets: currentTickets - totalCost,
+      remaining_tickets: remainingTicketsData?.ticket_count ?? 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
