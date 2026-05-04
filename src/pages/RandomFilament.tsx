@@ -377,7 +377,17 @@ export default function RandomFilament() {
           if (!o) setStep("offer");
         }}
       >
-        <DialogContent className="!overflow-hidden !max-h-none">
+        <DialogContent
+          className="!overflow-hidden !max-h-none"
+          ref={(node) => {
+            if (node && originPoint) {
+              const r = node.getBoundingClientRect();
+              const ox = Math.max(0, Math.min(r.width, originPoint.x - r.left));
+              const oy = Math.max(0, Math.min(r.height, originPoint.y - r.top));
+              node.style.transformOrigin = `${ox}px ${oy}px`;
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Dices className="size-5 text-primary" />
