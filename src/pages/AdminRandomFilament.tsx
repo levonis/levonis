@@ -646,9 +646,9 @@ function OfferDialog({
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 p-6 pt-3 border-t shrink-0">
           <Button variant="outline" onClick={onClose} disabled={saving}>إلغاء</Button>
           <Button onClick={save} disabled={saving || uploading}>
             <Save className="size-4 ml-1" />
