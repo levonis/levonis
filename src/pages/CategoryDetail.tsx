@@ -547,30 +547,37 @@ const CategoryDetail = () => {
                 {/* Responsive grid of product cards */}
                 {otherProducts.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
-                    {otherProducts.map((product) => (
-                      <FloatingProductCard
-                        key={product.id}
-                        id={product.id}
-                        name={product.name}
-                        nameAr={product.name_ar}
-                        price={ensurePriceIqd(Number(product.price), (product as any).price_usd, usdToIqd)}
-                        originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                        imageUrl={product.image_url || undefined}
-                        currency={product.currency || undefined}
-                        slug={product.slug}
-                        hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
-                        directSalePriceLive={
-                          (product as any).link_direct_commission_to_cod
-                            ? computeLinkedDirectSalePrice(
-                                product as any,
-                                { usd_to_iqd_rate: usdToIqd } as any,
-                                codDefaults as any,
-                              )
-                            : null
-                        }
-                        highlightQuery={searchQ}
-                      />
-                    ))}
+                    {otherProducts.map((product) => {
+                      const shouldRoundUp = (product as any).round_up_price === true;
+                      const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
+                      const cardPrice = roundIfNeeded(ensurePriceIqd(Number(product.price), (product as any).price_usd, usdToIqd));
+                      const cardOriginal = product.original_price
+                        ? roundIfNeeded(ensurePriceIqd(Number(product.original_price), (product as any).price_usd, usdToIqd))
+                        : undefined;
+                      const liveDirect = (product as any).link_direct_commission_to_cod
+                        ? computeLinkedDirectSalePrice(
+                            product as any,
+                            { usd_to_iqd_rate: usdToIqd } as any,
+                            codDefaults as any,
+                          )
+                        : null;
+                      return (
+                        <FloatingProductCard
+                          key={product.id}
+                          id={product.id}
+                          name={product.name}
+                          nameAr={product.name_ar}
+                          price={cardPrice}
+                          originalPrice={cardOriginal}
+                          imageUrl={product.image_url || undefined}
+                          currency={product.currency || undefined}
+                          slug={product.slug}
+                          hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
+                          directSalePriceLive={liveDirect != null ? roundIfNeeded(liveDirect) : null}
+                          highlightQuery={searchQ}
+                        />
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="glass-panel text-center py-12 px-6">
