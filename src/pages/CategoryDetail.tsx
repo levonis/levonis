@@ -47,17 +47,17 @@ function computeUnifiedCardPrice(
 ): number {
   const shouldRoundUp = product?.round_up_price === true;
   const roundIfNeeded = (n: number) => (shouldRoundUp ? Math.ceil(n / 250) * 250 : n);
-  const hasDirect = (product?.has_in_stock ?? false);
+  // Match ProductDetail default: prefer direct ONLY when stock isn't depleted; else fall back to pre-order.
+  const hasDirect = (product?.has_in_stock ?? false) && !isAllDirectStockDepleted(product);
+  const hasPreOrder = !!product?.has_pre_order;
+  const useDirect = hasDirect || (!hasPreOrder && (product?.has_in_stock ?? false));
 
-  if (hasDirect) {
-    // 1. Stored direct_sale_price (matches what product detail shows by default)
+  if (useDirect) {
     if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
       return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
     }
-    // 2. Server-computed live price
     const fromServer = liveDirectMap?.get(product.id);
     if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
-    // 3. Local fallback
     if (product?.link_direct_commission_to_cod && codDefaults) {
       const liveDirect = computeLinkedDirectSalePrice(
         product,
@@ -67,7 +67,19 @@ function computeUnifiedCardPrice(
       if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
     }
   }
-  // 4. Base price fallback
+  // Pre-order fallback: use sea/air price like ProductDetail does
+  if (hasPreOrder) {
+    const st = product?.shipping_type;
+    const sea = product?.sea_price ? ensurePriceIqd(Number(product.sea_price), product?.price_usd, usdToIqd) : null;
+    const air = product?.air_price ? ensurePriceIqd(Number(product.air_price), product?.price_usd, usdToIqd) : null;
+    if (st === 'sea' && sea) return roundIfNeeded(sea);
+    if (st === 'air' && air) return roundIfNeeded(air);
+    if (st === 'both') {
+      if (sea && air) return roundIfNeeded(Math.min(sea, air));
+      if (sea) return roundIfNeeded(sea);
+      if (air) return roundIfNeeded(air);
+    }
+  }
   return roundIfNeeded(ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd));
 }
 
