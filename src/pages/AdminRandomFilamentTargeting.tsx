@@ -349,6 +349,186 @@ function OfferTargetingRow({
           </Button>
         </div>
       </AccordionContent>
+
+      <WeightEditorDialog
+        product={editingProduct}
+        value={editingProduct ? weights[editingProduct.id] : undefined}
+        onClose={() => setEditingProduct(null)}
+        onSave={(w) => {
+          if (!editingProduct) return;
+          setWeights((cur) => {
+            const next = { ...cur };
+            const isEmpty =
+              w.weight === undefined &&
+              !Object.keys(w.colors || {}).length &&
+              !Object.keys(w.options || {}).length;
+            if (isEmpty) delete next[editingProduct.id];
+            else next[editingProduct.id] = w;
+            return next;
+          });
+          setEditingProduct(null);
+          toast.info("لا تنسَ الضغط على حفظ");
+        }}
+      />
     </AccordionItem>
+  );
+}
+
+function WeightEditorDialog({
+  product, value, onClose, onSave,
+}: {
+  product: any | null;
+  value: ProductWeight | undefined;
+  onClose: () => void;
+  onSave: (w: ProductWeight) => void;
+}) {
+  const [productWeight, setProductWeight] = useState<string>("");
+  const [colorWeights, setColorWeights] = useState<Record<string, string>>({});
+  const [optionWeights, setOptionWeights] = useState<Record<string, string>>({});
+
+  // Reset whenever a different product opens
+  useMemo(() => {
+    if (!product) return;
+    setProductWeight(value?.weight !== undefined ? String(value.weight) : "");
+    const cw: Record<string, string> = {};
+    Object.entries(value?.colors || {}).forEach(([k, v]) => { cw[k] = String(v); });
+    setColorWeights(cw);
+    const ow: Record<string, string> = {};
+    Object.entries(value?.options || {}).forEach(([k, v]) => { ow[k] = String(v); });
+    setOptionWeights(ow);
+  }, [product?.id]);
+
+  if (!product) return null;
+
+  const colors: any[] = Array.isArray(product.colors) ? product.colors : [];
+  const directColors = colors.filter((c: any) => c?.available_for_direct_sale === true);
+
+  // Collect option keys from all option_stocks across colors
+  const optionKeys = Array.from(new Set(
+    directColors.flatMap((c: any) =>
+      Object.keys(c?.option_stocks || {}).filter((k) => Number((c.option_stocks || {})[k]) > 0)
+    )
+  ));
+
+  const parse = (s: string): number | undefined => {
+    const t = s.trim();
+    if (!t) return undefined;
+    const n = Number(t);
+    return Number.isFinite(n) && n >= 0 ? n : undefined;
+  };
+
+  const handleSave = () => {
+    const out: ProductWeight = {};
+    const pw = parse(productWeight);
+    if (pw !== undefined) out.weight = pw;
+    const cOut: Record<string, number> = {};
+    Object.entries(colorWeights).forEach(([k, v]) => {
+      const n = parse(v); if (n !== undefined) cOut[k] = n;
+    });
+    if (Object.keys(cOut).length) out.colors = cOut;
+    const oOut: Record<string, number> = {};
+    Object.entries(optionWeights).forEach(([k, v]) => {
+      const n = parse(v); if (n !== undefined) oOut[k] = n;
+    });
+    if (Object.keys(oOut).length) out.options = oOut;
+    onSave(out);
+  };
+
+  const reset = () => {
+    setProductWeight("");
+    setColorWeights({});
+    setOptionWeights({});
+  };
+
+  return (
+    <Dialog open={!!product} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="!overflow-hidden !max-h-none max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-right">
+            <Sliders className="size-5 text-primary" />
+            أوزان: {product.name_ar}
+          </DialogTitle>
+          <DialogDescription className="text-right text-xs">
+            القيمة الافتراضية = 1. ارفع الرقم لزيادة احتمال الاختيار. اتركه فارغاً للوزن الافتراضي.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-4">
+          {/* Product weight */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold">وزن المنتج (في مجموعة المنتجات)</label>
+            <Input
+              type="number" min={0} step="0.1" inputMode="decimal"
+              placeholder="1"
+              value={productWeight}
+              onChange={(e) => setProductWeight(e.target.value)}
+              className="h-9 text-sm"
+            />
+          </div>
+
+          {/* Options table */}
+          {optionKeys.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">أوزان الخيارات</label>
+              <div className="border rounded-md divide-y">
+                {optionKeys.map((k) => (
+                  <div key={k} className="flex items-center justify-between gap-2 p-2">
+                    <span className="text-xs flex-1 truncate">{k}</span>
+                    <Input
+                      type="number" min={0} step="0.1" inputMode="decimal"
+                      placeholder="1"
+                      value={optionWeights[k] || ""}
+                      onChange={(e) => setOptionWeights((cur) => ({ ...cur, [k]: e.target.value }))}
+                      className="h-8 w-20 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Colors table */}
+          {directColors.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">أوزان الألوان</label>
+              <div className="border rounded-md divide-y">
+                {directColors.map((c: any, i: number) => {
+                  const key = c?.name_ar || c?.name || "";
+                  if (!key) return null;
+                  return (
+                    <div key={`${key}-${i}`} className="flex items-center justify-between gap-2 p-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span
+                          className="size-4 rounded-full border shrink-0"
+                          style={{ background: c?.hex_code || c?.hex || c?.color || "#888" }}
+                        />
+                        <span className="text-xs truncate">{key}</span>
+                      </div>
+                      <Input
+                        type="number" min={0} step="0.1" inputMode="decimal"
+                        placeholder="1"
+                        value={colorWeights[key] || ""}
+                        onChange={(e) => setColorWeights((cur) => ({ ...cur, [key]: e.target.value }))}
+                        className="h-8 w-20 text-sm"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between gap-2 pt-2 border-t">
+          <Button variant="ghost" size="sm" onClick={reset}>إعادة تعيين</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onClose}>إلغاء</Button>
+            <Button size="sm" onClick={handleSave} className="gap-1.5">
+              <Save className="size-3.5" /> تطبيق
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
