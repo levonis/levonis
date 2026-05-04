@@ -9419,6 +9419,7 @@ export type Database = {
           id: string
           image_url: string | null
           price_iqd: number
+          product_weights: Json
           sale_type: string
           title_ar: string
           updated_at: string
@@ -9434,6 +9435,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           price_iqd?: number
+          product_weights?: Json
           sale_type: string
           title_ar: string
           updated_at?: string
@@ -9449,6 +9451,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           price_iqd?: number
+          product_weights?: Json
           sale_type?: string
           title_ar?: string
           updated_at?: string
@@ -12656,6 +12659,7 @@ export type Database = {
       }
     }
     Functions: {
+      _rf_weighted_pick: { Args: { p_items: Json }; Returns: string }
       add_prize_as_product: {
         Args: {
           p_competition_id: string
