@@ -2366,7 +2366,12 @@ const Cart = () => {
                     const isDirect = (item as any).sale_type === 'direct';
                     const isGift = !!(item as any).is_gift;
                     const isLocked = !!(item as any).is_locked;
-                    const itemPrice = isGift ? 0 : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
+                    const isRandomFilamentItem = !!(item as any).is_random_filament;
+                    const itemPrice = isGift
+                      ? 0
+                      : isRandomFilamentItem
+                        ? (Number((item as any).random_filament_price_iqd) || 0)
+                        : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     
