@@ -563,6 +563,26 @@ const ProductDetail = () => {
   const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
   const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;
 
+  // Dev-only parity check: warn if the card price logic disagrees with what
+  // this detail page is showing. Runs whenever the relevant inputs change.
+  useEffect(() => {
+    if (!product) return;
+    // Build a "card-shaped" snapshot using the fully-loaded productOptions
+    // (the row from the products table doesn't include them by default).
+    const productForCard = { ...product, product_options: productOptions || [] };
+    const liveMap = new Map<string, number>();
+    if (liveDirectPriceFromRpc != null && product?.id) liveMap.set(product.id, liveDirectPriceFromRpc);
+    assertCardDetailParity(
+      productForCard,
+      usdToIqd,
+      codDefaults,
+      liveMap,
+      finalPrice,
+      finalOriginalPrice,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id, productOptions, usdToIqd, codDefaults, liveDirectPriceFromRpc, finalPrice, finalOriginalPrice]);
+
   const directStockQuantity = selectedColorData
     ? (getColorStockForOption(selectedColorData, selectedOptionName) ?? selectedColorData.stock_quantity)
     : undefined;
