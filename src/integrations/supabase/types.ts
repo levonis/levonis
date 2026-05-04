@@ -2157,6 +2157,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_technician_id_fkey"
             columns: ["technician_id"]
             isOneToOne: false
@@ -5362,6 +5369,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "loyalty_free_shipping_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
         ]
       }
       loyalty_levels: {
@@ -7236,6 +7250,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -7550,6 +7571,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "parts_discount_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "parts_discount_requests_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -7654,6 +7682,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_discount_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
             referencedColumns: ["id"]
           },
           {
@@ -9542,6 +9577,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "random_filament_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "random_filament_orders_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -10190,6 +10232,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "saved_invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "saved_invoices_printer_id_fkey"
             columns: ["printer_id"]
             isOneToOne: false
@@ -10336,6 +10385,13 @@ export type Database = {
             columns: ["order_item_id"]
             isOneToOne: false
             referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serial_number_requests_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items_admin"
             referencedColumns: ["id"]
           },
           {
@@ -10955,10 +11011,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "store_printers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "store_printers_order_item_id_fkey"
             columns: ["order_item_id"]
             isOneToOne: false
             referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_printers_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items_admin"
             referencedColumns: ["id"]
           },
           {
@@ -11844,6 +11914,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_purchased_products_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_purchased_products_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -12452,6 +12529,135 @@ export type Database = {
           },
         ]
       }
+      order_items_admin: {
+        Row: {
+          bundle_id: string | null
+          color_image_url: string | null
+          cost_price: number | null
+          created_at: string | null
+          custom_request_id: string | null
+          customer_notes: string | null
+          id: string | null
+          is_gift: boolean | null
+          order_id: string | null
+          product_id: string | null
+          product_name: string | null
+          product_name_ar: string | null
+          product_option_id: string | null
+          quantity: number | null
+          selected_color: string | null
+          selected_option: string | null
+          serial_number: string | null
+          shipping_option_name_ar: string | null
+          shipping_price_adjustment: number | null
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          bundle_id?: string | null
+          color_image_url?: string | null
+          cost_price?: number | null
+          created_at?: string | null
+          custom_request_id?: string | null
+          customer_notes?: string | null
+          id?: string | null
+          is_gift?: boolean | null
+          order_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_name_ar?: string | null
+          product_option_id?: string | null
+          quantity?: number | null
+          selected_color?: string | null
+          selected_option?: string | null
+          serial_number?: string | null
+          shipping_option_name_ar?: string | null
+          shipping_price_adjustment?: number | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          bundle_id?: string | null
+          color_image_url?: string | null
+          cost_price?: number | null
+          created_at?: string | null
+          custom_request_id?: string | null
+          customer_notes?: string | null
+          id?: string | null
+          is_gift?: boolean | null
+          order_id?: string | null
+          product_id?: string | null
+          product_name?: string | null
+          product_name_ar?: string | null
+          product_option_id?: string | null
+          quantity?: number | null
+          selected_color?: string | null
+          selected_option?: string | null
+          serial_number?: string | null
+          shipping_option_name_ar?: string | null
+          shipping_price_adjustment?: number | null
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_bundle_id_fkey"
+            columns: ["bundle_id"]
+            isOneToOne: false
+            referencedRelation: "product_bundles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_custom_request_id_fkey"
+            columns: ["custom_request_id"]
+            isOneToOne: false
+            referencedRelation: "custom_product_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey_products"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_option_id_fkey_product_options"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items_for_serial: {
         Row: {
           model_name: string | null
@@ -12477,6 +12683,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_admin"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -12490,6 +12703,211 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_print_reputation"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      orders_admin: {
+        Row: {
+          actual_weight: number | null
+          admin_files: string[] | null
+          admin_images: string[] | null
+          admin_other_costs: number | null
+          admin_paid_amount: number | null
+          admin_product_cost: number | null
+          admin_shipping_cost: number | null
+          arrived_iraq_at: string | null
+          arrived_warehouse_at: string | null
+          auto_confirmed: boolean | null
+          cancelled_at: string | null
+          card_discount_amount: number | null
+          card_discount_level_name: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          currency: string | null
+          customer_paid_amount: number | null
+          customs_declaration_number: string | null
+          delivered_at: string | null
+          delivery_method: string | null
+          discount_amount: number | null
+          estimated_delivery_date: string | null
+          financial_notes: string | null
+          governorate: string | null
+          id: string | null
+          internal_notes: string | null
+          on_the_way_at: string | null
+          order_number: string | null
+          order_type: string | null
+          package_dimensions: string | null
+          paid_amount: number | null
+          payment_method: string | null
+          payment_status: string | null
+          phone_number: string | null
+          priority: string | null
+          processing_at: string | null
+          profit_amount: number | null
+          purchased_at: string | null
+          referral_coupon_id: string | null
+          referral_owner_earnings_iqd: number | null
+          remaining_amount: number | null
+          serial_number_image_url: string | null
+          shipped_at: string | null
+          shipping_address: string | null
+          shipping_duration_days: number | null
+          shipping_notes: string | null
+          shipping_route_type: string | null
+          shipping_route_waypoints: Json | null
+          status: string | null
+          stock_deducted: boolean | null
+          subtotal: number | null
+          tax_amount: number | null
+          tax_percentage: number | null
+          total_amount: number | null
+          updated_at: string | null
+          user_confirmed_at: string | null
+          user_confirmed_delivery: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          actual_weight?: number | null
+          admin_files?: string[] | null
+          admin_images?: string[] | null
+          admin_other_costs?: number | null
+          admin_paid_amount?: number | null
+          admin_product_cost?: number | null
+          admin_shipping_cost?: number | null
+          arrived_iraq_at?: string | null
+          arrived_warehouse_at?: string | null
+          auto_confirmed?: boolean | null
+          cancelled_at?: string | null
+          card_discount_amount?: number | null
+          card_discount_level_name?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_paid_amount?: number | null
+          customs_declaration_number?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          discount_amount?: number | null
+          estimated_delivery_date?: string | null
+          financial_notes?: string | null
+          governorate?: string | null
+          id?: string | null
+          internal_notes?: string | null
+          on_the_way_at?: string | null
+          order_number?: string | null
+          order_type?: string | null
+          package_dimensions?: string | null
+          paid_amount?: number | null
+          payment_method?: string | null
+          payment_status?: string | null
+          phone_number?: string | null
+          priority?: string | null
+          processing_at?: string | null
+          profit_amount?: number | null
+          purchased_at?: string | null
+          referral_coupon_id?: string | null
+          referral_owner_earnings_iqd?: number | null
+          remaining_amount?: number | null
+          serial_number_image_url?: string | null
+          shipped_at?: string | null
+          shipping_address?: string | null
+          shipping_duration_days?: number | null
+          shipping_notes?: string | null
+          shipping_route_type?: string | null
+          shipping_route_waypoints?: Json | null
+          status?: string | null
+          stock_deducted?: boolean | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_percentage?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          user_confirmed_at?: string | null
+          user_confirmed_delivery?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          actual_weight?: number | null
+          admin_files?: string[] | null
+          admin_images?: string[] | null
+          admin_other_costs?: number | null
+          admin_paid_amount?: number | null
+          admin_product_cost?: number | null
+          admin_shipping_cost?: number | null
+          arrived_iraq_at?: string | null
+          arrived_warehouse_at?: string | null
+          auto_confirmed?: boolean | null
+          cancelled_at?: string | null
+          card_discount_amount?: number | null
+          card_discount_level_name?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_paid_amount?: number | null
+          customs_declaration_number?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          discount_amount?: number | null
+          estimated_delivery_date?: string | null
+          financial_notes?: string | null
+          governorate?: string | null
+          id?: string | null
+          internal_notes?: string | null
+          on_the_way_at?: string | null
+          order_number?: string | null
+          order_type?: string | null
+          package_dimensions?: string | null
+          paid_amount?: number | null
+          payment_method?: string | null
+          payment_status?: string | null
+          phone_number?: string | null
+          priority?: string | null
+          processing_at?: string | null
+          profit_amount?: number | null
+          purchased_at?: string | null
+          referral_coupon_id?: string | null
+          referral_owner_earnings_iqd?: number | null
+          remaining_amount?: number | null
+          serial_number_image_url?: string | null
+          shipped_at?: string | null
+          shipping_address?: string | null
+          shipping_duration_days?: number | null
+          shipping_notes?: string | null
+          shipping_route_type?: string | null
+          shipping_route_waypoints?: Json | null
+          status?: string | null
+          stock_deducted?: boolean | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_percentage?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+          user_confirmed_at?: string | null
+          user_confirmed_delivery?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
           {
             foreignKeyName: "orders_user_id_fkey_profiles"
             columns: ["user_id"]
@@ -12729,6 +13147,107 @@ export type Database = {
       }
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
+      admin_get_order_items_full: {
+        Args: { p_order_ids: string[] }
+        Returns: {
+          bundle_id: string | null
+          color_image_url: string | null
+          cost_price: number | null
+          created_at: string
+          custom_request_id: string | null
+          customer_notes: string | null
+          id: string
+          is_gift: boolean
+          order_id: string
+          product_id: string | null
+          product_name: string
+          product_name_ar: string
+          product_option_id: string | null
+          quantity: number
+          selected_color: string | null
+          selected_option: string | null
+          serial_number: string | null
+          shipping_option_name_ar: string | null
+          shipping_price_adjustment: number | null
+          total_price: number
+          unit_price: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "order_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_orders_full: {
+        Args: { p_order_ids?: string[] }
+        Returns: {
+          actual_weight: number | null
+          admin_files: string[] | null
+          admin_images: string[] | null
+          admin_other_costs: number | null
+          admin_paid_amount: number | null
+          admin_product_cost: number | null
+          admin_shipping_cost: number | null
+          arrived_iraq_at: string | null
+          arrived_warehouse_at: string | null
+          auto_confirmed: boolean | null
+          cancelled_at: string | null
+          card_discount_amount: number | null
+          card_discount_level_name: string | null
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          customer_paid_amount: number | null
+          customs_declaration_number: string | null
+          delivered_at: string | null
+          delivery_method: string | null
+          discount_amount: number | null
+          estimated_delivery_date: string | null
+          financial_notes: string | null
+          governorate: string
+          id: string
+          internal_notes: string | null
+          on_the_way_at: string | null
+          order_number: string
+          order_type: string | null
+          package_dimensions: string | null
+          paid_amount: number | null
+          payment_method: string | null
+          payment_status: string | null
+          phone_number: string
+          priority: string | null
+          processing_at: string | null
+          profit_amount: number | null
+          purchased_at: string | null
+          referral_coupon_id: string | null
+          referral_owner_earnings_iqd: number
+          remaining_amount: number | null
+          serial_number_image_url: string | null
+          shipped_at: string | null
+          shipping_address: string
+          shipping_duration_days: number | null
+          shipping_notes: string | null
+          shipping_route_type: string | null
+          shipping_route_waypoints: Json | null
+          status: string
+          stock_deducted: boolean | null
+          subtotal: number | null
+          tax_amount: number | null
+          tax_percentage: number | null
+          total_amount: number
+          updated_at: string
+          user_confirmed_at: string | null
+          user_confirmed_delivery: boolean | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_gift_loyalty_card: {
         Args: { p_admin_note?: string; p_card_id: string; p_user_id: string }
         Returns: Json

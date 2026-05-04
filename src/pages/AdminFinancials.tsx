@@ -206,23 +206,36 @@ const AdminFinancials = () => {
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-financials', dateFrom, dateTo],
     queryFn: async () => {
-      let query = supabase.from('orders').select(`
-        *, order_type,
-        profile:profiles!orders_user_id_fkey_profiles(username, full_name),
-        order_items!order_items_order_id_fkey(id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id,
-          products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, referral_earnings_iqd, category_id,
-            categories!products_category_id_fkey(id, name_ar, main_section_id,
-              main_sections!categories_main_section_id_fkey(id, name_ar)
-            )
-          ),
-          product_bundles:bundle_id(id, title_ar, image_url)
-        )
-      `).neq('status', 'cancelled').order('created_at', { ascending: false });
+      // Fetch full orders via admin view (includes profit/cost columns)
+      let query = supabase.from('orders_admin' as any).select('*, order_type').neq('status', 'cancelled').order('created_at', { ascending: false });
       if (dateFrom) query = query.gte('created_at', dateFrom);
       if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59');
-      const { data, error } = await query;
+      const { data: ordersData, error } = await query;
       if (error) throw error;
-      return (data || []) as OrderWithDetails[];
+      const orderRows = (ordersData as any[]) || [];
+      const orderIds = orderRows.map((o) => o.id);
+      const userIds = Array.from(new Set(orderRows.map((o) => o.user_id).filter(Boolean)));
+
+      const [itemsRes, profilesRes] = await Promise.all([
+        orderIds.length
+          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, products!order_items_product_id_fkey(id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, referral_earnings_iqd, category_id, categories!products_category_id_fkey(id, name_ar, main_section_id, main_sections!categories_main_section_id_fkey(id, name_ar))), product_bundles:bundle_id(id, title_ar, image_url)').in('order_id', orderIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        userIds.length
+          ? supabase.from('profiles').select('id, username, full_name').in('id', userIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
+      const itemsByOrder = new Map<string, any[]>();
+      ((itemsRes.data as any[]) || []).forEach((it) => {
+        const arr = itemsByOrder.get(it.order_id) || [];
+        arr.push(it); itemsByOrder.set(it.order_id, arr);
+      });
+      const profileById = new Map<string, any>();
+      ((profilesRes.data as any[]) || []).forEach((p) => profileById.set(p.id, p));
+      return orderRows.map((o) => ({
+        ...o,
+        profile: profileById.get(o.user_id) || null,
+        order_items: itemsByOrder.get(o.id) || [],
+      })) as OrderWithDetails[];
     },
     enabled: isAdmin,
   });

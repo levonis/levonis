@@ -327,8 +327,8 @@ export default function PrinterInvoiceGenerator({ printer, open, onClose }: Prop
         .not('buyer_user_id', 'is', null);
 
       // Source 2: completed orders containing printer products
-      const { data: printerOrders } = await supabase
-        .from('orders')
+      const { data: printerOrders } = await (supabase as any)
+        .from('orders_admin')
         .select(`
           id,
           order_number,
@@ -551,8 +551,8 @@ address: addr ? [addr.governorate, addr.area, addr.neighborhood, addr.nearest_la
 
       // Pull real invoice totals from the order so warranty invoice matches order invoice/payment choice
       if (buyer.orderId) {
-        const { data: orderData } = await supabase
-          .from('orders')
+        const { data: orderData } = await (supabase as any)
+          .from('orders_admin')
           .select('subtotal, tax_amount, tax_percentage, total_amount, discount_amount, card_discount_amount, paid_amount, remaining_amount, payment_method, payment_status, delivery_method, admin_shipping_cost')
           .eq('id', buyer.orderId)
           .maybeSingle();
