@@ -944,7 +944,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
+      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
