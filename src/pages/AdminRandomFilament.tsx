@@ -371,7 +371,7 @@ function OfferDialog({
       const { data } = await supabase
         .from("products")
         .select(`
-          id, name_ar, image_url, category_id, in_stock,
+          id, name_ar, image_url, category_id, in_stock, direct_stock, colors,
           product_options (id, available_for_direct_sale, available_for_pre_order, stock_quantity)
         `)
         .in("category_id", draft.category_ids as string[])
@@ -384,15 +384,51 @@ function OfferDialog({
   const filteredProducts = useMemo(() => {
     const list = (products || []).map((p: any) => {
       const opts = p.product_options || [];
-      const directStock = opts
-        .filter((o: any) => o.available_for_direct_sale && Number(o.stock_quantity) > 0)
-        .reduce((s: number, o: any) => s + Number(o.stock_quantity || 0), 0);
-      // If product has no options, treat it as preorder-eligible by default.
-      // If it has options, require at least one explicitly preorder-eligible.
+      const colors = Array.isArray(p.colors) ? p.colors : [];
+
+      // Compute direct stock honoring V3 rules:
+      // 1) colors with option_stocks (JSON) are PRIMARY when present
+      // 2) else fall back to color-level stock_quantity
+      // 3) else fall back to product_options.stock_quantity
+      // 4) else fall back to products.direct_stock
+      let directStock = 0;
+      let hasStockData = false;
+
+      if (colors.length > 0) {
+        for (const c of colors) {
+          if (c?.available_for_direct_sale === false) continue;
+          const stocks = c?.option_stocks;
+          if (stocks && typeof stocks === "object" && Object.keys(stocks).length > 0) {
+            hasStockData = true;
+            for (const v of Object.values(stocks)) directStock += Math.max(0, Number(v) || 0);
+          } else if (c?.stock_quantity != null) {
+            hasStockData = true;
+            directStock += Math.max(0, Number(c.stock_quantity) || 0);
+          }
+        }
+      }
+      if (!hasStockData && opts.length > 0) {
+        for (const o of opts) {
+          if ((o?.available_for_direct_sale ?? true) === false) continue;
+          if (o?.stock_quantity != null) {
+            hasStockData = true;
+            directStock += Math.max(0, Number(o.stock_quantity) || 0);
+          }
+        }
+      }
+      if (!hasStockData && p.direct_stock != null) {
+        hasStockData = true;
+        directStock = Math.max(0, Number(p.direct_stock) || 0);
+      }
+
+      // Preorder eligibility: products with no options/colors are preorder by default;
+      // otherwise require at least one variant flagged eligible.
       const hasPreorder =
-        opts.length === 0
+        opts.length === 0 && colors.length === 0
           ? true
-          : opts.some((o: any) => o.available_for_pre_order !== false);
+          : opts.some((o: any) => o?.available_for_pre_order !== false) ||
+            colors.some((c: any) => c?.available_for_pre_order !== false);
+
       return { ...p, directStock, hasPreorder };
     });
 
