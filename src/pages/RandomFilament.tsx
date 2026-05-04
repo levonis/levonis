@@ -50,6 +50,15 @@ export default function RandomFilament() {
   const [offerId, setOfferId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [originPoint, setOriginPoint] = useState<{ x: number; y: number } | null>(null);
+
+  const openFromEvent = (
+    e: React.MouseEvent | React.PointerEvent,
+    cb: () => void
+  ) => {
+    setOriginPoint({ x: e.clientX, y: e.clientY });
+    cb();
+  };
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["random-filament-settings-page"],
