@@ -340,7 +340,8 @@ export default function RandomFilament() {
               <p className="text-xs text-muted-foreground">نوع ولون عشوائي من القسم</p>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        </>
       )}
 
       {step === "category" && (
