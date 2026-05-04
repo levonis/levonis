@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +50,15 @@ export default function RandomFilament() {
   const [offerId, setOfferId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [originPoint, setOriginPoint] = useState<{ x: number; y: number } | null>(null);
+
+  const openFromEvent = (
+    e: React.MouseEvent | React.PointerEvent,
+    cb: () => void
+  ) => {
+    setOriginPoint({ x: e.clientX, y: e.clientY });
+    cb();
+  };
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["random-filament-settings-page"],
@@ -336,7 +345,7 @@ export default function RandomFilament() {
               <Card
                 key={o.id}
                 className="glass-panel cursor-pointer hover:border-primary transition overflow-hidden"
-                onClick={() => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); }}
+                onClick={(e) => openFromEvent(e, () => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); })}
               >
                 <div className="w-full h-32 relative overflow-hidden">
                   {o.image_url ? (
@@ -368,7 +377,17 @@ export default function RandomFilament() {
           if (!o) setStep("offer");
         }}
       >
-        <DialogContent className="!overflow-hidden !max-h-none">
+        <DialogContent
+          className="!overflow-hidden !max-h-none"
+          ref={(node) => {
+            if (node && originPoint) {
+              const r = node.getBoundingClientRect();
+              const ox = Math.max(0, Math.min(r.width, originPoint.x - r.left));
+              const oy = Math.max(0, Math.min(r.height, originPoint.y - r.top));
+              node.style.transformOrigin = `${ox}px ${oy}px`;
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Dices className="size-5 text-primary" />
