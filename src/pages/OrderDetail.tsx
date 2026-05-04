@@ -103,17 +103,24 @@ const OrderDetail = () => {
     enabled: canQuery
   });
 
-  const { data: hasRandomFilament } = useQuery({
-    queryKey: ['order-has-rf', orderId],
+  const { data: rfRows } = useQuery({
+    queryKey: ['order-rf-rows', orderId],
     queryFn: async () => {
-      if (!orderId) return false;
-      const { count } = await supabase
-        .from('random_filament_orders' as any)
-        .select('id', { count: 'exact', head: true })
+      if (!orderId) return [] as any[];
+      const { data } = await (supabase as any)
+        .from('random_filament_orders')
+        .select('id, product_id, product_option_id, selected_color, revealed_at, sale_type')
         .eq('order_id', orderId);
-      return (count || 0) > 0;
+      return (data || []) as any[];
     },
     enabled: !!orderId,
+  });
+  const hasRandomFilament = (rfRows?.length || 0) > 0;
+  // Build a key -> rf row map for per-item lookups
+  const rfByKey = new Map<string, any>();
+  (rfRows || []).forEach((r: any) => {
+    const k = `${r.product_id || ''}_${r.product_option_id || ''}`;
+    rfByKey.set(k, r);
   });
 
   const handleCancelOrder = async () => {
