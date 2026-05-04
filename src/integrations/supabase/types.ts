@@ -910,6 +910,8 @@ export type Database = {
           product_id: string | null
           product_option_id: string | null
           quantity: number
+          rf_category_id: string | null
+          rf_offer_id: string | null
           sale_type: string | null
           selected_color: string | null
           shipping_option_index: number | null
@@ -930,6 +932,8 @@ export type Database = {
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
+          rf_category_id?: string | null
+          rf_offer_id?: string | null
           sale_type?: string | null
           selected_color?: string | null
           shipping_option_index?: number | null
@@ -950,6 +954,8 @@ export type Database = {
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
+          rf_category_id?: string | null
+          rf_offer_id?: string | null
           sale_type?: string | null
           selected_color?: string | null
           shipping_option_index?: number | null
@@ -998,6 +1004,20 @@ export type Database = {
             columns: ["product_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_rf_category_id_fkey"
+            columns: ["rf_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_rf_offer_id_fkey"
+            columns: ["rf_offer_id"]
+            isOneToOne: false
+            referencedRelation: "random_filament_offers"
             referencedColumns: ["id"]
           },
         ]
@@ -7341,6 +7361,7 @@ export type Database = {
           product_name_ar: string
           product_option_id: string | null
           quantity: number
+          rf_offer_id: string | null
           selected_color: string | null
           selected_option: string | null
           serial_number: string | null
@@ -7364,6 +7385,7 @@ export type Database = {
           product_name_ar: string
           product_option_id?: string | null
           quantity?: number
+          rf_offer_id?: string | null
           selected_color?: string | null
           selected_option?: string | null
           serial_number?: string | null
@@ -7387,6 +7409,7 @@ export type Database = {
           product_name_ar?: string
           product_option_id?: string | null
           quantity?: number
+          rf_offer_id?: string | null
           selected_color?: string | null
           selected_option?: string | null
           serial_number?: string | null
@@ -7457,6 +7480,13 @@ export type Database = {
             columns: ["product_option_id"]
             isOneToOne: false
             referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_rf_offer_id_fkey"
+            columns: ["rf_offer_id"]
+            isOneToOne: false
+            referencedRelation: "random_filament_offers"
             referencedColumns: ["id"]
           },
         ]
@@ -9720,7 +9750,7 @@ export type Database = {
       }
       random_filament_orders: {
         Row: {
-          cart_item_id: string
+          cart_item_id: string | null
           category_id: string
           created_at: string
           id: string
@@ -9735,7 +9765,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          cart_item_id: string
+          cart_item_id?: string | null
           category_id: string
           created_at?: string
           id?: string
@@ -9750,7 +9780,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          cart_item_id?: string
+          cart_item_id?: string | null
           category_id?: string
           created_at?: string
           id?: string
@@ -9768,7 +9798,7 @@ export type Database = {
           {
             foreignKeyName: "random_filament_orders_cart_item_id_fkey"
             columns: ["cart_item_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "cart_items"
             referencedColumns: ["id"]
           },
@@ -13471,6 +13501,7 @@ export type Database = {
           product_name_ar: string
           product_option_id: string | null
           quantity: number
+          rf_offer_id: string | null
           selected_color: string | null
           selected_option: string | null
           serial_number: string | null
@@ -13568,6 +13599,10 @@ export type Database = {
         }
         Returns: string
       }
+      add_random_filament_to_cart: {
+        Args: { p_category_id: string; p_offer_id: string; p_quantity: number }
+        Returns: Json
+      }
       add_serial_number_to_order_item: {
         Args: {
           p_admin_id: string
@@ -13646,6 +13681,7 @@ export type Database = {
           product_name_ar: string
           product_option_id: string | null
           quantity: number
+          rf_offer_id: string | null
           selected_color: string | null
           selected_option: string | null
           serial_number: string | null
@@ -14010,6 +14046,10 @@ export type Database = {
       enter_mystery_box_competition: {
         Args: { comp_id: string }
         Returns: Json
+      }
+      finalize_and_reveal_rf_for_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
       }
       gacha_market_buy_atomic: { Args: { p_listing_id: string }; Returns: Json }
       game_award_points: {
