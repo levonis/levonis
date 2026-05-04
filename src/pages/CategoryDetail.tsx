@@ -26,7 +26,67 @@ import { usePageTitle } from '@/island/usePageTitle';
 import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
-import { computeLinkedDirectSalePrice, ensurePriceIqd } from '@/lib/priceGuard';
+import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
+
+/**
+ * Unified price for product cards — MUST match the price the user will see
+ * when they open the product detail page (default sale type = direct).
+ *
+ * Priority:
+ *  1. Stored `direct_sale_price` (this is the live admin-set price the detail page uses by default)
+ *  2. Server-computed live direct-sale price (when product is linked to global COD %)
+ *  3. Local fallback compute (when COD defaults are loaded)
+ *  4. Stored base `price`
+ * Then applies round_up_price (250 IQD) if the product flag is set.
+ */
+function computeUnifiedCardPrice(
+  product: any,
+  usdToIqd: number,
+  codDefaults: any,
+  liveDirectMap: Map<string, number> | undefined,
+): number {
+  const shouldRoundUp = product?.round_up_price === true;
+  const roundIfNeeded = (n: number) => (shouldRoundUp ? Math.ceil(n / 250) * 250 : n);
+  // Match ProductDetail default: prefer direct ONLY when stock isn't depleted; else fall back to pre-order.
+  const hasDirect = (product?.has_in_stock ?? false) && !isAllDirectStockDepleted(product);
+  const hasPreOrder = !!product?.has_pre_order;
+  const useDirect = hasDirect || (!hasPreOrder && (product?.has_in_stock ?? false));
+
+  if (useDirect) {
+    // 1. Server RPC live price (overrides stored when linked) — matches ProductDetail
+    if (product?.link_direct_commission_to_cod) {
+      const fromServer = liveDirectMap?.get(product.id);
+      if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
+      // Local fallback while RPC loads
+      if (codDefaults) {
+        const liveDirect = computeLinkedDirectSalePrice(
+          product,
+          { usd_to_iqd_rate: usdToIqd } as any,
+          codDefaults,
+        );
+        if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
+      }
+    }
+    // 2. Stored direct_sale_price
+    if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
+      return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
+    }
+  }
+  // Pre-order fallback: use sea/air price like ProductDetail does
+  if (hasPreOrder) {
+    const st = product?.shipping_type;
+    const sea = product?.sea_price ? ensurePriceIqd(Number(product.sea_price), product?.price_usd, usdToIqd) : null;
+    const air = product?.air_price ? ensurePriceIqd(Number(product.air_price), product?.price_usd, usdToIqd) : null;
+    if (st === 'sea' && sea) return roundIfNeeded(sea);
+    if (st === 'air' && air) return roundIfNeeded(air);
+    if (st === 'both') {
+      if (sea && air) return roundIfNeeded(Math.min(sea, air));
+      if (sea) return roundIfNeeded(sea);
+      if (air) return roundIfNeeded(air);
+    }
+  }
+  return roundIfNeeded(ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd));
+}
 
 type SortKey =
   | 'default'
@@ -95,6 +155,21 @@ const CategoryDetail = () => {
     },
     enabled: !!category?.id,
     staleTime: 2 * 60 * 1000,
+  });
+
+  // Fetch server-computed live direct-sale prices for all products linked to global COD %.
+  // This ensures the card price matches what the product detail page shows — no leak.
+  const linkedIds = useMemo(
+    () => (products || [])
+      .filter((p: any) => p.link_direct_commission_to_cod && (p.has_in_stock ?? false))
+      .map((p: any) => p.id),
+    [products]
+  );
+  const { data: liveDirectMap } = useQuery({
+    queryKey: ['category-live-direct-prices', linkedIds],
+    queryFn: () => fetchLiveDirectSalePrices(linkedIds),
+    enabled: linkedIds.length > 0,
+    staleTime: 60 * 1000,
   });
 
   // Apply filters & sort
@@ -357,17 +432,29 @@ const CategoryDetail = () => {
                           </p>
                         )}
                         <div className="flex items-baseline justify-end gap-1.5 mb-2 md:mb-3">
-                          <span className="text-base sm:text-xl md:text-3xl font-black text-primary">
-                            {Number(featuredProduct.price).toLocaleString()}
-                          </span>
-                          <span className="text-[10px] sm:text-xs md:text-sm text-primary/70 font-bold">
-                            {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
-                          </span>
-                          {featuredProduct.original_price && Number(featuredProduct.original_price) > Number(featuredProduct.price) && (
-                            <span className="text-[10px] sm:text-xs md:text-sm text-foreground/40 line-through mr-2">
-                              {Number(featuredProduct.original_price).toLocaleString()}
-                            </span>
-                          )}
+                          {(() => {
+                            const fpFinal = computeUnifiedCardPrice(featuredProduct, usdToIqd, codDefaults, liveDirectMap);
+                            const shouldRoundUp = (featuredProduct as any).round_up_price === true;
+                            const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
+                            const fpOriginal = featuredProduct.original_price
+                              ? roundIfNeeded(ensurePriceIqd(Number(featuredProduct.original_price), (featuredProduct as any).price_usd, usdToIqd))
+                              : 0;
+                            return (
+                              <>
+                                <span className="text-base sm:text-xl md:text-3xl font-black text-primary">
+                                  {fpFinal.toLocaleString()}
+                                </span>
+                                <span className="text-[10px] sm:text-xs md:text-sm text-primary/70 font-bold">
+                                  {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
+                                </span>
+                                {fpOriginal > fpFinal && (
+                                  <span className="text-[10px] sm:text-xs md:text-sm text-foreground/40 line-through mr-2">
+                                    {fpOriginal.toLocaleString()}
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         <span className="inline-flex items-center gap-1 text-primary text-[11px] sm:text-sm font-semibold group-hover:underline">
                           {t('catdetail_view_more')}
@@ -548,32 +635,27 @@ const CategoryDetail = () => {
                 {otherProducts.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
                     {otherProducts.map((product) => {
+                      const finalCardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
                       const shouldRoundUp = (product as any).round_up_price === true;
                       const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
-                      const cardPrice = roundIfNeeded(ensurePriceIqd(Number(product.price), (product as any).price_usd, usdToIqd));
-                      const cardOriginal = product.original_price
+                      const rawOriginal = product.original_price
                         ? roundIfNeeded(ensurePriceIqd(Number(product.original_price), (product as any).price_usd, usdToIqd))
                         : undefined;
-                      const liveDirect = (product as any).link_direct_commission_to_cod
-                        ? computeLinkedDirectSalePrice(
-                            product as any,
-                            { usd_to_iqd_rate: usdToIqd } as any,
-                            codDefaults as any,
-                          )
-                        : null;
+                      // Only show original if it's actually higher than the final shown price
+                      const cardOriginal = rawOriginal && rawOriginal > finalCardPrice ? rawOriginal : undefined;
                       return (
                         <FloatingProductCard
                           key={product.id}
                           id={product.id}
                           name={product.name}
                           nameAr={product.name_ar}
-                          price={cardPrice}
+                          price={finalCardPrice}
                           originalPrice={cardOriginal}
                           imageUrl={product.image_url || undefined}
                           currency={product.currency || undefined}
                           slug={product.slug}
                           hasDirectSale={(product.has_in_stock ?? false) && !isAllDirectStockDepleted(product)}
-                          directSalePriceLive={liveDirect != null ? roundIfNeeded(liveDirect) : null}
+                          directSalePriceLive={null}
                           highlightQuery={searchQ}
                         />
                       );
