@@ -524,7 +524,7 @@ function EligibleProductsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!overflow-hidden !max-h-none max-w-lg">
+      <DialogContent className="!overflow-hidden !max-h-none max-w-lg" ref={originRef}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
