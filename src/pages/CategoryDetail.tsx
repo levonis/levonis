@@ -75,7 +75,7 @@ const CategoryDetail = () => {
   usePageTitle('category', category ? pickName(category.name as any, category.name_ar as any) : undefined);
 
   const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ['category-products', category?.id],
+    queryKey: ['category-products', category?.id, isAdmin],
     queryFn: async () => {
       if (!category?.id) return [];
       let query = supabase
