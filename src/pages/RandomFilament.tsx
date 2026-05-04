@@ -176,11 +176,11 @@ export default function RandomFilament() {
     setSubmitting(true);
     try {
       const { data, error } = await (supabase as any).rpc(
-        "create_random_filament_order",
-        { p_category_id: categoryId, p_offer_id: offerId }
+        "add_random_filament_to_cart",
+        { p_category_id: categoryId, p_offer_id: offerId, p_quantity: 1 }
       );
       if (error) throw error;
-      if (!data?.success) throw new Error("UNKNOWN");
+      if (!data?.cart_item_id) throw new Error("UNKNOWN");
       await refreshCart();
       toast.success("تم إضافة الفلمنت العشوائي إلى السلة!");
       setConfirmOpen(false);
