@@ -4,9 +4,40 @@
  * If a product has price_usd and the stored IQD price appears stale
  * (doesn't match current exchange rate), recalculates dynamically.
  */
+import { supabase } from '@/integrations/supabase/client';
 
 /** Minimum expected IQD value — any price below this with a valid price_usd is suspicious */
 const MIN_IQD_THRESHOLD = 500;
+
+/**
+ * Fetches live direct-sale prices via the SECURITY DEFINER RPC.
+ * Used because internal commission/shipping cost columns are no longer
+ * readable client-side — the server computes the linked-COD direct-sale
+ * price and returns only the final IQD value.
+ */
+export async function fetchLiveDirectSalePrices(
+  productIds: string[]
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const ids = Array.from(new Set((productIds || []).filter(Boolean)));
+  if (ids.length === 0) return out;
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      'compute_products_live_direct_sale_prices',
+      { p_ids: ids }
+    );
+    if (error || !Array.isArray(data)) return out;
+    for (const row of data as Array<{ product_id: string; direct_sale_price: number | null }>) {
+      if (row?.product_id && row.direct_sale_price != null) {
+        out.set(row.product_id, Number(row.direct_sale_price));
+      }
+    }
+  } catch {
+    // Non-fatal — caller falls back to stored direct_sale_price
+  }
+  return out;
+}
+
 
 /**
  * Detects if a numeric value looks like it's in USD rather than IQD.
