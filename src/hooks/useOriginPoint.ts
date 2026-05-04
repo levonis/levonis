@@ -31,13 +31,11 @@ export function useOriginPoint() {
     if (!node) return;
     const p = pointRef.current;
     if (!p) return;
-    // Defer one frame so Radix has positioned the element.
-    requestAnimationFrame(() => {
-      const r = node.getBoundingClientRect();
-      const ox = Math.max(0, Math.min(r.width, p.x - r.left));
-      const oy = Math.max(0, Math.min(r.height, p.y - r.top));
-      node.style.transformOrigin = `${ox}px ${oy}px`;
-    });
+    // Set synchronously so the open animation uses the correct origin from frame 0.
+    const r = node.getBoundingClientRect();
+    const ox = Math.max(0, Math.min(r.width, p.x - r.left));
+    const oy = Math.max(0, Math.min(r.height, p.y - r.top));
+    node.style.transformOrigin = `${ox}px ${oy}px`;
   }, []);
 
   return { capture, originRef, originPoint };
