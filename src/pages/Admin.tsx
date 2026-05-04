@@ -3677,10 +3677,10 @@ const Admin = () => {
                           </div>
                         </TableCell>
                         <TableCell>{(product as any).categories?.name_ar}</TableCell>
-                        <TableCell>{formatPrice(Number(product.price))} دينار عراقي</TableCell>
+                        <TableCell>{formatPrice(Number(product.original_price ?? product.price))} د.ع</TableCell>
                         <TableCell>
                           {product.original_price 
-                            ? `${formatPrice(Number(product.original_price))} دينار عراقي`
+                            ? `${formatPrice(Number(product.original_price))} د.ع`
                             : '-'}
                         </TableCell>
                         <TableCell className="text-left">
@@ -3760,9 +3760,9 @@ const Admin = () => {
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{(product as any).categories?.name_ar || '-'}</p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-xs font-bold text-primary">{formatPrice(Number(product.price))}</span>
-                          {product.original_price && (
-                            <span className="text-[10px] text-muted-foreground line-through">{formatPrice(Number(product.original_price))}</span>
+                          <span className="text-xs font-bold text-primary">{formatPrice(Number(product.original_price ?? product.price))} د.ع</span>
+                          {product.original_price && product.original_price !== product.price && (
+                            <span className="text-[10px] text-muted-foreground">سعر البيع: {formatPrice(Number(product.price))}</span>
                           )}
                         </div>
                       </div>
