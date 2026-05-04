@@ -460,6 +460,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       const targetShippingIndex = normalizeShippingIndex(shippingInfo?.index);
       
+      // Block adding/merging with a locked Random Filament item that matches the same product/option/color
+      const conflictingRf = items.find((item: any) =>
+        (item.is_random_filament || item.is_locked) &&
+        item.product_id === productId &&
+        normalize(item.product_option_id) === normalize(optionId) &&
+        normalize(item.selected_color) === normalize(color)
+      );
+      if (conflictingRf) {
+        toast.error('هذا المنتج محجوز كفلمنت عشوائي في سلتك ولا يمكن تعديله أو إضافته مرة أخرى');
+        return false;
+      }
+
       const existingItem = items.find(item => 
         item.product_id === productId && 
         normalize((item as any).product_option_id) === normalize(optionId) &&
@@ -467,6 +479,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex &&
         (item as any).sale_type === saleType &&
         (item as any).is_gift === false &&
+        !(item as any).is_random_filament &&
+        !(item as any).is_locked &&
         !(item as any).bundle_id &&
         !(item as any).offer_purchase_id
       );
