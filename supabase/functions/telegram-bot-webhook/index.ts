@@ -60,14 +60,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate Telegram webhook secret token to prevent forged updates
+    // Validate Telegram webhook secret token to prevent forged updates.
+    // Always require the secret — never allow requests when env var is missing.
     const expectedSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
-    if (expectedSecret) {
-      const incomingSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
-      if (incomingSecret !== expectedSecret) {
-        return new Response(JSON.stringify({ success: false, error: "Unauthorized" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
-      }
+    const incomingSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
+    if (!expectedSecret || !incomingSecret || incomingSecret !== expectedSecret) {
+      console.error("Telegram webhook: missing or invalid secret token");
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
     }
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
