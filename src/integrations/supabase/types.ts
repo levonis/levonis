@@ -12729,6 +12729,107 @@ export type Database = {
       }
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
+      admin_get_order_items_full: {
+        Args: { p_order_ids: string[] }
+        Returns: {
+          bundle_id: string | null
+          color_image_url: string | null
+          cost_price: number | null
+          created_at: string
+          custom_request_id: string | null
+          customer_notes: string | null
+          id: string
+          is_gift: boolean
+          order_id: string
+          product_id: string | null
+          product_name: string
+          product_name_ar: string
+          product_option_id: string | null
+          quantity: number
+          selected_color: string | null
+          selected_option: string | null
+          serial_number: string | null
+          shipping_option_name_ar: string | null
+          shipping_price_adjustment: number | null
+          total_price: number
+          unit_price: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "order_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_orders_full: {
+        Args: { p_order_ids?: string[] }
+        Returns: {
+          actual_weight: number | null
+          admin_files: string[] | null
+          admin_images: string[] | null
+          admin_other_costs: number | null
+          admin_paid_amount: number | null
+          admin_product_cost: number | null
+          admin_shipping_cost: number | null
+          arrived_iraq_at: string | null
+          arrived_warehouse_at: string | null
+          auto_confirmed: boolean | null
+          cancelled_at: string | null
+          card_discount_amount: number | null
+          card_discount_level_name: string | null
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          customer_paid_amount: number | null
+          customs_declaration_number: string | null
+          delivered_at: string | null
+          delivery_method: string | null
+          discount_amount: number | null
+          estimated_delivery_date: string | null
+          financial_notes: string | null
+          governorate: string
+          id: string
+          internal_notes: string | null
+          on_the_way_at: string | null
+          order_number: string
+          order_type: string | null
+          package_dimensions: string | null
+          paid_amount: number | null
+          payment_method: string | null
+          payment_status: string | null
+          phone_number: string
+          priority: string | null
+          processing_at: string | null
+          profit_amount: number | null
+          purchased_at: string | null
+          referral_coupon_id: string | null
+          referral_owner_earnings_iqd: number
+          remaining_amount: number | null
+          serial_number_image_url: string | null
+          shipped_at: string | null
+          shipping_address: string
+          shipping_duration_days: number | null
+          shipping_notes: string | null
+          shipping_route_type: string | null
+          shipping_route_waypoints: Json | null
+          status: string
+          stock_deducted: boolean | null
+          subtotal: number | null
+          tax_amount: number | null
+          tax_percentage: number | null
+          total_amount: number
+          updated_at: string
+          user_confirmed_at: string | null
+          user_confirmed_delivery: boolean | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "orders"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_gift_loyalty_card: {
         Args: { p_admin_note?: string; p_card_id: string; p_user_id: string }
         Returns: Json
