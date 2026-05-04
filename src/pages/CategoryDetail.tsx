@@ -29,14 +29,14 @@ import { useCodDefaults } from '@/hooks/useCodDefaults';
 import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 
 /**
- * Unified price for product cards — MUST match what the product detail page shows
- * for the default (direct) sale type, so users never see a price leak between card and details.
+ * Unified price for product cards — MUST match the price the user will see
+ * when they open the product detail page (default sale type = direct).
  *
  * Priority:
- *  1. Server-computed live direct-sale price (when linked to global COD %)
- *  2. Locally computed live direct-sale price (when COD defaults are loaded)
- *  3. Stored direct_sale_price (guarded for USD→IQD)
- *  4. Stored base price (guarded for USD→IQD)
+ *  1. Stored `direct_sale_price` (this is the live admin-set price the detail page uses by default)
+ *  2. Server-computed live direct-sale price (when product is linked to global COD %)
+ *  3. Local fallback compute (when COD defaults are loaded)
+ *  4. Stored base `price`
  * Then applies round_up_price (250 IQD) if the product flag is set.
  */
 function computeUnifiedCardPrice(
@@ -50,10 +50,14 @@ function computeUnifiedCardPrice(
   const hasDirect = (product?.has_in_stock ?? false);
 
   if (hasDirect) {
-    // 1. Server-computed live price
+    // 1. Stored direct_sale_price (matches what product detail shows by default)
+    if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
+      return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
+    }
+    // 2. Server-computed live price
     const fromServer = liveDirectMap?.get(product.id);
     if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
-    // 2. Local fallback
+    // 3. Local fallback
     if (product?.link_direct_commission_to_cod && codDefaults) {
       const liveDirect = computeLinkedDirectSalePrice(
         product,
@@ -61,10 +65,6 @@ function computeUnifiedCardPrice(
         codDefaults,
       );
       if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
-    }
-    // 3. Stored direct_sale_price
-    if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
-      return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
     }
   }
   // 4. Base price fallback
