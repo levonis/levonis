@@ -368,3 +368,64 @@ export function getGuardedCartItemPrice(
 
   return price;
 }
+
+/**
+ * Computes the minimum price_adjustment (in IQD) across the available product_options
+ * for a given sale type. Returns 0 if no options exist or none are eligible.
+ *
+ * - Direct sale: option must have available_for_direct_sale !== false AND have stock
+ *   (stock_quantity > 0 OR backed by colors[].option_stocks summing > 0).
+ * - Pre-order: all options eligible (no stock requirement).
+ *
+ * Negative adjustments are honored (cheaper option lowers card price).
+ */
+export function getMinOptionAdjustmentIqd(
+  product: any,
+  saleType: 'direct' | 'preorder',
+  usdToIqd: number,
+): number {
+  const options = Array.isArray(product?.product_options) ? product.product_options : [];
+  if (options.length === 0) return 0;
+  const priceUsd = product?.price_usd ?? null;
+  const colors = Array.isArray(product?.colors) ? product.colors : [];
+
+  const norm = (s: any) =>
+    String(s ?? '')
+      .normalize('NFKC')
+      .replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const colorsHaveStocks = colors.some(
+    (c: any) => c?.option_stocks && typeof c.option_stocks === 'object' && Object.keys(c.option_stocks).length > 0,
+  );
+
+  const stockFromColors = (optName: string): number => {
+    if (!colorsHaveStocks || !optName) return 0;
+    const target = norm(optName);
+    let total = 0;
+    for (const c of colors) {
+      if ((c?.available_for_direct_sale ?? true) === false) continue;
+      const stocks = c?.option_stocks;
+      if (!stocks || typeof stocks !== 'object') continue;
+      const key = Object.keys(stocks).find((k) => norm(k) === target);
+      if (key) total += Math.max(0, Number((stocks as any)[key]) || 0);
+    }
+    return total;
+  };
+
+  const eligible: number[] = [];
+  for (const opt of options) {
+    if (saleType === 'direct') {
+      if ((opt?.available_for_direct_sale ?? true) === false) continue;
+      const hasStock = colorsHaveStocks
+        ? stockFromColors(opt?.name_ar || opt?.name || '') > 0
+        : opt?.stock_quantity != null && Number(opt.stock_quantity) > 0;
+      if (!hasStock) continue;
+    }
+    const adj = Number(opt?.price_adjustment) || 0;
+    eligible.push(adj === 0 ? 0 : ensureAdjustmentIqd(adj, usdToIqd, priceUsd));
+  }
+  if (eligible.length === 0) return 0;
+  return Math.min(...eligible);
+}

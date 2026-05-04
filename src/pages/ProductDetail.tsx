@@ -27,7 +27,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, fetchLiveDirectSalePrices, getMinOptionAdjustmentIqd } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -177,7 +177,7 @@ const ProductDetail = () => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!product || !product.category_id) return [];
-      const { data, error } = await supabase.from('products').select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, direct_sale_price, sea_price, air_price, round_up_price, direct_stock, pre_order_stock, sold_count, points_reward, ticket_reward, link_direct_commission_to_cod, cod_enabled, cod_fee_type, cod_fee_value').eq('category_id', product.category_id).eq('in_stock', true).neq('id', product.id).limit(4);
+      const { data, error } = await supabase.from('products').select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, direct_sale_price, sea_price, air_price, round_up_price, direct_stock, pre_order_stock, sold_count, points_reward, ticket_reward, link_direct_commission_to_cod, cod_enabled, cod_fee_type, cod_fee_value, shipping_type, price_usd, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)').eq('category_id', product.category_id).eq('in_stock', true).neq('id', product.id).limit(4);
       if (error) throw error;
       return data || [];
     },
@@ -1368,21 +1368,56 @@ const ProductDetail = () => {
                     {relatedProducts.map((rp: any) => {
                       const shouldRoundUp = rp?.round_up_price === true;
                       const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
-                      const hasDirect = rp?.has_in_stock ?? false;
-                      let finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.price || 0), rp.price_usd, usdToIqd));
+                      const hasDirect = (rp?.has_in_stock ?? false) && !isAllDirectStockDepleted(rp);
+                      const hasPreOrder = !!rp?.has_pre_order;
+                      const candidates: number[] = [];
+
                       if (hasDirect) {
-                        if (rp.direct_sale_price != null && Number(rp.direct_sale_price) > 0) {
-                          finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd));
-                        } else {
+                        let directBase: number | null = null;
+                        if (rp?.link_direct_commission_to_cod) {
                           const fromServer = relatedLiveDirectMap?.get(rp.id);
-                          if (fromServer != null && fromServer > 0) {
-                            finalPrice = roundIfNeeded(fromServer);
-                          } else if (rp.link_direct_commission_to_cod && codDefaults) {
+                          if (fromServer != null && fromServer > 0) directBase = fromServer;
+                          else if (codDefaults) {
                             const live = computeLinkedDirectSalePrice(rp, { usd_to_iqd_rate: usdToIqd } as any, codDefaults as any);
-                            if (live != null && live > 0) finalPrice = roundIfNeeded(live);
+                            if (live != null && live > 0) directBase = live;
+                          }
+                        }
+                        if (directBase == null && rp?.direct_sale_price != null && Number(rp.direct_sale_price) > 0) {
+                          directBase = ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd);
+                        }
+                        if (directBase != null) {
+                          const hasOptions = Array.isArray(rp?.product_options) && rp.product_options.length > 0;
+                          if (hasOptions) {
+                            const eligible = rp.product_options.some((opt: any) => {
+                              if ((opt?.available_for_direct_sale ?? true) === false) return false;
+                              return opt?.stock_quantity != null && Number(opt.stock_quantity) > 0;
+                            }) || (Array.isArray(rp?.colors) && rp.colors.some((c: any) =>
+                              c?.option_stocks && typeof c.option_stocks === 'object' && Object.keys(c.option_stocks).length > 0
+                            ));
+                            if (eligible) candidates.push(directBase + getMinOptionAdjustmentIqd(rp, 'direct', usdToIqd));
+                          } else {
+                            candidates.push(directBase);
                           }
                         }
                       }
+                      if (hasPreOrder) {
+                        const st = rp?.shipping_type;
+                        const sea = rp?.sea_price ? ensurePriceIqd(Number(rp.sea_price), rp.price_usd, usdToIqd) : null;
+                        const air = rp?.air_price ? ensurePriceIqd(Number(rp.air_price), rp.price_usd, usdToIqd) : null;
+                        let preBase: number | null = null;
+                        if (st === 'sea' && sea) preBase = sea;
+                        else if (st === 'air' && air) preBase = air;
+                        else if (st === 'both') {
+                          if (sea && air) preBase = Math.min(sea, air);
+                          else if (sea) preBase = sea;
+                          else if (air) preBase = air;
+                        }
+                        if (preBase != null) candidates.push(preBase + getMinOptionAdjustmentIqd(rp, 'preorder', usdToIqd));
+                      }
+
+                      const finalPrice = candidates.length > 0
+                        ? roundIfNeeded(Math.min(...candidates))
+                        : roundIfNeeded(ensurePriceIqd(Number(rp.price || 0), rp.price_usd, usdToIqd));
                       const rawOrig = rp.original_price ? roundIfNeeded(ensurePriceIqd(Number(rp.original_price), rp.price_usd, usdToIqd)) : 0;
                       const showOrig = rawOrig > finalPrice ? rawOrig : undefined;
                       return (
@@ -1391,8 +1426,8 @@ const ProductDetail = () => {
                           price={finalPrice} originalPrice={showOrig}
                           imageUrl={rp.image_url} images={rp.images}
                           currency={rp.currency || t('pd_currency_iqd')} slug={rp.slug}
-                          hasDirectSale={hasDirect && !isAllDirectStockDepleted(rp)}
-                          cardDiscounts={rp.card_discounts} />
+                          hasDirectSale={hasDirect}
+                          cardDiscounts={(rp as any).card_discounts} />
                       );
                     })}
                   </div>

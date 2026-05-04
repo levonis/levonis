@@ -26,7 +26,7 @@ import { usePageTitle } from '@/island/usePageTitle';
 import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
-import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
+import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices, getMinOptionAdjustmentIqd } from '@/lib/priceGuard';
 
 /**
  * Unified price for product cards — MUST match the price the user will see
@@ -47,45 +47,72 @@ function computeUnifiedCardPrice(
 ): number {
   const shouldRoundUp = product?.round_up_price === true;
   const roundIfNeeded = (n: number) => (shouldRoundUp ? Math.ceil(n / 250) * 250 : n);
-  // Match ProductDetail default: prefer direct ONLY when stock isn't depleted; else fall back to pre-order.
+
   const hasDirect = (product?.has_in_stock ?? false) && !isAllDirectStockDepleted(product);
   const hasPreOrder = !!product?.has_pre_order;
-  const useDirect = hasDirect || (!hasPreOrder && (product?.has_in_stock ?? false));
 
-  if (useDirect) {
-    // 1. Server RPC live price (overrides stored when linked) — matches ProductDetail
+  const candidates: number[] = [];
+
+  // --- Direct sale candidate ---
+  if (hasDirect) {
+    let directBase: number | null = null;
     if (product?.link_direct_commission_to_cod) {
       const fromServer = liveDirectMap?.get(product.id);
-      if (fromServer != null && fromServer > 0) return roundIfNeeded(fromServer);
-      // Local fallback while RPC loads
-      if (codDefaults) {
+      if (fromServer != null && fromServer > 0) {
+        directBase = fromServer;
+      } else if (codDefaults) {
         const liveDirect = computeLinkedDirectSalePrice(
           product,
           { usd_to_iqd_rate: usdToIqd } as any,
           codDefaults,
         );
-        if (liveDirect != null && liveDirect > 0) return roundIfNeeded(liveDirect);
+        if (liveDirect != null && liveDirect > 0) directBase = liveDirect;
       }
     }
-    // 2. Stored direct_sale_price
-    if (product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
-      return roundIfNeeded(ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd));
+    if (directBase == null && product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
+      directBase = ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd);
+    }
+    if (directBase != null) {
+      const hasOptions = Array.isArray(product?.product_options) && product.product_options.length > 0;
+      if (hasOptions) {
+        // Only add a direct candidate if at least one in-stock option exists.
+        const minAdj = getMinOptionAdjustmentIqd(product, 'direct', usdToIqd);
+        const eligible = product.product_options.some((opt: any) => {
+          if ((opt?.available_for_direct_sale ?? true) === false) return false;
+          return opt?.stock_quantity != null && Number(opt.stock_quantity) > 0;
+        }) || (Array.isArray(product?.colors) && product.colors.some((c: any) =>
+          c?.option_stocks && typeof c.option_stocks === 'object' && Object.keys(c.option_stocks).length > 0
+        ));
+        if (eligible) candidates.push(directBase + minAdj);
+      } else {
+        candidates.push(directBase);
+      }
     }
   }
-  // Pre-order fallback: use sea/air price like ProductDetail does
+
+  // --- Pre-order candidate ---
   if (hasPreOrder) {
     const st = product?.shipping_type;
     const sea = product?.sea_price ? ensurePriceIqd(Number(product.sea_price), product?.price_usd, usdToIqd) : null;
     const air = product?.air_price ? ensurePriceIqd(Number(product.air_price), product?.price_usd, usdToIqd) : null;
-    if (st === 'sea' && sea) return roundIfNeeded(sea);
-    if (st === 'air' && air) return roundIfNeeded(air);
-    if (st === 'both') {
-      if (sea && air) return roundIfNeeded(Math.min(sea, air));
-      if (sea) return roundIfNeeded(sea);
-      if (air) return roundIfNeeded(air);
+    let preBase: number | null = null;
+    if (st === 'sea' && sea) preBase = sea;
+    else if (st === 'air' && air) preBase = air;
+    else if (st === 'both') {
+      if (sea && air) preBase = Math.min(sea, air);
+      else if (sea) preBase = sea;
+      else if (air) preBase = air;
+    }
+    if (preBase != null) {
+      const minAdj = getMinOptionAdjustmentIqd(product, 'preorder', usdToIqd);
+      candidates.push(preBase + minAdj);
     }
   }
-  return roundIfNeeded(ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd));
+
+  if (candidates.length === 0) {
+    return roundIfNeeded(ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd));
+  }
+  return roundIfNeeded(Math.min(...candidates));
 }
 
 type SortKey =
@@ -140,7 +167,7 @@ const CategoryDetail = () => {
       if (!category?.id) return [];
       let query = supabase
         .from('products')
-        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, sea_price, air_price, round_up_price, product_options(stock_quantity, available_for_direct_sale)')
+        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, sea_price, air_price, round_up_price, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)')
         .eq('category_id', category.id)
         .eq('in_stock', true)
         .order('price', { ascending: false });
