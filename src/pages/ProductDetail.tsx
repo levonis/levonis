@@ -488,7 +488,7 @@ const ProductDetail = () => {
 
   // If the product is linked to global COD %, recompute direct_sale_price live
   // so it adjusts with exchange rate / sea shipping / COD setting changes.
-  const liveDirectSalePrice = computeLinkedDirectSalePrice(
+  const liveDirectSalePrice = liveDirectPriceFromRpc ?? computeLinkedDirectSalePrice(
     product as any,
     shippingSettings as any,
     codDefaults as any,
