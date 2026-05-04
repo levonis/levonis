@@ -491,34 +491,38 @@ const Cart = () => {
     }
   };
 
-  // Auto-remove items whose direct-sale stock has dropped to zero, with a one-time toast per item.
+  // Server-side purge: deletes OOS direct-sale items from cart_items table directly,
+  // ensuring DB-level consistency regardless of which page the user is on.
   const oosNotifiedRef = useRef<Set<string>>(new Set());
+  const purgeOosFromServer = async () => {
+    try {
+      const { data, error } = await (supabase as any).rpc('purge_oos_direct_cart_items');
+      if (error) return;
+      const removed: Array<{ id: string; product_name: string }> =
+        (data?.removed as any[]) || [];
+      for (const r of removed) {
+        if (oosNotifiedRef.current.has(r.id)) continue;
+        oosNotifiedRef.current.add(r.id);
+        const name = r.product_name || t('cart_out_of_stock');
+        sonnerToast.error(`${name} — ${t('cart_out_of_stock_warning')}`, {
+          description: t('cart_out_of_stock'),
+        });
+      }
+    } catch {}
+  };
+
+  // Trigger server-side purge whenever the local check detects OOS items,
+  // and once on mount as a safety net for items that became OOS while away.
+  useEffect(() => {
+    purgeOosFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (outOfStockItemIds.size === 0) return;
-    const toRemove: { id: string; name: string }[] = [];
-    items.forEach((item) => {
-      if (!outOfStockItemIds.has(item.id)) return;
-      if (oosNotifiedRef.current.has(item.id)) return;
-      const name = (item as any)?.products?.name_ar
-        || (item as any)?.products?.name
-        || (item as any)?.product_bundles?.title_ar
-        || t('cart_out_of_stock');
-      toRemove.push({ id: item.id, name });
-      oosNotifiedRef.current.add(item.id);
-    });
-    if (toRemove.length === 0) return;
-    (async () => {
-      for (const r of toRemove) {
-        try {
-          sonnerToast.error(`${r.name} — ${t('cart_out_of_stock_warning')}`, {
-            description: t('cart_out_of_stock'),
-          });
-          await removeFromCart(r.id);
-        } catch {}
-      }
-    })();
-    // Cleanup notified set if items list shrinks
-  }, [items, outOfStockItemIds, removeFromCart, t]);
+    purgeOosFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outOfStockItemIds.size]);
 
   // Drop stale entries from the notified set so re-added items can re-trigger.
   useEffect(() => {
