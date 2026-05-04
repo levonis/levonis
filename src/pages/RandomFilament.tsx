@@ -470,8 +470,8 @@ function EligibilityBadges({ offerId }: { offerId: string }) {
 }
 
 function EligibleProductsDialog({
-  offerId, open, onOpenChange,
-}: { offerId: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+  offerId, open, onOpenChange, originRef,
+}: { offerId: string; open: boolean; onOpenChange: (v: boolean) => void; originRef?: (node: HTMLElement | null) => void }) {
   const { data: items, isLoading } = useQuery({
     queryKey: ["rf-eligible-list", offerId],
     enabled: open,
