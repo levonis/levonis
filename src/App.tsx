@@ -137,6 +137,7 @@ const PriceProtection = lazy(() => import("./pages/PriceProtection"));
 const AdminWinners = lazy(() => import("./pages/AdminWinners"));
 const AdminProductColorQa = lazy(() => import("./pages/AdminProductColorQa"));
 const AdminRandomFilament = lazy(() => import("./pages/AdminRandomFilament"));
+const AdminRandomFilamentTargeting = lazy(() => import("./pages/AdminRandomFilamentTargeting"));
 const RandomFilament = lazy(() => import("./pages/RandomFilament"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
