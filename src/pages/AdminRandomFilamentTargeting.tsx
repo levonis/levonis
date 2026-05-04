@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,10 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
-import { Search, Save, Check, Package2, Layers, Settings2, Sliders } from "lucide-react";
+import { Search, Save, Check, Package2, Layers, Sliders, Info, ChevronDown, RotateCcw } from "lucide-react";
 
 type SaleType = "direct" | "preorder";
 type ProductWeight = {
@@ -64,14 +61,34 @@ export default function AdminRandomFilamentTargeting() {
   return (
     <div className="container mx-auto p-4 space-y-4">
       <Card className="glass-panel">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-2">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
             <Layers className="size-5 text-primary" />
             <h1 className="text-lg font-bold">إدارة استهداف العروض العشوائية</h1>
           </div>
-          <p className="text-xs text-muted-foreground">
-            اختر الأقسام الفرعية والمنتجات المسموح بها لكل عرض. التغييرات تُحفظ فوراً.
-          </p>
+
+          {/* شرح الخوارزمية */}
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs leading-relaxed space-y-2">
+            <div className="flex items-center gap-1.5 font-semibold text-primary">
+              <Info className="size-3.5" /> كيف يعمل النظام؟
+            </div>
+            <div className="text-muted-foreground">
+              يختار النظام عشوائياً بهذا الترتيب:
+              <span className="mx-1 px-1.5 py-0.5 rounded bg-primary/20 text-primary font-semibold">١. المنتج</span>
+              ←
+              <span className="mx-1 px-1.5 py-0.5 rounded bg-primary/20 text-primary font-semibold">٢. الخيار</span>
+              ←
+              <span className="mx-1 px-1.5 py-0.5 rounded bg-primary/20 text-primary font-semibold">٣. اللون</span>
+            </div>
+            <div className="text-muted-foreground">
+              <b>الوزن</b> = احتمال الظهور النسبي. القيمة الافتراضية <b>1</b>.
+              منتج بوزن <b>3</b> ظهوره أكثر بـ 3 أضعاف من منتج بوزن <b>1</b>.
+              ضع <b>0</b> لاستبعاد العنصر تماماً، أو اتركه فارغاً للافتراضي.
+            </div>
+            <div className="text-muted-foreground">
+              💡 يمكنك ضبط الوزن لكل منتج، ولكل خيار/لون داخله. التغييرات <b>تُحفظ تلقائياً</b>.
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -123,7 +140,7 @@ function OfferTargetingRow({
   const [weights, setWeights] = useState<ProductWeights>(offer.product_weights || {});
   const [productSearch, setProductSearch] = useState("");
   const [saving, setSaving] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
 
   const { data: products } = useQuery({
     queryKey: ["rf-targeting-products", offer.id, offer.sale_type, categoryIds],
@@ -131,7 +148,7 @@ function OfferTargetingRow({
     queryFn: async () => {
       const { data } = await supabase
         .from("products")
-        .select(`id, name_ar, image_url, category_id, in_stock, colors, product_options(available_for_pre_order)`)
+        .select(`id, name_ar, image_url, category_id, in_stock, colors, product_options(id, name_ar, name, available_for_pre_order, available_for_direct_sale, in_stock, stock_quantity)`)
         .in("category_id", categoryIds)
         .order("name_ar")
         .limit(500);
@@ -162,8 +179,17 @@ function OfferTargetingRow({
       const q = productSearch.toLowerCase();
       list = list.filter((p: any) => (p.name_ar || "").toLowerCase().includes(q));
     }
+    // ترتيب: الأكثر اختياراً أولاً (المنتجات داخل allowed بأعلى أوزان)
+    list.sort((a: any, b: any) => {
+      const aIn = allowed.includes(a.id) ? 1 : 0;
+      const bIn = allowed.includes(b.id) ? 1 : 0;
+      if (aIn !== bIn) return bIn - aIn;
+      const aw = weights[a.id]?.weight ?? (aIn ? 1 : 0);
+      const bw = weights[b.id]?.weight ?? (bIn ? 1 : 0);
+      return bw - aw;
+    });
     return list;
-  }, [products, offer.sale_type, productSearch]);
+  }, [products, offer.sale_type, productSearch, allowed, weights]);
 
   const toggleCat = (id: string) => {
     setCategoryIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
@@ -174,17 +200,16 @@ function OfferTargetingRow({
   const selectAll = () => setAllowed(filteredProducts.map((p: any) => p.id));
   const clearAll = () => setAllowed([]);
 
-  const save = async () => {
+  // حفظ يدوي (للأقسام والمنتجات المختارة)
+  const save = async (silent = false) => {
     if (!categoryIds.length) {
-      toast.error("اختر قسماً فرعياً واحداً على الأقل");
+      if (!silent) toast.error("اختر قسماً فرعياً واحداً على الأقل");
       return;
     }
     setSaving(true);
     try {
-      // Drop allowed products no longer matching the categories
       const validIds = new Set((products || []).map((p: any) => p.id));
       const cleaned = allowed.filter((id) => validIds.has(id));
-      // Drop weights for products no longer in the whitelist
       const cleanedWeights: ProductWeights = {};
       for (const id of cleaned) {
         if (weights[id]) cleanedWeights[id] = weights[id];
@@ -202,13 +227,46 @@ function OfferTargetingRow({
       if (error) throw error;
       setAllowed(cleaned);
       setWeights(cleanedWeights);
-      toast.success("تم الحفظ");
+      if (!silent) toast.success("تم الحفظ");
       onSaved();
     } catch (e: any) {
-      toast.error("فشل الحفظ: " + (e?.message || ""));
+      if (!silent) toast.error("فشل الحفظ: " + (e?.message || ""));
     } finally {
       setSaving(false);
     }
+  };
+
+  // حفظ تلقائي للأوزان (debounced)
+  const autoSaveTimer = useRef<any>(null);
+  const updateWeight = (productId: string, updater: (cur: ProductWeight) => ProductWeight) => {
+    setWeights((curMap) => {
+      const cur = curMap[productId] || {};
+      const next = updater(cur);
+      const isEmpty =
+        next.weight === undefined &&
+        !Object.keys(next.colors || {}).length &&
+        !Object.keys(next.options || {}).length;
+      const newMap = { ...curMap };
+      if (isEmpty) delete newMap[productId];
+      else newMap[productId] = next;
+
+      // debounce save
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = setTimeout(async () => {
+        try {
+          const { error } = await (supabase as any)
+            .from("random_filament_offers")
+            .update({ product_weights: newMap })
+            .eq("id", offer.id);
+          if (error) throw error;
+          toast.success("تم حفظ الوزن", { duration: 1200 });
+        } catch (e: any) {
+          toast.error("فشل الحفظ التلقائي");
+        }
+      }, 700);
+
+      return newMap;
+    });
   };
 
   return (
@@ -256,7 +314,7 @@ function OfferTargetingRow({
         <div>
           <div className="flex items-center justify-between mb-2 gap-2">
             <div className="text-xs font-semibold text-muted-foreground">
-              المنتجات ({allowed.length} مختار من {filteredProducts.length})
+              المنتجات ({allowed.length} مختار من {filteredProducts.length}) — مرتبة حسب الأكثر ظهوراً
             </div>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={selectAll} disabled={!filteredProducts.length}>
@@ -279,61 +337,68 @@ function OfferTargetingRow({
           {!categoryIds.length ? (
             <p className="text-xs text-muted-foreground py-4 text-center">اختر قسماً فرعياً أولاً</p>
           ) : (
-            <ScrollArea className="h-64 border rounded-md">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">
+            <ScrollArea className="h-[28rem] border rounded-md">
+              <div className="flex flex-col gap-1.5 p-2">
                 {filteredProducts.map((p: any) => {
                   const isOn = allowed.includes(p.id);
-                  const w = weights[p.id]?.weight;
-                  const hasCustomWeights =
-                    !!weights[p.id] &&
-                    (w !== undefined ||
-                      Object.keys(weights[p.id]?.colors || {}).length > 0 ||
-                      Object.keys(weights[p.id]?.options || {}).length > 0);
+                  const isExpanded = expandedProductId === p.id;
+                  const pw = weights[p.id];
+                  const w = pw?.weight;
                   return (
-                    <div
+                    <ProductRow
                       key={p.id}
-                      onClick={() => toggleProduct(p.id)}
-                      role="button"
-                      tabIndex={0}
-                      className={`relative rounded-md border p-2 text-right transition cursor-pointer ${
-                        isOn ? "border-primary bg-primary/10" : "hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {p.image_url ? (
-                          <img src={p.image_url} alt="" className="size-10 rounded object-cover" />
-                        ) : (
-                          <div className="size-10 rounded bg-muted" />
-                        )}
-                        <span className="text-xs line-clamp-2 flex-1">{p.name_ar}</span>
-                      </div>
-                      {isOn && (
-                        <Check className="absolute top-1 left-1 size-4 text-primary bg-background rounded-full p-0.5" />
-                      )}
-                      {isOn && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }}
-                          title="إعدادات الأوزان"
-                          className={`absolute bottom-1 left-1 size-6 rounded-full flex items-center justify-center transition ${
-                            hasCustomWeights
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-background/80 hover:bg-primary hover:text-primary-foreground border"
-                          }`}
-                        >
-                          <Settings2 className="size-3.5" />
-                        </button>
-                      )}
-                      {hasCustomWeights && w !== undefined && (
-                        <Badge variant="outline" className="absolute top-1 right-1 text-[9px] px-1 py-0 gap-0.5">
-                          <Sliders className="size-2.5" />×{w}
-                        </Badge>
-                      )}
-                    </div>
+                      product={p}
+                      isOn={isOn}
+                      isExpanded={isExpanded}
+                      saleType={offer.sale_type}
+                      productWeightValue={w}
+                      colorWeights={pw?.colors || {}}
+                      optionWeights={pw?.options || {}}
+                      onToggle={() => {
+                        toggleProduct(p.id);
+                        if (!isOn) setExpandedProductId(p.id);
+                      }}
+                      onExpandToggle={() =>
+                        setExpandedProductId((cur) => (cur === p.id ? null : p.id))
+                      }
+                      onProductWeight={(v) => updateWeight(p.id, (c) => ({ ...c, weight: v }))}
+                      onColorWeight={(key, v) =>
+                        updateWeight(p.id, (c) => {
+                          const colors = { ...(c.colors || {}) };
+                          if (v === undefined) delete colors[key];
+                          else colors[key] = v;
+                          return { ...c, colors };
+                        })
+                      }
+                      onOptionWeight={(key, v) =>
+                        updateWeight(p.id, (c) => {
+                          const options = { ...(c.options || {}) };
+                          if (v === undefined) delete options[key];
+                          else options[key] = v;
+                          return { ...c, options };
+                        })
+                      }
+                      onResetAll={() =>
+                        setWeights((cur) => {
+                          const next = { ...cur };
+                          delete next[p.id];
+                          // persist
+                          if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+                          autoSaveTimer.current = setTimeout(async () => {
+                            await (supabase as any)
+                              .from("random_filament_offers")
+                              .update({ product_weights: next })
+                              .eq("id", offer.id);
+                            toast.success("تمت إعادة التعيين", { duration: 1200 });
+                          }, 300);
+                          return next;
+                        })
+                      }
+                    />
                   );
                 })}
                 {filteredProducts.length === 0 && (
-                  <p className="col-span-full text-center text-xs text-muted-foreground py-6">
+                  <p className="text-center text-xs text-muted-foreground py-6">
                     لا منتجات متاحة
                   </p>
                 )}
@@ -343,156 +408,172 @@ function OfferTargetingRow({
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving} className="gap-2">
+          <Button onClick={() => save(false)} disabled={saving} className="gap-2">
             <Save className="size-4" />
-            {saving ? "جاري الحفظ..." : "حفظ"}
+            {saving ? "جاري الحفظ..." : "حفظ الأقسام والمنتجات"}
           </Button>
         </div>
       </AccordionContent>
-
-      <WeightEditorDialog
-        product={editingProduct}
-        value={editingProduct ? weights[editingProduct.id] : undefined}
-        onClose={() => setEditingProduct(null)}
-        onSave={(w) => {
-          if (!editingProduct) return;
-          setWeights((cur) => {
-            const next = { ...cur };
-            const isEmpty =
-              w.weight === undefined &&
-              !Object.keys(w.colors || {}).length &&
-              !Object.keys(w.options || {}).length;
-            if (isEmpty) delete next[editingProduct.id];
-            else next[editingProduct.id] = w;
-            return next;
-          });
-          setEditingProduct(null);
-          toast.info("لا تنسَ الضغط على حفظ");
-        }}
-      />
     </AccordionItem>
   );
 }
 
-function WeightEditorDialog({
-  product, value, onClose, onSave,
+function ProductRow({
+  product, isOn, isExpanded, saleType,
+  productWeightValue, colorWeights, optionWeights,
+  onToggle, onExpandToggle,
+  onProductWeight, onColorWeight, onOptionWeight, onResetAll,
 }: {
-  product: any | null;
-  value: ProductWeight | undefined;
-  onClose: () => void;
-  onSave: (w: ProductWeight) => void;
+  product: any;
+  isOn: boolean;
+  isExpanded: boolean;
+  saleType: SaleType;
+  productWeightValue: number | undefined;
+  colorWeights: Record<string, number>;
+  optionWeights: Record<string, number>;
+  onToggle: () => void;
+  onExpandToggle: () => void;
+  onProductWeight: (v: number | undefined) => void;
+  onColorWeight: (key: string, v: number | undefined) => void;
+  onOptionWeight: (key: string, v: number | undefined) => void;
+  onResetAll: () => void;
 }) {
-  const [productWeight, setProductWeight] = useState<string>("");
-  const [colorWeights, setColorWeights] = useState<Record<string, string>>({});
-  const [optionWeights, setOptionWeights] = useState<Record<string, string>>({});
-
-  // Reset whenever a different product opens
-  useMemo(() => {
-    if (!product) return;
-    setProductWeight(value?.weight !== undefined ? String(value.weight) : "");
-    const cw: Record<string, string> = {};
-    Object.entries(value?.colors || {}).forEach(([k, v]) => { cw[k] = String(v); });
-    setColorWeights(cw);
-    const ow: Record<string, string> = {};
-    Object.entries(value?.options || {}).forEach(([k, v]) => { ow[k] = String(v); });
-    setOptionWeights(ow);
-  }, [product?.id]);
-
-  if (!product) return null;
-
   const colors: any[] = Array.isArray(product.colors) ? product.colors : [];
-  const directColors = colors.filter((c: any) => c?.available_for_direct_sale === true);
+  const eligibleColors = colors.filter((c: any) =>
+    saleType === "direct"
+      ? c?.available_for_direct_sale === true &&
+        Object.values(c?.option_stocks || {}).some((v: any) => Number(v) > 0)
+      : c?.available_for_pre_order !== false
+  );
 
-  // Collect option keys from all option_stocks across colors
-  const optionKeys = Array.from(new Set(
-    directColors.flatMap((c: any) =>
-      Object.keys(c?.option_stocks || {}).filter((k) => Number((c.option_stocks || {})[k]) > 0)
-    )
-  ));
+  // الخيارات لكل لون
+  const options: any[] = Array.isArray(product.product_options) ? product.product_options : [];
+  let optionKeys: string[] = [];
+  if (saleType === "direct") {
+    optionKeys = Array.from(new Set(
+      eligibleColors.flatMap((c: any) =>
+        Object.keys(c?.option_stocks || {}).filter((k) => Number((c.option_stocks || {})[k]) > 0)
+      )
+    ));
+  } else {
+    optionKeys = options
+      .filter((o: any) => o?.available_for_pre_order !== false)
+      .map((o: any) => o?.name_ar || o?.name)
+      .filter(Boolean);
+  }
 
-  const parse = (s: string): number | undefined => {
-    const t = s.trim();
-    if (!t) return undefined;
-    const n = Number(t);
-    return Number.isFinite(n) && n >= 0 ? n : undefined;
-  };
-
-  const handleSave = () => {
-    const out: ProductWeight = {};
-    const pw = parse(productWeight);
-    if (pw !== undefined) out.weight = pw;
-    const cOut: Record<string, number> = {};
-    Object.entries(colorWeights).forEach(([k, v]) => {
-      const n = parse(v); if (n !== undefined) cOut[k] = n;
-    });
-    if (Object.keys(cOut).length) out.colors = cOut;
-    const oOut: Record<string, number> = {};
-    Object.entries(optionWeights).forEach(([k, v]) => {
-      const n = parse(v); if (n !== undefined) oOut[k] = n;
-    });
-    if (Object.keys(oOut).length) out.options = oOut;
-    onSave(out);
-  };
-
-  const reset = () => {
-    setProductWeight("");
-    setColorWeights({});
-    setOptionWeights({});
-  };
+  const hasCustom =
+    productWeightValue !== undefined ||
+    Object.keys(colorWeights).length > 0 ||
+    Object.keys(optionWeights).length > 0;
 
   return (
-    <Dialog open={!!product} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="!overflow-hidden !max-h-none max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-right">
-            <Sliders className="size-5 text-primary" />
-            أوزان: {product.name_ar}
-          </DialogTitle>
-          <DialogDescription className="text-right text-xs">
-            القيمة الافتراضية = 1. ارفع الرقم لزيادة احتمال الاختيار. اتركه فارغاً للوزن الافتراضي.
-          </DialogDescription>
-        </DialogHeader>
+    <div
+      className={`rounded-lg border transition-all ${
+        isOn ? "border-primary bg-primary/5" : "hover:border-primary/40"
+      }`}
+    >
+      {/* الصف الرئيسي */}
+      <div className="flex items-center gap-2 p-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`size-5 rounded border flex items-center justify-center shrink-0 transition ${
+            isOn ? "bg-primary border-primary text-primary-foreground" : "bg-background"
+          }`}
+          aria-label={isOn ? "إلغاء التحديد" : "تحديد"}
+        >
+          {isOn && <Check className="size-3.5" />}
+        </button>
 
-        <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-4">
-          {/* Product weight */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold">وزن المنتج (في مجموعة المنتجات)</label>
-            <Input
-              type="number" min={0} step="0.1" inputMode="decimal"
-              placeholder="1"
-              value={productWeight}
-              onChange={(e) => setProductWeight(e.target.value)}
-              className="h-9 text-sm"
+        {product.image_url ? (
+          <img src={product.image_url} alt="" className="size-10 rounded object-cover shrink-0" />
+        ) : (
+          <div className="size-10 rounded bg-muted shrink-0" />
+        )}
+
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={isOn ? onExpandToggle : onToggle}>
+          <div className="text-sm font-medium truncate">{product.name_ar}</div>
+          {isOn && (
+            <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-0.5">
+                <Sliders className="size-2.5" />
+                وزن المنتج: <b className={productWeightValue !== undefined ? "text-primary" : ""}>
+                  {productWeightValue ?? "1 (افتراضي)"}
+                </b>
+              </span>
+              {Object.keys(colorWeights).length > 0 && (
+                <span>· ألوان مخصصة: {Object.keys(colorWeights).length}</span>
+              )}
+              {Object.keys(optionWeights).length > 0 && (
+                <span>· خيارات مخصصة: {Object.keys(optionWeights).length}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isOn && (
+          <button
+            type="button"
+            onClick={onExpandToggle}
+            className="size-7 rounded-md hover:bg-primary/10 flex items-center justify-center shrink-0"
+            aria-label={isExpanded ? "طيّ" : "توسيع"}
+          >
+            <ChevronDown className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+          </button>
+        )}
+      </div>
+
+      {/* محرر الأوزان (يتمدد) */}
+      {isOn && isExpanded && (
+        <div className="border-t bg-background/40 p-3 space-y-3 animate-glass-expand">
+          {/* وزن المنتج */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold flex-1 flex items-center gap-1.5">
+              <Sliders className="size-3.5 text-primary" />
+              وزن المنتج (في مجموعة المنتجات)
+            </label>
+            <WeightInput
+              value={productWeightValue}
+              onChange={onProductWeight}
             />
           </div>
 
-          {/* Options table */}
+          {/* الخيارات */}
           {optionKeys.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold">أوزان الخيارات</label>
-              <div className="border rounded-md divide-y">
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold text-muted-foreground">
+                ٢. الخيارات (أوزان داخلية)
+              </div>
+              <div className="border rounded-md divide-y bg-card/40">
                 {optionKeys.map((k) => (
                   <div key={k} className="flex items-center justify-between gap-2 p-2">
                     <span className="text-xs flex-1 truncate">{k}</span>
-                    <Input
-                      type="number" min={0} step="0.1" inputMode="decimal"
-                      placeholder="1"
-                      value={optionWeights[k] || ""}
-                      onChange={(e) => setOptionWeights((cur) => ({ ...cur, [k]: e.target.value }))}
-                      className="h-8 w-20 text-sm"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      {optionWeights[k] !== undefined && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+                          ×{optionWeights[k]}
+                        </Badge>
+                      )}
+                      <WeightInput
+                        value={optionWeights[k]}
+                        onChange={(v) => onOptionWeight(k, v)}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Colors table */}
-          {directColors.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold">أوزان الألوان</label>
-              <div className="border rounded-md divide-y">
-                {directColors.map((c: any, i: number) => {
+          {/* الألوان */}
+          {eligibleColors.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold text-muted-foreground">
+                ٣. الألوان (أوزان داخلية)
+              </div>
+              <div className="border rounded-md divide-y bg-card/40">
+                {eligibleColors.map((c: any, i: number) => {
                   const key = c?.name_ar || c?.name || "";
                   if (!key) return null;
                   return (
@@ -504,31 +585,75 @@ function WeightEditorDialog({
                         />
                         <span className="text-xs truncate">{key}</span>
                       </div>
-                      <Input
-                        type="number" min={0} step="0.1" inputMode="decimal"
-                        placeholder="1"
-                        value={colorWeights[key] || ""}
-                        onChange={(e) => setColorWeights((cur) => ({ ...cur, [key]: e.target.value }))}
-                        className="h-8 w-20 text-sm"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        {colorWeights[key] !== undefined && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+                            ×{colorWeights[key]}
+                          </Badge>
+                        )}
+                        <WeightInput
+                          value={colorWeights[key]}
+                          onChange={(v) => onColorWeight(key, v)}
+                        />
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-        </div>
 
-        <div className="flex justify-between gap-2 pt-2 border-t">
-          <Button variant="ghost" size="sm" onClick={reset}>إعادة تعيين</Button>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose}>إلغاء</Button>
-            <Button size="sm" onClick={handleSave} className="gap-1.5">
-              <Save className="size-3.5" /> تطبيق
-            </Button>
-          </div>
+          {hasCustom && (
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={onResetAll} className="h-7 text-xs gap-1">
+                <RotateCcw className="size-3" /> إعادة تعيين أوزان هذا المنتج
+              </Button>
+            </div>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
+  );
+}
+
+/** حقل وزن: يكتب القيمة كـ string، يحفظ تلقائياً عند البلور أو بعد توقف الكتابة */
+function WeightInput({
+  value, onChange,
+}: {
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  const [text, setText] = useState<string>(value !== undefined ? String(value) : "");
+
+  // مزامنة لو تغيّرت القيمة من خارج (مثل reset)
+  useEffect(() => {
+    setText(value !== undefined ? String(value) : "");
+  }, [value]);
+
+  const commit = (raw: string) => {
+    const t = raw.trim();
+    if (!t) {
+      onChange(undefined);
+      return;
+    }
+    const n = Number(t);
+    if (Number.isFinite(n) && n >= 0) onChange(n);
+  };
+
+  return (
+    <Input
+      type="number"
+      min={0}
+      step="0.1"
+      inputMode="decimal"
+      placeholder="1"
+      value={text}
+      onChange={(e) => {
+        setText(e.target.value);
+        commit(e.target.value);
+      }}
+      onBlur={(e) => commit(e.target.value)}
+      className="h-7 w-16 text-xs text-center"
+    />
   );
 }
