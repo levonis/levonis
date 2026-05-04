@@ -604,7 +604,7 @@ function OfferDialog({
                   {draft.image_url ? (
                     <img src={draft.image_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <WavyColors />
+                    <WavyColors seed={(draft as any).id || draft.title_ar || "draft"} />
                   )}
                 </div>
                 <div className="flex flex-col gap-2 flex-1">
