@@ -381,6 +381,7 @@ function OfferDialog({
       ...offer,
       category_ids: offer.category_ids?.length ? offer.category_ids : (offer.category_id ? [offer.category_id] : []),
       allowed_product_ids: offer.allowed_product_ids || [],
+      product_weights: (offer as any).product_weights || {},
     });
     setProductSearch("");
   }, [offer]);
