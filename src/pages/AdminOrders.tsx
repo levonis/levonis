@@ -1182,7 +1182,23 @@ const AdminOrders = () => {
                       return (
                         <TableRow key={order.id} className="admin-table-row">
                           <TableCell className="font-mono text-sm font-medium">
-                            {order.order_number}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{order.order_number}</span>
+                              {(() => {
+                                const rfInfo = getRandomFilamentInfo(order);
+                                if (rfInfo.total === 0) return null;
+                                return (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] border-fuchsia-500/40 text-fuchsia-600 dark:text-fuchsia-300 gap-0.5"
+                                    title={rfInfo.offerTitle ? `عرض: ${rfInfo.offerTitle}` : 'فلامنت عشوائي'}
+                                  >
+                                    🎲 عشوائي ×{rfInfo.total}
+                                    {rfInfo.direct > 0 && rfInfo.preorder > 0 ? ' (مختلط)' : rfInfo.direct > 0 ? ' • مباشر' : ' • مسبق'}
+                                  </Badge>
+                                );
+                              })()}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col">
