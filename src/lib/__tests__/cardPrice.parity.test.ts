@@ -60,6 +60,7 @@ describe('computeUnifiedCardPrice', () => {
     const p = {
       direct_sale_price: 999999,
       has_in_stock: true,
+      direct_stock: 5,
       link_direct_commission_to_cod: true,
       id: 'p1',
     };
