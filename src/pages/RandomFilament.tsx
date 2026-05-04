@@ -421,7 +421,7 @@ function EligibleProductsDialog({
       const allowed: string[] = offer.allowed_product_ids || [];
       let q = supabase
         .from("products")
-        .select("id, name_ar, image_url, in_stock, colors")
+        .select("id, name_ar, image_url, in_stock, colors, product_options(id, name_ar, available_for_direct_sale, available_for_pre_order, stock_quantity, in_stock)")
         .order("name_ar")
         .limit(200);
       if (catIds.length) q = q.in("category_id", catIds);
@@ -432,6 +432,7 @@ function EligibleProductsDialog({
       return list
         .map((p: any) => {
           const colors = Array.isArray(p.colors) ? p.colors : [];
+          const opts = Array.isArray(p.product_options) ? p.product_options : [];
           const eligibleColors = colors.filter((c: any) => {
             if (isDirect) {
               if (c?.available_for_direct_sale !== true) return false;
@@ -440,7 +441,15 @@ function EligibleProductsDialog({
             }
             return c?.available_for_pre_order !== false;
           });
-          return { ...p, eligibleColors };
+          const eligibleOptions = opts.filter((o: any) => {
+            if (isDirect) {
+              if (o?.available_for_direct_sale !== true) return false;
+              if (o?.in_stock === false) return false;
+              return o?.stock_quantity == null || Number(o.stock_quantity) > 0;
+            }
+            return o?.available_for_pre_order !== false;
+          });
+          return { ...p, eligibleColors, eligibleOptions };
         })
         .filter((p: any) => (isDirect ? p.in_stock !== false : true) && p.eligibleColors.length > 0);
     },
@@ -485,10 +494,32 @@ function EligibleProductsDialog({
                     <span className="text-[10px] text-muted-foreground">+{p.eligibleColors.length - 8}</span>
                   )}
                 </div>
+                {p.eligibleOptions && p.eligibleOptions.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {p.eligibleOptions.slice(0, 4).map((o: any) => (
+                      <span
+                        key={o.id}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/70 border border-border/60"
+                      >
+                        {o.name_ar}
+                      </span>
+                    ))}
+                    {p.eligibleOptions.length > 4 && (
+                      <span className="text-[10px] text-muted-foreground">+{p.eligibleOptions.length - 4}</span>
+                    )}
+                  </div>
+                )}
               </div>
-              <Badge variant="outline" className="shrink-0 text-[10px]">
-                {p.eligibleColors.length} لون
-              </Badge>
+              <div className="shrink-0 flex flex-col items-end gap-1">
+                <Badge variant="outline" className="text-[10px]">
+                  {p.eligibleColors.length} لون
+                </Badge>
+                {p.eligibleOptions && p.eligibleOptions.length > 0 && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {p.eligibleOptions.length} خيار
+                  </Badge>
+                )}
+              </div>
             </div>
           ))}
         </div>
