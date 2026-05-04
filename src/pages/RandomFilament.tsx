@@ -213,22 +213,66 @@ export default function RandomFilament() {
       </header>
 
       {/* progress */}
-      <div className="flex items-center gap-2 justify-center text-xs">
-        {(["sale-type", "category", "offer", "confirm"] as Step[]).map((s, i, arr) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={`size-7 rounded-full flex items-center justify-center font-bold ${
-                step === s
-                  ? "bg-transparent text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {i + 1}
-            </div>
-            {i < arr.length - 1 && <div className="w-6 h-px bg-border" />}
+      {(() => {
+        const steps: Step[] = ["sale-type", "category", "offer", "confirm"];
+        const currentIdx = steps.indexOf(step);
+        const labels: Record<Step, string> = {
+          "sale-type": "النوع",
+          category: "الفئة",
+          offer: "العرض",
+          confirm: "التأكيد",
+        };
+        return (
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-xs px-2">
+            {steps.map((s, i, arr) => {
+              const isDone = i < currentIdx;
+              const isActive = i === currentIdx;
+              return (
+                <div key={s} className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={`size-8 rounded-full flex items-center justify-center font-bold text-[13px] transition-all duration-300 border ${
+                        isActive
+                          ? "bg-primary text-primary-foreground border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.18)] scale-110"
+                          : isDone
+                          ? "bg-primary/90 text-primary-foreground border-primary/60"
+                          : "bg-muted/60 text-muted-foreground border-border/50 backdrop-blur-sm"
+                      }`}
+                    >
+                      {isDone ? (
+                        <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        i + 1
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10px] font-medium transition-colors ${
+                        isActive
+                          ? "text-primary"
+                          : isDone
+                          ? "text-foreground/80"
+                          : "text-muted-foreground/70"
+                      }`}
+                    >
+                      {labels[s]}
+                    </span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className="relative h-0.5 w-8 sm:w-12 -mt-4 rounded-full overflow-hidden bg-border/60">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-primary/70 transition-all duration-500"
+                        style={{ width: i < currentIdx ? "100%" : "0%" }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {step === "sale-type" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
