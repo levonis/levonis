@@ -386,43 +386,24 @@ function OfferDialog({
       const opts = p.product_options || [];
       const colors = Array.isArray(p.colors) ? p.colors : [];
 
-      // Compute direct stock honoring V3 rules:
-      // 1) colors with option_stocks (JSON) are PRIMARY when present
-      // 2) else fall back to color-level stock_quantity
-      // 3) else fall back to product_options.stock_quantity
-      // 4) else fall back to products.direct_stock
+      // Direct stock — MIRROR server logic in create_random_filament_order:
+      // Only colors[].option_stocks values are counted (V3 strict).
+      // No fallback to color.stock_quantity, product_options or direct_stock —
+      // the RPC will reject those products anyway, so they must be hidden.
       let directStock = 0;
-      let hasStockData = false;
-
-      if (colors.length > 0) {
-        for (const c of colors) {
-          if (c?.available_for_direct_sale === false) continue;
-          const stocks = c?.option_stocks;
-          if (stocks && typeof stocks === "object" && Object.keys(stocks).length > 0) {
-            hasStockData = true;
-            for (const v of Object.values(stocks)) directStock += Math.max(0, Number(v) || 0);
-          } else if (c?.stock_quantity != null) {
-            hasStockData = true;
-            directStock += Math.max(0, Number(c.stock_quantity) || 0);
+      for (const c of colors) {
+        if (c?.available_for_direct_sale !== true) continue;
+        const stocks = c?.option_stocks;
+        if (stocks && typeof stocks === "object") {
+          for (const v of Object.values(stocks)) {
+            const n = Number(v) || 0;
+            if (n > 0) directStock += n;
           }
         }
       }
-      if (!hasStockData && opts.length > 0) {
-        for (const o of opts) {
-          if ((o?.available_for_direct_sale ?? true) === false) continue;
-          if (o?.stock_quantity != null) {
-            hasStockData = true;
-            directStock += Math.max(0, Number(o.stock_quantity) || 0);
-          }
-        }
-      }
-      if (!hasStockData && p.direct_stock != null) {
-        hasStockData = true;
-        directStock = Math.max(0, Number(p.direct_stock) || 0);
-      }
 
-      // Preorder eligibility: products with no options/colors are preorder by default;
-      // otherwise require at least one variant flagged eligible.
+      // Preorder eligibility mirrors server: any product in the category is eligible
+      // (server doesn't require option flags for preorder products without options).
       const hasPreorder =
         opts.length === 0 && colors.length === 0
           ? true
