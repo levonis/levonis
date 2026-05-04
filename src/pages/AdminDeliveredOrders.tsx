@@ -51,7 +51,7 @@ export default function AdminDeliveredOrders() {
 
       // 1. Fetch delivered site orders
       const { data: siteOrders } = await supabase
-        .from("orders")
+        .from("orders_admin" as any)
         .select("*, profiles(full_name, phone_number, username), order_items(product_name_ar, quantity, price, product_id)")
         .eq("status", "delivered")
         .order("delivered_at", { ascending: false });
