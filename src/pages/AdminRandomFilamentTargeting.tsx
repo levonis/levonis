@@ -16,6 +16,12 @@ import {
 import { Search, Save, Check, Package2, Layers, Settings2, Sliders } from "lucide-react";
 
 type SaleType = "direct" | "preorder";
+type ProductWeight = {
+  weight?: number;
+  colors?: Record<string, number>;
+  options?: Record<string, number>;
+};
+type ProductWeights = Record<string, ProductWeight>;
 type Offer = {
   id: string;
   sale_type: SaleType;
@@ -23,6 +29,7 @@ type Offer = {
   category_id: string | null;
   category_ids: string[];
   allowed_product_ids: string[];
+  product_weights: ProductWeights;
   enabled: boolean;
 };
 
