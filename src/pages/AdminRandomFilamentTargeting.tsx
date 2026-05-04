@@ -10,9 +10,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Search, Save, Check, Package2, Layers } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Search, Save, Check, Package2, Layers, Settings2, Sliders } from "lucide-react";
 
 type SaleType = "direct" | "preorder";
+type ProductWeight = {
+  weight?: number;
+  colors?: Record<string, number>;
+  options?: Record<string, number>;
+};
+type ProductWeights = Record<string, ProductWeight>;
 type Offer = {
   id: string;
   sale_type: SaleType;
@@ -20,6 +29,7 @@ type Offer = {
   category_id: string | null;
   category_ids: string[];
   allowed_product_ids: string[];
+  product_weights: ProductWeights;
   enabled: boolean;
 };
 
@@ -34,7 +44,7 @@ export default function AdminRandomFilamentTargeting() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("random_filament_offers")
-        .select("id, sale_type, title_ar, category_id, category_ids, allowed_product_ids, enabled")
+        .select("id, sale_type, title_ar, category_id, category_ids, allowed_product_ids, product_weights, enabled")
         .order("sale_type")
         .order("display_order");
       return (data || []) as Offer[];
@@ -110,8 +120,10 @@ function OfferTargetingRow({
     offer.category_ids?.length ? offer.category_ids : (offer.category_id ? [offer.category_id] : [])
   );
   const [allowed, setAllowed] = useState<string[]>(offer.allowed_product_ids || []);
+  const [weights, setWeights] = useState<ProductWeights>(offer.product_weights || {});
   const [productSearch, setProductSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
   const { data: products } = useQuery({
     queryKey: ["rf-targeting-products", offer.id, offer.sale_type, categoryIds],
@@ -172,6 +184,11 @@ function OfferTargetingRow({
       // Drop allowed products no longer matching the categories
       const validIds = new Set((products || []).map((p: any) => p.id));
       const cleaned = allowed.filter((id) => validIds.has(id));
+      // Drop weights for products no longer in the whitelist
+      const cleanedWeights: ProductWeights = {};
+      for (const id of cleaned) {
+        if (weights[id]) cleanedWeights[id] = weights[id];
+      }
 
       const { error } = await (supabase as any)
         .from("random_filament_offers")
@@ -179,10 +196,12 @@ function OfferTargetingRow({
           category_ids: categoryIds,
           category_id: categoryIds[0],
           allowed_product_ids: cleaned,
+          product_weights: cleanedWeights,
         })
         .eq("id", offer.id);
       if (error) throw error;
       setAllowed(cleaned);
+      setWeights(cleanedWeights);
       toast.success("تم الحفظ");
       onSaved();
     } catch (e: any) {
@@ -264,12 +283,19 @@ function OfferTargetingRow({
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">
                 {filteredProducts.map((p: any) => {
                   const isOn = allowed.includes(p.id);
+                  const w = weights[p.id]?.weight;
+                  const hasCustomWeights =
+                    !!weights[p.id] &&
+                    (w !== undefined ||
+                      Object.keys(weights[p.id]?.colors || {}).length > 0 ||
+                      Object.keys(weights[p.id]?.options || {}).length > 0);
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      type="button"
                       onClick={() => toggleProduct(p.id)}
-                      className={`relative rounded-md border p-2 text-right transition ${
+                      role="button"
+                      tabIndex={0}
+                      className={`relative rounded-md border p-2 text-right transition cursor-pointer ${
                         isOn ? "border-primary bg-primary/10" : "hover:border-primary/50"
                       }`}
                     >
@@ -284,7 +310,26 @@ function OfferTargetingRow({
                       {isOn && (
                         <Check className="absolute top-1 left-1 size-4 text-primary bg-background rounded-full p-0.5" />
                       )}
-                    </button>
+                      {isOn && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setEditingProduct(p); }}
+                          title="إعدادات الأوزان"
+                          className={`absolute bottom-1 left-1 size-6 rounded-full flex items-center justify-center transition ${
+                            hasCustomWeights
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background/80 hover:bg-primary hover:text-primary-foreground border"
+                          }`}
+                        >
+                          <Settings2 className="size-3.5" />
+                        </button>
+                      )}
+                      {hasCustomWeights && w !== undefined && (
+                        <Badge variant="outline" className="absolute top-1 right-1 text-[9px] px-1 py-0 gap-0.5">
+                          <Sliders className="size-2.5" />×{w}
+                        </Badge>
+                      )}
+                    </div>
                   );
                 })}
                 {filteredProducts.length === 0 && (
@@ -304,6 +349,186 @@ function OfferTargetingRow({
           </Button>
         </div>
       </AccordionContent>
+
+      <WeightEditorDialog
+        product={editingProduct}
+        value={editingProduct ? weights[editingProduct.id] : undefined}
+        onClose={() => setEditingProduct(null)}
+        onSave={(w) => {
+          if (!editingProduct) return;
+          setWeights((cur) => {
+            const next = { ...cur };
+            const isEmpty =
+              w.weight === undefined &&
+              !Object.keys(w.colors || {}).length &&
+              !Object.keys(w.options || {}).length;
+            if (isEmpty) delete next[editingProduct.id];
+            else next[editingProduct.id] = w;
+            return next;
+          });
+          setEditingProduct(null);
+          toast.info("لا تنسَ الضغط على حفظ");
+        }}
+      />
     </AccordionItem>
+  );
+}
+
+function WeightEditorDialog({
+  product, value, onClose, onSave,
+}: {
+  product: any | null;
+  value: ProductWeight | undefined;
+  onClose: () => void;
+  onSave: (w: ProductWeight) => void;
+}) {
+  const [productWeight, setProductWeight] = useState<string>("");
+  const [colorWeights, setColorWeights] = useState<Record<string, string>>({});
+  const [optionWeights, setOptionWeights] = useState<Record<string, string>>({});
+
+  // Reset whenever a different product opens
+  useMemo(() => {
+    if (!product) return;
+    setProductWeight(value?.weight !== undefined ? String(value.weight) : "");
+    const cw: Record<string, string> = {};
+    Object.entries(value?.colors || {}).forEach(([k, v]) => { cw[k] = String(v); });
+    setColorWeights(cw);
+    const ow: Record<string, string> = {};
+    Object.entries(value?.options || {}).forEach(([k, v]) => { ow[k] = String(v); });
+    setOptionWeights(ow);
+  }, [product?.id]);
+
+  if (!product) return null;
+
+  const colors: any[] = Array.isArray(product.colors) ? product.colors : [];
+  const directColors = colors.filter((c: any) => c?.available_for_direct_sale === true);
+
+  // Collect option keys from all option_stocks across colors
+  const optionKeys = Array.from(new Set(
+    directColors.flatMap((c: any) =>
+      Object.keys(c?.option_stocks || {}).filter((k) => Number((c.option_stocks || {})[k]) > 0)
+    )
+  ));
+
+  const parse = (s: string): number | undefined => {
+    const t = s.trim();
+    if (!t) return undefined;
+    const n = Number(t);
+    return Number.isFinite(n) && n >= 0 ? n : undefined;
+  };
+
+  const handleSave = () => {
+    const out: ProductWeight = {};
+    const pw = parse(productWeight);
+    if (pw !== undefined) out.weight = pw;
+    const cOut: Record<string, number> = {};
+    Object.entries(colorWeights).forEach(([k, v]) => {
+      const n = parse(v); if (n !== undefined) cOut[k] = n;
+    });
+    if (Object.keys(cOut).length) out.colors = cOut;
+    const oOut: Record<string, number> = {};
+    Object.entries(optionWeights).forEach(([k, v]) => {
+      const n = parse(v); if (n !== undefined) oOut[k] = n;
+    });
+    if (Object.keys(oOut).length) out.options = oOut;
+    onSave(out);
+  };
+
+  const reset = () => {
+    setProductWeight("");
+    setColorWeights({});
+    setOptionWeights({});
+  };
+
+  return (
+    <Dialog open={!!product} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="!overflow-hidden !max-h-none max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-right">
+            <Sliders className="size-5 text-primary" />
+            أوزان: {product.name_ar}
+          </DialogTitle>
+          <DialogDescription className="text-right text-xs">
+            القيمة الافتراضية = 1. ارفع الرقم لزيادة احتمال الاختيار. اتركه فارغاً للوزن الافتراضي.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-4">
+          {/* Product weight */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold">وزن المنتج (في مجموعة المنتجات)</label>
+            <Input
+              type="number" min={0} step="0.1" inputMode="decimal"
+              placeholder="1"
+              value={productWeight}
+              onChange={(e) => setProductWeight(e.target.value)}
+              className="h-9 text-sm"
+            />
+          </div>
+
+          {/* Options table */}
+          {optionKeys.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">أوزان الخيارات</label>
+              <div className="border rounded-md divide-y">
+                {optionKeys.map((k) => (
+                  <div key={k} className="flex items-center justify-between gap-2 p-2">
+                    <span className="text-xs flex-1 truncate">{k}</span>
+                    <Input
+                      type="number" min={0} step="0.1" inputMode="decimal"
+                      placeholder="1"
+                      value={optionWeights[k] || ""}
+                      onChange={(e) => setOptionWeights((cur) => ({ ...cur, [k]: e.target.value }))}
+                      className="h-8 w-20 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Colors table */}
+          {directColors.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">أوزان الألوان</label>
+              <div className="border rounded-md divide-y">
+                {directColors.map((c: any, i: number) => {
+                  const key = c?.name_ar || c?.name || "";
+                  if (!key) return null;
+                  return (
+                    <div key={`${key}-${i}`} className="flex items-center justify-between gap-2 p-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span
+                          className="size-4 rounded-full border shrink-0"
+                          style={{ background: c?.hex_code || c?.hex || c?.color || "#888" }}
+                        />
+                        <span className="text-xs truncate">{key}</span>
+                      </div>
+                      <Input
+                        type="number" min={0} step="0.1" inputMode="decimal"
+                        placeholder="1"
+                        value={colorWeights[key] || ""}
+                        onChange={(e) => setColorWeights((cur) => ({ ...cur, [key]: e.target.value }))}
+                        className="h-8 w-20 text-sm"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between gap-2 pt-2 border-t">
+          <Button variant="ghost" size="sm" onClick={reset}>إعادة تعيين</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onClose}>إلغاء</Button>
+            <Button size="sm" onClick={handleSave} className="gap-1.5">
+              <Save className="size-3.5" /> تطبيق
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
