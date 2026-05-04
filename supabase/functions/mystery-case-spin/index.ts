@@ -209,6 +209,7 @@ Deno.serve(async (req) => {
       results,
     });
   } catch (err) {
-    return jsonRes({ error: "Server error", details: String(err) }, 500);
+    console.error("mystery-case-spin error:", err);
+    return jsonRes({ error: "Server error" }, 500);
   }
 });
