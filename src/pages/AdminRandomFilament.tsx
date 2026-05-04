@@ -520,6 +520,7 @@ function OfferDialog({
         category_ids: draft.category_ids,
         category_id: draft.category_ids?.[0] || null, // legacy compatibility
         allowed_product_ids: draft.allowed_product_ids || [],
+        product_weights: draft.product_weights || {},
       };
 
       if (draft.id) {
