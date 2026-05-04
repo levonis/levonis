@@ -137,6 +137,7 @@ const PriceProtection = lazy(() => import("./pages/PriceProtection"));
 const AdminWinners = lazy(() => import("./pages/AdminWinners"));
 const AdminProductColorQa = lazy(() => import("./pages/AdminProductColorQa"));
 const AdminRandomFilament = lazy(() => import("./pages/AdminRandomFilament"));
+const AdminRandomFilamentTargeting = lazy(() => import("./pages/AdminRandomFilamentTargeting"));
 const RandomFilament = lazy(() => import("./pages/RandomFilament"));
 const Wishes = lazy(() => import("./pages/Wishes"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
@@ -316,6 +317,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/winners`} element={<AdminRoute><AdminWinners /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/product-color-qa`} element={<AdminRoute><AdminProductColorQa /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/random-filament`} element={<AdminRoute><AdminRandomFilament /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/random-filament-targeting`} element={<AdminRoute><AdminRandomFilamentTargeting /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />

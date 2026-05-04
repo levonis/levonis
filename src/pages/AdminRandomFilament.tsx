@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Trash2, Plus, Save, Sparkles, Package2, Ban, ShieldX,
   Search, Check, Image as ImageIcon, Upload, AlertTriangle,
-  TrendingUp, Boxes, Pencil, Truck,
+  TrendingUp, Boxes, Pencil, Truck, Layers,
 } from "lucide-react";
 import WavyColors from "@/components/WavyColors";
 
@@ -181,9 +181,16 @@ export default function AdminRandomFilament() {
               أنشئ عروضاً مخصصة، اربطها بأقسام ومنتجات متعددة، وتحكم بالمخزون.
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border bg-card/60 px-3 py-2">
-            <Switch checked={!!settings?.enabled} onCheckedChange={toggleSectionEnabled} />
-            <span className="text-xs">{settings?.enabled ? "القسم مفعّل" : "القسم متوقف"}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button asChild variant="outline" size="sm">
+              <a href="random-filament-targeting">
+                <Layers className="size-4 ml-1" /> إدارة الاستهداف
+              </a>
+            </Button>
+            <div className="flex items-center gap-2 rounded-xl border bg-card/60 px-3 py-2">
+              <Switch checked={!!settings?.enabled} onCheckedChange={toggleSectionEnabled} />
+              <span className="text-xs">{settings?.enabled ? "القسم مفعّل" : "القسم متوقف"}</span>
+            </div>
           </div>
         </div>
       </div>
