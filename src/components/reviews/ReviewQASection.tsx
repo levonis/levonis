@@ -138,24 +138,11 @@ export default function ReviewQASection({ reviewId, productId, reviewerId, revie
       if (error) throw error;
 
       // Award 5 points to answerer
-      const { data: currentPoints } = await supabase
-        .from('user_points')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (currentPoints) {
-        await supabase.from('user_points').update({
-          total_points: (currentPoints.total_points || 0) + 5,
-          available_points: (currentPoints.available_points || 0) + 5,
-        }).eq('user_id', user.id);
-      } else {
-        await supabase.from('user_points').insert({
-          user_id: user.id,
-          total_points: 5,
-          available_points: 5,
-        });
-      }
+      await supabase.rpc('add_user_points', {
+        p_user_id: user.id,
+        p_amount: 5,
+        p_source: 'qa_answer',
+      });
 
       await supabase.from('points_transactions').insert({
         user_id: user.id,

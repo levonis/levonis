@@ -93,22 +93,12 @@ const AdminReviews = () => {
             related_id: review.product_id,
           });
 
-          // Update user points
-          const { data: currentPoints } = await supabase
-            .from('user_points').select('*').eq('user_id', review.user_id).maybeSingle();
-
-          if (currentPoints) {
-            await supabase.from('user_points').update({
-              total_points: (currentPoints.total_points || 0) + pointsToAward,
-              available_points: (currentPoints.available_points || 0) + pointsToAward,
-            }).eq('user_id', review.user_id);
-          } else {
-            await supabase.from('user_points').insert({
-              user_id: review.user_id,
-              total_points: pointsToAward,
-              available_points: pointsToAward,
-            });
-          }
+          // Atomic server-side increment
+          await supabase.rpc('add_user_points', {
+            p_user_id: review.user_id,
+            p_amount: pointsToAward,
+            p_source: hasMedia ? 'verified_review' : 'review',
+          });
         }
       }
     },

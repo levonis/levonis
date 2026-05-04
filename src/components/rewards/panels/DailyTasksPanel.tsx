@@ -345,19 +345,12 @@ export default function DailyTasksPanel() {
         });
       if (pointsError) throw pointsError;
 
-      const { data: currentPoints } = await supabase
-        .from('user_points').select('*').eq('user_id', user.id).maybeSingle();
-
-      if (currentPoints) {
-        await supabase.from('user_points').update({
-          total_points: (currentPoints.total_points || 0) + totalPoints,
-          available_points: (currentPoints.available_points || 0) + totalPoints,
-        }).eq('user_id', user.id);
-      } else {
-        await supabase.from('user_points').insert({
-          user_id: user.id, total_points: totalPoints, available_points: totalPoints,
-        });
-      }
+      // Atomic server-side increment to prevent race-condition double-credit
+      await supabase.rpc('add_user_points', {
+        p_user_id: user.id,
+        p_amount: totalPoints,
+        p_source: 'daily_task',
+      });
       return { ...task, totalPoints, bonusPoints, pendingApproval: false };
     },
     onSuccess: (result) => {
@@ -837,19 +830,11 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
       });
       if (pointsError) throw pointsError;
 
-      const { data: currentPoints } = await supabase
-        .from('user_points').select('*').eq('user_id', user.id).maybeSingle();
-
-      if (currentPoints) {
-        await supabase.from('user_points').update({
-          total_points: (currentPoints.total_points || 0) + reviewPoints,
-          available_points: (currentPoints.available_points || 0) + reviewPoints,
-        }).eq('user_id', user.id);
-      } else {
-        await supabase.from('user_points').insert({
-          user_id: user.id, total_points: reviewPoints, available_points: reviewPoints,
-        });
-      }
+      await supabase.rpc('add_user_points', {
+        p_user_id: user.id,
+        p_amount: reviewPoints,
+        p_source: 'review',
+      });
 
       queryClient.invalidateQueries({ queryKey: ['reviewable-orders'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
