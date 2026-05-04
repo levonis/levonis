@@ -157,18 +157,42 @@ const AdminOrders = () => {
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders', isAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, bundle_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, is_gift, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))),
-          random_filament_orders!random_filament_orders_order_id_fkey(id, sale_type, product_id, product_option_id, selected_color, offer_id, random_filament_offers(title_ar))
-        `)
+      // Fetch orders via admin view (includes internal cost/profit columns)
+      const { data: ordersData, error: ordersErr } = await supabase
+        .from('orders_admin' as any)
+        .select('*')
         .order('created_at', { ascending: false });
+      if (ordersErr) throw ordersErr;
+      const orderIds = (ordersData || []).map((o: any) => o.id);
+      if (orderIds.length === 0) return [];
 
-      if (error) throw error;
-      return data || [];
+      // Fetch related data using base tables (cost_price comes from order_items_admin)
+      const [itemsRes, profilesRes, rfRes] = await Promise.all([
+        supabase.from('order_items_admin' as any).select('*, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))').in('order_id', orderIds),
+        supabase.from('profiles').select('id, full_name, email, username').in('id', Array.from(new Set((ordersData || []).map((o: any) => o.user_id).filter(Boolean)))),
+        supabase.from('random_filament_orders').select('id, order_id, sale_type, product_id, product_option_id, selected_color, offer_id, random_filament_offers(title_ar)').in('order_id', orderIds),
+      ]);
+      if (itemsRes.error) throw itemsRes.error;
+
+      const itemsByOrder = new Map<string, any[]>();
+      ((itemsRes.data as any[]) || []).forEach((it) => {
+        const arr = itemsByOrder.get(it.order_id) || [];
+        arr.push(it); itemsByOrder.set(it.order_id, arr);
+      });
+      const profileById = new Map<string, any>();
+      ((profilesRes.data as any[]) || []).forEach((p) => profileById.set(p.id, p));
+      const rfByOrder = new Map<string, any[]>();
+      ((rfRes.data as any[]) || []).forEach((r) => {
+        const arr = rfByOrder.get(r.order_id) || [];
+        arr.push(r); rfByOrder.set(r.order_id, arr);
+      });
+
+      return (ordersData || []).map((o: any) => ({
+        ...o,
+        profiles: profileById.get(o.user_id) || null,
+        order_items: itemsByOrder.get(o.id) || [],
+        random_filament_orders: rfByOrder.get(o.id) || [],
+      }));
     },
     enabled: isAdmin,
     refetchOnMount: true,
