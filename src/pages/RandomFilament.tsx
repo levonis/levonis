@@ -78,6 +78,34 @@ export default function RandomFilament() {
     },
   });
 
+  // Existing unrevealed/unpaid RF cart items — used to enforce single sale_type per cart
+  const { data: existingRfSaleType } = useQuery<SaleType | null>({
+    queryKey: ["rf-existing-cart-sale-type", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("random_filament_orders")
+        .select("sale_type, revealed_at, order_id")
+        .eq("user_id", user!.id)
+        .is("order_id", null)
+        .is("revealed_at", null)
+        .limit(1)
+        .maybeSingle();
+      return (data?.sale_type as SaleType) || null;
+    },
+  });
+
+  const handlePickSaleType = (next: SaleType) => {
+    if (existingRfSaleType && existingRfSaleType !== next) {
+      const existingLabel = existingRfSaleType === "direct" ? "البيع المباشر" : "الحجز المسبق";
+      toast.error(`لديك طلب فلمنت عشوائي من ${existingLabel} في السلة — أكمل الطلب أولاً قبل إضافة نوع آخر`);
+      navigate("/cart");
+      return;
+    }
+    setSaleType(next);
+    setStep("category");
+  };
+
   const { data: categories } = useQuery({
     queryKey: ["random-filament-allowed-categories", settings?.category_ids],
     enabled: !!settings?.category_ids?.length,
@@ -277,10 +305,24 @@ export default function RandomFilament() {
       })()}
 
       {step === "sale-type" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <>
+          {existingRfSaleType && (
+            <div className="mb-3 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm text-center">
+              لديك طلب فلمنت عشوائي من <strong>{existingRfSaleType === "direct" ? "البيع المباشر" : "الحجز المسبق"}</strong> في السلة.
+              يجب إتمام الطلب أولاً قبل إضافة نوع آخر.
+              <button
+                type="button"
+                className="block mx-auto mt-2 text-primary underline font-bold"
+                onClick={() => navigate("/cart")}
+              >
+                الذهاب إلى السلة
+              </button>
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
-            onClick={() => { setSaleType("direct"); setStep("category"); }}
+            onClick={() => handlePickSaleType("direct")}
           >
             <CardContent className="p-5 text-center space-y-2">
               <Truck className="size-8 mx-auto text-primary" />
@@ -290,7 +332,7 @@ export default function RandomFilament() {
           </Card>
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
-            onClick={() => { setSaleType("preorder"); setStep("category"); }}
+            onClick={() => handlePickSaleType("preorder")}
           >
             <CardContent className="p-5 text-center space-y-2">
               <Package className="size-8 mx-auto text-primary" />
@@ -298,7 +340,8 @@ export default function RandomFilament() {
               <p className="text-xs text-muted-foreground">نوع ولون عشوائي من القسم</p>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        </>
       )}
 
       {step === "category" && (
