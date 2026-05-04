@@ -145,8 +145,8 @@ export default function RandomFilament() {
         SECTION_DISABLED: "القسم متوقف حالياً",
         CATEGORY_NOT_ALLOWED: "هذه الفئة غير مفعّلة",
         OFFER_NOT_FOUND: "العرض غير متاح",
-        NO_PRODUCT_AVAILABLE: "لا توجد منتجات متاحة في هذه الفئة",
-        NO_COLOR_AVAILABLE: "لا توجد ألوان متاحة حالياً",
+        NO_PRODUCT_AVAILABLE: "انتهى هذا العرض — لا منتجات متاحة حالياً",
+        NO_COLOR_AVAILABLE: "انتهى هذا العرض — لا ألوان متاحة حالياً",
         PRICE_NOT_CONFIGURED: "السعر غير مضبوط من الإدارة",
       };
       const key = Object.keys(map).find((k) => msg.includes(k));
