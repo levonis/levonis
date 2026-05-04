@@ -1371,15 +1371,16 @@ const ProductDetail = () => {
                       const hasDirect = rp?.has_in_stock ?? false;
                       let finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.price || 0), rp.price_usd, usdToIqd));
                       if (hasDirect) {
-                        const fromServer = relatedLiveDirectMap?.get(rp.id);
-                        if (fromServer != null && fromServer > 0) {
-                          finalPrice = roundIfNeeded(fromServer);
-                        } else if (rp.link_direct_commission_to_cod && codDefaults) {
-                          const live = computeLinkedDirectSalePrice(rp, { usd_to_iqd_rate: usdToIqd } as any, codDefaults as any);
-                          if (live != null && live > 0) finalPrice = roundIfNeeded(live);
-                          else if (rp.direct_sale_price != null) finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd));
-                        } else if (rp.direct_sale_price != null) {
+                        if (rp.direct_sale_price != null && Number(rp.direct_sale_price) > 0) {
                           finalPrice = roundIfNeeded(ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd));
+                        } else {
+                          const fromServer = relatedLiveDirectMap?.get(rp.id);
+                          if (fromServer != null && fromServer > 0) {
+                            finalPrice = roundIfNeeded(fromServer);
+                          } else if (rp.link_direct_commission_to_cod && codDefaults) {
+                            const live = computeLinkedDirectSalePrice(rp, { usd_to_iqd_rate: usdToIqd } as any, codDefaults as any);
+                            if (live != null && live > 0) finalPrice = roundIfNeeded(live);
+                          }
                         }
                       }
                       const rawOrig = rp.original_price ? roundIfNeeded(ensurePriceIqd(Number(rp.original_price), rp.price_usd, usdToIqd)) : 0;
