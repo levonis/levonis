@@ -1366,60 +1366,9 @@ const ProductDetail = () => {
                   <h2 className="text-lg font-black text-foreground mb-4">{t('product_related')}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {relatedProducts.map((rp: any) => {
-                      const shouldRoundUp = rp?.round_up_price === true;
-                      const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
+                      const finalPrice = computeUnifiedCardPrice(rp, usdToIqd, codDefaults, relatedLiveDirectMap);
+                      const showOrig = computeUnifiedCardOriginalPrice(rp, usdToIqd, codDefaults, relatedLiveDirectMap) ?? undefined;
                       const hasDirect = (rp?.has_in_stock ?? false) && !isAllDirectStockDepleted(rp);
-                      const hasPreOrder = !!rp?.has_pre_order;
-                      const candidates: number[] = [];
-
-                      if (hasDirect) {
-                        let directBase: number | null = null;
-                        if (rp?.link_direct_commission_to_cod) {
-                          const fromServer = relatedLiveDirectMap?.get(rp.id);
-                          if (fromServer != null && fromServer > 0) directBase = fromServer;
-                          else if (codDefaults) {
-                            const live = computeLinkedDirectSalePrice(rp, { usd_to_iqd_rate: usdToIqd } as any, codDefaults as any);
-                            if (live != null && live > 0) directBase = live;
-                          }
-                        }
-                        if (directBase == null && rp?.direct_sale_price != null && Number(rp.direct_sale_price) > 0) {
-                          directBase = ensurePriceIqd(Number(rp.direct_sale_price), rp.price_usd, usdToIqd);
-                        }
-                        if (directBase != null) {
-                          const hasOptions = Array.isArray(rp?.product_options) && rp.product_options.length > 0;
-                          if (hasOptions) {
-                            const eligible = rp.product_options.some((opt: any) => {
-                              if ((opt?.available_for_direct_sale ?? true) === false) return false;
-                              return opt?.stock_quantity != null && Number(opt.stock_quantity) > 0;
-                            }) || (Array.isArray(rp?.colors) && rp.colors.some((c: any) =>
-                              c?.option_stocks && typeof c.option_stocks === 'object' && Object.keys(c.option_stocks).length > 0
-                            ));
-                            if (eligible) candidates.push(directBase + getMinOptionAdjustmentIqd(rp, 'direct', usdToIqd));
-                          } else {
-                            candidates.push(directBase);
-                          }
-                        }
-                      }
-                      if (hasPreOrder) {
-                        const st = rp?.shipping_type;
-                        const sea = rp?.sea_price ? ensurePriceIqd(Number(rp.sea_price), rp.price_usd, usdToIqd) : null;
-                        const air = rp?.air_price ? ensurePriceIqd(Number(rp.air_price), rp.price_usd, usdToIqd) : null;
-                        let preBase: number | null = null;
-                        if (st === 'sea' && sea) preBase = sea;
-                        else if (st === 'air' && air) preBase = air;
-                        else if (st === 'both') {
-                          if (sea && air) preBase = Math.min(sea, air);
-                          else if (sea) preBase = sea;
-                          else if (air) preBase = air;
-                        }
-                        if (preBase != null) candidates.push(preBase + getMinOptionAdjustmentIqd(rp, 'preorder', usdToIqd));
-                      }
-
-                      const finalPrice = candidates.length > 0
-                        ? roundIfNeeded(Math.min(...candidates))
-                        : roundIfNeeded(ensurePriceIqd(Number(rp.price || 0), rp.price_usd, usdToIqd));
-                      const rawOrig = rp.original_price ? roundIfNeeded(ensurePriceIqd(Number(rp.original_price), rp.price_usd, usdToIqd)) : 0;
-                      const showOrig = rawOrig > finalPrice ? rawOrig : undefined;
                       return (
                         <ProductCard key={rp.id} id={rp.id} name={rp.name} nameAr={rp.name_ar}
                           description={rp.description} descriptionAr={rp.description_ar}
