@@ -10,7 +10,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Search, Save, Check, Package2, Layers } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Search, Save, Check, Package2, Layers, Settings2, Sliders } from "lucide-react";
 
 type SaleType = "direct" | "preorder";
 type Offer = {
