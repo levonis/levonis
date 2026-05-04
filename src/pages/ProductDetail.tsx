@@ -27,7 +27,7 @@ import { useLanguage } from '@/lib/i18n';
 import { useLocalizedProduct } from '@/hooks/useLocalizedProduct';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { isAllDirectStockDepleted } from '@/lib/stockUtils';
-import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice } from '@/lib/priceGuard';
+import { ensurePriceIqd, guardProductPrices, ensureAdjustmentIqd, computeLinkedDirectSalePrice, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
 import LiveDirectPriceWarning from '@/components/LiveDirectPriceWarning';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -102,7 +102,7 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories!products_category_id_fkey(name_ar, name, name_ku)')
+        .select('id, name, name_ar, name_en, name_ku, slug, description, description_ar, description_en, description_ku, price, original_price, category_id, image_url, images, colors, features, in_stock, featured, currency, availability_type, has_in_stock, has_pre_order, pre_order_shipping_options, points_reward, card_discounts, ticket_reward, price_usd, original_price_usd, shipping_type, is_pricing_updated, direct_sale_price, sea_price, air_price, round_up_price, sold_count, direct_stock, pre_order_stock, personal_delivery_cost, referral_earnings_iqd, cod_enabled, cod_fee_type, cod_fee_value, link_direct_commission_to_cod, ai_content, short_summary, searchable_attributes, taobao_url, categories!products_category_id_fkey(name_ar, name, name_ku)')
         .eq('slug', slug)
         .maybeSingle();
       if (data && !data.is_pricing_updated && !isAdmin) throw new Error('Product not found');
@@ -110,6 +110,16 @@ const ProductDetail = () => {
       if (!data) throw new Error('Product not found');
       return data;
     }
+  });
+
+  const { data: liveDirectPriceFromRpc } = useQuery({
+    queryKey: ['product-live-direct-price', product?.id, product?.link_direct_commission_to_cod],
+    staleTime: 60 * 1000,
+    queryFn: async () => {
+      if (!product?.id || !(product as any).link_direct_commission_to_cod) return null;
+      return (await fetchLiveDirectSalePrices([product.id])).get(product.id) ?? null;
+    },
+    enabled: !!product?.id && !!(product as any).link_direct_commission_to_cod,
   });
 
   const { name: localizedName, description: localizedDescription } = useLocalizedProduct(product);
