@@ -347,16 +347,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
-        // Detect random-filament cart items so UI can lock them (no delete/qty change)
+        // Detect RF items: new flow uses rf_offer_id on cart_items;
+        // legacy flow used random_filament_orders.cart_item_id link.
         let rfIds = new Set<string>();
         const rfRevealedIds = new Set<string>();
         const rfPriceById = new Map<string, number>();
+        const rfMaxStockById = new Map<string, number>();
         try {
           const ids = (data || []).map((i: any) => i.id).filter(Boolean);
+          (data || []).forEach((it: any) => {
+            if (it?.rf_offer_id) rfIds.add(it.id);
+          });
+          // legacy link
           if (ids.length > 0) {
             const { data: rfRows } = await (supabase as any)
               .from('random_filament_orders')
-              .select('cart_item_id, price_iqd, revealed_at')
+              .select('cart_item_id, price_iqd, revealed_at, order_id')
               .in('cart_item_id', ids);
             (rfRows || []).forEach((r: any) => {
               if (r?.cart_item_id) {
@@ -366,9 +372,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
               }
             });
           }
+          // fetch offer prices + stock for new-flow RF rows
+          const offerIds = Array.from(new Set((data || []).map((i: any) => i.rf_offer_id).filter(Boolean)));
+          if (offerIds.length > 0) {
+            const { data: offerRows } = await (supabase as any)
+              .from('random_filament_offers')
+              .select('id, price_iqd, sale_type')
+              .in('id', offerIds);
+            const offerMap = new Map<string, any>();
+            (offerRows || []).forEach((o: any) => offerMap.set(o.id, o));
+            for (const it of (data || [])) {
+              if (!it?.rf_offer_id) continue;
+              const o = offerMap.get(it.rf_offer_id);
+              if (o) rfPriceById.set(it.id, Number(o.price_iqd) || 0);
+              if (o?.sale_type === 'direct') {
+                try {
+                  const { data: s } = await (supabase as any).rpc('rf_offer_stock_summary', { p_offer_id: it.rf_offer_id });
+                  rfMaxStockById.set(it.id, Number(s?.direct_stock_total ?? 0));
+                } catch {}
+              }
+            }
+          }
         } catch (e) { /* non-blocking */ }
 
-        // Map offer purchase data + force is_locked for revealed RF items only
         const mappedData = (data || []).map((item: any) => ({
           ...item,
           offer_purchase: item.product_offer_purchases || null,
@@ -376,6 +402,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           is_random_filament: rfIds.has(item.id),
           is_random_filament_revealed: rfRevealedIds.has(item.id),
           random_filament_price_iqd: rfPriceById.get(item.id) ?? null,
+          random_filament_max_stock: rfMaxStockById.get(item.id) ?? null,
         }));
         setItems(mappedData as CartItem[]);
       }
