@@ -349,29 +349,32 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (optimisticLockRef.current === lockValue) {
         // Detect random-filament cart items so UI can lock them (no delete/qty change)
         let rfIds = new Set<string>();
+        const rfRevealedIds = new Set<string>();
         const rfPriceById = new Map<string, number>();
         try {
           const ids = (data || []).map((i: any) => i.id).filter(Boolean);
           if (ids.length > 0) {
             const { data: rfRows } = await (supabase as any)
               .from('random_filament_orders')
-              .select('cart_item_id, price_iqd')
+              .select('cart_item_id, price_iqd, revealed_at')
               .in('cart_item_id', ids);
             (rfRows || []).forEach((r: any) => {
               if (r?.cart_item_id) {
                 rfIds.add(r.cart_item_id);
                 rfPriceById.set(r.cart_item_id, Number(r.price_iqd) || 0);
+                if (r.revealed_at) rfRevealedIds.add(r.cart_item_id);
               }
             });
           }
         } catch (e) { /* non-blocking */ }
 
-        // Map offer purchase data + force is_locked for RF items
+        // Map offer purchase data + force is_locked for revealed RF items only
         const mappedData = (data || []).map((item: any) => ({
           ...item,
           offer_purchase: item.product_offer_purchases || null,
-          is_locked: item.is_locked || rfIds.has(item.id),
+          is_locked: item.is_locked || rfRevealedIds.has(item.id),
           is_random_filament: rfIds.has(item.id),
+          is_random_filament_revealed: rfRevealedIds.has(item.id),
           random_filament_price_iqd: rfPriceById.get(item.id) ?? null,
         }));
         setItems(mappedData as CartItem[]);
@@ -658,10 +661,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error(`الحد الأقصى ${MAX_QUANTITY_PER_ITEM} قطعة لكل منتج في السلة`);
       return;
     }
-    // Locked random-filament items cannot change quantity
+    // Revealed random-filament items cannot change quantity
     const target = items.find(i => i.id === itemId) as any;
-    if (target?.is_random_filament || target?.is_locked) {
-      toast.error('لا يمكن تعديل كمية طلب الفلمنت العشوائي');
+    if (target?.is_random_filament_revealed || target?.is_locked) {
+      toast.error('لا يمكن تعديل كمية طلب الفلمنت العشوائي بعد الكشف عن اللون');
       return;
     }
 
