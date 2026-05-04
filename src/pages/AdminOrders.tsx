@@ -1050,12 +1050,13 @@ const AdminOrders = () => {
                 {pagination.paginatedItems.map((order) => {
                   const shippingInfo = getShippingInfo(order.order_items || []);
                   const isPreOrder = checkIfPreOrder(order.order_items || []);
+                  const rfInfo = getRandomFilamentInfo(order);
                   return (
                     <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {getStatusBadge(order.status)}
                           {(order as any).order_type === 'direct' ? (
                             <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 gap-0.5"><Truck className="h-3 w-3" />مباشر</Badge>
@@ -1063,6 +1064,16 @@ const AdminOrders = () => {
                             <Badge variant="outline" className="text-[10px] gap-0.5">
                               {shippingInfo.isFast ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
                               {isPreOrder ? 'مسبق' : 'متوفر'}
+                            </Badge>
+                          )}
+                          {rfInfo.total > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] border-fuchsia-500/40 text-fuchsia-600 dark:text-fuchsia-300 gap-0.5"
+                              title={rfInfo.offerTitle ? `عرض: ${rfInfo.offerTitle}` : 'فلامنت عشوائي'}
+                            >
+                              🎲 عشوائي ×{rfInfo.total}
+                              {rfInfo.direct > 0 && rfInfo.preorder > 0 ? ' (مختلط)' : rfInfo.direct > 0 ? ' • مباشر' : ' • مسبق'}
                             </Badge>
                           )}
                         </div>
