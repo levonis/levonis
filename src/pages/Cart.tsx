@@ -1276,19 +1276,28 @@ const Cart = () => {
         return;
       }
 
-      // Identify random filament cart items (kept hidden until wallet payment reveals)
+      // Identify random filament cart items: new flow via cart_items.rf_offer_id, legacy via random_filament_orders link
       const cartItemIdsAll = items.map(i => i.id).filter(Boolean);
       let randomFilamentIds = new Set<string>();
       const rfPriceByCartItem = new Map<string, number>();
+      const rfOfferByCartItem = new Map<string, string>();
+      items.forEach((it: any) => {
+        if (it?.rf_offer_id) {
+          randomFilamentIds.add(it.id);
+          rfOfferByCartItem.set(it.id, it.rf_offer_id);
+          if (it.random_filament_price_iqd) rfPriceByCartItem.set(it.id, Number(it.random_filament_price_iqd));
+        }
+      });
       try {
         if (cartItemIdsAll.length > 0) {
           const { data: rfRows } = await (supabase as any)
             .from('random_filament_orders')
-            .select('cart_item_id, price_iqd')
+            .select('cart_item_id, price_iqd, offer_id')
             .in('cart_item_id', cartItemIdsAll);
           (rfRows || []).forEach((r: any) => {
             randomFilamentIds.add(r.cart_item_id);
             rfPriceByCartItem.set(r.cart_item_id, Number(r.price_iqd) || 0);
+            if (r.offer_id) rfOfferByCartItem.set(r.cart_item_id, r.offer_id);
           });
         }
       } catch (e) { console.warn('rf lookup failed', e); }
