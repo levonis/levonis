@@ -742,9 +742,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = async () => {
     if (!user) return;
 
-    // Skip locked / random-filament items — they can never be removed by the user
+    // Skip locked / revealed random-filament items — only revealed RF can never be removed
     const deletableIds = items
-      .filter((i: any) => !i.is_random_filament && !i.is_locked)
+      .filter((i: any) => !i.is_random_filament_revealed && !i.is_locked)
       .map(i => i.id);
     const hasLocked = deletableIds.length !== items.length;
 
@@ -761,9 +761,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      setItems(prev => prev.filter((i: any) => i.is_random_filament || i.is_locked));
+      setItems(prev => prev.filter((i: any) => i.is_random_filament_revealed || i.is_locked));
       if (hasLocked) {
-        toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المحجوزة)');
+        toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المكشوفة)');
       } else {
         toast.success('تم تفريغ السلة');
       }
