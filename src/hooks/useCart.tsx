@@ -950,6 +950,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if ((item as any).is_gift) return sum;
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
+    if ((item as any).is_random_filament) {
+      const rfPrice = Number((item as any).random_filament_price_iqd) || 0;
+      return sum + (rfPrice * item.quantity);
+    }
     if (item.products) {
       const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices);
       return sum + (itemPrice * item.quantity);
