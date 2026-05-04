@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useOriginPoint } from "@/hooks/useOriginPoint";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,15 +51,7 @@ export default function RandomFilament() {
   const [offerId, setOfferId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [originPoint, setOriginPoint] = useState<{ x: number; y: number } | null>(null);
-
-  const openFromEvent = (
-    e: React.MouseEvent | React.PointerEvent,
-    cb: () => void
-  ) => {
-    setOriginPoint({ x: e.clientX, y: e.clientY });
-    cb();
-  };
+  const { capture: captureOrigin, originRef: confirmOriginRef } = useOriginPoint();
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["random-filament-settings-page"],
@@ -345,7 +338,7 @@ export default function RandomFilament() {
               <Card
                 key={o.id}
                 className="glass-panel cursor-pointer hover:border-primary transition overflow-hidden"
-                onClick={(e) => openFromEvent(e, () => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); })}
+                onClick={(e) => { captureOrigin(e); setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); }}
               >
                 <div className="w-full h-32 relative overflow-hidden">
                   {o.image_url ? (
@@ -379,14 +372,7 @@ export default function RandomFilament() {
       >
         <DialogContent
           className="!overflow-hidden !max-h-none"
-          ref={(node) => {
-            if (node && originPoint) {
-              const r = node.getBoundingClientRect();
-              const ox = Math.max(0, Math.min(r.width, originPoint.x - r.left));
-              const oy = Math.max(0, Math.min(r.height, originPoint.y - r.top));
-              node.style.transformOrigin = `${ox}px ${oy}px`;
-            }
-          }}
+          ref={confirmOriginRef}
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -455,6 +441,7 @@ export default function RandomFilament() {
 /* ----------------- Eligibility preview (public) ----------------- */
 function EligibilityBadges({ offerId }: { offerId: string }) {
   const [open, setOpen] = useState(false);
+  const { capture, originRef } = useOriginPoint();
   const { data } = useQuery({
     queryKey: ["rf-public-summary", offerId],
     queryFn: async () => {
@@ -471,20 +458,20 @@ function EligibilityBadges({ offerId }: { offerId: string }) {
     <>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        onClick={(e) => { e.stopPropagation(); capture(e); setOpen(true); }}
         className="inline-flex items-center gap-1.5 text-[11px] rounded-full border bg-background/60 px-2 py-1 hover:border-primary transition"
       >
         <Package className="size-3 text-primary" />
         <span><b>{products}</b> منتج · <b>{colors}</b> لون</span>
       </button>
-      <EligibleProductsDialog offerId={offerId} open={open} onOpenChange={setOpen} />
+      <EligibleProductsDialog offerId={offerId} open={open} onOpenChange={setOpen} originRef={originRef} />
     </>
   );
 }
 
 function EligibleProductsDialog({
-  offerId, open, onOpenChange,
-}: { offerId: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+  offerId, open, onOpenChange, originRef,
+}: { offerId: string; open: boolean; onOpenChange: (v: boolean) => void; originRef?: (node: HTMLElement | null) => void }) {
   const { data: items, isLoading } = useQuery({
     queryKey: ["rf-eligible-list", offerId],
     enabled: open,
@@ -537,7 +524,7 @@ function EligibleProductsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!overflow-hidden !max-h-none max-w-lg">
+      <DialogContent className="!overflow-hidden !max-h-none max-w-lg" ref={originRef}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />
