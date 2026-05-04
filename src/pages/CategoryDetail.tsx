@@ -26,7 +26,7 @@ import { usePageTitle } from '@/island/usePageTitle';
 import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
-import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices } from '@/lib/priceGuard';
+import { computeLinkedDirectSalePrice, ensurePriceIqd, fetchLiveDirectSalePrices, getMinOptionAdjustmentIqd } from '@/lib/priceGuard';
 
 /**
  * Unified price for product cards — MUST match the price the user will see
