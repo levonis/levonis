@@ -308,7 +308,7 @@ export default function RandomFilament() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
-            onClick={() => { setSaleType("direct"); setStep("category"); }}
+            onClick={() => handlePickSaleType("direct")}
           >
             <CardContent className="p-5 text-center space-y-2">
               <Truck className="size-8 mx-auto text-primary" />
