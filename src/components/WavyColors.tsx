@@ -60,8 +60,9 @@ export default function WavyColors({
   // Resolve a stable palette + motion params from the seed (or fall back to defaults).
   const { palette, motion } = useMemo(() => {
     const rand = mulberry32(hashSeed(seed ?? "default-wave"));
-    const fallback = ["#ff5e7e", "#ffb547", "#7cffb1", "#5eb4ff", "#c47dff", "#ff7df0"];
-    const pal = colors && colors.length ? colors : seed ? paletteFromSeed(rand) : fallback;
+    // Always derive an HSL palette so alpha-falloff works in the gradient stops.
+    // Custom hex palettes via `colors` prop are still respected.
+    const pal = colors && colors.length ? colors : paletteFromSeed(rand);
     const m = pal.map((_, i) => ({
       phase: i * 1.7 + rand() * Math.PI * 2,
       ax: 0.22 + rand() * 0.5,
