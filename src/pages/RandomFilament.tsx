@@ -318,7 +318,7 @@ export default function RandomFilament() {
           </Card>
           <Card
             className="glass-panel cursor-pointer hover:border-primary transition"
-            onClick={() => { setSaleType("preorder"); setStep("category"); }}
+            onClick={() => handlePickSaleType("preorder")}
           >
             <CardContent className="p-5 text-center space-y-2">
               <Package className="size-8 mx-auto text-primary" />
