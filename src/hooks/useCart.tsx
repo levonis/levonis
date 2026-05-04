@@ -273,6 +273,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           sale_type,
           is_gift,
           is_locked,
+          rf_offer_id,
+          rf_category_id,
           products (
             id,
             name,
