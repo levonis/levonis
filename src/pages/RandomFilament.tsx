@@ -494,10 +494,32 @@ function EligibleProductsDialog({
                     <span className="text-[10px] text-muted-foreground">+{p.eligibleColors.length - 8}</span>
                   )}
                 </div>
+                {p.eligibleOptions && p.eligibleOptions.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {p.eligibleOptions.slice(0, 4).map((o: any) => (
+                      <span
+                        key={o.id}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/70 border border-border/60"
+                      >
+                        {o.name_ar}
+                      </span>
+                    ))}
+                    {p.eligibleOptions.length > 4 && (
+                      <span className="text-[10px] text-muted-foreground">+{p.eligibleOptions.length - 4}</span>
+                    )}
+                  </div>
+                )}
               </div>
-              <Badge variant="outline" className="shrink-0 text-[10px]">
-                {p.eligibleColors.length} لون
-              </Badge>
+              <div className="shrink-0 flex flex-col items-end gap-1">
+                <Badge variant="outline" className="text-[10px]">
+                  {p.eligibleColors.length} لون
+                </Badge>
+                {p.eligibleOptions && p.eligibleOptions.length > 0 && (
+                  <Badge variant="outline" className="text-[10px]">
+                    {p.eligibleOptions.length} خيار
+                  </Badge>
+                )}
+              </div>
             </div>
           ))}
         </div>
