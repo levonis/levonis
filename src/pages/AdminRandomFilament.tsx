@@ -387,7 +387,12 @@ function OfferDialog({
       const directStock = opts
         .filter((o: any) => o.available_for_direct_sale && Number(o.stock_quantity) > 0)
         .reduce((s: number, o: any) => s + Number(o.stock_quantity || 0), 0);
-      const hasPreorder = opts.some((o: any) => o.available_for_pre_order !== false);
+      // If product has no options, treat it as preorder-eligible by default.
+      // If it has options, require at least one explicitly preorder-eligible.
+      const hasPreorder =
+        opts.length === 0
+          ? true
+          : opts.some((o: any) => o.available_for_pre_order !== false);
       return { ...p, directStock, hasPreorder };
     });
 
