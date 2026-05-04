@@ -573,13 +573,7 @@ const CategoryDetail = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
                     {otherProducts.map((product) => {
                       const finalCardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
-                      const shouldRoundUp = (product as any).round_up_price === true;
-                      const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
-                      const rawOriginal = product.original_price
-                        ? roundIfNeeded(ensurePriceIqd(Number(product.original_price), (product as any).price_usd, usdToIqd))
-                        : undefined;
-                      // Only show original if it's actually higher than the final shown price
-                      const cardOriginal = rawOriginal && rawOriginal > finalCardPrice ? rawOriginal : undefined;
+                      const cardOriginal = computeUnifiedCardOriginalPrice(product, usdToIqd, codDefaults, liveDirectMap) ?? undefined;
                       return (
                         <FloatingProductCard
                           key={product.id}
