@@ -195,6 +195,29 @@ const AdminOrders = () => {
     return { name, isFast };
   };
 
+  // Helper: random-filament summary for an order (counts + sale_type breakdown)
+  const getRandomFilamentInfo = (order: any): { total: number; direct: number; preorder: number; offerTitle?: string } => {
+    const rfos = (order?.random_filament_orders as any[]) || [];
+    let direct = 0, preorder = 0;
+    let offerTitle: string | undefined;
+    for (const r of rfos) {
+      if (r?.sale_type === 'direct') direct++;
+      else if (r?.sale_type === 'preorder') preorder++;
+      if (!offerTitle) offerTitle = r?.random_filament_offers?.title_ar;
+    }
+    return { total: rfos.length, direct, preorder, offerTitle };
+  };
+
+  // Helper: check if a specific order_item came from random-filament
+  const isRandomFilamentItem = (order: any, item: any): { isRf: boolean; saleType?: string } => {
+    const rfos = (order?.random_filament_orders as any[]) || [];
+    const match = rfos.find((r: any) =>
+      r.product_id === item.product_id &&
+      (r.product_option_id || null) === (item.product_option_id || null)
+    );
+    return { isRf: !!match, saleType: match?.sale_type };
+  };
+
   // Helper function to create invoice automatically
   const createAutoInvoice = async (orderId: string) => {
     try {
