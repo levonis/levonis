@@ -3677,10 +3677,10 @@ const Admin = () => {
                           </div>
                         </TableCell>
                         <TableCell>{(product as any).categories?.name_ar}</TableCell>
-                        <TableCell>{formatPrice(Number(product.price))} دينار عراقي</TableCell>
+                        <TableCell>{formatPrice(Number(product.original_price ?? product.price))} د.ع</TableCell>
                         <TableCell>
                           {product.original_price 
-                            ? `${formatPrice(Number(product.original_price))} دينار عراقي`
+                            ? `${formatPrice(Number(product.original_price))} د.ع`
                             : '-'}
                         </TableCell>
                         <TableCell className="text-left">
