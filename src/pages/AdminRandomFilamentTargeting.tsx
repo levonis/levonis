@@ -120,8 +120,10 @@ function OfferTargetingRow({
     offer.category_ids?.length ? offer.category_ids : (offer.category_id ? [offer.category_id] : [])
   );
   const [allowed, setAllowed] = useState<string[]>(offer.allowed_product_ids || []);
+  const [weights, setWeights] = useState<ProductWeights>(offer.product_weights || {});
   const [productSearch, setProductSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
   const { data: products } = useQuery({
     queryKey: ["rf-targeting-products", offer.id, offer.sale_type, categoryIds],
