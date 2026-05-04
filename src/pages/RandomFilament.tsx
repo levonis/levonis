@@ -345,7 +345,7 @@ export default function RandomFilament() {
               <Card
                 key={o.id}
                 className="glass-panel cursor-pointer hover:border-primary transition overflow-hidden"
-                onClick={() => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); }}
+                onClick={(e) => openFromEvent(e, () => { setOfferId(o.id); setConfirmOpen(true); setStep("confirm"); })}
               >
                 <div className="w-full h-32 relative overflow-hidden">
                   {o.image_url ? (
