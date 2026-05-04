@@ -131,6 +131,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // products linked to `link_direct_commission_to_cod` recompute live whenever
   // the admin changes the COD %.
   const { data: codDefaults = null } = useCodDefaults();
+  // Server-computed live direct-sale prices (RPC) — internal cost columns are
+  // hidden from clients, so we ask the DB to return the final IQD value.
+  const [liveDirectPrices, setLiveDirectPrices] = useState<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    const ids = items
+      .filter((it: any) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
+      .map((it: any) => it.products.id as string);
+    if (ids.length === 0) {
+      if (liveDirectPrices.size > 0) setLiveDirectPrices(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { fetchLiveDirectSalePrices } = await import('@/lib/priceGuard');
+      const map = await fetchLiveDirectSalePrices(ids);
+      if (!cancelled) setLiveDirectPrices(map);
+    })();
+    return () => { cancelled = true; };
+    // Re-fetch when item set, exchange rate, or COD defaults change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.map((i: any) => i.products?.id || '').join(','), usdToIqd, codDefaults?.value, codDefaults?.type]);
 
   // Fetch pending cart request
   const fetchPendingCartRequest = async () => {
@@ -922,7 +944,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
+      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);

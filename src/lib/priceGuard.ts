@@ -4,9 +4,40 @@
  * If a product has price_usd and the stored IQD price appears stale
  * (doesn't match current exchange rate), recalculates dynamically.
  */
+import { supabase } from '@/integrations/supabase/client';
 
 /** Minimum expected IQD value — any price below this with a valid price_usd is suspicious */
 const MIN_IQD_THRESHOLD = 500;
+
+/**
+ * Fetches live direct-sale prices via the SECURITY DEFINER RPC.
+ * Used because internal commission/shipping cost columns are no longer
+ * readable client-side — the server computes the linked-COD direct-sale
+ * price and returns only the final IQD value.
+ */
+export async function fetchLiveDirectSalePrices(
+  productIds: string[]
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const ids = Array.from(new Set((productIds || []).filter(Boolean)));
+  if (ids.length === 0) return out;
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      'compute_products_live_direct_sale_prices',
+      { p_ids: ids }
+    );
+    if (error || !Array.isArray(data)) return out;
+    for (const row of data as Array<{ product_id: string; direct_sale_price: number | null }>) {
+      if (row?.product_id && row.direct_sale_price != null) {
+        out.set(row.product_id, Number(row.direct_sale_price));
+      }
+    }
+  } catch {
+    // Non-fatal — caller falls back to stored direct_sale_price
+  }
+  return out;
+}
+
 
 /**
  * Detects if a numeric value looks like it's in USD rather than IQD.
@@ -238,7 +269,8 @@ export function getGuardedCartItemPrice(
     shipping_type?: string;
   },
   usdToIqd: number,
-  codDefaults?: { type: 'percentage' | 'fixed'; value: number } | null
+  codDefaults?: { type: 'percentage' | 'fixed'; value: number } | null,
+  livePriceMap?: Map<string, number> | null
 ): number {
   const product = item.products;
   if (!product) {
@@ -258,22 +290,30 @@ export function getGuardedCartItemPrice(
 
   // 2. Override with sale-type-specific price
   if (isDirect) {
-    // If product is linked to global COD %, ALWAYS use the live computation
-    // and never fall back to the stored direct_sale_price (it may be stale).
-    // If required inputs are missing, return 0 as a safe guard so the UI can
-    // surface the issue rather than display an incorrect price.
+    // If product is linked to global COD %, prefer the server-computed live price
+    // (via fetchLiveDirectSalePrices). Internal commission/shipping cost columns are
+    // hidden from clients, so the local computeLinkedDirectSalePrice fallback is only
+    // used when those fields are still readable (e.g. admin context / tests).
     if (product.link_direct_commission_to_cod) {
-      const liveDirect = codDefaults
-        ? computeLinkedDirectSalePrice(
-            product as any,
-            { usd_to_iqd_rate: usdToIqd } as any,
-            codDefaults,
-          )
-        : null;
-      if (liveDirect == null) {
-        return 0;
+      const fromMap = livePriceMap?.get(product.id);
+      if (fromMap != null && fromMap > 0) {
+        price = fromMap;
+      } else {
+        const liveDirect = codDefaults
+          ? computeLinkedDirectSalePrice(
+              product as any,
+              { usd_to_iqd_rate: usdToIqd } as any,
+              codDefaults,
+            )
+          : null;
+        if (liveDirect != null) {
+          price = liveDirect;
+        } else if (product.direct_sale_price != null) {
+          price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
+        } else {
+          return 0;
+        }
       }
-      price = liveDirect;
     } else if (product.direct_sale_price != null) {
       price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
     }
