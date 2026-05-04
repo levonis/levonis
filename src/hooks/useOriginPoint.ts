@@ -1,41 +1,83 @@
 import { useCallback, useRef, useState } from "react";
 
+type PointerLikeEvent = {
+  clientX?: number;
+  clientY?: number;
+  // React events expose currentTarget; we fall back to its center
+  // when there are no real coordinates (keyboard activation, programmatic).
+  currentTarget?: EventTarget | null;
+  // Touch events: use the first touch / changedTouches as the origin.
+  touches?: ArrayLike<{ clientX: number; clientY: number }>;
+  changedTouches?: ArrayLike<{ clientX: number; clientY: number }>;
+  // Pointer/Mouse events expose pointerType; touch needs the same path.
+  pointerType?: string;
+} | null | undefined;
+
+function extractPoint(e: PointerLikeEvent): { x: number; y: number } | null {
+  if (!e) return null;
+
+  // 1) Touch events — use the first available touch coordinates.
+  const touch =
+    (e.touches && e.touches.length > 0 && e.touches[0]) ||
+    (e.changedTouches && e.changedTouches.length > 0 && e.changedTouches[0]) ||
+    null;
+  if (touch && (touch.clientX || touch.clientY)) {
+    return { x: touch.clientX, y: touch.clientY };
+  }
+
+  // 2) Mouse / Pointer events with real coordinates.
+  const cx = typeof e.clientX === "number" ? e.clientX : 0;
+  const cy = typeof e.clientY === "number" ? e.clientY : 0;
+  if (cx !== 0 || cy !== 0) {
+    return { x: cx, y: cy };
+  }
+
+  // 3) Fallback: keyboard activation (Enter/Space) — use the trigger's center.
+  const target = e.currentTarget as Element | null;
+  if (target && typeof (target as any).getBoundingClientRect === "function") {
+    const r = (target as Element).getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  return null;
+}
+
 /**
- * Captures the click point so a portaled overlay (Dialog/Popover)
- * can animate-expand from that exact point.
+ * Captures the activation point (mouse, touch, or keyboard) so a portaled
+ * overlay (Dialog/Popover) can animate-expand from that exact point.
  *
- * Usage:
- *   const { capture, originRef, originPoint } = useOriginPoint();
- *   <button onClick={(e) => { capture(e); setOpen(true); }} />
- *   <DialogContent ref={originRef}>...</DialogContent>
+ * - Touch: reads from `touches[0]` / `changedTouches[0]`.
+ * - Mouse / Pen: reads `clientX/Y`.
+ * - Keyboard: falls back to the trigger element's center.
  *
- * The origin point is preserved across multiple reopens until a new
- * `capture` call replaces it.
+ * Coordinates are CSS pixels, so devicePixelRatio is naturally handled
+ * (getBoundingClientRect inside the ref callback is also CSS pixels).
+ *
+ * The origin point persists across reopens until `capture` runs again.
  */
 export function useOriginPoint() {
   const [originPoint, setOriginPoint] = useState<{ x: number; y: number } | null>(null);
   const pointRef = useRef<{ x: number; y: number } | null>(null);
 
-  const capture = useCallback(
-    (e: { clientX: number; clientY: number } | null | undefined) => {
-      if (!e) return;
-      const p = { x: e.clientX, y: e.clientY };
-      pointRef.current = p;
-      setOriginPoint(p);
-    },
-    []
-  );
+  const capture = useCallback((e: PointerLikeEvent) => {
+    const p = extractPoint(e);
+    if (!p) return;
+    pointRef.current = p;
+    setOriginPoint(p);
+  }, []);
 
-  // Ref callback: applied each time the DialogContent mounts (every reopen).
+  // Applied each time the overlay content mounts (every reopen).
   const originRef = useCallback((node: HTMLElement | null) => {
     if (!node) return;
     const p = pointRef.current;
     if (!p) return;
-    // Set synchronously so the open animation uses the correct origin from frame 0.
     const r = node.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return; // wait until laid out
+    // Clamp inside the dialog so the origin is always a sensible point
+    // even if the user tapped near a screen edge on a small phone.
     const ox = Math.max(0, Math.min(r.width, p.x - r.left));
     const oy = Math.max(0, Math.min(r.height, p.y - r.top));
-    node.style.transformOrigin = `${ox}px ${oy}px`;
+    node.style.transformOrigin = `${ox.toFixed(1)}px ${oy.toFixed(1)}px`;
   }, []);
 
   return { capture, originRef, originPoint };
