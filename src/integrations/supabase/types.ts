@@ -14047,10 +14047,12 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
-      finalize_and_reveal_rf_for_order: {
-        Args: { p_order_id: string }
-        Returns: undefined
-      }
+      finalize_and_reveal_rf_for_order:
+        | { Args: { p_order_id: string }; Returns: undefined }
+        | {
+            Args: { p_only_sale_type?: string; p_order_id: string }
+            Returns: undefined
+          }
       gacha_market_buy_atomic: { Args: { p_listing_id: string }; Returns: Json }
       game_award_points: {
         Args: { p_amount: number; p_game_name: string; p_user_id: string }
