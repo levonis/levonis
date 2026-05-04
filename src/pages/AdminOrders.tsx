@@ -162,7 +162,8 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, bundle_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, is_gift, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url))))
+          order_items!order_items_order_id_fkey(id, product_id, bundle_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, is_gift, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))),
+          random_filament_orders!random_filament_orders_order_id_fkey(id, sale_type, product_id, product_option_id, selected_color, offer_id, random_filament_offers(title_ar))
         `)
         .order('created_at', { ascending: false });
 
@@ -192,6 +193,29 @@ const AdminOrders = () => {
     const name = shippingItem?.shipping_option_name_ar || '';
     const isFast = name.includes('سريع') || name.includes('جوي');
     return { name, isFast };
+  };
+
+  // Helper: random-filament summary for an order (counts + sale_type breakdown)
+  const getRandomFilamentInfo = (order: any): { total: number; direct: number; preorder: number; offerTitle?: string } => {
+    const rfos = (order?.random_filament_orders as any[]) || [];
+    let direct = 0, preorder = 0;
+    let offerTitle: string | undefined;
+    for (const r of rfos) {
+      if (r?.sale_type === 'direct') direct++;
+      else if (r?.sale_type === 'preorder') preorder++;
+      if (!offerTitle) offerTitle = r?.random_filament_offers?.title_ar;
+    }
+    return { total: rfos.length, direct, preorder, offerTitle };
+  };
+
+  // Helper: check if a specific order_item came from random-filament
+  const isRandomFilamentItem = (order: any, item: any): { isRf: boolean; saleType?: string } => {
+    const rfos = (order?.random_filament_orders as any[]) || [];
+    const match = rfos.find((r: any) =>
+      r.product_id === item.product_id &&
+      (r.product_option_id || null) === (item.product_option_id || null)
+    );
+    return { isRf: !!match, saleType: match?.sale_type };
   };
 
   // Helper function to create invoice automatically
@@ -1026,12 +1050,13 @@ const AdminOrders = () => {
                 {pagination.paginatedItems.map((order) => {
                   const shippingInfo = getShippingInfo(order.order_items || []);
                   const isPreOrder = checkIfPreOrder(order.order_items || []);
+                  const rfInfo = getRandomFilamentInfo(order);
                   return (
                     <div key={order.id} className="rounded-xl border border-border bg-card p-3 space-y-3">
                       {/* Header row: order number + status */}
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-sm font-bold text-foreground">{order.order_number}</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           {getStatusBadge(order.status)}
                           {(order as any).order_type === 'direct' ? (
                             <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 gap-0.5"><Truck className="h-3 w-3" />مباشر</Badge>
@@ -1039,6 +1064,16 @@ const AdminOrders = () => {
                             <Badge variant="outline" className="text-[10px] gap-0.5">
                               {shippingInfo.isFast ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
                               {isPreOrder ? 'مسبق' : 'متوفر'}
+                            </Badge>
+                          )}
+                          {rfInfo.total > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] border-fuchsia-500/40 text-fuchsia-600 dark:text-fuchsia-300 gap-0.5"
+                              title={rfInfo.offerTitle ? `عرض: ${rfInfo.offerTitle}` : 'فلامنت عشوائي'}
+                            >
+                              🎲 عشوائي ×{rfInfo.total}
+                              {rfInfo.direct > 0 && rfInfo.preorder > 0 ? ' (مختلط)' : rfInfo.direct > 0 ? ' • مباشر' : ' • مسبق'}
                             </Badge>
                           )}
                         </div>
@@ -1147,7 +1182,23 @@ const AdminOrders = () => {
                       return (
                         <TableRow key={order.id} className="admin-table-row">
                           <TableCell className="font-mono text-sm font-medium">
-                            {order.order_number}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{order.order_number}</span>
+                              {(() => {
+                                const rfInfo = getRandomFilamentInfo(order);
+                                if (rfInfo.total === 0) return null;
+                                return (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] border-fuchsia-500/40 text-fuchsia-600 dark:text-fuchsia-300 gap-0.5"
+                                    title={rfInfo.offerTitle ? `عرض: ${rfInfo.offerTitle}` : 'فلامنت عشوائي'}
+                                  >
+                                    🎲 عشوائي ×{rfInfo.total}
+                                    {rfInfo.direct > 0 && rfInfo.preorder > 0 ? ' (مختلط)' : rfInfo.direct > 0 ? ' • مباشر' : ' • مسبق'}
+                                  </Badge>
+                                );
+                              })()}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col">
