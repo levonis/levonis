@@ -162,7 +162,8 @@ const AdminOrders = () => {
         .select(`
           *,
           profiles(full_name, email, username),
-          order_items!order_items_order_id_fkey(id, product_id, bundle_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, is_gift, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url))))
+          order_items!order_items_order_id_fkey(id, product_id, bundle_id, product_name_ar, product_name, quantity, unit_price, total_price, cost_price, selected_color, selected_option, color_image_url, shipping_option_name_ar, custom_request_id, is_gift, products!order_items_product_id_fkey(price_usd, cost_price, other_costs_iqd, shipping_cost_iqd, commission_direct_iqd, name_ar, image_url), product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))),
+          random_filament_orders!random_filament_orders_order_id_fkey(id, sale_type, product_id, product_option_id, selected_color, offer_id, random_filament_offers(title_ar))
         `)
         .order('created_at', { ascending: false });
 
