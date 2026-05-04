@@ -26,7 +26,7 @@ import { usePageTitle } from '@/island/usePageTitle';
 import { usePageSearchSection, usePageLiveQuery, type PageSearchItem } from '@/island/PageSearchContext';
 import { useShippingSettings } from '@/hooks/useShippingCalculator';
 import { useCodDefaults } from '@/hooks/useCodDefaults';
-import { computeLinkedDirectSalePrice } from '@/lib/priceGuard';
+import { computeLinkedDirectSalePrice, ensurePriceIqd } from '@/lib/priceGuard';
 
 type SortKey =
   | 'default'
@@ -553,7 +553,7 @@ const CategoryDetail = () => {
                         id={product.id}
                         name={product.name}
                         nameAr={product.name_ar}
-                        price={Number(product.price)}
+                        price={ensurePriceIqd(Number(product.price), (product as any).price_usd, usdToIqd)}
                         originalPrice={product.original_price ? Number(product.original_price) : undefined}
                         imageUrl={product.image_url || undefined}
                         currency={product.currency || undefined}
