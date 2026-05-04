@@ -19,7 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/utils';
 import { getReferralBannerStyle } from '@/lib/referralBannerStyles';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { toast as sonnerToast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -489,6 +490,44 @@ const Cart = () => {
       await removeFromCart(id);
     }
   };
+
+  // Auto-remove items whose direct-sale stock has dropped to zero, with a one-time toast per item.
+  const oosNotifiedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (outOfStockItemIds.size === 0) return;
+    const toRemove: { id: string; name: string }[] = [];
+    items.forEach((item) => {
+      if (!outOfStockItemIds.has(item.id)) return;
+      if (oosNotifiedRef.current.has(item.id)) return;
+      const name = (item as any)?.products?.name_ar
+        || (item as any)?.products?.name
+        || (item as any)?.product_bundles?.title_ar
+        || t('cart_out_of_stock');
+      toRemove.push({ id: item.id, name });
+      oosNotifiedRef.current.add(item.id);
+    });
+    if (toRemove.length === 0) return;
+    (async () => {
+      for (const r of toRemove) {
+        try {
+          sonnerToast.error(`${r.name} — ${t('cart_out_of_stock_warning')}`, {
+            description: t('cart_out_of_stock'),
+          });
+          await removeFromCart(r.id);
+        } catch {}
+      }
+    })();
+    // Cleanup notified set if items list shrinks
+  }, [items, outOfStockItemIds, removeFromCart, t]);
+
+  // Drop stale entries from the notified set so re-added items can re-trigger.
+  useEffect(() => {
+    const live = new Set(items.map((i) => i.id));
+    oosNotifiedRef.current.forEach((id) => {
+      if (!live.has(id)) oosNotifiedRef.current.delete(id);
+    });
+  }, [items]);
+
 
   const { data: userAddresses } = useQuery({
     queryKey: ['user-addresses', user?.id],
