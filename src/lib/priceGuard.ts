@@ -269,7 +269,8 @@ export function getGuardedCartItemPrice(
     shipping_type?: string;
   },
   usdToIqd: number,
-  codDefaults?: { type: 'percentage' | 'fixed'; value: number } | null
+  codDefaults?: { type: 'percentage' | 'fixed'; value: number } | null,
+  livePriceMap?: Map<string, number> | null
 ): number {
   const product = item.products;
   if (!product) {
@@ -289,22 +290,30 @@ export function getGuardedCartItemPrice(
 
   // 2. Override with sale-type-specific price
   if (isDirect) {
-    // If product is linked to global COD %, ALWAYS use the live computation
-    // and never fall back to the stored direct_sale_price (it may be stale).
-    // If required inputs are missing, return 0 as a safe guard so the UI can
-    // surface the issue rather than display an incorrect price.
+    // If product is linked to global COD %, prefer the server-computed live price
+    // (via fetchLiveDirectSalePrices). Internal commission/shipping cost columns are
+    // hidden from clients, so the local computeLinkedDirectSalePrice fallback is only
+    // used when those fields are still readable (e.g. admin context / tests).
     if (product.link_direct_commission_to_cod) {
-      const liveDirect = codDefaults
-        ? computeLinkedDirectSalePrice(
-            product as any,
-            { usd_to_iqd_rate: usdToIqd } as any,
-            codDefaults,
-          )
-        : null;
-      if (liveDirect == null) {
-        return 0;
+      const fromMap = livePriceMap?.get(product.id);
+      if (fromMap != null && fromMap > 0) {
+        price = fromMap;
+      } else {
+        const liveDirect = codDefaults
+          ? computeLinkedDirectSalePrice(
+              product as any,
+              { usd_to_iqd_rate: usdToIqd } as any,
+              codDefaults,
+            )
+          : null;
+        if (liveDirect != null) {
+          price = liveDirect;
+        } else if (product.direct_sale_price != null) {
+          price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
+        } else {
+          return 0;
+        }
       }
-      price = liveDirect;
     } else if (product.direct_sale_price != null) {
       price = ensurePriceIqd(Number(product.direct_sale_price), priceUsd, usdToIqd);
     }
