@@ -478,10 +478,10 @@ const Admin = () => {
     queryKey: ['admin-stats', isAdmin],
     queryFn: async () => {
       const [productsResult, featuredResult, categoriesResult, outOfStockResult, pendingOrdersResult] = await Promise.all([
-        supabase.from('products').select('*', { count: 'exact', head: true }),
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('featured', true),
+        supabase.from('products').select('id', { count: 'exact', head: true }),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('featured', true),
         supabase.from('categories').select('*', { count: 'exact', head: true }),
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', false),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('in_stock', false),
         supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending')
       ]);
 
