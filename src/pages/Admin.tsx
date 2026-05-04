@@ -371,8 +371,8 @@ const Admin = () => {
   const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['admin-products-with-options'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
+      const { data, error } = await (supabase as any)
+        .from('products_admin')
         .select('*, categories!products_category_id_fkey(name_ar), product_options(id, in_stock, taobao_available, taobao_sku_id)')
         .order('created_at', { ascending: false });
       
