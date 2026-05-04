@@ -164,7 +164,7 @@ const ProductsTable = memo(({
                   </div>
                 </TableCell>
                 <TableCell>{product.categories?.name_ar || '-'}</TableCell>
-                <TableCell>{formatPrice(product.price)}</TableCell>
+                <TableCell>{formatPrice(product.original_price ?? product.price)} د.ع</TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
                     <Badge variant={product.in_stock ? "default" : "destructive"}>
