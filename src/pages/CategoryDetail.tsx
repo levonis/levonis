@@ -375,11 +375,7 @@ const CategoryDetail = () => {
                         <div className="flex items-baseline justify-end gap-1.5 mb-2 md:mb-3">
                           {(() => {
                             const fpFinal = computeUnifiedCardPrice(featuredProduct, usdToIqd, codDefaults, liveDirectMap);
-                            const shouldRoundUp = (featuredProduct as any).round_up_price === true;
-                            const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
-                            const fpOriginal = featuredProduct.original_price
-                              ? roundIfNeeded(ensurePriceIqd(Number(featuredProduct.original_price), (featuredProduct as any).price_usd, usdToIqd))
-                              : 0;
+                            const fpOriginal = computeUnifiedCardOriginalPrice(featuredProduct, usdToIqd, codDefaults, liveDirectMap);
                             return (
                               <>
                                 <span className="text-base sm:text-xl md:text-3xl font-black text-primary">
@@ -388,7 +384,7 @@ const CategoryDetail = () => {
                                 <span className="text-[10px] sm:text-xs md:text-sm text-primary/70 font-bold">
                                   {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
                                 </span>
-                                {fpOriginal > fpFinal && (
+                                {fpOriginal != null && (
                                   <span className="text-[10px] sm:text-xs md:text-sm text-foreground/40 line-through mr-2">
                                     {fpOriginal.toLocaleString()}
                                   </span>
