@@ -289,7 +289,10 @@ export default function RandomFilament() {
                   {o.description_ar && (
                     <p className="text-xs text-muted-foreground line-clamp-2">{o.description_ar}</p>
                   )}
-                  <Badge variant="secondary">{Number(o.price_iqd).toLocaleString()} د.ع</Badge>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary">{Number(o.price_iqd).toLocaleString()} د.ع</Badge>
+                    <EligibilityBadges offerId={o.id} />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -366,5 +369,130 @@ export default function RandomFilament() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/* ----------------- Eligibility preview (public) ----------------- */
+function EligibilityBadges({ offerId }: { offerId: string }) {
+  const [open, setOpen] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["rf-public-summary", offerId],
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("rf_offer_stock_summary", {
+        p_offer_id: offerId,
+      });
+      return data as { eligible_products: number; eligible_colors: number };
+    },
+    staleTime: 60_000,
+  });
+  const products = Number(data?.eligible_products ?? 0);
+  const colors = Number(data?.eligible_colors ?? 0);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        className="inline-flex items-center gap-1.5 text-[11px] rounded-full border bg-background/60 px-2 py-1 hover:border-primary transition"
+      >
+        <Package className="size-3 text-primary" />
+        <span><b>{products}</b> منتج · <b>{colors}</b> لون</span>
+      </button>
+      <EligibleProductsDialog offerId={offerId} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
+function EligibleProductsDialog({
+  offerId, open, onOpenChange,
+}: { offerId: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { data: items, isLoading } = useQuery({
+    queryKey: ["rf-eligible-list", offerId],
+    enabled: open,
+    queryFn: async () => {
+      const { data: offer } = await (supabase as any)
+        .from("random_filament_offers")
+        .select("sale_type, category_id, category_ids, allowed_product_ids")
+        .eq("id", offerId)
+        .maybeSingle();
+      if (!offer) return [];
+      const catIds: string[] = (offer.category_ids?.length
+        ? offer.category_ids
+        : (offer.category_id ? [offer.category_id] : [])) as string[];
+      const allowed: string[] = offer.allowed_product_ids || [];
+      let q = supabase
+        .from("products")
+        .select("id, name_ar, image_url, in_stock, colors")
+        .order("name_ar")
+        .limit(200);
+      if (catIds.length) q = q.in("category_id", catIds);
+      if (allowed.length) q = q.in("id", allowed);
+      const { data } = await q;
+      const list = (data || []) as any[];
+      const isDirect = offer.sale_type === "direct";
+      return list
+        .map((p: any) => {
+          const colors = Array.isArray(p.colors) ? p.colors : [];
+          const eligibleColors = colors.filter((c: any) => {
+            if (isDirect) {
+              if (c?.available_for_direct_sale !== true) return false;
+              const stocks = c?.option_stocks || {};
+              return Object.values(stocks).some((v: any) => Number(v) > 0);
+            }
+            return c?.available_for_pre_order !== false;
+          });
+          return { ...p, eligibleColors };
+        })
+        .filter((p: any) => (isDirect ? p.in_stock !== false : true) && p.eligibleColors.length > 0);
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="!overflow-hidden !max-h-none max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-primary" />
+            ماذا قد تحصل؟
+          </DialogTitle>
+          <DialogDescription>
+            النظام سيختار <b>عشوائياً</b> من المنتجات والألوان التالية المتوفرة حالياً.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2 space-y-2">
+          {isLoading && <p className="text-center text-xs text-muted-foreground py-6">جاري التحميل...</p>}
+          {!isLoading && (items || []).length === 0 && (
+            <p className="text-center text-xs text-muted-foreground py-6">لا توجد منتجات مؤهلة حالياً</p>
+          )}
+          {(items || []).map((p: any) => (
+            <div key={p.id} className="flex items-center gap-3 rounded-lg border p-2 bg-card/60">
+              {p.image_url ? (
+                <img src={p.image_url} alt="" className="size-12 rounded object-cover shrink-0" />
+              ) : (
+                <div className="size-12 rounded bg-muted shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate">{p.name_ar}</div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {p.eligibleColors.slice(0, 8).map((c: any, i: number) => (
+                    <span
+                      key={i}
+                      title={c?.name || ""}
+                      className="size-4 rounded-full border"
+                      style={{ background: c?.hex || c?.color || "#888" }}
+                    />
+                  ))}
+                  {p.eligibleColors.length > 8 && (
+                    <span className="text-[10px] text-muted-foreground">+{p.eligibleColors.length - 8}</span>
+                  )}
+                </div>
+              </div>
+              <Badge variant="outline" className="shrink-0 text-[10px]">
+                {p.eligibleColors.length} لون
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
