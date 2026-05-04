@@ -44,7 +44,7 @@ export default function AdminRandomFilamentTargeting() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("random_filament_offers")
-        .select("id, sale_type, title_ar, category_id, category_ids, allowed_product_ids, enabled")
+        .select("id, sale_type, title_ar, category_id, category_ids, allowed_product_ids, product_weights, enabled")
         .order("sale_type")
         .order("display_order");
       return (data || []) as Offer[];
