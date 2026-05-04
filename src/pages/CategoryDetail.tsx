@@ -415,17 +415,29 @@ const CategoryDetail = () => {
                           </p>
                         )}
                         <div className="flex items-baseline justify-end gap-1.5 mb-2 md:mb-3">
-                          <span className="text-base sm:text-xl md:text-3xl font-black text-primary">
-                            {Number(featuredProduct.price).toLocaleString()}
-                          </span>
-                          <span className="text-[10px] sm:text-xs md:text-sm text-primary/70 font-bold">
-                            {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
-                          </span>
-                          {featuredProduct.original_price && Number(featuredProduct.original_price) > Number(featuredProduct.price) && (
-                            <span className="text-[10px] sm:text-xs md:text-sm text-foreground/40 line-through mr-2">
-                              {Number(featuredProduct.original_price).toLocaleString()}
-                            </span>
-                          )}
+                          {(() => {
+                            const fpFinal = computeUnifiedCardPrice(featuredProduct, usdToIqd, codDefaults, liveDirectMap);
+                            const shouldRoundUp = (featuredProduct as any).round_up_price === true;
+                            const roundIfNeeded = (n: number) => shouldRoundUp ? Math.ceil(n / 250) * 250 : n;
+                            const fpOriginal = featuredProduct.original_price
+                              ? roundIfNeeded(ensurePriceIqd(Number(featuredProduct.original_price), (featuredProduct as any).price_usd, usdToIqd))
+                              : 0;
+                            return (
+                              <>
+                                <span className="text-base sm:text-xl md:text-3xl font-black text-primary">
+                                  {fpFinal.toLocaleString()}
+                                </span>
+                                <span className="text-[10px] sm:text-xs md:text-sm text-primary/70 font-bold">
+                                  {featuredProduct.currency === 'IQD' || !featuredProduct.currency ? 'د.ع' : featuredProduct.currency}
+                                </span>
+                                {fpOriginal > fpFinal && (
+                                  <span className="text-[10px] sm:text-xs md:text-sm text-foreground/40 line-through mr-2">
+                                    {fpOriginal.toLocaleString()}
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                         <span className="inline-flex items-center gap-1 text-primary text-[11px] sm:text-sm font-semibold group-hover:underline">
                           {t('catdetail_view_more')}
