@@ -1,41 +1,74 @@
 ## الهدف
-في بطاقات صفحة `/category/:slug` (وكذلك بطاقة المنتج المميز والمنتجات المرتبطة في صفحة التفاصيل) يجب عرض **أقل سعر متاح فعلياً** للمستخدم — حسب الخيارات (options) الموجودة، سواء كان البيع مباشر أو حجز مسبق — بدلاً من السعر الأساسي فقط.
-
-## السلوك الحالي
-`computeUnifiedCardPrice` في `src/pages/CategoryDetail.tsx` يحسب سعراً واحداً (direct أو preorder) بناءً على `direct_sale_price`/RPC أو `sea_price`/`air_price`، **متجاهلاً `price_adjustment` للخيارات**. النتيجة: البطاقة تعرض سعر "بدون خيار"، بينما صفحة التفاصيل قد تعرض سعراً أقل عند اختيار خيار رخيص.
+ضمان تطابق **السعر** و**السعر الأصلي** بين بطاقة المنتج (`/category/:slug` + المنتجات المرتبطة) وبين صفحة التفاصيل في كل الحالات، عبر:
+1. توحيد منطق الحساب في موضع واحد (مصدر حقيقة وحيد).
+2. فحص تلقائي أثناء التشغيل (Dev) يحذّر عند وجود انحراف.
+3. اختبارات وحدة (Vitest) تغطي السيناريوهات الرئيسية.
 
 ## التغييرات
 
-### 1. `src/pages/CategoryDetail.tsx`
+### 1. ملف مشترك جديد: `src/lib/cardPrice.ts`
+ينقل `computeUnifiedCardPrice` من `CategoryDetail.tsx` إلى ملف مشترك، ويضيف:
 
-**أ. توسيع جلب البيانات** — في `useQuery` الخاص بـ `category-products`، عدّل الجزء `product_options(...)` ليشمل تعديل السعر:
+```ts
+export function computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap): number
+export function computeUnifiedCardOriginalPrice(product, usdToIqd): number | null
 ```
-product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)
+
+- `computeUnifiedCardPrice`: نفس المنطق الحالي (أدنى مرشح بين direct + preorder، مع `getMinOptionAdjustmentIqd`، ثم `round_up_price`).
+- `computeUnifiedCardOriginalPrice`: يعيد `original_price` بعد `ensurePriceIqd` و `round_up_price`، أو `null` إذا غير موجود/أقل من السعر النهائي.
+
+### 2. `src/pages/CategoryDetail.tsx`
+- حذف الدالة المحلية واستبدالها بـ `import { computeUnifiedCardPrice, computeUnifiedCardOriginalPrice } from '@/lib/cardPrice'`.
+- استخدام `computeUnifiedCardOriginalPrice` بدلاً من حساب `fpOriginal`/`rawOrig` المحلي في بطاقة المنتج المميز.
+
+### 3. `src/pages/ProductDetail.tsx` — استخدام نفس الدالة في المنتجات المرتبطة
+استبدال كتلة الحساب الطويلة (السطور 1368–1432) بـ:
+```tsx
+const finalPrice = computeUnifiedCardPrice(rp, usdToIqd, codDefaults, relatedLiveDirectMap);
+const showOrig = computeUnifiedCardOriginalPrice(rp, usdToIqd) ?? undefined;
 ```
 
-**ب. إعادة كتابة `computeUnifiedCardPrice`** بحيث:
-1. تحسب **سعر القاعدة للبيع المباشر** (RPC الحي → `direct_sale_price` → fallback) إذا `has_in_stock` ولم ينضب المخزون.
-2. تحسب **سعر القاعدة للحجز المسبق** من `sea_price`/`air_price` (الأدنى عند `both`) إذا `has_pre_order`.
-3. لكل قاعدة موجودة، تجمع قائمة "تعديلات الخيارات المتاحة":
-   - **للبيع المباشر**: الخيارات التي `available_for_direct_sale !== false` ولديها `stock_quantity > 0` (أو يوجد مخزون من الألوان `option_stocks` كما يفعل ProductDetail).
-   - **للحجز المسبق**: كل الخيارات (الحجز المسبق لا يتطلب مخزون).
-   - إذا لا توجد خيارات للمنتج، نعتبر التعديل = 0.
-4. تحوّل كل `price_adjustment` عبر `ensureAdjustmentIqd(adj, usdToIqd, price_usd)`.
-5. لكل قاعدة: `candidate = base + min(adjustments_available)`. إذا لا توجد خيارات متاحة لذلك النوع، تتجاهله.
-6. النتيجة النهائية = **أدنى candidate** بين الاثنين، ثم تطبق `round_up_price` (250 IQD) إن كان مفعّلاً.
+### 4. فحص تلقائي للتكافؤ (Dev only) في `src/pages/ProductDetail.tsx`
+بعد حساب `finalPrice` و `finalOriginalPrice` للمنتج الرئيسي، نضيف `useEffect` يعمل فقط في `import.meta.env.DEV`:
 
-**ج. السعر الأصلي المشطوب**: يبقى مخفياً إذا كان أقل من السعر النهائي (السلوك الحالي).
+```ts
+useEffect(() => {
+  if (!import.meta.env.DEV || !product) return;
+  const cardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, /* mainLiveMap */);
+  // The card should equal the cheapest possible detail combination
+  const expectedMin = computeMinDetailPrice(product, productOptions, usdToIqd, codDefaults, mainLiveMap);
+  if (cardPrice !== expectedMin) {
+    console.warn('[Price Parity] mismatch on', product.slug, { cardPrice, expectedMin });
+  }
+  const cardOrig = computeUnifiedCardOriginalPrice(product, usdToIqd);
+  // Compare to detail's finalOriginalPrice computed for cheapest option
+  // ... similar warn
+}, [product, productOptions, usdToIqd, codDefaults]);
+```
 
-### 2. بطاقة المنتج المميز (`featuredProduct`) في نفس الملف
-تستخدم نفس `computeUnifiedCardPrice` الجديد بدلاً من المنطق المحلي الحالي حول السطر 437.
+ملاحظة: سيُحتسب `expectedMin` عبر تطبيق نفس قاعدة "أرخص خيار متوفر" التي تستخدمها `computeUnifiedCardPrice` على بيانات `productOptions` المُحمَّلة كاملةً في صفحة التفاصيل. أي اختلاف يعني انحراف بين منطقَي الكارد والتفاصيل.
 
-### 3. `src/pages/ProductDetail.tsx` — قسم المنتجات المرتبطة
-نفس الدالة الجديدة (تُستخرج إلى `src/lib/priceGuard.ts` كـ `computeLowestCardPrice` لإعادة الاستخدام)، وتُستخدم في حلقة عرض `FloatingProductCard` للمنتجات المرتبطة. يجب توسيع جلب المنتجات المرتبطة لتشمل نفس حقول `product_options`.
+### 5. اختبارات Vitest جديدة: `src/lib/__tests__/cardPrice.parity.test.ts`
+تغطي:
+- منتج بسعر قاعدة فقط (بدون خيارات/ألوان).
+- منتج فيه `direct_sale_price` بدون خيارات.
+- منتج بخيارات بأسعار موجبة وسالبة → يتحقق أن البطاقة = base + min(adjustments).
+- منتج بـ `link_direct_commission_to_cod` مع `liveDirectMap`.
+- منتج preorder فقط بـ `sea/air/both`.
+- منتج له direct + preorder، direct أرخص → يختار direct، والعكس.
+- `round_up_price = true` → التقريب إلى 250.
+- `original_price` أقل من النهائي → يُعيد `null`.
+- `original_price` أكبر من النهائي → يُعيد القيمة المقربة.
 
-### تفاصيل تقنية
-- نوع `option_stocks` على الألوان للبيع المباشر يُحسب كما في `ProductDetail.getOptionStockFromColors` (لو احتجنا الدقة الكاملة، نمرر `colors` للدالة وننفّذ نفس المنطق المختصر).
-- لا تغييرات على RPC أو DB.
-- لا حاجة لجلب أسعار حية لكل خيار — `price_adjustment` مخزّن مع الخيار ذاته.
+كل اختبار يتأكد أن `computeUnifiedCardPrice(product, ...)` == السعر الذي ستحسبه صفحة التفاصيل لأرخص خيار متوفر (محاكاة يدوية).
 
 ## النتيجة
-بطاقة `H2C` (وغيرها) ستعرض **أدنى سعر يمكن للمستخدم فعلياً شراء المنتج به**، مطابقاً لما سيراه في صفحة التفاصيل عند اختيار أرخص خيار متاح.
+- مصدر حقيقة وحيد لمنطق سعر البطاقة → استحالة الانحراف عبر النسخ/اللصق.
+- تحذير فوري في Dev console عند أي تسريب مستقبلي.
+- شبكة أمان من اختبارات Vitest تُشغَّل تلقائياً.
+
+## ملفات متأثرة
+- `src/lib/cardPrice.ts` (جديد)
+- `src/lib/__tests__/cardPrice.parity.test.ts` (جديد)
+- `src/pages/CategoryDetail.tsx` (تنظيف + استيراد)
+- `src/pages/ProductDetail.tsx` (تبسيط الكتلة + فحص Dev)

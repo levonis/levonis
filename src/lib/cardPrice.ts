@@ -1,0 +1,152 @@
+/**
+ * Single source of truth for prices shown on product cards.
+ *
+ * MUST always agree with what ProductDetail will display for the cheapest
+ * available combination. CategoryDetail (cards + featured), ProductDetail
+ * (related products), and any future card surface MUST use these helpers
+ * — never reimplement the logic locally.
+ */
+import { computeLinkedDirectSalePrice, ensurePriceIqd, getMinOptionAdjustmentIqd } from './priceGuard';
+import { isAllDirectStockDepleted } from './stockUtils';
+
+export function computeUnifiedCardPrice(
+  product: any,
+  usdToIqd: number,
+  codDefaults: any,
+  liveDirectMap?: Map<string, number> | null,
+): number {
+  const shouldRoundUp = product?.round_up_price === true;
+  const roundIfNeeded = (n: number) => (shouldRoundUp ? Math.ceil(n / 250) * 250 : n);
+
+  const hasDirect = (product?.has_in_stock ?? false) && !isAllDirectStockDepleted(product);
+  const hasPreOrder = !!product?.has_pre_order;
+  const candidates: number[] = [];
+
+  // --- Direct sale candidate ---
+  if (hasDirect) {
+    let directBase: number | null = null;
+    if (product?.link_direct_commission_to_cod) {
+      const fromServer = liveDirectMap?.get(product.id);
+      if (fromServer != null && fromServer > 0) directBase = fromServer;
+      else if (codDefaults) {
+        const live = computeLinkedDirectSalePrice(
+          product,
+          { usd_to_iqd_rate: usdToIqd } as any,
+          codDefaults,
+        );
+        if (live != null && live > 0) directBase = live;
+      }
+    }
+    if (directBase == null && product?.direct_sale_price != null && Number(product.direct_sale_price) > 0) {
+      directBase = ensurePriceIqd(Number(product.direct_sale_price), product?.price_usd, usdToIqd);
+    }
+    if (directBase != null) {
+      const options = Array.isArray(product?.product_options) ? product.product_options : [];
+      const colors = Array.isArray(product?.colors) ? product.colors : [];
+      if (options.length > 0) {
+        const eligible =
+          options.some((opt: any) => {
+            if ((opt?.available_for_direct_sale ?? true) === false) return false;
+            return opt?.stock_quantity != null && Number(opt.stock_quantity) > 0;
+          }) ||
+          colors.some(
+            (c: any) =>
+              c?.option_stocks &&
+              typeof c.option_stocks === 'object' &&
+              Object.keys(c.option_stocks).length > 0,
+          );
+        if (eligible) candidates.push(directBase + getMinOptionAdjustmentIqd(product, 'direct', usdToIqd));
+      } else {
+        candidates.push(directBase);
+      }
+    }
+  }
+
+  // --- Pre-order candidate ---
+  if (hasPreOrder) {
+    const st = product?.shipping_type;
+    const sea = product?.sea_price ? ensurePriceIqd(Number(product.sea_price), product?.price_usd, usdToIqd) : null;
+    const air = product?.air_price ? ensurePriceIqd(Number(product.air_price), product?.price_usd, usdToIqd) : null;
+    let preBase: number | null = null;
+    if (st === 'sea' && sea) preBase = sea;
+    else if (st === 'air' && air) preBase = air;
+    else if (st === 'both') {
+      if (sea && air) preBase = Math.min(sea, air);
+      else if (sea) preBase = sea;
+      else if (air) preBase = air;
+    }
+    if (preBase != null) {
+      candidates.push(preBase + getMinOptionAdjustmentIqd(product, 'preorder', usdToIqd));
+    }
+  }
+
+  if (candidates.length === 0) {
+    return roundIfNeeded(ensurePriceIqd(Number(product?.price || 0), product?.price_usd, usdToIqd));
+  }
+  return roundIfNeeded(Math.min(...candidates));
+}
+
+/**
+ * Returns the original (pre-discount) price suitable for a strikethrough.
+ * Returns null when there is nothing to show (no original_price, or it's
+ * not strictly greater than the final card price).
+ */
+export function computeUnifiedCardOriginalPrice(
+  product: any,
+  usdToIqd: number,
+  codDefaults?: any,
+  liveDirectMap?: Map<string, number> | null,
+): number | null {
+  const orig = product?.original_price;
+  if (orig == null || Number(orig) <= 0) return null;
+  const shouldRoundUp = product?.round_up_price === true;
+  const value = ensurePriceIqd(Number(orig), product?.price_usd, usdToIqd);
+  const rounded = shouldRoundUp ? Math.ceil(value / 250) * 250 : value;
+  const finalPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
+  return rounded > finalPrice ? rounded : null;
+}
+
+/**
+ * Dev-only parity check: warns if the card price disagrees with what the
+ * detail page would show for the cheapest available option. Caller passes
+ * the same product + state used by the detail page.
+ *
+ * This is the runtime safety net — if a future change causes drift, the
+ * console will scream.
+ */
+export function assertCardDetailParity(
+  product: any,
+  usdToIqd: number,
+  codDefaults: any,
+  liveDirectMap: Map<string, number> | null | undefined,
+  detailFinalPriceForCheapest: number,
+  detailFinalOriginalForCheapest: number | null,
+): void {
+  if (!product) return;
+  // Only run in dev-mode browsers (Vite injects import.meta.env.DEV).
+  // In tests / SSR we still allow it; it just warns.
+  try {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta?.env && import.meta.env.DEV !== true && import.meta.env.MODE !== 'test') return;
+  } catch {}
+
+  const cardPrice = computeUnifiedCardPrice(product, usdToIqd, codDefaults, liveDirectMap);
+  if (cardPrice !== detailFinalPriceForCheapest) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[Price Parity] card price ≠ detail cheapest',
+      { product: product?.slug || product?.id, cardPrice, detailFinalPriceForCheapest },
+    );
+  }
+  const cardOrig = computeUnifiedCardOriginalPrice(product, usdToIqd, codDefaults, liveDirectMap);
+  const expectedOrig = detailFinalOriginalForCheapest != null && detailFinalOriginalForCheapest > detailFinalPriceForCheapest
+    ? detailFinalOriginalForCheapest
+    : null;
+  if (cardOrig !== expectedOrig) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[Price Parity] card original ≠ detail original',
+      { product: product?.slug || product?.id, cardOrig, expectedOrig },
+    );
+  }
+}
