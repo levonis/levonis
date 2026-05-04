@@ -2198,6 +2198,11 @@ const Cart = () => {
               {(() => {
                 // Group items by product + option + color combination
                 const groupedItems = items.reduce((acc, item) => {
+                  // Random filament: render each as single mystery item (never grouped)
+                  if ((item as any).is_random_filament) {
+                    acc.push({ type: 'single', items: [item] });
+                    return acc;
+                  }
                   // Offer purchase items (from storage) are rendered as single items
                   if ((item as any).offer_purchase_id) {
                     acc.push({ type: 'offer_purchase', items: [item] });
