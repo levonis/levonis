@@ -100,11 +100,28 @@ export default function RandomFilament() {
         .order("display_order");
       const list = (data || []) as any[];
       // filter offers that include this category (new array or legacy single)
-      return list.filter((o) =>
+      const inCat = list.filter((o) =>
         (Array.isArray(o.category_ids) && o.category_ids.length > 0
           ? o.category_ids.includes(categoryId)
           : (o.category_id == null || o.category_id === categoryId))
-      ) as Offer[];
+      );
+
+      // For direct-sale: hide offers with no available stock.
+      // For preorder: keep as-is (stock not required).
+      if (saleType !== "direct") return inCat as Offer[];
+
+      const summaries = await Promise.all(
+        inCat.map(async (o) => {
+          const { data: s } = await (supabase as any).rpc("rf_offer_stock_summary", {
+            p_offer_id: o.id,
+          });
+          return { id: o.id, stock: Number(s?.direct_stock_total ?? 0), products: Number(s?.eligible_products ?? 0) };
+        })
+      );
+      const ok = new Set(
+        summaries.filter((s) => s.stock > 0 && s.products > 0).map((s) => s.id)
+      );
+      return inCat.filter((o) => ok.has(o.id)) as Offer[];
     },
   });
 
