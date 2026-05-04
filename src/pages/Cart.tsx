@@ -2366,7 +2366,12 @@ const Cart = () => {
                     const isDirect = (item as any).sale_type === 'direct';
                     const isGift = !!(item as any).is_gift;
                     const isLocked = !!(item as any).is_locked;
-                    const itemPrice = isGift ? 0 : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
+                    const isRandomFilamentItem = !!(item as any).is_random_filament;
+                    const itemPrice = isGift
+                      ? 0
+                      : isRandomFilamentItem
+                        ? (Number((item as any).random_filament_price_iqd) || 0)
+                        : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
                     
                     const isRemoving = removingItemIds.has(item.id);
                     
@@ -2611,6 +2616,7 @@ const Cart = () => {
                   <Hash className="ml-2 h-4 w-4" />
                   {t('cart_code')}
                 </Button>
+                {items.some((i: any) => !i.is_random_filament && !i.is_locked) && (
                 <Button
                   variant="outline"
                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive"
@@ -2619,6 +2625,7 @@ const Cart = () => {
                   <Trash2 className="ml-2 h-4 w-4" />
                   {t('cart_clear')}
                 </Button>
+                )}
               </div>
             </div>
 

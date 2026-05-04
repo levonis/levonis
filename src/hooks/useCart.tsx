@@ -349,14 +349,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (optimisticLockRef.current === lockValue) {
         // Detect random-filament cart items so UI can lock them (no delete/qty change)
         let rfIds = new Set<string>();
+        const rfPriceById = new Map<string, number>();
         try {
           const ids = (data || []).map((i: any) => i.id).filter(Boolean);
           if (ids.length > 0) {
             const { data: rfRows } = await (supabase as any)
               .from('random_filament_orders')
-              .select('cart_item_id')
+              .select('cart_item_id, price_iqd')
               .in('cart_item_id', ids);
-            (rfRows || []).forEach((r: any) => r?.cart_item_id && rfIds.add(r.cart_item_id));
+            (rfRows || []).forEach((r: any) => {
+              if (r?.cart_item_id) {
+                rfIds.add(r.cart_item_id);
+                rfPriceById.set(r.cart_item_id, Number(r.price_iqd) || 0);
+              }
+            });
           }
         } catch (e) { /* non-blocking */ }
 
@@ -366,6 +372,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           offer_purchase: item.product_offer_purchases || null,
           is_locked: item.is_locked || rfIds.has(item.id),
           is_random_filament: rfIds.has(item.id),
+          random_filament_price_iqd: rfPriceById.get(item.id) ?? null,
         }));
         setItems(mappedData as CartItem[]);
       }
@@ -943,6 +950,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if ((item as any).is_gift) return sum;
     // Offer purchase items are free (already paid)
     if ((item as any).offer_purchase_id) return sum;
+    if ((item as any).is_random_filament) {
+      const rfPrice = Number((item as any).random_filament_price_iqd) || 0;
+      return sum + (rfPrice * item.quantity);
+    }
     if (item.products) {
       const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices);
       return sum + (itemPrice * item.quantity);
