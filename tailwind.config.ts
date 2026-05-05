@@ -211,7 +211,7 @@ export default {
         "avatar-frame-glow-cyan": "avatar-frame-glow-cyan 2s ease-in-out infinite",
         "avatar-frame-sparkle": "avatar-frame-sparkle 1.5s ease-in-out infinite",
         "card-discount-shine": "card-discount-shine 2.5s linear infinite",
-        "glass-expand": "glass-expand 240ms cubic-bezier(0.16,1,0.3,1)",
+        "glass-expand": "glass-expand 220ms cubic-bezier(0.16,1,0.3,1)",
         "glass-collapse": "glass-collapse 160ms cubic-bezier(0.4,0,0.84,0)",
         "glass-fade-up": "glass-fade-up 320ms cubic-bezier(0.16,1,0.3,1) both",
       },
