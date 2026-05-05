@@ -1430,6 +1430,23 @@ const Cart = () => {
         .single();
 
       if (orderError || !orderResult) {
+        console.error('Direct sale order insert failed:', { userId: user.id, orderNumber, orderError });
+        // Server-side log for admin diagnostics (non-blocking)
+        try {
+          await (supabase as any).rpc('log_order_error', {
+            p_context: 'direct_sale_order_insert',
+            p_error_code: (orderError as any)?.code || null,
+            p_error_message: orderError?.message || 'unknown error',
+            p_details: {
+              order_number: orderNumber,
+              wallet_deducted: walletDeductionAmount,
+              cod_remaining: codRemaining,
+              delivery_method: selectedDeliveryMethod,
+              hint: (orderError as any)?.hint || null,
+              details: (orderError as any)?.details || null,
+            },
+          });
+        } catch {}
         // Auto-refund the wallet if we already deducted, so the user is never charged for a non-existent order.
         if (walletDeductionAmount > 0) {
           try {
