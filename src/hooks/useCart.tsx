@@ -1,4 +1,4 @@
-// @ts-nocheck
+// Strict TypeScript — keep CartItem typing tight; do not add @ts-nocheck.
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -50,6 +50,14 @@ export interface CartItem {
   is_random_filament?: boolean | null;
   /** True after RF order is revealed and the actual product is shown. */
   is_random_filament_revealed?: boolean | null;
+  /** Hydrated final IQD price for revealed RF rows. */
+  random_filament_price_iqd?: number | null;
+  /** Max stock cap propagated from RF offer summary. */
+  random_filament_max_stock?: number | null;
+  /** True when quantity was clamped server-side to RF max stock. */
+  random_filament_was_capped?: boolean;
+  /** Marker set during fetch when an RF row was deleted server-side. */
+  __rf_removed?: boolean;
   /** Admin-overridden unit price (IQD). When set, overrides product price. */
   admin_set_price?: number | null;
   products?: {
@@ -162,8 +170,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const ids = items
-      .filter((it: any) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
-      .map((it: any) => it.products.id as string);
+      .filter((it) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
+      .map((it) => it.products!.id);
     if (ids.length === 0) {
       if (liveDirectPrices.size > 0) setLiveDirectPrices(new Map());
       return;
@@ -583,7 +591,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Check for sale_type conflict via centralized helper.
       // Policy: the existing cart's sale_type wins; the new item must match
       // or the user has to clear the cart first.
-      const conflict = detectSaleTypeConflict(items as any, saleType);
+      const conflict = detectSaleTypeConflict(items, saleType);
       if (conflict) {
         // Signal conflict - let the caller handle confirmation UI.
         const err: any = new Error('SALE_TYPE_CONFLICT');
@@ -636,17 +644,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      const existingItem = items.find(item => 
-        item.product_id === productId && 
-        normalize((item as any).product_option_id) === normalize(optionId) &&
-        normalize((item as any).selected_color) === normalize(color) &&
-        normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex &&
-        (item as any).sale_type === saleType &&
-        (item as any).is_gift === false &&
-        !(item as any).is_random_filament &&
-        !(item as any).is_locked &&
-        !(item as any).bundle_id &&
-        !(item as any).offer_purchase_id
+      const existingItem = items.find(item =>
+        item.product_id === productId &&
+        normalize(item.product_option_id) === normalize(optionId) &&
+        normalize(item.selected_color) === normalize(color) &&
+        normalizeShippingIndex(item.shipping_option_index) === targetShippingIndex &&
+        item.sale_type === saleType &&
+        item.is_gift === false &&
+        !item.is_random_filament &&
+        !item.is_locked &&
+        !item.bundle_id &&
+        !item.offer_purchase_id
       );
       
       if (existingItem) {
@@ -797,7 +805,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     // Revealed random-filament items cannot change quantity
-    const target = items.find(i => i.id === itemId) as any;
+    const target = items.find(i => i.id === itemId);
     if (target?.is_random_filament_revealed || target?.is_locked) {
       toast.error('لا يمكن تعديل كمية طلب الفلمنت العشوائي بعد الكشف عن اللون');
       return;
@@ -878,7 +886,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     // Skip locked / revealed random-filament items — only revealed RF can never be removed
     const deletableIds = items
-      .filter((i: any) => !i.is_random_filament_revealed && !i.is_locked)
+      .filter((i) => !i.is_random_filament_revealed && !i.is_locked)
       .map(i => i.id);
     const hasLocked = deletableIds.length !== items.length;
 
@@ -895,7 +903,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      setItems(prev => prev.filter((i: any) => i.is_random_filament_revealed || i.is_locked));
+      setItems(prev => prev.filter((i) => i.is_random_filament_revealed || i.is_locked));
       if (hasLocked) {
         toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المكشوفة)');
       } else {
@@ -997,7 +1005,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Check for sale_type conflict via centralized helper.
-      const conflict = detectSaleTypeConflict(items as any, saleType);
+      const conflict = detectSaleTypeConflict(items, saleType);
       if (conflict) {
         const err: any = new Error('SALE_TYPE_CONFLICT');
         err.conflict = conflict;
@@ -1052,7 +1060,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Check if already in cart
-      const existingItem = items.find(item => (item as any).offer_purchase_id === offerPurchaseId);
+      const existingItem = items.find(item => item.offer_purchase_id === offerPurchaseId);
       if (existingItem) {
         toast.info('هذا المنتج موجود بالفعل في السلة');
         return false;
@@ -1083,20 +1091,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   
   const total = items.reduce((sum, item) => {
     // Gift items are free
-    if ((item as any).is_gift) return sum;
+    if (item.is_gift) return sum;
     // Offer purchase items are free (already paid)
-    if ((item as any).offer_purchase_id) return sum;
-    if ((item as any).is_random_filament) {
-      const rfPrice = Number((item as any).random_filament_price_iqd) || 0;
+    if (item.offer_purchase_id) return sum;
+    if (item.is_random_filament) {
+      const rfPrice = Number(item.random_filament_price_iqd) || 0;
       return sum + (rfPrice * item.quantity);
     }
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices);
+      const itemPrice = getGuardedCartItemPrice(item, usdToIqd, codDefaults, liveDirectPrices);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
-    } else if ((item as any).product_bundles) {
-      return sum + (Number((item as any).product_bundles.bundle_price) * item.quantity);
+    } else if (item.product_bundles) {
+      return sum + (Number(item.product_bundles.bundle_price) * item.quantity);
     }
     return sum;
   }, 0);
@@ -1109,7 +1117,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Determine the current cart's sale type (centralized helper covers
   // product_id / bundle_id / rf_offer_id consistently).
-  const cartSaleType = deriveCartSaleType(items as any);
+  const cartSaleType = deriveCartSaleType(items);
 
 
   return (
