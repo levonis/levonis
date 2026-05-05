@@ -116,15 +116,16 @@ export default function MerchantAdBookingDialog({ open, onOpenChange, merchantId
 
       const cost = slot.price_per_hour * hoursNum;
       
-      // Check balance
-      if (cost > walletBalance) throw new Error("رصيد غير كافي");
+      // Check balance (server will re-validate atomically)
+      if (cost > walletBalance) throw new Error(`رصيد غير كافي. العجز: ${(cost - walletBalance).toLocaleString()} د.ع`);
 
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from("user_wallets")
-        .update({ balance: walletBalance - cost })
-        .eq("user_id", user.id);
-      if (walletError) throw walletError;
+      // Atomic deduct via secure RPC (locks row, validates balance, logs transaction)
+      const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
+        p_user_id: user.id,
+        p_amount: cost,
+        p_description: `حجز إعلان متجر - مركز ${selectedPosition} لمدة ${hoursNum} ساعة`,
+      });
+      if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
 
       // Create booking
       const { error: bookingError } = await supabase
