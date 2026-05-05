@@ -12472,6 +12472,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          idempotency_key: string | null
           payment_method: string | null
           payment_proof_url: string | null
           status: string
@@ -12487,6 +12488,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          idempotency_key?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
           status?: string
@@ -12502,6 +12504,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          idempotency_key?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
           status?: string
@@ -14006,7 +14009,12 @@ export type Database = {
         Returns: boolean
       }
       deduct_wallet_balance: {
-        Args: { p_amount: number; p_description?: string; p_user_id: string }
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_idempotency_key?: string
+          p_user_id: string
+        }
         Returns: string
       }
       delete_email: {
