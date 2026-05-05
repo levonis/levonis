@@ -110,8 +110,6 @@ const WarrantyDashboard = () => {
           العودة
         </Button>
 
-        {/* Warranty loyalty-style benefits — only when active */}
-        {!isExpired && <WarrantyBenefitsCard />}
 
         {/* Printer Header */}
         <Card className="overflow-hidden">
