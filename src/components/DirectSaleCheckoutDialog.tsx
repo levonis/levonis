@@ -206,11 +206,11 @@ const DirectSaleCheckoutDialog = ({
               <div className="flex items-start gap-2">
                 <Wallet className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
                 <div className="text-xs leading-relaxed">
-                  <p className="font-bold text-amber-300">الفلمنت العشوائي يُدفع من المحفظة فقط</p>
-                  <p className="text-muted-foreground mt-0.5">سيتم خصم قيمة المنتجات من رصيدك. التوصيل يبقى عند الاستلام.</p>
+                  <p className="font-bold text-amber-300">الفلمنت العشوائي يُدفع بالكامل من المحفظة</p>
+                  <p className="text-muted-foreground mt-0.5">سيتم خصم قيمة المنتجات + التوصيل من رصيدك مسبقاً.</p>
                   {insufficientWallet && (
                     <p className="text-destructive font-bold mt-1">
-                      رصيدك غير كافٍ — تحتاج {formatPrice(totalAmount - walletBalance)} د.ع إضافية
+                      رصيدك غير كافٍ — تحتاج {formatPrice(grandTotal - walletBalance)} د.ع إضافية
                     </p>
                   )}
                 </div>
