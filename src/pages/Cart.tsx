@@ -3262,6 +3262,7 @@ const Cart = () => {
                             </div>
                           </Label>
                         </div>
+                        {!hasRandomFilamentItems && (
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                           preOrderPaymentOption === 'half' 
                             ? 'border-primary bg-primary/5' 
@@ -3278,6 +3279,7 @@ const Cart = () => {
                             </div>
                           </Label>
                         </div>
+                        )}
                         {showCodOption && (
                           <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                             preOrderPaymentOption === 'cod'
