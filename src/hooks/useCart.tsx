@@ -166,8 +166,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const ids = items
-      .filter((it: any) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
-      .map((it: any) => it.products.id as string);
+      .filter((it) => it.sale_type === 'direct' && it.products?.link_direct_commission_to_cod && it.products?.id)
+      .map((it) => it.products!.id);
     if (ids.length === 0) {
       if (liveDirectPrices.size > 0) setLiveDirectPrices(new Map());
       return;
