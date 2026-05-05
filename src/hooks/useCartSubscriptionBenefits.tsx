@@ -102,8 +102,8 @@ export function useCartSubscriptionBenefits(
   // Subscription benefits apply ONLY to direct-sale items. Preorder/sea/air
   // items never qualify for the percentage discount or the free shipping perk.
   const isDirectItem = (item: CartItem) =>
-    ((item as any).sale_type ?? '').toString().toLowerCase() === 'direct';
-  const nonGiftItems = items.filter((i) => !(i as any).is_gift);
+    (item.sale_type ?? '').toString().toLowerCase() === 'direct';
+  const nonGiftItems = items.filter((i) => !i.is_gift);
   const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
 
   const candidates = rows.filter((r) => r.is_benefits_active);
