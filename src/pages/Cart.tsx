@@ -1628,42 +1628,45 @@ const Cart = () => {
         });
       }
 
-      // Record card discount usage if applied (per category)
-      if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory) {
-        const categoryIds = Object.keys(cardDiscount.discountsByCategory);
-        for (const catId of categoryIds) {
-          const catInfo = cardDiscount.discountsByCategory[catId];
-          if (catInfo.limited) {
-            await supabase.rpc('use_card_discount', {
-              p_user_id: user.id,
-              p_category_id: catId,
-              p_order_id: orderResult.id,
-            });
+      try {
+        // Record card discount usage if applied (per category)
+        if (cardDiscountAmount > 0 && cardDiscount?.discountsByCategory && cardDiscount?.cardId) {
+          const categoryIds = Object.keys(cardDiscount.discountsByCategory);
+          for (const catId of categoryIds) {
+            const catInfo = cardDiscount.discountsByCategory[catId];
+            if (catInfo.limited) {
+              await supabase.rpc('use_card_discount', {
+                p_user_id: user.id,
+                p_card_id: cardDiscount.cardId,
+                p_category_id: catId,
+                p_order_id: orderResult.id,
+              });
+            }
           }
         }
-      }
 
-      // Record percentage discount usage during card validity (direct sale)
-      if ((cardDiscount?.percentageDiscount || 0) > 0 && cardDiscount?.cardId && cardDiscount?.levelId) {
-        await (supabase as any).from('loyalty_percentage_discount_usage').insert({
-          user_id: user.id,
-          card_id: cardDiscount.cardId,
-          level_id: cardDiscount.levelId,
-          order_id: orderResult.id,
-          discount_amount: cardDiscount.percentageDiscount,
-        });
-      }
+        // Record percentage discount usage during card validity (direct sale)
+        if ((cardDiscount?.percentageDiscount || 0) > 0 && cardDiscount?.cardId) {
+          await (supabase as any).from('loyalty_percentage_discount_usage').insert({
+            user_id: user.id,
+            card_id: cardDiscount.cardId,
+            order_id: orderResult.id,
+            discount_amount: cardDiscount.percentageDiscount,
+          });
+        }
 
-      // Record free shipping usage (direct sale)
-      if (cardFreeShippingApplied && cardDiscount?.cardId && cardDiscount?.levelId) {
-        await (supabase as any).from('loyalty_free_shipping_usage').insert({
-          user_id: user.id,
-          card_id: cardDiscount.cardId,
-          level_id: cardDiscount.levelId,
-          order_id: orderResult.id,
-          delivery_method_key: selectedDeliveryMethod,
-          saved_amount: rawDeliveryFee,
-        });
+        // Record free shipping usage (direct sale)
+        if (cardFreeShippingApplied && cardDiscount?.cardId) {
+          await (supabase as any).from('loyalty_free_shipping_usage').insert({
+            user_id: user.id,
+            card_id: cardDiscount.cardId,
+            order_id: orderResult.id,
+            delivery_method_key: selectedDeliveryMethod,
+            saved_amount: rawDeliveryFee,
+          });
+        }
+      } catch (e) {
+        console.warn('Loyalty benefit usage recording failed:', e);
       }
 
       // (Printer warranty benefits removed — loyalty card discounts only.)
