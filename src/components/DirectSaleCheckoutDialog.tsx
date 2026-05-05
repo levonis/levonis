@@ -314,7 +314,7 @@ const DirectSaleCheckoutDialog = ({
           {/* Confirm Button */}
           <Button
             onClick={handleConfirm}
-            disabled={!canConfirm || isProcessing}
+            disabled={!canConfirm || isProcessing || insufficientWallet}
             className="w-full h-12 text-base font-black bg-gradient-to-l from-primary to-accent text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-all shadow-[0_4px_20px_hsl(var(--primary)/0.25)]"
             size="lg"
           >
