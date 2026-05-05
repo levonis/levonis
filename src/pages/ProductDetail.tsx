@@ -1492,7 +1492,7 @@ const ProductDetail = () => {
               {t('pd_clear_cart_title')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('pd_clear_cart_desc')}
+              {saleTypeConflictMessage || t('pd_clear_cart_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
