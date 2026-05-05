@@ -1461,7 +1461,14 @@ const Cart = () => {
             console.error('Auto-refund failed for failed order', orderNumber, refundErr);
           }
         }
-        toast({ title: t('cart_order_create_error_title'), description: orderError?.message || t('cart_order_create_error_desc'), variant: 'destructive' });
+        const friendly = buildFriendlyOrderError(orderError, language as any);
+        sonnerToast.error(friendly.title, {
+          description: friendly.description,
+          duration: 9000,
+          action: friendly.action
+            ? { label: friendly.action.label, onClick: () => navigate(friendly.action!.href) }
+            : undefined,
+        });
         return;
       }
 
