@@ -151,7 +151,7 @@ const BundleDetail = lazy(() => import("./pages/BundleDetail"));
 const ActivatePrinter = lazy(() => import("./pages/ActivatePrinter"));
 const WarrantyDashboard = lazy(() => import("./pages/WarrantyDashboard"));
 const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
-const AdminPrinterWarrantyBenefits = lazy(() => import("./pages/AdminPrinterWarrantyBenefits"));
+const AdminLoyaltyCardCodes = lazy(() => import("./pages/AdminLoyaltyCardCodes"));
 const AdminProtectionPlanBenefits = lazy(() => import("./pages/AdminProtectionPlanBenefits"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const About = lazy(() => import("./pages/About"));
