@@ -51,6 +51,23 @@ export default function RedeemLoyaltyCodeCard() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
+  const { data: warrantyCheck, isFetching: checking } = useQuery({
+    queryKey: ['user-warranty-precheck'],
+    enabled: open,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('check_user_printer_warranty');
+      if (error) throw error;
+      return data as { status: 'active' | 'no_printer_registered' | 'warranty_expired' | 'no_active_warranty' | 'auth_required'; expiry_date?: string };
+    },
+  });
+
+  const precheckBlocked: WarrantyReason | null =
+    warrantyCheck && warrantyCheck.status !== 'active' && warrantyCheck.status !== 'auth_required'
+      ? (warrantyCheck.status as WarrantyReason)
+      : null;
+  const activeReason = warrantyReason || precheckBlocked;
+
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setInterval(() => setCooldown(c => Math.max(0, c - 100)), 100);
