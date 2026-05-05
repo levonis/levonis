@@ -2,6 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { CartItem } from "./useCart";
+import {
+  isDirectSaleItem,
+  isGiftItem,
+  isDiscountEligibleItem,
+  readQuantity,
+} from "@/lib/cartItemGuards";
 
 /**
  * Mirrors useCartWarrantyBenefits but pulls data from the user's ACTIVE
