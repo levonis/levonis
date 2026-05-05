@@ -176,13 +176,19 @@ export default function AcceptOfferDialog({
 
       if (requestError) throw requestError;
 
-      // 6. Notify merchant
-      await supabase.from("notifications").insert({
-        user_id: offer.trader_id,
-        title: "تم قبول عرضك! ✓",
-        message: `تم قبول عرضك وحجز المبلغ (${offer.price_iqd.toLocaleString()} د.ع). يرجى المباشرة في تنفيذ الطلب.`,
-        type: "offer_accepted",
-      });
+      // 6. Notify merchant via SECURITY DEFINER RPC (notifications table INSERT is admin-only)
+      try {
+        await supabase.rpc("create_notification_if_not_exists", {
+          p_user_id: offer.trader_id,
+          p_title: "تم قبول عرضك! ✓",
+          p_message: `تم قبول عرضك وحجز المبلغ (${offer.price_iqd.toLocaleString()} د.ع). يرجى المباشرة في تنفيذ الطلب.`,
+          p_type: "offer_accepted",
+          p_related_id: requestId,
+          p_is_general: false,
+        } as any);
+      } catch (notifyErr) {
+        console.warn("merchant notification failed (non-blocking):", notifyErr);
+      }
 
       return { success: true };
     },
