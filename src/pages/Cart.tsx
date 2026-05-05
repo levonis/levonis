@@ -1385,12 +1385,13 @@ const Cart = () => {
         : 0;
       const codRemaining = orderGrandTotal - walletDeductionAmount;
 
-      // Deduct from wallet if applicable
+      // Deduct from wallet if applicable (idempotent — safe against retries / double-clicks)
       if (walletDeductionAmount > 0) {
         const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
           p_amount: walletDeductionAmount,
-          p_description: `خصم من المحفظة لطلب بيع مباشر`,
+          p_description: `خصم من المحفظة لطلب بيع مباشر ${orderNumber}`,
+          p_idempotency_key: `direct_sale:${orderNumber}`,
         });
         if (walletError) {
           toast({ title: t('cart_wallet_deduct_failed_title'), description: t('cart_wallet_deduct_failed_desc'), variant: 'destructive' });
