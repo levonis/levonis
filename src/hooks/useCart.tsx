@@ -355,6 +355,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const rfRevealedIds = new Set<string>();
         const rfPriceById = new Map<string, number>();
         const rfMaxStockById = new Map<string, number>();
+        const cappedIds = new Set<string>();
         try {
           const ids = (data || []).map((i: any) => i.id).filter(Boolean);
           (data || []).forEach((it: any) => {
@@ -376,7 +377,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           }
           // fetch offer prices + stock for new-flow RF rows; auto-cap qty against available stock
           const offerIds = Array.from(new Set((data || []).map((i: any) => i.rf_offer_id).filter(Boolean)));
-          const cappedIds = new Set<string>();
           if (offerIds.length > 0) {
             const { data: offerRows } = await (supabase as any)
               .from('random_filament_offers')
