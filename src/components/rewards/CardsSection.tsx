@@ -12,6 +12,7 @@ import { LevelCardSkeleton } from "./SkeletonLoaders";
 import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import RedeemLoyaltyCodeCard from "@/components/rewards/RedeemLoyaltyCodeCard";
+import LoyaltyCodeHistoryCard from "@/components/rewards/LoyaltyCodeHistoryCard";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
