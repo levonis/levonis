@@ -1322,13 +1322,14 @@ const Cart = () => {
     setIsDirectSaleProcessing(true);
 
     try {
-      // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات
+      // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات + التوصيل
       if (hasRandomFilamentItems) {
         const productsTotal = total - (appliedCoupon ? calculateDiscount() : 0);
-        if (!data.useWallet || (wallet?.balance || 0) < productsTotal) {
+        const requiredAll = productsTotal + (deliveryFee || 0);
+        if (!data.useWallet || (wallet?.balance || 0) < requiredAll) {
           toast({
             title: 'الدفع من المحفظة مطلوب',
-            description: `الفلمنت العشوائي يُدفع من المحفظة فقط ويجب أن يكون الرصيد كافياً (${formatPrice(productsTotal)} د.ع).`,
+            description: `الفلمنت العشوائي يُدفع من المحفظة (المنتجات + التوصيل). المطلوب: ${formatPrice(requiredAll)} د.ع.`,
             variant: 'destructive',
           });
           setIsDirectSaleProcessing(false);
