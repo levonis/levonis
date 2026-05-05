@@ -1303,6 +1303,33 @@ export type Database = {
           },
         ]
       }
+      client_error_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       community_cart_items: {
         Row: {
           created_at: string
@@ -14244,6 +14271,10 @@ export type Database = {
       }
       link_random_filament_to_order: {
         Args: { p_order_id: string }
+        Returns: undefined
+      }
+      log_client_error: {
+        Args: { p_context?: Json; p_message: string; p_source: string }
         Returns: undefined
       }
       move_to_dlq: {
