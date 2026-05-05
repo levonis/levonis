@@ -125,7 +125,7 @@ export function useCartSubscriptionBenefits(
     // Eligible subtotal for percentage discount — direct-sale items only.
     let eligibleSubtotal = 0;
     for (const item of items) {
-      if ((item as any).is_gift) continue;
+      if (item.is_gift) continue;
       if (!isDirectItem(item)) continue;
       const catId = (item.products as any)?.category_id;
       if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
