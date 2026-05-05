@@ -1,5 +1,6 @@
 // Strict TypeScript — keep CartItem typing tight; do not add @ts-nocheck.
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
