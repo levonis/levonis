@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { notifyWalletDeducted } from '@/lib/walletNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1397,6 +1398,13 @@ const Cart = () => {
           toast({ title: t('cart_wallet_deduct_failed_title'), description: t('cart_wallet_deduct_failed_desc'), variant: 'destructive' });
           return;
         }
+        // Instant notification for the user (non-blocking)
+        notifyWalletDeducted({
+          userId: user.id,
+          amount: walletDeductionAmount,
+          summary: `طلب بيع مباشر رقم ${orderNumber}`,
+          link: `/profile?tab=orders`,
+        });
       }
 
       const orderInsertData = {

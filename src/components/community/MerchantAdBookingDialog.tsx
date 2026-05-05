@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyWalletDeducted } from "@/lib/walletNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -146,6 +147,13 @@ export default function MerchantAdBookingDialog({ open, onOpenChange, merchantId
             : null,
         });
       if (bookingError) throw bookingError;
+
+      notifyWalletDeducted({
+        userId: user.id,
+        amount: cost,
+        summary: `حجز إعلان متجر - مركز ${selectedPosition} لمدة ${hoursNum} ساعة`,
+        link: `/community/merchant-dashboard`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ad-bookings-all"] });

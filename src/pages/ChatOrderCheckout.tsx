@@ -6,6 +6,7 @@ import {
   CheckCircle, Loader2, AlertCircle, Plus, Shield, CreditCard, Banknote,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { notifyWalletDeducted } from '@/lib/walletNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,13 @@ export default function ChatOrderCheckout() {
           p_idempotency_key: `chat_order:${order.id}:${paymentMethod}`,
         });
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
+        notifyWalletDeducted({
+          userId: user.id,
+          amount: amountToPay,
+          summary: `دفع طلب محادثة: ${order.product_title}`,
+          link: `/community/messages`,
+          relatedId: order.id,
+        });
       }
 
 
