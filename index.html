@@ -32,7 +32,30 @@
           fetch(url, {
             headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' },
             credentials: 'omit',
-          }).catch(function(){});
+          })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (banners) {
+              if (!banners || !banners.length) return;
+              // Find the first banner with an image — that's the LCP element.
+              var first = null;
+              for (var i = 0; i < banners.length; i++) {
+                if (banners[i] && banners[i].image_url) { first = banners[i]; break; }
+              }
+              if (!first) return;
+              var src = first.image_url;
+              // Match the size requested by the on-page <img> (snapped to 1200 for hero).
+              if (src.indexOf('/storage/v1/object/public/') !== -1) {
+                src = src.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+                  + (src.indexOf('?') === -1 ? '?' : '&') + 'width=1200&quality=75&resize=contain';
+              }
+              var link = document.createElement('link');
+              link.rel = 'preload';
+              link.as = 'image';
+              link.href = src;
+              link.setAttribute('fetchpriority', 'high');
+              document.head.appendChild(link);
+            })
+            .catch(function () {});
         } catch (e) {}
       })();
     </script>
