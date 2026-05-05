@@ -1327,10 +1327,12 @@ const Cart = () => {
       if (hasRandomFilamentItems) {
         const productsTotal = total - (appliedCoupon ? calculateDiscount() : 0);
         const requiredAll = productsTotal + (deliveryFee || 0);
-        if (!data.useWallet || (wallet?.balance || 0) < requiredAll) {
+        const currentBalance = wallet?.balance || 0;
+        const shortage = Math.max(0, requiredAll - currentBalance);
+        if (!data.useWallet || shortage > 0) {
           toast({
-            title: 'الدفع من المحفظة مطلوب',
-            description: `الفلمنت العشوائي يُدفع من المحفظة (المنتجات + التوصيل). المطلوب: ${formatPrice(requiredAll)} د.ع.`,
+            title: '⚠️ لا يمكن إكمال الطلب — رصيد المحفظة غير كافٍ',
+            description: `الفلمنت العشوائي يُدفع بالكامل من المحفظة (المنتجات + التوصيل).\nالمطلوب: ${formatPrice(requiredAll)} د.ع\nرصيدك: ${formatPrice(currentBalance)} د.ع\nالعجز: ${formatPrice(shortage)} د.ع`,
             variant: 'destructive',
           });
           setIsDirectSaleProcessing(false);
