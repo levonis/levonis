@@ -354,3 +354,272 @@ const CreateBatchButton = ({
 };
 
 export default AdminLoyaltyCardCodes;
+
+// ──────────────────────────────────────────────────────────────────────────
+// CSV bulk-import button
+// CSV format (header required, comma-separated):
+//   card_id,quantity,duration_days,code_expiry_days,batch_label,requires_active_warranty
+// - card_id: UUID of an existing membership card (must match list)
+// - quantity: 1..1000
+// - duration_days: card validity once redeemed
+// - code_expiry_days: days from now until the code itself expires
+// - batch_label: optional free-text label
+// - requires_active_warranty: true/false (default true)
+// Lines starting with # and empty lines are ignored.
+// ──────────────────────────────────────────────────────────────────────────
+
+interface CsvRow {
+  card_id: string;
+  quantity: number;
+  duration_days: number;
+  code_expiry_days: number;
+  batch_label: string | null;
+  requires_active_warranty: boolean;
+  _line: number;
+}
+
+const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
+  const errors: string[] = [];
+  const rows: CsvRow[] = [];
+  const rawLines = text.replace(/\r\n?/g, '\n').split('\n');
+  let headerCols: string[] | null = null;
+
+  rawLines.forEach((rawLine, idx) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) return;
+    const cols = line.split(',').map(c => c.trim());
+
+    if (!headerCols) {
+      headerCols = cols.map(c => c.toLowerCase());
+      const required = ['card_id', 'quantity', 'duration_days', 'code_expiry_days'];
+      for (const r of required) {
+        if (!headerCols.includes(r)) errors.push(`عمود مفقود في الترويسة: ${r}`);
+      }
+      return;
+    }
+
+    const get = (name: string) => {
+      const i = headerCols!.indexOf(name);
+      return i === -1 ? '' : (cols[i] ?? '');
+    };
+
+    const cardId = get('card_id');
+    const quantity = Number(get('quantity'));
+    const duration = Number(get('duration_days'));
+    const expiry = Number(get('code_expiry_days'));
+    const label = get('batch_label') || null;
+    const reqWarrantyRaw = get('requires_active_warranty').toLowerCase();
+    const requires = reqWarrantyRaw === '' ? true : ['true', '1', 'yes', 'نعم'].includes(reqWarrantyRaw);
+
+    if (!cardId || !/^[0-9a-f-]{36}$/i.test(cardId)) {
+      errors.push(`السطر ${idx + 1}: card_id غير صالح`);
+      return;
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000) {
+      errors.push(`السطر ${idx + 1}: quantity يجب أن يكون 1..1000`);
+      return;
+    }
+    if (!Number.isFinite(duration) || duration <= 0) {
+      errors.push(`السطر ${idx + 1}: duration_days غير صالح`);
+      return;
+    }
+    if (!Number.isFinite(expiry) || expiry <= 0) {
+      errors.push(`السطر ${idx + 1}: code_expiry_days غير صالح`);
+      return;
+    }
+
+    rows.push({
+      card_id: cardId,
+      quantity,
+      duration_days: duration,
+      code_expiry_days: expiry,
+      batch_label: label,
+      requires_active_warranty: requires,
+      _line: idx + 1,
+    });
+  });
+
+  return { rows, errors };
+};
+
+const ImportBatchesButton = ({
+  cards, onCreated,
+}: { cards: CardRow[]; onCreated: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<CsvRow[]>([]);
+  const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const [fileName, setFileName] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const validCardIds = useMemo(() => new Set(cards.map(c => c.id)), [cards]);
+
+  const handleFile = async (file: File) => {
+    setFileName(file.name);
+    const text = await file.text();
+    const { rows: parsed, errors } = parseCsv(text);
+    // Cross-check card_id exists in current cards list (warn, do not block)
+    const extraErrors: string[] = [];
+    parsed.forEach(r => {
+      if (!validCardIds.has(r.card_id)) {
+        extraErrors.push(`السطر ${r._line}: card_id غير موجود ضمن البطاقات الحالية`);
+      }
+    });
+    setParseErrors([...errors, ...extraErrors]);
+    setRows(parsed);
+  };
+
+  const downloadTemplate = () => {
+    const sampleCard = cards[0]?.id || '00000000-0000-0000-0000-000000000000';
+    const csv = [
+      '# قالب استيراد دفعات أكواد بطاقات الولاء',
+      '# اعمدة مطلوبة: card_id,quantity,duration_days,code_expiry_days',
+      '# اختياري: batch_label,requires_active_warranty (true/false)',
+      'card_id,quantity,duration_days,code_expiry_days,batch_label,requires_active_warranty',
+      `${sampleCard},6,180,90,بطاقة برونزية ٦ أشهر — مايو,true`,
+      `${sampleCard},10,365,60,بطاقة سنوية — يونيو,true`,
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'loyalty-codes-template.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const submit = async () => {
+    if (rows.length === 0) { toast.error('لا توجد صفوف صالحة'); return; }
+    if (parseErrors.length > 0) {
+      const ok = confirm(`يوجد ${parseErrors.length} تحذير/خطأ في الملف. متابعة الاستيراد للصفوف الصالحة فقط؟`);
+      if (!ok) return;
+    }
+    setSubmitting(true);
+    setProgress({ done: 0, total: rows.length });
+    let success = 0;
+    const failures: string[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      try {
+        const expires = new Date(Date.now() + r.code_expiry_days * 86400_000).toISOString();
+        const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
+          p_card_id: r.card_id,
+          p_quantity: r.quantity,
+          p_duration_days: r.duration_days,
+          p_code_expires_at: expires,
+          p_batch_label: r.batch_label,
+          p_requires_active_warranty: r.requires_active_warranty,
+        });
+        if (error) throw error;
+        success++;
+      } catch (e: any) {
+        failures.push(`السطر ${r._line}: ${e?.message || 'فشل'}`);
+      }
+      setProgress({ done: i + 1, total: rows.length });
+    }
+    setSubmitting(false);
+    if (success > 0) {
+      toast.success(`تم إنشاء ${success} دفعة من أصل ${rows.length}`);
+      onCreated();
+    }
+    if (failures.length > 0) {
+      toast.error(`فشل ${failures.length} دفعة. راجع التفاصيل في النافذة.`);
+      setParseErrors(prev => [...prev, ...failures]);
+    } else {
+      setOpen(false);
+      setRows([]);
+      setFileName('');
+      setParseErrors([]);
+      setProgress(null);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!submitting) setOpen(v); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <Upload className="h-4 w-4 ml-1" /> استيراد CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="!overflow-hidden !max-h-none max-w-lg">
+        <DialogHeader><DialogTitle>استيراد دفعات أكواد من CSV</DialogTitle></DialogHeader>
+        <div className="space-y-3 overflow-y-auto max-h-[70vh] px-1 text-sm">
+          <Card className="p-3 text-xs leading-relaxed text-muted-foreground space-y-1">
+            <div className="font-bold text-foreground">صيغة الملف:</div>
+            <div>صف ترويسة:</div>
+            <code className="block bg-muted/50 p-1.5 rounded text-[10px]">card_id,quantity,duration_days,code_expiry_days,batch_label,requires_active_warranty</code>
+            <div>كل سطر بعدها = دفعة واحدة. الأسطر التي تبدأ بـ <code>#</code> تُهمَل.</div>
+            <Button variant="link" size="sm" className="px-0 h-auto text-xs" onClick={downloadTemplate}>
+              <FileSpreadsheet className="h-3 w-3 ml-1" /> تنزيل قالب جاهز
+            </Button>
+          </Card>
+
+          <div>
+            <Label className="text-xs">ملف CSV</Label>
+            <Input
+              type="file"
+              accept=".csv,text/csv"
+              disabled={submitting}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+              }}
+            />
+            {fileName && <p className="text-[10px] text-muted-foreground mt-1">{fileName}</p>}
+          </div>
+
+          {rows.length > 0 && (
+            <Card className="p-2">
+              <div className="text-xs font-bold mb-1">معاينة ({rows.length} دفعة):</div>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {rows.slice(0, 20).map((r, i) => {
+                  const card = cards.find(c => c.id === r.card_id);
+                  return (
+                    <div key={i} className="text-[11px] flex justify-between gap-2 border-b border-border/40 pb-1">
+                      <span className="truncate">
+                        {card?.name_ar || card?.name_en || r.card_id.slice(0, 8)} •{' '}
+                        {r.quantity} كود • {r.duration_days}ي
+                      </span>
+                      <span className="text-muted-foreground shrink-0">ينتهي بعد {r.code_expiry_days}ي</span>
+                    </div>
+                  );
+                })}
+                {rows.length > 20 && (
+                  <div className="text-[10px] text-muted-foreground">… و {rows.length - 20} صف آخر</div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {parseErrors.length > 0 && (
+            <Card className="p-2 border-rose-500/40 bg-rose-500/5">
+              <div className="text-xs font-bold text-rose-600 mb-1">تحذيرات/أخطاء ({parseErrors.length}):</div>
+              <div className="max-h-32 overflow-y-auto space-y-0.5">
+                {parseErrors.map((e, i) => (
+                  <div key={i} className="text-[10px] text-rose-700">{e}</div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {progress && (
+            <div className="text-xs text-muted-foreground text-center">
+              جاري الإنشاء: {progress.done} / {progress.total}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              onClick={submit}
+              disabled={submitting || rows.length === 0}
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : `استيراد ${rows.length} دفعة`}
+            </Button>
+            <Button variant="outline" disabled={submitting} onClick={() => setOpen(false)}>
+              إلغاء
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
