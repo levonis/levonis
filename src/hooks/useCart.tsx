@@ -355,6 +355,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const rfRevealedIds = new Set<string>();
         const rfPriceById = new Map<string, number>();
         const rfMaxStockById = new Map<string, number>();
+        const cappedIds = new Set<string>();
         try {
           const ids = (data || []).map((i: any) => i.id).filter(Boolean);
           (data || []).forEach((it: any) => {
