@@ -899,7 +899,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      setItems(prev => prev.filter((i: any) => i.is_random_filament_revealed || i.is_locked));
+      setItems(prev => prev.filter((i) => i.is_random_filament_revealed || i.is_locked));
       if (hasLocked) {
         toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المكشوفة)');
       } else {
