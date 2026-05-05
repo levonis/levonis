@@ -988,6 +988,8 @@ export const en: TranslationKeys = {
   myorders_no_orders_yet: 'No orders yet',
   myorders_no_orders_desc: 'Start shopping and order your favorite products',
   myorders_browse_products: 'Browse products',
+  myorders_load_more: 'Load more',
+  myorders_loading_more: 'Loading...',
   myorders_tab_all: 'All',
   myorders_tab_pending: 'Awaiting payment',
   myorders_tab_confirmed: 'Confirmed',
