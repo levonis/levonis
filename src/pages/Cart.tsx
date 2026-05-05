@@ -1583,6 +1583,9 @@ const Cart = () => {
         const fullyWalletPaid = !isCodPayment && !_isPreOrderWithPartialPayment;
         if (fullyWalletPaid) {
           await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+          queryClient.invalidateQueries({ queryKey: ['order-detail', orderResult.id] });
+          queryClient.invalidateQueries({ queryKey: ['order-rf-rows', orderResult.id] });
+          queryClient.invalidateQueries({ queryKey: ['my-orders', user.id] });
         }
       } catch (e) {
         console.warn('random filament link/reveal failed', e);
