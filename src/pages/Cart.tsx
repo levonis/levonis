@@ -1190,19 +1190,28 @@ const Cart = () => {
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     const item = items.find(i => i.id === itemId);
     let finalQty = Math.max(1, Math.min(20, quantity));
+    let capped = false;
     if (item) {
-      // Cap by RF max stock
       const rfMax = (item as any).random_filament_max_stock;
-      if (typeof rfMax === 'number' && rfMax > 0) {
-        finalQty = Math.min(finalQty, rfMax);
+      if (typeof rfMax === 'number' && rfMax > 0 && finalQty > rfMax) {
+        finalQty = rfMax;
+        capped = true;
       }
-      // Cap by direct-sale available stock
       const available = getItemAvailableStock(item);
-      if (typeof available === 'number' && available > 0) {
-        finalQty = Math.min(finalQty, available);
+      if (typeof available === 'number' && available > 0 && finalQty > available) {
+        finalQty = available;
+        capped = true;
       }
     }
-    if (item && finalQty === item.quantity) return;
+    if (item && finalQty === item.quantity) {
+      if (capped) {
+        sonnerToast.info(`تم تعديل الكمية تلقائياً إلى الحد الأقصى المتاح (${finalQty})`);
+      }
+      return;
+    }
+    if (capped) {
+      sonnerToast.info(`تم تعديل الكمية تلقائياً إلى الحد الأقصى المتاح (${finalQty})`);
+    }
     wrapWithCartRequestCheck(() => updateQuantity(itemId, finalQty));
   };
 
