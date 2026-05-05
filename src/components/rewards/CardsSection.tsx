@@ -186,6 +186,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
         )}
 
         {user && <RedeemLoyaltyCodeCard />}
+        {user && <LoyaltyCodeHistoryCard />}
 
         {user && (
           <Card>
