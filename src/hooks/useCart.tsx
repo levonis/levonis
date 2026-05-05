@@ -7,6 +7,7 @@ import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
+import { deriveCartSaleType } from '@/lib/cartSaleType';
 
 // Default IQD rate fallback used across the cart when shipping settings haven't
 // loaded yet. Kept in sync with the production exchange rate so prices computed
@@ -1082,10 +1083,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     await fetchPendingCartRequest();
   };
 
-  // Determine the current cart's sale type
-  const cartSaleType = items.length > 0 
-    ? (items.find(i => i.product_id || i.bundle_id || (i as any).rf_offer_id)?.sale_type || 'preorder')
-    : null;
+  // Determine the current cart's sale type (centralized helper covers
+  // product_id / bundle_id / rf_offer_id consistently).
+  const cartSaleType = deriveCartSaleType(items as any);
+
 
   return (
     <CartContext.Provider
