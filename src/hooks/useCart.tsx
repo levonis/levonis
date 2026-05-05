@@ -1,5 +1,6 @@
 // Strict TypeScript — keep CartItem typing tight; do not add @ts-nocheck.
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useShippingSettings } from './useShippingCalculator';
@@ -151,6 +152,7 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
@@ -594,6 +596,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     let pendingRefresh = false;
     const handleChange = () => {
+      // Always invalidate the Cart page's stock-check query so quantities
+      // refresh even if the user is not on Cart.tsx yet.
+      queryClient.invalidateQueries({ queryKey: ['cart-stock-check'] });
+      queryClient.invalidateQueries({ queryKey: ['bundle-max-qty'] });
       if (typeof document !== 'undefined' && document.hidden) {
         pendingRefresh = true;
         return;
@@ -624,7 +630,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       document.removeEventListener('visibilitychange', onVisibility);
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart]);
+  }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart, queryClient]);
 
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
