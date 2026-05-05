@@ -1189,7 +1189,7 @@ const Cart = () => {
   // Wrapped cart actions
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
     const item = items.find(i => i.id === itemId);
-    let finalQty = Math.max(1, Math.min(MAX_QUANTITY_PER_ITEM, quantity));
+    let finalQty = Math.max(1, Math.min(20, quantity));
     if (item) {
       // Cap by RF max stock
       const rfMax = (item as any).random_filament_max_stock;
