@@ -1056,7 +1056,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Check if already in cart
-      const existingItem = items.find(item => (item as any).offer_purchase_id === offerPurchaseId);
+      const existingItem = items.find(item => item.offer_purchase_id === offerPurchaseId);
       if (existingItem) {
         toast.info('هذا المنتج موجود بالفعل في السلة');
         return false;
