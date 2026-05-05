@@ -186,13 +186,12 @@ export default {
           },
         },
         "glass-expand": {
-          "0%": { opacity: "0", transform: "scale(0.7)" },
-          "60%": { opacity: "1" },
+          "0%": { opacity: "0", transform: "scale(0.85)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
         "glass-collapse": {
           "0%": { opacity: "1", transform: "scale(1)" },
-          "100%": { opacity: "0", transform: "scale(0.85)" },
+          "100%": { opacity: "0", transform: "scale(0.92)" },
         },
         "glass-fade-up": {
           "0%": { opacity: "0", transform: "translateY(12px)" },
