@@ -685,6 +685,7 @@ const ProductDetail = () => {
     } catch (err: any) {
       if (err?.message === 'SALE_TYPE_CONFLICT') {
         pendingAddRef.current = { productId: product.id, optionId: selectedOption || undefined, color: selectedColor || undefined, quantity, shippingInfo, saleType: activeSaleType };
+        setSaleTypeConflictMessage(err?.conflict?.messageAr || null);
         setShowSaleTypeConflict(true);
       } else {
         console.error('Add to cart error:', err);
