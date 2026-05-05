@@ -52,6 +52,10 @@ export interface CartItem {
   is_random_filament_revealed?: boolean | null;
   /** Hydrated final IQD price for revealed RF rows. */
   random_filament_price_iqd?: number | null;
+  /** Max stock cap propagated from RF offer summary. */
+  random_filament_max_stock?: number | null;
+  /** True when quantity was clamped server-side to RF max stock. */
+  random_filament_was_capped?: boolean;
   /** Marker set during fetch when an RF row was deleted server-side. */
   __rf_removed?: boolean;
   /** Admin-overridden unit price (IQD). When set, overrides product price. */
