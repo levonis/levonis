@@ -140,7 +140,7 @@ export function useCartCardDiscount(
   const discountsByCategory: CardDiscountResult["discountsByCategory"] = {};
 
   for (const item of items) {
-    if (!item.products || item.is_gift) continue;
+    if (!item.products || !isDiscountEligibleItem(item)) continue;
     const product = item.products as any;
     const categoryId = product.category_id;
     const cardDiscounts: Array<{ card_id: string; discount_amount: number }> = Array.isArray(product.card_discounts) ? product.card_discounts : [];
@@ -157,7 +157,7 @@ export function useCartCardDiscount(
 
     if (isLimited && remaining <= 0) continue; // Limit reached for this category
 
-    const itemDiscount = match.discount_amount * item.quantity;
+    const itemDiscount = match.discount_amount * readQuantity(item);
     totalDiscount += itemDiscount;
 
     if (categoryId) {
