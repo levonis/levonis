@@ -521,6 +521,11 @@ const ImportBatchesButton = ({
     const failures: string[] = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
+      if (!validCardIds.has(r.card_id)) {
+        failures.push(`السطر ${r._line}: card_id غير موجود — تم التخطي`);
+        setProgress({ done: i + 1, total: rows.length });
+        continue;
+      }
       try {
         const expires = new Date(Date.now() + r.code_expiry_days * 86400_000).toISOString();
         const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
