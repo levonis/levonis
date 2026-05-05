@@ -19,7 +19,7 @@ import { ar } from 'date-fns/locale';
 import Footer from '@/components/Footer';
 import MaintenanceTicketDialog from '@/components/printer/MaintenanceTicketDialog';
 import MaintenanceTicketsList from '@/components/printer/MaintenanceTicketsList';
-import WarrantyBenefitsCard from '@/components/WarrantyBenefitsCard';
+
 
 interface EligiblePrinter {
   order_item_id: string;
@@ -592,10 +592,7 @@ const MyPrinters = () => {
           </div>
         </div>
 
-        {/* Warranty loyalty-style benefits */}
-        <div className="mb-4">
-          <WarrantyBenefitsCard />
-        </div>
+
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">

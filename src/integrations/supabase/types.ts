@@ -5492,6 +5492,68 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_card_codes: {
+        Row: {
+          batch_id: string
+          batch_label: string | null
+          card_id: string
+          code: string
+          code_expires_at: string
+          created_at: string
+          created_by: string | null
+          duration_days: number
+          id: string
+          redeemed_at: string | null
+          redeemed_by_user_id: string | null
+          redeemed_user_printer_id: string | null
+          requires_active_warranty: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          batch_label?: string | null
+          card_id: string
+          code: string
+          code_expires_at: string
+          created_at?: string
+          created_by?: string | null
+          duration_days: number
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by_user_id?: string | null
+          redeemed_user_printer_id?: string | null
+          requires_active_warranty?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          batch_label?: string | null
+          card_id?: string
+          code?: string
+          code_expires_at?: string
+          created_at?: string
+          created_by?: string | null
+          duration_days?: number
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by_user_id?: string | null
+          redeemed_user_printer_id?: string | null
+          requires_active_warranty?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_card_codes_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "membership_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_free_shipping_usage: {
         Row: {
           card_id: string
@@ -8622,107 +8684,6 @@ export type Database = {
           },
           {
             foreignKeyName: "printer_subscriptions_user_printer_id_fkey"
-            columns: ["user_printer_id"]
-            isOneToOne: false
-            referencedRelation: "user_printers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      printer_warranty_benefits: {
-        Row: {
-          created_at: string
-          discount_applicable_category_ids: string[] | null
-          discount_max_amount_monthly: number
-          discount_percentage: number
-          free_shipping_applicable_category_ids: string[] | null
-          free_shipping_max_uses_monthly: number
-          free_shipping_methods: Json
-          free_shipping_min_order: number
-          id: string
-          is_active: boolean
-          product_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          discount_applicable_category_ids?: string[] | null
-          discount_max_amount_monthly?: number
-          discount_percentage?: number
-          free_shipping_applicable_category_ids?: string[] | null
-          free_shipping_max_uses_monthly?: number
-          free_shipping_methods?: Json
-          free_shipping_min_order?: number
-          id?: string
-          is_active?: boolean
-          product_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          discount_applicable_category_ids?: string[] | null
-          discount_max_amount_monthly?: number
-          discount_percentage?: number
-          free_shipping_applicable_category_ids?: string[] | null
-          free_shipping_max_uses_monthly?: number
-          free_shipping_methods?: Json
-          free_shipping_min_order?: number
-          id?: string
-          is_active?: boolean
-          product_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "printer_warranty_benefits_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "printer_warranty_benefits_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products_admin"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      printer_warranty_usage: {
-        Row: {
-          benefit_type: string
-          delivery_method_key: string | null
-          id: string
-          order_id: string
-          saved_amount: number
-          used_at: string
-          user_id: string
-          user_printer_id: string
-        }
-        Insert: {
-          benefit_type: string
-          delivery_method_key?: string | null
-          id?: string
-          order_id: string
-          saved_amount?: number
-          used_at?: string
-          user_id: string
-          user_printer_id: string
-        }
-        Update: {
-          benefit_type?: string
-          delivery_method_key?: string | null
-          id?: string
-          order_id?: string
-          saved_amount?: number
-          used_at?: string
-          user_id?: string
-          user_printer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "printer_warranty_usage_user_printer_id_fkey"
             columns: ["user_printer_id"]
             isOneToOne: false
             referencedRelation: "user_printers"
@@ -13949,16 +13910,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      consume_warranty_benefit: {
-        Args: {
-          p_amount: number
-          p_benefit_type: string
-          p_delivery_method_key?: string
-          p_order_id: string
-          p_user_printer_id: string
-        }
-        Returns: boolean
-      }
       convert_points_to_tickets: {
         Args: { points_amount: number }
         Returns: Json
@@ -13966,6 +13917,20 @@ export type Database = {
       convert_points_to_wallet: {
         Args: { points_amount: number }
         Returns: Json
+      }
+      create_loyalty_code_batch: {
+        Args: {
+          p_batch_label?: string
+          p_card_id: string
+          p_code_expires_at: string
+          p_duration_days: number
+          p_quantity: number
+          p_requires_active_warranty?: boolean
+        }
+        Returns: {
+          code: string
+          id: string
+        }[]
       }
       create_notification_if_not_exists: {
         Args: {
@@ -14096,6 +14061,7 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
+      expire_loyalty_card_codes: { Args: never; Returns: number }
       finalize_and_reveal_rf_for_order:
         | { Args: { p_order_id: string }; Returns: undefined }
         | {
@@ -14110,6 +14076,7 @@ export type Database = {
       generate_cart_code: { Args: never; Returns: string }
       generate_conversation_code: { Args: never; Returns: string }
       generate_listing_code: { Args: never; Returns: string }
+      generate_loyalty_code: { Args: { p_length?: number }; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }
@@ -14141,30 +14108,6 @@ export type Database = {
           start_date: string
           store_printer_id: string
           subscription_id: string
-          user_printer_id: string
-        }[]
-      }
-      get_active_warranty_benefits_for_user: {
-        Args: { p_user_id: string }
-        Returns: {
-          activation_date: string
-          discount_applicable_category_ids: string[]
-          discount_max_amount_monthly: number
-          discount_percentage: number
-          discount_used: number
-          expiry_date: string
-          free_shipping_applicable_category_ids: string[]
-          free_shipping_max_uses_monthly: number
-          free_shipping_methods: Json
-          free_shipping_min_order: number
-          free_shipping_used: number
-          is_benefits_active: boolean
-          model_name_ar: string
-          period_end: string
-          period_start: string
-          product_id: string
-          serial_number: string
-          store_printer_id: string
           user_printer_id: string
         }[]
       }
@@ -14406,6 +14349,7 @@ export type Database = {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
       }
+      redeem_loyalty_card_code: { Args: { p_code: string }; Returns: Json }
       refund_wallet_balance: {
         Args: {
           p_amount: number

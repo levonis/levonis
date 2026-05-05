@@ -11,7 +11,7 @@ import { Loader2, Shield, Calendar, Wrench, Package, Clock, ChevronLeft, Printer
 import { format, differenceInDays, differenceInCalendarDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import Footer from '@/components/Footer';
-import WarrantyBenefitsCard from '@/components/WarrantyBenefitsCard';
+
 
 const WarrantyDashboard = () => {
   const { printerId } = useParams<{ printerId: string }>();
@@ -110,8 +110,6 @@ const WarrantyDashboard = () => {
           العودة
         </Button>
 
-        {/* Warranty loyalty-style benefits — only when active */}
-        {!isExpired && <WarrantyBenefitsCard />}
 
         {/* Printer Header */}
         <Card className="overflow-hidden">

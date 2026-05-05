@@ -11,6 +11,7 @@ import { SubTabId } from "./RewardsSubTabs";
 import { LevelCardSkeleton } from "./SkeletonLoaders";
 import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
+import RedeemLoyaltyCodeCard from "@/components/rewards/RedeemLoyaltyCodeCard";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
 import { useNumberFormat } from "@/lib/i18n/numberFormat";
@@ -182,6 +183,8 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
             </CardContent>
           </Card>
         )}
+
+        {user && <RedeemLoyaltyCodeCard />}
 
         {user && (
           <Card>
