@@ -77,6 +77,7 @@ const ProductDetail = () => {
   const { user, isAdmin } = useAuth();
   const { addToCart, forceAddToCart } = useCart();
   const [showSaleTypeConflict, setShowSaleTypeConflict] = useState(false);
+  const [saleTypeConflictMessage, setSaleTypeConflictMessage] = useState<string | null>(null);
   const pendingAddRef = useRef<{ productId: string; optionId?: string; color?: string; quantity: number; shippingInfo?: { index: number; name_ar: string }; saleType: 'direct' | 'preorder' } | null>(null);
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState(0);
