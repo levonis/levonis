@@ -108,18 +108,22 @@ export default function RedeemLoyaltyCodeCard() {
           </p>
           <Input
             value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyError) setWarrantyError(false); }}
+            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyReason) setWarrantyReason(null); }}
             placeholder="مثال: A1B2C3D4E5F6"
             className="font-mono tracking-wider text-center"
             autoFocus
           />
-          {warrantyError && (
+          {warrantyReason && (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                  لا يمكن تفعيل هذا الكود — لا توجد لديك طابعة فعّالة في الضمان أو أن ضمان طابعتك منتهي.
-                  يرجى تفعيل الطابعة في الضمان أولاً.
+                <div className="space-y-1 text-right">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    {WARRANTY_DETAILS[warrantyReason].title}
+                  </p>
+                  <p className="text-xs text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
+                    {WARRANTY_DETAILS[warrantyReason].desc}
+                  </p>
                 </div>
               </div>
               <Button
@@ -128,7 +132,7 @@ export default function RedeemLoyaltyCodeCard() {
                 className="w-full border-amber-500/50 hover:bg-amber-500/20"
                 onClick={() => { setOpen(false); navigate('/activate-printer'); }}
               >
-                الذهاب لتفعيل الطابعة
+                {WARRANTY_DETAILS[warrantyReason].cta}
               </Button>
             </div>
           )}
