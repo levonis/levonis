@@ -184,6 +184,8 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
           </Card>
         )}
 
+        {user && <RedeemLoyaltyCodeCard />}
+
         {user && (
           <Card>
             <Collapsible open={expandedCoupons} onOpenChange={setExpandedCoupons}>
