@@ -1273,6 +1273,15 @@ const Cart = () => {
         });
         return;
       }
+      // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع من المحفظة فقط — تحقق من كفاية الرصيد قبل فتح الحوار
+      if (hasRandomFilamentItems && walletBalance < total) {
+        toast({
+          title: 'رصيد المحفظة غير كافٍ',
+          description: `الفلمنت العشوائي يُدفع من المحفظة فقط. رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(total)} د.ع`,
+          variant: "destructive",
+        });
+        return;
+      }
       setShowDirectSaleDialog(true);
       return;
     }
