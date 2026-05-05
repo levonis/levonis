@@ -1374,9 +1374,13 @@ const Cart = () => {
       const { data: orderNumberData } = await supabase.rpc('generate_order_number');
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      // Wallet deduction for direct sale — التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة
-      const walletDeductionAmount = data.useWallet ? Math.min(data.walletDeduction, orderSubtotal) : 0;
-      const codRemaining = (orderSubtotal + deliveryFeeCalc) - walletDeductionAmount;
+      // Wallet deduction for direct sale — افتراضياً التوصيل عند الاستلام، إلا للفلمنت العشوائي حيث يُحسم التوصيل أيضاً من المحفظة
+      const orderGrandTotal = orderSubtotal + deliveryFeeCalc;
+      const walletCap = hasRandomFilamentItems ? orderGrandTotal : orderSubtotal;
+      const walletDeductionAmount = data.useWallet
+        ? Math.min(data.walletDeduction || (hasRandomFilamentItems ? orderGrandTotal : 0), walletCap)
+        : 0;
+      const codRemaining = orderGrandTotal - walletDeductionAmount;
 
       // Deduct from wallet if applicable
       if (walletDeductionAmount > 0) {
