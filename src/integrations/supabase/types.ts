@@ -13813,6 +13813,20 @@ export type Database = {
         }
         Returns: Json
       }
+      audit_product_stock_discrepancies: {
+        Args: never
+        Returns: {
+          actual_sold_qty: number
+          current_total_stock: number
+          expected_remaining: number
+          missing_colors: string[]
+          product_id: string
+          product_name: string
+          recorded_sold_count: number
+          shortfall: number
+          total_purchased: number
+        }[]
+      }
       auto_award_expired_seasons: { Args: never; Returns: Json }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       ban_user_for_unreceived_random_filament: {
