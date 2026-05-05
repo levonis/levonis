@@ -1282,14 +1282,17 @@ const Cart = () => {
         });
         return;
       }
-      // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع من المحفظة فقط — تحقق من كفاية الرصيد قبل فتح الحوار
-      if (hasRandomFilamentItems && walletBalance < total) {
-        toast({
-          title: 'رصيد المحفظة غير كافٍ',
-          description: `الفلمنت العشوائي يُدفع من المحفظة فقط. رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(total)} د.ع`,
-          variant: "destructive",
-        });
-        return;
+      // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع (المنتجات + التوصيل) من المحفظة مسبقاً
+      {
+        const rfRequired = total + deliveryFee;
+        if (hasRandomFilamentItems && walletBalance < rfRequired) {
+          toast({
+            title: 'رصيد المحفظة غير كافٍ',
+            description: `الفلمنت العشوائي يُدفع من المحفظة (المنتجات + التوصيل). رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(rfRequired)} د.ع`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
       setShowDirectSaleDialog(true);
       return;
