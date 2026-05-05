@@ -581,6 +581,51 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user?.id, fetchCart]);
 
+  // Realtime: when stock of a product currently sitting in the user's cart
+  // changes (e.g. another user's RF reveal deducted option_stocks via
+  // finalize_and_reveal_rf_for_order), refetch the cart so quantities and
+  // availability reflect reality immediately.
+  useEffect(() => {
+    if (!user?.id) return;
+    const productIds = Array.from(
+      new Set(items.map((i) => i.products?.id).filter(Boolean) as string[])
+    );
+    if (productIds.length === 0) return;
+
+    let pendingRefresh = false;
+    const handleChange = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        pendingRefresh = true;
+        return;
+      }
+      fetchCart();
+    };
+
+    const channels = productIds.map((pid) =>
+      supabase
+        .channel(`cart-product-${user.id}-${pid}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${pid}` },
+          handleChange
+        )
+        .subscribe()
+    );
+
+    const onVisibility = () => {
+      if (!document.hidden && pendingRefresh) {
+        pendingRefresh = false;
+        fetchCart();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      channels.forEach((ch) => supabase.removeChannel(ch));
+    };
+  }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart]);
+
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
