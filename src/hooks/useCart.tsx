@@ -377,7 +377,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           }
           // fetch offer prices + stock for new-flow RF rows; auto-cap qty against available stock
           const offerIds = Array.from(new Set((data || []).map((i: any) => i.rf_offer_id).filter(Boolean)));
-          const cappedIds = new Set<string>();
           if (offerIds.length > 0) {
             const { data: offerRows } = await (supabase as any)
               .from('random_filament_offers')
