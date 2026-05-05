@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { CartItem } from "./useCart";
+import { isDiscountEligibleItem, readQuantity } from "@/lib/cartItemGuards";
 
 export interface CardDiscountResult {
   totalDiscount: number;
