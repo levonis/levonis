@@ -1,4 +1,4 @@
-// @ts-nocheck
+// Strict TypeScript — keep CartItem typing tight; do not add @ts-nocheck.
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
