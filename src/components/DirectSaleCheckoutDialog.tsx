@@ -29,6 +29,7 @@ interface DirectSaleCheckoutDialogProps {
   isProcessing: boolean;
   walletBalance: number;
   hasActiveDirectOrders: boolean;
+  forceWalletPayment?: boolean;
 }
 
 const DirectSaleCheckoutDialog = ({
@@ -42,6 +43,7 @@ const DirectSaleCheckoutDialog = ({
   isProcessing,
   walletBalance,
   hasActiveDirectOrders,
+  forceWalletPayment = false,
 }: DirectSaleCheckoutDialogProps) => {
   const [notes, setNotes] = useState('');
   const [countdown, setCountdown] = useState(5);
