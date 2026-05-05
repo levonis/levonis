@@ -1273,6 +1273,15 @@ const Cart = () => {
         });
         return;
       }
+      // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع من المحفظة فقط — تحقق من كفاية الرصيد قبل فتح الحوار
+      if (hasRandomFilamentItems && walletBalance < total) {
+        toast({
+          title: 'رصيد المحفظة غير كافٍ',
+          description: `الفلمنت العشوائي يُدفع من المحفظة فقط. رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(total)} د.ع`,
+          variant: "destructive",
+        });
+        return;
+      }
       setShowDirectSaleDialog(true);
       return;
     }
@@ -1301,6 +1310,20 @@ const Cart = () => {
     setIsDirectSaleProcessing(true);
 
     try {
+      // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات
+      if (hasRandomFilamentItems) {
+        const productsTotal = total - (appliedCoupon ? calculateDiscount() : 0);
+        if (!data.useWallet || (wallet?.balance || 0) < productsTotal) {
+          toast({
+            title: 'الدفع من المحفظة مطلوب',
+            description: `الفلمنت العشوائي يُدفع من المحفظة فقط ويجب أن يكون الرصيد كافياً (${formatPrice(productsTotal)} د.ع).`,
+            variant: 'destructive',
+          });
+          setIsDirectSaleProcessing(false);
+          return;
+        }
+      }
+
       // Check address
       const { data: addresses, error: addressError } = await supabase
         .from('user_addresses')
