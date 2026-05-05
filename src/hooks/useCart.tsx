@@ -632,6 +632,46 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart, queryClient]);
 
+  // Global always-on listener: ANY random_filament_orders INSERT/UPDATE may
+  // deduct stock from products that any user has in their cart. Runs even when
+  // the cart is empty so opening Cart immediately reflects fresh stock/prices.
+  useEffect(() => {
+    if (!user?.id) return;
+    let pendingRefresh = false;
+    const refresh = () => {
+      queryClient.invalidateQueries({ queryKey: ['cart-stock-check'] });
+      queryClient.invalidateQueries({ queryKey: ['bundle-max-qty'] });
+      queryClient.invalidateQueries({ queryKey: ['random-filament-offers'] });
+      queryClient.invalidateQueries({ queryKey: ['random-filament-section-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['product'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (typeof document !== 'undefined' && document.hidden) {
+        pendingRefresh = true;
+        return;
+      }
+      fetchCart();
+    };
+    const channel = supabase
+      .channel(`cart-rf-global-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'random_filament_orders' },
+        refresh
+      )
+      .subscribe();
+    const onVisibility = () => {
+      if (!document.hidden && pendingRefresh) {
+        pendingRefresh = false;
+        fetchCart();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, fetchCart, queryClient]);
+
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
