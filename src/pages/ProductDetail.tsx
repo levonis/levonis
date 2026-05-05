@@ -77,6 +77,7 @@ const ProductDetail = () => {
   const { user, isAdmin } = useAuth();
   const { addToCart, forceAddToCart } = useCart();
   const [showSaleTypeConflict, setShowSaleTypeConflict] = useState(false);
+  const [saleTypeConflictMessage, setSaleTypeConflictMessage] = useState<string | null>(null);
   const pendingAddRef = useRef<{ productId: string; optionId?: string; color?: string; quantity: number; shippingInfo?: { index: number; name_ar: string }; saleType: 'direct' | 'preorder' } | null>(null);
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -684,6 +685,7 @@ const ProductDetail = () => {
     } catch (err: any) {
       if (err?.message === 'SALE_TYPE_CONFLICT') {
         pendingAddRef.current = { productId: product.id, optionId: selectedOption || undefined, color: selectedColor || undefined, quantity, shippingInfo, saleType: activeSaleType };
+        setSaleTypeConflictMessage(err?.conflict?.messageAr || null);
         setShowSaleTypeConflict(true);
       } else {
         console.error('Add to cart error:', err);
@@ -1490,7 +1492,7 @@ const ProductDetail = () => {
               {t('pd_clear_cart_title')}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('pd_clear_cart_desc')}
+              {saleTypeConflictMessage || t('pd_clear_cart_desc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">

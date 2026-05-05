@@ -7,7 +7,7 @@ import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
-import { deriveCartSaleType, type SaleType } from '@/lib/cartSaleType';
+import { deriveCartSaleType, detectSaleTypeConflict, type SaleType } from '@/lib/cartSaleType';
 
 // Default IQD rate fallback used across the cart when shipping settings haven't
 // loaded yet. Kept in sync with the production exchange rate so prices computed
@@ -580,14 +580,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Check for sale type conflict
-      const existingProductItems = items.filter(i => i.product_id);
-      if (existingProductItems.length > 0) {
-        const currentCartSaleType = existingProductItems[0]?.sale_type || 'preorder';
-        if (currentCartSaleType !== saleType) {
-          // Signal conflict - let the caller handle confirmation
-          throw new Error('SALE_TYPE_CONFLICT');
-        }
+      // Check for sale_type conflict via centralized helper.
+      // Policy: the existing cart's sale_type wins; the new item must match
+      // or the user has to clear the cart first.
+      const conflict = detectSaleTypeConflict(items as any, saleType);
+      if (conflict) {
+        // Signal conflict - let the caller handle confirmation UI.
+        const err: any = new Error('SALE_TYPE_CONFLICT');
+        err.conflict = conflict;
+        throw err;
       }
 
       // Get product data to find color image
@@ -995,13 +996,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Check for sale type conflict
-      const existingProductItems = items.filter(i => i.product_id || i.bundle_id);
-      if (existingProductItems.length > 0) {
-        const currentCartSaleType = existingProductItems[0]?.sale_type || 'preorder';
-        if (currentCartSaleType !== saleType) {
-          throw new Error('SALE_TYPE_CONFLICT');
-        }
+      // Check for sale_type conflict via centralized helper.
+      const conflict = detectSaleTypeConflict(items as any, saleType);
+      if (conflict) {
+        const err: any = new Error('SALE_TYPE_CONFLICT');
+        err.conflict = conflict;
+        throw err;
       }
 
       // Check if this bundle already exists in the cart
