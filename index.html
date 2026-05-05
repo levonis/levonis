@@ -43,10 +43,15 @@
               }
               if (!first) return;
               var src = first.image_url;
-              // Match the size requested by the on-page <img> (snapped to 1200 for hero).
+              // Match EXACTLY the URL the React component will request, otherwise
+              // the browser treats the preload as unused and re-downloads. The
+              // BannerImage component uses width=800 for the first/LCP banner
+              // (mobile-sized) and width=1200 for the rest. Use the smaller, mobile-
+              // optimized variant here since the preload only matters for the LCP.
+              var w = (window.innerWidth && window.innerWidth > 900) ? 1200 : 800;
               if (src.indexOf('/storage/v1/object/public/') !== -1) {
                 src = src.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
-                  + (src.indexOf('?') === -1 ? '?' : '&') + 'width=1200&quality=75&resize=contain';
+                  + (src.indexOf('?') === -1 ? '?' : '&') + 'width=' + w + '&quality=75&resize=contain';
               }
               var link = document.createElement('link');
               link.rel = 'preload';
