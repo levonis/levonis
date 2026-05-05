@@ -801,7 +801,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     // Revealed random-filament items cannot change quantity
-    const target = items.find(i => i.id === itemId) as any;
+    const target = items.find(i => i.id === itemId);
     if (target?.is_random_filament_revealed || target?.is_locked) {
       toast.error('لا يمكن تعديل كمية طلب الفلمنت العشوائي بعد الكشف عن اللون');
       return;
