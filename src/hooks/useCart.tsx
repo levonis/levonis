@@ -587,7 +587,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Check for sale_type conflict via centralized helper.
       // Policy: the existing cart's sale_type wins; the new item must match
       // or the user has to clear the cart first.
-      const conflict = detectSaleTypeConflict(items as any, saleType);
+      const conflict = detectSaleTypeConflict(items, saleType);
       if (conflict) {
         // Signal conflict - let the caller handle confirmation UI.
         const err: any = new Error('SALE_TYPE_CONFLICT');
@@ -1001,7 +1001,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       // Check for sale_type conflict via centralized helper.
-      const conflict = detectSaleTypeConflict(items as any, saleType);
+      const conflict = detectSaleTypeConflict(items, saleType);
       if (conflict) {
         const err: any = new Error('SALE_TYPE_CONFLICT');
         err.conflict = conflict;
