@@ -14062,6 +14062,7 @@ export type Database = {
         Returns: Json
       }
       expire_loyalty_card_codes: { Args: never; Returns: number }
+      expire_loyalty_codes_and_cards: { Args: never; Returns: undefined }
       finalize_and_reveal_rf_for_order:
         | { Args: { p_order_id: string }; Returns: undefined }
         | {
