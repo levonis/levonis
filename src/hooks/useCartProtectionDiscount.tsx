@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { CartItem } from './useCart';
+import { isDirectSaleItem, isDiscountEligibleItem, readQuantity } from '@/lib/cartItemGuards';
 
 export interface CartProtectionDiscount {
   planId: string;
@@ -46,9 +47,10 @@ export const useCartProtectionDiscount = (items: CartItem[], getItemPrice: (item
         const planCategories: string[] = plan.parts_discount_categories || [];
         if (planCategories.length === 0) continue;
 
-        // Find eligible cart items — direct-sale only.
+        // Find eligible cart items — direct-sale only & discount-eligible.
         const eligibleItems = items.filter(item =>
-          (item.sale_type ?? '').toString().toLowerCase() === 'direct' &&
+          isDiscountEligibleItem(item) &&
+          isDirectSaleItem(item) &&
           item.products?.category_id &&
           planCategories.includes(item.products.category_id)
         );
@@ -85,10 +87,11 @@ export const useCartProtectionDiscount = (items: CartItem[], getItemPrice: (item
         let totalDiscount = 0;
         for (const item of eligibleItems) {
           const itemPrice = getItemPrice(item);
+          const qty = readQuantity(item);
           if (plan.parts_discount_type === 'percentage') {
-            totalDiscount += Math.round(itemPrice * item.quantity * (plan.parts_discount_value / 100));
+            totalDiscount += Math.round(itemPrice * qty * (plan.parts_discount_value / 100));
           } else {
-            totalDiscount += Math.min(plan.parts_discount_value, itemPrice) * item.quantity;
+            totalDiscount += Math.min(plan.parts_discount_value, itemPrice) * qty;
           }
         }
 

@@ -2,6 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { CartItem } from "./useCart";
+import {
+  isDirectSaleItem,
+  isGiftItem,
+  isDiscountEligibleItem,
+  readQuantity,
+} from "@/lib/cartItemGuards";
 
 /**
  * OFFICIAL WARRANTY BENEFITS ONLY.
@@ -82,8 +88,7 @@ export function useActiveWarrantyBenefits() {
 
 // Warranty benefits apply ONLY to direct-sale items. Preorder/sea/air items
 // never qualify for the percentage discount or the free shipping perk.
-const isDirectItem = (item: CartItem) =>
-  (item.sale_type ?? '').toString().toLowerCase() === 'direct';
+const isDirectItem = (item: CartItem) => isDirectSaleItem(item);
 
 function computeDiscount(
   rate: number,
@@ -95,11 +100,11 @@ function computeDiscount(
 ): number {
   let eligibleSubtotal = 0;
   for (const item of items) {
-    if (item.is_gift) continue;
+    if (!isDiscountEligibleItem(item)) continue;
     if (!isDirectItem(item)) continue;
     const catId = (item.products as any)?.category_id;
     if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
-      eligibleSubtotal += getItemPrice(item) * item.quantity;
+      eligibleSubtotal += getItemPrice(item) * readQuantity(item);
     }
   }
   if (rate > 0 && remaining > 0 && eligibleSubtotal > 0) {
@@ -121,7 +126,7 @@ export function useCartWarrantyBenefits(
 
   // Free shipping is granted only when the entire (non-gift) cart is direct
   // sale, since shipping is charged per-order and cannot be partially waived.
-  const nonGiftItems = items.filter((i) => !i.is_gift);
+  const nonGiftItems = items.filter((i) => !isGiftItem(i));
   const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
 
   for (const w of (warranties || []).filter((x) => x.is_benefits_active)) {

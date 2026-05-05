@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { CartItem } from "./useCart";
+import { isDiscountEligibleItem, readQuantity } from "@/lib/cartItemGuards";
 
 export interface CardDiscountResult {
   totalDiscount: number;
@@ -139,7 +140,7 @@ export function useCartCardDiscount(
   const discountsByCategory: CardDiscountResult["discountsByCategory"] = {};
 
   for (const item of items) {
-    if (!item.products || item.is_gift) continue;
+    if (!item.products || !isDiscountEligibleItem(item)) continue;
     const product = item.products as any;
     const categoryId = product.category_id;
     const cardDiscounts: Array<{ card_id: string; discount_amount: number }> = Array.isArray(product.card_discounts) ? product.card_discounts : [];
@@ -156,7 +157,7 @@ export function useCartCardDiscount(
 
     if (isLimited && remaining <= 0) continue; // Limit reached for this category
 
-    const itemDiscount = match.discount_amount * item.quantity;
+    const itemDiscount = match.discount_amount * readQuantity(item);
     totalDiscount += itemDiscount;
 
     if (categoryId) {
@@ -189,10 +190,10 @@ export function useCartCardDiscount(
   if (discountCats.length > 0) {
     eligibleSubtotal = 0;
     for (const item of items) {
-      if (!item.products || item.is_gift) continue;
+      if (!item.products || !isDiscountEligibleItem(item)) continue;
       const catId = (item.products as any).category_id;
       if (catId && discountCats.includes(catId)) {
-        eligibleSubtotal += getItemPrice(item) * item.quantity;
+        eligibleSubtotal += getItemPrice(item) * readQuantity(item);
       }
     }
   }
