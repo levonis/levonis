@@ -157,7 +157,7 @@ const Cart = () => {
   );
 
   // الفلمنت العشوائي يجب أن يُدفع من المحفظة فقط (سواء حجز مسبق أو بيع مباشر)
-  const hasRandomFilamentItems = items.some((item: any) => (item as any).is_random_filament);
+  const hasRandomFilamentItems = items.some((item: any) => item.is_random_filament);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -422,7 +422,7 @@ const Cart = () => {
   });
 
   // ── Stock validation for direct sale items ──
-  const directProductIds = [...new Set(items.filter(i => (i as any).sale_type === 'direct' && i.product_id).map(i => i.product_id!))];
+  const directProductIds = [...new Set(items.filter(i => i.sale_type === 'direct' && i.product_id).map(i => i.product_id!))];
   const { data: stockDataMap } = useQuery({
     queryKey: ['cart-stock-check', directProductIds.join(',')],
     queryFn: async () => {
@@ -440,7 +440,7 @@ const Cart = () => {
   });
 
   const getItemAvailableStock = (item: CartItem): number | null => {
-    if ((item as any).sale_type !== 'direct' || !item.product_id) return null;
+    if (item.sale_type !== 'direct' || !item.product_id) return null;
     const product = stockDataMap?.[item.product_id];
     if (!product) return null;
     const colors = Array.isArray(product.colors) ? product.colors : [];
@@ -1421,9 +1421,9 @@ const Cart = () => {
             ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
             : null;
 
-          const isDirect = (item as any).sale_type === 'direct';
+          const isDirect = item.sale_type === 'direct';
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = (item as any).is_gift ? 0 : (isRandomFilament ? (rfPriceByCartItem.get(item.id) || 0) : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults)));
+          const itemPrice = item.is_gift ? 0 : (isRandomFilament ? (rfPriceByCartItem.get(item.id) || 0) : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults)));
 
           const productName = isRandomFilament
             ? 'Mystery Random Filament'
@@ -1450,7 +1450,7 @@ const Cart = () => {
             selected_option: isRandomFilament ? null : (itemOption?.name_ar || null),
             product_name: productName,
             product_name_ar: productNameAr,
-            is_gift: !!(item as any).is_gift,
+            is_gift: !!item.is_gift,
           };
         });
 
@@ -1504,7 +1504,7 @@ const Cart = () => {
             : (item.products?.name_ar || item.products?.name || 'منتج');
           const color = (item as any).selected_color;
           const option = (item as any).product_options?.name_ar;
-          const shippingOpt = (item as any).shipping_option_name_ar;
+          const shippingOpt = item.shipping_option_name_ar;
           let detail = `${idx + 1}. ${name} × ${item.quantity}`;
           if (color) detail += `\n   🎨 اللون: ${color}`;
           if (option) detail += `\n   📐 الخيار: ${option}`;
@@ -1837,7 +1837,7 @@ const Cart = () => {
             : (item.products?.name_ar || item.products?.name || 'منتج');
           const color = (item as any).selected_color;
           const option = (item as any).product_options?.name_ar;
-          const shippingOpt = (item as any).shipping_option_name_ar;
+          const shippingOpt = item.shipping_option_name_ar;
           let detail = `${idx + 1}. ${name} × ${item.quantity}`;
           if (color) detail += `\n   🎨 اللون: ${color}`;
           if (option) detail += `\n   📐 الخيار: ${option}`;
@@ -1916,7 +1916,7 @@ const Cart = () => {
             (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
           
           const bundle = isBundle ? (item as any).product_bundles : null;
-          const itemPrice = (item as any).is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
+          const itemPrice = item.is_gift ? 0 : (isBundle ? Number(bundle?.bundle_price || 0) : getGuardedCartItemPrice(item as any, usdToIqd, codDefaults));
 
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
@@ -1937,10 +1937,10 @@ const Cart = () => {
             selected_color: itemColor || null,
             color_image_url: (item as any).color_image_url || null,
             selected_option: itemOption?.name_ar || null,
-            shipping_option_name_ar: (item as any).shipping_option_name_ar || null,
+            shipping_option_name_ar: item.shipping_option_name_ar || null,
             product_name: productName,
             product_name_ar: productNameAr,
-            is_gift: !!(item as any).is_gift,
+            is_gift: !!item.is_gift,
           };
         });
 
@@ -2001,7 +2001,7 @@ const Cart = () => {
           ? (customRequest?.product_name || 'طلب مخصص')
           : (item.products?.name_ar || 'منتج');
         
-        const isDirect = (item as any).sale_type === 'direct';
+        const isDirect = item.sale_type === 'direct';
         const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
         
         // Use product_options data directly from the cart item
@@ -2314,7 +2314,7 @@ const Cart = () => {
                 // Group items by product + option + color combination
                 const groupedItems = items.reduce((acc, item) => {
                   // Random filament: render each as single mystery item (never grouped)
-                  if ((item as any).is_random_filament) {
+                  if (item.is_random_filament) {
                     acc.push({ type: 'single', items: [item] });
                     return acc;
                   }
@@ -2362,7 +2362,7 @@ const Cart = () => {
                     const bundlePrice = Number(bundle.bundle_price);
                     const isRemoving = removingItemIds.has(item.id);
                     const bundleMaxQty = item.bundle_id && bundleMaxQtyMap ? (bundleMaxQtyMap[item.bundle_id] ?? 99) : 99;
-                    const isDirect = (item as any).sale_type === 'direct';
+                    const isDirect = item.sale_type === 'direct';
                     const effectiveMax = isDirect ? bundleMaxQty : 99;
                     const handleAnimatedRemove = () => {
                       setRemovingItemIds(prev => new Set(prev).add(item.id));
@@ -2478,10 +2478,10 @@ const Cart = () => {
                       ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
                       : null;
                     
-                    const isDirect = (item as any).sale_type === 'direct';
-                    const isGift = !!(item as any).is_gift;
-                    const isLocked = !!(item as any).is_locked;
-                    const isRandomFilamentItem = !!(item as any).is_random_filament;
+                    const isDirect = item.sale_type === 'direct';
+                    const isGift = !!item.is_gift;
+                    const isLocked = !!item.is_locked;
+                    const isRandomFilamentItem = !!item.is_random_filament;
                     const itemPrice = isGift
                       ? 0
                       : isRandomFilamentItem
@@ -2529,7 +2529,7 @@ const Cart = () => {
                         )}
                         <div className="flex gap-2.5 sm:gap-4">
                           {/* Product Image - compact on mobile. RF items show wavy mystery image. */}
-                          {(item as any).is_random_filament ? (
+                          {item.is_random_filament ? (
                             <div className="flex-shrink-0 w-16 h-16 sm:w-24 sm:h-24 rounded-lg border border-primary/40 overflow-hidden relative">
                               <WavyColors seed={item.id} />
                               <div className="absolute inset-0 flex items-center justify-center bg-background/20">
@@ -2553,7 +2553,7 @@ const Cart = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-1">
                               <div className="min-w-0 flex-1">
-                                {(item as any).is_random_filament ? (
+                                {item.is_random_filament ? (
                                   <div className="font-bold text-xs sm:text-sm text-foreground line-clamp-1 flex items-center gap-1">
                                     <Sparkles className="h-3 w-3 text-primary shrink-0" />
                                     فلمنت عشوائي
@@ -2574,7 +2574,7 @@ const Cart = () => {
                                 )}
                                 
                                 {/* Option/Color/Shipping tags inline — hidden for RF (mystery) */}
-                                {!(item as any).is_random_filament && (itemOption || colorData || (item as any).shipping_option_name_ar) && (
+                                {!item.is_random_filament && (itemOption || colorData || item.shipping_option_name_ar) && (
                                   <div className="flex flex-wrap gap-1 mt-0.5">
                                     {itemOption && (
                                       <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{itemOption.name_ar}</span>
@@ -2585,12 +2585,12 @@ const Cart = () => {
                                         {colorData.name_ar}
                                       </span>
                                     )}
-                                    {(item as any).shipping_option_name_ar && (
-                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{translateShippingOption((item as any).shipping_option_name_ar, t)}</span>
+                                    {item.shipping_option_name_ar && (
+                                      <span className="text-[10px] text-muted-foreground bg-border/30 px-1.5 py-0.5 rounded">{translateShippingOption(item.shipping_option_name_ar, t)}</span>
                                     )}
                                   </div>
                                 )}
-                                {(item as any).is_random_filament && (
+                                {item.is_random_filament && (
                                   <div className="text-[10px] text-muted-foreground mt-0.5">
                                     سيتم الكشف عن المنتج واللون عند التوصيل
                                   </div>
