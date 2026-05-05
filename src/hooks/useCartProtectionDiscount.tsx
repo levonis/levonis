@@ -48,7 +48,7 @@ export const useCartProtectionDiscount = (items: CartItem[], getItemPrice: (item
 
         // Find eligible cart items — direct-sale only.
         const eligibleItems = items.filter(item =>
-          ((item as any).sale_type ?? '').toString().toLowerCase() === 'direct' &&
+          (item.sale_type ?? '').toString().toLowerCase() === 'direct' &&
           item.products?.category_id &&
           planCategories.includes(item.products.category_id)
         );

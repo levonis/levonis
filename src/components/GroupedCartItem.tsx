@@ -107,9 +107,9 @@ const GroupedCartItem = ({
             </div>
             
             {items.map((item) => {
-              const shippingName = (item as any).shipping_option_name_ar || 'شحن افتراضي';
-              const isGift = !!(item as any).is_gift;
-              const isLocked = !!(item as any).is_locked;
+              const shippingName = item.shipping_option_name_ar || 'شحن افتراضي';
+              const isGift = !!item.is_gift;
+              const isLocked = !!item.is_locked;
               const itemPrice = isGift ? 0 : calculateItemPrice(item);
               const isRemoving = removingIds.has(item.id);
               const isItemOOS = outOfStockItemIds.has(item.id);

@@ -7,7 +7,7 @@ import { getGuardedCartItemPrice } from '@/lib/priceGuard';
 import { useCodDefaults } from './useCodDefaults';
 import { toast } from 'sonner';
 import { trackMetaEvent } from '@/lib/metaPixel';
-import { deriveCartSaleType } from '@/lib/cartSaleType';
+import { deriveCartSaleType, type SaleType } from '@/lib/cartSaleType';
 
 // Default IQD rate fallback used across the cart when shipping settings haven't
 // loaded yet. Kept in sync with the production exchange rate so prices computed
@@ -21,6 +21,8 @@ export interface CartItem {
   product_id: string | null;
   custom_request_id: string | null;
   bundle_id?: string | null;
+  /** Random Filament offer link — items linked here go through RF flow. */
+  rf_offer_id?: string | null;
   offer_purchase_id?: string | null;
   quantity: number;
   product_option_id?: string | null;
@@ -29,7 +31,27 @@ export interface CartItem {
   option_image_url?: string | null;
   shipping_option_index?: number | null;
   shipping_option_name_ar?: string | null;
-  sale_type?: string | null;
+  /**
+   * Cart item sale_type. Source of truth lives on the linked entity
+   * (product / bundle / rf_offer) and is copied onto the row at insert.
+   * Use helpers from `@/lib/cartSaleType` instead of reading directly.
+   */
+  sale_type?: SaleType | null;
+  // ---- Gift / locked / random-filament metadata ----
+  /** True when the row was inserted as a gift (price forced to 0). */
+  is_gift?: boolean | null;
+  /** Gift category, e.g. competition / red-envelope / membership. */
+  gift_type?: string | null;
+  /** Source id for the gift (envelope id, prize id, etc.). */
+  gift_id?: string | null;
+  /** Locked row that the user cannot remove/edit (e.g. revealed RF). */
+  is_locked?: boolean | null;
+  /** True when the row belongs to the Random Filament flow. */
+  is_random_filament?: boolean | null;
+  /** True after RF order is revealed and the actual product is shown. */
+  is_random_filament_revealed?: boolean | null;
+  /** Admin-overridden unit price (IQD). When set, overrides product price. */
+  admin_set_price?: number | null;
   products?: {
     id: string;
     name: string;
@@ -46,6 +68,8 @@ export interface CartItem {
     pre_order_shipping_options?: any;
     shipping_type?: string | null;
     category_id?: string | null;
+    cod_enabled?: boolean | null;
+    link_direct_commission_to_cod?: boolean | null;
     categories?: {
       id: string;
       tax_rate: number | null;

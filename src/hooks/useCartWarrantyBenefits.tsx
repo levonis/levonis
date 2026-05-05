@@ -83,7 +83,7 @@ export function useActiveWarrantyBenefits() {
 // Warranty benefits apply ONLY to direct-sale items. Preorder/sea/air items
 // never qualify for the percentage discount or the free shipping perk.
 const isDirectItem = (item: CartItem) =>
-  ((item as any).sale_type ?? '').toString().toLowerCase() === 'direct';
+  (item.sale_type ?? '').toString().toLowerCase() === 'direct';
 
 function computeDiscount(
   rate: number,
@@ -95,7 +95,7 @@ function computeDiscount(
 ): number {
   let eligibleSubtotal = 0;
   for (const item of items) {
-    if ((item as any).is_gift) continue;
+    if (item.is_gift) continue;
     if (!isDirectItem(item)) continue;
     const catId = (item.products as any)?.category_id;
     if (discountCats.length === 0 || (catId && discountCats.includes(catId))) {
@@ -121,7 +121,7 @@ export function useCartWarrantyBenefits(
 
   // Free shipping is granted only when the entire (non-gift) cart is direct
   // sale, since shipping is charged per-order and cannot be partially waived.
-  const nonGiftItems = items.filter((i) => !(i as any).is_gift);
+  const nonGiftItems = items.filter((i) => !i.is_gift);
   const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
 
   for (const w of (warranties || []).filter((x) => x.is_benefits_active)) {

@@ -139,7 +139,7 @@ export function useCartCardDiscount(
   const discountsByCategory: CardDiscountResult["discountsByCategory"] = {};
 
   for (const item of items) {
-    if (!item.products || (item as any).is_gift) continue;
+    if (!item.products || item.is_gift) continue;
     const product = item.products as any;
     const categoryId = product.category_id;
     const cardDiscounts: Array<{ card_id: string; discount_amount: number }> = Array.isArray(product.card_discounts) ? product.card_discounts : [];
@@ -189,7 +189,7 @@ export function useCartCardDiscount(
   if (discountCats.length > 0) {
     eligibleSubtotal = 0;
     for (const item of items) {
-      if (!item.products || (item as any).is_gift) continue;
+      if (!item.products || item.is_gift) continue;
       const catId = (item.products as any).category_id;
       if (catId && discountCats.includes(catId)) {
         eligibleSubtotal += getItemPrice(item) * item.quantity;
