@@ -420,16 +420,31 @@ export default function AdminWallet() {
                         <TableCell className="font-medium">{formatPrice(transaction.amount)}</TableCell>
                         <TableCell>
                           {transaction.payment_proof_url ? (
-                            <a
-                              href={transaction.payment_proof_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const url: string = transaction.payment_proof_url;
+                                  // Extract path after the bucket name
+                                  const marker = '/payment-proofs/';
+                                  const idx = url.indexOf(marker);
+                                  const path = idx >= 0 ? url.substring(idx + marker.length) : url;
+                                  const { data, error } = await supabase.storage
+                                    .from('payment-proofs')
+                                    .createSignedUrl(decodeURIComponent(path), 60 * 10);
+                                  if (error || !data?.signedUrl) throw error;
+                                  window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+                                } catch (e) {
+                                  console.error('Failed to open proof:', e);
+                                  toast.error('تعذّر فتح صورة الإثبات');
+                                }
+                              }}
                               className="inline-flex items-center gap-1 text-primary hover:underline"
                             >
                               <ImageIcon className="h-4 w-4" />
                               <span className="text-xs">عرض</span>
                               <ExternalLink className="h-3 w-3" />
-                            </a>
+                            </button>
                           ) : (
                             <span className="text-xs text-muted-foreground">-</span>
                           )}
