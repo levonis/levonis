@@ -429,20 +429,25 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
     const reqWarrantyRaw = get('requires_active_warranty').toLowerCase();
     const requires = reqWarrantyRaw === '' ? true : ['true', '1', 'yes', 'نعم'].includes(reqWarrantyRaw);
 
-    if (!cardId || !/^[0-9a-f-]{36}$/i.test(cardId)) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!cardId || !UUID_RE.test(cardId)) {
       errors.push(`السطر ${idx + 1}: card_id غير صالح`);
       return;
     }
-    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000) {
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
       errors.push(`السطر ${idx + 1}: quantity يجب أن يكون 1..1000`);
       return;
     }
-    if (!Number.isFinite(duration) || duration <= 0) {
-      errors.push(`السطر ${idx + 1}: duration_days غير صالح`);
+    if (!Number.isInteger(duration) || duration < 1 || duration > 1825) {
+      errors.push(`السطر ${idx + 1}: duration_days يجب أن يكون 1..1825`);
       return;
     }
-    if (!Number.isFinite(expiry) || expiry <= 0) {
-      errors.push(`السطر ${idx + 1}: code_expiry_days غير صالح`);
+    if (!Number.isInteger(expiry) || expiry < 1 || expiry > 365) {
+      errors.push(`السطر ${idx + 1}: code_expiry_days يجب أن يكون 1..365`);
+      return;
+    }
+    if (label && label.length > 100) {
+      errors.push(`السطر ${idx + 1}: batch_label طويل جداً`);
       return;
     }
 
