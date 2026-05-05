@@ -630,7 +630,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       document.removeEventListener('visibilitychange', onVisibility);
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart]);
+  }, [user?.id, items.map((i) => i.products?.id || '').join(','), fetchCart, queryClient]);
 
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }, saleType: 'direct' | 'preorder' = 'preorder'): Promise<boolean> => {
     if (!user) {
