@@ -69,9 +69,11 @@ const DirectSaleCheckoutDialog = ({
       setCountdown(5);
       setCanConfirm(false);
       setNotes('');
-      setUseWallet(false);
+      setUseWallet(forceWalletPayment);
       return;
     }
+
+    if (forceWalletPayment) setUseWallet(true);
 
     const timer = setInterval(() => {
       setCountdown(prev => {
@@ -85,18 +87,19 @@ const DirectSaleCheckoutDialog = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [open]);
+  }, [open, forceWalletPayment]);
 
   const grandTotal = totalAmount + deliveryFee;
   // التوصيل يُدفع دائماً عند الاستلام — لا يُخصم من المحفظة.
   // المحفظة تخصم فقط من قيمة المنتجات (totalAmount).
   const walletDeduction = useWallet ? Math.min(walletBalance, totalAmount) : 0;
   const codAmount = grandTotal - walletDeduction;
+  const insufficientWallet = forceWalletPayment && walletBalance < totalAmount;
 
   const handleConfirm = useCallback(async () => {
-    if (!canConfirm || isProcessing) return;
+    if (!canConfirm || isProcessing || insufficientWallet) return;
     await onConfirm({ notes, useWallet, walletDeduction });
-  }, [canConfirm, isProcessing, notes, onConfirm, useWallet, walletDeduction]);
+  }, [canConfirm, isProcessing, notes, onConfirm, useWallet, walletDeduction, insufficientWallet]);
 
   const progressValue = ((5 - countdown) / 5) * 100;
   const estimatedTime = address?.governorate?.includes('بغداد') ? '1-3 أيام' : '3-5 أيام';
