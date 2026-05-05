@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+
+const COOLDOWN_MS = 1500;
 
 const ERROR_MESSAGES: Record<string, string> = {
   code_not_found: 'الكود غير صالح',
@@ -42,19 +44,37 @@ export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [warrantyReason, setWarrantyReason] = useState<WarrantyReason | null>(null);
+  const inFlightRef = useRef(false);
+  const lastAttemptRef = useRef<{ code: string; at: number } | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown(c => Math.max(0, c - 100)), 100);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
   const submit = async () => {
+    if (inFlightRef.current || submitting) return;
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
+    const last = lastAttemptRef.current;
+    if (last && last.code === trimmed && Date.now() - last.at < COOLDOWN_MS) {
+      toast.error('يرجى الانتظار قبل إعادة المحاولة');
+      return;
+    }
+    inFlightRef.current = true;
     setSubmitting(true);
     setWarrantyReason(null);
     try {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
+      lastAttemptRef.current = { code: trimmed, at: Date.now() };
       if (error) {
         const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
+        setCooldown(COOLDOWN_MS);
         if (key === 'no_printer_registered' || key === 'warranty_expired' || key === 'no_active_warranty') {
           setWarrantyReason(key as WarrantyReason);
           return;
@@ -75,8 +95,10 @@ export default function RedeemLoyaltyCodeCard() {
       qc.invalidateQueries({ queryKey: ['card-percentage-discount-used'] });
       qc.invalidateQueries({ queryKey: ['card-free-shipping-used'] });
     } catch (e: any) {
+      setCooldown(COOLDOWN_MS);
       toast.error(e?.message || 'فشل التفعيل');
     } finally {
+      inFlightRef.current = false;
       setSubmitting(false);
     }
   };
@@ -112,6 +134,8 @@ export default function RedeemLoyaltyCodeCard() {
             placeholder="مثال: A1B2C3D4E5F6"
             className="font-mono tracking-wider text-center"
             autoFocus
+            disabled={submitting}
+            onKeyDown={e => { if (e.key === 'Enter' && !submitting && cooldown === 0) submit(); }}
           />
           {warrantyReason && (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
@@ -130,14 +154,19 @@ export default function RedeemLoyaltyCodeCard() {
                 size="sm"
                 variant="outline"
                 className="w-full border-amber-500/50 hover:bg-amber-500/20"
+                disabled={submitting}
                 onClick={() => { setOpen(false); navigate('/activate-printer'); }}
               >
                 {WARRANTY_DETAILS[warrantyReason].cta}
               </Button>
             </div>
           )}
-          <Button className="w-full" onClick={submit} disabled={submitting}>
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تفعيل'}
+          <Button className="w-full" onClick={submit} disabled={submitting || cooldown > 0 || !code.trim()}>
+            {submitting ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> جاري التفعيل...</>
+            ) : cooldown > 0 ? (
+              `إعادة المحاولة خلال ${(cooldown / 1000).toFixed(1)}s`
+            ) : 'تفعيل'}
           </Button>
         </div>
       </DialogContent>
