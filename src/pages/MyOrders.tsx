@@ -583,6 +583,19 @@ const MyOrders = () => {
                 </div>
               )}
             </div>
+
+            {hasNextPage && (
+              <div className="px-4 pt-2 pb-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="rounded-xl"
+                >
+                  {isFetchingNextPage ? t('myorders_tab_pending') : t('myorders_browse_products')}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </main>
