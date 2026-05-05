@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Ticket, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 const COOLDOWN_MS = 1500;
@@ -51,6 +51,23 @@ export default function RedeemLoyaltyCodeCard() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
+  const { data: warrantyCheck, isFetching: checking } = useQuery({
+    queryKey: ['user-warranty-precheck'],
+    enabled: open,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('check_user_printer_warranty');
+      if (error) throw error;
+      return data as { status: 'active' | 'no_printer_registered' | 'warranty_expired' | 'no_active_warranty' | 'auth_required'; expiry_date?: string };
+    },
+  });
+
+  const precheckBlocked: WarrantyReason | null =
+    warrantyCheck && warrantyCheck.status !== 'active' && warrantyCheck.status !== 'auth_required'
+      ? (warrantyCheck.status as WarrantyReason)
+      : null;
+  const activeReason = warrantyReason || precheckBlocked;
+
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setInterval(() => setCooldown(c => Math.max(0, c - 100)), 100);
@@ -59,6 +76,10 @@ export default function RedeemLoyaltyCodeCard() {
 
   const submit = async () => {
     if (inFlightRef.current || submitting) return;
+    if (precheckBlocked) {
+      toast.error(WARRANTY_DETAILS[precheckBlocked].title);
+      return;
+    }
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
     const last = lastAttemptRef.current;
@@ -137,16 +158,22 @@ export default function RedeemLoyaltyCodeCard() {
             disabled={submitting}
             onKeyDown={e => { if (e.key === 'Enter' && !submitting && cooldown === 0) submit(); }}
           />
-          {warrantyReason && (
+          {checking && !warrantyCheck && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              جاري التحقق من حالة الضمان...
+            </div>
+          )}
+          {activeReason && (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <div className="space-y-1 text-right">
                   <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                    {WARRANTY_DETAILS[warrantyReason].title}
+                    {WARRANTY_DETAILS[activeReason].title}
                   </p>
                   <p className="text-xs text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
-                    {WARRANTY_DETAILS[warrantyReason].desc}
+                    {WARRANTY_DETAILS[activeReason].desc}
                   </p>
                 </div>
               </div>
@@ -157,16 +184,20 @@ export default function RedeemLoyaltyCodeCard() {
                 disabled={submitting}
                 onClick={() => { setOpen(false); navigate('/activate-printer'); }}
               >
-                {WARRANTY_DETAILS[warrantyReason].cta}
+                {WARRANTY_DETAILS[activeReason].cta}
               </Button>
             </div>
           )}
-          <Button className="w-full" onClick={submit} disabled={submitting || cooldown > 0 || !code.trim()}>
+          <Button
+            className="w-full"
+            onClick={submit}
+            disabled={submitting || cooldown > 0 || !code.trim() || !!precheckBlocked || checking}
+          >
             {submitting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" /> جاري التفعيل...</>
             ) : cooldown > 0 ? (
               `إعادة المحاولة خلال ${(cooldown / 1000).toFixed(1)}s`
-            ) : 'تفعيل'}
+            ) : precheckBlocked ? 'لا يمكن التفعيل' : 'تفعيل'}
           </Button>
         </div>
       </DialogContent>
