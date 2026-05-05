@@ -73,11 +73,13 @@ export function useOriginPoint() {
     if (!p) return;
     const r = node.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // wait until laid out
-    // Clamp inside the dialog so the origin is always a sensible point
-    // even if the user tapped near a screen edge on a small phone.
-    const ox = Math.max(0, Math.min(r.width, p.x - r.left));
-    const oy = Math.max(0, Math.min(r.height, p.y - r.top));
+    // Use the real click point (allow values outside the box so the
+    // overlay genuinely scales out of the trigger, even if the trigger
+    // is far from the centered dialog).
+    const ox = p.x - r.left;
+    const oy = p.y - r.top;
     node.style.transformOrigin = `${ox.toFixed(1)}px ${oy.toFixed(1)}px`;
+    node.style.willChange = "transform, opacity";
   }, []);
 
   return { capture, originRef, originPoint };
