@@ -1248,7 +1248,9 @@ const Cart = () => {
   };
 
   // حساب المبلغ المطلوب دفعه الآن من المحفظة (التوصيل يُدفع عند الاستلام دائماً)
-  const requiredPaymentNow = preOrderPaymentAmount;
+  const requiredPaymentNow = hasRandomFilamentItems
+    ? preOrderPaymentAmount + deliveryFee
+    : preOrderPaymentAmount;
   const walletBalance = wallet?.balance || 0;
   const hasEnoughBalance = walletBalance >= requiredPaymentNow;
 
