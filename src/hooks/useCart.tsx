@@ -50,6 +50,10 @@ export interface CartItem {
   is_random_filament?: boolean | null;
   /** True after RF order is revealed and the actual product is shown. */
   is_random_filament_revealed?: boolean | null;
+  /** Hydrated final IQD price for revealed RF rows. */
+  random_filament_price_iqd?: number | null;
+  /** Marker set during fetch when an RF row was deleted server-side. */
+  __rf_removed?: boolean;
   /** Admin-overridden unit price (IQD). When set, overrides product price. */
   admin_set_price?: number | null;
   products?: {
