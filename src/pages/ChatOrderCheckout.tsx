@@ -151,6 +151,13 @@ export default function ChatOrderCheckout() {
           p_idempotency_key: `chat_order:${order.id}:${paymentMethod}`,
         });
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
+        notifyWalletDeducted({
+          userId: user.id,
+          amount: amountToPay,
+          summary: `دفع طلب محادثة: ${order.product_title}`,
+          link: `/community/messages`,
+          relatedId: order.id,
+        });
       }
 
 
