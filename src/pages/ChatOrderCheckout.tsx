@@ -142,12 +142,13 @@ export default function ChatOrderCheckout() {
         half: 'نصف المبلغ',
       };
 
-      // Deduct wallet
+      // Deduct wallet (idempotent — order.id makes the operation safely retryable)
       if (amountToPay > 0) {
         const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
           p_amount: amountToPay,
-          p_description: `دفع طلب محادثة #${order.id.slice(0, 8)}`
+          p_description: `دفع طلب محادثة #${order.id.slice(0, 8)}`,
+          p_idempotency_key: `chat_order:${order.id}:${paymentMethod}`,
         });
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
       }
