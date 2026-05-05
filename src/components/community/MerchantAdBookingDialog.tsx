@@ -146,6 +146,13 @@ export default function MerchantAdBookingDialog({ open, onOpenChange, merchantId
             : null,
         });
       if (bookingError) throw bookingError;
+
+      notifyWalletDeducted({
+        userId: user.id,
+        amount: cost,
+        summary: `حجز إعلان متجر - مركز ${selectedPosition} لمدة ${hoursNum} ساعة`,
+        link: `/community/merchant-dashboard`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ad-bookings-all"] });
