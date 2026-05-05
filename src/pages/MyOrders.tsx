@@ -294,7 +294,9 @@ const MyOrders = () => {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
+          id, order_number, status, total_amount, currency, order_type,
+          tracking_number, tracking_url, user_confirmed_delivery, auto_confirmed,
+          created_at, payment_method, payment_status,
           order_items!order_items_order_id_fkey(
             *,
             products!order_items_product_id_fkey(name_ar, image_url),
