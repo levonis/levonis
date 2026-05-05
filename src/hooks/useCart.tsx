@@ -346,6 +346,45 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         console.error('Fetch cart error:', error);
         throw error;
       }
+
+      const cartRows = [...(data || [])];
+      try {
+        // Safety net for Random Filament rows: they intentionally have product_id = null,
+        // so keep a lightweight direct read and merge them if an embedded select misses them.
+        const { data: rfCartRows, error: rfCartError } = await (supabase as any)
+          .from('cart_items')
+          .select(`
+            id,
+            product_id,
+            custom_request_id,
+            bundle_id,
+            offer_purchase_id,
+            quantity,
+            product_option_id,
+            selected_color,
+            color_image_url,
+            option_image_url,
+            shipping_option_index,
+            shipping_option_name_ar,
+            sale_type,
+            is_gift,
+            is_locked,
+            rf_offer_id,
+            rf_category_id
+          `)
+          .eq('user_id', user.id)
+          .not('rf_offer_id', 'is', null);
+        if (rfCartError) {
+          console.warn('[useCart.fetchCart] RF fallback read failed:', rfCartError);
+        } else if (rfCartRows?.length) {
+          const knownIds = new Set(cartRows.map((row: any) => row.id));
+          for (const row of rfCartRows) {
+            if (!knownIds.has(row.id)) cartRows.push(row);
+          }
+        }
+      } catch (rfFallbackError) {
+        console.warn('[useCart.fetchCart] RF fallback crashed:', rfFallbackError);
+      }
       
       // Only update if no optimistic operation happened while we were fetching
       if (optimisticLockRef.current === lockValue) {
@@ -357,8 +396,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const rfMaxStockById = new Map<string, number>();
         const cappedIds = new Set<string>();
         try {
-          const ids = (data || []).map((i: any) => i.id).filter(Boolean);
-          (data || []).forEach((it: any) => {
+          const ids = cartRows.map((i: any) => i.id).filter(Boolean);
+          cartRows.forEach((it: any) => {
             if (it?.rf_offer_id) rfIds.add(it.id);
           });
           // legacy link
@@ -376,7 +415,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             });
           }
           // fetch offer prices + stock for new-flow RF rows; auto-cap qty against available stock
-          const offerIds = Array.from(new Set((data || []).map((i: any) => i.rf_offer_id).filter(Boolean)));
+          const offerIds = Array.from(new Set(cartRows.map((i: any) => i.rf_offer_id).filter(Boolean)));
           if (offerIds.length > 0) {
             const { data: offerRows } = await (supabase as any)
               .from('random_filament_offers')
@@ -384,7 +423,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
               .in('id', offerIds);
             const offerMap = new Map<string, any>();
             (offerRows || []).forEach((o: any) => offerMap.set(o.id, o));
-            for (const it of (data || [])) {
+            for (const it of cartRows) {
               if (!it?.rf_offer_id) continue;
               const o = offerMap.get(it.rf_offer_id);
               if (o) rfPriceById.set(it.id, Number(o.price_iqd) || 0);
@@ -410,7 +449,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch (e) { /* non-blocking */ }
 
-        const mappedData = (data || [])
+        const mappedData = cartRows
           .filter((it: any) => !it.__rf_removed)
           .map((item: any) => ({
             ...item,
