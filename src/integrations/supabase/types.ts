@@ -14244,6 +14244,15 @@ export type Database = {
         Args: { p_context?: Json; p_message: string; p_source: string }
         Returns: undefined
       }
+      log_order_error: {
+        Args: {
+          p_context: string
+          p_details?: Json
+          p_error_code?: string
+          p_error_message?: string
+        }
+        Returns: string
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
