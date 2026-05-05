@@ -3604,6 +3604,7 @@ const Cart = () => {
         isProcessing={isDirectSaleProcessing}
         walletBalance={walletBalance}
         hasActiveDirectOrders={(activeDirectOrders?.length || 0) > 0}
+        forceWalletPayment={hasRandomFilamentItems}
       />
 
       {/* Order Success Animation */}
