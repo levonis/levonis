@@ -884,27 +884,41 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = async () => {
     if (!user) return;
 
-    // Skip locked / revealed random-filament items — only revealed RF can never be removed
-    const deletableIds = items
-      .filter((i) => !i.is_random_filament_revealed && !i.is_locked)
-      .map(i => i.id);
-    const hasLocked = deletableIds.length !== items.length;
+    // Only revealed RF items (linked to an order) cannot be removed — the DB trigger
+    // protect_random_filament_cart_delete is the source of truth and will block those.
+    // We still attempt to delete unrevealed RF items so the user can clear the cart.
+    const revealedIds = new Set(
+      items.filter((i: any) => i.is_random_filament_revealed).map((i) => i.id)
+    );
+    const deletableIds = items.filter((i) => !revealedIds.has(i.id)).map(i => i.id);
+    const hasRevealed = revealedIds.size > 0;
+
+    if (deletableIds.length === 0) {
+      toast.info('لا توجد عناصر يمكن حذفها من السلة');
+      return;
+    }
 
     try {
-      let error: any = null;
-      if (deletableIds.length > 0) {
-        const res = await supabase
-          .from('cart_items')
-          .delete()
-          .eq('user_id', user.id)
-          .in('id', deletableIds);
-        error = res.error;
+      const { error, data } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id)
+        .in('id', deletableIds)
+        .select('id');
+
+      if (error) {
+        const msg = String((error as any)?.message || '');
+        if (msg.includes('RANDOM_FILAMENT_LOCKED')) {
+          toast.error('لا يمكن إلغاء طلب الفلمنت العشوائي بعد ربطه بطلب.');
+          await fetchCart();
+          return;
+        }
+        throw error;
       }
 
-      if (error) throw error;
-      
-      setItems(prev => prev.filter((i) => i.is_random_filament_revealed || i.is_locked));
-      if (hasLocked) {
+      const deletedSet = new Set((data || []).map((r: any) => r.id));
+      setItems(prev => prev.filter((i) => !deletedSet.has(i.id)));
+      if (hasRevealed) {
         toast.success('تم تفريغ السلة (تم الإبقاء على طلبات الفلمنت العشوائي المكشوفة)');
       } else {
         toast.success('تم تفريغ السلة');
