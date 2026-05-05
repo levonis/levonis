@@ -1188,7 +1188,22 @@ const Cart = () => {
 
   // Wrapped cart actions
   const handleUpdateQuantity = (itemId: string, quantity: number) => {
-    wrapWithCartRequestCheck(() => updateQuantity(itemId, quantity));
+    const item = items.find(i => i.id === itemId);
+    let finalQty = Math.max(1, Math.min(MAX_QUANTITY_PER_ITEM, quantity));
+    if (item) {
+      // Cap by RF max stock
+      const rfMax = (item as any).random_filament_max_stock;
+      if (typeof rfMax === 'number' && rfMax > 0) {
+        finalQty = Math.min(finalQty, rfMax);
+      }
+      // Cap by direct-sale available stock
+      const available = getItemAvailableStock(item);
+      if (typeof available === 'number' && available > 0) {
+        finalQty = Math.min(finalQty, available);
+      }
+    }
+    if (item && finalQty === item.quantity) return;
+    wrapWithCartRequestCheck(() => updateQuantity(itemId, finalQty));
   };
 
   const handleRemoveFromCart = (itemId: string) => {
