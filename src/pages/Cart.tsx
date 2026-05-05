@@ -1285,10 +1285,11 @@ const Cart = () => {
       // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع (المنتجات + التوصيل) من المحفظة مسبقاً
       {
         const rfRequired = total + deliveryFee;
-        if (hasRandomFilamentItems && walletBalance < rfRequired) {
+        const shortage = Math.max(0, rfRequired - walletBalance);
+        if (hasRandomFilamentItems && shortage > 0) {
           toast({
-            title: 'رصيد المحفظة غير كافٍ',
-            description: `الفلمنت العشوائي يُدفع من المحفظة (المنتجات + التوصيل). رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(rfRequired)} د.ع`,
+            title: '⚠️ رصيد المحفظة غير كافٍ',
+            description: `الفلمنت العشوائي يُدفع بالكامل من المحفظة (المنتجات + التوصيل).\nالمطلوب: ${formatPrice(rfRequired)} د.ع\nرصيدك: ${formatPrice(walletBalance)} د.ع\nالعجز: ${formatPrice(shortage)} د.ع`,
             variant: "destructive",
           });
           return;
