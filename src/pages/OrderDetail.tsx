@@ -91,7 +91,7 @@ const OrderDetail = () => {
       if (!orderId) return null;
       let query = supabase
         .from('orders')
-        .select(`*, order_items!order_items_order_id_fkey(*, products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url), custom_product_requests(product_name, image_url, suggested_price)), profiles(full_name, email)`)
+        .select(`*, order_items!order_items_order_id_fkey(*, products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url), custom_product_requests(product_name, image_url, suggested_price), random_filament_offers!order_items_rf_offer_id_fkey(id, title_ar, description_ar, image_url)), profiles(full_name, email)`)
         .eq('id', orderId);
       if (!isAdmin) {
         if (!user) return null;

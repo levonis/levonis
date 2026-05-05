@@ -127,12 +127,16 @@ const OrderCard = ({ order, navigate, t, language }: OrderCardProps) => {
   const statusColor = STATUS_COLORS[order.status] || 'bg-muted text-muted-foreground border-border';
   const itemCount = order.order_items?.length || 0;
   const firstItem = order.order_items?.[0];
-  const firstImage = firstItem?.custom_request_id
-    ? firstItem?.custom_product_requests?.image_url
-    : firstItem?.products?.image_url;
-  const firstName = firstItem?.custom_request_id
-    ? firstItem?.custom_product_requests?.product_name || firstItem?.product_name_ar
-    : firstItem?.product_name_ar;
+  const firstImage = firstItem?.rf_offer_id
+    ? (firstItem?.random_filament_offers?.image_url || firstItem?.products?.image_url)
+    : firstItem?.custom_request_id
+      ? firstItem?.custom_product_requests?.image_url
+      : firstItem?.products?.image_url;
+  const firstName = firstItem?.rf_offer_id
+    ? (firstItem?.random_filament_offers?.title_ar || firstItem?.product_name_ar || 'فلمنت عشوائي')
+    : firstItem?.custom_request_id
+      ? firstItem?.custom_product_requests?.product_name || firstItem?.product_name_ar
+      : firstItem?.product_name_ar;
 
   const dateLocale = language === 'en' ? enUS : arLocale;
   const relativeTime = (() => {
@@ -309,10 +313,11 @@ const MyOrders = () => {
           user_confirmed_delivery, auto_confirmed,
           created_at,
           order_items!order_items_order_id_fkey(
-            id, product_id, custom_request_id, quantity,
+            id, product_id, custom_request_id, rf_offer_id, quantity,
             product_name_ar, shipping_option_name_ar,
             products!order_items_product_id_fkey(name_ar, image_url),
-            custom_product_requests(product_name, image_url)
+            custom_product_requests(product_name, image_url),
+            random_filament_offers!order_items_rf_offer_id_fkey(title_ar, image_url)
           )
         `)
         .eq('user_id', user.id)

@@ -1508,9 +1508,9 @@ const Cart = () => {
         }
       } catch (e) { console.warn('rf lookup failed', e); }
 
-      // Create order items
+      // Create order items (include RF items even when product_id is still null — revealed later)
       const orderItems = items
-        .filter(item => item.product_id || item.custom_request_id || (item as any).bundle_id)
+        .filter(item => item.product_id || item.custom_request_id || (item as any).bundle_id || randomFilamentIds.has(item.id) || (item as any).rf_offer_id)
         .map(item => {
           const isCustomRequest = !!item.custom_request_id;
           const isBundle = !!(item as any).bundle_id;
@@ -1541,7 +1541,8 @@ const Cart = () => {
             product_id: isCustomRequest || isBundle ? null : item.product_id,
             bundle_id: isBundle ? (item as any).bundle_id : null,
             custom_request_id: isCustomRequest ? item.custom_request_id : null,
-            product_option_id: (item as any).product_option_id || null,
+            product_option_id: isRandomFilament ? null : ((item as any).product_option_id || null),
+            rf_offer_id: isRandomFilament ? (rfOfferByCartItem.get(item.id) || (item as any).rf_offer_id || null) : null,
             quantity: item.quantity,
             unit_price: itemPrice,
             total_price: itemPrice * item.quantity,
