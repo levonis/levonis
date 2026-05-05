@@ -934,17 +934,20 @@ const Cart = () => {
 
   // ===== الدفع عند الاستلام (للطلب المسبق فقط) =====
   // متاح فقط إذا كان كل المنتجات في السلة تدعم الدفع عند الاستلام
-  const allItemsSupportCod = hasPreOrderItems && items.length > 0 && items.every((item: any) => {
+  const allItemsSupportCod = hasPreOrderItems && !hasRandomFilamentItems && items.length > 0 && items.every((item: any) => {
     return item.products?.cod_enabled === true;
   });
   const showCodOption = allItemsSupportCod;
 
-  // إعادة ضبط الخيار إذا اختفى الشرط
+  // إعادة ضبط الخيار إذا اختفى الشرط، وإجبار الدفع الكامل عند وجود فلمنت عشوائي
   useEffect(() => {
     if (preOrderPaymentOption === 'cod' && !showCodOption) {
       setPreOrderPaymentOption('full');
     }
-  }, [showCodOption, preOrderPaymentOption]);
+    if (hasRandomFilamentItems && preOrderPaymentOption !== 'full') {
+      setPreOrderPaymentOption('full');
+    }
+  }, [showCodOption, preOrderPaymentOption, hasRandomFilamentItems]);
 
   // حساب رسوم الدفع عند الاستلام لكل منتج
   // المنتجات المربوطة بـ link_direct_commission_to_cod: نستخدم نفس حساب سعر "البيع المباشر"
