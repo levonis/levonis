@@ -596,6 +596,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     let pendingRefresh = false;
     const handleChange = () => {
+      // Always invalidate the Cart page's stock-check query so quantities
+      // refresh even if the user is not on Cart.tsx yet.
+      queryClient.invalidateQueries({ queryKey: ['cart-stock-check'] });
+      queryClient.invalidateQueries({ queryKey: ['bundle-max-qty'] });
       if (typeof document !== 'undefined' && document.hidden) {
         pendingRefresh = true;
         return;
