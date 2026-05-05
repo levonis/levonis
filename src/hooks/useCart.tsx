@@ -431,9 +431,27 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
         setItems(mappedData as CartItem[]);
       }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-      console.warn('Cart fetch failed (non-critical):', error);
+    } catch (error: any) {
+      const details = {
+        name: error?.name,
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        stack: error?.stack,
+        userId: user?.id,
+        timestamp: new Date().toISOString(),
+      };
+      console.error('[useCart.fetchCart] Failed:', details);
+      console.warn('[useCart.fetchCart] Non-critical fail:', details);
+      // Best-effort telemetry to backend logs (silently no-op if RPC missing)
+      try {
+        (supabase as any).rpc('log_client_error', {
+          p_source: 'useCart.fetchCart',
+          p_message: String(error?.message || error),
+          p_context: details,
+        })?.then?.(() => {}, () => {});
+      } catch { /* swallow telemetry errors */ }
     } finally {
       setLoading(false);
     }
