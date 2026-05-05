@@ -128,6 +128,14 @@ export default function AcceptOfferDialog({
 
       if (deductError) throw new Error(deductError.message || 'فشل خصم المحفظة');
 
+      notifyWalletDeducted({
+        userId: user.id,
+        amount: offer.price_iqd,
+        summary: `حجز مبلغ لطلب طباعة - ${offer.merchant?.display_name || "تاجر"}`,
+        link: `/community/customer-track/${requestId}`,
+        relatedId: requestId,
+      });
+
       // 3. Create escrow transaction
       const { error: escrowError } = await supabase.from("escrow_transactions").insert({
         request_id: requestId,
