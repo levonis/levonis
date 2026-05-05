@@ -271,10 +271,28 @@ const CreateBatchButton = ({
   }, [cardId, cards]);
 
   const submit = async () => {
-    if (!cardId) { toast.error('اختر البطاقة'); return; }
-    if (quantity <= 0 || quantity > 1000) { toast.error('عدد غير صالح'); return; }
-    if (durationDays <= 0) { toast.error('مدة غير صالحة'); return; }
-    if (codeExpiryDays <= 0) { toast.error('تاريخ انتهاء غير صالح'); return; }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validCardIds = new Set(cards.map(c => c.id));
+    if (!cardId || !UUID_RE.test(cardId) || !validCardIds.has(cardId)) {
+      toast.error('اختر بطاقة صالحة');
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
+      toast.error('عدد الأكواد يجب أن يكون 1..1000');
+      return;
+    }
+    if (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 1825) {
+      toast.error('مدة البطاقة يجب أن تكون 1..1825 يوم');
+      return;
+    }
+    if (!Number.isInteger(codeExpiryDays) || codeExpiryDays < 1 || codeExpiryDays > 365) {
+      toast.error('مدة صلاحية الكود يجب أن تكون 1..365 يوم');
+      return;
+    }
+    if ((batchLabel || '').length > 100) {
+      toast.error('اسم الدفعة طويل جداً');
+      return;
+    }
     setSubmitting(true);
     try {
       const expires = new Date(Date.now() + codeExpiryDays * 86400_000).toISOString();
@@ -283,7 +301,7 @@ const CreateBatchButton = ({
         p_quantity: quantity,
         p_duration_days: durationDays,
         p_code_expires_at: expires,
-        p_batch_label: batchLabel || null,
+        p_batch_label: batchLabel?.trim() || null,
         p_requires_active_warranty: requiresWarranty,
       });
       if (error) throw error;
@@ -411,20 +429,25 @@ const parseCsv = (text: string): { rows: CsvRow[]; errors: string[] } => {
     const reqWarrantyRaw = get('requires_active_warranty').toLowerCase();
     const requires = reqWarrantyRaw === '' ? true : ['true', '1', 'yes', 'نعم'].includes(reqWarrantyRaw);
 
-    if (!cardId || !/^[0-9a-f-]{36}$/i.test(cardId)) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!cardId || !UUID_RE.test(cardId)) {
       errors.push(`السطر ${idx + 1}: card_id غير صالح`);
       return;
     }
-    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000) {
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
       errors.push(`السطر ${idx + 1}: quantity يجب أن يكون 1..1000`);
       return;
     }
-    if (!Number.isFinite(duration) || duration <= 0) {
-      errors.push(`السطر ${idx + 1}: duration_days غير صالح`);
+    if (!Number.isInteger(duration) || duration < 1 || duration > 1825) {
+      errors.push(`السطر ${idx + 1}: duration_days يجب أن يكون 1..1825`);
       return;
     }
-    if (!Number.isFinite(expiry) || expiry <= 0) {
-      errors.push(`السطر ${idx + 1}: code_expiry_days غير صالح`);
+    if (!Number.isInteger(expiry) || expiry < 1 || expiry > 365) {
+      errors.push(`السطر ${idx + 1}: code_expiry_days يجب أن يكون 1..365`);
+      return;
+    }
+    if (label && label.length > 100) {
+      errors.push(`السطر ${idx + 1}: batch_label طويل جداً`);
       return;
     }
 
@@ -498,6 +521,11 @@ const ImportBatchesButton = ({
     const failures: string[] = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
+      if (!validCardIds.has(r.card_id)) {
+        failures.push(`السطر ${r._line}: card_id غير موجود — تم التخطي`);
+        setProgress({ done: i + 1, total: rows.length });
+        continue;
+      }
       try {
         const expires = new Date(Date.now() + r.code_expiry_days * 86400_000).toISOString();
         const { error } = await (supabase as any).rpc('create_loyalty_code_batch', {
