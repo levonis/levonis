@@ -148,12 +148,18 @@ const AdminLoyaltyCardCodes = () => {
           <h1 className="text-base font-bold flex items-center gap-2">
             <Ticket className="h-4 w-4" /> أكواد تفعيل بطاقات الولاء
           </h1>
-          <CreateBatchButton
-            cards={cards || []}
-            open={openCreate}
-            onOpenChange={setOpenCreate}
-            onCreated={() => qc.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-          />
+          <div className="flex gap-1.5">
+            <ImportBatchesButton
+              cards={cards || []}
+              onCreated={() => qc.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
+            />
+            <CreateBatchButton
+              cards={cards || []}
+              open={openCreate}
+              onOpenChange={setOpenCreate}
+              onCreated={() => qc.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
+            />
+          </div>
         </div>
 
         <Card className="p-3 text-xs text-muted-foreground leading-relaxed">
