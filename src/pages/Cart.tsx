@@ -1191,27 +1191,31 @@ const Cart = () => {
     const item = items.find(i => i.id === itemId);
     let finalQty = Math.max(1, Math.min(20, quantity));
     let capped = false;
+    let maxAvailable: number | null = null;
     if (item) {
       const rfMax = (item as any).random_filament_max_stock;
       if (typeof rfMax === 'number' && rfMax > 0 && finalQty > rfMax) {
         finalQty = rfMax;
+        maxAvailable = rfMax;
         capped = true;
       }
       const available = getItemAvailableStock(item);
       if (typeof available === 'number' && available > 0 && finalQty > available) {
         finalQty = available;
+        maxAvailable = available;
         capped = true;
       }
     }
+    const showCapToast = () => {
+      sonnerToast.info(
+        `تم تعديل الكمية تلقائياً إلى الحد الأقصى المتاح في المخزون: ${finalQty} قطعة (المتوفر حالياً: ${maxAvailable ?? finalQty})`
+      );
+    };
     if (item && finalQty === item.quantity) {
-      if (capped) {
-        sonnerToast.info(`تم تعديل الكمية تلقائياً إلى الحد الأقصى المتاح (${finalQty})`);
-      }
+      if (capped) showCapToast();
       return;
     }
-    if (capped) {
-      sonnerToast.info(`تم تعديل الكمية تلقائياً إلى الحد الأقصى المتاح (${finalQty})`);
-    }
+    if (capped) showCapToast();
     wrapWithCartRequestCheck(() => updateQuantity(itemId, finalQty));
   };
 
