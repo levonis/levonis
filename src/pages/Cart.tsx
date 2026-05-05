@@ -3267,6 +3267,42 @@ const Cart = () => {
                         <CreditCard className="h-5 w-5 text-accent" />
                         <span className="font-bold text-foreground">{t('cart_preorder_options')}</span>
                       </div>
+
+                      {hasRandomFilamentItems && (
+                        <div className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
+                          <div className="flex items-start gap-2">
+                            <Wallet className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                            <div className="text-xs leading-relaxed flex-1">
+                              <p className="font-bold text-amber-700 dark:text-amber-300">
+                                لديك فلمنت عشوائي في السلة — يجب الدفع من المحفظة مسبقاً
+                              </p>
+                              <p className="text-muted-foreground mt-1">
+                                لا يمكن استخدام الدفع عند الاستلام أو دفع نصف المبلغ مع وجود فلمنت عشوائي.
+                                إما إكمال الطلب بالدفع الكامل من المحفظة، أو إزالة منتجات الفلمنت العشوائي لاختيار طريقة دفع أخرى.
+                              </p>
+                              <div className="mt-2 space-y-1.5">
+                                {items.filter((it: any) => it.is_random_filament).map((it: any) => (
+                                  <div key={it.id} className="flex items-center justify-between gap-2 rounded-md bg-background/40 px-2 py-1.5">
+                                    <span className="text-[11px] font-medium text-foreground truncate">
+                                      🎲 {it.products?.name_ar || it.products?.name || 'فلمنت عشوائي'} × {it.quantity || 1}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 px-2 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => wrapWithCartRequestCheck(() => removeFromCart(it.id))}
+                                    >
+                                      إزالة
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <RadioGroup 
                         value={preOrderPaymentOption} 
                         onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'half' | 'cod')}
@@ -3332,12 +3368,46 @@ const Cart = () => {
                   
                   {/* Payment section - different for direct sale vs preorder */}
                   {isDirectSaleCart ? (
-                    <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30 space-y-2">
+                      <div className="flex items-center gap-2 mb-1">
                         <Truck className="h-5 w-5 text-primary" />
                         <span className="font-bold text-primary">{t('cart_cod_title')}</span>
                       </div>
                       <p className="text-xs text-muted-foreground">{t('cart_cod_paid_on_receipt')}</p>
+                      {hasRandomFilamentItems && (
+                        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 mt-2">
+                          <div className="flex items-start gap-2">
+                            <Wallet className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                            <div className="text-xs leading-relaxed flex-1">
+                              <p className="font-bold text-amber-700 dark:text-amber-300">
+                                الفلمنت العشوائي يُدفع من المحفظة فقط
+                              </p>
+                              <p className="text-muted-foreground mt-1">
+                                لا يمكن إكمال الطلب بالدفع عند الاستلام لقيمة منتجات الفلمنت العشوائي.
+                                ادفع قيمة المنتجات من المحفظة (التوصيل يبقى عند الاستلام)، أو أزل الفلمنت العشوائي لاستخدام الدفع عند الاستلام بالكامل.
+                              </p>
+                              <div className="mt-2 space-y-1.5">
+                                {items.filter((it: any) => it.is_random_filament).map((it: any) => (
+                                  <div key={it.id} className="flex items-center justify-between gap-2 rounded-md bg-background/40 px-2 py-1.5">
+                                    <span className="text-[11px] font-medium text-foreground truncate">
+                                      🎲 {it.products?.name_ar || it.products?.name || 'فلمنت عشوائي'} × {it.quantity || 1}
+                                    </span>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 px-2 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => wrapWithCartRequestCheck(() => removeFromCart(it.id))}
+                                    >
+                                      إزالة
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : isCodPayment ? (
                     <div className="py-3 px-4 rounded-lg border bg-primary/5 border-primary/30">
