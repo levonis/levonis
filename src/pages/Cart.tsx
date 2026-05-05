@@ -675,8 +675,11 @@ const Cart = () => {
       if (pickupMethod?.free_delivery_enabled) return 0;
       return 0;
     }
-    // Free delivery for 2nd+ direct sale orders before 5PM
-    if (isDirectSaleCart && hasExistingDirectOrderToday) return 0;
+    // For 2nd+ direct sale orders before 5PM:
+    // The previous order already paid one "base delivery slot" per category,
+    // so we waive only the FIRST delivery unit per category — but extras
+    // (e.g. printer surcharge, filament beyond units_per_delivery) STILL apply.
+    const freeFirstDeliverySlot = isDirectSaleCart && hasExistingDirectOrderToday;
 
     // Get base price from selected method
     const method = deliveryMethods.find((m: any) => m.method_key === selectedDeliveryMethod);
