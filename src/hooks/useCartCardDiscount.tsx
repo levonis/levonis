@@ -190,10 +190,10 @@ export function useCartCardDiscount(
   if (discountCats.length > 0) {
     eligibleSubtotal = 0;
     for (const item of items) {
-      if (!item.products || item.is_gift) continue;
+      if (!item.products || !isDiscountEligibleItem(item)) continue;
       const catId = (item.products as any).category_id;
       if (catId && discountCats.includes(catId)) {
-        eligibleSubtotal += getItemPrice(item) * item.quantity;
+        eligibleSubtotal += getItemPrice(item) * readQuantity(item);
       }
     }
   }
