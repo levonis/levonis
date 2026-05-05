@@ -87,10 +87,11 @@ export const useCartProtectionDiscount = (items: CartItem[], getItemPrice: (item
         let totalDiscount = 0;
         for (const item of eligibleItems) {
           const itemPrice = getItemPrice(item);
+          const qty = readQuantity(item);
           if (plan.parts_discount_type === 'percentage') {
-            totalDiscount += Math.round(itemPrice * item.quantity * (plan.parts_discount_value / 100));
+            totalDiscount += Math.round(itemPrice * qty * (plan.parts_discount_value / 100));
           } else {
-            totalDiscount += Math.min(plan.parts_discount_value, itemPrice) * item.quantity;
+            totalDiscount += Math.min(plan.parts_discount_value, itemPrice) * qty;
           }
         }
 
