@@ -436,7 +436,7 @@ const MyOrders = () => {
               </div>
               <div>
                 <h1 className="text-lg font-black text-foreground">{t('myorders_title')}</h1>
-                {orders && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
+                {orders.length > 0 && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate(-1 as any)}>
