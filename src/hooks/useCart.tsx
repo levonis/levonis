@@ -1087,20 +1087,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   
   const total = items.reduce((sum, item) => {
     // Gift items are free
-    if ((item as any).is_gift) return sum;
+    if (item.is_gift) return sum;
     // Offer purchase items are free (already paid)
-    if ((item as any).offer_purchase_id) return sum;
-    if ((item as any).is_random_filament) {
-      const rfPrice = Number((item as any).random_filament_price_iqd) || 0;
+    if (item.offer_purchase_id) return sum;
+    if (item.is_random_filament) {
+      const rfPrice = Number(item.random_filament_price_iqd) || 0;
       return sum + (rfPrice * item.quantity);
     }
     if (item.products) {
-      const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults, liveDirectPrices);
+      const itemPrice = getGuardedCartItemPrice(item, usdToIqd, codDefaults, liveDirectPrices);
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
-    } else if ((item as any).product_bundles) {
-      return sum + (Number((item as any).product_bundles.bundle_price) * item.quantity);
+    } else if (item.product_bundles) {
+      return sum + (Number(item.product_bundles.bundle_price) * item.quantity);
     }
     return sum;
   }, 0);
@@ -1113,7 +1113,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Determine the current cart's sale type (centralized helper covers
   // product_id / bundle_id / rf_offer_id consistently).
-  const cartSaleType = deriveCartSaleType(items as any);
+  const cartSaleType = deriveCartSaleType(items);
 
 
   return (
