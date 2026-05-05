@@ -882,7 +882,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     // Skip locked / revealed random-filament items — only revealed RF can never be removed
     const deletableIds = items
-      .filter((i: any) => !i.is_random_filament_revealed && !i.is_locked)
+      .filter((i) => !i.is_random_filament_revealed && !i.is_locked)
       .map(i => i.id);
     const hasLocked = deletableIds.length !== items.length;
 
