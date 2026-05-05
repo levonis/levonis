@@ -988,6 +988,8 @@ export const ar: TranslationKeys = {
   myorders_no_orders_yet: 'لا توجد طلبات بعد',
   myorders_no_orders_desc: 'ابدأ التسوّق واطلب منتجاتك المفضّلة',
   myorders_browse_products: 'تصفّح المنتجات',
+  myorders_load_more: 'تحميل المزيد',
+  myorders_loading_more: 'جاري التحميل...',
   myorders_tab_all: 'الكل',
   myorders_tab_pending: 'بانتظار الدفع',
   myorders_tab_confirmed: 'مؤكّد',
