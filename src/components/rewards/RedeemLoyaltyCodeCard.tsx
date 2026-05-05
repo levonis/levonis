@@ -42,7 +42,7 @@ export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [warrantyError, setWarrantyError] = useState(false);
+  const [warrantyReason, setWarrantyReason] = useState<WarrantyReason | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -50,13 +50,13 @@ export default function RedeemLoyaltyCodeCard() {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
     setSubmitting(true);
-    setWarrantyError(false);
+    setWarrantyReason(null);
     try {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
       if (error) {
         const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
-        if (key === 'no_active_warranty') {
-          setWarrantyError(true);
+        if (key === 'no_printer_registered' || key === 'warranty_expired' || key === 'no_active_warranty') {
+          setWarrantyReason(key as WarrantyReason);
           return;
         }
         toast.error(ERROR_MESSAGES[key] || error.message || 'فشل التفعيل');
@@ -65,7 +65,7 @@ export default function RedeemLoyaltyCodeCard() {
       toast.success('تم تفعيل البطاقة بنجاح');
       setOpen(false);
       setCode('');
-      setWarrantyError(false);
+      setWarrantyReason(null);
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
       qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
