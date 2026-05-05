@@ -79,7 +79,7 @@ export default function CartRequestDialog({
       // Prepare cart items data with correct prices
       const cartItemsData = cartItems.map(item => {
         const isCustomRequest = !!item.custom_request_id;
-        const isDirect = (item as any).sale_type === 'direct';
+        const isDirect = item.sale_type === 'direct';
         
         // Calculate correct item price using centralized guard
         const itemPrice = getGuardedCartItemPrice(item as any, usdToIqd, codDefaults);
