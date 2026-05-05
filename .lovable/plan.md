@@ -1,56 +1,104 @@
-# مزامنة حذف العناصر منتهية المخزون على مستوى قاعدة البيانات
+## Scope
 
-## المشكلة الحالية
-حالياً منطق حذف عناصر السلة عند نفاد مخزون البيع المباشر يعمل **فقط في الواجهة** (`src/pages/Cart.tsx` يستدعي `removeFromCart` الذي بدوره يحذف من `cart_items`). هذا يعني:
-- إذا لم يفتح المستخدم صفحة Cart، تبقى العناصر منتهية المخزون في قاعدة البيانات.
-- صفحات أخرى تقرأ `cart_items` (Checkout، الشريط العلوي، شارة العداد) قد ترى عناصر يجب أن تكون محذوفة.
-- الحساب يتم بالكامل في JavaScript مع إمكانية تباين بسيط بين منطق الواجهة ومنطق قاعدة البيانات.
+You want two changes:
 
-## الهدف
-ضمان حذف العنصر على مستوى قاعدة البيانات بمجرد وصول مخزون البيع المباشر إلى الصفر، بغض النظر عن الصفحة التي يتصفحها المستخدم.
+1. **Remove the "Printer Warranty Benefits" system completely** (the discount + free-shipping perks tied to a registered/active printer warranty). Loyalty card discount + free shipping stay untouched.
+2. **Add a new "Loyalty Card Activation Codes" feature in admin**: admin generates batches of single-use codes for a specific membership card (e.g. Bronze for 6 months). Each code has its own redemption deadline. A user can redeem a code only if they have at least one printer in active warranty; once redeemed, the card activates from that moment for its configured duration.
 
-## التنفيذ
+---
 
-### 1. Migration جديد: `purge_oos_direct_cart_items` RPC
-دالة `SECURITY DEFINER` تأخذ `p_user_id uuid` (افتراضياً `auth.uid()`) وتقوم بـ:
+## Part 1 — Remove warranty benefits
 
-- جلب كل `cart_items` للمستخدم حيث `sale_type = 'direct'` و `product_id IS NOT NULL` (تستثني RF و bundles و locked).
-- لكل عنصر تحسب المخزون المتاح من `products.colors` / `option_stocks` / `direct_stock` بنفس منطق `getItemAvailableStock` في الواجهة:
-  - إذا لم يكن للمنتج ألوان → استخدم `direct_stock`.
-  - إذا كان `selected_color` محدد → ابحث عن اللون، تحقق من `available_for_direct_sale`، ثم اقرأ `option_stocks[product_option_id]` أو مجموع `option_stocks`، أو `stock_quantity`.
-  - بدون لون محدد → اجمع كل الألوان المؤهلة للبيع المباشر.
-- إذا كان المتاح `<= 0` → احذف الصف من `cart_items`.
-- ترجع `jsonb` يحتوي مصفوفة العناصر المحذوفة `[{id, product_id, product_name}]` لاستخدامها في عرض إشعارات للمستخدم.
+### Database (migration)
+Drop the warranty-benefit tables and any policies/functions tied to them:
+- Drop table `public.printer_warranty_benefits`
+- Drop table `public.printer_warranty_usage`
+- Drop any RPC / trigger / view that only exists to compute warranty perks (audit during migration).
 
-تمنح `EXECUTE` للأدوار `authenticated` فقط، مع حماية `p_user_id = auth.uid()` داخلياً (يرفض إذا حاول مستخدم تمرير id آخر).
+`store_printers` (warranty itself), `user_printers`, `protection_plans`, `printer_protection_logs` stay — they belong to the warranty product, not the perks.
 
-### 2. تحديث `src/pages/Cart.tsx`
-- استبدال حلقة `removeOutOfStockItems` و `useEffect` التلقائي بنداء واحد لـ:
-  ```ts
-  const { data } = await supabase.rpc('purge_oos_direct_cart_items');
-  ```
-- استدعاؤه في:
-  - `useEffect` على mount.
-  - دوري مع interval الفحص الموجود حالياً (نفس الـ refetch القائم لـ `cart-stock-check`).
-  - بعد أي `refetch` لبيانات المخزون عندما يكتشف المنطق المحلي عناصر `outOfStockItemIds`.
-- لكل عنصر مُعاد في الاستجابة، إظهار `sonnerToast.error` بنفس النص الحالي (`cart_out_of_stock_warning`).
-- استخدام `oosNotifiedRef` كما هو الآن لمنع تكرار التنبيه.
-- بعد النجاح، استدعاء `refetch` لبيانات السلة (`useCart` يتعامل مع realtime لكن استدعاء صريح يضمن التحديث الفوري).
+### Frontend code to delete
+- `src/pages/AdminPrinterWarrantyBenefits.tsx` (admin page)
+- `src/components/WarrantyBenefitsCard.tsx`
+- `src/hooks/useCartWarrantyBenefits.tsx`
+- Route + nav entry for warranty benefits in `src/App.tsx` and admin sidebar
+- All warranty-benefit references in `src/pages/Cart.tsx` and `src/pages/ProductDetail.tsx` (discount calc, badges, totals)
+- All `warranty_benefit*` i18n keys in `src/lib/i18n/{ar,en,ku}.ts` and `src/lib/i18n/types.ts`
 
-### 3. تحديث `src/hooks/useCart.tsx` (اختياري خفيف)
-إضافة استدعاء لـ `purge_oos_direct_cart_items` داخل خطوة تحميل السلة الأولية (`fetchCart`) قبل قراءة `cart_items`، لضمان أن أي صفحة (وليس Cart فقط) تبدأ بسلة نظيفة. لا تغيير في الواجهة الخارجية.
+### Memory cleanup
+Remove these stale memories from `mem://index.md`:
+- `Warranty vs Protection Plan`
+- `Benefits Direct Sale Only`
+- `Insurance Discount Integration` (only the warranty-discount portion)
 
-### 4. تحديث `src/integrations/supabase/types.ts`
-إضافة توقيع الدالة الجديدة `purge_oos_direct_cart_items` ضمن `Functions`.
+---
 
-## ملاحظات تقنية
-- لا حاجة لـ Edge Function؛ Postgres RPC كافٍ ويُستدعى مباشرة عبر `supabase.rpc(...)` من المتصفح.
-- العملية idempotent: إذا لم يوجد ما يُحذف ترجع مصفوفة فارغة.
-- لا تُمَس عناصر RF، locked، bundles، أو preorder.
-- لا تأثير على `WHERE true` أو سياسات RLS الموجودة لأن الحذف يتم عبر `SECURITY DEFINER` المحدود بـ `auth.uid()`.
+## Part 2 — Loyalty Card Activation Codes
 
-## الملفات المتأثرة
-- جديد: `supabase/migrations/<timestamp>_purge_oos_direct_cart_items.sql`
-- تعديل: `src/pages/Cart.tsx`
-- تعديل خفيف: `src/hooks/useCart.tsx`
-- تحديث تلقائي: `src/integrations/supabase/types.ts`
+### New table: `loyalty_card_codes`
+Columns:
+- `id` uuid PK
+- `card_id` uuid → `membership_cards.id` (which card the code grants)
+- `code` text UNIQUE (the redeemable string, generated by admin)
+- `batch_id` uuid (groups codes generated together)
+- `batch_label` text (admin label, e.g. "بطاقة برونزية 6 أشهر — دفعة مايو")
+- `duration_days` integer (how long the card is valid after the user activates it; default copied from `membership_cards.duration_days` but overridable per batch)
+- `code_expires_at` timestamptz (deadline for redeeming the code itself, e.g. 3 months from creation — set per batch)
+- `requires_active_warranty` boolean default true
+- `status` text: `active` | `redeemed` | `expired` | `revoked`
+- `redeemed_by_user_id` uuid (nullable)
+- `redeemed_user_printer_id` uuid (nullable, the warranty record used for eligibility)
+- `redeemed_at` timestamptz (nullable)
+- `created_by` uuid (admin)
+- `created_at`, `updated_at`
+
+**RLS**: Admins manage all rows. Authenticated users have no SELECT — they only interact via the redeem RPC below (so codes can't be brute-forced).
+
+### New RPC: `redeem_loyalty_card_code(p_code text)`
+SECURITY DEFINER. Steps:
+1. Lookup code; reject if not found / not `active` / `code_expires_at < now()`.
+2. Check user has ≥ 1 row in `store_printers` with `buyer_user_id = auth.uid()`, `status='active'` (or equivalent), and `expiry_date > now()`. Reject otherwise with localized error.
+3. Reject if user already has an active row in `user_cards` for this `card_id` that hasn't expired.
+4. Insert into `user_cards` with `purchased_at = now()`, `expires_at = now() + duration_days`, `payment_method = 'code'`, `is_active = true`. Deactivate any previously-active `user_cards` row for this user (current single-active-card pattern).
+5. Update the code: `status='redeemed'`, `redeemed_by_user_id`, `redeemed_at`, `redeemed_user_printer_id`.
+6. Return the new `user_cards` row.
+
+### Optional cron / on-read check
+A small SQL function `expire_loyalty_card_codes()` flips `status='active'` codes whose `code_expires_at < now()` to `expired`. Can be run by the existing cron infrastructure (no new schedule required — checked lazily on admin list load too).
+
+### Admin UI: new page `src/pages/AdminLoyaltyCardCodes.tsx`
+Replaces the deleted warranty-benefits route in admin sidebar.
+
+Flow:
+- "Generate batch" form: pick membership card → enter quantity (e.g. 6) → enter card duration (months/days, prefilled from card) → enter code expiry (e.g. 3 months from now) → optional batch label → "Generate". Codes are auto-generated server-side (random, unique).
+- List of batches with: card name, quantity, redeemed/active/expired counts, code expiry date, created date.
+- Expand batch → table of individual codes with copy button, status, redeemed-by user, redeemed date.
+- Per-batch actions: revoke remaining active codes, export CSV.
+
+### User UI: redeem screen
+Add a card on `src/pages/RewardsHub.tsx` (or `MembershipCards.tsx`): "تفعيل بطاقة بكود" → input → submit → calls `redeem_loyalty_card_code`. Shows clear errors:
+- "الكود غير صالح أو منتهي"
+- "تحتاج طابعة فعّالة في الضمان لتفعيل هذا الكود"
+- "لديك بطاقة فعّالة بالفعل"
+
+On success: toast + invalidate `user_cards` query so the new card appears.
+
+### i18n
+Add new keys (ar/en/ku) for: redeem screen labels, errors, admin batch-generation form, status badges.
+
+---
+
+## Out of scope / unchanged
+- Loyalty card discount % and free-shipping logic (`useCartCardDiscount`, `useCartProtectionDiscount` for plan-only) — untouched.
+- Existing card purchase via points/wallet — untouched, `payment_method='code'` is just a new value alongside.
+- `protection_plans` (paid protection) — untouched.
+
+---
+
+## Technical notes (for the implementer)
+
+- Codes generated server-side as `nanoid(12)` uppercase or similar; insert in a single `INSERT … SELECT generate_series` for the whole batch.
+- Add unique partial index `(card_id, redeemed_by_user_id) WHERE status='redeemed'` if we want to enforce "one redeemed code per card per user", or skip for flexibility.
+- Eligibility check uses `store_printers.buyer_user_id` + `status='active'` + `expiry_date > now()` — confirmed columns exist.
+- Deletion of `printer_warranty_benefits` / `printer_warranty_usage` will cascade-fail if anything FKs them; the migration must drop dependents first (audit shows none in the public schema beyond the two pages we're deleting).
+- After approval I'll run the table-drop as a schema migration and execute the cleanup of leftover usage rows via the data tool.
