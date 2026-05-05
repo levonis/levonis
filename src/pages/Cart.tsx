@@ -997,15 +997,22 @@ const Cart = () => {
     ? Math.ceil(subtotalWithTax * 0.5)
     : (isCodPayment ? 0 : subtotalWithTax);
 
-  // حساب المبلغ المستخدم من المحفظة (التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة)
-  const walletDeduction = useWalletBalance && wallet?.balance && !isCodPayment
-    ? Math.min(wallet.balance, preOrderPaymentAmount)
+  // حساب المبلغ المستخدم من المحفظة
+  // قاعدة عامة: التوصيل يُدفع عند الاستلام ولا يُخصم من المحفظة.
+  // استثناء: إذا وُجد فلمنت عشوائي، يجب دفع المنتجات + التوصيل بالكامل من المحفظة مسبقاً.
+  const walletRequiredAmount = hasRandomFilamentItems
+    ? preOrderPaymentAmount + deliveryFee
+    : preOrderPaymentAmount;
+  const walletDeduction = (useWalletBalance || hasRandomFilamentItems) && wallet?.balance && !isCodPayment
+    ? Math.min(wallet.balance, walletRequiredAmount)
     : 0;
 
-  // المطلوب الآن: في COD لا شيء (حتى التوصيل عند الاستلام). في غيره: المنتجات بعد المحفظة + التوصيل.
+  // المطلوب الآن: في COD لا شيء. خلاف ذلك: المنتجات بعد المحفظة + التوصيل (التوصيل يبقى عند الاستلام إلا للفلمنت العشوائي حيث يُحسم مع المحفظة).
   const grandTotal = isCodPayment
     ? 0
-    : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
+    : hasRandomFilamentItems
+      ? Math.max(0, walletRequiredAmount - walletDeduction)
+      : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
 
   // المبلغ المتبقي عند الاستلام (يشمل رسوم COD والتوصيل في حالة COD، أو رسوم الدفع الجزئي)
   const remainingAmount = isCodPayment
@@ -1241,7 +1248,9 @@ const Cart = () => {
   };
 
   // حساب المبلغ المطلوب دفعه الآن من المحفظة (التوصيل يُدفع عند الاستلام دائماً)
-  const requiredPaymentNow = preOrderPaymentAmount;
+  const requiredPaymentNow = hasRandomFilamentItems
+    ? preOrderPaymentAmount + deliveryFee
+    : preOrderPaymentAmount;
   const walletBalance = wallet?.balance || 0;
   const hasEnoughBalance = walletBalance >= requiredPaymentNow;
 
@@ -1273,14 +1282,17 @@ const Cart = () => {
         });
         return;
       }
-      // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع من المحفظة فقط — تحقق من كفاية الرصيد قبل فتح الحوار
-      if (hasRandomFilamentItems && walletBalance < total) {
-        toast({
-          title: 'رصيد المحفظة غير كافٍ',
-          description: `الفلمنت العشوائي يُدفع من المحفظة فقط. رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(total)} د.ع`,
-          variant: "destructive",
-        });
-        return;
+      // الفلمنت العشوائي في البيع المباشر يجب أن يُدفع (المنتجات + التوصيل) من المحفظة مسبقاً
+      {
+        const rfRequired = total + deliveryFee;
+        if (hasRandomFilamentItems && walletBalance < rfRequired) {
+          toast({
+            title: 'رصيد المحفظة غير كافٍ',
+            description: `الفلمنت العشوائي يُدفع من المحفظة (المنتجات + التوصيل). رصيدك: ${formatPrice(walletBalance)} د.ع — المطلوب: ${formatPrice(rfRequired)} د.ع`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
       setShowDirectSaleDialog(true);
       return;
@@ -1310,13 +1322,14 @@ const Cart = () => {
     setIsDirectSaleProcessing(true);
 
     try {
-      // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات
+      // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات + التوصيل
       if (hasRandomFilamentItems) {
         const productsTotal = total - (appliedCoupon ? calculateDiscount() : 0);
-        if (!data.useWallet || (wallet?.balance || 0) < productsTotal) {
+        const requiredAll = productsTotal + (deliveryFee || 0);
+        if (!data.useWallet || (wallet?.balance || 0) < requiredAll) {
           toast({
             title: 'الدفع من المحفظة مطلوب',
-            description: `الفلمنت العشوائي يُدفع من المحفظة فقط ويجب أن يكون الرصيد كافياً (${formatPrice(productsTotal)} د.ع).`,
+            description: `الفلمنت العشوائي يُدفع من المحفظة (المنتجات + التوصيل). المطلوب: ${formatPrice(requiredAll)} د.ع.`,
             variant: 'destructive',
           });
           setIsDirectSaleProcessing(false);
@@ -1361,9 +1374,13 @@ const Cart = () => {
       const { data: orderNumberData } = await supabase.rpc('generate_order_number');
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      // Wallet deduction for direct sale — التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة
-      const walletDeductionAmount = data.useWallet ? Math.min(data.walletDeduction, orderSubtotal) : 0;
-      const codRemaining = (orderSubtotal + deliveryFeeCalc) - walletDeductionAmount;
+      // Wallet deduction for direct sale — افتراضياً التوصيل عند الاستلام، إلا للفلمنت العشوائي حيث يُحسم التوصيل أيضاً من المحفظة
+      const orderGrandTotal = orderSubtotal + deliveryFeeCalc;
+      const walletCap = hasRandomFilamentItems ? orderGrandTotal : orderSubtotal;
+      const walletDeductionAmount = data.useWallet
+        ? Math.min(data.walletDeduction || (hasRandomFilamentItems ? orderGrandTotal : 0), walletCap)
+        : 0;
+      const codRemaining = orderGrandTotal - walletDeductionAmount;
 
       // Deduct from wallet if applicable
       if (walletDeductionAmount > 0) {
@@ -3384,7 +3401,7 @@ const Cart = () => {
                               </p>
                               <p className="text-muted-foreground mt-1">
                                 لا يمكن إكمال الطلب بالدفع عند الاستلام لقيمة منتجات الفلمنت العشوائي.
-                                ادفع قيمة المنتجات من المحفظة (التوصيل يبقى عند الاستلام)، أو أزل الفلمنت العشوائي لاستخدام الدفع عند الاستلام بالكامل.
+                                ادفع قيمة المنتجات + التوصيل من المحفظة مسبقاً، أو أزل الفلمنت العشوائي لاستخدام الدفع عند الاستلام.
                               </p>
                               <div className="mt-2 space-y-1.5">
                                 {items.filter((it: any) => it.is_random_filament).map((it: any) => (
