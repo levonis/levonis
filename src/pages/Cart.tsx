@@ -997,15 +997,22 @@ const Cart = () => {
     ? Math.ceil(subtotalWithTax * 0.5)
     : (isCodPayment ? 0 : subtotalWithTax);
 
-  // حساب المبلغ المستخدم من المحفظة (التوصيل يبقى دائماً عند الاستلام، لا يُخصم من المحفظة)
-  const walletDeduction = useWalletBalance && wallet?.balance && !isCodPayment
-    ? Math.min(wallet.balance, preOrderPaymentAmount)
+  // حساب المبلغ المستخدم من المحفظة
+  // قاعدة عامة: التوصيل يُدفع عند الاستلام ولا يُخصم من المحفظة.
+  // استثناء: إذا وُجد فلمنت عشوائي، يجب دفع المنتجات + التوصيل بالكامل من المحفظة مسبقاً.
+  const walletRequiredAmount = hasRandomFilamentItems
+    ? preOrderPaymentAmount + deliveryFee
+    : preOrderPaymentAmount;
+  const walletDeduction = (useWalletBalance || hasRandomFilamentItems) && wallet?.balance && !isCodPayment
+    ? Math.min(wallet.balance, walletRequiredAmount)
     : 0;
 
-  // المطلوب الآن: في COD لا شيء (حتى التوصيل عند الاستلام). في غيره: المنتجات بعد المحفظة + التوصيل.
+  // المطلوب الآن: في COD لا شيء. خلاف ذلك: المنتجات بعد المحفظة + التوصيل (التوصيل يبقى عند الاستلام إلا للفلمنت العشوائي حيث يُحسم مع المحفظة).
   const grandTotal = isCodPayment
     ? 0
-    : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
+    : hasRandomFilamentItems
+      ? Math.max(0, walletRequiredAmount - walletDeduction)
+      : Math.max(0, preOrderPaymentAmount - walletDeduction) + deliveryFee;
 
   // المبلغ المتبقي عند الاستلام (يشمل رسوم COD والتوصيل في حالة COD، أو رسوم الدفع الجزئي)
   const remainingAmount = isCodPayment
