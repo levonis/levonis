@@ -29,6 +29,7 @@ interface DirectSaleCheckoutDialogProps {
   isProcessing: boolean;
   walletBalance: number;
   hasActiveDirectOrders: boolean;
+  forceWalletPayment?: boolean;
 }
 
 const DirectSaleCheckoutDialog = ({
@@ -42,6 +43,7 @@ const DirectSaleCheckoutDialog = ({
   isProcessing,
   walletBalance,
   hasActiveDirectOrders,
+  forceWalletPayment = false,
 }: DirectSaleCheckoutDialogProps) => {
   const [notes, setNotes] = useState('');
   const [countdown, setCountdown] = useState(5);
@@ -67,9 +69,11 @@ const DirectSaleCheckoutDialog = ({
       setCountdown(5);
       setCanConfirm(false);
       setNotes('');
-      setUseWallet(false);
+      setUseWallet(forceWalletPayment);
       return;
     }
+
+    if (forceWalletPayment) setUseWallet(true);
 
     const timer = setInterval(() => {
       setCountdown(prev => {
@@ -83,18 +87,19 @@ const DirectSaleCheckoutDialog = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [open]);
+  }, [open, forceWalletPayment]);
 
   const grandTotal = totalAmount + deliveryFee;
   // التوصيل يُدفع دائماً عند الاستلام — لا يُخصم من المحفظة.
   // المحفظة تخصم فقط من قيمة المنتجات (totalAmount).
   const walletDeduction = useWallet ? Math.min(walletBalance, totalAmount) : 0;
   const codAmount = grandTotal - walletDeduction;
+  const insufficientWallet = forceWalletPayment && walletBalance < totalAmount;
 
   const handleConfirm = useCallback(async () => {
-    if (!canConfirm || isProcessing) return;
+    if (!canConfirm || isProcessing || insufficientWallet) return;
     await onConfirm({ notes, useWallet, walletDeduction });
-  }, [canConfirm, isProcessing, notes, onConfirm, useWallet, walletDeduction]);
+  }, [canConfirm, isProcessing, notes, onConfirm, useWallet, walletDeduction, insufficientWallet]);
 
   const progressValue = ((5 - countdown) / 5) * 100;
   const estimatedTime = address?.governorate?.includes('بغداد') ? '1-3 أيام' : '3-5 أيام';
@@ -194,6 +199,24 @@ const DirectSaleCheckoutDialog = ({
             </div>
           )}
 
+          {/* Random Filament — wallet only notice */}
+          {forceWalletPayment && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 backdrop-blur-sm">
+              <div className="flex items-start gap-2">
+                <Wallet className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                <div className="text-xs leading-relaxed">
+                  <p className="font-bold text-amber-300">الفلمنت العشوائي يُدفع من المحفظة فقط</p>
+                  <p className="text-muted-foreground mt-0.5">سيتم خصم قيمة المنتجات من رصيدك. التوصيل يبقى عند الاستلام.</p>
+                  {insufficientWallet && (
+                    <p className="text-destructive font-bold mt-1">
+                      رصيدك غير كافٍ — تحتاج {formatPrice(totalAmount - walletBalance)} د.ع إضافية
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Wallet Balance Option */}
           {walletBalance > 0 && (
             <div className={`rounded-xl border p-4 space-y-3 transition-all backdrop-blur-sm ${useWallet ? 'border-primary/30 bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.1)]' : 'border-white/10 bg-white/5'}`}>
@@ -205,6 +228,7 @@ const DirectSaleCheckoutDialog = ({
                 <Switch
                   checked={useWallet}
                   onCheckedChange={setUseWallet}
+                  disabled={forceWalletPayment}
                 />
               </div>
               <div className="flex justify-between text-sm">
@@ -290,7 +314,7 @@ const DirectSaleCheckoutDialog = ({
           {/* Confirm Button */}
           <Button
             onClick={handleConfirm}
-            disabled={!canConfirm || isProcessing}
+            disabled={!canConfirm || isProcessing || insufficientWallet}
             className="w-full h-12 text-base font-black bg-gradient-to-l from-primary to-accent text-primary-foreground hover:opacity-90 disabled:opacity-40 transition-all shadow-[0_4px_20px_hsl(var(--primary)/0.25)]"
             size="lg"
           >

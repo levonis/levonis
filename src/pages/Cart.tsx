@@ -156,6 +156,9 @@ const Cart = () => {
     (item as any).shipping_option_index !== null
   );
 
+  // الفلمنت العشوائي يجب أن يُدفع من المحفظة فقط (سواء حجز مسبق أو بيع مباشر)
+  const hasRandomFilamentItems = items.some((item: any) => (item as any).is_random_filament);
+
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -931,17 +934,20 @@ const Cart = () => {
 
   // ===== الدفع عند الاستلام (للطلب المسبق فقط) =====
   // متاح فقط إذا كان كل المنتجات في السلة تدعم الدفع عند الاستلام
-  const allItemsSupportCod = hasPreOrderItems && items.length > 0 && items.every((item: any) => {
+  const allItemsSupportCod = hasPreOrderItems && !hasRandomFilamentItems && items.length > 0 && items.every((item: any) => {
     return item.products?.cod_enabled === true;
   });
   const showCodOption = allItemsSupportCod;
 
-  // إعادة ضبط الخيار إذا اختفى الشرط
+  // إعادة ضبط الخيار إذا اختفى الشرط، وإجبار الدفع الكامل عند وجود فلمنت عشوائي
   useEffect(() => {
     if (preOrderPaymentOption === 'cod' && !showCodOption) {
       setPreOrderPaymentOption('full');
     }
-  }, [showCodOption, preOrderPaymentOption]);
+    if (hasRandomFilamentItems && preOrderPaymentOption !== 'full') {
+      setPreOrderPaymentOption('full');
+    }
+  }, [showCodOption, preOrderPaymentOption, hasRandomFilamentItems]);
 
   // حساب رسوم الدفع عند الاستلام لكل منتج
   // المنتجات المربوطة بـ link_direct_commission_to_cod: نستخدم نفس حساب سعر "البيع المباشر"
@@ -3256,6 +3262,7 @@ const Cart = () => {
                             </div>
                           </Label>
                         </div>
+                        {!hasRandomFilamentItems && (
                         <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                           preOrderPaymentOption === 'half' 
                             ? 'border-primary bg-primary/5' 
@@ -3272,6 +3279,7 @@ const Cart = () => {
                             </div>
                           </Label>
                         </div>
+                        )}
                         {showCodOption && (
                           <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                             preOrderPaymentOption === 'cod'
@@ -3596,6 +3604,7 @@ const Cart = () => {
         isProcessing={isDirectSaleProcessing}
         walletBalance={walletBalance}
         hasActiveDirectOrders={(activeDirectOrders?.length || 0) > 0}
+        forceWalletPayment={hasRandomFilamentItems}
       />
 
       {/* Order Success Animation */}
