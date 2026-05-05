@@ -287,33 +287,50 @@ const MyOrders = () => {
 
   useOrderRealtimeNotifications();
 
-  const { data: orders, isLoading } = useQuery({
+  const PAGE_SIZE = 15;
+
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['my-orders', user?.id],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
       if (!user) return [];
+      const from = (pageParam as number) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from('orders')
         .select(`
           id, order_number, status, total_amount, currency, order_type,
           tracking_number, tracking_url, user_confirmed_delivery, auto_confirmed,
-          created_at, payment_method, payment_status,
+          created_at,
           order_items!order_items_order_id_fkey(
-            *,
+            id, product_id, custom_request_id, quantity,
+            product_name_ar, shipping_option_name_ar,
             products!order_items_product_id_fkey(name_ar, image_url),
-            custom_product_requests(product_name, image_url, suggested_price)
+            custom_product_requests(product_name, image_url)
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
       if (error) throw error;
       return data || [];
     },
+    getNextPageParam: (lastPage, allPages) =>
+      (lastPage?.length ?? 0) === PAGE_SIZE ? allPages.length : undefined,
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
 
-  const preorders = orders?.filter((o: any) => o.order_type !== 'direct') || [];
-  const directOrders = orders?.filter((o: any) => o.order_type === 'direct') || [];
+  const orders = useMemo(() => (data?.pages ?? []).flat(), [data]);
+
+  const preorders = orders.filter((o: any) => o.order_type !== 'direct');
+  const directOrders = orders.filter((o: any) => o.order_type === 'direct');
 
   const preorderCounts: Record<string, number> = {};
   preorders.forEach((o: any) => { preorderCounts[o.status] = (preorderCounts[o.status] || 0) + 1; });
