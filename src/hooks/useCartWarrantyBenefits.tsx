@@ -126,7 +126,7 @@ export function useCartWarrantyBenefits(
 
   // Free shipping is granted only when the entire (non-gift) cart is direct
   // sale, since shipping is charged per-order and cannot be partially waived.
-  const nonGiftItems = items.filter((i) => !i.is_gift);
+  const nonGiftItems = items.filter((i) => !isGiftItem(i));
   const cartIsAllDirect = nonGiftItems.length > 0 && nonGiftItems.every(isDirectItem);
 
   for (const w of (warranties || []).filter((x) => x.is_benefits_active)) {
