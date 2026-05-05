@@ -95,3 +95,53 @@ describe("deriveCartSaleType", () => {
     ).toBe("preorder");
   });
 });
+
+import { detectSaleTypeConflict } from "../cartSaleType";
+
+describe("detectSaleTypeConflict", () => {
+  it("returns null for empty cart", () => {
+    expect(detectSaleTypeConflict([], "direct")).toBeNull();
+    expect(detectSaleTypeConflict(null, "preorder")).toBeNull();
+  });
+
+  it("returns null when cart has no bearer items", () => {
+    expect(
+      detectSaleTypeConflict([{ sale_type: "direct" }], "preorder"),
+    ).toBeNull();
+  });
+
+  it("returns null when sale_types match", () => {
+    expect(
+      detectSaleTypeConflict(
+        [{ product_id: "p1", sale_type: "direct" }],
+        "direct",
+      ),
+    ).toBeNull();
+  });
+
+  it("detects direct vs preorder conflict and includes both labels", () => {
+    const c = detectSaleTypeConflict(
+      [{ product_id: "p1", sale_type: "direct" }],
+      "preorder",
+    );
+    expect(c).not.toBeNull();
+    expect(c!.existing).toBe("direct");
+    expect(c!.incoming).toBe("preorder");
+    expect(c!.messageAr).toContain("بيع مباشر");
+    expect(c!.messageAr).toContain("حجز مسبق");
+  });
+
+  it("uses first bearer (cart winner) regardless of order of mixed bearers", () => {
+    const c = detectSaleTypeConflict(
+      [
+        { sale_type: "preorder" }, // non-bearer skipped
+        { bundle_id: "b1", sale_type: "preorder" },
+        { product_id: "p1", sale_type: "direct" },
+      ],
+      "direct",
+    );
+    expect(c).not.toBeNull();
+    expect(c!.existing).toBe("preorder");
+    expect(c!.incoming).toBe("direct");
+  });
+});
