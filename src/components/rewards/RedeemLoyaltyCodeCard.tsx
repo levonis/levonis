@@ -76,6 +76,10 @@ export default function RedeemLoyaltyCodeCard() {
 
   const submit = async () => {
     if (inFlightRef.current || submitting) return;
+    if (precheckBlocked) {
+      toast.error(WARRANTY_DETAILS[precheckBlocked].title);
+      return;
+    }
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
     const last = lastAttemptRef.current;
