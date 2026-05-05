@@ -640,17 +640,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      const existingItem = items.find(item => 
-        item.product_id === productId && 
-        normalize((item as any).product_option_id) === normalize(optionId) &&
-        normalize((item as any).selected_color) === normalize(color) &&
-        normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex &&
-        (item as any).sale_type === saleType &&
-        (item as any).is_gift === false &&
-        !(item as any).is_random_filament &&
-        !(item as any).is_locked &&
-        !(item as any).bundle_id &&
-        !(item as any).offer_purchase_id
+      const existingItem = items.find(item =>
+        item.product_id === productId &&
+        normalize(item.product_option_id) === normalize(optionId) &&
+        normalize(item.selected_color) === normalize(color) &&
+        normalizeShippingIndex(item.shipping_option_index) === targetShippingIndex &&
+        item.sale_type === saleType &&
+        item.is_gift === false &&
+        !item.is_random_filament &&
+        !item.is_locked &&
+        !item.bundle_id &&
+        !item.offer_purchase_id
       );
       
       if (existingItem) {
