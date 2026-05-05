@@ -93,11 +93,11 @@ export default function CartRequestDialog({
           selected_color: item.selected_color,
           color_image_url: item.color_image_url,
           product_option_id: item.product_option_id,
-          option_name_ar: (item as any).product_options?.name_ar,
+          option_name_ar: item.product_options?.name_ar,
           option_image_url: item.option_image_url,
           shipping_option_name_ar: item.shipping_option_name_ar,
           custom_request_id: item.custom_request_id,
-          sale_type: (item as any).sale_type,
+          sale_type: item.sale_type,
         };
       });
 
