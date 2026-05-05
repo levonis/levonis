@@ -199,6 +199,24 @@ const DirectSaleCheckoutDialog = ({
             </div>
           )}
 
+          {/* Random Filament — wallet only notice */}
+          {forceWalletPayment && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 backdrop-blur-sm">
+              <div className="flex items-start gap-2">
+                <Wallet className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                <div className="text-xs leading-relaxed">
+                  <p className="font-bold text-amber-300">الفلمنت العشوائي يُدفع من المحفظة فقط</p>
+                  <p className="text-muted-foreground mt-0.5">سيتم خصم قيمة المنتجات من رصيدك. التوصيل يبقى عند الاستلام.</p>
+                  {insufficientWallet && (
+                    <p className="text-destructive font-bold mt-1">
+                      رصيدك غير كافٍ — تحتاج {formatPrice(totalAmount - walletBalance)} د.ع إضافية
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Wallet Balance Option */}
           {walletBalance > 0 && (
             <div className={`rounded-xl border p-4 space-y-3 transition-all backdrop-blur-sm ${useWallet ? 'border-primary/30 bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.1)]' : 'border-white/10 bg-white/5'}`}>
@@ -210,6 +228,7 @@ const DirectSaleCheckoutDialog = ({
                 <Switch
                   checked={useWallet}
                   onCheckedChange={setUseWallet}
+                  disabled={forceWalletPayment}
                 />
               </div>
               <div className="flex justify-between text-sm">
