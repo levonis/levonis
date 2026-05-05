@@ -306,7 +306,7 @@ const MyOrders = () => {
         .from('orders')
         .select(`
           id, order_number, status, total_amount, currency, order_type,
-          tracking_number, tracking_url, user_confirmed_delivery, auto_confirmed,
+          user_confirmed_delivery, auto_confirmed,
           created_at,
           order_items!order_items_order_id_fkey(
             id, product_id, custom_request_id, quantity,
