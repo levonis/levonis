@@ -618,19 +618,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .subscribe()
     );
 
-    // Global listener: any random-filament reveal (INSERT into random_filament_orders)
-    // can deduct stock from a product currently in this user's cart even if the
-    // per-product UPDATE event was missed. Force a stock refresh on every RF event.
-    const rfChannel = supabase
-      .channel(`cart-rf-global-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'random_filament_orders' },
-        handleChange
-      )
-      .subscribe();
-    channels.push(rfChannel);
-
     const onVisibility = () => {
       if (!document.hidden && pendingRefresh) {
         pendingRefresh = false;
