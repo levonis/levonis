@@ -28,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
 import { translateShippingOption } from '@/lib/shippingLabel';
+import { buildFriendlyOrderError } from '@/lib/orderErrorMessages';
 
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
@@ -47,7 +48,7 @@ const Cart = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
@@ -1460,7 +1461,14 @@ const Cart = () => {
             console.error('Auto-refund failed for failed order', orderNumber, refundErr);
           }
         }
-        toast({ title: t('cart_order_create_error_title'), description: orderError?.message || t('cart_order_create_error_desc'), variant: 'destructive' });
+        const friendly = buildFriendlyOrderError(orderError, language as any);
+        sonnerToast.error(friendly.title, {
+          description: friendly.description,
+          duration: 9000,
+          action: friendly.action
+            ? { label: friendly.action.label, onClick: () => navigate(friendly.action!.href) }
+            : undefined,
+        });
         return;
       }
 
@@ -1861,10 +1869,13 @@ const Cart = () => {
             },
           });
         } catch {}
-        toast({
-          title: t('cart_order_create_error_title'),
-          description: orderError?.message || t('cart_order_create_error_desc'),
-          variant: "destructive",
+        const friendly = buildFriendlyOrderError(orderError, language as any);
+        sonnerToast.error(friendly.title, {
+          description: friendly.description,
+          duration: 9000,
+          action: friendly.action
+            ? { label: friendly.action.label, onClick: () => navigate(friendly.action!.href) }
+            : undefined,
         });
         return;
       }
