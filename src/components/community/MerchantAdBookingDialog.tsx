@@ -119,11 +119,14 @@ export default function MerchantAdBookingDialog({ open, onOpenChange, merchantId
       // Check balance (server will re-validate atomically)
       if (cost > walletBalance) throw new Error(`رصيد غير كافي. العجز: ${(cost - walletBalance).toLocaleString()} د.ع`);
 
-      // Atomic deduct via secure RPC (locks row, validates balance, logs transaction)
+      // Atomic + idempotent deduct (key debounces double-clicks within same minute / retries)
+      const minuteBucket = Math.floor(Date.now() / 60000);
+      const idemKey = `ad_booking:${merchantId}:${selectedPosition}:${hoursNum}:${minuteBucket}`;
       const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
         p_user_id: user.id,
         p_amount: cost,
         p_description: `حجز إعلان متجر - مركز ${selectedPosition} لمدة ${hoursNum} ساعة`,
+        p_idempotency_key: idemKey,
       });
       if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
 

@@ -118,11 +118,12 @@ export default function AcceptOfferDialog({
       const platformFee = Math.floor(offer.price_iqd * commissionRate);
       const merchantPayout = offer.price_iqd - platformFee;
 
-      // 1. Deduct from customer wallet using secure RPC function
+      // 1. Deduct from customer wallet using secure RPC (idempotent per offer acceptance)
       const { error: deductError } = await supabase.rpc('deduct_wallet_balance', {
         p_user_id: user.id,
         p_amount: offer.price_iqd,
-        p_description: `حجز مبلغ لطلب الطباعة - ${offer.merchant?.display_name || "تاجر"}`
+        p_description: `حجز مبلغ لطلب الطباعة - ${offer.merchant?.display_name || "تاجر"}`,
+        p_idempotency_key: `print_offer_accept:${offer.id}`,
       });
 
       if (deductError) throw new Error(deductError.message || 'فشل خصم المحفظة');
