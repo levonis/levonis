@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useMemo } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotifications';
@@ -287,33 +287,50 @@ const MyOrders = () => {
 
   useOrderRealtimeNotifications();
 
-  const { data: orders, isLoading } = useQuery({
+  const PAGE_SIZE = 15;
+
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['my-orders', user?.id],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
       if (!user) return [];
+      const from = (pageParam as number) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
       const { data, error } = await supabase
         .from('orders')
         .select(`
           id, order_number, status, total_amount, currency, order_type,
           tracking_number, tracking_url, user_confirmed_delivery, auto_confirmed,
-          created_at, payment_method, payment_status,
+          created_at,
           order_items!order_items_order_id_fkey(
-            *,
+            id, product_id, custom_request_id, quantity,
+            product_name_ar, shipping_option_name_ar,
             products!order_items_product_id_fkey(name_ar, image_url),
-            custom_product_requests(product_name, image_url, suggested_price)
+            custom_product_requests(product_name, image_url)
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
       if (error) throw error;
       return data || [];
     },
+    getNextPageParam: (lastPage, allPages) =>
+      (lastPage?.length ?? 0) === PAGE_SIZE ? allPages.length : undefined,
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
 
-  const preorders = orders?.filter((o: any) => o.order_type !== 'direct') || [];
-  const directOrders = orders?.filter((o: any) => o.order_type === 'direct') || [];
+  const orders = useMemo(() => (data?.pages ?? []).flat(), [data]);
+
+  const preorders = orders.filter((o: any) => o.order_type !== 'direct');
+  const directOrders = orders.filter((o: any) => o.order_type === 'direct');
 
   const preorderCounts: Record<string, number> = {};
   preorders.forEach((o: any) => { preorderCounts[o.status] = (preorderCounts[o.status] || 0) + 1; });
@@ -419,7 +436,7 @@ const MyOrders = () => {
               </div>
               <div>
                 <h1 className="text-lg font-black text-foreground">{t('myorders_title')}</h1>
-                {orders && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
+                {orders.length > 0 && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
               </div>
             </div>
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate(-1 as any)}>
@@ -566,6 +583,19 @@ const MyOrders = () => {
                 </div>
               )}
             </div>
+
+            {hasNextPage && (
+              <div className="px-4 pt-2 pb-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="rounded-xl"
+                >
+                  {isFetchingNextPage ? t('myorders_loading_more') : t('myorders_load_more')}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </main>

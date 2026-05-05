@@ -988,6 +988,8 @@ export const ku: TranslationKeys = {
   myorders_no_orders_yet: 'هێشتا هیچ داواکارییەک نییە',
   myorders_no_orders_desc: 'دەست بکە بە کڕین و کاڵا حەزلێکراوەکانت داوا بکە',
   myorders_browse_products: 'گەڕان لە کاڵاکان',
+  myorders_load_more: 'زیاتر',
+  myorders_loading_more: 'بارکردن...',
   myorders_tab_all: 'هەموو',
   myorders_tab_pending: 'چاوەڕێی پارەدان',
   myorders_tab_confirmed: 'پشتڕاستکراوە',

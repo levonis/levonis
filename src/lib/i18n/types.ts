@@ -990,6 +990,8 @@ export type TranslationKeys = {
   myorders_no_orders_yet: string;
   myorders_no_orders_desc: string;
   myorders_browse_products: string;
+  myorders_load_more: string;
+  myorders_loading_more: string;
   myorders_tab_all: string;
   myorders_tab_pending: string;
   myorders_tab_confirmed: string;
