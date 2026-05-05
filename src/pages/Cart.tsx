@@ -156,6 +156,9 @@ const Cart = () => {
     (item as any).shipping_option_index !== null
   );
 
+  // الفلمنت العشوائي يجب أن يُدفع من المحفظة فقط (سواء حجز مسبق أو بيع مباشر)
+  const hasRandomFilamentItems = items.some((item: any) => (item as any).is_random_filament);
+
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
