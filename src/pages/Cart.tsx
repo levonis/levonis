@@ -48,7 +48,7 @@ const Cart = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1540;
