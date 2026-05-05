@@ -777,7 +777,14 @@ const Cart = () => {
           totalCatFee += standardGovPrice;
         }
       }
-      return totalCatFee;
+      const finalCatFee = totalCatFee;
+      // Waive one base delivery slot if a prior direct-sale order today already paid for it
+      if (freeFirstDeliverySlot) {
+        const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
+        const oneSlot = matchingGovExc ? Number(matchingGovExc.delivery_price) : basePrice;
+        return Math.max(0, finalCatFee - oneSlot);
+      }
+      return finalCatFee;
     }
 
     // Check if there are items NOT covered by category exceptions
@@ -785,21 +792,21 @@ const Cart = () => {
     // Also count items with no category
     const hasNoCategoryItems = items.some(item => !item.products?.category_id);
 
+    const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
+    const govPrice = matchingGovExc ? Number(matchingGovExc.delivery_price) : basePrice;
+
+    let finalFee: number;
     if (handledCategories.size > 0) {
-      // If there are uncovered items, add base/gov delivery for them
-      if (hasUncoveredItems || hasNoCategoryItems) {
-        const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
-        const uncoveredFee = matchingGovExc ? Number(matchingGovExc.delivery_price) : basePrice;
-        return totalCatFee + uncoveredFee;
-      }
-      return totalCatFee;
+      finalFee = (hasUncoveredItems || hasNoCategoryItems) ? totalCatFee + govPrice : totalCatFee;
+    } else {
+      finalFee = govPrice;
     }
 
-    // No category exceptions matched, use governorate or base
-    const matchingGovExc = govExceptions.find((exc: any) => exc.governorate === governorate);
-    if (matchingGovExc) return Number(matchingGovExc.delivery_price);
-
-    return basePrice;
+    // Waive one base slot for 2nd+ direct-sale order today (extras like printer/filament>10 still apply)
+    if (freeFirstDeliverySlot) {
+      finalFee = Math.max(0, finalFee - govPrice);
+    }
+    return finalFee;
   };
 
   // Check if free delivery is active for selected method
