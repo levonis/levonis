@@ -18,6 +18,26 @@ const ERROR_MESSAGES: Record<string, string> = {
   auth_required: 'يرجى تسجيل الدخول',
 };
 
+type WarrantyReason = 'no_printer_registered' | 'warranty_expired' | 'no_active_warranty';
+
+const WARRANTY_DETAILS: Record<WarrantyReason, { title: string; desc: string; cta: string }> = {
+  no_printer_registered: {
+    title: 'لا توجد طابعة مسجّلة في حسابك',
+    desc: 'لتفعيل هذا الكود يجب أولاً تسجيل طابعتك وتفعيل ضمانها عبر مسح رمز QR الخاص بها.',
+    cta: 'تسجيل وتفعيل الطابعة',
+  },
+  warranty_expired: {
+    title: 'انتهى ضمان طابعتك',
+    desc: 'صلاحية ضمان طابعتك انتهت. يرجى تجديد الضمان أو تفعيل طابعة أخرى لاستخدام هذا الكود.',
+    cta: 'تجديد / تفعيل ضمان الطابعة',
+  },
+  no_active_warranty: {
+    title: 'لا توجد طابعة فعّالة في الضمان',
+    desc: 'يجب أن تكون لديك طابعة واحدة على الأقل ضمانها فعّال لتفعيل هذا الكود.',
+    cta: 'الذهاب لتفعيل الطابعة',
+  },
+};
+
 export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
