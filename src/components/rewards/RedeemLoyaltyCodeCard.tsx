@@ -49,6 +49,11 @@ export default function RedeemLoyaltyCodeCard() {
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
       qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
+      qc.invalidateQueries({ queryKey: ['user-active-card-cart'] });
+      qc.invalidateQueries({ queryKey: ['card-discount-limits'] });
+      qc.invalidateQueries({ queryKey: ['card-discount-usage'] });
+      qc.invalidateQueries({ queryKey: ['card-percentage-discount-used'] });
+      qc.invalidateQueries({ queryKey: ['card-free-shipping-used'] });
     } catch (e: any) {
       toast.error(e?.message || 'فشل التفعيل');
     } finally {
