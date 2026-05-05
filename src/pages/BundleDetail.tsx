@@ -126,8 +126,10 @@ const BundleDetail = () => {
     const bundleSaleType = bundle.sale_type === 'direct' ? 'direct' : 'preorder';
     setIsAdding(true);
     try {
-      if (cartItems.length > 0 && cartSaleType && cartSaleType !== bundleSaleType) {
-        toast.error('السلة تحتوي على نوع مختلف من الطلبات. يرجى إكمال الطلب الحالي أو تفريغ السلة');
+      const { detectSaleTypeConflict } = await import('@/lib/cartSaleType');
+      const conflict = detectSaleTypeConflict(cartItems as any, bundleSaleType);
+      if (conflict) {
+        toast.error(conflict.messageAr);
         return;
       }
       const success = await addBundleToCart(bundle.id, bundleSaleType as 'direct' | 'preorder', quantity);
@@ -135,9 +137,13 @@ const BundleDetail = () => {
         toast.success('تم إضافة الباقة للسلة بنجاح! 🎉');
         setQuantity(1);
       }
-    } catch (error) {
-      console.error('Error adding bundle to cart:', error);
-      toast.error('حدث خطأ في إضافة الباقة');
+    } catch (error: any) {
+      if (error?.conflict?.messageAr) {
+        toast.error(error.conflict.messageAr);
+      } else {
+        console.error('Error adding bundle to cart:', error);
+        toast.error('حدث خطأ في إضافة الباقة');
+      }
     } finally {
       setIsAdding(false);
     }
