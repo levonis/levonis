@@ -14406,6 +14406,15 @@ export type Database = {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
       }
+      refund_wallet_balance: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_idempotency_key?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       register_printer_from_order: {
         Args: { p_serial_number: string; p_user_id: string }
         Returns: string

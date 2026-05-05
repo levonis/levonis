@@ -1430,6 +1430,19 @@ const Cart = () => {
         .single();
 
       if (orderError || !orderResult) {
+        // Auto-refund the wallet if we already deducted, so the user is never charged for a non-existent order.
+        if (walletDeductionAmount > 0) {
+          try {
+            await supabase.rpc('refund_wallet_balance' as any, {
+              p_user_id: user.id,
+              p_amount: walletDeductionAmount,
+              p_description: `استرجاع تلقائي - فشل إنشاء الطلب ${orderNumber}`,
+              p_idempotency_key: `refund:direct_sale:${orderNumber}`,
+            });
+          } catch (refundErr) {
+            console.error('Auto-refund failed for failed order', orderNumber, refundErr);
+          }
+        }
         toast({ title: t('cart_order_create_error_title'), description: orderError?.message || t('cart_order_create_error_desc'), variant: 'destructive' });
         return;
       }
