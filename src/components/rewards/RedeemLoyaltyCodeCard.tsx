@@ -44,19 +44,37 @@ export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [warrantyReason, setWarrantyReason] = useState<WarrantyReason | null>(null);
+  const inFlightRef = useRef(false);
+  const lastAttemptRef = useRef<{ code: string; at: number } | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown(c => Math.max(0, c - 100)), 100);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
   const submit = async () => {
+    if (inFlightRef.current || submitting) return;
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
+    const last = lastAttemptRef.current;
+    if (last && last.code === trimmed && Date.now() - last.at < COOLDOWN_MS) {
+      toast.error('يرجى الانتظار قبل إعادة المحاولة');
+      return;
+    }
+    inFlightRef.current = true;
     setSubmitting(true);
     setWarrantyReason(null);
     try {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
+      lastAttemptRef.current = { code: trimmed, at: Date.now() };
       if (error) {
         const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
+        setCooldown(COOLDOWN_MS);
         if (key === 'no_printer_registered' || key === 'warranty_expired' || key === 'no_active_warranty') {
           setWarrantyReason(key as WarrantyReason);
           return;
