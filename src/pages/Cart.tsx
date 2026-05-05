@@ -1427,7 +1427,7 @@ const Cart = () => {
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
         .insert([orderInsertData])
-        .select('*')
+        .select('id, order_number')
         .single();
 
       if (orderError || !orderResult) {
@@ -1896,7 +1896,7 @@ const Cart = () => {
       // Fetch the created order to get order_number
       const { data: order, error: fetchOrderError } = await supabase
         .from('orders')
-        .select('*')
+        .select('id, order_number')
         .eq('id', orderId)
         .single();
 
