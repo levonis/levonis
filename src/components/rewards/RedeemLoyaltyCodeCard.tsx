@@ -95,8 +95,10 @@ export default function RedeemLoyaltyCodeCard() {
       qc.invalidateQueries({ queryKey: ['card-percentage-discount-used'] });
       qc.invalidateQueries({ queryKey: ['card-free-shipping-used'] });
     } catch (e: any) {
+      setCooldown(COOLDOWN_MS);
       toast.error(e?.message || 'فشل التفعيل');
     } finally {
+      inFlightRef.current = false;
       setSubmitting(false);
     }
   };
