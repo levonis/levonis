@@ -808,12 +808,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
-    // Client-side guard: never attempt to delete revealed random-filament items
-    const target = items.find(i => i.id === itemId) as any;
-    if (target?.is_random_filament_revealed || target?.is_locked) {
-      toast.error('لا يمكن إلغاء طلب الفلمنت العشوائي بعد الكشف عن اللون.');
-      return;
-    }
+    // Note: do NOT hard-block on client side based on is_random_filament_revealed/is_locked.
+    // The DB trigger `protect_random_filament_cart_delete` is the source of truth — it only
+    // blocks when there is an actual linked order (order_id IS NOT NULL OR revealed_at IS NOT NULL).
+    // Client-side flags can become stale (e.g. accidental reveal without order), which would
+    // otherwise leave the user unable to delete a perfectly removable cart row.
     // Optimistic update with lock
     optimisticLockRef.current++;
     const previousItems = items;
