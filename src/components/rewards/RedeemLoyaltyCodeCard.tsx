@@ -3,10 +3,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Ticket, Loader2 } from 'lucide-react';
+import { Ticket, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 
 const ERROR_MESSAGES: Record<string, string> = {
   code_not_found: 'الكود غير صالح',
@@ -21,24 +22,33 @@ export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [warrantyError, setWarrantyError] = useState(false);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const submit = async () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
     setSubmitting(true);
+    setWarrantyError(false);
     try {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
       if (error) {
         const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
+        if (key === 'no_active_warranty') {
+          setWarrantyError(true);
+          return;
+        }
         toast.error(ERROR_MESSAGES[key] || error.message || 'فشل التفعيل');
         return;
       }
       toast.success('تم تفعيل البطاقة بنجاح');
       setOpen(false);
       setCode('');
+      setWarrantyError(false);
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
+      qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
     } catch (e: any) {
       toast.error(e?.message || 'فشل التفعيل');
     } finally {
