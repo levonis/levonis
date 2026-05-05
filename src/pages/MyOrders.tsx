@@ -592,7 +592,7 @@ const MyOrders = () => {
                   disabled={isFetchingNextPage}
                   className="rounded-xl"
                 >
-                  {isFetchingNextPage ? t('myorders_tab_pending') : t('myorders_browse_products')}
+                  {isFetchingNextPage ? t('myorders_loading_more') : t('myorders_load_more')}
                 </Button>
               </div>
             )}
