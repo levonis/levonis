@@ -3,10 +3,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Ticket, Loader2 } from 'lucide-react';
+import { Ticket, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 
 const ERROR_MESSAGES: Record<string, string> = {
   code_not_found: 'الكود غير صالح',
@@ -21,24 +22,33 @@ export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [warrantyError, setWarrantyError] = useState(false);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const submit = async () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
     setSubmitting(true);
+    setWarrantyError(false);
     try {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
       if (error) {
         const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
+        if (key === 'no_active_warranty') {
+          setWarrantyError(true);
+          return;
+        }
         toast.error(ERROR_MESSAGES[key] || error.message || 'فشل التفعيل');
         return;
       }
       toast.success('تم تفعيل البطاقة بنجاح');
       setOpen(false);
       setCode('');
+      setWarrantyError(false);
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
+      qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
     } catch (e: any) {
       toast.error(e?.message || 'فشل التفعيل');
     } finally {
@@ -73,11 +83,30 @@ export default function RedeemLoyaltyCodeCard() {
           </p>
           <Input
             value={code}
-            onChange={e => setCode(e.target.value.toUpperCase())}
+            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyError) setWarrantyError(false); }}
             placeholder="مثال: A1B2C3D4E5F6"
             className="font-mono tracking-wider text-center"
             autoFocus
           />
+          {warrantyError && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                  لا يمكن تفعيل هذا الكود — لا توجد لديك طابعة فعّالة في الضمان أو أن ضمان طابعتك منتهي.
+                  يرجى تفعيل الطابعة في الضمان أولاً.
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-amber-500/50 hover:bg-amber-500/20"
+                onClick={() => { setOpen(false); navigate('/activate-printer'); }}
+              >
+                الذهاب لتفعيل الطابعة
+              </Button>
+            </div>
+          )}
           <Button className="w-full" onClick={submit} disabled={submitting}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تفعيل'}
           </Button>
