@@ -1583,6 +1583,9 @@ const Cart = () => {
         const fullyWalletPaid = !isCodPayment && !_isPreOrderWithPartialPayment;
         if (fullyWalletPaid) {
           await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: orderResult.id });
+          queryClient.invalidateQueries({ queryKey: ['order-detail', orderResult.id] });
+          queryClient.invalidateQueries({ queryKey: ['order-rf-rows', orderResult.id] });
+          queryClient.invalidateQueries({ queryKey: ['my-orders', user.id] });
         }
       } catch (e) {
         console.warn('random filament link/reveal failed', e);
@@ -2065,6 +2068,21 @@ const Cart = () => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Random filament: link selection to order, and reveal immediately if fully wallet-paid.
+      // (Wallet-only payments cannot be cancelled by the user → reveal at checkout, not on delivery.)
+      try {
+        await supabase.rpc('link_random_filament_to_order' as any, { p_order_id: order.id });
+        const fullyWalletPaidPreorder = !isPreOrderCod && !isPreOrderWithPartialPayment;
+        if (fullyWalletPaidPreorder) {
+          await supabase.rpc('reveal_random_filament_orders' as any, { p_order_id: order.id });
+          queryClient.invalidateQueries({ queryKey: ['order-detail', order.id] });
+          queryClient.invalidateQueries({ queryKey: ['order-rf-rows', order.id] });
+          queryClient.invalidateQueries({ queryKey: ['my-orders', user.id] });
+        }
+      } catch (e) {
+        console.warn('random filament link/reveal failed (preorder)', e);
       }
 
       // تحديث استخدام الكوبون إذا كان موجوداً
