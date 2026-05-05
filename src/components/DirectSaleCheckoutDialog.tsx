@@ -90,11 +90,12 @@ const DirectSaleCheckoutDialog = ({
   }, [open, forceWalletPayment]);
 
   const grandTotal = totalAmount + deliveryFee;
-  // التوصيل يُدفع دائماً عند الاستلام — لا يُخصم من المحفظة.
-  // المحفظة تخصم فقط من قيمة المنتجات (totalAmount).
-  const walletDeduction = useWallet ? Math.min(walletBalance, totalAmount) : 0;
+  // افتراضياً: التوصيل يُدفع عند الاستلام ولا يُخصم من المحفظة.
+  // استثناء: عند فرض الدفع من المحفظة (فلمنت عشوائي)، التوصيل أيضاً يُحسم من المحفظة مسبقاً.
+  const walletCap = forceWalletPayment ? grandTotal : totalAmount;
+  const walletDeduction = useWallet ? Math.min(walletBalance, walletCap) : 0;
   const codAmount = grandTotal - walletDeduction;
-  const insufficientWallet = forceWalletPayment && walletBalance < totalAmount;
+  const insufficientWallet = forceWalletPayment && walletBalance < grandTotal;
 
   const handleConfirm = useCallback(async () => {
     if (!canConfirm || isProcessing || insufficientWallet) return;
