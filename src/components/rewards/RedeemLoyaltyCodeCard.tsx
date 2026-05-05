@@ -18,11 +18,31 @@ const ERROR_MESSAGES: Record<string, string> = {
   auth_required: 'يرجى تسجيل الدخول',
 };
 
+type WarrantyReason = 'no_printer_registered' | 'warranty_expired' | 'no_active_warranty';
+
+const WARRANTY_DETAILS: Record<WarrantyReason, { title: string; desc: string; cta: string }> = {
+  no_printer_registered: {
+    title: 'لا توجد طابعة مسجّلة في حسابك',
+    desc: 'لتفعيل هذا الكود يجب أولاً تسجيل طابعتك وتفعيل ضمانها عبر مسح رمز QR الخاص بها.',
+    cta: 'تسجيل وتفعيل الطابعة',
+  },
+  warranty_expired: {
+    title: 'انتهى ضمان طابعتك',
+    desc: 'صلاحية ضمان طابعتك انتهت. يرجى تجديد الضمان أو تفعيل طابعة أخرى لاستخدام هذا الكود.',
+    cta: 'تجديد / تفعيل ضمان الطابعة',
+  },
+  no_active_warranty: {
+    title: 'لا توجد طابعة فعّالة في الضمان',
+    desc: 'يجب أن تكون لديك طابعة واحدة على الأقل ضمانها فعّال لتفعيل هذا الكود.',
+    cta: 'الذهاب لتفعيل الطابعة',
+  },
+};
+
 export default function RedeemLoyaltyCodeCard() {
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [warrantyError, setWarrantyError] = useState(false);
+  const [warrantyReason, setWarrantyReason] = useState<WarrantyReason | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -30,13 +50,13 @@ export default function RedeemLoyaltyCodeCard() {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) { toast.error('أدخل الكود'); return; }
     setSubmitting(true);
-    setWarrantyError(false);
+    setWarrantyReason(null);
     try {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
       if (error) {
         const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
-        if (key === 'no_active_warranty') {
-          setWarrantyError(true);
+        if (key === 'no_printer_registered' || key === 'warranty_expired' || key === 'no_active_warranty') {
+          setWarrantyReason(key as WarrantyReason);
           return;
         }
         toast.error(ERROR_MESSAGES[key] || error.message || 'فشل التفعيل');
@@ -45,7 +65,7 @@ export default function RedeemLoyaltyCodeCard() {
       toast.success('تم تفعيل البطاقة بنجاح');
       setOpen(false);
       setCode('');
-      setWarrantyError(false);
+      setWarrantyReason(null);
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
       qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
@@ -88,18 +108,22 @@ export default function RedeemLoyaltyCodeCard() {
           </p>
           <Input
             value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyError) setWarrantyError(false); }}
+            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyReason) setWarrantyReason(null); }}
             placeholder="مثال: A1B2C3D4E5F6"
             className="font-mono tracking-wider text-center"
             autoFocus
           />
-          {warrantyError && (
+          {warrantyReason && (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-                <div className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                  لا يمكن تفعيل هذا الكود — لا توجد لديك طابعة فعّالة في الضمان أو أن ضمان طابعتك منتهي.
-                  يرجى تفعيل الطابعة في الضمان أولاً.
+                <div className="space-y-1 text-right">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    {WARRANTY_DETAILS[warrantyReason].title}
+                  </p>
+                  <p className="text-xs text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
+                    {WARRANTY_DETAILS[warrantyReason].desc}
+                  </p>
                 </div>
               </div>
               <Button
@@ -108,7 +132,7 @@ export default function RedeemLoyaltyCodeCard() {
                 className="w-full border-amber-500/50 hover:bg-amber-500/20"
                 onClick={() => { setOpen(false); navigate('/activate-printer'); }}
               >
-                الذهاب لتفعيل الطابعة
+                {WARRANTY_DETAILS[warrantyReason].cta}
               </Button>
             </div>
           )}
