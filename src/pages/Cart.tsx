@@ -3403,6 +3403,39 @@ const Cart = () => {
                                 لا يمكن إكمال الطلب بالدفع عند الاستلام لقيمة منتجات الفلمنت العشوائي.
                                 ادفع قيمة المنتجات + التوصيل من المحفظة مسبقاً، أو أزل الفلمنت العشوائي لاستخدام الدفع عند الاستلام.
                               </p>
+                              {(() => {
+                                const required = (total || 0) + (deliveryFee || 0);
+                                const shortage = Math.max(0, required - walletBalance);
+                                if (shortage <= 0) return null;
+                                return (
+                                  <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 space-y-1">
+                                    <p className="text-[11px] font-bold text-destructive">
+                                      ⚠️ رصيد المحفظة غير كافٍ لإتمام الطلب
+                                    </p>
+                                    <div className="flex justify-between text-[11px]">
+                                      <span className="text-muted-foreground">المطلوب (المنتجات + التوصيل):</span>
+                                      <span className="font-bold text-foreground">{formatPrice(required)} د.ع</span>
+                                    </div>
+                                    <div className="flex justify-between text-[11px]">
+                                      <span className="text-muted-foreground">رصيدك الحالي:</span>
+                                      <span className="font-bold text-foreground">{formatPrice(walletBalance)} د.ع</span>
+                                    </div>
+                                    <div className="flex justify-between text-[11px]">
+                                      <span className="text-destructive font-bold">العجز:</span>
+                                      <span className="font-black text-destructive">{formatPrice(shortage)} د.ع</span>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      className="w-full h-8 mt-1 text-[11px] gap-1"
+                                      onClick={() => navigate('/wallet')}
+                                    >
+                                      <Wallet className="h-3 w-3" />
+                                      شحن المحفظة الآن
+                                    </Button>
+                                  </div>
+                                );
+                              })()}
                               <div className="mt-2 space-y-1.5">
                                 {items.filter((it: any) => it.is_random_filament).map((it: any) => (
                                   <div key={it.id} className="flex items-center justify-between gap-2 rounded-md bg-background/40 px-2 py-1.5">
