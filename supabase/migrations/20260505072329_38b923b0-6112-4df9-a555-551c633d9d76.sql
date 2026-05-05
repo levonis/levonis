@@ -1,0 +1,1 @@
+DELETE FROM public.cart_items WHERE user_id='2ae7972f-6d1d-40fb-b73f-9fb72941f3f3';
