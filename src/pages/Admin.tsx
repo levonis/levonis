@@ -322,7 +322,10 @@ const Admin = () => {
       
       // Load card discounts from product
       const cardDiscounts = Array.isArray(editingProduct.card_discounts) ? editingProduct.card_discounts : [];
-      setProductCardDiscounts(cardDiscounts);
+      setProductCardDiscounts(cardDiscounts.map((d: any) => ({
+        card_id: d.card_id || d.level_id || '',
+        discount_amount: Number(d.discount_amount || 0),
+      })));
 
       // Load options from the database ONLY if editing an existing product (has id)
       // For duplicated products (no id), options are already set by handleDuplicateProduct
@@ -1457,7 +1460,7 @@ const Admin = () => {
           ? Number(formData.get('points_reward')) 
           : 0,
         // Multiple card discounts as JSON array
-        card_discounts: productCardDiscounts.filter(d => d.level_id && d.discount_amount > 0),
+        card_discounts: productCardDiscounts.filter(d => d.card_id && d.discount_amount > 0),
         // New USD pricing fields
         price_usd: formData.get('price_usd') && formData.get('price_usd') !== '' 
           ? Number(formData.get('price_usd')) 
