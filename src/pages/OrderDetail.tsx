@@ -658,7 +658,7 @@ const OrderDetail = () => {
       {!isAdmin && <UnifiedChatButton />}
       
       {isAdmin && order && (
-        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={order.profiles?.full_name || t('od_admin_default_customer')} />
+        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={customerProfile?.full_name || t('od_admin_default_customer')} />
       )}
 
       {/* Cancel Dialog */}
