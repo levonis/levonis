@@ -326,7 +326,7 @@ const AdminFinancials = () => {
         remaining_amount: form.remaining_amount, status: form.status,
         order_type: form.order_type,
         shipping_address: 'طلب يدوي', phone_number: '-', governorate: '-',
-      }).select().single();
+      }).select('id, order_number').single();
       if (orderError) throw orderError;
       if (order) {
         const validProducts = form.products.filter(p => p.name.trim());
