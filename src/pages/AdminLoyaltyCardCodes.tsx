@@ -371,14 +371,27 @@ export const CreateBatchButton = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div>
-              <Label className="text-xs">عدد الأكواد</Label>
-              <Input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} />
+              <Label className="text-xs">عدد البطاقات</Label>
+              <Input type="number" min={1} max={1000} value={quantity} onChange={e => setQuantity(Number(e.target.value))} />
+              <p className="text-[10px] text-muted-foreground mt-1">كل كود = بطاقة لمستخدم</p>
             </div>
             <div>
-              <Label className="text-xs">مدة البطاقة (أيام)</Label>
-              <Input type="number" value={durationDays} onChange={e => setDurationDays(Number(e.target.value))} />
+              <Label className="text-xs">المدة (أشهر)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={Math.max(1, Math.round(durationDays / 30))}
+                onChange={e => setDurationDays(Math.max(1, Number(e.target.value)) * 30)}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">يُحوَّل إلى أيام</p>
+            </div>
+            <div>
+              <Label className="text-xs">المدة (أيام)</Label>
+              <Input type="number" min={1} max={1825} value={durationDays} onChange={e => setDurationDays(Number(e.target.value))} />
+              <p className="text-[10px] text-muted-foreground mt-1">صلاحية كل بطاقة</p>
             </div>
           </div>
           <div className="rounded-lg border border-border/60 p-2.5 space-y-2 bg-muted/20">
