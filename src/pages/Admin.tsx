@@ -1430,6 +1430,7 @@ const Admin = () => {
         display_order: formData.get('display_order') && formData.get('display_order') !== ''
           ? Number(formData.get('display_order'))
           : 0,
+        brand: ((formData.get('brand') as string) || '').trim() || null,
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
