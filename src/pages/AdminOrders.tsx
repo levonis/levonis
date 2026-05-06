@@ -953,26 +953,26 @@ const AdminOrders = () => {
           <AdminStatsGrid>
             <AdminStatCard
               icon={<Package className="h-5 w-5" />}
-              value={filteredOrders?.length || 0}
+              value={baseOrders.length}
               label="إجمالي الطلبات"
             />
             <AdminStatCard
               icon={<Loader2 className="h-5 w-5" />}
-              value={filteredOrders?.filter(o => o.status === 'pending').length || 0}
+              value={baseOrders.filter(o => o.status === 'pending').length}
               label="قيد الانتظار"
               colorClass="text-amber-500"
               bgClass="bg-amber-500/10"
             />
             <AdminStatCard
               icon={<Truck className="h-5 w-5" />}
-              value={filteredOrders?.filter(o => o.status === 'shipped').length || 0}
+              value={baseOrders.filter(o => o.status === 'shipped').length}
               label="تم الشحن"
               colorClass="text-blue-500"
               bgClass="bg-blue-500/10"
             />
             <AdminStatCard
               icon={<ShoppingBag className="h-5 w-5" />}
-              value={filteredOrders?.filter(o => o.status === 'delivered').length || 0}
+              value={baseOrders.filter(o => o.status === 'delivered').length}
               label="تم التوصيل"
               colorClass="text-green-500"
               bgClass="bg-green-500/10"
