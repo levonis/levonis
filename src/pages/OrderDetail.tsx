@@ -79,8 +79,7 @@ const ORDER_DETAIL_SELECT = `
     products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url),
     custom_product_requests(product_name, image_url, suggested_price),
     random_filament_offers!order_items_rf_offer_id_fkey(id, title_ar, description_ar, image_url)
-  ),
-  profiles(full_name, email)
+  )
 `;
 
 const InfoRow = ({ label, value, icon: Icon, valueClass = '' }: { label: string; value: string; icon?: any; valueClass?: string }) => (
@@ -140,6 +139,18 @@ const OrderDetail = () => {
     },
     enabled: !!orderId,
   });
+
+  const { data: customerProfile } = useQuery({
+    queryKey: ['order-customer-profile', (order as any)?.user_id, isAdmin],
+    queryFn: async () => {
+      const uid = (order as any)?.user_id;
+      if (!uid) return null;
+      const { data } = await supabase.from('profiles').select('full_name, email').eq('id', uid).maybeSingle();
+      return data;
+    },
+    enabled: !!isAdmin && !!(order as any)?.user_id,
+  });
+
   const hasRandomFilament = (rfRows?.length || 0) > 0;
   // Build a key -> rf row map for per-item lookups
   const rfByKey = new Map<string, any>();
@@ -647,7 +658,7 @@ const OrderDetail = () => {
       {!isAdmin && <UnifiedChatButton />}
       
       {isAdmin && order && (
-        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={order.profiles?.full_name || t('od_admin_default_customer')} />
+        <AdminUserChat userId={order.user_id} orderId={orderId} open={showAdminChat} onOpenChange={setShowAdminChat} userName={customerProfile?.full_name || t('od_admin_default_customer')} />
       )}
 
       {/* Cancel Dialog */}
