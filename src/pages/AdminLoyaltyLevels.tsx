@@ -603,9 +603,9 @@ export default function AdminLoyaltyLevels() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-card-codes`)}
+                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
               >
-                <Ticket className="h-4 w-4 ml-1" /> إدارة الأكواد
+                <History className="h-4 w-4 ml-1" /> سجل الاستخدام
               </Button>
               <Button
                 size="sm"
