@@ -1336,6 +1336,12 @@ const Cart = () => {
     setIsDirectSaleProcessing(true);
 
     try {
+      // CRITICAL: refuse to checkout an empty cart (prevents charging wallet for nothing).
+      if (!items || items.length === 0) {
+        toast({ title: 'السلة فارغة', description: 'لا توجد منتجات لإتمام الطلب', variant: 'destructive' });
+        setIsDirectSaleProcessing(false);
+        return;
+      }
       // حماية إضافية: عند وجود فلمنت عشوائي، يجب الدفع من المحفظة بالكامل لقيمة المنتجات + التوصيل
       if (hasRandomFilamentItems) {
         const productsTotal = total - (appliedCoupon ? calculateDiscount() : 0);
@@ -1483,18 +1489,37 @@ const Cart = () => {
         return;
       }
 
-      // Identify random filament cart items: new flow via cart_items.rf_offer_id, legacy via random_filament_orders link
+      // Identify random filament cart items: new flow via cart_items.rf_offer_id, legacy via random_filament_orders link.
+      // SAFETY: also re-read cart_items by id from DB so stale local state never drops RF rows.
       const cartItemIdsAll = items.map(i => i.id).filter(Boolean);
       let randomFilamentIds = new Set<string>();
       const rfPriceByCartItem = new Map<string, number>();
       const rfOfferByCartItem = new Map<string, string>();
+      const rfCategoryByCartItem = new Map<string, string>();
       items.forEach((it: any) => {
         if (it?.rf_offer_id) {
           randomFilamentIds.add(it.id);
           rfOfferByCartItem.set(it.id, it.rf_offer_id);
+          if (it.rf_category_id) rfCategoryByCartItem.set(it.id, it.rf_category_id);
           if (it.random_filament_price_iqd) rfPriceByCartItem.set(it.id, Number(it.random_filament_price_iqd));
         }
       });
+      // Fallback 1: direct cart_items read for any rf_offer_id we may have missed locally
+      try {
+        if (cartItemIdsAll.length > 0) {
+          const { data: rfFresh } = await (supabase as any)
+            .from('cart_items')
+            .select('id, rf_offer_id, rf_category_id')
+            .in('id', cartItemIdsAll)
+            .not('rf_offer_id', 'is', null);
+          (rfFresh || []).forEach((r: any) => {
+            randomFilamentIds.add(r.id);
+            if (r.rf_offer_id) rfOfferByCartItem.set(r.id, r.rf_offer_id);
+            if (r.rf_category_id) rfCategoryByCartItem.set(r.id, r.rf_category_id);
+          });
+        }
+      } catch (e) { console.warn('rf cart_items fallback failed', e); }
+      // Fallback 2: legacy random_filament_orders link
       try {
         if (cartItemIdsAll.length > 0) {
           const { data: rfRows } = await (supabase as any)
@@ -1508,6 +1533,29 @@ const Cart = () => {
           });
         }
       } catch (e) { console.warn('rf lookup failed', e); }
+      // Backfill RF prices from offers table when missing
+      try {
+        const offerIdsNeedingPrice = Array.from(new Set(
+          Array.from(randomFilamentIds)
+            .filter((cid) => !rfPriceByCartItem.has(cid))
+            .map((cid) => rfOfferByCartItem.get(cid))
+            .filter(Boolean) as string[]
+        ));
+        if (offerIdsNeedingPrice.length > 0) {
+          const { data: offers } = await (supabase as any)
+            .from('random_filament_offers')
+            .select('id, price_iqd')
+            .in('id', offerIdsNeedingPrice);
+          const priceByOffer = new Map<string, number>();
+          (offers || []).forEach((o: any) => priceByOffer.set(o.id, Number(o.price_iqd) || 0));
+          for (const cid of randomFilamentIds) {
+            if (!rfPriceByCartItem.has(cid)) {
+              const oid = rfOfferByCartItem.get(cid);
+              if (oid && priceByOffer.has(oid)) rfPriceByCartItem.set(cid, priceByOffer.get(oid)!);
+            }
+          }
+        }
+      } catch (e) { console.warn('rf price backfill failed', e); }
 
       // Create order items (include RF items even when product_id is still null — revealed later)
       const orderItems = items
@@ -1556,6 +1604,28 @@ const Cart = () => {
           };
         });
 
+      // CRITICAL SAFETY: never finalize an empty order. If we somehow built no items
+      // (e.g. stale local state, RF row not yet linked), refund + delete and abort.
+      if (orderItems.length === 0) {
+        console.error('Direct sale: orderItems empty — rolling back', { orderId: orderResult.id, orderNumber, itemsCount: items.length });
+        if (walletDeductionAmount > 0) {
+          try {
+            await supabase.rpc('refund_wallet_balance' as any, {
+              p_user_id: user.id,
+              p_amount: walletDeductionAmount,
+              p_description: `استرجاع تلقائي - عناصر الطلب فارغة ${orderNumber}`,
+              p_idempotency_key: `refund:empty_items:${orderNumber}`,
+            });
+          } catch (e) { console.error('Refund (empty items) failed:', e); }
+        }
+        try { await supabase.from('orders').delete().eq('id', orderResult.id); } catch (e) { console.error('Delete (empty items) failed:', e); }
+        sonnerToast.error('تعذر إنشاء الطلب', {
+          description: 'لم يتم العثور على عناصر السلة. تم إعادة المبلغ للمحفظة. يرجى تحديث الصفحة وإعادة المحاولة.',
+          duration: 9000,
+        });
+        return;
+      }
+
       if (orderItems.length > 0) {
         const itemsResult = await insertOrderItemsWithRollback(orderItems, {
           orderId: orderResult.id,
@@ -1572,6 +1642,18 @@ const Cart = () => {
             duration: 9000,
           });
           return;
+        }
+
+        // For Random Filament: finalize selection + deduct stock atomically BEFORE generic stock RPC.
+        // finalize_and_reveal_rf_for_order picks the random product/color, creates random_filament_orders rows,
+        // updates order_items with the chosen product_id/color, and decrements option_stocks.
+        const hasRfInOrder = orderItems.some((oi: any) => oi.rf_offer_id);
+        if (hasRfInOrder) {
+          try {
+            await supabase.rpc('finalize_and_reveal_rf_for_order' as any, { p_order_id: orderResult.id });
+          } catch (e) {
+            console.error('finalize_and_reveal_rf_for_order failed:', e);
+          }
         }
 
         // Deduct stock for direct sale items - retry up to 3 times
