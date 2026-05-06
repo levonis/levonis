@@ -377,13 +377,13 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
                   placeholder="المبلغ بالـ ¥"
                   className="h-8 text-sm"
                   autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert('price'); } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert(); } }}
                 />
                 <Button
                   type="button"
                   size="sm"
                   className="h-8 px-3 text-xs shrink-0"
-                  onClick={() => handleCnyConvert('price')}
+                  onClick={() => handleCnyConvert()}
                   disabled={!cnyValue || Number(cnyValue) <= 0}
                 >
                   تحويل
@@ -407,58 +407,22 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
             />
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="original_price_usd">السعر الأصلي ($)</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-[10px] gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                onClick={() => setShowCnyOrigInput(!showCnyOrigInput)}
-              >
-                <span className="font-bold">¥</span>
-                {showCnyOrigInput ? 'إخفاء' : 'تحويل من يوان'}
-              </Button>
-            </div>
-            {showCnyOrigInput && (
-              <div className="flex gap-1.5 items-center p-2 rounded-md bg-amber-50 border border-amber-200">
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={cnyOrigValue}
-                  onChange={(e) => setCnyOrigValue(e.target.value)}
-                  placeholder="المبلغ بالـ ¥"
-                  className="h-8 text-sm"
-                  autoFocus
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCnyConvert('original'); } }}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-8 px-3 text-xs shrink-0"
-                  onClick={() => handleCnyConvert('original')}
-                  disabled={!cnyOrigValue || Number(cnyOrigValue) <= 0}
-                >
-                  تحويل
-                </Button>
-                {cnyOrigValue && Number(cnyOrigValue) > 0 && (
-                  <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
-                    = {(Number(cnyOrigValue) / cnyToUsdRate).toFixed(2)}$
-                  </span>
-                )}
-              </div>
-            )}
+            <Label htmlFor="original_price_iqd">السعر الأصلي (د.ع)</Label>
             <Input
-              id="original_price_usd"
-              name="original_price_usd"
+              id="original_price_iqd"
+              name="original_price_iqd"
               type="number"
-              step="0.01"
+              step="250"
               min="0"
-              value={originalPriceUsd || ''}
-              onChange={(e) => setOriginalPriceUsd(Number(e.target.value))}
-              placeholder="اختياري"
+              value={originalPriceIqd || ''}
+              onChange={(e) => setOriginalPriceIqd(Number(e.target.value))}
+              placeholder="اختياري — يظهر للمستخدم كسعر قبل التخفيض"
             />
+            {originalPriceIqd > 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                سيظهر للمستخدم: {Math.round(originalPriceIqd).toLocaleString()} د.ع
+              </p>
+            )}
           </div>
         </div>
 
