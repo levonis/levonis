@@ -139,6 +139,18 @@ const OrderDetail = () => {
     },
     enabled: !!orderId,
   });
+
+  const { data: customerProfile } = useQuery({
+    queryKey: ['order-customer-profile', (order as any)?.user_id, isAdmin],
+    queryFn: async () => {
+      const uid = (order as any)?.user_id;
+      if (!uid) return null;
+      const { data } = await supabase.from('profiles').select('full_name, email').eq('id', uid).maybeSingle();
+      return data;
+    },
+    enabled: !!isAdmin && !!(order as any)?.user_id,
+  });
+
   const hasRandomFilament = (rfRows?.length || 0) > 0;
   // Build a key -> rf row map for per-item lookups
   const rfByKey = new Map<string, any>();
