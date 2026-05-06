@@ -14045,6 +14045,10 @@ export type Database = {
         Args: { p_category_id: string; p_offer_id: string }
         Returns: Json
       }
+      credit_user_wallet: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: number
+      }
       deduct_order_stock: { Args: { p_order_id: string }; Returns: undefined }
       deduct_prize_stock: {
         Args: { p_color?: string; p_option_name?: string; p_product_id: string }
