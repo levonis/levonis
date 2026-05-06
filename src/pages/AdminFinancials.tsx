@@ -67,36 +67,46 @@ interface ManualOrderForm {
 
 const PAGE_SIZE = 50;
 
+const toNumber = (value: unknown): number => {
+  const numberValue = typeof value === 'string' ? Number(value) : value;
+  return typeof numberValue === 'number' && Number.isFinite(numberValue) ? numberValue : 0;
+};
+
 const calcItemRevenue = (item: NonNullable<OrderWithDetails['order_items']>[number]): number => {
-  if (typeof item.total_price === 'number' && item.total_price > 0) return item.total_price;
-  return (item.unit_price || 0) * (item.quantity || 1);
+  const totalPrice = toNumber(item.total_price);
+  if (totalPrice > 0) return totalPrice;
+  return toNumber(item.unit_price) * (toNumber(item.quantity) || 1);
 };
 
 const getOrderItemsSubtotal = (order: OrderWithDetails): number => {
-  if (typeof order.subtotal === 'number' && order.subtotal > 0) return order.subtotal;
+  const subtotal = toNumber(order.subtotal);
+  if (subtotal > 0) return subtotal;
   if (!order.order_items?.length) return 0;
   return order.order_items.reduce((sum, item) => sum + calcItemRevenue(item), 0);
 };
 
 // Calculate delivery cost (respect manual admin_shipping_cost even when it's 0)
 const calcDeliveryCost = (order: OrderWithDetails): number => {
-  if (order.admin_shipping_cost != null) {
-    return order.admin_shipping_cost;
+  const manualShippingCost = toNumber(order.admin_shipping_cost);
+  if (manualShippingCost > 0) {
+    return manualShippingCost;
   }
   const subtotal = getOrderItemsSubtotal(order);
   if (subtotal > 0) {
-    return (order.total_amount || 0) - subtotal + (order.discount_amount || 0);
+    return Math.max(0, toNumber(order.total_amount) - subtotal + toNumber(order.discount_amount));
   }
   return 0;
 };
 
 // Calculate product cost (admin_product_cost, then admin_other_costs, then auto-derived)
 const calcProductCost = (order: OrderWithDetails, usdToIqdRate: number): number => {
-  if (order.admin_product_cost != null && order.admin_product_cost > 0) {
-    return order.admin_product_cost;
+  const adminProductCost = toNumber(order.admin_product_cost);
+  if (adminProductCost > 0) {
+    return adminProductCost;
   }
-  if (order.admin_other_costs != null && order.admin_other_costs > 0) {
-    return order.admin_other_costs;
+  const adminOtherCosts = toNumber(order.admin_other_costs);
+  if (adminOtherCosts > 0) {
+    return adminOtherCosts;
   }
   return calcAutoOrderProductCost(order, usdToIqdRate);
 };
@@ -118,12 +128,12 @@ const calcActualDeliveryCostFor = (
   const deliveryMethod = (order as any).delivery_method || 'standard';
   if (deliveryMethod === 'personal') {
     return (order.order_items || []).reduce((sum, item: any) => {
-      const pdc = item.products?.personal_delivery_cost || 0;
-      return sum + (pdc * (item.quantity || 1));
+      const pdc = toNumber(item.products?.personal_delivery_cost);
+      return sum + (pdc * (toNumber(item.quantity) || 1));
     }, 0);
   }
   const methodData = deliveryMethods.find((m) => m.method_key === deliveryMethod);
-  return methodData?.actual_cost || 0;
+  return toNumber(methodData?.actual_cost);
 };
 
 // Total costs = |delivery| + product costs + actual delivery paid to company
@@ -149,7 +159,7 @@ const calcOrderProfit = (
   deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
 ): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
+  return toNumber(order.total_amount) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
 };
 
 const AdminFinancials = () => {
@@ -219,21 +229,24 @@ const AdminFinancials = () => {
 
       const [itemsRes, profilesRes] = await Promise.all([
         orderIds.length
-          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id, product_bundles:bundle_id(id, title_ar, image_url)').in('order_id', orderIds)
+          ? supabase.from('order_items_admin' as any).select('id, order_id, product_name, product_name_ar, quantity, unit_price, total_price, cost_price, product_id, bundle_id, shipping_option_name_ar, custom_request_id').in('order_id', orderIds)
           : Promise.resolve({ data: [], error: null } as any),
         userIds.length
           ? supabase.from('profiles').select('id, username, full_name').in('id', userIds)
           : Promise.resolve({ data: [], error: null } as any),
       ]);
+      if (itemsRes.error) throw itemsRes.error;
+      if (profilesRes.error) throw profilesRes.error;
       const itemsRaw = ((itemsRes.data as any[]) || []);
       // Hydrate product fields (cost columns are restricted on base table; use products_admin view)
       const productIds = Array.from(new Set(itemsRaw.map((it: any) => it.product_id).filter(Boolean)));
       const productMap = new Map<string, any>();
       if (productIds.length > 0) {
-        const { data: prodData } = await (supabase as any)
+        const { data: prodData, error: prodErr } = await (supabase as any)
           .from('products_admin')
           .select('id, name_ar, price_usd, cost_price, shipping_cost_iqd, other_costs_iqd, personal_delivery_cost, referral_earnings_iqd, category_id, categories!products_category_id_fkey(id, name_ar, main_section_id, main_sections!categories_main_section_id_fkey(id, name_ar))')
           .in('id', productIds);
+        if (prodErr) throw prodErr;
         ((prodData as any[]) || []).forEach((p) => productMap.set(p.id, p));
       }
       const itemsByOrder = new Map<string, any[]>();

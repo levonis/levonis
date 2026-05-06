@@ -19,9 +19,10 @@ export interface FinancialOrderSnapshot {
   order_items?: FinancialOrderItemSnapshot[] | null;
 }
 
-const toPositiveNumber = (value: unknown): number => (
-  typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
-);
+const toPositiveNumber = (value: unknown): number => {
+  const numberValue = typeof value === 'string' ? Number(value) : value;
+  return typeof numberValue === 'number' && Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
+};
 
 export const isDirectSaleLikeOrder = (order: FinancialOrderSnapshot): boolean => {
   if (order.order_type === 'direct') return true;
