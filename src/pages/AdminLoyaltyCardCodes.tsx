@@ -196,7 +196,12 @@ const AdminLoyaltyCardCodes = () => {
                       <div className="text-sm font-semibold">{cardName(b.card_id)}</div>
                       <div className="text-[10px] text-muted-foreground">
                         {b.batch_label || `دفعة ${b.batch_id.slice(0, 6)}`} • {b.codes.length} كود •
-                        ينتهي الاستخدام: {new Date(b.code_expires_at).toLocaleDateString('ar')}
+                       {b.valid_from && new Date(b.valid_from) > new Date()
+                         ? `يبدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
+                         : b.valid_from
+                         ? `بدأ: ${new Date(b.valid_from).toLocaleDateString('ar')} • `
+                         : ''}
+                       ينتهي: {new Date(b.code_expires_at).toLocaleDateString('ar')}
                       </div>
                     </div>
                   </div>
