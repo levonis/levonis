@@ -1457,6 +1457,17 @@ export default function AdminLoyaltyLevels() {
               })}
             </div>
           )}
+
+          {/* Loyalty Activation Code Batches (merged from /loyalty-card-codes) */}
+          <AdminCard hover={false}>
+            <AdminCardHeader
+              title="دفعات أكواد التفعيل"
+              description="إنشاء وإدارة دفعات أكواد تفعيل بطاقات الولاء"
+            />
+            <AdminCardContent>
+              <LoyaltyCodeBatchesList showHeader={false} />
+            </AdminCardContent>
+          </AdminCard>
         </TabsContent>
 
         {/* Card Holders Tab */}
