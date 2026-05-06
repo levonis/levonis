@@ -39,13 +39,13 @@ const PROBES: Probe[] = [
     page: 'إدارة الطلبات',
     route: '/orders',
     table: 'orders_admin',
-    columns: 'id, total_amount, profit_amount, cost_total',
+    columns: 'id, total_amount, profit_amount, admin_product_cost, admin_shipping_cost',
   },
   {
     page: 'بنود الطلبات',
     route: '/orders',
     table: 'order_items_admin',
-    columns: 'id, price, cost_price, profit_amount',
+    columns: 'id, unit_price, total_price, cost_price',
   },
   {
     page: 'المنتجات / المخزون',
@@ -63,7 +63,7 @@ const PROBES: Probe[] = [
     page: 'المستخدمين',
     route: '/users',
     table: 'profiles',
-    columns: 'id, username, full_name, phone',
+    columns: 'id, username, full_name, phone_number',
   },
   {
     page: 'أدوار المستخدمين',
@@ -81,7 +81,7 @@ const PROBES: Probe[] = [
     page: 'الكوبونات',
     route: '/coupons',
     table: 'coupons',
-    columns: 'id, code, discount_amount',
+    columns: 'id, code, discount_value, discount_type',
   },
   {
     page: 'بطاقات العضوية',
