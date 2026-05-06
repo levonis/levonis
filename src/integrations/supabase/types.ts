@@ -13931,10 +13931,7 @@ export type Database = {
           p_quantity: number
           p_requires_active_warranty?: boolean
         }
-        Returns: {
-          code: string
-          id: string
-        }[]
+        Returns: Json
       }
       create_notification_if_not_exists: {
         Args: {
@@ -14065,7 +14062,7 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
-      expire_loyalty_card_codes: { Args: never; Returns: number }
+      expire_loyalty_card_codes: { Args: never; Returns: undefined }
       expire_loyalty_codes_and_cards: { Args: never; Returns: undefined }
       finalize_and_reveal_rf_for_order:
         | { Args: { p_order_id: string }; Returns: undefined }
