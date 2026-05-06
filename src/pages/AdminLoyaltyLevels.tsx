@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -601,40 +602,71 @@ export default function AdminLoyaltyLevels() {
                   إضافة بطاقة جديدة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="admin-dialog max-w-4xl h-[90vh] p-0 flex flex-col">
-                <DialogHeader className="px-6 py-4 border-b shrink-0">
-                  <DialogTitle>{editingLevel ? "تعديل البطاقة" : "إضافة بطاقة جديدة"}</DialogTitle>
+              <DialogContent className="admin-dialog max-w-6xl h-[92vh] p-0 flex flex-col !overflow-hidden !max-h-none">
+                <DialogHeader className="px-6 py-4 border-b shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                    {editingLevel ? `تعديل البطاقة: ${formData.name_ar || formData.level_key}` : "إضافة بطاقة جديدة"}
+                  </DialogTitle>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    عدّل الحقول من اليسار وراقب المعاينة المباشرة على اليمين
+                  </p>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 overflow-y-auto">
-                  <div className="px-6 py-4 space-y-6">
-                    {/* Card Preview */}
-                    <div className="flex justify-center p-6 bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl">
-                      <LoyaltyCardPreview
-                        name_ar={formData.name_ar || "اسم البطاقة"}
-                        name_en={formData.name_en || "Card Name"}
-                        color={formData.color}
-                        discount_percentage={formData.discount_percentage}
-                        bonus_points_percentage={formData.bonus_points_percentage}
-                        free_shipping={formData.free_shipping}
-                        free_shipping_min_order={formData.free_shipping_min_order}
-                        duration_days={formData.duration_days}
-                        is_purchasable={formData.is_purchasable}
-                        purchase_price_points={formData.purchase_price_points}
-                        min_points={formData.min_points}
-                        vip_support={formData.vip_support}
-                        special_name_style={formData.special_name_style}
-                        profile_effects={formData.profile_effects}
-                        size="lg"
-                      />
-                    </div>
+                <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-0">
+                  {/* Form area - scrollable */}
+                  <ScrollArea className="h-full">
+                    <div className="px-6 py-5">
+                      <Accordion
+                        type="multiple"
+                        defaultValue={["basic", "purchase", "discounts", "shipping", "perks", "design", "preview-mobile"]}
+                        className="space-y-3"
+                      >
+                        {/* Mobile preview - only on small screens */}
+                        <AccordionItem value="preview-mobile" className="lg:hidden border rounded-xl bg-gradient-to-br from-muted/40 to-muted/10 overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-4 w-4 text-primary" />
+                              <span className="font-semibold text-sm">معاينة البطاقة</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="flex justify-center">
+                              <LoyaltyCardPreview
+                                name_ar={formData.name_ar || "اسم البطاقة"}
+                                name_en={formData.name_en || "Card Name"}
+                                color={formData.color}
+                                discount_percentage={formData.discount_percentage}
+                                bonus_points_percentage={formData.bonus_points_percentage}
+                                free_shipping={formData.free_shipping}
+                                free_shipping_min_order={formData.free_shipping_min_order}
+                                duration_days={formData.duration_days}
+                                is_purchasable={formData.is_purchasable}
+                                purchase_price_points={formData.purchase_price_points}
+                                min_points={formData.min_points}
+                                vip_support={formData.vip_support}
+                                special_name_style={formData.special_name_style}
+                                profile_effects={formData.profile_effects}
+                                size="md"
+                              />
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Basic Info */}
-                      <AdminCard>
-                        <AdminCardHeader title="المعلومات الأساسية" icon={<Tag className="h-4 w-4" />} />
-                        <AdminCardContent>
-                          <div className="space-y-4">
+                        {/* 1. Basic Info */}
+                        <AccordionItem value="basic" className="border rounded-xl bg-card overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-md bg-primary/10">
+                                <Tag className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-sm">المعلومات الأساسية</div>
+                                <div className="text-[11px] text-muted-foreground font-normal">الاسم، اللون، المدة</div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4 space-y-4">
                             <div className="admin-form-group">
                               <Label>مفتاح البطاقة (بالإنجليزي)</Label>
                               <Input
@@ -708,15 +740,25 @@ export default function AdminLoyaltyLevels() {
                                 onChange={(e) => setFormData({ ...formData, duration_days: parseInt(e.target.value) })}
                               />
                             </div>
-                          </div>
-                        </AdminCardContent>
-                      </AdminCard>
+                          </AccordionContent>
+                        </AccordionItem>
 
-                      {/* Purchase Settings */}
-                      <AdminCard>
-                        <AdminCardHeader title="إعدادات الحصول على البطاقة" icon={<CreditCard className="h-4 w-4" />} />
-                        <AdminCardContent>
-                          <div className="space-y-4">
+                        {/* 2. Purchase / Acquisition */}
+                        <AccordionItem value="purchase" className="border rounded-xl bg-card overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-md bg-blue-500/10">
+                                <CreditCard className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-sm">طريقة الحصول على البطاقة</div>
+                                <div className="text-[11px] text-muted-foreground font-normal">
+                                  {formData.is_purchasable ? `بالشراء — ${formData.purchase_price_points || 0} نقطة` : `تلقائي — ${formData.min_points || 0} نقطة`}
+                                </div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4 space-y-4">
                             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                               <Label className="font-medium">قابلة للشراء بالنقاط</Label>
                               <Switch
@@ -726,7 +768,7 @@ export default function AdminLoyaltyLevels() {
                             </div>
 
                             {formData.is_purchasable ? (
-                              <>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div className="admin-form-group">
                                   <Label>سعر البطاقة (نقاط)</Label>
                                   <Input
@@ -737,18 +779,18 @@ export default function AdminLoyaltyLevels() {
                                   />
                                 </div>
                                 <div className="admin-form-group">
-                                  <Label>سعر المحفظة (د.ع) - اختياري</Label>
+                                  <Label>سعر المحفظة (د.ع) — اختياري</Label>
                                   <Input
                                     type="number"
                                     value={formData.wallet_price || ''}
                                     onChange={(e) => setFormData({ ...formData, wallet_price: e.target.value ? parseInt(e.target.value) : null })}
                                     placeholder="مثلاً 50000"
                                   />
-                                  <p className="text-xs text-muted-foreground mt-1">
+                                  <p className="text-[11px] text-muted-foreground mt-1">
                                     اتركه فارغاً لتعطيل الشراء بالمحفظة
                                   </p>
                                 </div>
-                              </>
+                              </div>
                             ) : (
                               <div className="admin-form-group">
                                 <Label>الحد الأدنى من النقاط (تلقائي)</Label>
@@ -760,29 +802,54 @@ export default function AdminLoyaltyLevels() {
                                 />
                               </div>
                             )}
-                          </div>
-                        </AdminCardContent>
-                      </AdminCard>
-                    </div>
+                          </AccordionContent>
+                        </AccordionItem>
 
-                    {/* Benefits Settings */}
-                    <AdminCard>
-                      <AdminCardHeader title="المميزات والخصومات" icon={<Gift className="h-4 w-4" />} />
-                      <AdminCardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div className="admin-form-group">
-                            <Label className="flex items-center gap-2">
-                              <Percent className="h-4 w-4" />
-                              نسبة الخصم (%)
-                            </Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={formData.discount_percentage}
-                              onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
-                            />
-                            <div className="mt-2">
+                        {/* 3. Discounts & Points */}
+                        <AccordionItem value="discounts" className="border rounded-xl bg-card overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-md bg-emerald-500/10">
+                                <Percent className="h-4 w-4 text-emerald-600" />
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-sm">الخصومات والنقاط</div>
+                                <div className="text-[11px] text-muted-foreground font-normal">
+                                  خصم {formData.discount_percentage || 0}% • نقاط +{formData.bonus_points_percentage || 0}%
+                                </div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="admin-form-group">
+                                <Label className="flex items-center gap-2">
+                                  <Percent className="h-4 w-4" />
+                                  نسبة الخصم العامة (%)
+                                </Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={formData.discount_percentage}
+                                  onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
+                                />
+                              </div>
+                              <div className="admin-form-group">
+                                <Label className="flex items-center gap-2">
+                                  <Zap className="h-4 w-4" />
+                                  نقاط إضافية (%)
+                                </Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={formData.bonus_points_percentage}
+                                  onChange={(e) => setFormData({ ...formData, bonus_points_percentage: parseFloat(e.target.value) })}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="admin-form-group">
                               <Label className="text-xs text-muted-foreground">
                                 الحد الأقصى للخصم بالدينار خلال صلاحية الباقة (اتركه فارغاً = بدون سقف)
                               </Label>
@@ -798,109 +865,139 @@ export default function AdminLoyaltyLevels() {
                                 } as any)}
                                 disabled={!formData.discount_percentage || formData.discount_percentage <= 0}
                               />
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                يظهر للمستخدمين: "خصم {formData.discount_percentage || 0}% مع بطاقة {formData.name_ar || '—'}"
+                                {(formData as any).discount_percentage_max_amount > 0 && ` بحد أقصى ${Number((formData as any).discount_percentage_max_amount).toLocaleString()} د.ع`}
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              يظهر للمستخدمين غير الحاملين: "خصم {formData.discount_percentage || 0}% مع بطاقة {formData.name_ar}"
-                              {(formData as any).discount_percentage_max_amount > 0 && ` بحد أقصى ${Number((formData as any).discount_percentage_max_amount).toLocaleString()} د.ع`}
-                            </p>
-                          </div>
-                          <div className="admin-form-group">
-                            <Label className="flex items-center gap-2">
-                              <Zap className="h-4 w-4" />
-                              نسبة النقاط الإضافية (%)
-                            </Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={formData.bonus_points_percentage}
-                              onChange={(e) => setFormData({ ...formData, bonus_points_percentage: parseFloat(e.target.value) })}
-                            />
-                          </div>
-                          <div className="admin-form-group">
-                            <Label className="flex items-center gap-2">
-                              <Truck className="h-4 w-4" />
-                              الحد الأدنى للشحن المجاني (د.ع)
-                            </Label>
-                            <Input
-                              type="number"
-                              value={formData.free_shipping_min_order}
-                              onChange={(e) => setFormData({ ...formData, free_shipping_min_order: parseFloat(e.target.value) })}
-                              disabled={!formData.free_shipping}
-                              placeholder="مثال: 250000"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {formData.free_shipping && formData.free_shipping_min_order > 0 
-                                ? `شحن مجاني للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
-                                : 'شحن مجاني على كل الطلبات'}
-                            </p>
-                          </div>
-                        </div>
 
-                        {/* Free shipping limits */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 rounded-lg border border-dashed border-border bg-muted/20">
-                          <div className="admin-form-group md:col-span-2">
-                            <Label className="text-sm font-semibold">طرق التوصيل المشمولة بالشحن المجاني</Label>
-                            <p className="text-xs text-muted-foreground mb-2">حدد طرق التوصيل التي يُطبَّق عليها الشحن المجاني (الاستلام من المخزن مجاني افتراضياً)</p>
-                            <div className="flex flex-wrap gap-3">
-                              {[
-                                { key: "standard", label: "التوصيل الاعتيادي" },
-                                { key: "personal", label: "التوصيل الشخصي" },
-                              ].map((m) => {
-                                const checked = formData.free_shipping_methods.includes(m.key);
-                                return (
-                                  <label key={m.key} className="flex items-center gap-2 cursor-pointer text-sm select-none">
-                                    <Switch
-                                      checked={checked}
-                                      onCheckedChange={(v) => {
-                                        const next = v
-                                          ? Array.from(new Set([...formData.free_shipping_methods, m.key]))
-                                          : formData.free_shipping_methods.filter((k) => k !== m.key);
-                                        setFormData({ ...formData, free_shipping_methods: next });
-                                      }}
-                                      disabled={!formData.free_shipping}
-                                    />
-                                    {m.label}
-                                  </label>
-                                );
-                              })}
+                            <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
+                              <Label className="text-sm font-semibold">الأقسام المشمولة بالخصم</Label>
+                              <p className="text-[11px] text-muted-foreground mb-2">اتركه فارغًا ليشمل جميع الأقسام</p>
+                              <div className="flex flex-wrap gap-2">
+                                {(allCategoriesForBenefits || []).map((c) => {
+                                  const selected = formData.discount_applicable_category_ids;
+                                  const checked = selected.includes(c.id);
+                                  return (
+                                    <label
+                                      key={c.id}
+                                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer text-xs select-none border ${
+                                        checked ? 'bg-primary/10 border-primary/40' : 'bg-background border-border'
+                                      }`}
+                                    >
+                                      <Switch
+                                        checked={checked}
+                                        onCheckedChange={(v) => {
+                                          const next = v
+                                            ? Array.from(new Set([...selected, c.id]))
+                                            : selected.filter((x) => x !== c.id);
+                                          setFormData({ ...formData, discount_applicable_category_ids: next });
+                                        }}
+                                      />
+                                      <span>{c.name_ar || c.name}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                          <div className="admin-form-group">
-                            <Label>الحد الأقصى لعدد مرات الشحن المجاني</Label>
-                            <Input
-                              type="number"
-                              min={0}
-                              value={formData.free_shipping_max_uses ?? ""}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  free_shipping_max_uses: e.target.value === "" ? null : parseInt(e.target.value),
-                                })
-                              }
-                              placeholder="اتركه فارغاً = غير محدود"
-                              disabled={!formData.free_shipping}
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {formData.free_shipping_max_uses != null && formData.free_shipping_max_uses > 0
-                                ? `يحق للعميل ${formData.free_shipping_max_uses} مرات شحن مجاني خلال صلاحية البطاقة`
-                                : "غير محدود طوال صلاحية البطاقة"}
-                            </p>
-                          </div>
-                        </div>
+                          </AccordionContent>
+                        </AccordionItem>
 
-                        {/* Category whitelists for discount and free shipping */}
-                        <div className="space-y-3 mb-4">
-                          {[
-                            { key: 'discount_applicable_category_ids' as const, label: 'الأقسام المشمولة بالخصم' },
-                            { key: 'free_shipping_applicable_category_ids' as const, label: 'الأقسام المشمولة بالتوصيل المجاني' },
-                          ].map((sec) => {
-                            const selected = (formData as any)[sec.key] as string[];
-                            return (
-                              <div key={sec.key} className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
-                                <Label className="text-sm font-semibold">{sec.label}</Label>
+                        {/* 4. Shipping (consolidated) */}
+                        <AccordionItem value="shipping" className="border rounded-xl bg-card overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-md bg-orange-500/10">
+                                <Truck className="h-4 w-4 text-orange-600" />
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-sm">إعدادات الشحن</div>
+                                <div className="text-[11px] text-muted-foreground font-normal">
+                                  {formData.free_shipping ? 'شحن مجاني مفعّل' : 'شحن مجاني معطّل'}
+                                  {formData.monthly_free_shipping > 0 && ` • ${formData.monthly_free_shipping} شحنات/شهر`}
+                                </div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4 space-y-4">
+                            {/* Master toggle */}
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20">
+                              <Label className="flex items-center gap-2 font-medium">
+                                <Truck className="h-4 w-4 text-orange-600" />
+                                تفعيل الشحن المجاني
+                              </Label>
+                              <Switch
+                                checked={formData.free_shipping}
+                                onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
+                              />
+                            </div>
+
+                            <div className={cn("space-y-4 transition-opacity", !formData.free_shipping && "opacity-50 pointer-events-none")}>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="admin-form-group">
+                                  <Label>الحد الأدنى للطلب (د.ع)</Label>
+                                  <Input
+                                    type="number"
+                                    value={formData.free_shipping_min_order}
+                                    onChange={(e) => setFormData({ ...formData, free_shipping_min_order: parseFloat(e.target.value) })}
+                                    placeholder="مثال: 250000"
+                                  />
+                                  <p className="text-[11px] text-muted-foreground mt-1">
+                                    {formData.free_shipping_min_order > 0
+                                      ? `يُطبَّق للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
+                                      : 'يُطبَّق على كل الطلبات'}
+                                  </p>
+                                </div>
+                                <div className="admin-form-group">
+                                  <Label>الحد الأقصى لعدد المرات</Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={formData.free_shipping_max_uses ?? ""}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        free_shipping_max_uses: e.target.value === "" ? null : parseInt(e.target.value),
+                                      })
+                                    }
+                                    placeholder="فارغ = غير محدود"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
+                                <Label className="text-sm font-semibold">طرق التوصيل المشمولة</Label>
+                                <p className="text-[11px] text-muted-foreground mb-2">الاستلام من المخزن مجاني افتراضياً</p>
+                                <div className="flex flex-wrap gap-3">
+                                  {[
+                                    { key: "standard", label: "التوصيل الاعتيادي" },
+                                    { key: "personal", label: "التوصيل الشخصي" },
+                                  ].map((m) => {
+                                    const checked = formData.free_shipping_methods.includes(m.key);
+                                    return (
+                                      <label key={m.key} className="flex items-center gap-2 cursor-pointer text-sm select-none">
+                                        <Switch
+                                          checked={checked}
+                                          onCheckedChange={(v) => {
+                                            const next = v
+                                              ? Array.from(new Set([...formData.free_shipping_methods, m.key]))
+                                              : formData.free_shipping_methods.filter((k) => k !== m.key);
+                                            setFormData({ ...formData, free_shipping_methods: next });
+                                          }}
+                                        />
+                                        {m.label}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
+                                <Label className="text-sm font-semibold">الأقسام المشمولة بالتوصيل المجاني</Label>
                                 <p className="text-[11px] text-muted-foreground mb-2">اتركه فارغًا ليشمل جميع الأقسام</p>
                                 <div className="flex flex-wrap gap-2">
                                   {(allCategoriesForBenefits || []).map((c) => {
+                                    const selected = formData.free_shipping_applicable_category_ids;
                                     const checked = selected.includes(c.id);
                                     return (
                                       <label
@@ -915,7 +1012,7 @@ export default function AdminLoyaltyLevels() {
                                             const next = v
                                               ? Array.from(new Set([...selected, c.id]))
                                               : selected.filter((x) => x !== c.id);
-                                            setFormData({ ...formData, [sec.key]: next } as any);
+                                            setFormData({ ...formData, free_shipping_applicable_category_ids: next });
                                           }}
                                         />
                                         <span>{c.name_ar || c.name}</span>
@@ -924,309 +1021,292 @@ export default function AdminLoyaltyLevels() {
                                   })}
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2 text-sm">
-                              <Tag className="h-4 w-4" />
-                              خصومات منتجات
-                            </Label>
-                            <Switch
-                              checked={formData.card_discounts_enabled}
-                              onCheckedChange={(checked) => setFormData({ ...formData, card_discounts_enabled: checked })}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                            <Label className="flex items-center gap-2 text-sm">
-                              <Crown className="h-4 w-4 text-amber-600" />
-                              دعم VIP
-                            </Label>
-                            <Switch
-                              checked={formData.vip_support}
-                              onCheckedChange={(checked) => setFormData({ ...formData, vip_support: checked })}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2 text-sm">
-                              <Truck className="h-4 w-4" />
-                              أولوية الشحن
-                            </Label>
-                            <Switch
-                              checked={formData.priority_shipping}
-                              onCheckedChange={(checked) => setFormData({ ...formData, priority_shipping: checked })}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2 text-sm">
-                              <Sparkles className="h-4 w-4" />
-                              وصول مبكر
-                            </Label>
-                            <Switch
-                              checked={formData.early_access}
-                              onCheckedChange={(checked) => setFormData({ ...formData, early_access: checked })}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2 text-sm">
-                              <Gift className="h-4 w-4" />
-                              منتجات حصرية
-                            </Label>
-                            <Switch
-                              checked={formData.exclusive_products}
-                              onCheckedChange={(checked) => setFormData({ ...formData, exclusive_products: checked })}
-                            />
-                          </div>
-                          <div className="admin-form-group">
-                            <Label className="text-xs">شحن مجاني شهرياً</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={formData.monthly_free_shipping}
-                              onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
-                              placeholder="0"
-                            />
-                          </div>
-                        </div>
-                      </AdminCardContent>
-                    </AdminCard>
-
-                    {/* Special Name Style */}
-                    <AdminCard>
-                      <AdminCardHeader title="تأثيرات الاسم والبروفايل" icon={<User className="h-4 w-4" />} />
-                      <AdminCardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {/* Name Style */}
-                          <div className="space-y-4 p-4 border rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <Label className="font-medium">اسم مميز للمستخدم</Label>
-                              <Switch
-                                checked={formData.special_name_style?.enabled || false}
-                                onCheckedChange={(checked) => setFormData({ 
-                                  ...formData, 
-                                  special_name_style: { ...formData.special_name_style, enabled: checked } 
-                                })}
-                              />
                             </div>
-                            {formData.special_name_style?.enabled && (
-                              <div className="space-y-3">
-                                <div className="admin-form-group">
-                                  <Label className="text-xs">لون الاسم</Label>
-                                  <div className="flex gap-2">
-                                    <Input
-                                      type="color"
-                                      value={formData.special_name_style?.color || formData.color}
-                                      onChange={(e) => setFormData({ 
-                                        ...formData, 
-                                        special_name_style: { ...formData.special_name_style, color: e.target.value } 
-                                      })}
-                                      className="w-12 h-9 cursor-pointer"
-                                    />
-                                    <Input
-                                      value={formData.special_name_style?.color || formData.color}
-                                      onChange={(e) => setFormData({ 
-                                        ...formData, 
-                                        special_name_style: { ...formData.special_name_style, color: e.target.value } 
-                                      })}
-                                      className="flex-1 font-mono text-xs"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                                  <Label className="text-xs">تأثير توهج</Label>
-                                  <Switch
-                                    checked={formData.special_name_style?.glow || false}
-                                    onCheckedChange={(checked) => setFormData({ 
-                                      ...formData, 
-                                      special_name_style: { ...formData.special_name_style, glow: checked } 
-                                    })}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
 
-                          {/* Profile Effects */}
-                          <div className="space-y-4 p-4 border rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <Label className="font-medium">تأثيرات البروفايل</Label>
-                              <Switch
-                                checked={formData.profile_effects?.enabled || false}
-                                onCheckedChange={(checked) => setFormData({ 
-                                  ...formData, 
-                                  profile_effects: { ...formData.profile_effects, enabled: checked } 
-                                })}
+                            {/* Monthly free shipping (separate from main free shipping) */}
+                            <div className="admin-form-group pt-3 border-t">
+                              <Label className="flex items-center gap-2 text-sm">
+                                <Truck className="h-4 w-4 text-muted-foreground" />
+                                شحنات مجانية شهرياً (مستقلة)
+                              </Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={formData.monthly_free_shipping}
+                                onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
+                                placeholder="0 = معطّل"
                               />
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                عدد الشحنات المجانية المتاحة كل شهر بغض النظر عن الإعدادات أعلاه
+                              </p>
                             </div>
-                            {formData.profile_effects?.enabled && (
-                              <div className="space-y-3">
-                                <div className="admin-form-group">
-                                  <Label className="text-xs">لون الإطار</Label>
-                                  <div className="flex gap-2">
-                                    <Input
-                                      type="color"
-                                      value={formData.profile_effects?.border_color || formData.color}
-                                      onChange={(e) => setFormData({ 
-                                        ...formData, 
-                                        profile_effects: { ...formData.profile_effects, border_color: e.target.value } 
-                                      })}
-                                      className="w-12 h-9 cursor-pointer"
-                                    />
-                                    <Input
-                                      value={formData.profile_effects?.border_color || formData.color}
-                                      onChange={(e) => setFormData({ 
-                                        ...formData, 
-                                        profile_effects: { ...formData.profile_effects, border_color: e.target.value } 
-                                      })}
-                                      className="flex-1 font-mono text-xs"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                                  <Label className="text-xs">توهج الخلفية</Label>
-                                  <Switch
-                                    checked={formData.profile_effects?.background_glow || false}
-                                    onCheckedChange={(checked) => setFormData({ 
-                                      ...formData, 
-                                      profile_effects: { ...formData.profile_effects, background_glow: checked } 
-                                    })}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </AdminCardContent>
-                    </AdminCard>
+                          </AccordionContent>
+                        </AccordionItem>
 
-                    {/* Auto-derived Benefits — toggle each to enable/disable */}
-                    <AdminCard>
-                      <AdminCardHeader 
-                        title="المزايا الظاهرة للعميل" 
-                        icon={<Sparkles className="h-4 w-4" />}
-                      />
-                      <AdminCardContent>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          فعّل أو أوقف كل ميزة. الميزة المُوقَفة لن تظهر للعميل ولن تُطبَّق في السلة.
-                        </p>
-                        {(() => {
-                          const items: Array<{
-                            key: string;
-                            text: string;
-                            enabled: boolean;
-                            toggle: (v: boolean) => void;
-                            visible: boolean;
-                          }> = [
-                            {
-                              key: 'discount_percentage',
-                              visible: formData.discount_percentage > 0 || !!editingLevel,
-                              enabled: formData.discount_percentage > 0,
-                              toggle: (v) => setFormData({ ...formData, discount_percentage: v ? (formData.discount_percentage || 5) : 0 }),
-                              text: formData.discount_percentage > 0
-                                ? (formData.discount_percentage_max_amount && formData.discount_percentage_max_amount > 0
-                                    ? `خصم ${formData.discount_percentage}% على جميع المنتجات (حتى ${formData.discount_percentage_max_amount.toLocaleString()} د.ع)`
-                                    : `خصم ${formData.discount_percentage}% على جميع المنتجات`)
-                                : 'خصم نسبي على المنتجات',
-                            },
-                            {
-                              key: 'bonus_points_percentage',
-                              visible: formData.bonus_points_percentage > 0 || !!editingLevel,
-                              enabled: formData.bonus_points_percentage > 0,
-                              toggle: (v) => setFormData({ ...formData, bonus_points_percentage: v ? (formData.bonus_points_percentage || 10) : 0 }),
-                              text: formData.bonus_points_percentage > 0
-                                ? `نقاط إضافية ${formData.bonus_points_percentage}%`
-                                : 'نقاط إضافية على الطلبات',
-                            },
-                            {
-                              key: 'free_shipping',
-                              visible: true,
-                              enabled: formData.free_shipping,
-                              toggle: (v) => setFormData({ ...formData, free_shipping: v }),
-                              text: (() => {
-                                if (!formData.free_shipping) return 'شحن مجاني';
-                                const methodsLabel = formData.free_shipping_methods.length === 0
-                                  ? '—'
-                                  : formData.free_shipping_methods.map((k) => k === 'standard' ? 'الاعتيادي' : k === 'personal' ? 'الشخصي' : k).join(' و');
-                                const minPart = formData.free_shipping_min_order > 0
-                                  ? ` للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
-                                  : '';
-                                const usesPart = formData.free_shipping_max_uses && formData.free_shipping_max_uses > 0
-                                  ? ` (حتى ${formData.free_shipping_max_uses} مرات خلال صلاحية البطاقة)`
-                                  : '';
-                                return `شحن مجاني (${methodsLabel})${minPart}${usesPart}`;
-                              })(),
-                            },
-                            { key: 'vip_support', visible: true, enabled: formData.vip_support, toggle: (v) => setFormData({ ...formData, vip_support: v }), text: 'دعم عملاء مميز وأولوية الرد' },
-                            { key: 'priority_shipping', visible: true, enabled: formData.priority_shipping, toggle: (v) => setFormData({ ...formData, priority_shipping: v }), text: 'أولوية في الشحن والتوصيل' },
-                            { key: 'priority_packaging', visible: true, enabled: formData.priority_packaging, toggle: (v) => setFormData({ ...formData, priority_packaging: v }), text: 'أولوية في التغليف' },
-                            { key: 'priority_support', visible: true, enabled: formData.priority_support, toggle: (v) => setFormData({ ...formData, priority_support: v }), text: 'دعم فني ذو أولوية' },
-                            { key: 'early_access', visible: true, enabled: formData.early_access, toggle: (v) => setFormData({ ...formData, early_access: v }), text: 'الوصول المبكر للمنتجات الجديدة' },
-                            { key: 'exclusive_products', visible: true, enabled: formData.exclusive_products, toggle: (v) => setFormData({ ...formData, exclusive_products: v }), text: 'منتجات حصرية لحاملي البطاقة' },
-                            { key: 'card_discounts_enabled', visible: true, enabled: formData.card_discounts_enabled, toggle: (v) => setFormData({ ...formData, card_discounts_enabled: v }), text: 'خصومات إضافية على منتجات مختارة' },
-                            { key: 'wholesale_discount_enabled', visible: true, enabled: formData.wholesale_discount_enabled, toggle: (v) => setFormData({ ...formData, wholesale_discount_enabled: v }), text: 'أسعار الجملة على المنتجات المؤهلة' },
-                            { key: 'investment_enabled', visible: true, enabled: formData.investment_enabled, toggle: (v) => setFormData({ ...formData, investment_enabled: v }), text: 'الوصول لميزة الاستثمار' },
-                            { key: 'is_vip_plus', visible: true, enabled: formData.is_vip_plus, toggle: (v) => setFormData({ ...formData, is_vip_plus: v }), text: 'عضوية VIP+ كاملة المزايا' },
-                            {
-                              key: 'monthly_free_shipping',
-                              visible: formData.monthly_free_shipping > 0 || !!editingLevel,
-                              enabled: formData.monthly_free_shipping > 0,
-                              toggle: (v) => setFormData({ ...formData, monthly_free_shipping: v ? (formData.monthly_free_shipping || 1) : 0 }),
-                              text: formData.monthly_free_shipping > 0 ? `${formData.monthly_free_shipping} شحنات مجانية شهرياً` : 'شحنات مجانية شهرياً',
-                            },
-                            {
-                              key: 'free_daily_games',
-                              visible: formData.free_daily_games > 0 || !!editingLevel,
-                              enabled: formData.free_daily_games > 0,
-                              toggle: (v) => setFormData({ ...formData, free_daily_games: v ? (formData.free_daily_games || 1) : 0 }),
-                              text: formData.free_daily_games > 0 ? `${formData.free_daily_games} ألعاب مجانية يومياً` : 'ألعاب مجانية يومياً',
-                            },
-                          ].filter((it) => it.visible);
-
-                          if (items.length === 0) {
-                            return (
-                              <div className="text-center py-8 text-muted-foreground">
-                                <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p>لا توجد مزايا متاحة</p>
+                        {/* 5. Perks & VIP toggles */}
+                        <AccordionItem value="perks" className="border rounded-xl bg-card overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-md bg-amber-500/10">
+                                <Crown className="h-4 w-4 text-amber-600" />
                               </div>
-                            );
-                          }
-                          return (
-                            <ul className="space-y-2">
-                              {items.map((it) => (
-                                <li
-                                  key={it.key}
-                                  className={cn(
-                                    "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
-                                    it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                              <div className="text-right">
+                                <div className="font-semibold text-sm">المزايا الإضافية</div>
+                                <div className="text-[11px] text-muted-foreground font-normal">VIP، الأولوية، الوصول المبكر</div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
+                            <p className="text-xs text-muted-foreground mb-3">
+                              فعّل أو أوقف كل ميزة. الميزة المُوقَفة لن تظهر للعميل ولن تُطبَّق في السلة.
+                            </p>
+                            {(() => {
+                              const items: Array<{
+                                key: string;
+                                text: string;
+                                enabled: boolean;
+                                toggle: (v: boolean) => void;
+                                visible: boolean;
+                              }> = [
+                                { key: 'vip_support', visible: true, enabled: formData.vip_support, toggle: (v) => setFormData({ ...formData, vip_support: v }), text: 'دعم عملاء مميز وأولوية الرد' },
+                                { key: 'priority_shipping', visible: true, enabled: formData.priority_shipping, toggle: (v) => setFormData({ ...formData, priority_shipping: v }), text: 'أولوية في الشحن والتوصيل' },
+                                { key: 'priority_packaging', visible: true, enabled: formData.priority_packaging, toggle: (v) => setFormData({ ...formData, priority_packaging: v }), text: 'أولوية في التغليف' },
+                                { key: 'priority_support', visible: true, enabled: formData.priority_support, toggle: (v) => setFormData({ ...formData, priority_support: v }), text: 'دعم فني ذو أولوية' },
+                                { key: 'early_access', visible: true, enabled: formData.early_access, toggle: (v) => setFormData({ ...formData, early_access: v }), text: 'الوصول المبكر للمنتجات الجديدة' },
+                                { key: 'exclusive_products', visible: true, enabled: formData.exclusive_products, toggle: (v) => setFormData({ ...formData, exclusive_products: v }), text: 'منتجات حصرية لحاملي البطاقة' },
+                                { key: 'card_discounts_enabled', visible: true, enabled: formData.card_discounts_enabled, toggle: (v) => setFormData({ ...formData, card_discounts_enabled: v }), text: 'خصومات إضافية على منتجات مختارة' },
+                                { key: 'wholesale_discount_enabled', visible: true, enabled: formData.wholesale_discount_enabled, toggle: (v) => setFormData({ ...formData, wholesale_discount_enabled: v }), text: 'أسعار الجملة على المنتجات المؤهلة' },
+                                { key: 'investment_enabled', visible: true, enabled: formData.investment_enabled, toggle: (v) => setFormData({ ...formData, investment_enabled: v }), text: 'الوصول لميزة الاستثمار' },
+                                { key: 'is_vip_plus', visible: true, enabled: formData.is_vip_plus, toggle: (v) => setFormData({ ...formData, is_vip_plus: v }), text: 'عضوية VIP+ كاملة المزايا' },
+                                {
+                                  key: 'free_daily_games',
+                                  visible: true,
+                                  enabled: formData.free_daily_games > 0,
+                                  toggle: (v) => setFormData({ ...formData, free_daily_games: v ? (formData.free_daily_games || 1) : 0 }),
+                                  text: formData.free_daily_games > 0 ? `${formData.free_daily_games} ألعاب مجانية يومياً` : 'ألعاب مجانية يومياً',
+                                },
+                              ];
+                              return (
+                                <ul className="space-y-2">
+                                  {items.map((it) => (
+                                    <li
+                                      key={it.key}
+                                      className={cn(
+                                        "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
+                                        it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                                      )}
+                                    >
+                                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                                        <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
+                                        <span className={cn(!it.enabled && "line-through")}>{it.text}</span>
+                                      </div>
+                                      <Switch checked={it.enabled} onCheckedChange={it.toggle} />
+                                    </li>
+                                  ))}
+                                  {formData.free_daily_games > 0 && (
+                                    <li className="p-2.5 rounded-lg border border-dashed">
+                                      <Label className="text-xs">عدد الألعاب المجانية يومياً</Label>
+                                      <Input
+                                        type="number"
+                                        min="1"
+                                        value={formData.free_daily_games}
+                                        onChange={(e) => setFormData({ ...formData, free_daily_games: parseInt(e.target.value) || 0 })}
+                                        className="mt-1"
+                                      />
+                                    </li>
                                   )}
-                                >
-                                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                                    <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
-                                    <span className={cn(!it.enabled && "line-through")}>{it.text}</span>
-                                  </div>
-                                  <Switch checked={it.enabled} onCheckedChange={it.toggle} />
-                                </li>
-                              ))}
-                            </ul>
-                          );
-                        })()}
-                      </AdminCardContent>
-                    </AdminCard>
-                  </div>
-                </ScrollArea>
+                                </ul>
+                              );
+                            })()}
+                          </AccordionContent>
+                        </AccordionItem>
 
-                <div className="flex justify-end gap-2 px-6 py-4 border-t shrink-0 bg-background">
+                        {/* 6. Visual / Profile design */}
+                        <AccordionItem value="design" className="border rounded-xl bg-card overflow-hidden">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-md bg-purple-500/10">
+                                <Sparkles className="h-4 w-4 text-purple-600" />
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-sm">تأثيرات الاسم والبروفايل</div>
+                                <div className="text-[11px] text-muted-foreground font-normal">للحاملين</div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Name Style */}
+                              <div className="space-y-3 p-3 border rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <Label className="font-medium text-sm">اسم مميز للمستخدم</Label>
+                                  <Switch
+                                    checked={formData.special_name_style?.enabled || false}
+                                    onCheckedChange={(checked) => setFormData({
+                                      ...formData,
+                                      special_name_style: { ...formData.special_name_style, enabled: checked }
+                                    })}
+                                  />
+                                </div>
+                                {formData.special_name_style?.enabled && (
+                                  <>
+                                    <div className="admin-form-group">
+                                      <Label className="text-xs">لون الاسم</Label>
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="color"
+                                          value={formData.special_name_style?.color || formData.color}
+                                          onChange={(e) => setFormData({
+                                            ...formData,
+                                            special_name_style: { ...formData.special_name_style, color: e.target.value }
+                                          })}
+                                          className="w-12 h-9 cursor-pointer"
+                                        />
+                                        <Input
+                                          value={formData.special_name_style?.color || formData.color}
+                                          onChange={(e) => setFormData({
+                                            ...formData,
+                                            special_name_style: { ...formData.special_name_style, color: e.target.value }
+                                          })}
+                                          className="flex-1 font-mono text-xs"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                      <Label className="text-xs">تأثير توهج</Label>
+                                      <Switch
+                                        checked={formData.special_name_style?.glow || false}
+                                        onCheckedChange={(checked) => setFormData({
+                                          ...formData,
+                                          special_name_style: { ...formData.special_name_style, glow: checked }
+                                        })}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Profile Effects */}
+                              <div className="space-y-3 p-3 border rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <Label className="font-medium text-sm">تأثيرات البروفايل</Label>
+                                  <Switch
+                                    checked={formData.profile_effects?.enabled || false}
+                                    onCheckedChange={(checked) => setFormData({
+                                      ...formData,
+                                      profile_effects: { ...formData.profile_effects, enabled: checked }
+                                    })}
+                                  />
+                                </div>
+                                {formData.profile_effects?.enabled && (
+                                  <>
+                                    <div className="admin-form-group">
+                                      <Label className="text-xs">لون الإطار</Label>
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="color"
+                                          value={formData.profile_effects?.border_color || formData.color}
+                                          onChange={(e) => setFormData({
+                                            ...formData,
+                                            profile_effects: { ...formData.profile_effects, border_color: e.target.value }
+                                          })}
+                                          className="w-12 h-9 cursor-pointer"
+                                        />
+                                        <Input
+                                          value={formData.profile_effects?.border_color || formData.color}
+                                          onChange={(e) => setFormData({
+                                            ...formData,
+                                            profile_effects: { ...formData.profile_effects, border_color: e.target.value }
+                                          })}
+                                          className="flex-1 font-mono text-xs"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                      <Label className="text-xs">توهج الخلفية</Label>
+                                      <Switch
+                                        checked={formData.profile_effects?.background_glow || false}
+                                        onCheckedChange={(checked) => setFormData({
+                                          ...formData,
+                                          profile_effects: { ...formData.profile_effects, background_glow: checked }
+                                        })}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+                  </ScrollArea>
+
+                  {/* Sticky Preview Sidebar - Desktop only */}
+                  <aside className="hidden lg:flex flex-col border-r bg-gradient-to-b from-muted/40 to-muted/10 overflow-hidden">
+                    <div className="px-4 py-3 border-b bg-background/60 backdrop-blur shrink-0">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-sm">معاينة مباشرة</span>
+                      </div>
+                    </div>
+                    <ScrollArea className="flex-1">
+                      <div className="p-5 flex flex-col items-center gap-4">
+                        <LoyaltyCardPreview
+                          name_ar={formData.name_ar || "اسم البطاقة"}
+                          name_en={formData.name_en || "Card Name"}
+                          color={formData.color}
+                          discount_percentage={formData.discount_percentage}
+                          bonus_points_percentage={formData.bonus_points_percentage}
+                          free_shipping={formData.free_shipping}
+                          free_shipping_min_order={formData.free_shipping_min_order}
+                          duration_days={formData.duration_days}
+                          is_purchasable={formData.is_purchasable}
+                          purchase_price_points={formData.purchase_price_points}
+                          min_points={formData.min_points}
+                          vip_support={formData.vip_support}
+                          special_name_style={formData.special_name_style}
+                          profile_effects={formData.profile_effects}
+                          size="md"
+                        />
+                        <div className="w-full space-y-1.5 text-xs">
+                          <div className="flex justify-between p-2 rounded bg-background/60">
+                            <span className="text-muted-foreground">المدة</span>
+                            <span className="font-medium">{formData.duration_days} يوم</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-background/60">
+                            <span className="text-muted-foreground">الخصم</span>
+                            <span className="font-medium">{formData.discount_percentage || 0}%</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-background/60">
+                            <span className="text-muted-foreground">نقاط إضافية</span>
+                            <span className="font-medium">+{formData.bonus_points_percentage || 0}%</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-background/60">
+                            <span className="text-muted-foreground">شحن مجاني</span>
+                            <span className={cn("font-medium", formData.free_shipping ? "text-emerald-600" : "text-muted-foreground")}>
+                              {formData.free_shipping ? 'مفعّل' : 'معطّل'}
+                            </span>
+                          </div>
+                          {formData.is_vip_plus && (
+                            <div className="flex justify-between p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                              <span className="text-amber-700 dark:text-amber-500">VIP+</span>
+                              <Crown className="h-3.5 w-3.5 text-amber-600" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </ScrollArea>
+                  </aside>
+                </div>
+
+                <div className="flex justify-end gap-2 px-6 py-3 border-t shrink-0 bg-background">
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>
                     إلغاء
                   </Button>
-                  <Button 
+                  <Button
                     className="admin-btn-primary"
-                    onClick={() => saveMutation.mutate()} 
+                    onClick={() => saveMutation.mutate()}
                     disabled={saveMutation.isPending}
                   >
                     {saveMutation.isPending ? "جاري الحفظ..." : "حفظ البطاقة"}
@@ -1235,6 +1315,7 @@ export default function AdminLoyaltyLevels() {
               </DialogContent>
             </Dialog>
           </div>
+
 
           {/* Cards Grid */}
           {!levels || levels.length === 0 ? (
