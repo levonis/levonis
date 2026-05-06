@@ -271,7 +271,7 @@ const CategoryDetail = () => {
       return sorters[sortBy](a, b);
     });
     return arr;
-  }, [products, sortBy, stockFilter, directOnly, minPrice, maxPrice, searchQ]);
+  }, [products, sortBy, stockFilter, directOnly, minPrice, maxPrice, brandFilter, searchQ]);
 
   const featuredProduct = (() => {
     if (!products?.length) return undefined;
