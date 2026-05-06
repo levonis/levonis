@@ -2050,6 +2050,9 @@ const Admin = () => {
           </div>
         </div>
 
+        {/* Permissions Health Panel - diagnoses 403/permission errors */}
+        <PermissionsHealthPanel />
+
         {/* Quick Actions - Settings & Management */}
         <div className="admin-card mb-6">
           <div className="admin-card-header">
