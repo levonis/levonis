@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Ticket, Loader2, AlertTriangle } from 'lucide-react';
+import { Ticket, Loader2, AlertTriangle, XCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,14 +11,57 @@ import { useNavigate } from 'react-router-dom';
 
 const COOLDOWN_MS = 1500;
 
-const ERROR_MESSAGES: Record<string, string> = {
-  code_not_found: 'الكود غير صالح',
-  code_already_used: 'تم استخدام هذا الكود مسبقاً',
-  code_expired: 'انتهت صلاحية هذا الكود',
-  no_active_warranty: 'تحتاج إلى طابعة فعّالة في الضمان لتفعيل هذا الكود',
-  already_has_active_card: 'لديك بطاقة فعّالة بالفعل',
-  auth_required: 'يرجى تسجيل الدخول',
+type ErrorKey =
+  | 'code_not_found'
+  | 'code_invalid_format'
+  | 'code_already_used'
+  | 'code_expired'
+  | 'already_has_active_card'
+  | 'auth_required'
+  | 'card_not_found'
+  | 'rate_limited'
+  | 'unknown';
+
+const ERROR_DETAILS: Record<ErrorKey, { title: string; desc: string }> = {
+  code_not_found: {
+    title: 'الكود غير صالح',
+    desc: 'تأكد من إدخال الكود بشكل صحيح بدون مسافات أو أحرف زائدة.',
+  },
+  code_invalid_format: {
+    title: 'صيغة الكود غير صحيحة',
+    desc: 'الكود يجب أن يتكوّن من أحرف وأرقام إنجليزية فقط (8-20 خانة).',
+  },
+  code_already_used: {
+    title: 'تم استخدام هذا الكود مسبقاً',
+    desc: 'هذا الكود مفعّل من قبل ولا يمكن استخدامه مرة أخرى. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.',
+  },
+  code_expired: {
+    title: 'انتهت صلاحية الكود',
+    desc: 'الكود الذي أدخلته منتهي الصلاحية ولم يعد قابلاً للتفعيل. يمكنك طلب كود جديد من الدعم.',
+  },
+  already_has_active_card: {
+    title: 'لديك بطاقة فعّالة بالفعل',
+    desc: 'لا يمكن تفعيل بطاقة جديدة قبل انتهاء البطاقة الحالية.',
+  },
+  auth_required: {
+    title: 'يرجى تسجيل الدخول',
+    desc: 'تحتاج إلى تسجيل الدخول إلى حسابك لاستخدام كود تفعيل البطاقة.',
+  },
+  card_not_found: {
+    title: 'البطاقة المرتبطة بالكود غير موجودة',
+    desc: 'حدث خلل في إعدادات هذا الكود. يرجى التواصل مع الدعم.',
+  },
+  rate_limited: {
+    title: 'محاولات متكررة',
+    desc: 'يرجى الانتظار قليلاً قبل إعادة المحاولة.',
+  },
+  unknown: {
+    title: 'فشل التفعيل',
+    desc: 'حدث خطأ غير متوقع. حاول مرة أخرى أو تواصل مع الدعم.',
+  },
 };
+
+const CODE_REGEX = /^[A-Z0-9]{8,20}$/;
 
 type WarrantyReason = 'no_printer_registered' | 'warranty_expired' | 'no_active_warranty';
 
@@ -46,6 +89,9 @@ export default function RedeemLoyaltyCodeCard() {
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [warrantyReason, setWarrantyReason] = useState<WarrantyReason | null>(null);
+  const [errorKey, setErrorKey] = useState<ErrorKey | null>(null);
+  const [errorRaw, setErrorRaw] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const inFlightRef = useRef(false);
   const lastAttemptRef = useRef<{ code: string; at: number } | null>(null);
   const qc = useQueryClient();
@@ -74,17 +120,40 @@ export default function RedeemLoyaltyCodeCard() {
     return () => clearInterval(t);
   }, [cooldown]);
 
+  // Reset states on dialog close
+  useEffect(() => {
+    if (!open) {
+      setErrorKey(null);
+      setErrorRaw(null);
+      setSuccess(false);
+    }
+  }, [open]);
+
+  const clearFeedback = () => {
+    setErrorKey(null);
+    setErrorRaw(null);
+    setSuccess(false);
+  };
+
   const submit = async () => {
     if (inFlightRef.current || submitting) return;
+    clearFeedback();
     if (precheckBlocked) {
-      toast.error(WARRANTY_DETAILS[precheckBlocked].title);
+      setWarrantyReason(precheckBlocked);
       return;
     }
     const trimmed = code.trim().toUpperCase();
-    if (!trimmed) { toast.error('أدخل الكود'); return; }
+    if (!trimmed) {
+      setErrorKey('code_invalid_format');
+      return;
+    }
+    if (!CODE_REGEX.test(trimmed)) {
+      setErrorKey('code_invalid_format');
+      return;
+    }
     const last = lastAttemptRef.current;
     if (last && last.code === trimmed && Date.now() - last.at < COOLDOWN_MS) {
-      toast.error('يرجى الانتظار قبل إعادة المحاولة');
+      setErrorKey('rate_limited');
       return;
     }
     inFlightRef.current = true;
@@ -94,19 +163,27 @@ export default function RedeemLoyaltyCodeCard() {
       const { error } = await (supabase as any).rpc('redeem_loyalty_card_code', { p_code: trimmed });
       lastAttemptRef.current = { code: trimmed, at: Date.now() };
       if (error) {
-        const key = (error.message || '').match(/[a-z_]+/)?.[0] || '';
+        const raw = (error.message || '').toString();
+        const key = (raw.match(/[a-z_]+/g) || []).find(Boolean) || '';
         setCooldown(COOLDOWN_MS);
         if (key === 'no_printer_registered' || key === 'warranty_expired' || key === 'no_active_warranty') {
           setWarrantyReason(key as WarrantyReason);
           return;
         }
-        toast.error(ERROR_MESSAGES[key] || error.message || 'فشل التفعيل');
+        const knownKeys: ErrorKey[] = [
+          'code_not_found','code_already_used','code_expired',
+          'already_has_active_card','auth_required','card_not_found',
+        ];
+        if (knownKeys.includes(key as ErrorKey)) {
+          setErrorKey(key as ErrorKey);
+        } else {
+          setErrorKey('unknown');
+          setErrorRaw(raw);
+        }
         return;
       }
+      setSuccess(true);
       toast.success('تم تفعيل البطاقة بنجاح');
-      setOpen(false);
-      setCode('');
-      setWarrantyReason(null);
       qc.invalidateQueries({ queryKey: ['user-active-card-benefits'] });
       qc.invalidateQueries({ queryKey: ['user-cards'] });
       qc.invalidateQueries({ queryKey: ['user-loyalty-code-history'] });
@@ -115,9 +192,11 @@ export default function RedeemLoyaltyCodeCard() {
       qc.invalidateQueries({ queryKey: ['card-discount-usage'] });
       qc.invalidateQueries({ queryKey: ['card-percentage-discount-used'] });
       qc.invalidateQueries({ queryKey: ['card-free-shipping-used'] });
+      setTimeout(() => { setOpen(false); setCode(''); }, 1200);
     } catch (e: any) {
       setCooldown(COOLDOWN_MS);
-      toast.error(e?.message || 'فشل التفعيل');
+      setErrorKey('unknown');
+      setErrorRaw(e?.message || null);
     } finally {
       inFlightRef.current = false;
       setSubmitting(false);
@@ -151,11 +230,15 @@ export default function RedeemLoyaltyCodeCard() {
           </p>
           <Input
             value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); if (warrantyReason) setWarrantyReason(null); }}
+            onChange={e => {
+              setCode(e.target.value.toUpperCase());
+              if (warrantyReason) setWarrantyReason(null);
+              if (errorKey || success) clearFeedback();
+            }}
             placeholder="مثال: A1B2C3D4E5F6"
-            className="font-mono tracking-wider text-center"
+            className={`font-mono tracking-wider text-center ${errorKey ? 'border-destructive focus-visible:ring-destructive' : ''}`}
             autoFocus
-            disabled={submitting}
+            disabled={submitting || success}
             onKeyDown={e => { if (e.key === 'Enter' && !submitting && cooldown === 0) submit(); }}
           />
           {checking && !warrantyCheck && (
@@ -164,7 +247,38 @@ export default function RedeemLoyaltyCodeCard() {
               جاري التحقق من حالة الضمان...
             </div>
           )}
-          {activeReason && (
+          {success && (
+            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <div className="space-y-1 text-right">
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  تم تفعيل البطاقة بنجاح
+                </p>
+                <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90">
+                  أصبحت مزايا البطاقة فعّالة في حسابك الآن.
+                </p>
+              </div>
+            </div>
+          )}
+          {errorKey && !success && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 flex items-start gap-2">
+              <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+              <div className="space-y-1 text-right flex-1">
+                <p className="text-sm font-semibold text-destructive">
+                  {ERROR_DETAILS[errorKey].title}
+                </p>
+                <p className="text-xs text-destructive/90 leading-relaxed">
+                  {ERROR_DETAILS[errorKey].desc}
+                </p>
+                {errorKey === 'unknown' && errorRaw && (
+                  <p className="text-[10px] text-muted-foreground font-mono break-all mt-1">
+                    {errorRaw}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          {activeReason && !success && (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
@@ -191,9 +305,11 @@ export default function RedeemLoyaltyCodeCard() {
           <Button
             className="w-full"
             onClick={submit}
-            disabled={submitting || cooldown > 0 || !code.trim() || !!precheckBlocked || checking}
+            disabled={submitting || cooldown > 0 || !code.trim() || !!precheckBlocked || checking || success}
           >
-            {submitting ? (
+            {success ? (
+              <><CheckCircle2 className="h-4 w-4 mr-2" /> تم التفعيل</>
+            ) : submitting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" /> جاري التفعيل...</>
             ) : cooldown > 0 ? (
               `إعادة المحاولة خلال ${(cooldown / 1000).toFixed(1)}s`
