@@ -268,8 +268,8 @@ const AdminPrinterProtection = () => {
     queryKey: ['admin-delivered-printer-items'],
     queryFn: async () => {
       // First get product IDs in printer category
-      const { data: printerProducts } = await supabase
-        .from('products')
+      const { data: printerProducts } = await (supabase as any)
+        .from('products_admin')
         .select('id')
         .eq('category_id', PRINTER_CATEGORY_ID);
       
