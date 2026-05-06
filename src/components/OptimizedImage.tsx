@@ -116,6 +116,7 @@ const OptimizedImage = memo(({
       {isInView && !hasError && (
         <img
           src={optimizedSrc}
+          srcSet={srcSet}
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
