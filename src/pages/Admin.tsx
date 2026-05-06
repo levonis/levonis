@@ -207,7 +207,7 @@ const Admin = () => {
     icon?: string;
   }>>([]);
   const [productCardDiscounts, setProductCardDiscounts] = useState<Array<{
-    level_id: string;
+    card_id: string;
     discount_amount: number; // Amount in IQD
   }>>([]);
   const [productAIContent, setProductAIContent] = useState<any>({});
@@ -285,13 +285,14 @@ const Admin = () => {
     }
   });
 
-  // Fetch loyalty levels for card discount selection
-  const { data: loyaltyLevels } = useQuery({
-    queryKey: ['loyalty-levels-admin'],
+  // Fetch membership cards for product card discount selection
+  const { data: membershipCardsForDiscounts } = useQuery({
+    queryKey: ['membership-cards-admin-discounts'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('loyalty_levels')
-        .select('id, name_ar, level_key, color')
+        .from('membership_cards')
+        .select('id, name_ar, name_en, card_key, color')
+        .eq('is_active', true)
         .order('display_order', { ascending: true });
       
       if (error) throw error;
