@@ -50,7 +50,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         .from("products_admin" as any)
         .select("id, name, name_ar, price, colors, direct_stock")
         .order("name_ar");
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 
