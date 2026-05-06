@@ -9205,6 +9205,7 @@ export type Database = {
           description_ku: string | null
           direct_sale_price: number | null
           direct_stock: number | null
+          display_order: number
           featured: boolean | null
           features: Json | null
           has_in_stock: boolean | null
@@ -9274,6 +9275,7 @@ export type Database = {
           description_ku?: string | null
           direct_sale_price?: number | null
           direct_stock?: number | null
+          display_order?: number
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -9343,6 +9345,7 @@ export type Database = {
           description_ku?: string | null
           direct_sale_price?: number | null
           direct_stock?: number | null
+          display_order?: number
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
