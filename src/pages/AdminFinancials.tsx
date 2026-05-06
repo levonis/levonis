@@ -128,12 +128,12 @@ const calcActualDeliveryCostFor = (
   const deliveryMethod = (order as any).delivery_method || 'standard';
   if (deliveryMethod === 'personal') {
     return (order.order_items || []).reduce((sum, item: any) => {
-      const pdc = item.products?.personal_delivery_cost || 0;
-      return sum + (pdc * (item.quantity || 1));
+      const pdc = toNumber(item.products?.personal_delivery_cost);
+      return sum + (pdc * (toNumber(item.quantity) || 1));
     }, 0);
   }
   const methodData = deliveryMethods.find((m) => m.method_key === deliveryMethod);
-  return methodData?.actual_cost || 0;
+  return toNumber(methodData?.actual_cost);
 };
 
 // Total costs = |delivery| + product costs + actual delivery paid to company
@@ -159,7 +159,7 @@ const calcOrderProfit = (
   deliveryMethods: Array<{ method_key: string; actual_cost: number }> = []
 ): number => {
   if (order.status !== 'delivered') return 0;
-  return (order.total_amount || 0) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
+  return toNumber(order.total_amount) - calcOrderCost(order, usdToIqdRate, deliveryMethods) - calcReferralCommission(order);
 };
 
 const AdminFinancials = () => {
