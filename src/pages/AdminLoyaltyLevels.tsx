@@ -741,13 +741,34 @@ export default function AdminLoyaltyLevels() {
                             <div className="admin-form-group">
                               <Label className="flex items-center gap-2">
                                 <Clock className="h-4 w-4" />
-                                مدة الصلاحية (أيام)
+                                مدة الصلاحية
                               </Label>
-                              <Input
-                                type="number"
-                                value={formData.duration_days}
-                                onChange={(e) => setFormData({ ...formData, duration_days: parseInt(e.target.value) })}
-                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">أشهر</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    value={Math.max(1, Math.round((formData.duration_days || 30) / 30))}
+                                    onChange={(e) => {
+                                      const months = Math.max(1, Number(e.target.value) || 1);
+                                      setFormData({ ...formData, duration_days: months * 30 });
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">أيام (دقيق)</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    value={formData.duration_days}
+                                    onChange={(e) => setFormData({ ...formData, duration_days: Math.max(1, parseInt(e.target.value) || 1) })}
+                                  />
+                                </div>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-1">
+                                مثال: 10 أشهر = 300 يوم. تُمثّل كل دورة 30 يوماً لإعادة احتساب السقف.
+                              </p>
                             </div>
                           </AccordionContent>
                         </AccordionItem>
