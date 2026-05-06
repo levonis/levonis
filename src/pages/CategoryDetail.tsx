@@ -72,6 +72,8 @@ const CategoryDetail = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   usePageTitle('category', category ? pickName(category.name as any, category.name_ar as any) : undefined);
