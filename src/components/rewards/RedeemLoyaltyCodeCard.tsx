@@ -235,11 +235,11 @@ export default function RedeemLoyaltyCodeCard() {
               if (warrantyReason) setWarrantyReason(null);
               if (errorKey || success) clearFeedback();
             }}
-            placeholder="مثال: A1B2C3D4E5F6"
-            className={`font-mono tracking-wider text-center ${errorKey ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-            autoFocus
-            disabled={submitting || success}
-            onKeyDown={e => { if (e.key === 'Enter' && !submitting && cooldown === 0) submit(); }}
+            placeholder={precheckBlocked ? 'يجب تفعيل ضمان الطابعة أولاً' : 'مثال: A1B2C3D4E5F6'}
+            className={`font-mono tracking-wider text-center ${errorKey ? 'border-destructive focus-visible:ring-destructive' : ''} ${precheckBlocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+            autoFocus={!precheckBlocked}
+            disabled={submitting || success || !!precheckBlocked || checking}
+            onKeyDown={e => { if (e.key === 'Enter' && !submitting && cooldown === 0 && !precheckBlocked) submit(); }}
           />
           {checking && !warrantyCheck && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
