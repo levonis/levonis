@@ -99,23 +99,29 @@ serve(async (req) => {
         // Calculate payout
         const merchantPayout = escrow.merchant_payout || Math.floor(offer.price_iqd * (1 - commissionRate));
 
-        // Get or create merchant wallet
-        const { data: merchantWallet } = await supabase
-          .from("user_wallets")
-          .select("balance")
-          .eq("user_id", offer.trader_id)
+        // Atomically release escrow first; only one concurrent caller succeeds.
+        const { data: released, error: releaseError } = await supabase
+          .from("escrow_transactions")
+          .update({ status: "released", released_at: new Date().toISOString() })
+          .eq("id", escrow.id)
+          .eq("status", "held")
+          .select("id")
           .maybeSingle();
 
-        if (merchantWallet) {
-          await supabase
-            .from("user_wallets")
-            .update({ balance: merchantWallet.balance + merchantPayout })
-            .eq("user_id", offer.trader_id);
-        } else {
-          await supabase.from("user_wallets").insert({
-            user_id: offer.trader_id,
-            balance: merchantPayout,
-          });
+        if (releaseError || !released) {
+          console.warn(`Escrow ${escrow.id} already released; skipping.`);
+          continue;
+        }
+
+        // Atomic wallet credit (race-free)
+        const { error: creditError } = await supabase.rpc("credit_user_wallet", {
+          p_user_id: offer.trader_id,
+          p_amount: merchantPayout,
+        });
+        if (creditError) {
+          console.error(`Credit error for ${offer.trader_id}:`, creditError);
+          errorCount++;
+          continue;
         }
 
         // Record wallet transaction for merchant
@@ -126,15 +132,6 @@ serve(async (req) => {
           status: "completed",
           description: `استلام مبلغ طلب طباعة - تأكيد تلقائي`,
         });
-
-        // Update escrow status
-        await supabase
-          .from("escrow_transactions")
-          .update({
-            status: "released",
-            released_at: new Date().toISOString(),
-          })
-          .eq("id", escrow.id);
 
         // Update request status
         await supabase
