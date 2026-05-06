@@ -1,0 +1,1 @@
+GRANT SELECT (original_price_usd) ON public.products TO anon, authenticated;
