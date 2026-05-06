@@ -444,7 +444,7 @@ const MyOrders = () => {
                 {orders.length > 0 && <p className="text-xs text-muted-foreground">{t('myorders_count', { count: orders.length })}</p>}
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate(-1 as any)}>
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => navigate('/')}>
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
