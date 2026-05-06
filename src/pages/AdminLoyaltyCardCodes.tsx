@@ -545,10 +545,10 @@ const ImportBatchesButton = ({
     const csv = [
       '# قالب استيراد دفعات أكواد بطاقات الولاء',
       '# اعمدة مطلوبة: card_id,quantity,duration_days,code_expiry_days',
-      '# اختياري: batch_label,requires_active_warranty (true/false)',
-      'card_id,quantity,duration_days,code_expiry_days,batch_label,requires_active_warranty',
-      `${sampleCard},6,180,90,بطاقة برونزية ٦ أشهر — مايو,true`,
-      `${sampleCard},10,365,60,بطاقة سنوية — يونيو,true`,
+      '# اختياري: valid_from_days (تأجيل البداية بأيام),batch_label,requires_active_warranty',
+      'card_id,quantity,duration_days,code_expiry_days,valid_from_days,batch_label,requires_active_warranty',
+      `${sampleCard},6,180,90,,بطاقة برونزية ٦ أشهر — مايو,true`,
+      `${sampleCard},10,365,60,7,بطاقة سنوية — يونيو,true`,
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
