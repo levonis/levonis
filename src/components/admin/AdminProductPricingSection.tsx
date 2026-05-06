@@ -90,33 +90,34 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
   // Cash on Delivery (Pre-order only) — toggle only; fee comes from global settings
   const [codEnabled, setCodEnabled] = useState<boolean>(false);
   
-  // CNY converter
+  // CNY converter (only for cost price in USD)
   const [showCnyInput, setShowCnyInput] = useState(false);
   const [cnyValue, setCnyValue] = useState<string>('');
-  const [showCnyOrigInput, setShowCnyOrigInput] = useState(false);
-  const [cnyOrigValue, setCnyOrigValue] = useState<string>('');
-  
+
   const cnyToUsdRate = shippingSettings?.cny_to_usd_rate || 6.7;
-  
-  const handleCnyConvert = (target: 'price' | 'original') => {
-    const val = target === 'price' ? Number(cnyValue) : Number(cnyOrigValue);
+
+  const handleCnyConvert = () => {
+    const val = Number(cnyValue);
     if (!val || val <= 0) return;
     const usdVal = Math.round((val / cnyToUsdRate) * 100) / 100;
-    if (target === 'price') {
-      setPriceUsd(usdVal);
-      setCnyValue('');
-      setShowCnyInput(false);
-    } else {
-      setOriginalPriceUsd(usdVal);
-      setCnyOrigValue('');
-      setShowCnyOrigInput(false);
-    }
+    setPriceUsd(usdVal);
+    setCnyValue('');
+    setShowCnyInput(false);
   };
 
   useEffect(() => {
     if (editingProduct) {
       setPriceUsd(editingProduct.price_usd || 0);
-      setOriginalPriceUsd(editingProduct.original_price_usd || 0);
+      // Original price is now stored/edited directly in IQD.
+      // Backward compat: if old USD value is present and IQD is empty, convert it once.
+      const rate = shippingSettings?.usd_to_iqd_rate || 0;
+      if (editingProduct.original_price && editingProduct.original_price > 0) {
+        setOriginalPriceIqd(Number(editingProduct.original_price));
+      } else if (editingProduct.original_price_usd && editingProduct.original_price_usd > 0 && rate > 0) {
+        setOriginalPriceIqd(Math.round(Number(editingProduct.original_price_usd) * rate));
+      } else {
+        setOriginalPriceIqd(0);
+      }
       setLengthCm(editingProduct.length_cm || 0);
       setWidthCm(editingProduct.width_cm || 0);
       setHeightCm(editingProduct.height_cm || 0);
@@ -154,13 +155,16 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
       // Persisted "link direct commission to COD %" toggle
       setLinkDirectCommissionToCod(!!editingProduct.link_direct_commission_to_cod);
     }
-  }, [editingProduct]);
+  }, [editingProduct, shippingSettings?.usd_to_iqd_rate]);
 
   useEffect(() => {
     const handleAutofill = (event: Event) => {
-      const detail = (event as CustomEvent<{ originalPriceUsd?: number; priceUsd?: number }>).detail;
-      if (detail?.originalPriceUsd && detail.originalPriceUsd > 0) {
-        setOriginalPriceUsd(detail.originalPriceUsd);
+      const detail = (event as CustomEvent<{ originalPriceUsd?: number; originalPriceIqd?: number; priceUsd?: number }>).detail;
+      const rate = shippingSettings?.usd_to_iqd_rate || 0;
+      if (detail?.originalPriceIqd && detail.originalPriceIqd > 0) {
+        setOriginalPriceIqd(Math.round(detail.originalPriceIqd));
+      } else if (detail?.originalPriceUsd && detail.originalPriceUsd > 0 && rate > 0) {
+        setOriginalPriceIqd(Math.round(detail.originalPriceUsd * rate));
       }
       if (detail?.priceUsd && detail.priceUsd > 0) {
         setPriceUsd(detail.priceUsd);
@@ -169,7 +173,7 @@ const AdminProductPricingSection = ({ editingProduct, categoryId }: AdminProduct
 
     window.addEventListener('admin-product-pricing-autofill', handleAutofill);
     return () => window.removeEventListener('admin-product-pricing-autofill', handleAutofill);
-  }, []);
+  }, [shippingSettings?.usd_to_iqd_rate]);
 
   // Derive shipping_type value for hidden input
   const shippingTypeValue = useMemo(() => {
