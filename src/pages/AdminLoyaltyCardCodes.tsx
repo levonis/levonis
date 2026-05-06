@@ -145,7 +145,7 @@ export const LoyaltyCodeBatchesList = ({ showHeader = true }: { showHeader?: boo
   const Body = (
     <div className="space-y-3">
       <Card className="p-3 text-xs text-muted-foreground leading-relaxed">
-        الأكواد الناتجة هنا تُمكّن المستخدم من تفعيل بطاقة ولاء (مثل البطاقة البرونزية لمدة 6 أشهر) فقط
+        الأكواد الناتجة هنا تُمكّن المستخدم من تفعيل بطاقة ولاء (مثل بطاقة Levo لمدة 6 أشهر) فقط
         إذا كان لديه طابعة فعّالة في الضمان. تاريخ بدء البطاقة هو لحظة تفعيل الكود من قبل المستخدم.
       </Card>
 

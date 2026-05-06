@@ -681,7 +681,7 @@ export default function AdminLoyaltyLevels() {
                               <Input
                                 value={formData.level_key}
                                 onChange={(e) => setFormData({ ...formData, level_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                                placeholder="gold, platinum, diamond"
+                                placeholder="levo, levo_plus, levo_pro, levo_vip"
                                 disabled={!!editingLevel}
                               />
                             </div>
