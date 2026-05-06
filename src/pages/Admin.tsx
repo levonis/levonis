@@ -65,6 +65,7 @@ const productSchema = z.object({
   features: z.array(z.any()).optional(),
   pre_order_shipping_options: z.array(z.any()).optional(),
   display_order: z.number().int().min(0).optional(),
+  brand: z.string().nullable().optional(),
 });
 
 const categorySchema = z.object({
@@ -1429,6 +1430,7 @@ const Admin = () => {
         display_order: formData.get('display_order') && formData.get('display_order') !== ''
           ? Number(formData.get('display_order'))
           : 0,
+        brand: ((formData.get('brand') as string) || '').trim() || null,
         // Use empty array [] instead of undefined to actually clear data
         colors: validColors.length > 0 ? validColors : [],
         features: validFeatures.length > 0 ? validFeatures : [],
@@ -2619,17 +2621,29 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="display_order">ترتيب العرض (الأصغر أولاً: 1، 2، 3 ...)</Label>
-                      <Input
-                        id="display_order"
-                        name="display_order"
-                        type="number"
-                        min={0}
-                        step={1}
-                        defaultValue={editingProduct?.display_order ?? 0}
-                        placeholder="0 = ترتيب تلقائي"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="display_order">ترتيب العرض (1، 2، 3 ...)</Label>
+                        <Input
+                          id="display_order"
+                          name="display_order"
+                          type="number"
+                          min={0}
+                          step={1}
+                          defaultValue={editingProduct?.display_order ?? 0}
+                          placeholder="0 = ترتيب تلقائي"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="brand">الشركة المصنعة / البراند</Label>
+                        <Input
+                          id="brand"
+                          name="brand"
+                          type="text"
+                          defaultValue={editingProduct?.brand ?? ''}
+                          placeholder="مثال: Bambu Lab، Creality، Qidi، Anycubic"
+                        />
+                      </div>
                     </div>
 
                     {/* Availability options now managed by AdminProductPricingSection */}

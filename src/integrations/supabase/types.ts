@@ -9186,6 +9186,7 @@ export type Database = {
           ai_content: Json | null
           air_price: number | null
           availability_type: string
+          brand: string | null
           card_discounts: Json | null
           category_id: string | null
           cod_enabled: boolean
@@ -9256,6 +9257,7 @@ export type Database = {
           ai_content?: Json | null
           air_price?: number | null
           availability_type?: string
+          brand?: string | null
           card_discounts?: Json | null
           category_id?: string | null
           cod_enabled?: boolean
@@ -9326,6 +9328,7 @@ export type Database = {
           ai_content?: Json | null
           air_price?: number | null
           availability_type?: string
+          brand?: string | null
           card_discounts?: Json | null
           category_id?: string | null
           cod_enabled?: boolean

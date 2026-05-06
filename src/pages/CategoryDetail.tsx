@@ -55,6 +55,7 @@ const CategoryDetail = () => {
   const [directOnly, setDirectOnly] = useState(false);
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
+  const [brandFilter, setBrandFilter] = useState<string>('all');
 
   const { data: shippingSettings } = useShippingSettings();
   const usdToIqd = shippingSettings?.usd_to_iqd_rate || 1300;
@@ -81,7 +82,7 @@ const CategoryDetail = () => {
       if (!category?.id) return [];
       let query = supabase
         .from('products')
-        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, sea_price, air_price, round_up_price, display_order, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)')
+        .select('id, name, name_ar, name_en, name_ku, description, description_ar, description_en, description_ku, price, original_price, image_url, images, currency, slug, has_in_stock, sold_count, in_stock, is_pricing_updated, direct_stock, colors, category_id, created_at, card_discounts, direct_sale_price, link_direct_commission_to_cod, has_pre_order, shipping_type, price_usd, personal_delivery_cost, referral_earnings_iqd, sea_price, air_price, round_up_price, display_order, brand, product_options(name_ar, price_adjustment, stock_quantity, available_for_direct_sale)')
         .eq('category_id', category.id)
         .eq('in_stock', true)
         .order('display_order', { ascending: true })
@@ -238,6 +239,7 @@ const CategoryDetail = () => {
       if (directOnly && !hasDirect) return false;
       if (minP != null && priceNum < minP) return false;
       if (maxP != null && priceNum > maxP) return false;
+      if (brandFilter !== 'all' && (p.brand || '').toString().trim() !== brandFilter) return false;
       if (searchQ && !isFinite(scoreFor(p))) return false;
       return true;
     });
@@ -269,7 +271,7 @@ const CategoryDetail = () => {
       return sorters[sortBy](a, b);
     });
     return arr;
-  }, [products, sortBy, stockFilter, directOnly, minPrice, maxPrice, searchQ]);
+  }, [products, sortBy, stockFilter, directOnly, minPrice, maxPrice, brandFilter, searchQ]);
 
   const featuredProduct = (() => {
     if (!products?.length) return undefined;
@@ -307,6 +309,7 @@ const CategoryDetail = () => {
     setDirectOnly(false);
     setMinPrice('');
     setMaxPrice('');
+    setBrandFilter('all');
   };
 
   const filtersActive =
@@ -314,7 +317,18 @@ const CategoryDetail = () => {
     stockFilter !== 'all' ||
     directOnly ||
     minPrice !== '' ||
-    maxPrice !== '';
+    maxPrice !== '' ||
+    brandFilter !== 'all';
+
+  const availableBrands = useMemo(() => {
+    if (!products) return [] as string[];
+    const set = new Set<string>();
+    for (const p of products as any[]) {
+      const b = (p.brand || '').toString().trim();
+      if (b) set.add(b);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [products]);
 
   return (
     <div className="min-h-screen">
@@ -515,6 +529,24 @@ const CategoryDetail = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
+
+                              {/* Brand filter */}
+                              {availableBrands.length > 0 && (
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs font-bold text-foreground/80">الشركة المصنعة</Label>
+                                  <Select value={brandFilter} onValueChange={setBrandFilter}>
+                                    <SelectTrigger className="w-full h-9 rounded-lg bg-[hsl(var(--background)/0.6)] backdrop-blur border-[hsl(var(--border)/0.5)]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="all">الكل</SelectItem>
+                                      {availableBrands.map((b) => (
+                                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
 
                               {/* Direct sale */}
                               <div className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border)/0.4)] bg-[hsl(var(--background)/0.4)] backdrop-blur p-3">
