@@ -37,12 +37,34 @@ export function resizeSupabaseImage(
   params.delete('height');
   params.delete('quality');
   params.delete('resize');
+  params.delete('format');
   params.set('width', String(width));
   params.set('quality', String(Math.max(1, Math.min(100, Math.round(quality)))));
   // 'contain' preserves aspect ratio and never upscales beyond the source,
   // preventing the "zoomed/oversized" appearance caused by the default 'cover' mode.
   params.set('resize', 'contain');
+  // Request WebP — ~25-35% smaller than JPEG at equal quality, supported by all modern browsers.
+  params.set('format', 'webp');
   return `${path}?${params.toString()}`;
+}
+
+/**
+ * Build a responsive srcset for a Supabase image at multiple widths.
+ * Browser picks the smallest acceptable size based on `sizes` attribute.
+ */
+export function buildResponsiveSrcSet(
+  url: string | undefined,
+  widths: number[],
+  quality: number = 75
+): string | undefined {
+  if (!url) return undefined;
+  return widths
+    .map((w) => {
+      const u = resizeSupabaseImage(url, w, quality);
+      return u ? `${u} ${w}w` : null;
+    })
+    .filter(Boolean)
+    .join(', ');
 }
 
 /**

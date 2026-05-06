@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from "react";
-import { resizeSupabaseImage } from "@/lib/imageUtils";
+import { resizeSupabaseImage, buildResponsiveSrcSet } from "@/lib/imageUtils";
 
 interface OptimizedImageProps {
   src: string;
@@ -90,6 +90,11 @@ const OptimizedImage = memo(({
     return resizeSupabaseImage(src, snapped, quality) || src;
   }, [src, targetWidth, width, quality]);
 
+  const srcSet = useMemo(
+    () => buildResponsiveSrcSet(src, [200, 400, 600, 800, 1200], quality),
+    [src, quality]
+  );
+
   return (
     <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
       {/* Placeholder skeleton - uses CSS aspect-ratio if dimensions provided */}
@@ -111,6 +116,7 @@ const OptimizedImage = memo(({
       {isInView && !hasError && (
         <img
           src={optimizedSrc}
+          srcSet={srcSet}
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding="async"

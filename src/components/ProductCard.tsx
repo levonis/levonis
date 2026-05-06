@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Heart, CreditCard } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
+import { resizeSupabaseImage, buildResponsiveSrcSet, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
@@ -72,8 +72,8 @@ const ProductCard = ({
   const displayDescription = getLocalizedField(localProduct, 'description', language);
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
-  // Compress image to 300px width with medium quality for cards
   const optimizedImage = resizeSupabaseImage(displayImage, IMAGE_SIZES.card, IMAGE_QUALITY.medium);
+  const srcSet = buildResponsiveSrcSet(displayImage, [200, 300, 400, 600], IMAGE_QUALITY.medium);
 
   const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -150,6 +150,8 @@ const ProductCard = ({
           )}
           <img 
             src={optimizedImage || '/placeholder.svg'} 
+            srcSet={srcSet}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             alt={nameAr}
             className={`w-full h-full object-cover group-hover:scale-103 transition-all duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
