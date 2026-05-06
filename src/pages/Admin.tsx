@@ -25,6 +25,7 @@ import AdminProductPricingSection from '@/components/admin/AdminProductPricingSe
 import AdminProductAIContentEditor from '@/components/admin/AdminProductAIContentEditor';
 import { ExtractionProgress, type ExtractionStep } from '@/components/admin/ExtractionProgress';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
+import PermissionsHealthPanel from '@/components/admin/PermissionsHealthPanel';
 
 const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
   { key: 'fetch', label: 'جلب صفحة المنتج' },
