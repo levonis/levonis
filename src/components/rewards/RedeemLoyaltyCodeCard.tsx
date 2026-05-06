@@ -11,14 +11,57 @@ import { useNavigate } from 'react-router-dom';
 
 const COOLDOWN_MS = 1500;
 
-const ERROR_MESSAGES: Record<string, string> = {
-  code_not_found: 'الكود غير صالح',
-  code_already_used: 'تم استخدام هذا الكود مسبقاً',
-  code_expired: 'انتهت صلاحية هذا الكود',
-  no_active_warranty: 'تحتاج إلى طابعة فعّالة في الضمان لتفعيل هذا الكود',
-  already_has_active_card: 'لديك بطاقة فعّالة بالفعل',
-  auth_required: 'يرجى تسجيل الدخول',
+type ErrorKey =
+  | 'code_not_found'
+  | 'code_invalid_format'
+  | 'code_already_used'
+  | 'code_expired'
+  | 'already_has_active_card'
+  | 'auth_required'
+  | 'card_not_found'
+  | 'rate_limited'
+  | 'unknown';
+
+const ERROR_DETAILS: Record<ErrorKey, { title: string; desc: string }> = {
+  code_not_found: {
+    title: 'الكود غير صالح',
+    desc: 'تأكد من إدخال الكود بشكل صحيح بدون مسافات أو أحرف زائدة.',
+  },
+  code_invalid_format: {
+    title: 'صيغة الكود غير صحيحة',
+    desc: 'الكود يجب أن يتكوّن من أحرف وأرقام إنجليزية فقط (8-20 خانة).',
+  },
+  code_already_used: {
+    title: 'تم استخدام هذا الكود مسبقاً',
+    desc: 'هذا الكود مفعّل من قبل ولا يمكن استخدامه مرة أخرى. تواصل مع الدعم إذا كنت تعتقد أن هذا خطأ.',
+  },
+  code_expired: {
+    title: 'انتهت صلاحية الكود',
+    desc: 'الكود الذي أدخلته منتهي الصلاحية ولم يعد قابلاً للتفعيل. يمكنك طلب كود جديد من الدعم.',
+  },
+  already_has_active_card: {
+    title: 'لديك بطاقة فعّالة بالفعل',
+    desc: 'لا يمكن تفعيل بطاقة جديدة قبل انتهاء البطاقة الحالية.',
+  },
+  auth_required: {
+    title: 'يرجى تسجيل الدخول',
+    desc: 'تحتاج إلى تسجيل الدخول إلى حسابك لاستخدام كود تفعيل البطاقة.',
+  },
+  card_not_found: {
+    title: 'البطاقة المرتبطة بالكود غير موجودة',
+    desc: 'حدث خلل في إعدادات هذا الكود. يرجى التواصل مع الدعم.',
+  },
+  rate_limited: {
+    title: 'محاولات متكررة',
+    desc: 'يرجى الانتظار قليلاً قبل إعادة المحاولة.',
+  },
+  unknown: {
+    title: 'فشل التفعيل',
+    desc: 'حدث خطأ غير متوقع. حاول مرة أخرى أو تواصل مع الدعم.',
+  },
 };
+
+const CODE_REGEX = /^[A-Z0-9]{8,20}$/;
 
 type WarrantyReason = 'no_printer_registered' | 'warranty_expired' | 'no_active_warranty';
 
