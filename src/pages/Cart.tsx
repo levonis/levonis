@@ -878,6 +878,59 @@ const Cart = () => {
   const subscriptionFreeShippingApplied = useSubscriptionContrib && !warrantyFreeShippingApplied && subFreeShippingEligible;
   const hardwareFreeShippingApplied = warrantyFreeShippingApplied || subscriptionFreeShippingApplied;
 
+  // ── Card perks scope notices: tell user which items block free shipping / discount ─────
+  const allWhitelistCatIds = useMemo(() => {
+    const ids = new Set<string>();
+    [
+      ...(cardDiscount?.discountApplicableCategoryIds || []),
+      ...(cardShipCats || []),
+    ].forEach((id) => id && ids.add(id));
+    return Array.from(ids);
+  }, [cardDiscount?.discountApplicableCategoryIds, cardShipCats]);
+
+  const { data: whitelistCatNames = {} } = useQuery({
+    queryKey: ['cart-whitelist-cat-names', allWhitelistCatIds.join(',')],
+    queryFn: async () => {
+      if (!allWhitelistCatIds.length) return {};
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name_ar')
+        .in('id', allWhitelistCatIds);
+      if (error) throw error;
+      return Object.fromEntries((data || []).map((c: any) => [c.id, c.name_ar]));
+    },
+    enabled: allWhitelistCatIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const nonGiftItems = items.filter((it: any) => !it?.is_gift);
+
+  const buildScopeNotice = (whitelist: string[]) => {
+    if (!whitelist.length || nonGiftItems.length === 0) return null;
+    const allowedSet = new Set(whitelist);
+    const blocking = nonGiftItems.filter((it: any) => {
+      const cid = it?.products?.category_id;
+      return !cid || !allowedSet.has(cid);
+    });
+    const allowedNames = whitelist
+      .map((id) => (whitelistCatNames as any)[id])
+      .filter(Boolean)
+      .join('، ');
+    const blockingNames = blocking
+      .map((it: any) => it?.products?.name_ar || it?.products?.name)
+      .filter(Boolean)
+      .slice(0, 3)
+      .join('، ') + (blocking.length > 3 ? ` +${blocking.length - 3}` : '');
+    return { eligible: blocking.length === 0, allowedNames, blockingNames };
+  };
+
+  const cardDiscountScope = cardDiscount?.discountApplicableCategoryIds?.length
+    ? buildScopeNotice(cardDiscount.discountApplicableCategoryIds)
+    : null;
+  const cardShippingScope = (cardDiscount?.freeShipping && cardShipCats.length)
+    ? buildScopeNotice(cardShipCats)
+    : null;
+
   // Referral coupon: free delivery is conditional on subtotal >= admin-defined min
   const referralMinOrder = (appliedReferral as any)?.free_delivery_min_order_iqd ?? 100000;
   const referralFreeShippingApplied = !!appliedReferral && total >= referralMinOrder;
@@ -3205,6 +3258,63 @@ const Cart = () => {
                     </div>
                   )}
 
+                  {/* Card perk scope notices: explain why free shipping / discount activates or not */}
+                  {(cardShippingScope || cardDiscountScope) && (
+                    <div className="space-y-1.5">
+                      {cardShippingScope && (
+                        <div className={`text-[11px] rounded-lg px-3 py-2 border ${
+                          cardShippingScope.eligible
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
+                        }`}>
+                          {cardShippingScope.eligible ? (
+                            <div className="font-semibold">
+                              {t('cart_card_perk_eligible_title', { perk: t('cart_free_delivery_won') })}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-bold mb-0.5">
+                                {t('cart_card_perk_blocked_title', { perk: t('cart_free_delivery_won') })}
+                              </div>
+                              <div className="leading-relaxed">
+                                {t('cart_card_perk_blocked_desc', {
+                                  perk: t('cart_free_delivery_won'),
+                                  cats: cardShippingScope.allowedNames || '—',
+                                  items: cardShippingScope.blockingNames || '—',
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {cardDiscountScope && (
+                        <div className={`text-[11px] rounded-lg px-3 py-2 border ${
+                          cardDiscountScope.eligible
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
+                        }`}>
+                          {cardDiscountScope.eligible ? (
+                            <div className="font-semibold">
+                              {t('cart_card_perk_eligible_title', { perk: `${cardDiscount?.percentageRate || 0}%` })}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-bold mb-0.5">
+                                {t('cart_card_perk_blocked_title', { perk: `${cardDiscount?.percentageRate || 0}%` })}
+                              </div>
+                              <div className="leading-relaxed">
+                                {t('cart_card_perk_blocked_desc', {
+                                  perk: `${cardDiscount?.percentageRate || 0}%`,
+                                  cats: cardDiscountScope.allowedNames || '—',
+                                  items: cardDiscountScope.blockingNames || '—',
+                                })}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <div className="flex justify-between text-foreground">
                     <span>{t('cart_delivery')}</span>
