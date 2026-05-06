@@ -169,7 +169,7 @@ const AdminOrders = () => {
 
       // Fetch related data via admin views (cost columns are restricted on base tables)
       const [itemsRes, profilesRes, rfRes] = await Promise.all([
-        supabase.from('order_items_admin' as any).select('*, product_bundles:bundle_id(id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url)))').in('order_id', orderIds),
+        supabase.from('order_items_admin' as any).select('*').in('order_id', orderIds),
         supabase.from('profiles').select('id, full_name, email, username').in('id', Array.from(new Set((ordersData || []).map((o: any) => o.user_id).filter(Boolean)))),
         supabase.from('random_filament_orders').select('id, order_id, sale_type, product_id, product_option_id, selected_color, offer_id, random_filament_offers(title_ar)').in('order_id', orderIds),
       ]);
@@ -185,10 +185,19 @@ const AdminOrders = () => {
           .in('id', productIds);
         ((prodData as any[]) || []).forEach((p) => productMap.set(p.id, p));
       }
+      const bundleIds = Array.from(new Set(itemsRaw.map((it: any) => it.bundle_id).filter(Boolean)));
+      let bundleMap = new Map<string, any>();
+      if (bundleIds.length > 0) {
+        const { data: bundleData } = await supabase
+          .from('product_bundles')
+          .select('id, title_ar, image_url, bundle_items(quantity, products(name_ar, image_url))')
+          .in('id', bundleIds);
+        ((bundleData as any[]) || []).forEach((b) => bundleMap.set(b.id, b));
+      }
 
       const itemsByOrder = new Map<string, any[]>();
       itemsRaw.forEach((it) => {
-        const enriched = { ...it, products: productMap.get(it.product_id) || null };
+        const enriched = { ...it, products: productMap.get(it.product_id) || null, product_bundles: it.bundle_id ? bundleMap.get(it.bundle_id) || null : null };
         const arr = itemsByOrder.get(it.order_id) || [];
         arr.push(enriched); itemsByOrder.set(it.order_id, arr);
       });
