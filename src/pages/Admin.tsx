@@ -1224,11 +1224,7 @@ const Admin = () => {
   const handleToggleVisibility = async (product: any) => {
     const newValue = !product.is_pricing_updated;
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({ is_pricing_updated: newValue, updated_at: new Date().toISOString() })
-        .eq('id', product.id);
-      if (error) throw error;
+      await adminUpdateProduct(product.id, { is_pricing_updated: newValue, updated_at: new Date().toISOString() });
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       toast.success(newValue ? 'تم إظهار المنتج للمستخدمين' : 'تم إخفاء المنتج عن المستخدمين');
     } catch (error) {
