@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Plus, Save, Package } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
+import { adminUpdateOrder } from "@/lib/adminMutations";
 
 interface OrderItem {
   id: string;
@@ -193,10 +194,7 @@ export default function AdminOrderItemEditor({ open, onOpenChange, orderId, orde
         : 0;
       const newTotal = Math.max(0, newSubtotal + extras - prevDiscount);
 
-      await supabase
-        .from('orders')
-        .update({ subtotal: newSubtotal, total_amount: newTotal })
-        .eq('id', orderId);
+      await adminUpdateOrder(orderId, { subtotal: newSubtotal, total_amount: newTotal });
 
       toast.success("تم تحديث المنتجات والمخزون بنجاح");
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });

@@ -26,6 +26,7 @@ import AdminProductAIContentEditor from '@/components/admin/AdminProductAIConten
 import { ExtractionProgress, type ExtractionStep } from '@/components/admin/ExtractionProgress';
 import { useShippingSettings, calculateShippingCost } from '@/hooks/useShippingCalculator';
 import PermissionsHealthPanel from '@/components/admin/PermissionsHealthPanel';
+import { adminCreateProduct, adminDeleteProduct, adminUpdateProduct } from '@/lib/adminMutations';
 
 const EXTRACTION_STEP_DEFS: { key: string; label: string }[] = [
   { key: 'fetch', label: 'جلب صفحة المنتج' },
@@ -512,11 +513,7 @@ const Admin = () => {
 
   const createProduct = useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase
-        .from('products')
-        .insert([values]);
-      
-      if (error) throw error;
+      await adminCreateProduct(values);
     },
     onSuccess: () => {
       // Invalidate all product-related queries across the app
@@ -545,12 +542,7 @@ const Admin = () => {
 
   const updateProduct = useMutation({
     mutationFn: async ({ id, values }: { id: string, values: any }) => {
-      const { error } = await supabase
-        .from('products')
-        .update(values)
-        .eq('id', id);
-      
-      if (error) throw error;
+      await adminUpdateProduct(id, values);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
@@ -579,12 +571,7 @@ const Admin = () => {
 
   const deleteProduct = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+      await adminDeleteProduct(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
@@ -1237,11 +1224,7 @@ const Admin = () => {
   const handleToggleVisibility = async (product: any) => {
     const newValue = !product.is_pricing_updated;
     try {
-      const { error } = await supabase
-        .from('products')
-        .update({ is_pricing_updated: newValue, updated_at: new Date().toISOString() })
-        .eq('id', product.id);
-      if (error) throw error;
+      await adminUpdateProduct(product.id, { is_pricing_updated: newValue, updated_at: new Date().toISOString() });
       queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       toast.success(newValue ? 'تم إظهار المنتج للمستخدمين' : 'تم إخفاء المنتج عن المستخدمين');
     } catch (error) {
@@ -1271,14 +1254,7 @@ const Admin = () => {
       };
 
       // 3) Insert duplicated product
-      const { data: inserted, error: insertError } = await supabase
-        .from('products')
-        .insert([newValues as any])
-        .select('id')
-        .single();
-      if (insertError) throw insertError;
-
-      const newProductId = inserted.id;
+      const newProductId = await adminCreateProduct(newValues as any);
 
       // 4) Duplicate options to the new product
       if (options && options.length > 0) {
@@ -1697,14 +1673,7 @@ const Admin = () => {
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, values });
       } else {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([values as any])
-          .select('id')
-          .single();
-        
-        if (error) throw error;
-        productId = data.id;
+        productId = await adminCreateProduct(values as any);
       }
 
       // Save product options - always delete existing options when editing
@@ -1753,12 +1722,8 @@ const Admin = () => {
             .update({ featured_product_id: productId })
             .eq('id', values.category_id);
           // Unfeature other products in the same category
-          await supabase
-            .from('products')
-            .update({ featured: false })
-            .eq('category_id', values.category_id)
-            .neq('id', productId)
-            .eq('featured', true);
+          const featuredProducts = (products || []).filter((p: any) => p.category_id === values.category_id && p.id !== productId && p.featured);
+          await Promise.all(featuredProducts.map((p: any) => adminUpdateProduct(p.id, { featured: false })));
         } else {
           // If this product was the featured one, clear it
           await supabase

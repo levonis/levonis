@@ -13478,6 +13478,10 @@ export type Database = {
       }
     }
     Functions: {
+      _admin_filtered_payload: {
+        Args: { _exclude?: string[]; _payload: Json; _table_name: string }
+        Returns: Json
+      }
       _admin_order_items_full: {
         Args: never
         Returns: {
@@ -13658,6 +13662,23 @@ export type Database = {
       }
       admin_award_knife_rain_winners: { Args: never; Returns: Json }
       admin_award_stack_winners: { Args: never; Returns: Json }
+      admin_create_order: {
+        Args: { _values: Json }
+        Returns: {
+          created_at: string
+          id: string
+          order_number: string
+          status: string
+          total_amount: number
+          user_id: string
+        }[]
+      }
+      admin_create_product: { Args: { _values: Json }; Returns: string }
+      admin_delete_order: { Args: { _order_id: string }; Returns: undefined }
+      admin_delete_product: {
+        Args: { _product_id: string }
+        Returns: undefined
+      }
       admin_get_order_items_full: {
         Args: { p_order_ids: string[] }
         Returns: {
@@ -13767,6 +13788,14 @@ export type Database = {
       admin_update_level_prize_claim: {
         Args: { p_claim_id: string; p_new_status: string; p_notes?: string }
         Returns: Json
+      }
+      admin_update_order: {
+        Args: { _order_id: string; _updates: Json }
+        Returns: undefined
+      }
+      admin_update_product: {
+        Args: { _product_id: string; _updates: Json }
+        Returns: undefined
       }
       apply_referral_coupon: {
         Args: { p_buyer_user_id: string; p_code: string }
