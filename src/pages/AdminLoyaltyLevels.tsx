@@ -105,9 +105,9 @@ export default function AdminLoyaltyLevels() {
   const adminGiftMutation = useMutation({
     mutationFn: async ({ levelId, recipientId, message }: { levelId: string; recipientId: string; message: string }) => {
       const { data, error } = await supabase.rpc('admin_gift_loyalty_card' as any, {
-        p_recipient_id: recipientId,
-        p_level_id: levelId,
-        p_message: message || null,
+        p_user_id: recipientId,
+        p_card_id: levelId,
+        p_admin_note: message || null,
       });
       if (error) throw error;
       const result = data as { success?: boolean; error?: string };
@@ -151,10 +151,10 @@ export default function AdminLoyaltyLevels() {
   }, [user, navigate]);
 
   const { data: levels, isLoading } = useQuery({
-    queryKey: ["loyaltyLevels"],
+    queryKey: ["membershipCards"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("loyalty_levels")
+        .from("membership_cards")
         .select("*")
         .order("display_order", { ascending: true });
 
@@ -182,7 +182,7 @@ export default function AdminLoyaltyLevels() {
         .from("user_cards")
         .select(`
           *,
-          loyalty_levels:level_id(name_ar, color)
+          membership_cards:card_id(name_ar, color)
         `)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
@@ -200,6 +200,7 @@ export default function AdminLoyaltyLevels() {
       return cards.map((c: any) => ({
         ...c,
         profiles: profileMap.get(c.user_id) || null,
+        loyalty_levels: c.membership_cards, // backward-compat for existing UI bindings
       }));
     },
   });
@@ -211,12 +212,12 @@ export default function AdminLoyaltyLevels() {
         .from("card_exclusive_offers")
         .select(`
           *,
-          loyalty_levels:min_card_level_id(name_ar, color)
+          membership_cards:min_card_id(name_ar, color)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return (data || []).map((o: any) => ({ ...o, loyalty_levels: o.membership_cards }));
     },
   });
 
@@ -224,8 +225,8 @@ export default function AdminLoyaltyLevels() {
     queryKey: ["loyaltyStats"],
     queryFn: async () => {
       const [cardsRes, holdersRes] = await Promise.all([
-        supabase.from("loyalty_levels").select("id", { count: "exact" }),
-        supabase.from("user_cards").select("id", { count: "exact" }).eq("is_active", true),
+        supabase.from("membership_cards").select("id", { count: "exact", head: true }),
+        supabase.from("user_cards").select("id", { count: "exact", head: true }).eq("is_active", true),
       ]);
       return {
         totalCards: cardsRes.count || 0,
@@ -262,8 +263,20 @@ export default function AdminLoyaltyLevels() {
         displayOrder = editingLevel.display_order;
       }
 
-      const levelData = {
-        ...formData,
+      // Map form fields → membership_cards columns
+      const {
+        level_key,
+        min_points,
+        purchase_price_points,
+        is_purchasable,
+        ...rest
+      } = formData;
+
+      const cardData: any = {
+        ...rest,
+        card_key: level_key,
+        price_points: purchase_price_points,
+        is_active: is_purchasable, // false ⇒ exclusive (admin-gift only)
         benefits,
         display_order: displayOrder,
         discount_applicable_category_ids: formData.discount_applicable_category_ids.length > 0
@@ -276,21 +289,21 @@ export default function AdminLoyaltyLevels() {
 
       if (editingLevel) {
         const { error } = await (supabase as any)
-          .from("loyalty_levels")
-          .update(levelData)
+          .from("membership_cards")
+          .update(cardData)
           .eq("id", editingLevel.id);
 
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
-          .from("loyalty_levels")
-          .insert([levelData]);
+          .from("membership_cards")
+          .insert([cardData]);
 
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loyaltyLevels"] });
+      queryClient.invalidateQueries({ queryKey: ["membershipCards"] });
       queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
       toast.success(editingLevel ? "تم تحديث البطاقة بنجاح" : "تم إضافة البطاقة بنجاح");
       setDialogOpen(false);
@@ -304,14 +317,14 @@ export default function AdminLoyaltyLevels() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("loyalty_levels")
+        .from("membership_cards")
         .delete()
         .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loyaltyLevels"] });
+      queryClient.invalidateQueries({ queryKey: ["membershipCards"] });
       queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
       toast.success("تم حذف البطاقة بنجاح");
     },
@@ -322,9 +335,10 @@ export default function AdminLoyaltyLevels() {
 
   const saveOfferMutation = useMutation({
     mutationFn: async () => {
-      const data = {
-        ...offerData,
-        min_card_level_id: offerData.min_card_level_id || null,
+      const { min_card_level_id, ...rest } = offerData as any;
+      const data: any = {
+        ...rest,
+        min_card_id: min_card_level_id || null,
       };
 
       if (editingOffer) {
@@ -420,10 +434,10 @@ export default function AdminLoyaltyLevels() {
   const handleEdit = (level: any) => {
     setEditingLevel(level);
     setFormData({
-      level_key: level.level_key,
+      level_key: level.card_key || level.level_key || "",
       name_ar: level.name_ar,
       name_en: level.name_en,
-      min_points: level.min_points,
+      min_points: level.min_points ?? 0,
       color: level.color,
       discount_percentage: level.discount_percentage || 0,
       discount_percentage_max_amount: level.discount_percentage_max_amount ?? null,
@@ -432,8 +446,8 @@ export default function AdminLoyaltyLevels() {
       free_shipping_min_order: level.free_shipping_min_order || 0,
       free_shipping_methods: Array.isArray(level.free_shipping_methods) ? level.free_shipping_methods : ["standard"],
       free_shipping_max_uses: level.free_shipping_max_uses ?? null,
-      is_purchasable: level.is_purchasable ?? true,
-      purchase_price_points: level.purchase_price_points || 0,
+      is_purchasable: level.is_active ?? true,
+      purchase_price_points: level.price_points ?? level.purchase_price_points ?? 0,
       duration_days: level.duration_days || 30,
       card_discounts_enabled: level.card_discounts_enabled || false,
       icon: level.icon || "crown",
@@ -463,7 +477,7 @@ export default function AdminLoyaltyLevels() {
     setOfferData({
       title_ar: offer.title_ar,
       description_ar: offer.description_ar || "",
-      min_card_level_id: offer.min_card_level_id || "",
+      min_card_level_id: offer.min_card_id || offer.min_card_level_id || "",
       offer_type: offer.offer_type || "discount",
       offer_value: offer.offer_value || 0,
       is_active: offer.is_active,
