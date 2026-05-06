@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Heart, CreditCard } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
+import { resizeSupabaseImage, buildResponsiveSrcSet, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DirectSaleRibbon from './ui/DirectSaleRibbon';
