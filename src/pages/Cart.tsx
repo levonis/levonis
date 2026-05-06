@@ -1483,18 +1483,37 @@ const Cart = () => {
         return;
       }
 
-      // Identify random filament cart items: new flow via cart_items.rf_offer_id, legacy via random_filament_orders link
+      // Identify random filament cart items: new flow via cart_items.rf_offer_id, legacy via random_filament_orders link.
+      // SAFETY: also re-read cart_items by id from DB so stale local state never drops RF rows.
       const cartItemIdsAll = items.map(i => i.id).filter(Boolean);
       let randomFilamentIds = new Set<string>();
       const rfPriceByCartItem = new Map<string, number>();
       const rfOfferByCartItem = new Map<string, string>();
+      const rfCategoryByCartItem = new Map<string, string>();
       items.forEach((it: any) => {
         if (it?.rf_offer_id) {
           randomFilamentIds.add(it.id);
           rfOfferByCartItem.set(it.id, it.rf_offer_id);
+          if (it.rf_category_id) rfCategoryByCartItem.set(it.id, it.rf_category_id);
           if (it.random_filament_price_iqd) rfPriceByCartItem.set(it.id, Number(it.random_filament_price_iqd));
         }
       });
+      // Fallback 1: direct cart_items read for any rf_offer_id we may have missed locally
+      try {
+        if (cartItemIdsAll.length > 0) {
+          const { data: rfFresh } = await (supabase as any)
+            .from('cart_items')
+            .select('id, rf_offer_id, rf_category_id')
+            .in('id', cartItemIdsAll)
+            .not('rf_offer_id', 'is', null);
+          (rfFresh || []).forEach((r: any) => {
+            randomFilamentIds.add(r.id);
+            if (r.rf_offer_id) rfOfferByCartItem.set(r.id, r.rf_offer_id);
+            if (r.rf_category_id) rfCategoryByCartItem.set(r.id, r.rf_category_id);
+          });
+        }
+      } catch (e) { console.warn('rf cart_items fallback failed', e); }
+      // Fallback 2: legacy random_filament_orders link
       try {
         if (cartItemIdsAll.length > 0) {
           const { data: rfRows } = await (supabase as any)
@@ -1508,6 +1527,29 @@ const Cart = () => {
           });
         }
       } catch (e) { console.warn('rf lookup failed', e); }
+      // Backfill RF prices from offers table when missing
+      try {
+        const offerIdsNeedingPrice = Array.from(new Set(
+          Array.from(randomFilamentIds)
+            .filter((cid) => !rfPriceByCartItem.has(cid))
+            .map((cid) => rfOfferByCartItem.get(cid))
+            .filter(Boolean) as string[]
+        ));
+        if (offerIdsNeedingPrice.length > 0) {
+          const { data: offers } = await (supabase as any)
+            .from('random_filament_offers')
+            .select('id, price_iqd')
+            .in('id', offerIdsNeedingPrice);
+          const priceByOffer = new Map<string, number>();
+          (offers || []).forEach((o: any) => priceByOffer.set(o.id, Number(o.price_iqd) || 0));
+          for (const cid of randomFilamentIds) {
+            if (!rfPriceByCartItem.has(cid)) {
+              const oid = rfOfferByCartItem.get(cid);
+              if (oid && priceByOffer.has(oid)) rfPriceByCartItem.set(cid, priceByOffer.get(oid)!);
+            }
+          }
+        }
+      } catch (e) { console.warn('rf price backfill failed', e); }
 
       // Create order items (include RF items even when product_id is still null — revealed later)
       const orderItems = items
