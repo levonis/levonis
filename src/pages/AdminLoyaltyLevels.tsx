@@ -263,8 +263,20 @@ export default function AdminLoyaltyLevels() {
         displayOrder = editingLevel.display_order;
       }
 
-      const levelData = {
-        ...formData,
+      // Map form fields → membership_cards columns
+      const {
+        level_key,
+        min_points,
+        purchase_price_points,
+        is_purchasable,
+        ...rest
+      } = formData;
+
+      const cardData: any = {
+        ...rest,
+        card_key: level_key,
+        price_points: purchase_price_points,
+        is_active: is_purchasable, // false ⇒ exclusive (admin-gift only)
         benefits,
         display_order: displayOrder,
         discount_applicable_category_ids: formData.discount_applicable_category_ids.length > 0
@@ -277,21 +289,21 @@ export default function AdminLoyaltyLevels() {
 
       if (editingLevel) {
         const { error } = await (supabase as any)
-          .from("loyalty_levels")
-          .update(levelData)
+          .from("membership_cards")
+          .update(cardData)
           .eq("id", editingLevel.id);
 
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
-          .from("loyalty_levels")
-          .insert([levelData]);
+          .from("membership_cards")
+          .insert([cardData]);
 
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loyaltyLevels"] });
+      queryClient.invalidateQueries({ queryKey: ["membershipCards"] });
       queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
       toast.success(editingLevel ? "تم تحديث البطاقة بنجاح" : "تم إضافة البطاقة بنجاح");
       setDialogOpen(false);
@@ -305,14 +317,14 @@ export default function AdminLoyaltyLevels() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("loyalty_levels")
+        .from("membership_cards")
         .delete()
         .eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["loyaltyLevels"] });
+      queryClient.invalidateQueries({ queryKey: ["membershipCards"] });
       queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
       toast.success("تم حذف البطاقة بنجاح");
     },
