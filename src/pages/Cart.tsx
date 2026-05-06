@@ -1556,6 +1556,28 @@ const Cart = () => {
           };
         });
 
+      // CRITICAL SAFETY: never finalize an empty order. If we somehow built no items
+      // (e.g. stale local state, RF row not yet linked), refund + delete and abort.
+      if (orderItems.length === 0) {
+        console.error('Direct sale: orderItems empty — rolling back', { orderId: orderResult.id, orderNumber, itemsCount: items.length });
+        if (walletDeductionAmount > 0) {
+          try {
+            await supabase.rpc('refund_wallet_balance' as any, {
+              p_user_id: user.id,
+              p_amount: walletDeductionAmount,
+              p_description: `استرجاع تلقائي - عناصر الطلب فارغة ${orderNumber}`,
+              p_idempotency_key: `refund:empty_items:${orderNumber}`,
+            });
+          } catch (e) { console.error('Refund (empty items) failed:', e); }
+        }
+        try { await supabase.from('orders').delete().eq('id', orderResult.id); } catch (e) { console.error('Delete (empty items) failed:', e); }
+        sonnerToast.error('تعذر إنشاء الطلب', {
+          description: 'لم يتم العثور على عناصر السلة. تم إعادة المبلغ للمحفظة. يرجى تحديث الصفحة وإعادة المحاولة.',
+          duration: 9000,
+        });
+        return;
+      }
+
       if (orderItems.length > 0) {
         const itemsResult = await insertOrderItemsWithRollback(orderItems, {
           orderId: orderResult.id,
@@ -1572,6 +1594,18 @@ const Cart = () => {
             duration: 9000,
           });
           return;
+        }
+
+        // For Random Filament: finalize selection + deduct stock atomically BEFORE generic stock RPC.
+        // finalize_and_reveal_rf_for_order picks the random product/color, creates random_filament_orders rows,
+        // updates order_items with the chosen product_id/color, and decrements option_stocks.
+        const hasRfInOrder = orderItems.some((oi: any) => oi.rf_offer_id);
+        if (hasRfInOrder) {
+          try {
+            await supabase.rpc('finalize_and_reveal_rf_for_order' as any, { p_order_id: orderResult.id });
+          } catch (e) {
+            console.error('finalize_and_reveal_rf_for_order failed:', e);
+          }
         }
 
         // Deduct stock for direct sale items - retry up to 3 times
