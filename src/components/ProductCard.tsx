@@ -153,7 +153,7 @@ const ProductCard = ({
             alt={nameAr}
             className={`w-full h-full object-cover group-hover:scale-103 transition-all duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
-            fetchPriority={priority ? "high" : "auto"}
+            {...({ fetchpriority: priority ? "high" : "auto" } as any)}
             decoding="async"
             width="300"
             height="300"
