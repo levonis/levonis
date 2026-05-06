@@ -75,7 +75,7 @@ const AdminProductColorQa = () => {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as ProductRow[];
+      return (data || []) as unknown as ProductRow[];
     },
   });
 
