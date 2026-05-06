@@ -604,33 +604,6 @@ export default function AdminLoyaltyLevels() {
               البطاقات المتاحة للمستخدمين للشراء أو الحصول عليها تلقائياً
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
-              >
-                <History className="h-4 w-4 ml-1" /> سجل الاستخدام
-              </Button>
-              <ImportBatchesButton
-                cards={(levels || []).map((l: any) => ({
-                  id: l.id,
-                  name_ar: l.name_ar,
-                  name_en: l.name_en,
-                  duration_days: l.duration_days,
-                }))}
-                onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-              />
-              <CreateBatchButton
-                cards={(levels || []).map((l: any) => ({
-                  id: l.id,
-                  name_ar: l.name_ar,
-                  name_en: l.name_en,
-                  duration_days: l.duration_days,
-                }))}
-                open={createBatchOpen}
-                onOpenChange={setCreateBatchOpen}
-                onCreated={() => queryClient.invalidateQueries({ queryKey: ['admin-loyalty-codes'] })}
-              />
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="admin-btn-primary" onClick={resetForm}>
