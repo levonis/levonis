@@ -18,6 +18,7 @@ import {
 import { mergeRetryColors } from '@/lib/mergeRetryColors';
 import { normalizeVariantName, isSwatchUrl } from '@/lib/variantNameNormalize';
 import { getColorSwatchStyle } from '@/lib/colorSwatch';
+import { adminUpdateProduct } from '@/lib/adminMutations';
 
 type ColorVariant = {
   name?: string;
@@ -64,7 +65,7 @@ const AdminProductColorQa = () => {
     queryKey: ['qa-product-search', search],
     queryFn: async () => {
       const q = supabase
-        .from('products')
+        .from('products_admin' as any)
         .select('id, slug, name, name_ar, image_url, images, colors, taobao_url')
         .order('updated_at', { ascending: false })
         .limit(25);
@@ -192,11 +193,7 @@ const AdminProductColorQa = () => {
         mode: data.mode === 'replace' ? 'replace' : 'upsert',
         defaults,
       });
-      const { error: upErr } = await supabase
-        .from('products')
-        .update({ colors: updated as any })
-        .eq('id', product.id);
-      if (upErr) throw upErr;
+      await adminUpdateProduct(product.id, { colors: updated as any });
 
       // Auto-resolve all flags for this product after a successful re-extract
       await supabase
