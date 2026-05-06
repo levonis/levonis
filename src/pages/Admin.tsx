@@ -1258,14 +1258,7 @@ const Admin = () => {
       };
 
       // 3) Insert duplicated product
-      const { data: inserted, error: insertError } = await supabase
-        .from('products')
-        .insert([newValues as any])
-        .select('id')
-        .single();
-      if (insertError) throw insertError;
-
-      const newProductId = inserted.id;
+      const newProductId = await adminCreateProduct(newValues as any);
 
       // 4) Duplicate options to the new product
       if (options && options.length > 0) {
@@ -1684,14 +1677,7 @@ const Admin = () => {
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, values });
       } else {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([values as any])
-          .select('id')
-          .single();
-        
-        if (error) throw error;
-        productId = data.id;
+        productId = await adminCreateProduct(values as any);
       }
 
       // Save product options - always delete existing options when editing
@@ -1740,12 +1726,8 @@ const Admin = () => {
             .update({ featured_product_id: productId })
             .eq('id', values.category_id);
           // Unfeature other products in the same category
-          await supabase
-            .from('products')
-            .update({ featured: false })
-            .eq('category_id', values.category_id)
-            .neq('id', productId)
-            .eq('featured', true);
+          const featuredProducts = (products || []).filter((p: any) => p.category_id === values.category_id && p.id !== productId && p.featured);
+          await Promise.all(featuredProducts.map((p: any) => adminUpdateProduct(p.id, { featured: false })));
         } else {
           // If this product was the featured one, clear it
           await supabase
