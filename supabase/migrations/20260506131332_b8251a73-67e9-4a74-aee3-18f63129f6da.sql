@@ -1,0 +1,1 @@
+REVOKE SELECT (admin_paid_amount) ON public.orders FROM authenticated, anon;
