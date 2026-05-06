@@ -14192,6 +14192,16 @@ export type Database = {
           username: string
         }[]
       }
+      get_user_card_cycle: {
+        Args: { p_card_id: string }
+        Returns: {
+          cycle_end: string
+          cycle_index: number
+          cycle_start: string
+          duration_days: number
+          total_cycles: number
+        }[]
+      }
       get_user_card_frame: {
         Args: { p_user_id: string }
         Returns: {
