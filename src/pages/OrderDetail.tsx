@@ -79,8 +79,7 @@ const ORDER_DETAIL_SELECT = `
     products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url),
     custom_product_requests(product_name, image_url, suggested_price),
     random_filament_offers!order_items_rf_offer_id_fkey(id, title_ar, description_ar, image_url)
-  ),
-  profiles(full_name, email)
+  )
 `;
 
 const InfoRow = ({ label, value, icon: Icon, valueClass = '' }: { label: string; value: string; icon?: any; valueClass?: string }) => (
