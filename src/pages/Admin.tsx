@@ -2567,7 +2567,7 @@ const Admin = () => {
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { level_id: '', discount_amount: 0 }])}
+                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { card_id: '', discount_amount: 0 }])}
                             >
                               <Plus className="ml-1 h-3 w-3" />
                               إضافة خصم بطاقة
@@ -2581,18 +2581,18 @@ const Admin = () => {
                                 <div key={index} className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border">
                                   <div className="flex-1">
                                     <select
-                                      value={discount.level_id}
+                                      value={discount.card_id}
                                       onChange={(e) => {
                                         const updated = [...productCardDiscounts];
-                                        updated[index] = { ...updated[index], level_id: e.target.value };
+                                        updated[index] = { ...updated[index], card_id: e.target.value };
                                         setProductCardDiscounts(updated);
                                       }}
                                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                                     >
                                       <option value="">اختر البطاقة</option>
-                                      {loyaltyLevels?.map((level) => (
-                                        <option key={level.id} value={level.id}>
-                                          {level.name_ar}
+                                      {membershipCardsForDiscounts?.map((card) => (
+                                        <option key={card.id} value={card.id}>
+                                          {card.name_ar || card.name_en || card.card_key}
                                         </option>
                                       ))}
                                     </select>
