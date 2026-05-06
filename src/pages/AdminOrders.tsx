@@ -821,37 +821,39 @@ const AdminOrders = () => {
     return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
   };
 
-  // Filter orders
-  const filteredOrders = orders?.filter(order => {
-    const matchesSearch = 
+  // Base orders: filtered by tab + shipping type + search only (NOT by status).
+  // Used for stat cards and status-filter button counts so they reflect real totals.
+  const baseOrders = (orders || []).filter(order => {
+    const matchesSearch =
       order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.phone_number?.includes(searchTerm);
 
-    // When 'all' is selected, hide cancelled orders. Show them only via 'cancelled' filter.
-    const matchesStatus = statusFilter === 'all' 
+    const shippingInfo = getShippingInfo(order.order_items || []);
+    const isAirShipping = shippingInfo.isFast;
+    const matchesShippingType =
+      orderTab !== 'preorder' || preorderShippingTab === 'all' ||
+      (preorderShippingTab === 'air' && isAirShipping) ||
+      (preorderShippingTab === 'sea' && !isAirShipping);
+
+    const orderType = (order as any).order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
+    const matchesOrderType =
+      (orderTab === 'preorder' && orderType === 'preorder') ||
+      (orderTab === 'direct' && orderType === 'direct');
+
+    return matchesSearch && matchesShippingType && matchesOrderType;
+  });
+
+  // Apply status filter on top of baseOrders for the visible list.
+  const filteredOrders = baseOrders.filter(order => {
+    const matchesStatus = statusFilter === 'all'
       ? order.status !== 'cancelled'
       : statusFilter === 'active'
         ? !['delivered', 'cancelled'].includes(order.status)
         : order.status === statusFilter;
-    
-    // Shipping type filter based on tab
-    const shippingInfo = getShippingInfo(order.order_items || []);
-    const isAirShipping = shippingInfo.isFast;
-    const matchesShippingType = 
-      orderTab !== 'preorder' || preorderShippingTab === 'all' || 
-      (preorderShippingTab === 'air' && isAirShipping) ||
-      (preorderShippingTab === 'sea' && !isAirShipping);
-    
-    // Order type filter based on tab
-    const orderType = (order as any).order_type || (checkIfPreOrder(order.order_items || []) ? 'preorder' : 'direct');
-    const matchesOrderType = 
-      (orderTab === 'preorder' && orderType === 'preorder') ||
-      (orderTab === 'direct' && orderType === 'direct');
-
-    return matchesSearch && matchesStatus && matchesShippingType && matchesOrderType;
-  }) || [];
+    return matchesStatus;
+  });
 
   // Pagination
   const pagination = usePagination(filteredOrders, { pageSize: 25 });
