@@ -335,9 +335,10 @@ export default function AdminLoyaltyLevels() {
 
   const saveOfferMutation = useMutation({
     mutationFn: async () => {
-      const data = {
-        ...offerData,
-        min_card_level_id: offerData.min_card_level_id || null,
+      const { min_card_level_id, ...rest } = offerData as any;
+      const data: any = {
+        ...rest,
+        min_card_id: min_card_level_id || null,
       };
 
       if (editingOffer) {
