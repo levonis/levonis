@@ -1447,6 +1447,13 @@ export default function AdminLoyaltyLevels() {
               <Button
                 size="sm"
                 variant="outline"
+                onClick={() => navigate(`${ADMIN_BASE_PATH}/user-card-cycles`)}
+              >
+                <History className="h-4 w-4 ml-1" /> ملخص دورات المستخدمين
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => navigate(`${ADMIN_BASE_PATH}/loyalty-code-redemptions`)}
               >
                 <History className="h-4 w-4 ml-1" /> سجل الاستخدام

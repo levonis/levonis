@@ -13784,6 +13784,41 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_get_user_card_cycles_summary: {
+        Args: {
+          p_min_duration_days?: number
+          p_only_active?: boolean
+          p_search?: string
+        }
+        Returns: {
+          card_id: string
+          card_key: string
+          card_name_ar: string
+          card_name_en: string
+          current_cycle_index: number
+          cycle_end: string
+          cycle_start: string
+          days_left_in_card: number
+          days_left_in_cycle: number
+          duration_days: number
+          expires_at: string
+          free_shipping_max_uses: number
+          free_shipping_remaining_in_cycle: number
+          free_shipping_used_in_cycle: number
+          full_name: string
+          is_active: boolean
+          percentage_max_amount: number
+          percentage_remaining_in_cycle: number
+          percentage_used_in_cycle: number
+          purchased_at: string
+          redeemed_code: string
+          total_cycles: number
+          user_card_id: string
+          user_id: string
+          username: string
+          validity_status: string
+        }[]
+      }
       admin_gift_loyalty_card: {
         Args: { p_admin_note?: string; p_card_id: string; p_user_id: string }
         Returns: Json
