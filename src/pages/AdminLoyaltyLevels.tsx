@@ -920,17 +920,9 @@ export default function AdminLoyaltyLevels() {
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="px-4 pb-4 space-y-4">
-                            {/* Master toggle */}
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20">
-                              <Label className="flex items-center gap-2 font-medium">
-                                <Truck className="h-4 w-4 text-orange-600" />
-                                تفعيل الشحن المجاني
-                              </Label>
-                              <Switch
-                                checked={formData.free_shipping}
-                                onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
-                              />
-                            </div>
+                            <p className="text-[11px] text-muted-foreground">
+                              فعّل/أوقف "الشحن المجاني" من قسم "المزايا الإضافية" أدناه. هذه الحقول إعدادات تفصيلية له.
+                            </p>
 
                             <div className={cn("space-y-4 transition-opacity", !formData.free_shipping && "opacity-50 pointer-events-none")}>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1023,23 +1015,6 @@ export default function AdminLoyaltyLevels() {
                               </div>
                             </div>
 
-                            {/* Monthly free shipping (separate from main free shipping) */}
-                            <div className="admin-form-group pt-3 border-t">
-                              <Label className="flex items-center gap-2 text-sm">
-                                <Truck className="h-4 w-4 text-muted-foreground" />
-                                شحنات مجانية شهرياً (مستقلة)
-                              </Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                value={formData.monthly_free_shipping}
-                                onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
-                                placeholder="0 = معطّل"
-                              />
-                              <p className="text-[11px] text-muted-foreground mt-1">
-                                عدد الشحنات المجانية المتاحة كل شهر بغض النظر عن الإعدادات أعلاه
-                              </p>
-                            </div>
                           </AccordionContent>
                         </AccordionItem>
 
@@ -1068,6 +1043,20 @@ export default function AdminLoyaltyLevels() {
                                 toggle: (v: boolean) => void;
                                 visible: boolean;
                               }> = [
+                                {
+                                  key: 'free_shipping',
+                                  visible: true,
+                                  enabled: formData.free_shipping,
+                                  toggle: (v) => setFormData({ ...formData, free_shipping: v }),
+                                  text: 'شحن مجاني (تفاصيل في قسم الشحن)',
+                                },
+                                {
+                                  key: 'monthly_free_shipping',
+                                  visible: true,
+                                  enabled: formData.monthly_free_shipping > 0,
+                                  toggle: (v) => setFormData({ ...formData, monthly_free_shipping: v ? (formData.monthly_free_shipping || 1) : 0 }),
+                                  text: formData.monthly_free_shipping > 0 ? `${formData.monthly_free_shipping} شحنات مجانية شهرياً` : 'شحنات مجانية شهرياً',
+                                },
                                 { key: 'vip_support', visible: true, enabled: formData.vip_support, toggle: (v) => setFormData({ ...formData, vip_support: v }), text: 'دعم عملاء مميز وأولوية الرد' },
                                 { key: 'priority_shipping', visible: true, enabled: formData.priority_shipping, toggle: (v) => setFormData({ ...formData, priority_shipping: v }), text: 'أولوية في الشحن والتوصيل' },
                                 { key: 'priority_packaging', visible: true, enabled: formData.priority_packaging, toggle: (v) => setFormData({ ...formData, priority_packaging: v }), text: 'أولوية في التغليف' },
@@ -1087,35 +1076,53 @@ export default function AdminLoyaltyLevels() {
                                 },
                               ];
                               return (
-                                <ul className="space-y-2">
-                                  {items.map((it) => (
-                                    <li
-                                      key={it.key}
-                                      className={cn(
-                                        "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
-                                        it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                                <div className="space-y-3">
+                                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {items.map((it) => (
+                                      <li
+                                        key={it.key}
+                                        className={cn(
+                                          "flex items-center justify-between gap-3 p-2.5 rounded-lg border text-sm transition-colors",
+                                          it.enabled ? "bg-primary/5 border-primary/30" : "bg-muted/20 border-border/50 opacity-60"
+                                        )}
+                                      >
+                                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                                          <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
+                                          <span className={cn("leading-tight", !it.enabled && "line-through")}>{it.text}</span>
+                                        </div>
+                                        <Switch checked={it.enabled} onCheckedChange={it.toggle} />
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {(formData.free_daily_games > 0 || formData.monthly_free_shipping > 0) && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2 border-t">
+                                      {formData.monthly_free_shipping > 0 && (
+                                        <div className="p-2.5 rounded-lg border border-dashed">
+                                          <Label className="text-xs">عدد الشحنات المجانية شهرياً</Label>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            value={formData.monthly_free_shipping}
+                                            onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
+                                            className="mt-1"
+                                          />
+                                        </div>
                                       )}
-                                    >
-                                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                                        <Check className={cn("h-4 w-4 shrink-0 mt-0.5", it.enabled ? "text-primary" : "text-muted-foreground")} />
-                                        <span className={cn(!it.enabled && "line-through")}>{it.text}</span>
-                                      </div>
-                                      <Switch checked={it.enabled} onCheckedChange={it.toggle} />
-                                    </li>
-                                  ))}
-                                  {formData.free_daily_games > 0 && (
-                                    <li className="p-2.5 rounded-lg border border-dashed">
-                                      <Label className="text-xs">عدد الألعاب المجانية يومياً</Label>
-                                      <Input
-                                        type="number"
-                                        min="1"
-                                        value={formData.free_daily_games}
-                                        onChange={(e) => setFormData({ ...formData, free_daily_games: parseInt(e.target.value) || 0 })}
-                                        className="mt-1"
-                                      />
-                                    </li>
+                                      {formData.free_daily_games > 0 && (
+                                        <div className="p-2.5 rounded-lg border border-dashed">
+                                          <Label className="text-xs">عدد الألعاب المجانية يومياً</Label>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            value={formData.free_daily_games}
+                                            onChange={(e) => setFormData({ ...formData, free_daily_games: parseInt(e.target.value) || 0 })}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
-                                </ul>
+                                </div>
                               );
                             })()}
                           </AccordionContent>
