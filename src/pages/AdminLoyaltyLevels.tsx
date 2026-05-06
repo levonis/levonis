@@ -268,7 +268,6 @@ export default function AdminLoyaltyLevels() {
         level_key,
         min_points,
         purchase_price_points,
-        is_purchasable,
         ...rest
       } = formData;
 
@@ -276,7 +275,6 @@ export default function AdminLoyaltyLevels() {
         ...rest,
         card_key: level_key,
         price_points: purchase_price_points,
-        is_active: is_purchasable, // false ⇒ exclusive (admin-gift only)
         benefits,
         display_order: displayOrder,
         discount_applicable_category_ids: formData.discount_applicable_category_ids.length > 0
