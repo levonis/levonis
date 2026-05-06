@@ -39,7 +39,7 @@ const PROBES: Probe[] = [
     page: 'إدارة الطلبات',
     route: '/orders',
     table: 'orders_admin',
-    columns: 'id, total_amount, profit_amount, cost_total',
+    columns: 'id, total_amount, profit_amount, admin_product_cost, admin_shipping_cost',
   },
   {
     page: 'بنود الطلبات',
