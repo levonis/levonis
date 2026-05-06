@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Ticket, Star, Zap, Trophy, BarChart3, Gift, Target, Crown, Plus, Trash2, Medal, RefreshCcw, Package, Search, Palette, Settings2, Gamepad2, Globe } from "lucide-react";
 import SeasonAdminFields from "./SeasonAdminFields";
+import { adminUpdateProduct } from "@/lib/adminMutations";
 
 interface ProductPickerValue {
   product_id: string | null;
@@ -33,7 +34,7 @@ function ProductPicker({
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products-picker", search],
     queryFn: async () => {
-      let q = supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
+      let q = supabase.from("products_admin" as any).select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").order("created_at", { ascending: false }).limit(20);
       if (search.trim()) q = q.ilike("name_ar", `%${search}%`);
       const { data } = await q;
       return (data || []) as any[];
@@ -45,7 +46,7 @@ function ProductPicker({
     queryKey: ["admin-product-selected", value.product_id],
     queryFn: async () => {
       if (!value.product_id) return null;
-      const { data } = await supabase.from("products").select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
+      const { data } = await supabase.from("products_admin" as any).select("id, name_ar, image_url, direct_stock, pre_order_stock, colors").eq("id", value.product_id).single();
       return data as any;
     },
     enabled: !!value.product_id,
@@ -198,8 +199,7 @@ function ProductPicker({
                   size="sm" 
                   className="text-xs h-7" 
                   onClick={async () => {
-                    const { error } = await supabase.from("products").update({ direct_stock: manualStock } as any).eq("id", value.product_id!);
-                    if (error) { toast.error("فشل تحديث المخزون"); return; }
+                    try { await adminUpdateProduct(value.product_id!, { direct_stock: manualStock }); } catch { toast.error("فشل تحديث المخزون"); return; }
                     toast.success(`تم تحديد المخزون: ${manualStock}`);
                     setSettingStock(false);
                     queryClient.invalidateQueries({ queryKey: ["admin-product-selected", value.product_id] });
