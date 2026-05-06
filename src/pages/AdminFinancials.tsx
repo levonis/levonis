@@ -27,6 +27,7 @@ import { ar } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading } from '@/components/admin/AdminLayout';
 import BatchProfitAnalysis from '@/components/admin/BatchProfitAnalysis';
+import { adminCreateOrder, adminDeleteOrder, adminUpdateOrder } from '@/lib/adminMutations';
 
 interface EditingCell { orderId: string; field: string; value: number; }
 
@@ -296,8 +297,7 @@ const AdminFinancials = () => {
         }
       }
 
-      const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
-      if (error) throw error;
+      await adminUpdateOrder(orderId, updates);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-financials'] }); toast.success('تم تحديث البيانات'); setEditingCell(null); },
     onError: () => { toast.error('حدث خطأ أثناء التحديث'); },
@@ -305,10 +305,7 @@ const AdminFinancials = () => {
 
   const deleteOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const { error: itemsError } = await supabase.from('order_items').delete().eq('order_id', orderId);
-      if (itemsError) throw itemsError;
-      const { error } = await supabase.from('orders').delete().eq('id', orderId);
-      if (error) throw error;
+      await adminDeleteOrder(orderId);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-financials'] }); toast.success('تم حذف الطلب بنجاح'); },
     onError: () => { toast.error('حدث خطأ أثناء حذف الطلب'); },
@@ -318,7 +315,7 @@ const AdminFinancials = () => {
     mutationFn: async (form: ManualOrderForm) => {
       const orderNumber = `MAN-${Date.now()}`;
       const totalProductCost = form.products.reduce((s, p) => s + (p.cost_price * p.quantity), 0);
-      const { data: order, error: orderError } = await supabase.from('orders').insert({
+      const order = await adminCreateOrder({
         order_number: orderNumber, user_id: user?.id || '', total_amount: form.total_amount,
         customer_paid_amount: form.customer_paid_amount, admin_paid_amount: 0,
         admin_product_cost: form.admin_product_cost || totalProductCost, admin_shipping_cost: form.admin_shipping_cost, admin_other_costs: 0,
@@ -326,8 +323,7 @@ const AdminFinancials = () => {
         remaining_amount: form.remaining_amount, status: form.status,
         order_type: form.order_type,
         shipping_address: 'طلب يدوي', phone_number: '-', governorate: '-',
-      }).select('id, order_number').single();
-      if (orderError) throw orderError;
+      });
       if (order) {
         const validProducts = form.products.filter(p => p.name.trim());
         if (validProducts.length > 0) {
